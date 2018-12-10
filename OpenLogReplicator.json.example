@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "dumplogfile": "0",
+  "dumpdata": "0",
+  "directread": "0",
+  "sources": [
+    {
+      "type": "ORACLE11204",
+      "alias": "S1", 
+      "name": "O112A", 
+      "user": "system", 
+      "password": "unknPwd4%", 
+      "server": "//server:4999/O112A.ORADOMAIN",
+      "tables": [
+        {"table": "OWNER.TABLENAME1"},
+        {"table": "OWNER.TABLENAME1"},
+        {"table": "OWNER.TABLENAME1"}]
+    }
+  ],
+  "targets": [
+    {
+      "type": "KAFKA",
+      "alias": "T2",
+      "brokers": "localhost:9092",
+      "topic": "O112A",
+      "source": "S1"
+    }
+  ]
+}
