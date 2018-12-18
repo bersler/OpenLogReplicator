@@ -55,15 +55,15 @@ namespace OpenLogReplicatorOracle {
     		lastScn = scn;
 	}
 
-    void Transaction::add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+    void Transaction::add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
     		TransactionBuffer *transactionBuffer) {
-    	tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, uba, dba, slt, redoLogRecord1, redoLogRecord2);
+    	tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
     	++opCodes;
     	touch(redoLogRecord1->scn);
     }
 
     void Transaction::rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer) {
-    	tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt);
+    	tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
 
     	--opCodes;
     	if (lastScn == ZERO_SCN || lastScn < scn)
@@ -163,6 +163,7 @@ namespace OpenLogReplicatorOracle {
 			lastUba(0),
 			lastDba(0),
 			lastSlt(0),
+			lastRci(0),
 			isBegin(false),
 			isCommit(false),
 			isRollback(false),

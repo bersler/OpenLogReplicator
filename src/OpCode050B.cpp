@@ -52,7 +52,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 8)
-			throw RedoLogException("ERROR: to short field buext: ", nullptr, fieldLength);
+			throw RedoLogException("to short field buext: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t idx = 0; //FIXME

@@ -67,22 +67,25 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode::ktbRedo(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 8)
-			throw RedoLogException("ERROR: to short field KTB Redo: ", nullptr, fieldLength);
+			throw RedoLogException("to short field KTB Redo: ", nullptr, fieldLength);
 
 		uint8_t op = redoLogRecord->data[fieldPos + 0];
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t ver = redoLogRecord->data[fieldPos + 1] & 0x03;
 
+			if (oracleEnvironment->version == 12)
+				cout << "KDO undo record:" << endl;
+
 			cout << "KTB Redo" << endl;
-			cout << "op: 0x" << setfill('0') << setw(2) << hex << (int)op << " " <<
-					" ver: 0x" << setfill('0') << setw(2) << hex << (int)ver << endl;
+			cout << "op: 0x" << setfill('0') << setw(2) << hex << (uint32_t)op << " " <<
+					" ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver << endl;
 			cout << "compat bit: 4 (post-11) padding: 1" << endl;
 		}
 		char opCode = '?';
 
 		if (op == 0x02) {
 			if (fieldLength < 16)
-				throw RedoLogException("ERROR: to short field KTB Redo 2: ", nullptr, fieldLength);
+				throw RedoLogException("to short field KTB Redo 2: ", nullptr, fieldLength);
 
 			redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
 
@@ -97,7 +100,7 @@ namespace OpenLogReplicatorOracle {
 			}
 		} else if (op == 0x04) {
 			if (fieldLength < 32)
-				throw RedoLogException("ERROR: to short field KTB Redo 4: ", nullptr, fieldLength);
+				throw RedoLogException("to short field KTB Redo 4: ", nullptr, fieldLength);
 
 			redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 16);
 
@@ -117,14 +120,14 @@ namespace OpenLogReplicatorOracle {
 						" uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 				cout << "                     " <<
 						" flg: C---   " <<
-						" lkc:  " << (int)lkc << "    " <<
+						" lkc:  " << (uint32_t)lkc << "    " <<
 						" scn: " << PRINTSCN(scnx) << endl;
 			}
 
 		} else if (op == 0x01 || op == 0x11) {
 
 			if (fieldLength < 24)
-				throw RedoLogException("ERROR: to short field KTB Redo F: ", nullptr, fieldLength);
+				throw RedoLogException("to short field KTB Redo F: ", nullptr, fieldLength);
 
 			redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
 					oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
@@ -155,14 +158,14 @@ namespace OpenLogReplicatorOracle {
 
 					cout << "Block cleanout record, scn: " <<
 							" " << PRINTSCN(scn) <<
-							" ver: 0x" << setfill('0') << setw(2) << hex << (int)ver <<
-							" opt: 0x" << setfill('0') << setw(2) << hex << (int)opt <<
+							" ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
+							" opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
 							", entries follow..." << endl;
-					cout << "  itli: " << (int)itli1 << " " <<
-							" flg: " << (int)flg1 << " " <<
+					cout << "  itli: " << (uint32_t)itli1 << " " <<
+							" flg: " << (uint32_t)flg1 << " " <<
 							" scn: " << PRINTSCN(scn1) << endl;
-					cout << "  itli: " << (int)itli2 << " " <<
-							" flg: " << (int)flg2 << " " <<
+					cout << "  itli: " << (uint32_t)itli2 << " " <<
+							" flg: " << (uint32_t)flg2 << " " <<
 							" scn: " << PRINTSCN(scn2) << endl;
 				}
 			}
@@ -171,7 +174,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode::kdoOpCode(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 16)
-			throw RedoLogException("ERROR: to short field KDO OpCode: ", nullptr, fieldLength);
+			throw RedoLogException("to short field KDO OpCode: ", nullptr, fieldLength);
 
 	    itli = redoLogRecord->data[fieldPos + 12];
 		uint8_t op = redoLogRecord->data[fieldPos + 10];
@@ -214,21 +217,21 @@ namespace OpenLogReplicatorOracle {
 					" flags: 0x00000000 " <<
 					" bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->bdba << " " <<
 					" hdba: 0x" << setfill('0') << setw(8) << hex << hdba << endl;
-			cout << "itli: " << dec << (int)itli << " " <<
-					" ispac: " << dec << (int)ispac << " " <<
-					" maxfr: " << dec << (int)maxFr << endl;
+			cout << "itli: " << dec << (uint32_t)itli << " " <<
+					" ispac: " << dec << (uint32_t)ispac << " " <<
+					" maxfr: " << dec << (uint32_t)maxFr << endl;
 		}
 
 		if ((op & 0x1F) == 0x03) { //Delete Row Piece
 			if (fieldLength < 20)
-				throw RedoLogException("ERROR: to short field KDO OpCode DRP: ", nullptr, fieldLength);
+				throw RedoLogException("to short field KDO OpCode DRP: ", nullptr, fieldLength);
 
 			uint32_t tabn = redoLogRecord->data[fieldPos + 15]; //FIXME
 		    slot = redoLogRecord->data[fieldPos + 16];
 
 			if (oracleEnvironment->dumpLogFile) {
 				cout << "tabn: "<< tabn <<
-						" slot: " << dec << (int)slot << "(0x" << setfill('0') << setw(2) << hex << (int)slot << ")" << endl;
+						" slot: " << dec << (uint32_t)slot << "(0x" << setfill('0') << setw(2) << hex << (uint32_t)slot << ")" << endl;
 			}
 
 		} else
@@ -236,7 +239,7 @@ namespace OpenLogReplicatorOracle {
 		if ((op & 0x1F) == 0x02) { //Insert Row Piece
 			if (fieldLength < 48) {
 				cout << "length is " << fieldLength << endl;
-				throw RedoLogException("ERROR: to short field KDO OpCode IRP: ", nullptr, fieldLength);
+				throw RedoLogException("to short field KDO OpCode IRP: ", nullptr, fieldLength);
 			}
 
 		    uint32_t tabn = redoLogRecord->data[fieldPos + 15]; //FIXME
@@ -244,7 +247,7 @@ namespace OpenLogReplicatorOracle {
 
 			if (oracleEnvironment->dumpLogFile) {
 				cout << "tabn: "<< tabn <<
-						" slot: " << dec << (int)slot << "(0x" << setfill('0') << setw(2) << hex << (int)slot << ")" << endl;
+						" slot: " << dec << (uint32_t)slot << "(0x" << setfill('0') << setw(2) << hex << (uint32_t)slot << ")" << endl;
 			}
 
 			if (oracleEnvironment->dumpLogFile) {
@@ -263,8 +266,8 @@ namespace OpenLogReplicatorOracle {
 				if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
 
 				cout << "fb: " << flStr <<
-						" lb: 0x" << hex << (int)lb << " " <<
-						" cc: " << dec << (int)cc << endl;
+						" lb: 0x" << hex << (uint32_t)lb << " " <<
+						" cc: " << dec << (uint32_t)cc << endl;
 				cout << "null:" << endl;
 				cout << "0123 4567 8901 2345 6789 0123 4567 8901 2345 67890 123456789012345678901234567890123456789" << endl;
 				cout << "---N --N- -NNN NNNN NNNN NNNN -NNN -N-N N--N NN-" << endl;
@@ -275,7 +278,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode::ktub(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 24)
-			throw RedoLogException("ERROR: to short field ktub: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktub: ", nullptr, fieldLength);
 
 		redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
 		redoLogRecord->objd = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
@@ -295,16 +298,16 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode::ktubu(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 24)
-			throw RedoLogException("ERROR: to short field ktubu.B.1: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktubu.B.1: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			string lastBufferSplit = "No"; //FIXME
 			string tablespaceUndo = "No"; //FIXME
 
 			cout << "ktubu redo:" <<
-					" slt: " << dec << (int)redoLogRecord->slt <<
-					" rci: " << dec << (int)redoLogRecord->rci <<
-					" opc: " << (int)(redoLogRecord->opc >> 8) << "." << (int)(redoLogRecord->opc & 0xFF) <<
+					" slt: " << dec << (uint32_t)redoLogRecord->slt <<
+					" rci: " << dec << (uint32_t)redoLogRecord->rci <<
+					" opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
 					" objn: " << redoLogRecord->objn << " objd: " << redoLogRecord->objd << " tsn: " << redoLogRecord->tsn << endl;
 			cout << "Undo type:  Regular undo       Undo type:  " << getUndoType() << "Last buffer split:  " << lastBufferSplit << endl;
 			cout << "Tablespace Undo:  " << tablespaceUndo << endl;
@@ -340,7 +343,7 @@ namespace OpenLogReplicatorOracle {
 		cout << "  + " << getName() << " " << PRINTXID(redoLogRecord->xid) <<
 				" UBA " << PRINTUBA(redoLogRecord->uba) <<
 				" BDBA 0x" << setw(8) << hex << redoLogRecord->bdba <<
-				" ITLI 0x" << setw(2) << hex << (int)itli << " ";
+				" ITLI 0x" << setw(2) << hex << (uint32_t)itli << " ";
 		dumpDetails();
 		cout << endl;
 	}

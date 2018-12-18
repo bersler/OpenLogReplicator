@@ -123,17 +123,15 @@ namespace OpenLogReplicatorOracle {
 					cerr << "archive log path: " << redo->path << endl;
 					cerr << "archive log sequence: " << redo->sequence << endl;
 					cerr << "now should read: " << databaseSequence << endl;
-					throw RedoLogException("ERROR: incorrect archive log sequence", nullptr, 0);
+					throw RedoLogException("incorrect archive log sequence", nullptr, 0);
 				}
 
 				int ret = redo->processLog(this);
 				if (this->shutdown)
 					return 0;
 
-				if (ret != REDO_OK) {
-					cerr << "archive log path: " << redo->path << endl;
-					throw RedoLogException("ERROR: error while reading archive log", nullptr, 0);
-				}
+				if (ret != REDO_OK)
+					throw RedoLogException("read archive log", nullptr, 0);
 
 				databaseSequence = redo->sequence + 1;
 				writeCheckpoint();
@@ -204,7 +202,7 @@ namespace OpenLogReplicatorOracle {
 				if (ret != REDO_OK) {
 					if (ret == REDO_WRONG_SEQUENCE_SWITCHED)
 						break;
-					throw RedoLogException("ERROR: error while reading archive log", nullptr, 0);
+					throw RedoLogException("read archive log", nullptr, 0);
 				}
 				databaseSequence = redo->sequence + 1;
 				writeCheckpoint();
@@ -216,7 +214,7 @@ namespace OpenLogReplicatorOracle {
 			archLogGetList();
 			if (archiveRedoQueue.empty()) {
 				cerr << "now should read: " << databaseSequence << endl;
-				throw RedoLogException("ERROR: archive log missing", nullptr, 0);
+				throw RedoLogException("archive log missing", nullptr, 0);
 			}
 		}
 
@@ -269,13 +267,19 @@ namespace OpenLogReplicatorOracle {
 				status = stmt.rset->getString(4);
 				group = stmt.rset->getInt(5);
 				path = stmt.rset->getString(6);
+
+				if (oracleEnvironment->dumpData) {
+					cout << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
+							", GROUP: " << group << ", PATH: " << path << endl;
+				}
+
 				if (status.compare("CURRENT") != 0)
 					nextScn = stmt.rset->getNumber(3);
 				else
 					nextScn = ZERO_SCN;
 				if (groupPrev != groupLast && group != groupPrev) {
-					cerr << "ERROR: can not read any member from group " << groupPrev << endl;
-					throw RedoLogException("ERROR: can not read any member from group", nullptr, 0);
+					cerr << "can not read any member from group " << groupPrev << endl;
+					throw RedoLogException("can not read any member from group", nullptr, 0);
 				}
 
 				if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
@@ -372,11 +376,11 @@ namespace OpenLogReplicatorOracle {
 			OracleStatement stmt(&conn, env);
 			OracleStatement stmt2(&conn, env);
 			stmt.createStatement(
-					"SELECT tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.NAME AS owner, obj.NAME AS objectName "
-					"FROM SYS.TAB$ tab, SYS.OBJ$ obj, SYS.USER$ usr "
+					"SELECT tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
+					"FROM SYS.TAB$ tab, SYS.OBJ$ obj, ALL_USERS usr "
 					"WHERE tab.OBJ# = obj.OBJ# "
-					"AND obj.OWNER# = usr.USER# "
-					"AND usr.NAME || '.' || obj.NAME LIKE :i");
+					"AND obj.OWNER# = usr.USER_ID "
+					"AND usr.USERNAME || '.' || obj.NAME LIKE :i");
 			//tab.OBJ# = :i");
 			stmt.stmt->setString(1, mask);
 			stmt.executeQuery();

@@ -50,7 +50,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0502::ktudh(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
 		if (fieldLength < 32)
-			throw RedoLogException("ERROR: to short field ktudh: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktudh: ", nullptr, fieldLength);
 
 		redoLogRecord->xid = XID(usn,
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
@@ -71,7 +71,7 @@ namespace OpenLogReplicatorOracle {
 					" sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
 					" flg: 0x" << setfill('0') << setw(4) << flg <<
 					" siz: " << dec << siz <<
-					" fbi: " << dec << (int) fbi << endl;
+					" fbi: " << dec << (uint32_t)fbi << endl;
 			cout << "           " <<
 					" uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
 					" pxid:  " << PRINTXID(pxid) << endl;

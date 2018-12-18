@@ -65,7 +65,7 @@ void signalHandler(int s) {
 
 int main() {
 	signal (SIGINT, signalHandler);
-	cout << "Open Log Replicator v. 0.0.1 (C) 2018 by Adam Leszcznski, aleszczynski@bersler.com" << endl;
+	cout << "Open Log Replicator v. 0.0.2 (C) 2018 by Adam Leszcznski, aleszczynski@bersler.com" << endl;
 
 	ifstream config("OpenLogReplicator.json");
 	string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
@@ -77,7 +77,7 @@ int main() {
     	{cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.0.1") != 0)
+    if (strcmp(version.GetString(), "0.0.2") != 0)
     	{cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
@@ -103,7 +103,8 @@ int main() {
     	const Value& source = sources[i];
     	const Value& type = getJSONfield(source, "type");
 
-    	if (strcmp("ORACLE11204", type.GetString()) == 0) {
+    	if (strcmp("ORACLE11204", type.GetString()) == 0 ||
+    		strcmp("ORACLE12102", type.GetString()) == 0) {
     		const Value& alias = getJSONfield(source, "alias");
     		const Value& name = getJSONfield(source, "name");
         	const Value& user = getJSONfield(source, "user");

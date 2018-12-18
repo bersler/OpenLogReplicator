@@ -34,9 +34,9 @@ namespace OpenLogReplicatorOracle {
 	public:
 		TransactionMap();
 		virtual ~TransactionMap();
-		void erase(typeuba uba, uint32_t dba, uint8_t slt);
-		void set(typeuba uba, uint32_t dba, uint8_t slt, Transaction * transaction);
-		Transaction* get(typeuba uba, uint32_t dba, uint8_t slt);
+		void erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+		void set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction * transaction);
+		Transaction* get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 	};
 }
 

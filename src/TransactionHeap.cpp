@@ -39,10 +39,8 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void TransactionHeap::pop(uint32_t pos) {
-		if (pos > heapSize) {
-			cerr << "ERROR: pop of non existent transaction from heap (pos: " << pos << ")" << endl;
-			throw MemoryException("ERROR: heap inconsistency");
-		}
+		if (pos > heapSize)
+			throw MemoryException("heap inconsistency: pop of non existent transaction from heap");
 
 		while ((pos << 1) < heapSize) {
 			if (*heap[pos << 1] < *heap[heapSize]) {
@@ -77,10 +75,8 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	int TransactionHeap::add(Transaction *transaction) {
-		if (heapSize == heapMaxSize) {
-			cerr << "ERROR: maximum heap size reached" << endl;
-			throw MemoryException("ERROR: out of memory");
-		}
+		if (heapSize == heapMaxSize)
+			throw MemoryException("out of memory: maximum heap size reached");
 
 		uint32_t pos = heapSize + 1;
 		++heapSize;
@@ -96,10 +92,8 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void TransactionHeap::update(uint32_t pos) {
-		if (pos > heapSize) {
-			cerr << "ERROR: pop of non existent transaction from heap (pos: " << pos << ", heapSize: " << heapSize << ")" << endl;
-			throw MemoryException("ERROR: out of memory");
-		}
+		if (pos > heapSize)
+			throw MemoryException("heap inconsistency: update of non existent transaction from heap");
 
 		Transaction *transaction = heap[pos];
 		while (true) {

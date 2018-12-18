@@ -38,7 +38,7 @@ namespace OpenLogReplicatorOracle {
 				ktudb(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-				if (redoLogRecord->opc == 0x0507) // (flg & 0x8) != 0)
+				if ((redoLogRecord->flg & 0x8) != 0)
 					ktubl(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 				else if (redoLogRecord->opc == 0x0B01)
 					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
@@ -72,7 +72,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0501::ktudb(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 20)
-			throw RedoLogException("ERROR: to short field ktudb: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktudb: ", nullptr, fieldLength);
 
 		redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
@@ -90,7 +90,7 @@ namespace OpenLogReplicatorOracle {
 					" spc: " << dec << spc <<
 					" flg: 0x" << setfill('0') << setw(4) << hex << flg <<
 					" seq: 0x" << setfill('0') << setw(4) << seq <<
-					" rec: 0x" << setfill('0') << setw(2) << (int)rec << endl;
+					" rec: 0x" << setfill('0') << setw(2) << (uint32_t)rec << endl;
 			cout << "           " <<
 					" xid:  " << PRINTXID(redoLogRecord->xid) << endl;
 		}
@@ -98,7 +98,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0501::ktubl(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 76)
-			throw RedoLogException("ERROR: to short field ktubl.5.7: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktubl.5.7: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint32_t x1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 24);
@@ -117,9 +117,9 @@ namespace OpenLogReplicatorOracle {
 			uint32_t flg2 = 0; //FIXME
 
 			cout << "ktubl redo:" <<
-					" slt: " << dec << (int)redoLogRecord->slt <<
-					" rci: " << dec << (int)redoLogRecord->rci <<
-					" opc: " << (int)(redoLogRecord->opc >> 8) << "." << (int)(redoLogRecord->opc & 0xFF) <<
+					" slt: " << dec << (uint32_t)redoLogRecord->slt <<
+					" rci: " << dec << (uint32_t)redoLogRecord->rci <<
+					" opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
 					" [objn: " << redoLogRecord->objn << " objd: " << redoLogRecord->objd << " tsn: " << redoLogRecord->tsn << "]" << endl;
 			cout << "Undo type:  Regular undo        Begin trans    Last buffer split:  " << lastBufferSplit << endl;
 			cout << "Temp Object:  " << tempObject << endl;

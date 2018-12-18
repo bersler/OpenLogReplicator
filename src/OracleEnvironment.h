@@ -51,6 +51,7 @@ namespace OpenLogReplicatorOracle {
 		bool dumpLogFile;
 		bool dumpData;
 		bool directRead;
+		int version; //11 or 12
 
 		OracleObject *checkDict(uint32_t objn, uint32_t objd);
 		void addToDict(OracleObject *object);

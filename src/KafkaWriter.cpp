@@ -92,7 +92,8 @@ namespace OpenLogReplicatorKafka {
 					ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, jsonBuffer->intraThreadBuffer + jsonBuffer->posStart + 4,
 					length - 4, nullptr, nullptr)) {
 				cerr << "ERROR: writing to topic " << endl;
-				break;
+				usleep(1000);
+				continue;
 			}
 
 			{

@@ -26,7 +26,7 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 	void RedoLogRecord::dump() {
-		cerr << "DUMP: opCode: " << hex << opCode <<
+		cout << "DUMP: opCode: " << hex << opCode <<
 			" length: " << dec << length <<
 			" dba: " << hex << dba <<
 			" bdba: " << hex << bdba <<

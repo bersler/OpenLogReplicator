@@ -50,17 +50,15 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	TransactionChunk *TransactionBuffer::newTransactionChunk() {
-		if (unused == nullptr) {
-			cerr << "ERROR: out of transaction buffer size" << endl;
-			throw MemoryException("ERROR: out of memory");
-		}
+		if (unused == nullptr)
+			throw MemoryException("out of memory: out of transaction buffer size");
+
 		TransactionChunk *tc = unused;
 		unused = unused->next;
 
-		if (unused == nullptr) {
-			cerr << "ERROR: out of transaction buffer size" << endl;
-			throw MemoryException("ERROR: out of memory");
-		}
+		if (unused == nullptr)
+			throw MemoryException("out of memory: out of transaction buffer size");
+
 		unused->prev = nullptr;
 		tc->next = nullptr;
 		tc->size = 0;
@@ -81,7 +79,7 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objdId, typeuba uba, uint32_t dba,
-			uint8_t slt, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+			uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
 		//0:objId
 		//4:op
@@ -90,7 +88,9 @@ namespace OpenLogReplicatorOracle {
 		//d1:data1
 		//d2:data2
 		//4:size  -28
-		//4:slt   -24
+		//1:slt   -24
+		//1:rci   -23
+		//2:...
 		//4:dba   -20
 		//8:uba   -16
 		//8:scn   -8
@@ -151,7 +151,7 @@ namespace OpenLogReplicatorOracle {
 				tcTemp->next = tcNew;
 				tcTemp = tcNew;
 			}
-			appendTransactionChunk(tcTemp, objdId, uba, dba, slt, redoLogRecord1, redoLogRecord2);
+			appendTransactionChunk(tcTemp, objdId, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
 		} else {
 			//new block needed
 			if (tcLast->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
@@ -163,14 +163,14 @@ namespace OpenLogReplicatorOracle {
 				tcLast->next = tcNew;
 				tcLast = tcNew;
 			}
-			appendTransactionChunk(tcLast, objdId, uba, dba, slt, redoLogRecord1, redoLogRecord2);
+			appendTransactionChunk(tcLast, objdId, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
 		}
 
 		return tcLast;
 	}
 
-	void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objdId, typeuba uba, uint32_t dba, uint8_t slt,
-			RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+	void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objdId, typeuba uba, uint32_t dba,
+			uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 		//append to the chunk at the end
 		*((uint32_t *)(tc->buffer + tc->size)) = objdId;
 		*((uint32_t *)(tc->buffer + tc->size + 4)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
@@ -189,6 +189,8 @@ namespace OpenLogReplicatorOracle {
 				redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 		*((uint8_t *)(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
 				redoLogRecord1->length + redoLogRecord2->length)) = slt;
+		*((uint8_t *)(tc->buffer + tc->size + 13 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+				redoLogRecord1->length + redoLogRecord2->length)) = rci;
 		*((uint32_t *)(tc->buffer + tc->size + 16 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
 				redoLogRecord1->length + redoLogRecord2->length)) = dba;
 		*((typeuba *)(tc->buffer + tc->size + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
@@ -201,7 +203,8 @@ namespace OpenLogReplicatorOracle {
 	}
 
 
-	TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba, uint8_t &lastSlt) {
+	TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba,
+			uint8_t &lastSlt, uint8_t &lastRci) {
 		if (tc->size < ROW_HEADER_MEMORY || tc->elements == 0) {
 			cerr << "ERROR: trying to remove from empty buffer" << endl;
 			return tc;
@@ -221,6 +224,7 @@ namespace OpenLogReplicatorOracle {
 			lastUba = 0;
 			lastDba = 0;
 			lastSlt = 0;
+			lastRci = 0;
 			return tc;
 		}
 
@@ -231,6 +235,7 @@ namespace OpenLogReplicatorOracle {
 		lastUba = *((typeuba *)(tc->buffer + tc->size - 16));
 		lastDba = *((uint32_t *)(tc->buffer + tc->size - 20));
 		lastSlt = *((uint8_t *)(tc->buffer + tc->size - 24));
+		lastRci = *((uint8_t *)(tc->buffer + tc->size - 23));
 
 		return tc;
 	}

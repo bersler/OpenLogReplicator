@@ -39,7 +39,7 @@ namespace OpenLogReplicatorOracle {
 			OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
@@ -72,7 +72,7 @@ namespace OpenLogReplicatorOracle {
 			if (i == 2) {
 				uint8_t op = redoLogRecord->data[fieldPosTmp + 10];
 				if ((op & 0x1F) != 0x02) {
-					cerr << "ERROR: Insert operation with incorrect OP: " << (int)op << endl;
+					cerr << "ERROR: Insert operation with incorrect OP: " << dec << (uint32_t)op << endl;
 					return;
 				}
 				colCount = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 18);
@@ -255,7 +255,7 @@ namespace OpenLogReplicatorOracle {
 					if (jMax != 7) {
 						cerr << "ERROR: unknown value (type: " << object->columns[i]->typeNo << "): ";
 						for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i + 3]; ++j)
-							cout << " " << hex << setw(2) << (int) redoLogRecord->data[fieldPosTmp + j];
+							cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPosTmp + j];
 						cout << endl;
 					} else {
 						uint32_t val1 = redoLogRecord->data[fieldPosTmp + 0],

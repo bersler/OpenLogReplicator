@@ -56,7 +56,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0506::ktuxvoff(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 8)
-			throw RedoLogException("ERROR: to short field ktuxvoff: ", nullptr, fieldLength);
+			throw RedoLogException("to short field ktuxvoff: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint16_t off = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);

@@ -20,6 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include "Thread.h"
 #include "JsonBuffer.h"
+#include "RedoLogException.h"
 
 using namespace std;
 
@@ -36,7 +37,13 @@ namespace OpenLogReplicator {
 	}
 
 	void *Thread::runStatic(void *context){
-		return ((Thread *) context)->run();
+		void *ret = nullptr;
+		try {
+			ret = ((Thread *) context)->run();
+        } catch(RedoLogException &ex) {
+                cerr << "ERROR: " << ex.msg << endl;
+        }
+        return ret;
 	}
 
 	void Thread::terminate(void) {

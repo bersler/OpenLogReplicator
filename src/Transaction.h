@@ -44,6 +44,7 @@ namespace OpenLogReplicatorOracle {
 		typeuba lastUba;
 		uint32_t lastDba;
 		uint8_t lastSlt;
+		uint8_t lastRci;
 		bool isBegin;
 		bool isCommit;
 		bool isRollback;
@@ -51,7 +52,7 @@ namespace OpenLogReplicatorOracle {
 
 	    bool operator< (Transaction &p);
 	    void touch(typescn scn);
-	    void add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+	    void add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
 	    		TransactionBuffer *transactionBuffer);
 	    void rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer);
 
@@ -63,3 +64,4 @@ namespace OpenLogReplicatorOracle {
 }
 
 #endif
+

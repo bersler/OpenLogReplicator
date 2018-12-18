@@ -36,7 +36,8 @@ namespace OpenLogReplicatorOracle {
 		jsonBuffer(jsonBuffer),
 		dumpLogFile(dumpLogFile),
 		dumpData(dumpData),
-		directRead(directRead) {
+		directRead(directRead),
+		version(0) {
 		transactionHeap.initialize(MAX_CONCURRENT_TRANSACTIONS);
 	}
 
