@@ -84,7 +84,6 @@ namespace OpenLogReplicatorKafka {
 					jsonBuffer->posStart = 0;
 					jsonBuffer->posSize = 0;
 				}
-
 				length = *((uint32_t*)(jsonBuffer->intraThreadBuffer + jsonBuffer->posStart));
 			}
 
@@ -92,13 +91,17 @@ namespace OpenLogReplicatorKafka {
 					ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, jsonBuffer->intraThreadBuffer + jsonBuffer->posStart + 4,
 					length - 4, nullptr, nullptr)) {
 				cerr << "ERROR: writing to topic " << endl;
-				usleep(1000);
-				continue;
 			}
 
 			{
 				unique_lock<mutex> lck(jsonBuffer->mtx);
 				jsonBuffer->posStart += (length + 3) & 0xFFFFFFFC;
+
+				if (jsonBuffer->posStart == jsonBuffer->posSize && jsonBuffer->posSize > 0) {
+					jsonBuffer->posStart = 0;
+					jsonBuffer->posSize = 0;
+				}
+
 				jsonBuffer->writer.notify_all();
 			}
 		}

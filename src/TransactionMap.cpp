@@ -23,14 +23,14 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "TransactionMap.h"
 #include "Transaction.h"
 
-#define HASHINGFUNCTION(uba,dba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^((uba>0)?0:dba)^(slt<<9)^(rci<<17))%(MAX_CONCURRENT_TRANSACTIONS*2-1)
+#define HASHINGFUNCTION(uba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^(slt<<9)^(rci<<17))%(MAX_CONCURRENT_TRANSACTIONS*2-1)
 
 using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
 	void TransactionMap::set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction* transaction) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, dba, slt, rci);
+		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
 		if (hashMap[hashKey] == nullptr) {
 			hashMap[hashKey] = transaction;
@@ -44,7 +44,7 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void TransactionMap::erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, dba, slt, rci);
+		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
 		if (hashMap[hashKey] == nullptr) {
 			cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
@@ -64,7 +64,7 @@ namespace OpenLogReplicatorOracle {
 		}
 		Transaction *transactionTempNext = transactionTemp->next;
 		while (transactionTempNext != nullptr) {
-			if (transactionTempNext->lastUba == uba && (uba != 0 || transactionTempNext->lastDba == dba)
+			if (transactionTempNext->lastUba == uba && transactionTempNext->lastDba == dba
 					&& transactionTempNext->lastSlt == slt && transactionTempNext->lastRci == rci) {
 				transactionTemp->next = transactionTempNext->next;
 				transactionTempNext->next = nullptr;
@@ -82,11 +82,11 @@ namespace OpenLogReplicatorOracle {
 		return;
 	}
 
-	Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, dba, slt, rci);
+	Transaction* TransactionMap::getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial;
-		uint32_t partialMatches = 0;
+		Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
+		uint32_t partialMatches1 = 0, partialMatches2 = 0;
 
 		while (transactionTemp != nullptr) {
 			if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
@@ -95,15 +95,40 @@ namespace OpenLogReplicatorOracle {
 
 			if (transactionTemp->lastUba == uba && (uba != 0 || transactionTemp->lastDba == dba) &&
 					transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
-				transactionTempPartial = transactionTemp;
-				++partialMatches;
+				transactionTempPartial1 = transactionTemp;
+				++partialMatches1;
+			}
+
+			if (transactionTemp->lastUba == uba && transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
+				transactionTempPartial2 = transactionTemp;
+				++partialMatches2;
 			}
 
 			transactionTemp = transactionTemp->next;
 		}
 
-		if (uba != 0 && partialMatches == 1)
-			return transactionTempPartial;
+		if (partialMatches1 == 1)
+			return transactionTempPartial1;
+
+		if (partialMatches2 == 1)
+			return transactionTempPartial2;
+
+		return nullptr;
+	}
+
+	Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+
+		Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
+		uint32_t partialMatches1 = 0, partialMatches2 = 0;
+
+		while (transactionTemp != nullptr) {
+			if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
+					transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
+				return transactionTemp;
+
+			transactionTemp = transactionTemp->next;
+		}
 
 		return nullptr;
 	}

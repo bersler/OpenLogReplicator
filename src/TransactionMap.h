@@ -37,6 +37,7 @@ namespace OpenLogReplicatorOracle {
 		void erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 		void set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction * transaction);
 		Transaction* get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+		Transaction* getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 	};
 }
 

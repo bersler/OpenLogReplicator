@@ -565,7 +565,7 @@ namespace OpenLogReplicatorOracle {
 		//case 0x0B020506:
 		//case 0x0B02050B:
 			{
-				Transaction *transaction = oracleEnvironment->lastOpTransactionMap.get(redoLogRecord1->uba,
+				Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
 						redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
 				//match
 				if (transaction != nullptr) {

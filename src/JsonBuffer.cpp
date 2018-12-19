@@ -41,28 +41,27 @@ namespace OpenLogReplicator {
 		if (this->shutdown)
 			return this;
 
-		while (length > 0) {
-			if (posSize > 0 && posEndTmp + 2 >= posStart) {
-				unique_lock<mutex> lck(mtx);
-				while (posSize > 0 && posEndTmp + 2 >= posStart) {
-					writer.wait(lck);
-					if (this->shutdown)
-						return this;
-				}
+		{
+			unique_lock<mutex> lck(mtx);
+			while (posSize > 0 && posEndTmp + length * 2 >= posStart) {
+				cerr << "WARNING, JSON buffer full, log reader suspended (1)" << endl;
+				writer.wait(lck);
 				if (this->shutdown)
 					return this;
 			}
-
-			if (posEndTmp + 2 >= INTRA_THREAD_BUFFER_SIZE) {
-				cerr << "ERROR: (1) buffer overflow" << endl;
+			if (this->shutdown)
 				return this;
-			}
+		}
 
+		if (posEndTmp + length * 2 >= INTRA_THREAD_BUFFER_SIZE) {
+			cerr << "ERROR: JSON buffer overflow (1)" << endl;
+			return this;
+		}
+
+		while (length > 0) {
 			if (*str == '"' || *str == '\\')
 				intraThreadBuffer[posEndTmp++] = '\\';
-
 			intraThreadBuffer[posEndTmp++] = *(str++);
-
 			--length;
 		}
 
@@ -74,16 +73,18 @@ namespace OpenLogReplicator {
 			return this;
 
 		uint32_t length = str.length();
-		if (posSize > 0 && posEndTmp + length >= posStart) {
+		{
 			unique_lock<mutex> lck(mtx);
 			while (posSize > 0 && posEndTmp + length >= posStart) {
+				cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
 				writer.wait(lck);
 				if (this->shutdown)
 					return this;
 			}
 		}
+
 		if (posEndTmp + length >= INTRA_THREAD_BUFFER_SIZE) {
-			cerr << "ERROR: (2) buffer overflow" << endl;
+			cerr << "ERROR: JSON buffer overflow (2)" << endl;
 			return this;
 		}
 
@@ -97,9 +98,10 @@ namespace OpenLogReplicator {
 		if (this->shutdown)
 			return this;
 
-		if (posSize > 0 && posEndTmp + 1 >= posStart) {
+		{
 			unique_lock<mutex> lck(mtx);
 			while (posSize > 0 && posEndTmp + 1 >= posStart) {
+				cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
 				writer.wait(lck);
 				if (this->shutdown)
 					return this;
@@ -107,7 +109,7 @@ namespace OpenLogReplicator {
 		}
 
 		if (posEndTmp + 1 >= INTRA_THREAD_BUFFER_SIZE) {
-			cerr << "ERROR: (3) buffer overflow" << endl;
+			cerr << "ERROR: JSON buffer overflow (3)" << endl;
 			return this;
 		}
 
@@ -120,9 +122,10 @@ namespace OpenLogReplicator {
 		if (this->shutdown)
 			return this;
 
-		if (posSize > 0 && posEndTmp + 4 >= posStart) {
+		{
 			unique_lock<mutex> lck(mtx);
 			while (posSize > 0 && posEndTmp + 4 >= posStart) {
+				cerr << "WARNING, JSON buffer full, log reader suspended (4)" << endl;
 				writer.wait(lck);
 				if (this->shutdown)
 					return this;
@@ -130,7 +133,7 @@ namespace OpenLogReplicator {
 		}
 
 		if (posEndTmp + 4 >= INTRA_THREAD_BUFFER_SIZE) {
-			cerr << "ERROR: (4) buffer overflow" << endl;
+			cerr << "ERROR: JSON buffer overflow (4)" << endl;
 			return this;
 		}
 
@@ -140,7 +143,12 @@ namespace OpenLogReplicator {
 	}
 
 	JsonBuffer* JsonBuffer::commitTran() {
-		if (posEndTmp != posEnd) {
+		if (posEndTmp == posEnd) {
+			cerr << "WARNING: JSON buffer - commit of empty transaction" << endl;
+			return this;
+		}
+
+		{
 			unique_lock<mutex> lck(mtx);
 			*((uint32_t*)(intraThreadBuffer + posEnd)) = posEndTmp - posEnd;
 			posEndTmp = (posEndTmp + 3) & 0xFFFFFFFC;
@@ -148,6 +156,12 @@ namespace OpenLogReplicator {
 
 			readers.notify_all();
 		}
+
+		if (posEndTmp + 1 >= INTRA_THREAD_BUFFER_SIZE) {
+			cerr << "ERROR: JSON buffer overflow (4)" << endl;
+			return this;
+		}
+
 		return this;
 	}
 
@@ -155,17 +169,15 @@ namespace OpenLogReplicator {
 		if (this->shutdown)
 			return this;
 
-		if (posSize > 0 || posStart == 0) {
+		{
 			unique_lock<mutex> lck(mtx);
 			while (posSize > 0 || posStart == 0) {
+				cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
 				writer.wait(lck);
 				if (this->shutdown)
 					return this;
 			}
-		}
 
-		{
-			unique_lock<mutex> lck(mtx);
 			posSize = posEnd;
 			posEnd = 0;
 			posEndTmp = 0;
