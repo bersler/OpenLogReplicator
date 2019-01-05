@@ -1,0 +1,28 @@
+{
+  "version": "0.0.3",
+  "dumplogfile": "0",
+  "dumpdata": "0",
+  "directread": "0",
+  "sources": [
+    {
+      "type": "ORACLE11204",
+      "alias": "S1", 
+      "name": "O112A", 
+      "user": "system", 
+      "password": "unknPwd4%", 
+      "server": "//server:4999/O112A.ORADOMAIN",
+      "tables": [
+        {"table": "OWNER.TABLENAME1"},
+        {"table": "OWNER.TABLENAME2"},
+        {"table": "OWNER.TABLENAME3"}]
+    }
+  ],
+  "targets": [
+    {
+      "type": "REDIS",
+      "alias": "T3",
+      "server": "localhost:6379",
+      "source": "S1"
+    }
+  ]
+}
