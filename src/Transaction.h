@@ -1,5 +1,5 @@
 /* Header for Transaction class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -55,6 +55,7 @@ namespace OpenLogReplicatorOracle {
 	    void add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
 	    		TransactionBuffer *transactionBuffer);
 	    void rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer);
+	    bool rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 
 	    void flush(OracleEnvironment *oracleEnvironment);
 

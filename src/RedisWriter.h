@@ -1,4 +1,4 @@
-/* Header for OpCode0501 class
+/* Header for RedisWriter class
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -17,28 +17,40 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
+#include <set>
+#include <queue>
+#include <stdint.h>
+#include <occi.h>
+#include <hiredis.h>
+#include "types.h"
+#include "Thread.h"
 
-#ifndef OPCODE0501_H_
-#define OPCODE0501_H_
+#ifndef REDISWRITER_H_
+#define REDISWRITER_H_
 
-namespace OpenLogReplicatorOracle {
+using namespace std;
+using namespace OpenLogReplicator;
 
-	class RedoLogRecord;
+namespace OpenLogReplicator {
+	class CommandBuffer;
+}
 
-	class OpCode0501: public OpCode {
+namespace OpenLogReplicatorRedis {
+
+	class RedisWriter : public Thread {
 	protected:
-		void ktudb(uint32_t fieldPos, uint32_t fieldLength);
-		void ktubl(uint32_t fieldPos, uint32_t fieldLength);
-		virtual const char* getUndoType();
-		virtual bool isKdoUndo();
-	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
+		string host;
+		uint32_t port;
+		redisContext *c;
 
-		OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
-		virtual ~OpCode0501();
+	public:
+		virtual void *run();
+
+		void addTable(string mask);
+		int initialize();
+
+		RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer);
+		virtual ~RedisWriter();
 	};
 }
 

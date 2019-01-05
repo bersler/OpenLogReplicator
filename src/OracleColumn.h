@@ -1,5 +1,5 @@
 /* Header for OracleColumn class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -34,8 +34,9 @@ namespace OpenLogReplicatorOracle {
 		string columnName;
 		uint32_t typeNo;
 		uint32_t length;
+		uint32_t numPk;
 
-		OracleColumn(uint32_t colNo, uint32_t segSolNo, string columnName, uint32_t typeNo, uint32_t length);
+		OracleColumn(uint32_t colNo, uint32_t segSolNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk);
 		virtual ~OracleColumn();
 
 		friend ostream& operator<<(ostream& os, const OracleColumn& ors);

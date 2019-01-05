@@ -1,5 +1,5 @@
 /* Table from Oracle Database
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -30,6 +30,7 @@ namespace OpenLogReplicatorOracle {
 	OracleObject::OracleObject(uint32_t objn, uint32_t cluCols, string owner, string objectName) :
 		objn(objn),
 		cluCols(cluCols),
+		totalPk(0),
 		owner(owner),
 		objectName(objectName) {
 	}

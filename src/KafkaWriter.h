@@ -1,5 +1,5 @@
 /* Header for KafkaWriter class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -33,7 +33,7 @@ using namespace OpenLogReplicator;
 using namespace RdKafka;
 
 namespace OpenLogReplicator {
-	class JsonBuffer;
+	class CommandBuffer;
 }
 
 namespace OpenLogReplicatorKafka {
@@ -53,7 +53,7 @@ namespace OpenLogReplicatorKafka {
 		void addTable(string mask);
 		int initialize();
 
-		KafkaWriter(const string alias, const string brokers, const string topic, JsonBuffer *jsonBuffer);
+		KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer);
 		virtual ~KafkaWriter();
 	};
 }

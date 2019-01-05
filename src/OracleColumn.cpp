@@ -1,5 +1,5 @@
 /* Column of a table in an Oracle database
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -22,12 +22,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length) :
+	OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk) :
 			colNo(colNo),
 			segColNo(segColNo),
 			columnName(columnName),
 			typeNo(typeNo),
-			length(length) {
+			length(length),
+			numPk(numPk) {
 	}
 
 	OracleColumn::~OracleColumn() {

@@ -1,5 +1,5 @@
 /* Transaction from Oracle database
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -21,6 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include <string>
 #include "types.h"
+#include "CommandBuffer.h"
 #include "OracleEnvironment.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
@@ -31,6 +32,9 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0502.h"
 #include "OpCode0504.h"
 #include "OpCode0B02.h"
+#include "OpCode0B03.h"
+#include "OpCode0B0B.h"
+#include "OpCode0B0C.h"
 
 using namespace std;
 
@@ -62,6 +66,16 @@ namespace OpenLogReplicatorOracle {
     	touch(redoLogRecord1->scn);
     }
 
+    bool Transaction::rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+    	if (transactionBuffer->deleteTransactionPart(tcLast, uba, dba, slt, rci)) {
+        	--opCodes;
+        	if (lastScn == ZERO_SCN || lastScn < scn)
+        		lastScn = scn;
+        	return true;
+    	} else
+    		return false;
+    }
+
     void Transaction::rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer) {
     	tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
 
@@ -82,14 +96,22 @@ namespace OpenLogReplicatorOracle {
 			//		" - " << PRINTSCN(lastScn) <<
 			//		" opCodes: " << dec << opCodes <<  endl;
 
-    		if (oracleEnvironment->jsonBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
-				oracleEnvironment->jsonBuffer->rewind();
+    		if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
+				oracleEnvironment->commandBuffer->rewind();
 
-			oracleEnvironment->jsonBuffer
-					->beginTran()
-					->append("{\"scn\": \"")
-					->append(to_string(lastScn))
-					->append("\", dml: [");
+    		switch (oracleEnvironment->commandBuffer->type) {
+    		case COMMAND_BUFFER_JSON:
+				oracleEnvironment->commandBuffer
+						->beginTran()
+						->append("{\"scn\": \"")
+						->append(to_string(lastScn))
+						->append("\", dml: [");
+				break;
+    		case COMMAND_BUFFER_REDIS:
+				oracleEnvironment->commandBuffer
+						->beginTran();
+    			break;
+    		}
 
 			while (tcTemp != nullptr) {
 				uint32_t pos = 0;
@@ -113,42 +135,93 @@ namespace OpenLogReplicatorOracle {
 					redoLogRecord2->data = tcTemp->buffer + pos + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
 
 					switch (op) {
-					//single row insert
+					//insert single row
 					case 0x05010B02:
-						if (hasPrev)
-							oracleEnvironment->jsonBuffer->append(", ");
-						OpCode0B02 *opCode0B02 = new OpCode0B02(oracleEnvironment, redoLogRecord2, true);
-						opCode0B02->parseDml();
-						hasPrev = true;
-						delete opCode0B02;
+						{
+							if (hasPrev) {
+					    		switch (oracleEnvironment->commandBuffer->type) {
+					    		case COMMAND_BUFFER_JSON:
+									oracleEnvironment->commandBuffer->append(", ");
+									break;
+					    		}
+							}
+							OpCode0B02 *opCode0B02 = new OpCode0B02(oracleEnvironment, redoLogRecord2, true);
+							opCode0B02->parseDml();
+							hasPrev = true;
+							delete opCode0B02;
+						}
+						break;
+
+					//insert multiple rows
+					case 0x05010B0B:
+						{
+							if (hasPrev) {
+					    		switch (oracleEnvironment->commandBuffer->type) {
+					    		case COMMAND_BUFFER_JSON:
+									oracleEnvironment->commandBuffer->append(", ");
+									break;
+					    		}
+							}
+							OpCode0B0B *opCode0B0B = new OpCode0B0B(oracleEnvironment, redoLogRecord2, true);
+							opCode0B0B->parseDml();
+							hasPrev = true;
+							delete opCode0B0B;
+						}
 						break;
 					}
 
 					pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 
-					if (oracleEnvironment->jsonBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
-						cerr << "WARNING: Big transaction divided (" << oracleEnvironment->jsonBuffer->currentTranSize() << ")" << endl;
-						oracleEnvironment->jsonBuffer
-								->append("]}")
-								->commitTran();
+					if (oracleEnvironment->commandBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
+						cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;
+			    		switch (oracleEnvironment->commandBuffer->type) {
+			    		case COMMAND_BUFFER_JSON:
+							oracleEnvironment->commandBuffer
+									->append("]}")
+									->commitTran();
+							break;
+			    		case COMMAND_BUFFER_REDIS:
+							oracleEnvironment->commandBuffer
+									->append("EXEC\n")
+									->commitTran();
+							break;
+			    		}
 
-						if (oracleEnvironment->jsonBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
-							oracleEnvironment->jsonBuffer->rewind();
+						if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
+							oracleEnvironment->commandBuffer->rewind();
 
-						oracleEnvironment->jsonBuffer
-								->beginTran()
-								->append("{\"scn\": \"")
-								->append(to_string(lastScn))
-								->append("\", dml: [");
+			    		switch (oracleEnvironment->commandBuffer->type) {
+			    		case COMMAND_BUFFER_JSON:
+							oracleEnvironment->commandBuffer
+									->beginTran()
+									->append("{\"scn\": \"")
+									->append(to_string(lastScn))
+									->append("\", dml: [");
+							break;
+			    		case COMMAND_BUFFER_REDIS:
+							oracleEnvironment->commandBuffer
+									->beginTran();
+							break;
+			    		}
+
 					}
 
 					//oldScn = scn;
 				}
 				tcTemp = tcTemp->next;
 			}
-			oracleEnvironment->jsonBuffer
-					->append("]}")
-					->commitTran();
+
+    		switch (oracleEnvironment->commandBuffer->type) {
+    		case COMMAND_BUFFER_JSON:
+				oracleEnvironment->commandBuffer
+						->append("]}")
+						->commitTran();
+				break;
+    		case COMMAND_BUFFER_REDIS:
+				oracleEnvironment->commandBuffer
+						->commitTran();
+				break;
+    		}
     	}
 
     	oracleEnvironment->transactionBuffer.deleteTransactionChunks(tc, tcLast);

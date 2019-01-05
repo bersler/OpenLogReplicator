@@ -1,5 +1,5 @@
 /* Header for OracleEnvironment class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -19,12 +19,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <unordered_map>
 #include <string>
+
+#include "CommandBuffer.h"
 #include "types.h"
 #include "DatabaseEnvironment.h"
 #include "TransactionMap.h"
 #include "TransactionHeap.h"
 #include "TransactionBuffer.h"
-#include "JsonBuffer.h"
 
 #ifndef ORACLEENVIRONMENT_H_
 #define ORACLEENVIRONMENT_H_
@@ -47,7 +48,7 @@ namespace OpenLogReplicatorOracle {
 		uint8_t *redoBuffer;
 		uint8_t *headerBuffer;
 		uint8_t *recordBuffer;
-		JsonBuffer *jsonBuffer;
+		CommandBuffer *commandBuffer;
 		bool dumpLogFile;
 		bool dumpData;
 		bool directRead;
@@ -58,7 +59,7 @@ namespace OpenLogReplicatorOracle {
 		void transactionNew(typexid xid);
 		void transactionAppend(typexid xid);
 
-		OracleEnvironment(JsonBuffer *jsonBuffer, bool dumpLogFile, bool dumpData, bool directRead);
+		OracleEnvironment(CommandBuffer *commandBuffer, bool dumpLogFile, bool dumpData, bool directRead);
 		virtual ~OracleEnvironment();
 	};
 }

@@ -1,5 +1,5 @@
 /* Hash map class for transactions
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -119,8 +119,8 @@ namespace OpenLogReplicatorOracle {
 	Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
 		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
-		uint32_t partialMatches1 = 0, partialMatches2 = 0;
+		Transaction *transactionTemp = hashMap[hashKey]; //, *transactionTempPartial1, *transactionTempPartial2;
+		//uint32_t partialMatches1 = 0, partialMatches2 = 0;
 
 		while (transactionTemp != nullptr) {
 			if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&

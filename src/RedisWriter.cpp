@@ -1,4 +1,4 @@
-/* Thread writing to Kafka stream
+/* Thread writing to Redis stream
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -25,50 +25,31 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <mutex>
 #include <unistd.h>
 #include <string.h>
-#include <librdkafka/rdkafkacpp.h>
+#include <hiredis.h>
 #include "types.h"
-#include "KafkaWriter.h"
+#include "RedisWriter.h"
 #include "CommandBuffer.h"
 
 using namespace std;
-using namespace RdKafka;
 
-namespace OpenLogReplicatorKafka {
+namespace OpenLogReplicatorRedis {
 
-	KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer) :
+	RedisWriter::RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer) :
 		Thread(alias, commandBuffer),
-		conf(nullptr),
-		tconf(nullptr),
-		brokers(brokers.c_str()),
-		topic(topic.c_str()),
-		producer(nullptr),
-		ktopic(nullptr) {
+		host(host),
+		port(port),
+		c(nullptr) {
 	}
 
-	KafkaWriter::~KafkaWriter() {
-	    if (ktopic != nullptr) {
-	    	delete ktopic;
-	    	ktopic = nullptr;
-	    }
-	    if (producer != nullptr) {
-	    	delete producer;
-	    	producer = nullptr;
-	    }
-		if (tconf != nullptr) {
-			delete tconf;
-			tconf = nullptr;
-		}
-		if (conf != nullptr) {
-			delete conf;
-			conf = nullptr;
-		}
+	RedisWriter::~RedisWriter() {
+	    redisFree(c);
 	}
 
-	void *KafkaWriter::run() {
-		cout << "- Kafka Writer for: " << brokers << " topic: " << topic << endl;
+	void *RedisWriter::run() {
+		cout << "- Redis Writer for " << host << ":" << port << endl;
 
 		while (!this->shutdown) {
-			uint32_t length;
+			uint32_t length, lengthProcessed;
 			{
 				unique_lock<mutex> lck(commandBuffer->mtx);
 				while (commandBuffer->posStart == commandBuffer->posEnd) {
@@ -87,11 +68,28 @@ namespace OpenLogReplicatorKafka {
 				length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
 			}
 
-			if (producer->produce(
-					ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
-					length - 4, nullptr, nullptr)) {
-				cerr << "ERROR: writing to topic " << endl;
-			}
+			redisReply *reply;
+			reply = (redisReply *)redisCommand(c, "MULTI");
+		    freeReplyObject(reply);
+
+		    lengthProcessed = 4;
+		    while (lengthProcessed < length) {
+				//FIXME: waste of time to run strlen
+		    	const char *key = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed;
+				uint32_t keylen = strlen(key);
+		    	const char *cmd = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed + keylen + 1;
+				uint32_t cmdlen = strlen(cmd);
+
+		    	//cout << "SET [" << key << "] [" << cmd << "]" << endl;
+				reply = (redisReply *)redisCommand(c, "SET %s %s", key, cmd);
+			    //cout << "RET [" << reply->str << "]" << endl;
+				freeReplyObject(reply);
+
+				lengthProcessed += keylen + 1 + cmdlen + 1;
+		    }
+
+			reply = (redisReply *)redisCommand(c, "EXEC");
+		    freeReplyObject(reply);
 
 			{
 				unique_lock<mutex> lck(commandBuffer->mtx);
@@ -109,23 +107,17 @@ namespace OpenLogReplicatorKafka {
 		return 0;
 	}
 
-	int KafkaWriter::initialize() {
-		string errstr;
-		Conf *conf = Conf::create(Conf::CONF_GLOBAL);
-		Conf *tconf = Conf::create(Conf::CONF_TOPIC);
-		conf->set("metadata.broker.list", brokers, errstr);
+	int RedisWriter::initialize() {
+		c = redisConnect(host.c_str(), port);
 
-	    producer = Producer::create(conf, errstr);
-	    if (producer == nullptr) {
-	        std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
+		redisReply *reply = (redisReply *)redisCommand(c, "PING");
+	    printf("PING: %s\n", reply->str);
+	    freeReplyObject(reply);
+
+	    if (c->err) {
+	        cerr << "ERROR: Redis: " << c->errstr << endl;
 	        return 0;
 	    }
-
-	    ktopic = Topic::create(producer, topic, tconf, errstr);
-		if (ktopic == nullptr) {
-			std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
-			return 0;
-		}
 
 		return 1;
 	}

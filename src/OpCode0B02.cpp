@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 11.2
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -20,11 +20,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0B02.h"
+
+#include "CommandBuffer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
-#include "JsonBuffer.h"
 
 using namespace std;
 using namespace OpenLogReplicator;
@@ -55,18 +56,11 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0B02::parseDml() {
 		OracleObject *object = redoLogRecord->object;
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+		uint32_t fieldPosTmp = redoLogRecord->fieldPos, fieldPosTmp2;
 		uint32_t fieldPos2;
 		uint32_t colCount;
 		uint8_t nulls, bits = 1;
 		bool prevValue = false;
-
-		oracleEnvironment->jsonBuffer
-				->append("{\"operation\":\"insert\", \"table\": \"")
-				->append(redoLogRecord->object->owner)
-				->append(".")
-				->append(redoLogRecord->object->objectName)
-				->append("\", \"after\": {");
 
 		for (uint32_t i = 1; i <= 2; ++i) {
 			if (i == 2) {
@@ -81,247 +75,117 @@ namespace OpenLogReplicatorOracle {
 			}
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
 		}
+		fieldPosTmp2 = fieldPosTmp;
+
+		switch (oracleEnvironment->commandBuffer->type) {
+		case COMMAND_BUFFER_JSON:
+			oracleEnvironment->commandBuffer
+					->append("{\"operation\":\"insert\", \"table\": \"")
+					->append(redoLogRecord->object->owner)
+					->append('.')
+					->append(redoLogRecord->object->objectName)
+					->append("\", \"after\": {");
+			break;
+
+		case COMMAND_BUFFER_REDIS:
+			oracleEnvironment->commandBuffer
+					->append(redoLogRecord->object->owner)
+					->append('.')
+					->append(redoLogRecord->object->objectName)
+					->append('.');
+
+			for (uint32_t i = 0; i < colCount; ++i) {
+				//is PK or table has no PK
+				if (object->columns[i]->numPk > 0 || object->totalPk == 0) {
+					if (prevValue) {
+						oracleEnvironment->commandBuffer
+								->append('.');
+					} else
+						prevValue = true;
+
+					//NULL values
+					if ((nulls & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0 || i >= object->columns.size()) {
+						oracleEnvironment->commandBuffer
+							->append("NULL");
+					} else {
+
+						oracleEnvironment->commandBuffer
+								->append('"');
+
+						appendValue(object->columns[i]->typeNo, fieldPosTmp, redoLogRecord->fieldLengths[i + 3]);
+
+						oracleEnvironment->commandBuffer
+								->append('"');
+					}
+				}
+				bits <<= 1;
+				if (bits == 0) {
+					bits = 1;
+					nulls = redoLogRecord->data[fieldPos2 + (i >> 3)];
+				}
+				fieldPosTmp += (redoLogRecord->fieldLengths[i + 3] + 3) & 0xFFFC;
+			}
+			fieldPosTmp = fieldPosTmp2;
+
+			oracleEnvironment->commandBuffer
+					->append(0);
+			break;
+		}
+		prevValue = false;
+
 		for (uint32_t i = 0; i < colCount; ++i) {
-			if ((nulls & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0) {
-				//omit NULL values
-
-				/*
-				oracleEnvironment->jsonBuffer
-						->append('"')
-						->append(object->columns[i]->columnName.c_str())
-						->append("\": NULL");
-				*/
-			} else {
-				uint32_t j, jMax; uint8_t digits;
-
-				if (prevValue)
-					oracleEnvironment->jsonBuffer
-							->append(", ");
-
-				if (i >= object->columns.size())
-					continue;
-
-				oracleEnvironment->jsonBuffer
-						->append('"')
-						->append(object->columns[i]->columnName)
-						->append("\": \"");
-
-				switch(object->columns[i]->typeNo) {
-				case 1: //varchar(2)
-				case 96: //char
-					oracleEnvironment->jsonBuffer
-							->appendEscape(redoLogRecord->data + fieldPosTmp, redoLogRecord->fieldLengths[i + 3]);
+			//NULL values
+			if ((nulls & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0 || i >= object->columns.size()) {
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
 					break;
 
-				case 2: //numeric
-					digits = redoLogRecord->data[fieldPosTmp + 0];
-					//just zero
-					if (digits == 0x80) {
-						oracleEnvironment->jsonBuffer->append('0');
-						break;
-					}
+				case COMMAND_BUFFER_REDIS:
+					if (prevValue) {
+						oracleEnvironment->commandBuffer
+								->append(',');
+					} else
+						prevValue = true;
 
-					j = 1;
-					jMax = redoLogRecord->fieldLengths[i + 3] - 1;
-
-					//positive number
-					if (digits >= 0xC0 && jMax >= 1) {
-						uint32_t val;
-						//part of the total
-						if (digits == 0xC0)
-							oracleEnvironment->jsonBuffer->append('0');
-						else {
-							digits -= 0xC0;
-							//part of the total - omitting first zero for first digit
-							val = redoLogRecord->data[fieldPosTmp + j] - 1;
-							if (val < 10)
-								oracleEnvironment->jsonBuffer
-										->append('0' + val);
-							else
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val / 10))
-										->append('0' + (val % 10));
-
-							++j;
-							--digits;
-
-							while (digits > 0) {
-								val = redoLogRecord->data[fieldPosTmp + j] - 1;
-								if (j <= jMax) {
-									oracleEnvironment->jsonBuffer
-											->append('0' + (val / 10))
-											->append('0' + (val % 10));
-									++j;
-								} else {
-									oracleEnvironment->jsonBuffer
-											->append("00");
-								}
-								--digits;
-							}
-						}
-
-						//fraction part
-						if (j <= jMax) {
-							oracleEnvironment->jsonBuffer
-									->append('.');
-
-							while (j <= jMax - 1) {
-								val = redoLogRecord->data[fieldPosTmp + j] - 1;
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val / 10))
-										->append('0' + (val % 10));
-								++j;
-							}
-
-							//last digit - omitting 0 at the end
-							val = redoLogRecord->data[fieldPosTmp + j] - 1;
-							oracleEnvironment->jsonBuffer
-									->append('0' + (val / 10));
-							if ((val % 10) != 0)
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val % 10));
-						}
-					//negative number
-					} else if (digits <= 0x3F && redoLogRecord->fieldLengths[i + 3] >= 2) {
-						uint32_t val;
-						oracleEnvironment->jsonBuffer->append('-');
-
-						if (redoLogRecord->data[fieldPosTmp + jMax] == 0x66)
-							--jMax;
-
-						//part of the total
-						if (digits == 0x3F)
-							oracleEnvironment->jsonBuffer->append('0');
-						else {
-							digits = 0x3F - digits;
-
-							val = 101 - redoLogRecord->data[fieldPosTmp + j];
-							if (val < 10)
-								oracleEnvironment->jsonBuffer
-										->append('0' + val);
-							else
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val / 10))
-										->append('0' + (val % 10));
-							++j;
-							--digits;
-
-							while (digits > 0) {
-								if (j <= jMax) {
-									val = 101 - redoLogRecord->data[fieldPosTmp + j];
-									oracleEnvironment->jsonBuffer
-											->append('0' + (val / 10))
-											->append('0' + (val % 10));
-									++j;
-								} else {
-									oracleEnvironment->jsonBuffer
-											->append("00");
-								}
-								--digits;
-							}
-						}
-
-						if (j <= jMax) {
-							oracleEnvironment->jsonBuffer
-									->append('.');
-
-							while (j <= jMax - 1) {
-								val = 101 - redoLogRecord->data[fieldPosTmp + j];
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val / 10))
-										->append('0' + (val % 10));
-								++j;
-							}
-
-							val = 101 - redoLogRecord->data[fieldPosTmp + j];
-							oracleEnvironment->jsonBuffer
-									->append('0' + (val / 10));
-							if ((val % 10) != 0)
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val % 10));
-						}
-					} else {
-						cerr << "ERROR: unknown value (type: " << object->columns[i]->typeNo << "): " << dec << (uint32_t)(redoLogRecord->fieldLengths[i + 3]) << " - ";
-						for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i + 3]; ++j)
-							cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPosTmp + j];
-						cout << endl;
-					}
+					oracleEnvironment->commandBuffer
+							->append("NULL");
 					break;
-				case 12:
-				case 180:
-					//2012-04-23T18:25:43.511Z - ISO 8601 format
-					jMax = redoLogRecord->fieldLengths[i + 3];
-
-					if (jMax != 7) {
-						cerr << "ERROR: unknown value (type: " << object->columns[i]->typeNo << "): ";
-						for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i + 3]; ++j)
-							cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPosTmp + j];
-						cout << endl;
-					} else {
-						uint32_t val1 = redoLogRecord->data[fieldPosTmp + 0],
-								 val2 = redoLogRecord->data[fieldPosTmp + 1];
-						bool bc = false;
-
-						//AD
-						if (val1 >= 100 && val2 >= 100) {
-							val1 -= 100;
-							val2 -= 100;
-						//BC
-						} else {
-							val1 = 100 - val1;
-							val2 = 100 - val2;
-							bc = true;
-						}
-						if (val1 > 0) {
-							if (val1 > 10)
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val1 / 10))
-										->append('0' + (val1 % 10))
-										->append('0' + (val2 / 10))
-										->append('0' + (val2 % 10));
-							else
-								oracleEnvironment->jsonBuffer
-										->append('0' + val1)
-										->append('0' + (val2 / 10))
-										->append('0' + (val2 % 10));
-						} else {
-							if (val2 > 10)
-								oracleEnvironment->jsonBuffer
-										->append('0' + (val2 / 10))
-										->append('0' + (val2 % 10));
-							else
-								oracleEnvironment->jsonBuffer
-										->append('0' + val2);
-						}
-
-						if (bc)
-							oracleEnvironment->jsonBuffer
-									->append("BC");
-
-						oracleEnvironment->jsonBuffer
-								->append('-')
-								->append('0' + (redoLogRecord->data[fieldPosTmp + 2] / 10))
-								->append('0' + (redoLogRecord->data[fieldPosTmp + 2] % 10))
-								->append('-')
-								->append('0' + (redoLogRecord->data[fieldPosTmp + 3] / 10))
-								->append('0' + (redoLogRecord->data[fieldPosTmp + 3] % 10))
-								->append('T')
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 4] - 1) / 10))
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 4] - 1) % 10))
-								->append(':')
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 5] - 1) / 10))
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 5] - 1) % 10))
-								->append(':')
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 6] - 1) / 10))
-								->append('0' + ((redoLogRecord->data[fieldPosTmp + 6] - 1) % 10));
-					}
-					break;
-				default:
-					oracleEnvironment->jsonBuffer->append('?');
 				}
 
-				oracleEnvironment->jsonBuffer->append('"');
-				prevValue = true;
+			} else {
+				if (prevValue) {
+					oracleEnvironment->commandBuffer
+							->append(',');
+				} else
+					prevValue = true;
+
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					oracleEnvironment->commandBuffer
+							->append('"')
+							->append(object->columns[i]->columnName)
+							->append("\": \"");
+					break;
+
+				case COMMAND_BUFFER_REDIS:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+				}
+
+				appendValue(object->columns[i]->typeNo, fieldPosTmp, redoLogRecord->fieldLengths[i + 3]);
+
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+
+				case COMMAND_BUFFER_REDIS:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+				}
 			}
 			bits <<= 1;
 			if (bits == 0) {
@@ -331,17 +195,32 @@ namespace OpenLogReplicatorOracle {
 			fieldPosTmp += (redoLogRecord->fieldLengths[i + 3] + 3) & 0xFFFC;
 		}
 
-		/*
-		uint32_t colTotal = object->columns.size();
-		for (uint32_t i = colCount; i < colTotal; ++i) {
-			oracleEnvironment->jsonBuffer
-					.append(",  \"")
-					.append(object->columns[i]->columnName)
-					.append("\": NULL");
+		if (oracleEnvironment->commandBuffer->type == COMMAND_BUFFER_REDIS) {
+			uint32_t colTotal = object->columns.size();
+			for (uint32_t i = colCount; i < colTotal; ++i) {
+				if (prevValue) {
+					oracleEnvironment->commandBuffer
+							->append(',');
+				} else
+					prevValue = true;
+
+				oracleEnvironment->commandBuffer
+						->append("NULL");
+			}
 		}
-		*/
-		oracleEnvironment->jsonBuffer
-				->append("}}");
+
+		switch (oracleEnvironment->commandBuffer->type) {
+		case COMMAND_BUFFER_JSON:
+			oracleEnvironment->commandBuffer
+					->append("}}");
+			break;
+
+		case COMMAND_BUFFER_REDIS:
+			oracleEnvironment->commandBuffer
+					->append(0);
+			break;
+		}
+
 	}
 
 	uint16_t OpCode0B02::getOpCode(void) {

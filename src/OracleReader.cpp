@@ -1,5 +1,5 @@
 /* Thread reading Oracle Redo Logs
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -25,10 +25,11 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <unistd.h>
 #include <rapidjson/document.h>
 #include "types.h"
-#include "JsonBuffer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OracleReader.h"
+
+#include "CommandBuffer.h"
 #include "OracleReaderRedo.h"
 #include "OracleEnvironment.h"
 #include "RedoLogException.h"
@@ -41,9 +42,9 @@ using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
-	OracleReader::OracleReader(JsonBuffer *jsonBuffer, const string alias, const string database, const string user, const string passwd,
+	OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
 			const string connectString, bool dumpLogFile, bool dumpData, bool directRead) :
-		Thread(alias, jsonBuffer),
+		Thread(alias, commandBuffer),
 		currentRedo(nullptr),
 		database(database.c_str()),
 		databaseSequence(0),
@@ -54,7 +55,8 @@ namespace OpenLogReplicatorOracle {
 		user(user),
 		passwd(passwd),
 		connectString(connectString) {
-		oracleEnvironment = new OracleEnvironment(jsonBuffer, dumpLogFile, dumpData, directRead);
+
+		oracleEnvironment = new OracleEnvironment(commandBuffer, dumpLogFile, dumpData, directRead);
 		readCheckpoint();
 		env = Environment::createEnvironment (Environment::DEFAULT);
 	}
@@ -390,12 +392,13 @@ namespace OpenLogReplicatorOracle {
 				uint32_t cluCols = stmt.rset->getInt(2);
 				string owner = stmt.rset->getString(3);
 				string objectName = stmt.rset->getString(4);
+				uint32_t totalPk = 0;
 				OracleObject *object = new OracleObject(objn, cluCols, owner.c_str(), objectName.c_str());
 
 				if (oracleEnvironment->dumpData)
 					cout << "- found: " << owner << "." << objectName << " (OBJN: " << objn << ")" << endl;
 
-				stmt2.createStatement("SELECT COL#, SEGCOL#, NAME, TYPE#, LENGTH FROM SYS.COL$ WHERE OBJ# = :i ORDER BY SEGCOL#");
+				stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
 				stmt2.stmt->setInt(1, objn);
 				stmt2.executeQuery();
 
@@ -405,11 +408,14 @@ namespace OpenLogReplicatorOracle {
 					string columnName = stmt2.rset->getString(3);
 					uint32_t typeNo = stmt2.rset->getInt(4);
 					uint32_t length = stmt2.rset->getInt(5);
-					OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length);
+					uint32_t numPk = stmt2.rset->getInt(6);
+					OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
+					totalPk += numPk;
 
 					object->addColumn(column);
 				}
 
+				object->totalPk = totalPk;
 				oracleEnvironment->addToDict(object);
 			}
 		} catch(SQLException &ex) {

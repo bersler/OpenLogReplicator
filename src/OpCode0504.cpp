@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.4
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 

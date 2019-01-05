@@ -1,5 +1,5 @@
 /* Header for OracleObject class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -34,6 +34,7 @@ namespace OpenLogReplicatorOracle {
 	public:
 		uint32_t objn;
 		uint32_t cluCols;
+		uint32_t totalPk;
 		string owner;
 		string objectName;
 		vector<OracleColumn*> columns;

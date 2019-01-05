@@ -1,5 +1,5 @@
 /* Struct used to hold in memory basic information for OpCode
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 

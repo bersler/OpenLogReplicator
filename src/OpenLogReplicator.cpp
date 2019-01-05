@@ -1,5 +1,5 @@
 /* Main class for the program
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -27,17 +27,21 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
 #include <rapidjson/document.h>
+
+#include "CommandBuffer.h"
 #include "OracleEnvironment.h"
-#include "JsonBuffer.h"
 #include "OracleReader.h"
 #include "KafkaWriter.h"
+#include "RedisWriter.h"
 
 using namespace std;
 using namespace rapidjson;
 using namespace OpenLogReplicator;
 using namespace OpenLogReplicatorOracle;
 using namespace OpenLogReplicatorKafka;
+using namespace OpenLogReplicatorRedis;
 
 const Value& getJSONfield(const Value& value, const char* field) {
 	if (!value.HasMember(field)) {
@@ -64,20 +68,21 @@ void signalHandler(int s) {
 }
 
 int main() {
-	signal (SIGINT, signalHandler);
-	cout << "Open Log Replicator v. 0.0.2 (C) 2018 by Adam Leszcznski, aleszczynski@bersler.com" << endl;
+	signal(SIGINT, signalHandler);
+    signal(SIGPIPE, signalHandler);
+	cout << "Open Log Replicator v. 0.0.3 (C) 2018-2019 by Adam Leszcznski, aleszczynski@bersler.com" << endl;
 
 	ifstream config("OpenLogReplicator.json");
 	string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
 	Document document;
 	list<Thread *> readers, writers;
-	list<JsonBuffer *> buffers;
+	list<CommandBuffer *> buffers;
 
     if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
     	{cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.0.2") != 0)
+    if (strcmp(version.GetString(), "0.0.3") != 0)
     	{cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
@@ -115,9 +120,10 @@ int main() {
         		{cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
 
         	cout << "Adding source: " << name.GetString() << endl;
-        	JsonBuffer *jsonBuffer = new JsonBuffer();
-        	buffers.push_back(jsonBuffer);
-        	OracleReader *oracleReader = new OracleReader(jsonBuffer, alias.GetString(), name.GetString(), user.GetString(),
+        	CommandBuffer *commandBuffer = new CommandBuffer();
+
+        	buffers.push_back(commandBuffer);
+        	OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
         			password.GetString(), server.GetString(), dumpLogFileBool, dumpDataBool, directReadBool);
         	readers.push_back(oracleReader);
 
@@ -151,17 +157,19 @@ int main() {
     		const Value& brokers = getJSONfield(target, "brokers");
     		const Value& topic = getJSONfield(target, "topic");
     		const Value& source = getJSONfield(target, "source");
-        	JsonBuffer *jsonBuffer = nullptr;
+    		CommandBuffer *commandBuffer = nullptr;
 
 			for (auto reader : readers) {
-				if (reader->alias.compare(source.GetString()) == 0)
-					jsonBuffer = reader->jsonBuffer;
+				if (reader->alias.compare(source.GetString()) == 0) {
+					commandBuffer = reader->commandBuffer;
+					commandBuffer->type = COMMAND_BUFFER_JSON;
+				}
 			}
-			if (jsonBuffer == nullptr)
+			if (commandBuffer == nullptr)
 	    		{cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
         	cout << "Adding target: " << alias.GetString() << endl;
-        	KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), jsonBuffer);
+        	KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer);
         	writers.push_back(kafkaWriter);
 
         	//initialize
@@ -173,8 +181,50 @@ int main() {
         	}
 
         	//run
-        	pthread_create(&kafkaWriter->thread, nullptr, &OracleReader::runStatic, (void*)kafkaWriter);
-    	}
+        	pthread_create(&kafkaWriter->thread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
+    	} else
+		if (strcmp("REDIS", type.GetString()) == 0) {
+			const Value& alias = getJSONfield(target, "alias");
+			const Value& server = getJSONfield(target, "server");
+    		const Value& source = getJSONfield(target, "source");
+    		CommandBuffer *commandBuffer = nullptr;
+
+			for (auto reader : readers) {
+				if (reader->alias.compare(source.GetString()) == 0) {
+					commandBuffer = reader->commandBuffer;
+					commandBuffer->type = COMMAND_BUFFER_REDIS;
+				}
+			}
+			if (commandBuffer == nullptr)
+				{cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
+
+			cout << "Adding target: " << alias.GetString() << endl;
+			uint32_t serverLength = server.GetStringLength() + 1;
+			char *host = new char[serverLength];
+			memcpy(host, server.GetString(), serverLength);
+			char *colon = strchr(host, ':');
+			if (colon == nullptr) {
+				delete host;
+				cerr << "ERROR: Incorrect format for " << server.GetString() << endl;
+				return -1;
+			}
+			*colon = 0;
+			uint32_t port = atoi(colon + 1);
+			RedisWriter *redisWriter = new RedisWriter(alias.GetString(), host, port, commandBuffer);
+			writers.push_back(redisWriter);
+			delete host;
+
+			//initialize
+			if (!redisWriter->initialize()) {
+				delete redisWriter;
+				redisWriter = nullptr;
+				cerr << "ERROR: Redis starting writer for " << server.GetString() << endl;
+				return -1;
+			}
+
+			//run
+			pthread_create(&redisWriter->thread, nullptr, &RedisWriter::runStatic, (void*)redisWriter);
+		}
     }
 
     //sleep until killed
@@ -189,13 +239,13 @@ int main() {
 		writer->terminate();
 	for (auto reader : readers)
 		reader->terminate();
-	for (auto jsonBuffer : buffers)
-		jsonBuffer->terminate();
+	for (auto commandBuffer : buffers)
+		commandBuffer->terminate();
 
-	for (auto jsonBuffer : buffers) {
-		unique_lock<mutex> lck(jsonBuffer->mtx);
-		jsonBuffer->readers.notify_all();
-		jsonBuffer->writer.notify_all();
+	for (auto commandBuffer : buffers) {
+		unique_lock<mutex> lck(commandBuffer->mtx);
+		commandBuffer->readers.notify_all();
+		commandBuffer->writer.notify_all();
 	}
 
     cout << "Waiting for writers to terminate" << endl;
@@ -215,8 +265,8 @@ int main() {
 	}
 	readers.clear();
 
-	for (auto jsonBuffer : buffers)
-		delete jsonBuffer;
+	for (auto commandBuffer : buffers)
+		delete commandBuffer;
 	buffers.clear();
 
 	return 0;

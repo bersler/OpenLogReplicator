@@ -1,5 +1,5 @@
 /* Buffer to handle transactions
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -202,6 +202,20 @@ namespace OpenLogReplicatorOracle {
 		++tc->elements;
 	}
 
+	bool TransactionBuffer::deleteTransactionPart(TransactionChunk* tc, typeuba &uba, uint32_t &dba, uint8_t &slt, uint8_t &rci) {
+		if (tc->size < ROW_HEADER_MEMORY || tc->elements == 0) {
+			cerr << "ERROR: trying to remove from empty buffer" << endl;
+			return false;
+		}
+
+		//while (tc != nullptr) {
+		//	uint32_t lastSize = *((uint32_t *)(tc->buffer + tc->size - 28));
+			//...
+		//	tc = tc->prev;
+		//}
+
+		return false;
+	}
 
 	TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba,
 			uint8_t &lastSlt, uint8_t &lastRci) {

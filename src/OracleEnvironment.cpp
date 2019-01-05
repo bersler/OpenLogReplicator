@@ -1,5 +1,5 @@
 /* Class Oracle database environment variables
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -28,12 +28,12 @@ using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
-	OracleEnvironment::OracleEnvironment(JsonBuffer *jsonBuffer, bool dumpLogFile, bool dumpData, bool directRead) :
+	OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, bool dumpLogFile, bool dumpData, bool directRead) :
 		DatabaseEnvironment(),
 		redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
 		headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
 		recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
-		jsonBuffer(jsonBuffer),
+		commandBuffer(commandBuffer),
 		dumpLogFile(dumpLogFile),
 		dumpData(dumpData),
 		directRead(directRead),

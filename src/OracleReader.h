@@ -1,5 +1,5 @@
 /* Header for OracleReader class
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -33,7 +33,7 @@ using namespace oracle::occi;
 using namespace OpenLogReplicator;
 
 namespace OpenLogReplicator {
-	class JsonBuffer;
+	class CommandBuffer;
 }
 
 namespace OpenLogReplicatorOracle {
@@ -79,7 +79,7 @@ namespace OpenLogReplicatorOracle {
 		void writeCheckpoint();
 		int initialize();
 
-		OracleReader(JsonBuffer *jsonBuffer, const string alias, const string database, const string user, const string passwd,
+		OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
 				const string connectString, bool dumpLogFile, bool dumpData, bool directRead);
 		virtual ~OracleReader();
 	};

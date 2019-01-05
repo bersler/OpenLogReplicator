@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.11
+/* Oracle Redo OpCode: 11.11
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -19,9 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include <iomanip>
-#include "types.h"
-#include "OpCode050B.h"
-#include "RedoLogException.h"
+#include "OpCode0B0B.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -29,53 +27,42 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode050B::OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill) :
+			OpCode(oracleEnvironment, redoLogRecord, fill) {
+	}
+
+	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
-				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-
-				if (redoLogRecord->opc == 0x0B15)
-					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
-				buext(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			}
+
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
 		}
 	}
 
-	uint16_t OpCode050B::getOpCode(void) {
-		return 0x050B;
+	OpCode0B0B::~OpCode0B0B() {
 	}
 
-	void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 8)
-			throw RedoLogException("to short field buext: ", nullptr, fieldLength);
+	void OpCode0B0B::parseDml() {
 
-		if (oracleEnvironment->dumpLogFile) {
-			uint8_t idx = 0; //FIXME
-			uint8_t flg2 = 0; // FIXME
-
-			cout << "BuExt idx: " << dec << (int)idx <<
-					" flg2: " << (int)flg2 << endl;
-		}
 	}
 
-	OpCode050B::~OpCode050B() {
+	uint16_t OpCode0B0B::getOpCode(void) {
+		return 0x0B0B;
 	}
 
-	const char* OpCode050B::getUndoType() {
-		return "User undo done    Begin trans    ";
+	string OpCode0B0B::getName() {
+		return "REDO DEL   ";
 	}
 
-	string OpCode050B::getName() {
-		return "ROLLBACK B ";
-	}
-
-	//rollback
-	void OpCode050B::process() {
+	//insert
+	void OpCode0B0B::process() {
 		dump();
 	}
 }

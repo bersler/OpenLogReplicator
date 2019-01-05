@@ -1,5 +1,5 @@
 /* Base class for source and target thread
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -19,18 +19,19 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include "Thread.h"
-#include "JsonBuffer.h"
+
+#include "CommandBuffer.h"
 #include "RedoLogException.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-	Thread::Thread(const string alias, JsonBuffer *jsonBuffer) :
+	Thread::Thread(const string alias, CommandBuffer *commandBuffer) :
 		shutdown(false),
 		thread(0),
 		alias(alias.c_str()),
-		jsonBuffer(jsonBuffer) {
+		commandBuffer(commandBuffer) {
 	}
 
 	Thread::~Thread() {

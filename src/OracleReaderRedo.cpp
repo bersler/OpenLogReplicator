@@ -1,5 +1,5 @@
 /* Class reading a redo log file
-   Copyright (C) 2018 Adam Leszczynski.
+   Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -43,6 +43,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode050B.h"
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
+#include "OpCode0B0B.h"
+#include "OpCode0B0C.h"
 
 using namespace std;
 using namespace OpenLogReplicator;
@@ -425,6 +427,16 @@ namespace OpenLogReplicatorOracle {
 				case 0x0B03:
 					opCode = new OpCode0B03(oracleEnvironment, redoLogRecordCur);
 					break;
+
+				//REDO: Insert multiple rows
+				case 0x0B0B:
+					opCode = new OpCode0B0B(oracleEnvironment, redoLogRecordCur);
+					break;
+
+				//REDO: Delete multiple rows
+				case 0x0B0C:
+					opCode = new OpCode0B0C(oracleEnvironment, redoLogRecordCur);
+					break;
 				}
 
 				if (redoLogRecordCur->opCode != 0) {
@@ -497,6 +509,7 @@ namespace OpenLogReplicatorOracle {
 			cout << "** Append: " <<
 					setfill('0') << setw(4) << hex << redoLogRecord1->opCode << " + " <<
 					setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
+			cout << "SCN: " << PRINTSCN(redoLogRecord1->scn) << endl;
 			redoLogRecord1->dump();
 			redoLogRecord2->dump();
 		}
@@ -523,10 +536,14 @@ namespace OpenLogReplicatorOracle {
 		long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
 
 		switch (opCodeLong) {
-		//single row insert
+		//insert single row
 		case 0x05010B02:
-		//single row delete
+		//insert multiple rows
+		case 0x05010B0B:
+		//delete single row
 		//case 0x05010B03:
+		//delete multiple row
+		//case 0x05010B0C:
 			{
 				Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
 				if (transaction == nullptr) {
@@ -558,12 +575,18 @@ namespace OpenLogReplicatorOracle {
 			}
 			break;
 
-		//rollback: delete row
+		//rollback: delete single row
 		case 0x0B030506:
 		case 0x0B03050B:
-		//rollback: insert row
+		//rollback: delete multiple rows
+		case 0x0B0C0506:
+		case 0x0B0C050B:
+		//rollback: insert single row
 		//case 0x0B020506:
 		//case 0x0B02050B:
+		//rollback: insert multiple row
+		//case 0x0B0B0506:
+		//case 0x0B0B050B:
 			{
 				Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
 						redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
@@ -576,10 +599,26 @@ namespace OpenLogReplicatorOracle {
 					oracleEnvironment->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
 							transaction->lastSlt, transaction->lastRci, transaction);
 				} else {
-					cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
-							" DBA: " << hex << redoLogRecord2->dba <<
-							" SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
-							" RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+					//check all previous transactions
+					bool foundPrevious = false;
+
+					for (uint32_t i = 0; i < oracleEnvironment->transactionHeap.heapSize; ++i) {
+						transaction = oracleEnvironment->transactionHeap.heap[i];
+
+						if (transaction->opCodes > 0 &&
+								transaction->rollbackPreviousOp(curScn, &oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
+								redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
+							oracleEnvironment->transactionHeap.update(transaction->pos);
+							foundPrevious = true;
+							break;
+						}
+					}
+
+					if (!foundPrevious)
+						cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+								" DBA: " << hex << redoLogRecord2->dba <<
+								" SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
+								" RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
 				}
 			}
 
