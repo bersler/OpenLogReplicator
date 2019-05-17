@@ -59,9 +59,9 @@ namespace OpenLogReplicatorOracle {
     		lastScn = scn;
 	}
 
-    void Transaction::add(uint32_t objn, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+    void Transaction::add(uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
     		TransactionBuffer *transactionBuffer) {
-    	tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+    	tcLast = transactionBuffer->addTransactionChunk(tcLast, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
     	++opCodes;
     	touch(redoLogRecord1->scn);
     }
@@ -121,12 +121,12 @@ namespace OpenLogReplicatorOracle {
 					RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 8));
 					RedoLogRecord *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 8 + sizeof(struct RedoLogRecord)));
 
-					//uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
+					//uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos));
 					//typescn scn = *((typescn *)(tcTemp->buffer + pos + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
 					//		redoLogRecord1->length + redoLogRecord2->length));
 					//cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<
 					//		" op: " << setfill('0') << setw(8) << hex << op <<
-					//		" objn: " << dec << objn <<
+					//		" objd: " << dec << objd <<
 					//		" scn: " << PRINTSCN(scn) << endl;
 					//if (oldScn != 0 && oldScn > scn)
 					//	cerr << "ERROR: SCN swap" << endl;
@@ -246,6 +246,15 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	Transaction::~Transaction() {
+	}
+
+	ostream& operator<<(ostream& os, const Transaction& tran) {
+		os << "xid: " << PRINTXID(tran.xid) <<
+				" scn: " << PRINTSCN(tran.firstScn) << " - " << PRINTSCN(tran.lastScn) <<
+				" begin: " << tran.isBegin <<
+				" commit: " << tran.isCommit <<
+				" rollback: " << tran.isRollback;
+		return os;
 	}
 }
 

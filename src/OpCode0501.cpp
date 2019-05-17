@@ -32,22 +32,92 @@ namespace OpenLogReplicatorOracle {
 	OpCode0501::OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 		OpCode(oracleEnvironment, redoLogRecord) {
 
+		uint16_t *colnums;
+		uint8_t *nullstmp, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktudb(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+
 			} else if (i == 2) {
 				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 				if ((redoLogRecord->flg & 0x8) != 0)
 					ktubl(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-				else if (redoLogRecord->opc == 0x0B01)
+				else //if (redoLogRecord->opc == 0x0B01)
 					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+
 			} else if (i == 3) {
 				if (redoLogRecord->opc == 0x0B01)
 					ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+
 			} else if (i == 4) {
-				if (redoLogRecord->opc == 0x0B01)
+				if (redoLogRecord->opc == 0x0B01) {
 					kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+					if ((op & 0x1F) == 0x05) { //Update Row Piece
+						nulls = redoLogRecord->data + fieldPosTmp + 26;
+					}
+					nullstmp = nulls;
+				}
+
+			//Update Row Piece
+			} else if ((op & 0x1F) == 0x05) {
+				if (i == 5)
+					colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
+				else if (i > 5 && i <= 5 + (uint32_t)cc) {
+					if (oracleEnvironment->dumpLogFile) {
+						if ((*nullstmp & bits) == 0) {
+							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << *colnums << ": " <<
+									"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
+							if (redoLogRecord->fieldLengths[i] <= 20)
+								oracleEnvironment->dumpStream << " ";
+							else
+								oracleEnvironment->dumpStream << endl;
+							for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
+								oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
+								if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
+									oracleEnvironment->dumpStream << endl;
+							}
+							oracleEnvironment->dumpStream << endl;
+						} else
+							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << *colnums << ": *NULL*" << endl;
+
+						++colnums;
+						bits <<= 1;
+						if (bits == 0) {
+							bits = 1;
+							++nullstmp;
+						}
+					}
+				}
+
+			//Insert Row Piece
+			} else if ((op & 0x1F) == 0x02) {
+				if (i > 4 && i <= 4 + (uint32_t)cc) {
+					if (oracleEnvironment->dumpLogFile) {
+						if ((*nullstmp & bits) == 0) {
+							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 5) << ": " <<
+									"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
+							if (redoLogRecord->fieldLengths[i] <= 20)
+								oracleEnvironment->dumpStream << " ";
+							else
+								oracleEnvironment->dumpStream << endl;
+							for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
+								oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
+								if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
+									oracleEnvironment->dumpStream << endl;
+							}
+							oracleEnvironment->dumpStream << endl;
+						} else
+							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 5) << ": *NULL*" << endl;
+
+						++colnums;
+						bits <<= 1;
+						if (bits == 0) {
+							bits = 1;
+							++nullstmp;
+						}
+					}
+				}
 			}
 
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
@@ -72,7 +142,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0501::ktudb(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 20)
-			throw RedoLogException("to short field ktudb: ", nullptr, fieldLength);
+			throw RedoLogException("too short field ktudb: ", nullptr, fieldLength);
 
 		redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
@@ -85,20 +155,20 @@ namespace OpenLogReplicatorOracle {
 			uint16_t seq = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
 			uint8_t rec = redoLogRecord->data[fieldPos + 18];
 
-			cout << "ktudb redo:" <<
+			oracleEnvironment->dumpStream << "ktudb redo:" <<
 					" siz: " << dec << siz <<
 					" spc: " << dec << spc <<
 					" flg: 0x" << setfill('0') << setw(4) << hex << flg <<
 					" seq: 0x" << setfill('0') << setw(4) << seq <<
 					" rec: 0x" << setfill('0') << setw(2) << (uint32_t)rec << endl;
-			cout << "           " <<
-					" xid:  " << PRINTXID(redoLogRecord->xid) << endl;
+			oracleEnvironment->dumpStream << "           " <<
+					" xid:  " << PRINTXID(redoLogRecord->xid) << "  " << endl;
 		}
 	}
 
 	void OpCode0501::ktubl(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 76)
-			throw RedoLogException("to short field ktubl.5.7: ", nullptr, fieldLength);
+			throw RedoLogException("too short field ktubl.5.7: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint32_t x1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 24);
@@ -109,26 +179,26 @@ namespace OpenLogReplicatorOracle {
 			uint32_t prevBrb = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 64);
 			uint32_t logonUser = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 72);
 
-			string lastBufferSplit = "No";
-			string tempObject = "No"; //FIXME
-			string tablespaceUndo = "No"; //FIXME
+			string lastBufferSplit = "No "; //FIXME
+			string tempObject = "No "; //FIXME
+			string tablespaceUndo = "No "; //FIXME
 			uint32_t prevBcl = 0; //FIXME
 			uint32_t buExtIdx = 0; // FIXME
 			uint32_t flg2 = 0; //FIXME
 
-			cout << "ktubl redo:" <<
+			oracleEnvironment->dumpStream << "ktubl redo:" <<
 					" slt: " << dec << (uint32_t)redoLogRecord->slt <<
 					" rci: " << dec << (uint32_t)redoLogRecord->rci <<
 					" opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
 					" [objn: " << redoLogRecord->objn << " objd: " << redoLogRecord->objd << " tsn: " << redoLogRecord->tsn << "]" << endl;
-			cout << "Undo type:  Regular undo        Begin trans    Last buffer split:  " << lastBufferSplit << endl;
-			cout << "Temp Object:  " << tempObject << endl;
-			cout << "Tablespace Undo:  " << tablespaceUndo << endl;
-			cout << "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
-					" prev ctl uba: " << PRINTUBA(prevCtlUba) << endl;
-			cout << "prev ctl max cmt scn:  " << PRINTSCN(prevCtlMaxCmtScn) << " " <<
-					" prev tx cmt scn:  " << PRINTSCN(prevTxCmtScn) << endl;
-			cout << "txn start scn:  " << PRINTSCN(txStartScn) << " " <<
+			oracleEnvironment->dumpStream << "Undo type:  Regular undo        Begin trans    Last buffer split:  " << lastBufferSplit << endl;
+			oracleEnvironment->dumpStream << "Temp Object:  " << tempObject << endl;
+			oracleEnvironment->dumpStream << "Tablespace Undo:  " << tablespaceUndo << endl;
+			oracleEnvironment->dumpStream << "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
+					" prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl;
+			oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN(prevCtlMaxCmtScn) << " " <<
+					" prev tx cmt scn:  " << PRINTSCN(prevTxCmtScn) << " " << endl;
+			oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN(txStartScn) << " " <<
 					" logon user: " << dec << logonUser << " " <<
 					" prev brb: " << prevBrb << " " <<
 					" prev bcl: " << dec << prevBcl <<

@@ -80,7 +80,7 @@ namespace OpenLogReplicatorRedis {
 		    	const char *cmd = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed + keylen + 1;
 				uint32_t cmdlen = strlen(cmd);
 
-		    	//cout << "SET [" << key << "] [" << cmd << "]" << endl;
+		    	cout << "SET [" << key << "] [" << cmd << "]" << endl;
 				reply = (redisReply *)redisCommand(c, "SET %s %s", key, cmd);
 			    //cout << "RET [" << reply->str << "]" << endl;
 				freeReplyObject(reply);
@@ -111,7 +111,8 @@ namespace OpenLogReplicatorRedis {
 		c = redisConnect(host.c_str(), port);
 
 		redisReply *reply = (redisReply *)redisCommand(c, "PING");
-	    printf("PING: %s\n", reply->str);
+		if (reply != nullptr)
+			printf("PING: %s\n", reply->str);
 	    freeReplyObject(reply);
 
 	    if (c->err) {

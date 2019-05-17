@@ -82,13 +82,18 @@ int main() {
     	{cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.0.3") != 0)
+    if (strcmp(version.GetString(), "0.0.4") != 0)
     	{cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
     bool dumpLogFileBool = false;
     if (strcmp(dumpLogFile.GetString(), "1") == 0)
     	dumpLogFileBool = true;
+
+    const Value& trace = getJSONfield(document, "trace");
+    int traceInt = 0;
+    if (trace.IsInt())
+    	traceInt = trace.GetInt();
 
     const Value& dumpData = getJSONfield(document, "dumpdata");
     bool dumpDataBool = false;
@@ -124,7 +129,7 @@ int main() {
 
         	buffers.push_back(commandBuffer);
         	OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-        			password.GetString(), server.GetString(), dumpLogFileBool, dumpDataBool, directReadBool);
+        			password.GetString(), server.GetString(), traceInt, dumpLogFileBool, dumpDataBool, directReadBool);
         	readers.push_back(oracleReader);
 
         	//initialize

@@ -33,7 +33,7 @@ namespace OpenLogReplicatorOracle {
 		OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 
@@ -56,13 +56,13 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0506::ktuxvoff(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 8)
-			throw RedoLogException("to short field ktuxvoff: ", nullptr, fieldLength);
+			throw RedoLogException("too short field ktuxvoff: ", nullptr, fieldLength);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint16_t off = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
 			uint16_t flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
 
-			cout << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
+			oracleEnvironment->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
 					" ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
 		}
 	}

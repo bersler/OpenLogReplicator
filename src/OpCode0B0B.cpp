@@ -35,7 +35,7 @@ namespace OpenLogReplicatorOracle {
 			OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {

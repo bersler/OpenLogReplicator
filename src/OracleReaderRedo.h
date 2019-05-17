@@ -24,6 +24,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #define ORACLEREADERREDO_H_
 
 using namespace std;
+using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
@@ -38,6 +39,11 @@ namespace OpenLogReplicatorOracle {
 		typescn curScn;
 		typescn firstScn;
 		typescn nextScn;
+		uint32_t recordBeginPos;
+		uint32_t recordBeginBlock;
+		typetime recordTimestmap;
+		uint32_t recordObjd;
+
 		uint32_t blockSize;
 		uint32_t blockNumber;
 		uint32_t numBlocks;
@@ -62,6 +68,7 @@ namespace OpenLogReplicatorOracle {
 		void flushTransactions();
 		void appendToTransaction(RedoLogRecord *redoLogRecord);
 		void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+		uint16_t calcChSum(uint8_t *buffer, uint32_t size);
 
 	public:
 		string path;

@@ -37,8 +37,8 @@ namespace OpenLogReplicatorOracle {
 			" undo: " << dec << undo <<
 			" xid: " << PRINTXID(xid) <<
 			" uba: " << PRINTUBA(uba) <<
-			" slt: " << dec << (int)slt <<
-			" rci: " << dec << (int)rci <<
-			" flg: " << dec << (int)flg << endl;
+			" slt: " << dec << (uint32_t)slt <<
+			" rci: " << dec << (uint32_t)rci <<
+			" flg: " << dec << (uint32_t)flg << endl;
 	}
 }

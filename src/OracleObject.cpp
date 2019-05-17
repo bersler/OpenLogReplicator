@@ -27,8 +27,8 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OracleObject::OracleObject(uint32_t objn, uint32_t cluCols, string owner, string objectName) :
-		objn(objn),
+	OracleObject::OracleObject(uint32_t objd, uint32_t cluCols, string owner, string objectName) :
+		objd(objd),
 		cluCols(cluCols),
 		totalPk(0),
 		owner(owner),
@@ -47,7 +47,7 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	ostream& operator<<(ostream& os, const OracleObject& object) {
-		os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << object.objn << ", " << object.cluCols << ")" << endl;
+		os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << object.objd << ", " << object.cluCols << ")" << endl;
 		for (auto it : object.columns)
 			os << "     - " << *it << endl;
 		return os;

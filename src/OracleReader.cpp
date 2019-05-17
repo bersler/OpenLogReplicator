@@ -43,7 +43,7 @@ using namespace OpenLogReplicator;
 namespace OpenLogReplicatorOracle {
 
 	OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-			const string connectString, bool dumpLogFile, bool dumpData, bool directRead) :
+			const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
 		Thread(alias, commandBuffer),
 		currentRedo(nullptr),
 		database(database.c_str()),
@@ -56,7 +56,7 @@ namespace OpenLogReplicatorOracle {
 		passwd(passwd),
 		connectString(connectString) {
 
-		oracleEnvironment = new OracleEnvironment(commandBuffer, dumpLogFile, dumpData, directRead);
+		oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead);
 		readCheckpoint();
 		env = Environment::createEnvironment (Environment::DEFAULT);
 	}
@@ -270,7 +270,7 @@ namespace OpenLogReplicatorOracle {
 				group = stmt.rset->getInt(5);
 				path = stmt.rset->getString(6);
 
-				if (oracleEnvironment->dumpData) {
+				if (oracleEnvironment->trace >= 1) {
 					cout << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
 							", GROUP: " << group << ", PATH: " << path << endl;
 				}
@@ -378,7 +378,7 @@ namespace OpenLogReplicatorOracle {
 			OracleStatement stmt(&conn, env);
 			OracleStatement stmt2(&conn, env);
 			stmt.createStatement(
-					"SELECT tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
+					"SELECT tab.OBJ# as objd, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
 					"FROM SYS.TAB$ tab, SYS.OBJ$ obj, ALL_USERS usr "
 					"WHERE tab.OBJ# = obj.OBJ# "
 					"AND obj.OWNER# = usr.USER_ID "
@@ -388,18 +388,18 @@ namespace OpenLogReplicatorOracle {
 			stmt.executeQuery();
 
 			while (stmt.rset->next()) {
-				uint32_t objn = stmt.rset->getInt(1);
+				uint32_t objd = stmt.rset->getInt(1);
 				uint32_t cluCols = stmt.rset->getInt(2);
 				string owner = stmt.rset->getString(3);
 				string objectName = stmt.rset->getString(4);
 				uint32_t totalPk = 0;
-				OracleObject *object = new OracleObject(objn, cluCols, owner.c_str(), objectName.c_str());
+				OracleObject *object = new OracleObject(objd, cluCols, owner.c_str(), objectName.c_str());
 
-				if (oracleEnvironment->dumpData)
-					cout << "- found: " << owner << "." << objectName << " (OBJN: " << objn << ")" << endl;
+				if (oracleEnvironment->trace >= 1)
+					cout << "- found: " << owner << "." << objectName << " (OBJD: " << objd << ")" << endl;
 
 				stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
-				stmt2.stmt->setInt(1, objn);
+				stmt2.stmt->setInt(1, objd);
 				stmt2.executeQuery();
 
 				while (stmt2.rset->next()) {
@@ -438,7 +438,7 @@ namespace OpenLogReplicatorOracle {
 					((typescn)buffer[9] << 40) | ((typescn)buffer[8] << 32) |
 					((typescn)buffer[7] << 24) | ((typescn)buffer[6] << 16) |
 					((typescn)buffer[5] << 8) | buffer[4];
-			if (oracleEnvironment->dumpData) {
+			if (oracleEnvironment->trace >= 1) {
 				cout << "Read checkpoint sequence: " << databaseSequence << endl;
 				cout << "Read checkpoint scn: " << databaseScn << endl;
 			}
@@ -449,7 +449,7 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OracleReader::writeCheckpoint() {
-		if (oracleEnvironment->dumpData)
+		if (oracleEnvironment->trace >= 1)
 			cout << "Writing checkpoint information" << endl;
 		FILE *fp = fopen((database + ".cfg").c_str(), "wb");
 		if (fp == nullptr) {
@@ -457,7 +457,7 @@ namespace OpenLogReplicatorOracle {
 			return;
 		}
 
-		if (oracleEnvironment->dumpData) {
+		if (oracleEnvironment->trace >= 1) {
 			cout << "write: databaseSequence: " << databaseSequence << endl;
 			cout << "write: databaseScn: " << databaseScn << endl;
 		}

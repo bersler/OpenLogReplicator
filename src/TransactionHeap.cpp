@@ -75,8 +75,13 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	int TransactionHeap::add(Transaction *transaction) {
-		if (heapSize == heapMaxSize)
+		if (heapSize == heapMaxSize) {
+			cout << "Transaction heap content:" << endl;
+			for (uint32_t i = 1; i <= heapSize; ++i) {
+				cout << "[" << dec << i << "]: " << *heap[i] << endl;
+			}
 			throw MemoryException("out of memory: maximum heap size reached");
+		}
 
 		uint32_t pos = heapSize + 1;
 		++heapSize;

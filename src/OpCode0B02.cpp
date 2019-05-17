@@ -39,12 +39,38 @@ namespace OpenLogReplicatorOracle {
 	OpCode0B02::OpCode0B02(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
 
+		uint8_t *nullstmp, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				nullstmp = nulls = redoLogRecord->data + fieldPosTmp + 45;
+			} else if (i > 2) {
+				if (oracleEnvironment->dumpLogFile) {
+					if ((*nullstmp & bits) == 0) {
+						oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 3) << ": " <<
+								"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
+						if (redoLogRecord->fieldLengths[i] <= 20)
+							oracleEnvironment->dumpStream << " ";
+						else
+							oracleEnvironment->dumpStream << endl;
+						for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
+							oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
+							if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
+								oracleEnvironment->dumpStream << endl;
+						}
+						oracleEnvironment->dumpStream << endl;
+					} else
+						oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 3) << ": *NULL*" << endl;
+
+					bits <<= 1;
+					if (bits == 0) {
+						bits = 1;
+						++nullstmp;
+					}
+				}
 			}
 
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
@@ -57,9 +83,8 @@ namespace OpenLogReplicatorOracle {
 	void OpCode0B02::parseDml() {
 		OracleObject *object = redoLogRecord->object;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos, fieldPosTmp2;
-		uint32_t fieldPos2;
 		uint32_t colCount;
-		uint8_t nulls, bits = 1;
+		uint8_t *nullstmp = nulls, bits = 1;
 		bool prevValue = false;
 
 		for (uint32_t i = 1; i <= 2; ++i) {
@@ -70,8 +95,6 @@ namespace OpenLogReplicatorOracle {
 					return;
 				}
 				colCount = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 18);
-				fieldPos2 = fieldPosTmp + 45;
-				nulls = redoLogRecord->data[fieldPos2];
 			}
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
 		}
@@ -104,7 +127,7 @@ namespace OpenLogReplicatorOracle {
 						prevValue = true;
 
 					//NULL values
-					if ((nulls & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0 || i >= object->columns.size()) {
+					if ((*nullstmp & bits) != 0 || i >= object->columns.size()) { //redoLogRecord->fieldLengths[i + 3] == 0 ||
 						oracleEnvironment->commandBuffer
 							->append("NULL");
 					} else {
@@ -121,7 +144,7 @@ namespace OpenLogReplicatorOracle {
 				bits <<= 1;
 				if (bits == 0) {
 					bits = 1;
-					nulls = redoLogRecord->data[fieldPos2 + (i >> 3)];
+					++nullstmp;
 				}
 				fieldPosTmp += (redoLogRecord->fieldLengths[i + 3] + 3) & 0xFFFC;
 			}
@@ -135,7 +158,7 @@ namespace OpenLogReplicatorOracle {
 
 		for (uint32_t i = 0; i < colCount; ++i) {
 			//NULL values
-			if ((nulls & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0 || i >= object->columns.size()) {
+			if ((*nullstmp & bits) != 0 || redoLogRecord->fieldLengths[i + 3] == 0 || i >= object->columns.size()) {
 				switch (oracleEnvironment->commandBuffer->type) {
 				case COMMAND_BUFFER_JSON:
 					break;
@@ -190,7 +213,7 @@ namespace OpenLogReplicatorOracle {
 			bits <<= 1;
 			if (bits == 0) {
 				bits = 1;
-				nulls = redoLogRecord->data[fieldPos2 + (i >> 3)];
+				++nullstmp;
 			}
 			fieldPosTmp += (redoLogRecord->fieldLengths[i + 3] + 3) & 0xFFFC;
 		}

@@ -17,10 +17,14 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <ostream>
+#include <iomanip>
 #include <stdint.h>
 
 #ifndef TYPES_H_
 #define TYPES_H_
+
+using namespace std;
 
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
@@ -39,15 +43,6 @@ typedef uint32_t typeseq;
 #define TRANSACTION_BUFFER_CHUNK_SIZE (65536*2)
 #define TRANSACTION_BUFFER_CHUNK_NUM (16384/2)
 
-#define FLAGS_NEXT_COLUMN_CONT 0x01
-#define FLAGS_PREV_COLUMN_CONT 0x02
-#define FLAGS_LAST_COL         0x04
-#define FLAGS_FIRST_COL        0x08
-#define FLAGS_DEL_ROW          0x10
-#define FLAGS_HEAD             0x20
-#define FLAGS_CLUSTERED        0x40
-#define FLAGS_CLUSTERED_KEY    0x80
-
 #define REDO_OK                      0
 #define REDO_WRONG_SEQUENCE          1
 #define REDO_WRONG_SEQUENCE_SWITCHED 2
@@ -65,10 +60,45 @@ typedef uint32_t typeseq;
 #define BLOCK(uba) ((uint32_t)((uba)&0xFFFFFFFF))
 #define SEQUENCE(uba) ((uint16_t)((((uint64_t)uba)>>32)&0xFFFF))
 #define RECORD(uba) ((uint8_t)((((uint64_t)uba)>>48)&0xFF))
-#define PRINTUBA(uba) "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(uba)<<"."<<setfill('0')<<setw(2)<<hex<<(int)RECORD(uba)
+#define PRINTUBA(uba) "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(uba)<<"."<<setfill('0')<<setw(2)<<hex<<(uint32_t)RECORD(uba)
 
 #define SCN(scn1,scn2) ((((uint64_t)scn1)<<32)|(scn2))
-#define PRINTSCN(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((int)((scn)>>32))<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
+#define PRINTSCN(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32))<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
+
+namespace OpenLogReplicator {
+	class typetime {
+		uint32_t val;
+	public:
+		typetime() {
+			this->val = 0;
+		}
+
+		typetime(uint32_t val) {
+			this->val = val;
+		}
+
+		typetime& operator= (uint32_t val) {
+			this->val = val;
+			return *this;
+		}
+
+		friend ostream& operator<<(ostream& os, const typetime& time) {
+			uint32_t rest = time.val;
+			uint32_t ss = rest % 60; rest /= 60;
+			uint32_t mi = rest % 60; rest /= 60;
+			uint32_t hh = rest % 24; rest /= 24;
+			uint32_t dd = (rest % 31) + 1; rest /= 31;
+			uint32_t mm = (rest % 12) + 1; rest /= 12;
+			uint32_t yy = rest + 1988;
+			os << dec << setfill('0') << setw(2) << mm << "/" << setfill('0') << setw(2) << dd << "/" << yy << " " <<
+					setfill('0') << setw(2) << hh << ":" << setfill('0') << setw(2) << mi << ":" << setfill('0') << setw(2) << ss;
+			return os;
+			//DDDDDDDDDD HHHHHHHH
+			//10/15/2018 22:25:36
+
+		}
+	};
+}
 
 #define CHECKPOINT_SIZE 12
 

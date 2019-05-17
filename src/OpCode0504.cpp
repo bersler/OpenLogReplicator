@@ -33,7 +33,7 @@ namespace OpenLogReplicatorOracle {
 		OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (int i = 1; i <= redoLogRecord->fieldNum; ++i) {
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktucm(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
 			} else if (i == 2) {
@@ -44,9 +44,9 @@ namespace OpenLogReplicatorOracle {
 		}
 
 		if (oracleEnvironment->dumpLogFile) {
-			cout << endl;
+			oracleEnvironment->dumpStream << endl;
 			if ((redoLogRecord->flg & 0x04) == 0x04)
-				cout << "rolled back transaction" << endl;
+				oracleEnvironment->dumpStream << "rolled back transaction" << endl;
 		}
 	}
 
@@ -57,7 +57,7 @@ namespace OpenLogReplicatorOracle {
 
 	void OpCode0504::ktucm(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
 		if (fieldLength < 20)
-			throw RedoLogException("to short field ktucm: ", nullptr, fieldLength);
+			throw RedoLogException("too short field ktucm: ", nullptr, fieldLength);
 
 		redoLogRecord->xid = XID(usn,
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
@@ -68,30 +68,31 @@ namespace OpenLogReplicatorOracle {
 			uint16_t srt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
 			uint32_t sta = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12);
 
-			cout << "ktucm redo: slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
+			oracleEnvironment->dumpStream << "ktucm redo: slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
 					" sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
 					" srt: " << dec << srt <<
 					" sta: " << dec << sta <<
-					" flg: 0x" << setfill('0') << setw(2) << hex << (int)redoLogRecord->flg << " ";
+					" flg: 0x" << hex << (uint32_t)redoLogRecord->flg << " ";
 		}
 	}
 
 	void OpCode0504::ktucf(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 16)
-			throw RedoLogException("to short field ktucf: ", nullptr, fieldLength);
+			throw RedoLogException("too short field ktucf: ", nullptr, fieldLength);
 
 		redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 0);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint16_t ext = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
 			uint16_t spc = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10);
-			uint8_t fbi = redoLogRecord->data[12];
+			uint8_t fbi = redoLogRecord->data[fieldPos + 12];
 
-			cout << "ktucf redo: " <<
-					" uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
+			oracleEnvironment->dumpStream << "ktucf redo:" <<
+					" uba: " << PRINTUBA(redoLogRecord->uba) <<
 					" ext: " << dec << ext <<
 					" spc: " << dec << spc <<
-					" fbi: " << dec << (int)fbi;
+					" fbi: " << dec << (uint32_t)fbi <<
+					" ";
 		}
 	}
 

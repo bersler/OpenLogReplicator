@@ -43,8 +43,11 @@ namespace OpenLogReplicatorOracle {
 		virtual bool isKdoUndo();
 
 	public:
+	    uint8_t op;
+	    uint8_t cc;
 		uint8_t itli;
-	    uint8_t slot;
+	    uint16_t slot;
+	    uint8_t *nulls;
 
 		virtual void process();
 		virtual string getName();

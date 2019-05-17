@@ -80,7 +80,7 @@ namespace OpenLogReplicatorOracle {
 		int initialize();
 
 		OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-				const string connectString, bool dumpLogFile, bool dumpData, bool directRead);
+				const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead);
 		virtual ~OracleReader();
 	};
 }

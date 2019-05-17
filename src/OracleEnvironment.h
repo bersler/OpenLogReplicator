@@ -19,6 +19,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <unordered_map>
 #include <string>
+#include <iostream>
+#include <fstream>
 
 #include "CommandBuffer.h"
 #include "types.h"
@@ -49,17 +51,19 @@ namespace OpenLogReplicatorOracle {
 		uint8_t *headerBuffer;
 		uint8_t *recordBuffer;
 		CommandBuffer *commandBuffer;
+		ofstream dumpStream;
 		bool dumpLogFile;
 		bool dumpData;
 		bool directRead;
-		int version; //11 or 12
+		int trace;
+		uint32_t version; //11 or 12
 
 		OracleObject *checkDict(uint32_t objn, uint32_t objd);
 		void addToDict(OracleObject *object);
 		void transactionNew(typexid xid);
 		void transactionAppend(typexid xid);
 
-		OracleEnvironment(CommandBuffer *commandBuffer, bool dumpLogFile, bool dumpData, bool directRead);
+		OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead);
 		virtual ~OracleEnvironment();
 	};
 }
