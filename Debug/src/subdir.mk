@@ -4,8 +4,8 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/CommandBuffer.cpp \
 ../src/DatabaseEnvironment.cpp \
-../src/JsonBuffer.cpp \
 ../src/KafkaWriter.cpp \
 ../src/MemoryException.cpp \
 ../src/OpCode.cpp \
@@ -16,6 +16,8 @@ CPP_SRCS += \
 ../src/OpCode050B.cpp \
 ../src/OpCode0B02.cpp \
 ../src/OpCode0B03.cpp \
+../src/OpCode0B0B.cpp \
+../src/OpCode0B0C.cpp \
 ../src/OpenLogReplicator.cpp \
 ../src/OracleColumn.cpp \
 ../src/OracleEnvironment.cpp \
@@ -23,6 +25,7 @@ CPP_SRCS += \
 ../src/OracleReader.cpp \
 ../src/OracleReaderRedo.cpp \
 ../src/OracleStatement.cpp \
+../src/RedisWriter.cpp \
 ../src/RedoLogException.cpp \
 ../src/RedoLogRecord.cpp \
 ../src/Thread.cpp \
@@ -33,8 +36,8 @@ CPP_SRCS += \
 ../src/TransactionMap.cpp 
 
 OBJS += \
+./src/CommandBuffer.o \
 ./src/DatabaseEnvironment.o \
-./src/JsonBuffer.o \
 ./src/KafkaWriter.o \
 ./src/MemoryException.o \
 ./src/OpCode.o \
@@ -45,6 +48,8 @@ OBJS += \
 ./src/OpCode050B.o \
 ./src/OpCode0B02.o \
 ./src/OpCode0B03.o \
+./src/OpCode0B0B.o \
+./src/OpCode0B0C.o \
 ./src/OpenLogReplicator.o \
 ./src/OracleColumn.o \
 ./src/OracleEnvironment.o \
@@ -52,6 +57,7 @@ OBJS += \
 ./src/OracleReader.o \
 ./src/OracleReaderRedo.o \
 ./src/OracleStatement.o \
+./src/RedisWriter.o \
 ./src/RedoLogException.o \
 ./src/RedoLogRecord.o \
 ./src/Thread.o \
@@ -62,8 +68,8 @@ OBJS += \
 ./src/TransactionMap.o 
 
 CPP_DEPS += \
+./src/CommandBuffer.d \
 ./src/DatabaseEnvironment.d \
-./src/JsonBuffer.d \
 ./src/KafkaWriter.d \
 ./src/MemoryException.d \
 ./src/OpCode.d \
@@ -74,6 +80,8 @@ CPP_DEPS += \
 ./src/OpCode050B.d \
 ./src/OpCode0B02.d \
 ./src/OpCode0B03.d \
+./src/OpCode0B0B.d \
+./src/OpCode0B0C.d \
 ./src/OpenLogReplicator.d \
 ./src/OracleColumn.d \
 ./src/OracleEnvironment.d \
@@ -81,6 +89,7 @@ CPP_DEPS += \
 ./src/OracleReader.d \
 ./src/OracleReaderRedo.d \
 ./src/OracleStatement.d \
+./src/RedisWriter.d \
 ./src/RedoLogException.d \
 ./src/RedoLogRecord.d \
 ./src/Thread.d \
@@ -95,7 +104,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -std=c++1y -I/opt/oracle/instantclient_11_2/sdk/include -I/opt/rapidjson/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1y -I/opt/oracle/instantclient_11_2/sdk/include -I/opt/rapidjson/include -I/opt/hiredis -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
