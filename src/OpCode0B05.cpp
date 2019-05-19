@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 11.3
+/* Oracle Redo OpCode: 11.5
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -19,7 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include <iomanip>
-#include "OpCode0B03.h"
+#include "OpCode0B05.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -27,35 +27,51 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0B03::OpCode0B03(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+	OpCode0B05::OpCode0B05(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
 
+		uint16_t *colnums;
+		uint8_t *nullstmp, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				nullstmp = nulls = redoLogRecord->data + fieldPosTmp + 26;
+			} else if (i == 3) {
+				colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
+			} else if (i > 3 && i <= 3 + (uint32_t)cc) {
+				if (oracleEnvironment->dumpLogFile) {
+					dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, redoLogRecord->fieldLengths[i], *nullstmp & bits);
+					++colnums;
+					bits <<= 1;
+					if (bits == 0) {
+						bits = 1;
+						++nullstmp;
+					}
+				}
 			}
+
 
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
 		}
 	}
 
-	OpCode0B03::~OpCode0B03() {
+	OpCode0B05::~OpCode0B05() {
 	}
 
 
-	uint16_t OpCode0B03::getOpCode(void) {
-		return 0x0B03;
+	uint16_t OpCode0B05::getOpCode(void) {
+		return 0x0B05;
 	}
 
-	string OpCode0B03::getName() {
-		return "REDO DEL   ";
+	string OpCode0B05::getName() {
+		return "REDO UPD   ";
 	}
 
-	//delete row
-	void OpCode0B03::process() {
+	//lock row
+	void OpCode0B05::process() {
 		dump();
 	}
 }

@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 11.3
+/* Oracle Redo OpCode: 11.4
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -19,7 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include <iomanip>
-#include "OpCode0B03.h"
+#include "OpCode0B04.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -27,7 +27,7 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0B03::OpCode0B03(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+	OpCode0B04::OpCode0B04(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
@@ -42,20 +42,20 @@ namespace OpenLogReplicatorOracle {
 		}
 	}
 
-	OpCode0B03::~OpCode0B03() {
+	OpCode0B04::~OpCode0B04() {
 	}
 
 
-	uint16_t OpCode0B03::getOpCode(void) {
-		return 0x0B03;
+	uint16_t OpCode0B04::getOpCode(void) {
+		return 0x0B04;
 	}
 
-	string OpCode0B03::getName() {
-		return "REDO DEL   ";
+	string OpCode0B04::getName() {
+		return "REDO LKR   ";
 	}
 
-	//delete row
-	void OpCode0B03::process() {
+	//lock row
+	void OpCode0B04::process() {
 		dump();
 	}
 }

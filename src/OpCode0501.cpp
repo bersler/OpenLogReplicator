@@ -30,7 +30,7 @@ using namespace std;
 namespace OpenLogReplicatorOracle {
 
 	OpCode0501::OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-		OpCode(oracleEnvironment, redoLogRecord) {
+		OpCodeMultirow(oracleEnvironment, redoLogRecord) {
 
 		uint16_t *colnums;
 		uint8_t *nullstmp, bits = 1;
@@ -47,16 +47,19 @@ namespace OpenLogReplicatorOracle {
 					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 
 			} else if (i == 3) {
-				if (redoLogRecord->opc == 0x0B01)
+				if (redoLogRecord->opc == 0x0B01) {
 					ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				}
 
 			} else if (i == 4) {
 				if (redoLogRecord->opc == 0x0B01) {
 					kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-					if ((op & 0x1F) == 0x05) { //Update Row Piece
-						nulls = redoLogRecord->data + fieldPosTmp + 26;
-					}
 					nullstmp = nulls;
+					//Quick Multi-row Delete
+					if (oracleEnvironment->dumpLogFile && (op & 0x1F) == 0x0C) {
+						for (uint32_t i = 0; i < nrow; ++i)
+							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << slots[i] << endl;
+					}
 				}
 
 			//Update Row Piece
@@ -65,22 +68,7 @@ namespace OpenLogReplicatorOracle {
 					colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
 				else if (i > 5 && i <= 5 + (uint32_t)cc) {
 					if (oracleEnvironment->dumpLogFile) {
-						if ((*nullstmp & bits) == 0) {
-							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << *colnums << ": " <<
-									"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
-							if (redoLogRecord->fieldLengths[i] <= 20)
-								oracleEnvironment->dumpStream << " ";
-							else
-								oracleEnvironment->dumpStream << endl;
-							for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
-								oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
-								if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
-									oracleEnvironment->dumpStream << endl;
-							}
-							oracleEnvironment->dumpStream << endl;
-						} else
-							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << *colnums << ": *NULL*" << endl;
-
+						dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 						++colnums;
 						bits <<= 1;
 						if (bits == 0) {
@@ -94,23 +82,7 @@ namespace OpenLogReplicatorOracle {
 			} else if ((op & 0x1F) == 0x02) {
 				if (i > 4 && i <= 4 + (uint32_t)cc) {
 					if (oracleEnvironment->dumpLogFile) {
-						if ((*nullstmp & bits) == 0) {
-							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 5) << ": " <<
-									"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
-							if (redoLogRecord->fieldLengths[i] <= 20)
-								oracleEnvironment->dumpStream << " ";
-							else
-								oracleEnvironment->dumpStream << endl;
-							for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
-								oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
-								if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
-									oracleEnvironment->dumpStream << endl;
-							}
-							oracleEnvironment->dumpStream << endl;
-						} else
-							oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 5) << ": *NULL*" << endl;
-
-						++colnums;
+						dumpCols(redoLogRecord->data + fieldPosTmp, i - 5, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 						bits <<= 1;
 						if (bits == 0) {
 							bits = 1;

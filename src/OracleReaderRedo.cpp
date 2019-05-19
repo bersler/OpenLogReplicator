@@ -44,6 +44,9 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode050B.h"
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
+#include "OpCode0B04.h"
+#include "OpCode0B05.h"
+#include "OpCode0B06.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 
@@ -565,14 +568,29 @@ namespace OpenLogReplicatorOracle {
 					opCode = new OpCode050B(oracleEnvironment, redoLogRecordCur);
 					break;
 
-				//REDO: Insert single row
+				//REDO: Insert row piece
 				case 0x0B02:
 					opCode = new OpCode0B02(oracleEnvironment, redoLogRecordCur);
 					break;
 
-				//REDO: Delete single row
+				//REDO: Delete row piece
 				case 0x0B03:
 					opCode = new OpCode0B03(oracleEnvironment, redoLogRecordCur);
+					break;
+
+				//REDO: Lock row piece
+				case 0x0B04:
+					opCode = new OpCode0B04(oracleEnvironment, redoLogRecordCur);
+					break;
+
+				//REDO: Update row piece
+				case 0x0B05:
+					opCode = new OpCode0B05(oracleEnvironment, redoLogRecordCur);
+					break;
+
+				//REDO: Overwrite row piece
+				case 0x0B06:
+					opCode = new OpCode0B06(oracleEnvironment, redoLogRecordCur);
 					break;
 
 				//REDO: Insert multiple rows

@@ -49,22 +49,7 @@ namespace OpenLogReplicatorOracle {
 				nullstmp = nulls = redoLogRecord->data + fieldPosTmp + 45;
 			} else if (i > 2) {
 				if (oracleEnvironment->dumpLogFile) {
-					if ((*nullstmp & bits) == 0) {
-						oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 3) << ": " <<
-								"[" << setfill(' ') << setw(2) << dec << redoLogRecord->fieldLengths[i] << "]";
-						if (redoLogRecord->fieldLengths[i] <= 20)
-							oracleEnvironment->dumpStream << " ";
-						else
-							oracleEnvironment->dumpStream << endl;
-						for (uint32_t j = 0; j < redoLogRecord->fieldLengths[i]; ++j) {
-							oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPosTmp + j];
-							if ((j % 25) == 24 && j != (uint32_t)redoLogRecord->fieldLengths[i] - 1)
-								oracleEnvironment->dumpStream << endl;
-						}
-						oracleEnvironment->dumpStream << endl;
-					} else
-						oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << (i - 3) << ": *NULL*" << endl;
-
+					dumpCols(redoLogRecord->data + fieldPosTmp, i - 3, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 					bits <<= 1;
 					if (bits == 0) {
 						bits = 1;

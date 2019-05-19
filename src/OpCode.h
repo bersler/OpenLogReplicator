@@ -37,10 +37,18 @@ namespace OpenLogReplicatorOracle {
 
 		void ktbRedo(uint32_t fieldPos, uint32_t fieldLength);
 		void kdoOpCode(uint32_t fieldPos, uint32_t fieldLength);
+		void kdoOpCodeIRP(uint32_t fieldPos, uint32_t fieldLength);
+		void kdoOpCodeDRP(uint32_t fieldPos, uint32_t fieldLength);
+		void kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength);
+		void kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength);
+		void kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength);
+		virtual void kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength);
+
 		void ktub(uint32_t fieldPos, uint32_t fieldLength);
 		void ktubu(uint32_t fieldPos, uint32_t fieldLength);
 		virtual const char* getUndoType();
 		virtual bool isKdoUndo();
+		void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
 
 	public:
 	    uint8_t op;

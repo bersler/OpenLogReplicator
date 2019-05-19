@@ -85,7 +85,7 @@ namespace OpenLogReplicatorOracle {
 		}
 		char opCode = '?';
 
-		if (op == 0x02) {
+		if ((op & 0x0F) == 0x02) {
 			if (fieldLength < 16) {
 				oracleEnvironment->dumpStream << "too short field KTB Redo 4: " << fieldLength << endl;
 				return;
@@ -97,12 +97,12 @@ namespace OpenLogReplicatorOracle {
 				opCode = 'C';
 				oracleEnvironment->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 			}
-		} else if (op == 0x03) {
+		} else if ((op & 0x0F) == 0x03) {
 			if (oracleEnvironment->dumpLogFile) {
 				opCode = 'Z';
 				oracleEnvironment->dumpStream << "op: " << opCode << endl;
 			}
-		} else if (op == 0x04) {
+		} else if ((op & 0x0F) == 0x04) {
 			if (fieldLength < 32) {
 				oracleEnvironment->dumpStream << "too short field KTB Redo 4: " << fieldLength << endl;
 				return;
@@ -130,7 +130,7 @@ namespace OpenLogReplicatorOracle {
 						" scn: " << PRINTSCN(scnx) << endl;
 			}
 
-		} else if (op == 0x01 || op == 0x11) {
+		} else if ((op & 0x0F) == 0x01) {
 			if (fieldLength < 24) {
 				oracleEnvironment->dumpStream << "too short field KTB Redo F: " << fieldLength << endl;
 				return;
@@ -145,40 +145,234 @@ namespace OpenLogReplicatorOracle {
 				opCode = 'F';
 
 				oracleEnvironment->dumpStream << "op: " << opCode << " " <<
-						//" itl:" <<
 						" xid:  " << PRINTXID(redoLogRecord->xid) <<
 						"    uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 			}
+		}
 
-			if (op == 0x11) {
-				if (oracleEnvironment->dumpLogFile) {
-					typescn scn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 48); //34?
-					uint8_t opt = redoLogRecord->data[fieldPos + 44];
-					uint8_t ver = redoLogRecord->data[fieldPos + 46];
-					uint8_t entries = redoLogRecord->data[fieldPos + 45];
+		//block cleanout record
+		if ((op & 0x10) == 0x10) {
+			if (oracleEnvironment->dumpLogFile) {
+				typescn scn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 48); //34?
+				uint8_t opt = redoLogRecord->data[fieldPos + 44];
+				uint8_t ver = redoLogRecord->data[fieldPos + 46];
+				uint8_t entries = redoLogRecord->data[fieldPos + 45];
 
-					oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
-							" " << PRINTSCN(scn) <<
-							" ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
-							" opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
-							", entries follow..." << endl;
+				oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
+						" " << PRINTSCN(scn) <<
+						" ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
+						" opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
+						", entries follow..." << endl;
 
-					if (fieldLength < 56 + entries * (uint32_t)8) {
-						oracleEnvironment->dumpStream << "too short field KTB Redo F 0x11: " << fieldLength << endl;
-						return;
-					}
+				if (fieldLength < 56 + entries * (uint32_t)8) {
+					oracleEnvironment->dumpStream << "too short field KTB Redo F 0x11: " << fieldLength << endl;
+					return;
+				}
 
-					for (uint32_t j = 0; j < entries; ++j) {
-						uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
-						uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
-						typescn scn = (((uint64_t)oracleEnvironment->read16(redoLogRecord->data + fieldPos + 58 + j * 8)) << 32) |
-										oracleEnvironment->read32(redoLogRecord->data + fieldPos + 60 + j * 8);
-						oracleEnvironment->dumpStream << "  itli: " << (uint32_t)itli << " " <<
-								" flg: " << (uint32_t)flg << " " <<
-								" scn: " << PRINTSCN(scn) << endl;
-					}
+				for (uint32_t j = 0; j < entries; ++j) {
+					uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
+					uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
+					typescn scn = (((uint64_t)oracleEnvironment->read16(redoLogRecord->data + fieldPos + 58 + j * 8)) << 32) |
+									oracleEnvironment->read32(redoLogRecord->data + fieldPos + 60 + j * 8);
+					oracleEnvironment->dumpStream << "  itli: " << dec << 	(uint32_t)itli << " " <<
+							" flg: " << (uint32_t)flg << " " <<
+							" scn: " << PRINTSCN(scn) << endl;
 				}
 			}
+		}
+	}
+
+	void OpCode::kdoOpCodeIRP(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 48) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode IRP: " << fieldLength << endl;
+			return;
+		}
+
+		uint8_t tabn = redoLogRecord->data[fieldPos + 44];
+		slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
+			oracleEnvironment->dumpStream << "tabn: " << (uint32_t)tabn <<
+					" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" <<
+					" size/delt: " << dec << sizeDelt << endl;
+		}
+
+		cc = redoLogRecord->data[fieldPos + 18]; //column count
+		nulls = redoLogRecord->data + fieldPos + 45;
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t fl = redoLogRecord->data[fieldPos + 16];
+			uint8_t lb = redoLogRecord->data[fieldPos + 17];
+			char flStr[9] = "--------";
+
+			if ((fl & 0x01) == 0x01) flStr[7] = 'N'; //last column continues in Next piece
+			if ((fl & 0x02) == 0x02) flStr[6] = 'P'; //first column continues from Previous piece
+			if ((fl & 0x04) == 0x04) flStr[5] = 'L'; //Last data piece
+			if ((fl & 0x08) == 0x08) flStr[4] = 'F'; //First data piece
+			if ((fl & 0x10) == 0x10) flStr[3] = 'D'; //Deleted row
+			if ((fl & 0x20) == 0x20) flStr[2] = 'H'; //Head piece of row
+			if ((fl & 0x40) == 0x40) flStr[1] = 'C'; //Clustered table member
+			if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
+
+			oracleEnvironment->dumpStream << "fb: " << flStr <<
+					" lb: 0x" << hex << (uint32_t)lb << " " <<
+					" cc: " << dec << (uint32_t)cc;
+			if (flStr[1] == 'C') {
+				uint8_t cki = redoLogRecord->data[fieldPos + 19];
+				oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
+			} else
+				oracleEnvironment->dumpStream << endl;
+
+			if (flStr[0] == 'K') {
+				uint8_t curc = 0; //FIXME
+				uint8_t comc = 0; //FIXME
+				uint32_t pk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
+				uint8_t pk1 = redoLogRecord->data[fieldPos + 24];
+				uint32_t nk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
+				uint8_t nk1 = redoLogRecord->data[fieldPos + 32];
+
+				oracleEnvironment->dumpStream << "curc: " << dec << (uint32_t)curc <<
+						" comc: " << dec << (uint32_t)comc <<
+						" pk: 0x" << setfill('0') << setw(8) << hex << pk << "." << hex << (uint32_t)pk1 <<
+						" nk: 0x" << setfill('0') << setw(8) << hex << nk << "." << hex << (uint32_t)nk1 << endl;
+			}
+
+			oracleEnvironment->dumpStream << "null:";
+			if (cc >= 12)
+				oracleEnvironment->dumpStream << endl << "01234567890123456789012345678901234567890123456789012345678901234567890123456789" << endl;
+			else
+				oracleEnvironment->dumpStream << " ";
+
+			uint8_t *nullstmp = nulls, bits = 1;
+			for (uint32_t i = 0; i < cc; ++i) {
+
+				if ((*nullstmp & bits) != 0)
+					oracleEnvironment->dumpStream << "N";
+				else
+					oracleEnvironment->dumpStream << "-";
+
+				bits <<= 1;
+				if (bits == 0) {
+					bits = 1;
+					++nullstmp;
+				}
+			}
+			oracleEnvironment->dumpStream << endl;
+		}
+	}
+
+	void OpCode::kdoOpCodeDRP(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 20) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode DRP: " << fieldLength << endl;
+			return;
+		}
+
+		slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t tabn = redoLogRecord->data[fieldPos + 18];
+			oracleEnvironment->dumpStream << "tabn: " << (uint32_t)tabn <<
+					" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" << endl;
+		}
+	}
+
+	void OpCode::kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 20) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode LKR: " << fieldLength << endl;
+			return;
+		}
+
+		slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t tabn = redoLogRecord->data[fieldPos + 18];
+			uint8_t to = redoLogRecord->data[fieldPos + 19];
+			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
+				" slot: " << dec << slot <<
+				" to: " << dec << (uint32_t)to << endl;
+		}
+	}
+
+	void OpCode::kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 28) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode URP: " << fieldLength << endl;
+			return;
+		}
+
+		slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
+		nulls = redoLogRecord->data + fieldPos + 26;
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t flag = redoLogRecord->data[fieldPos + 16];
+			uint8_t lock = redoLogRecord->data[fieldPos + 17];
+			uint8_t ckix = redoLogRecord->data[fieldPos + 18];
+			uint8_t tabn = redoLogRecord->data[fieldPos + 19];
+			uint8_t ncol = redoLogRecord->data[fieldPos + 22];
+			cc = redoLogRecord->data[fieldPos + 23]; //nnew field
+			int16_t size = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24); //signed
+
+			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
+					" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" <<
+					" flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)flag <<
+					" lock: " << dec << (uint32_t)lock <<
+					" ckix: " << dec << (uint32_t)ckix << endl;
+			oracleEnvironment->dumpStream << "ncol: " << dec << (uint32_t)ncol <<
+					" nnew: " << dec << (uint32_t)cc <<
+					" size: " << size << endl;
+		}
+	}
+
+	void OpCode::kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 48) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode QMI: " << fieldLength << endl;
+			return;
+		}
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t tabn = redoLogRecord->data[fieldPos + 11];
+			uint8_t slot = redoLogRecord->data[fieldPos + 42];
+			uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
+			uint8_t fb = redoLogRecord->data[fieldPos + 16];
+			char fbStr[9] = "--------";
+			uint8_t lb = redoLogRecord->data[fieldPos + 17];
+			cc = 0; //FIXME
+			uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
+			uint8_t nrid2 = redoLogRecord->data[fieldPos + 32];
+
+			if ((fb & 0x01) == 0x01) fbStr[7] = 'N'; //last column continues in Next piece
+			if ((fb & 0x02) == 0x02) fbStr[6] = 'P'; //first column continues from Previous piece
+			if ((fb & 0x04) == 0x04) fbStr[5] = 'L'; //Last data piece
+			if ((fb & 0x08) == 0x08) fbStr[4] = 'F'; //First data piece
+			if ((fb & 0x10) == 0x10) fbStr[3] = 'D'; //Deleted row
+			if ((fb & 0x20) == 0x20) fbStr[2] = 'H'; //Head piece of row
+			if ((fb & 0x40) == 0x40) fbStr[1] = 'C'; //Clustered table member
+			if ((fb & 0x80) == 0x80) fbStr[0] = 'K'; //cluster Key
+
+			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
+				" slot: " << dec << (uint32_t)slot << "(0x" << hex << (uint32_t)slot << ")" <<
+				" size/delt: " << dec << sizeDelt << endl;
+			oracleEnvironment->dumpStream << "fb: " << fbStr <<
+					" lb: 0x" << hex << (uint32_t) lb << " " <<
+					" cc: " << dec << (uint32_t) cc << endl;
+			oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << (uint32_t) nrid2 << endl;
+			oracleEnvironment->dumpStream << "null: " << endl;
+		}
+	}
+
+	void OpCode::kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength) {
+		if (fieldLength < 24) {
+			oracleEnvironment->dumpStream << "too short field KDO OpCode QMI: " << fieldLength << endl;
+			return;
+		}
+
+		if (oracleEnvironment->dumpLogFile) {
+			uint8_t tabn = redoLogRecord->data[fieldPos + 16];
+			uint8_t lock = redoLogRecord->data[fieldPos + 17];
+			uint16_t nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
+
+			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
+				" lock: " << dec << (uint32_t)lock <<
+				" nrow: " << dec << nrow << endl;
 		}
 	}
 
@@ -209,11 +403,11 @@ namespace OpenLogReplicatorOracle {
 		    	case 0x07: opCode = "MFC"; break; //Manipulate First Column
 		    	case 0x08: opCode = "CFA"; break; //Change Forwarding Address
 		    	case 0x09: opCode = "CKI"; break; //Change Cluster key Index
-		    	case 0x0a: opCode = "SKL"; break; //Set Key Links
-		    	case 0x0b: opCode = "QMI"; break; //Quick Multi-row Insert
-		    	case 0x0c: opCode = "QMD"; break; //Quick Multi-row Delete
-		    	case 0x0d: opCode = "TBF"; break;
-		    	case 0x0e: opCode = "DSC"; break;
+		    	case 0x0A: opCode = "SKL"; break; //Set Key Links
+		    	case 0x0B: opCode = "QMI"; break; //Quick Multi-row Insert
+		    	case 0x0C: opCode = "QMD"; break; //Quick Multi-row Delete
+		    	case 0x0D: opCode = "TBF"; break;
+		    	case 0x0E: opCode = "DSC"; break;
 		    	case 0x10: opCode = "LMN"; break;
 		    	case 0x11: opCode = "LLB"; break;
 		    }
@@ -234,168 +428,32 @@ namespace OpenLogReplicatorOracle {
 					" maxfr: " << dec << (uint32_t)maxFr << endl;
 		}
 
-		uint8_t tabn;
 	    switch (op & 0x1F) {
-	    case 0x02: //Insert Row Piece
-			if (fieldLength < 48) {
-				oracleEnvironment->dumpStream << "too short field KDO OpCode IRP: " << fieldLength << endl;
-				return;
-			}
+	    case 0x02:
+	    	kdoOpCodeIRP(fieldPos, fieldLength);
+	    	break;
 
-			tabn = redoLogRecord->data[fieldPos + 44];
-			slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
+	    case 0x03:
+	    	kdoOpCodeDRP(fieldPos, fieldLength);
+	    	break;
 
-			if (oracleEnvironment->dumpLogFile) {
-				uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
-				oracleEnvironment->dumpStream << "tabn: " << (uint32_t)tabn <<
-						" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" <<
-						" size/delt: " << dec << sizeDelt << endl;
-			}
+	    case 0x04:
+	    	kdoOpCodeLKR(fieldPos, fieldLength);
+	    	break;
 
-			cc = redoLogRecord->data[fieldPos + 18]; //column count
-			nulls = redoLogRecord->data + fieldPos + 45;
-			if (oracleEnvironment->dumpLogFile) {
-				uint8_t fl = redoLogRecord->data[fieldPos + 16];
-				uint8_t lb = redoLogRecord->data[fieldPos + 17];
-				char flStr[9] = "--------";
-
-				if ((fl & 0x01) == 0x01) flStr[7] = 'N'; //last column continues in Next piece
-				if ((fl & 0x02) == 0x02) flStr[6] = 'P'; //first column continues from Previous piece
-				if ((fl & 0x04) == 0x04) flStr[5] = 'L'; //Last data piece
-				if ((fl & 0x08) == 0x08) flStr[4] = 'F'; //First data piece
-				if ((fl & 0x10) == 0x10) flStr[3] = 'D'; //Deleted row
-				if ((fl & 0x20) == 0x20) flStr[2] = 'H'; //Head piece of row
-				if ((fl & 0x40) == 0x40) flStr[1] = 'C'; //Clustered table member
-				if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
-
-				oracleEnvironment->dumpStream << "fb: " << flStr <<
-						" lb: 0x" << hex << (uint32_t)lb << " " <<
-						" cc: " << dec << (uint32_t)cc;
-				if (flStr[1] == 'C') {
-					uint8_t cki = redoLogRecord->data[fieldPos + 19];
-					oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
-				} else
-					oracleEnvironment->dumpStream << endl;
-
-				if (flStr[0] == 'K') {
-					uint8_t curc = 0; //FIXME
-					uint8_t comc = 0; //FIXME
-					uint32_t pk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
-					uint8_t pk1 = redoLogRecord->data[fieldPos + 24];
-					uint32_t nk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
-					uint8_t nk1 = redoLogRecord->data[fieldPos + 32];
-
-					oracleEnvironment->dumpStream << "curc: " << dec << (uint32_t)curc <<
-							" comc: " << dec << (uint32_t)comc <<
-							" pk: 0x" << setfill('0') << setw(8) << hex << pk << "." << hex << (uint32_t)pk1 <<
-							" nk: 0x" << setfill('0') << setw(8) << hex << nk << "." << hex << (uint32_t)nk1 << endl;
-				}
-
-				oracleEnvironment->dumpStream << "null:";
-				if (cc >= 12)
-					oracleEnvironment->dumpStream << endl << "01234567890123456789012345678901234567890123456789012345678901234567890123456789" << endl;
-				else
-					oracleEnvironment->dumpStream << " ";
-
-				uint8_t *nullstmp = nulls, bits = 1;
-				for (uint32_t i = 0; i < cc; ++i) {
-
-					if ((*nullstmp & bits) != 0)
-						oracleEnvironment->dumpStream << "N";
-					else
-						oracleEnvironment->dumpStream << "-";
-
-					bits <<= 1;
-					if (bits == 0) {
-						bits = 1;
-						++nullstmp;
-					}
-				}
-				oracleEnvironment->dumpStream << endl;
-			}
+	    case 0x05:
+	    	kdoOpCodeURP(fieldPos, fieldLength);
 			break;
 
-	    case 0x03://Delete Row Piece
-			if (fieldLength < 20) {
-				oracleEnvironment->dumpStream << "too short field KDO OpCode DRP: " << fieldLength << endl;
-				return;
-			}
-
-		    slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
-
-			if (oracleEnvironment->dumpLogFile) {
-				tabn = redoLogRecord->data[fieldPos + 18];
-				oracleEnvironment->dumpStream << "tabn: " << (uint32_t)tabn <<
-						" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" << endl;
-			}
+	    case 0x06:
+	    	kdoOpCodeORP(fieldPos, fieldLength);
 			break;
 
-	    case 0x04://LocK Row
-			if (fieldLength < 20) {
-				oracleEnvironment->dumpStream << "too short field KDO OpCode LKR: " << fieldLength << endl;
-				return;
-			}
-
-			slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
-
-			if (oracleEnvironment->dumpLogFile) {
-				tabn = redoLogRecord->data[fieldPos + 18];
-				uint8_t to = redoLogRecord->data[fieldPos + 19];
-				oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
-					" slot: " << dec << slot <<
-					" to: " << dec << (uint32_t)to << endl;
-			}
-			break;
-
-	    case 0x05://Update Row Piece
-			if (fieldLength < 28) {
-				oracleEnvironment->dumpStream << "too short field KDO OpCode URP: " << fieldLength << endl;
-				return;
-			}
-
-			slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
-
-			if (oracleEnvironment->dumpLogFile) {
-				uint8_t flag = redoLogRecord->data[fieldPos + 16];
-				uint8_t lock = redoLogRecord->data[fieldPos + 17];
-				uint8_t ckix = redoLogRecord->data[fieldPos + 18];
-				tabn = redoLogRecord->data[fieldPos + 19];
-				uint8_t ncol = redoLogRecord->data[fieldPos + 22];
-				cc = redoLogRecord->data[fieldPos + 23]; //nnew field
-				int16_t size = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24); //signed
-
-				oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
-						" slot: " << dec << (uint32_t)slot << "(0x" << hex << slot << ")" <<
-						" flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)flag <<
-						" lock: " << dec << (uint32_t)lock <<
-						" ckix: " << dec << (uint32_t)ckix << endl;
-				oracleEnvironment->dumpStream << "ncol: " << dec << (uint32_t)ncol <<
-						" nnew: " << dec << (uint32_t)cc <<
-						" size: " << size << endl;
-			}
-			break;
-
-	    case 0x0C://Quick Multi-row Delete
-			if (fieldLength < 20) {
-				oracleEnvironment->dumpStream << "too short field KDO OpCode QMD: " << fieldLength << endl;
-				return;
-			}
-
-			if (oracleEnvironment->dumpLogFile) {
-				tabn = redoLogRecord->data[fieldPos + 16];
-				uint8_t lock = redoLogRecord->data[fieldPos + 17];
-				uint16_t nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
-				oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
-					" lock: " << dec << (uint32_t)lock <<
-					" nrow: " << dec << nrow << endl;
-
-				for (uint32_t i = 0; i < nrow; ++i) {
-					slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20 + i * 2);
-					oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << slot << endl;
-				}
-			}
-			break;
-		}
+	    case 0x0B:
+	    case 0x0C:
+	    	kdoOpCodeQM(fieldPos, fieldLength);
+	    	break;
+	    }
 	}
 
 	void OpCode::ktub(uint32_t fieldPos, uint32_t fieldLength) {
@@ -447,6 +505,28 @@ namespace OpenLogReplicatorOracle {
 
 	bool OpCode::isKdoUndo() {
 		return false;
+	}
+
+	void OpCode::dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull) {
+		if (isNull) {
+			oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << colnum << ": *NULL*" << endl;
+		} else {
+			oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << colnum << ": " <<
+					"[" << setfill(' ') << setw(2) << dec << fieldLength << "]";
+
+			if (fieldLength <= 20)
+				oracleEnvironment->dumpStream << " ";
+			else
+				oracleEnvironment->dumpStream << endl;
+
+			for (uint32_t j = 0; j < fieldLength; ++j) {
+				oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)data[j];
+				if ((j % 25) == 24 && j != (uint32_t)fieldLength - 1)
+					oracleEnvironment->dumpStream << endl;
+			}
+
+			oracleEnvironment->dumpStream << endl;
+		}
 	}
 
 	string OpCode::getName() {
