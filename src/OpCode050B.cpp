@@ -37,7 +37,7 @@ namespace OpenLogReplicatorOracle {
 			if (i == 1) {
 				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 
-				if (redoLogRecord->opc == 0x0B15)
+				//if (redoLogRecord->opc == 0x0B15)
 					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				buext(fieldPosTmp, redoLogRecord->fieldLengths[i]);
@@ -51,8 +51,10 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 8)
-			throw RedoLogException("too short field buext: ", nullptr, fieldLength);
+		if (fieldLength < 8) {
+			oracleEnvironment->dumpStream << "too short field buext: " << dec << fieldLength << endl;
+			return;
+		}
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t idx = 0; //FIXME

@@ -444,7 +444,6 @@ namespace OpenLogReplicatorOracle {
 				throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
 
 			uint16_t *fieldList = (uint16_t*)(oracleEnvironment->recordBuffer + pos + fieldOffset);
-			//uint16_t fieldNum = (fieldList[0] - 2) / 2;
 
 			memset(redoLogRecordCur, 0, sizeof(struct RedoLogRecord));
 			redoLogRecordCur->opCode = (((uint16_t)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
@@ -460,7 +459,11 @@ namespace OpenLogReplicatorOracle {
 			if (redoLogRecordCur->fieldPos > redoLogRecordCur->length)
 				throw RedoLogException("incomplete record", nullptr, 0);
 
-			if ((redoLogRecordCur->opCode & 0xFF00) == 0x0500)
+			if (redoLogRecordCur->opCode == 0x0501 ||
+					redoLogRecordCur->opCode == 0x0502 ||
+					redoLogRecordCur->opCode == 0x0504 ||
+					redoLogRecordCur->opCode == 0x0506 ||
+					redoLogRecordCur->opCode == 0x050B)
 				recordObjd = 4294967295;
 
 			if (oracleEnvironment->dumpLogFile) {

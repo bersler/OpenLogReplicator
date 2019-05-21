@@ -70,7 +70,7 @@ void signalHandler(int s) {
 int main() {
 	signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
-	cout << "Open Log Replicator v. 0.0.3 (C) 2018-2019 by Adam Leszcznski, aleszczynski@bersler.com" << endl;
+	cout << "Open Log Replicator v. 0.0.4 (C) 2018-2019 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
 
 	ifstream config("OpenLogReplicator.json");
 	string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());

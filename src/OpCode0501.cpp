@@ -54,19 +54,19 @@ namespace OpenLogReplicatorOracle {
 			} else if (i == 4) {
 				if (redoLogRecord->opc == 0x0B01) {
 					kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-					nullstmp = nulls;
+					nullstmp = redoLogRecord->nulls;
 					//Quick Multi-row Delete
-					if (oracleEnvironment->dumpLogFile && (op & 0x1F) == 0x0C) {
+					if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
 						for (uint32_t i = 0; i < nrow; ++i)
 							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << slots[i] << endl;
 					}
 				}
 
 			//Update Row Piece
-			} else if ((op & 0x1F) == 0x05) {
+			} else if ((redoLogRecord->op & 0x1F) == 0x05) {
 				if (i == 5)
 					colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
-				else if (i > 5 && i <= 5 + (uint32_t)cc) {
+				else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
 					if (oracleEnvironment->dumpLogFile) {
 						dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 						++colnums;
@@ -78,9 +78,9 @@ namespace OpenLogReplicatorOracle {
 					}
 				}
 
-			//Insert Row Piece
-			} else if ((op & 0x1F) == 0x02) {
-				if (i > 4 && i <= 4 + (uint32_t)cc) {
+			//Insert Row Piece / Overwrite Row Piece
+			} else if ((redoLogRecord->op & 0x1F) == 0x02 || (redoLogRecord->op & 0x1F) == 0x06) {
+				if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
 					if (oracleEnvironment->dumpLogFile) {
 						dumpCols(redoLogRecord->data + fieldPosTmp, i - 5, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 						bits <<= 1;
@@ -113,8 +113,10 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OpCode0501::ktudb(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 20)
-			throw RedoLogException("too short field ktudb: ", nullptr, fieldLength);
+		if (fieldLength < 20) {
+			oracleEnvironment->dumpStream << "too short field ktudb: " << dec << fieldLength << endl;
+			return;
+		}
 
 		redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
@@ -139,8 +141,10 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OpCode0501::ktubl(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 76)
-			throw RedoLogException("too short field ktubl.5.7: ", nullptr, fieldLength);
+		if (fieldLength < 76) {
+			oracleEnvironment->dumpStream << "too short field ktubl.5.7: " << dec << fieldLength << endl;
+			return;
+		}
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint32_t x1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 24);

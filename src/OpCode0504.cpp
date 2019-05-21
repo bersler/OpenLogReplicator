@@ -56,8 +56,10 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OpCode0504::ktucm(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
-		if (fieldLength < 20)
-			throw RedoLogException("too short field ktucm: ", nullptr, fieldLength);
+		if (fieldLength < 20) {
+			oracleEnvironment->dumpStream << "too short field ktucm: " << dec << fieldLength << endl;
+			return;
+		}
 
 		redoLogRecord->xid = XID(usn,
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
@@ -72,7 +74,7 @@ namespace OpenLogReplicatorOracle {
 					" sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
 					" srt: " << dec << srt <<
 					" sta: " << dec << sta <<
-					" flg: 0x" << hex << (uint32_t)redoLogRecord->flg << " ";
+					" flg: 0x" << hex << redoLogRecord->flg << " ";
 		}
 	}
 

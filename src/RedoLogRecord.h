@@ -49,9 +49,15 @@ namespace OpenLogReplicatorOracle {
 
 		uint8_t slt;
 		uint8_t rci;
-		uint8_t flg;			//flag (for opCode 0504)
+		uint16_t flg;			//flag (for opCode 0504)
 		uint16_t opCode;		//operation code
 		uint16_t opc;			//operation code for UNDO
+
+	    uint8_t op;
+	    uint8_t cc;
+		uint8_t itli;
+	    uint16_t slot;
+	    uint8_t *nulls;
 
 		void dump();
 	};

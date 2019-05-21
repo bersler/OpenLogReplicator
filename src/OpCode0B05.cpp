@@ -38,10 +38,10 @@ namespace OpenLogReplicatorOracle {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-				nullstmp = nulls = redoLogRecord->data + fieldPosTmp + 26;
+				nullstmp = redoLogRecord->nulls = redoLogRecord->data + fieldPosTmp + 26;
 			} else if (i == 3) {
 				colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
-			} else if (i > 3 && i <= 3 + (uint32_t)cc) {
+			} else if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc) {
 				if (oracleEnvironment->dumpLogFile) {
 					dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 					++colnums;

@@ -25,6 +25,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 using namespace std;
 
 namespace OpenLogReplicatorOracle {
+
 	void RedoLogRecord::dump() {
 		cout << "DUMP: opCode: " << hex << opCode <<
 			" length: " << dec << length <<
@@ -39,6 +40,10 @@ namespace OpenLogReplicatorOracle {
 			" uba: " << PRINTUBA(uba) <<
 			" slt: " << dec << (uint32_t)slt <<
 			" rci: " << dec << (uint32_t)rci <<
-			" flg: " << dec << (uint32_t)flg << endl;
+			" flg: " << dec << (uint32_t)flg <<
+			" op: " << dec << (uint32_t)op <<
+			" cc: " << dec << (uint32_t)cc <<
+			" itli: " << dec << (uint32_t)itli <<
+			" slot: " << dec << slot << endl;
 	}
 }
