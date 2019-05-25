@@ -378,20 +378,20 @@ namespace OpenLogReplicatorOracle {
 			OracleStatement stmt(&conn, env);
 			OracleStatement stmt2(&conn, env);
 			stmt.createStatement(
-					"SELECT tab.OBJ# as objd, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
+					"SELECT tab.DATAOBJ# as objd, tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
 					"FROM SYS.TAB$ tab, SYS.OBJ$ obj, ALL_USERS usr "
 					"WHERE tab.OBJ# = obj.OBJ# "
 					"AND obj.OWNER# = usr.USER_ID "
 					"AND usr.USERNAME || '.' || obj.NAME LIKE :i");
-			//tab.OBJ# = :i");
 			stmt.stmt->setString(1, mask);
 			stmt.executeQuery();
 
 			while (stmt.rset->next()) {
 				uint32_t objd = stmt.rset->getInt(1);
-				uint32_t cluCols = stmt.rset->getInt(2);
-				string owner = stmt.rset->getString(3);
-				string objectName = stmt.rset->getString(4);
+				uint32_t objn = stmt.rset->getInt(2);
+				uint32_t cluCols = stmt.rset->getInt(3);
+				string owner = stmt.rset->getString(4);
+				string objectName = stmt.rset->getString(5);
 				uint32_t totalPk = 0;
 				OracleObject *object = new OracleObject(objd, cluCols, owner.c_str(), objectName.c_str());
 
@@ -399,7 +399,7 @@ namespace OpenLogReplicatorOracle {
 					cout << "- found: " << owner << "." << objectName << " (OBJD: " << objd << ")" << endl;
 
 				stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
-				stmt2.stmt->setInt(1, objd);
+				stmt2.stmt->setInt(1, objn);
 				stmt2.executeQuery();
 
 				while (stmt2.rset->next()) {

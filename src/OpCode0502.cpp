@@ -36,7 +36,7 @@ namespace OpenLogReplicatorOracle {
 			if (i == 1) {
 				ktudh(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
 			} else if (i == 2) {
-				if ((redoLogRecord->flg & 0x2) == 0)
+				if (redoLogRecord->flg == 0x0080)
 					kteop(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
 			}
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
@@ -70,13 +70,14 @@ namespace OpenLogReplicatorOracle {
 			oracleEnvironment->dumpStream << "kteop redo - redo operation on extent map" << endl;
 			oracleEnvironment->dumpStream << "   SETHWM:      " <<
 					" Highwater::  0x" << setfill('0') << setw(8) << hex << highwater << " " <<
-					" ext#: " << dec << ext << "     " <<
-					" blk#: " << dec << blk << "     " <<
-					" ext size: " << dec << extSize << "     " << endl;
+					" ext#: " << setfill(' ') << setw(6) << left << dec << ext <<
+					" blk#: " << setfill(' ') << setw(6) << left << dec << blk <<
+					" ext size: " << setfill(' ') << setw(6) << left << dec << extSize << endl;
 			oracleEnvironment->dumpStream << "  #blocks in seg. hdr's freelists: " << dec << blocksFreelist << "     " << endl;
-			oracleEnvironment->dumpStream << "  #blocks below: " << blocksBelow << "     " << endl;
+			oracleEnvironment->dumpStream << "  #blocks below: " << setfill(' ') << setw(6) << left << dec << blocksBelow << endl;
 			oracleEnvironment->dumpStream << "  mapblk  0x" << setfill('0') << setw(8) << hex << mapblk << " " <<
-					" offset: " << dec << offset << "     " << endl;
+					" offset: " << setfill(' ') << setw(6) << left << dec << offset << endl;
+			oracleEnvironment->dumpStream << right;
 		}
 	}
 
@@ -90,10 +91,10 @@ namespace OpenLogReplicatorOracle {
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
 				oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4));
 		redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
+		redoLogRecord->flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t fbi = redoLogRecord->data[fieldPos + 20];
-			redoLogRecord->flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
 			uint16_t siz = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
 
 			uint16_t pxid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24),

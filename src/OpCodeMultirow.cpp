@@ -28,17 +28,11 @@ using namespace std;
 namespace OpenLogReplicatorOracle {
 
 	OpCodeMultirow::OpCodeMultirow(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill) :
-			OpCode(oracleEnvironment, redoLogRecord, fill),
-			nrow(0),
-			slots(nullptr),
-			rowLenghs(nullptr) {
+			OpCode(oracleEnvironment, redoLogRecord, fill) {
 	}
 
 	OpCodeMultirow::OpCodeMultirow(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-			OpCode(oracleEnvironment, redoLogRecord),
-			nrow(0),
-			slots(nullptr),
-			rowLenghs(nullptr) {
+			OpCode(oracleEnvironment, redoLogRecord) {
 	}
 
 	void OpCodeMultirow::kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength) {
@@ -47,8 +41,8 @@ namespace OpenLogReplicatorOracle {
 			return;
 		}
 
-		slots = (uint16_t*)(redoLogRecord->data + fieldPos + 20);
-		nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
+		redoLogRecord->slots = (uint16_t*)(redoLogRecord->data + fieldPos + 20);
+		redoLogRecord->nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
 
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t tabn = redoLogRecord->data[fieldPos + 16];
@@ -56,7 +50,7 @@ namespace OpenLogReplicatorOracle {
 
 			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
 				" lock: " << dec << (uint32_t)lock <<
-				" nrow: " << dec << nrow << endl;
+				" nrow: " << dec << redoLogRecord->nrow << endl;
 		}
 	}
 

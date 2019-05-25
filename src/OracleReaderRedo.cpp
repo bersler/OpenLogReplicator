@@ -62,6 +62,10 @@ namespace OpenLogReplicatorOracle {
 			curScn(ZERO_SCN),
 			firstScn(firstScn),
 			nextScn(nextScn),
+			recordBeginPos(0),
+			recordBeginBlock(0),
+			recordTimestmap(0),
+			recordObjd(0),
 			blockSize(0),
 			blockNumber(0),
 			numBlocks(0),
@@ -102,7 +106,7 @@ namespace OpenLogReplicatorOracle {
 		return REDO_OK;
 	}
 
-	int OracleReaderRedo::checkRedoHeader() {
+	int OracleReaderRedo::checkRedoHeader(bool first) {
 		headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
 		if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
 			cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
@@ -187,7 +191,7 @@ namespace OpenLogReplicatorOracle {
 		//typescn threadClosedScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 220);
 		memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
-		if (oracleEnvironment->dumpLogFile) {
+		if (oracleEnvironment->dumpLogFile && first) {
 			oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl <<
 					" Opcodes *.*" << endl <<
 					" RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl <<
@@ -909,7 +913,7 @@ namespace OpenLogReplicatorOracle {
 
 		initFile();
 		bool reachedEndOfOnlineRedo = false;
-		int ret = checkRedoHeader();
+		int ret = checkRedoHeader(true);
 		if (ret != REDO_OK) {
 			oracleEnvironment->dumpStream.close();
 			return ret;
@@ -941,7 +945,7 @@ namespace OpenLogReplicatorOracle {
 					}
 
 					//check if sequence has changed
-					int ret = checkRedoHeader();
+					int ret = checkRedoHeader(false);
 					if (ret != REDO_OK) {
 						oracleEnvironment->dumpStream.close();
 						return ret;

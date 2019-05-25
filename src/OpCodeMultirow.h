@@ -28,10 +28,6 @@ namespace OpenLogReplicatorOracle {
 
 	class OpCodeMultirow: public OpCode {
 	public:
-		uint16_t nrow;
-		uint16_t *slots;
-		uint16_t *rowLenghs;
-
 		virtual void process();
 		virtual string getName();
 		virtual uint16_t getOpCode(void);

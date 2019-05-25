@@ -52,7 +52,6 @@ namespace OpenLogReplicatorOracle {
 		void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
 
 	public:
-
 		virtual void process();
 		virtual string getName();
 		virtual void dumpDetails();

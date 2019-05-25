@@ -62,7 +62,7 @@ namespace OpenLogReplicatorOracle {
 		int initFile();
 		int readFileMore();
 		int checkBlockHeader(uint8_t *buffer, uint32_t blockNumberExpected);
-		int checkRedoHeader();
+		int checkRedoHeader(bool first);
 		int processBuffer();
 		void analyzeRecord();
 		void flushTransactions();

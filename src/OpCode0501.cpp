@@ -33,7 +33,7 @@ namespace OpenLogReplicatorOracle {
 		OpCodeMultirow(oracleEnvironment, redoLogRecord) {
 
 		uint16_t *colnums;
-		uint8_t *nullstmp, bits = 1;
+		uint8_t *nullstmp = nullptr, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
@@ -57,8 +57,8 @@ namespace OpenLogReplicatorOracle {
 					nullstmp = redoLogRecord->nulls;
 					//Quick Multi-row Delete
 					if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
-						for (uint32_t i = 0; i < nrow; ++i)
-							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << slots[i] << endl;
+						for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
+							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << redoLogRecord->slots[i] << endl;
 					}
 				}
 
@@ -81,6 +81,10 @@ namespace OpenLogReplicatorOracle {
 			//Insert Row Piece / Overwrite Row Piece
 			} else if ((redoLogRecord->op & 0x1F) == 0x02 || (redoLogRecord->op & 0x1F) == 0x06) {
 				if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
+					if (nullstmp == nullptr) {
+						cout << "nullstmp = null" << endl;
+						exit(1);
+					}
 					if (oracleEnvironment->dumpLogFile) {
 						dumpCols(redoLogRecord->data + fieldPosTmp, i - 5, redoLogRecord->fieldLengths[i], *nullstmp & bits);
 						bits <<= 1;

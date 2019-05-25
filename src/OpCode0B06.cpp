@@ -30,12 +30,23 @@ namespace OpenLogReplicatorOracle {
 	OpCode0B06::OpCode0B06(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
 
+		uint8_t *nullstmp, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
 				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 2) {
 				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				nullstmp = redoLogRecord->nulls = redoLogRecord->data + fieldPosTmp + 45;
+			} else if (i > 2 && i <= 2 + (uint32_t)redoLogRecord->cc) {
+				if (oracleEnvironment->dumpLogFile) {
+					dumpCols(redoLogRecord->data + fieldPosTmp, i - 3, redoLogRecord->fieldLengths[i], *nullstmp & bits);
+					bits <<= 1;
+					if (bits == 0) {
+						bits = 1;
+						++nullstmp;
+					}
+				}
 			}
 
 			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
