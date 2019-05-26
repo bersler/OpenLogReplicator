@@ -396,7 +396,7 @@ namespace OpenLogReplicatorOracle {
 				OracleObject *object = new OracleObject(objd, cluCols, owner.c_str(), objectName.c_str());
 
 				if (oracleEnvironment->trace >= 1)
-					cout << "- found: " << owner << "." << objectName << " (OBJD: " << objd << ")" << endl;
+					cout << "- found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")" << endl;
 
 				stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
 				stmt2.stmt->setInt(1, objn);

@@ -126,6 +126,13 @@ namespace OpenLogReplicatorOracle {
 		fieldPosTmp2 = fieldPosTmp;
 
 		for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
+    		if (r > 0)
+    			switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					oracleEnvironment->commandBuffer->append(", ");
+					break;
+				}
+
 			pos = 0;
 			prevValue = false;
 			fieldPosTmp = fieldPosTmp2;
