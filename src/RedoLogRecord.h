@@ -36,8 +36,8 @@ namespace OpenLogReplicatorOracle {
 		uint16_t fieldNum;
 		uint32_t fieldPos;
 		uint16_t nrow;
-		uint16_t *slots;
-		uint16_t *rowLenghs;
+		uint32_t slotsDelta;
+		uint32_t rowLenghsDelta;
 
 		uint32_t length;		//length
 		uint32_t dba;

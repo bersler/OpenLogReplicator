@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCodeMultirow.h"
+#include "OpCode.h"
 
 #ifndef OPCODE0B0B_H_
 #define OPCODE0B0B_H_
@@ -26,7 +26,7 @@ namespace OpenLogReplicatorOracle {
 
 	class RedoLogRecord;
 
-	class OpCode0B0B: public OpCodeMultirow {
+	class OpCode0B0B: public OpCode {
 	public:
 		virtual void process();
 		virtual string getName();

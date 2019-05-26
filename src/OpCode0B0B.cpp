@@ -31,11 +31,11 @@ using namespace std;
 namespace OpenLogReplicatorOracle {
 
 	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill) :
-			OpCodeMultirow(oracleEnvironment, redoLogRecord, fill) {
+			OpCode(oracleEnvironment, redoLogRecord, fill) {
 	}
 
 	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-			OpCodeMultirow(oracleEnvironment, redoLogRecord) {
+			OpCode(oracleEnvironment, redoLogRecord) {
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
@@ -43,7 +43,7 @@ namespace OpenLogReplicatorOracle {
 			} else if (i == 2) {
 				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
 			} else if (i == 3) {
-				redoLogRecord->rowLenghs = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
+				redoLogRecord->rowLenghsDelta = fieldPosTmp;
 				if (redoLogRecord->fieldLengths[i] < redoLogRecord->nrow * 2) {
 					oracleEnvironment->dumpStream << "field length list length too short: " << dec << redoLogRecord->fieldLengths[i] << endl;
 					return;
@@ -54,7 +54,7 @@ namespace OpenLogReplicatorOracle {
 					char flStr[9] = "--------";
 
 					for (uint32_t j = 0; j < redoLogRecord->nrow; ++j) {
-						oracleEnvironment->dumpStream << "slot[" << dec << j << "]: " << dec << redoLogRecord->slots[j] << endl;
+						oracleEnvironment->dumpStream << "slot[" << dec << j << "]: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[j] << endl;
 						uint8_t fl = redoLogRecord->data[fieldPosTmp + pos];
 						uint8_t lb = redoLogRecord->data[fieldPosTmp + pos + 1];
 						uint8_t jcc = redoLogRecord->data[fieldPosTmp + pos + 2];
@@ -68,7 +68,7 @@ namespace OpenLogReplicatorOracle {
 						if ((fl & 0x40) == 0x40) flStr[1] = 'C'; else flStr[1] = '-'; //Clustered table member
 						if ((fl & 0x80) == 0x80) flStr[0] = 'K'; else flStr[0] = '-'; //cluster Key
 
-						oracleEnvironment->dumpStream << "tl: " << dec <<  redoLogRecord->rowLenghs[j] <<
+						oracleEnvironment->dumpStream << "tl: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[j] <<
 								" fb: " << flStr <<
 								" lb: 0x" << hex << (uint32_t)lb << " " <<
 								" cc: " << dec << (uint32_t)jcc << endl;
@@ -287,7 +287,7 @@ namespace OpenLogReplicatorOracle {
 				break;
 			}
 
-			fieldPosTmp2 += redoLogRecord->rowLenghs[r];
+			fieldPosTmp2 += ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[r];
 		}
 	}
 

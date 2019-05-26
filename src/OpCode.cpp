@@ -468,21 +468,23 @@ namespace OpenLogReplicatorOracle {
 			return;
 		}
 
+		redoLogRecord->slotsDelta = fieldPos + 20;
+		redoLogRecord->nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
+
 		if (oracleEnvironment->dumpLogFile) {
 			uint8_t tabn = redoLogRecord->data[fieldPos + 16];
 			uint8_t lock = redoLogRecord->data[fieldPos + 17];
-			uint16_t nrow = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
 
 			oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
 				" lock: " << dec << (uint32_t)lock <<
-				" nrow: " << dec << nrow << endl;
+				" nrow: " << dec << redoLogRecord->nrow << endl;
 
-			if (fieldLength < 24 + (uint32_t)nrow * 2) {
+			if (fieldLength < 24 + (uint32_t)redoLogRecord->nrow * 2) {
 				oracleEnvironment->dumpStream << "too short field KDO OpCode QMI (2): " << dec << fieldLength << endl;
 				return;
 			}
 
-			for (uint i = 0; i < nrow; ++i) {
+			for (uint i = 0; i < redoLogRecord->nrow; ++i) {
 				uint16_t slotVal = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 22 + i * 2);
 				oracleEnvironment->dumpStream << "slot[" << dec << i << "]: " << dec <<   slotVal << endl;
 			}

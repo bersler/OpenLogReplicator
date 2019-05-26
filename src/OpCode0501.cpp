@@ -30,7 +30,7 @@ using namespace std;
 namespace OpenLogReplicatorOracle {
 
 	OpCode0501::OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-		OpCodeMultirow(oracleEnvironment, redoLogRecord) {
+		OpCode(oracleEnvironment, redoLogRecord) {
 
 		uint16_t *colnums;
 		uint8_t *nullstmp = nullptr, bits = 1;
@@ -58,7 +58,7 @@ namespace OpenLogReplicatorOracle {
 					//Quick Multi-row Delete
 					if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
 						for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
-							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << redoLogRecord->slots[i] << endl;
+							oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
 					}
 				}
 
