@@ -32,13 +32,15 @@ namespace OpenLogReplicatorOracle {
 	public:
 		typescn scn;			//scn
 		uint8_t *data;			//data
-	    uint16_t *fieldLengths;
 		uint16_t fieldNum;
 		uint32_t fieldPos;
 		uint16_t nrow;
 		uint32_t slotsDelta;
 		uint32_t rowLenghsDelta;
+	    uint32_t fieldLengthsDelta;
+	    uint32_t nullsDelta;
 
+		uint32_t afn;			//file number
 		uint32_t length;		//length
 		uint32_t dba;
 		uint32_t bdba;			//block DBA
@@ -46,6 +48,7 @@ namespace OpenLogReplicatorOracle {
 		uint32_t objd;			//object version ID
 		uint32_t tsn;
 		uint32_t undo;
+		int16_t usn;
 		OracleObject *object;
 		typexid xid;			//transaction id
 		typeuba uba;			//Undo Block Address
@@ -60,7 +63,6 @@ namespace OpenLogReplicatorOracle {
 	    uint8_t cc;
 		uint8_t itli;
 	    uint16_t slot;
-	    uint8_t *nulls;
 
 		void dump();
 	};

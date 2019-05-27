@@ -33,12 +33,13 @@ namespace OpenLogReplicatorOracle {
 		virtual const char* getUndoType();
 		virtual bool isKdoUndo();
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
-
 		OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
 		virtual ~OpCode0501();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
+
+		virtual void parseDelete(uint32_t afn);
 	};
 }
 

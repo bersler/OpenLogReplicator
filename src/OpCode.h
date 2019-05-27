@@ -52,16 +52,13 @@ namespace OpenLogReplicatorOracle {
 		void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
 
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual void dumpDetails();
-		void dump();
-		virtual uint16_t getOpCode(void);
-		void appendValue(uint32_t typeNo, uint32_t fieldPosTmp, uint32_t fieldLength);
-
 		OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
-		OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill);
 		virtual ~OpCode();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
+
+		void appendValue(uint32_t typeNo, uint32_t fieldPosTmp, uint32_t fieldLength);
 	};
 }
 

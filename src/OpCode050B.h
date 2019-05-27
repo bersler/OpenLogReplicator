@@ -32,12 +32,11 @@ namespace OpenLogReplicatorOracle {
 		void buext(uint32_t fieldPos, uint32_t fieldLength);
 
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
-
 		OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
 		virtual ~OpCode050B();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
 	};
 }
 

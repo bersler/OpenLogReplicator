@@ -21,7 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "OpCode0501.h"
 #include "OracleEnvironment.h"
-#include "RedoLogException.h"
+#include "OracleColumn.h"
 #include "OracleObject.h"
 #include "RedoLogRecord.h"
 
@@ -31,30 +31,39 @@ namespace OpenLogReplicatorOracle {
 
 	OpCode0501::OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 		OpCode(oracleEnvironment, redoLogRecord) {
+	}
 
+	OpCode0501::~OpCode0501() {
+	}
+
+	uint16_t OpCode0501::getOpCode(void) {
+		return 0x0501;
+	}
+
+	void OpCode0501::process() {
 		uint16_t *colnums;
 		uint8_t *nullstmp = nullptr, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
-				ktudb(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				ktudb(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
 			} else if (i == 2) {
-				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 				if ((redoLogRecord->flg & 0x8) != 0)
-					ktubl(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+					ktubl(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 				else //if (redoLogRecord->opc == 0x0B01)
-					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+					ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
 			} else if (i == 3) {
 				if (redoLogRecord->opc == 0x0B01) {
-					ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+					ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 				}
 
 			} else if (i == 4) {
 				if (redoLogRecord->opc == 0x0B01) {
-					kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-					nullstmp = redoLogRecord->nulls;
+					kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+					nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta;
 					//Quick Multi-row Delete
 					if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
 						for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
@@ -68,7 +77,7 @@ namespace OpenLogReplicatorOracle {
 					colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
 				else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
 					if (oracleEnvironment->dumpLogFile) {
-						dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, redoLogRecord->fieldLengths[i], *nullstmp & bits);
+						dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nullstmp & bits);
 						++colnums;
 						bits <<= 1;
 						if (bits == 0) {
@@ -86,7 +95,7 @@ namespace OpenLogReplicatorOracle {
 						exit(1);
 					}
 					if (oracleEnvironment->dumpLogFile) {
-						dumpCols(redoLogRecord->data + fieldPosTmp, i - 5, redoLogRecord->fieldLengths[i], *nullstmp & bits);
+						dumpCols(redoLogRecord->data + fieldPosTmp, i - 5, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nullstmp & bits);
 						bits <<= 1;
 						if (bits == 0) {
 							bits = 1;
@@ -96,16 +105,8 @@ namespace OpenLogReplicatorOracle {
 				}
 			}
 
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 		}
-	}
-
-	OpCode0501::~OpCode0501() {
-	}
-
-
-	uint16_t OpCode0501::getOpCode(void) {
-		return 0x0501;
 	}
 
 	bool OpCode0501::isKdoUndo() {
@@ -187,31 +188,145 @@ namespace OpenLogReplicatorOracle {
 		}
 	}
 
-	string OpCode0501::getName() {
-		char output[12] = "UNDO xx.xx ";
-		if (((redoLogRecord->opc >> 8) >> 4) <= 9)
-			output[5] = (redoLogRecord->opc >> 12) + '0';
-		else
-			output[5] = ((redoLogRecord->opc >> 12) - 9) + 'a';
-		if (((redoLogRecord->opc >> 8) & 0xF) <= 9)
-			output[6] = ((redoLogRecord->opc >> 8) & 0xF) + '0';
-		else
-			output[6] = (((redoLogRecord->opc >> 8) & 0xF) - 9) + 'a';
+	void OpCode0501::parseDelete(uint32_t afn) {
+		uint32_t fieldPosTmp = redoLogRecord->fieldPos, fieldPosTmp2;
+		uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+		bool prevValue = false;
 
-		if (((redoLogRecord->opc & 0xFF) >> 4) <= 9)
-			output[8] = ((redoLogRecord->opc & 0xFF) >> 4) + '0';
-		else
-			output[8] = (((redoLogRecord->opc & 0xFF) >> 4) - 9) + 'a';
-		if ((redoLogRecord->opc & 0xF) <= 9)
-			output[9] = (redoLogRecord->opc & 0xF) + '0';
-		else
-			output[9] = ((redoLogRecord->opc & 0xF) - 9) + 'a';
+		for (uint32_t i = 1; i <= 4; ++i)
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+		fieldPosTmp2 = fieldPosTmp;
 
-		return output;
-	}
+		switch (oracleEnvironment->commandBuffer->type) {
+		case COMMAND_BUFFER_JSON:
+			oracleEnvironment->commandBuffer
+					->append("{\"operation\":\"delete\", \"table\": \"")
+					->append(redoLogRecord->object->owner)
+					->append('.')
+					->append(redoLogRecord->object->objectName)
+					->append("\", \"rowid\": \"")
+					->appendRowid(redoLogRecord->objd, afn, redoLogRecord->bdba & 0xFFFF, redoLogRecord->slot)
+					->append("\", \"before\": {");
+			break;
 
-	//undo block
-	void OpCode0501::process() {
-		dump();
+		case COMMAND_BUFFER_REDIS:
+			oracleEnvironment->commandBuffer
+					->append(redoLogRecord->object->owner)
+					->append('.')
+					->append(redoLogRecord->object->objectName)
+					->append('.');
+
+			for (uint32_t i = 0; i < redoLogRecord->object->columns.size(); ++i) {
+				//is PK or table has no PK
+				if (redoLogRecord->object->columns[i]->numPk > 0 || redoLogRecord->object->totalPk == 0) {
+					if (prevValue) {
+						oracleEnvironment->commandBuffer
+								->append('.');
+					} else
+						prevValue = true;
+
+					if ((*nullstmp & bits) != 0 || ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5] == 0 || i >= redoLogRecord->cc) {
+						oracleEnvironment->commandBuffer
+							->append("NULL");
+					} else {
+						oracleEnvironment->commandBuffer
+								->append('"');
+
+						appendValue(redoLogRecord->object->columns[i]->typeNo, fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5]);
+
+						oracleEnvironment->commandBuffer
+								->append('"');
+					}
+				}
+
+				bits <<= 1;
+				if (bits == 0) {
+					bits = 1;
+					++nullstmp;
+				}
+				fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+			}
+			fieldPosTmp = fieldPosTmp2;
+			nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta;
+
+			oracleEnvironment->commandBuffer
+					->append(0);
+			break;
+		}
+		prevValue = false;
+
+		for (uint32_t i = 0; i < redoLogRecord->object->columns.size(); ++i) {
+			if ((*nullstmp & bits) != 0 || ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5] == 0 || i >= redoLogRecord->cc) {
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					break;
+
+				case COMMAND_BUFFER_REDIS:
+					if (prevValue) {
+						oracleEnvironment->commandBuffer
+								->append(',');
+					} else
+						prevValue = true;
+
+					oracleEnvironment->commandBuffer
+							->append("NULL");
+					break;
+				}
+
+			} else {
+				if (prevValue) {
+					oracleEnvironment->commandBuffer
+							->append(',');
+				} else
+					prevValue = true;
+
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					oracleEnvironment->commandBuffer
+							->append('"')
+							->append(redoLogRecord->object->columns[i]->columnName)
+							->append("\": \"");
+					break;
+
+				case COMMAND_BUFFER_REDIS:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+				}
+
+				appendValue(redoLogRecord->object->columns[i]->typeNo, fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5]);
+
+				switch (oracleEnvironment->commandBuffer->type) {
+				case COMMAND_BUFFER_JSON:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+
+				case COMMAND_BUFFER_REDIS:
+					oracleEnvironment->commandBuffer
+							->append('"');
+					break;
+				}
+			}
+
+			bits <<= 1;
+			if (bits == 0) {
+				bits = 1;
+				++nullstmp;
+			}
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+		}
+
+		switch (oracleEnvironment->commandBuffer->type) {
+		case COMMAND_BUFFER_JSON:
+			oracleEnvironment->commandBuffer
+					->append("}}");
+			break;
+
+		case COMMAND_BUFFER_REDIS:
+			oracleEnvironment->commandBuffer
+					->append(0);
+			break;
+		}
 	}
 }

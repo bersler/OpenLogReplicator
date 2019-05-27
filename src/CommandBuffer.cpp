@@ -20,8 +20,9 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <string.h>
 
-#include "CommandBuffer.h"
 #include "types.h"
+#include "CommandBuffer.h"
+#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
 
@@ -99,6 +100,32 @@ namespace OpenLogReplicator {
 
 		return this;
 	}
+
+	char CommandBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	CommandBuffer* CommandBuffer::appendRowid(uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot) {
+		append(translationMap[(objd >> 30) & 0x3F]);
+		append(translationMap[(objd >> 24) & 0x3F]);
+		append(translationMap[(objd >> 18) & 0x3F]);
+		append(translationMap[(objd >> 12) & 0x3F]);
+		append(translationMap[(objd >> 6) & 0x3F]);
+		append(translationMap[objd & 0x3F]);
+		append(translationMap[(afn >> 12) & 0x3F]);
+		append(translationMap[(afn >> 6) & 0x3F]);
+		append(translationMap[afn & 0x3F]);
+		append(translationMap[(bdba >> 30) & 0x3F]);
+		append(translationMap[(bdba >> 24) & 0x3F]);
+		append(translationMap[(bdba >> 18) & 0x3F]);
+		append(translationMap[(bdba >> 12) & 0x3F]);
+		append(translationMap[(bdba >> 6) & 0x3F]);
+		append(translationMap[bdba & 0x3F]);
+		append(translationMap[(slot >> 12) & 0x3F]);
+		append(translationMap[(slot >> 6) & 0x3F]);
+		append(translationMap[slot & 0x3F]);
+		return this;
+	}
+
+
 
 	CommandBuffer* CommandBuffer::append(char chr) {
 		if (this->shutdown)

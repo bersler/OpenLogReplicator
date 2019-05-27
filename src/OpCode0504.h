@@ -30,16 +30,15 @@ namespace OpenLogReplicatorOracle {
 
 	class OpCode0504: public OpCode {
 	protected:
-		void ktucm(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn);
+		void ktucm(uint32_t fieldPos, uint32_t fieldLength);
 		void ktucf(uint32_t fieldPos, uint32_t fieldLength);
 
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
-
-		OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, uint16_t usn);
+		OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
 		virtual ~OpCode0504();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
 	};
 }
 

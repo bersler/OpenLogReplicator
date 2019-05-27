@@ -21,7 +21,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "OpCode0504.h"
-#include "RedoLogException.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -29,18 +28,27 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0504::OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, uint16_t usn) :
+	OpCode0504::OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 		OpCode(oracleEnvironment, redoLogRecord) {
+	}
 
+	OpCode0504::~OpCode0504() {
+	}
+
+	uint16_t OpCode0504::getOpCode(void) {
+		return 0x0504;
+	}
+
+	void OpCode0504::process() {
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
-				ktucm(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
+				ktucm(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 			} else if (i == 2) {
 				if ((redoLogRecord->flg & 0x02) == 0x02)
-					ktucf(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+					ktucf(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 			}
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 		}
 
 		if (oracleEnvironment->dumpLogFile) {
@@ -50,24 +58,19 @@ namespace OpenLogReplicatorOracle {
 		}
 	}
 
-
-	uint16_t OpCode0504::getOpCode(void) {
-		return 0x0504;
-	}
-
-	void OpCode0504::ktucm(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
+	void OpCode0504::ktucm(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 20) {
 			oracleEnvironment->dumpStream << "too short field ktucm: " << dec << fieldLength << endl;
 			return;
 		}
 
-		redoLogRecord->xid = XID(usn,
+		redoLogRecord->xid = XID(redoLogRecord->usn,
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
 				oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4));
 		redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
 		if (oracleEnvironment->dumpLogFile) {
-			uint16_t srt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
+			uint16_t srt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6);
 			uint32_t sta = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12);
 
 			oracleEnvironment->dumpStream << "ktucm redo: slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
@@ -79,8 +82,10 @@ namespace OpenLogReplicatorOracle {
 	}
 
 	void OpCode0504::ktucf(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 16)
-			throw RedoLogException("too short field ktucf: ", nullptr, fieldLength);
+		if (fieldLength < 16) {
+			oracleEnvironment->dumpStream << "too short field ktucf: " << dec << fieldLength << endl;
+			return;
+		}
 
 		redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 0);
 
@@ -96,17 +101,5 @@ namespace OpenLogReplicatorOracle {
 					" fbi: " << dec << (uint32_t)fbi <<
 					" ";
 		}
-	}
-
-	OpCode0504::~OpCode0504() {
-	}
-
-	string OpCode0504::getName() {
-		return "COMMIT     ";
-	}
-
-	//commit
-	void OpCode0504::process() {
-		dump();
 	}
 }

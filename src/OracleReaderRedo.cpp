@@ -434,6 +434,7 @@ namespace OpenLogReplicatorOracle {
 		while (pos < recordLength) {
 			//uint16_t opc = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos);
 			uint16_t cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
+			uint16_t afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
 			uint32_t dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
 			int16_t usn = (cls >= 15) ? (cls - 15) / 2 : -1;
 			uint8_t typ = oracleEnvironment->recordBuffer[pos + 21];
@@ -453,12 +454,14 @@ namespace OpenLogReplicatorOracle {
 			redoLogRecordCur->opCode = (((uint16_t)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
 					oracleEnvironment->recordBuffer[pos + 1];
 			redoLogRecordCur->length = fieldOffset + ((fieldList[0] + 2) & 0xFFFC);
+			redoLogRecordCur->afn = afn;
 			redoLogRecordCur->dba = dba;
 			redoLogRecordCur->scn = curScn;
+			redoLogRecordCur->usn = usn;
 			redoLogRecordCur->data = oracleEnvironment->recordBuffer + pos;
-			redoLogRecordCur->fieldLengths = (uint16_t*)(redoLogRecordCur->data + fieldOffset);
-			redoLogRecordCur->fieldNum = (redoLogRecordCur->fieldLengths[0] - 2) / 2;
-			redoLogRecordCur->fieldPos = fieldOffset + ((redoLogRecordCur->fieldLengths[0] + 2) & 0xFFFC);
+			redoLogRecordCur->fieldLengthsDelta = fieldOffset;
+			redoLogRecordCur->fieldNum = (*((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta)) - 2) / 2;
+			redoLogRecordCur->fieldPos = fieldOffset + ((*((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta)) + 2) & 0xFFFC);
 
 			if (redoLogRecordCur->fieldPos > redoLogRecordCur->length)
 				throw RedoLogException("incomplete record", nullptr, 0);
@@ -467,11 +470,11 @@ namespace OpenLogReplicatorOracle {
 					redoLogRecordCur->opCode == 0x0502 ||
 					redoLogRecordCur->opCode == 0x0504 ||
 					redoLogRecordCur->opCode == 0x0506 ||
+					redoLogRecordCur->opCode == 0x0508 ||
 					redoLogRecordCur->opCode == 0x050B)
 				recordObjd = 4294967295;
 
 			if (oracleEnvironment->dumpLogFile) {
-				uint16_t afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
 				typescn scn2 = oracleEnvironment->read48(oracleEnvironment->recordBuffer + pos + 12);
 				uint8_t seq = oracleEnvironment->recordBuffer[pos + 20];
 				uint32_t rbl = 0; //FIXME
@@ -530,8 +533,8 @@ namespace OpenLogReplicatorOracle {
 			uint32_t fieldPosTmp = redoLogRecordCur->fieldPos;
 			for (uint32_t i = 1; i <= redoLogRecordCur->fieldNum; ++i) {
 				if (oracleEnvironment->dumpData) {
-					oracleEnvironment->dumpStream << "##: " << dec << redoLogRecordCur->fieldLengths[i] << " (" << i << ")";
-					for (uint32_t j = 0; j < redoLogRecordCur->fieldLengths[i]; ++j) {
+					oracleEnvironment->dumpStream << "##: " << dec << ((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] << " (" << i << ")";
+					for (uint32_t j = 0; j < ((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i]; ++j) {
 						if ((j & 0xF) == 0)
 							oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
 						if ((j & 0x7) == 0)
@@ -542,7 +545,7 @@ namespace OpenLogReplicatorOracle {
 				}
 
 				redoLogRecordCur->length += (fieldList[i] + 3) & 0xFFFC;
-				fieldPosTmp += (redoLogRecordCur->fieldLengths[i] + 3) & 0xFFFC;
+				fieldPosTmp += (((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 				if (pos + redoLogRecordCur->length > recordLength)
 					throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecordCur->length);
 			}
@@ -552,64 +555,78 @@ namespace OpenLogReplicatorOracle {
 
 			//begin transaction
 			if (redoLogRecordCur->opCode == 0x0502) {
-				opCode = new OpCode0502(oracleEnvironment, redoLogRecordCur, usn);
+				opCode = new OpCode0502(oracleEnvironment, redoLogRecordCur);
+				opCode->process();
 				if (SQN(redoLogRecordCur->xid) > 0)
 					appendToTransaction(redoLogRecordCur);
 			} else
 			//commit transaction (or rollback)
 			if (redoLogRecordCur->opCode == 0x0504) {
-				opCode = new OpCode0504(oracleEnvironment, redoLogRecordCur, usn);
+				opCode = new OpCode0504(oracleEnvironment, redoLogRecordCur);
+				opCode->process();
 				appendToTransaction(redoLogRecordCur);
 			} else {
 				switch (redoLogRecordCur->opCode) {
 				//Undo
 				case 0x0501:
 					opCode = new OpCode0501(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//Partial rollback
 				case 0x0506:
 					opCode = new OpCode0506(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
+
 				case 0x050B:
 					opCode = new OpCode050B(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Insert row piece
 				case 0x0B02:
 					opCode = new OpCode0B02(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Delete row piece
 				case 0x0B03:
 					opCode = new OpCode0B03(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Lock row piece
 				case 0x0B04:
 					opCode = new OpCode0B04(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Update row piece
 				case 0x0B05:
 					opCode = new OpCode0B05(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Overwrite row piece
 				case 0x0B06:
 					opCode = new OpCode0B06(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Insert multiple rows
 				case 0x0B0B:
 					opCode = new OpCode0B0B(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 
 				//REDO: Delete multiple rows
 				case 0x0B0C:
 					opCode = new OpCode0B0C(oracleEnvironment, redoLogRecordCur);
+					opCode->process();
 					break;
 				}
+
 				if (redoLogRecordCur->objd != 0)
 					recordObjd = redoLogRecordCur->objd;
 
@@ -706,10 +723,10 @@ namespace OpenLogReplicatorOracle {
 		switch (opCodeLong) {
 		//insert single row
 		case 0x05010B02:
+		//delete single row
+		case 0x05010B03:
 		//insert multiple rows
 		case 0x05010B0B:
-		//delete single row
-		//case 0x05010B03:
 		//delete multiple row
 		//case 0x05010B0C:
 			{
@@ -798,11 +815,6 @@ namespace OpenLogReplicatorOracle {
 	void OracleReaderRedo::flushTransactions() {
 		Transaction *transaction = oracleEnvironment->transactionHeap.top();
 
-		if (oracleEnvironment->trace >= 1) {
-			cout << "##########################" << endl <<
-					"checkpoint for SCN: " << PRINTSCN(curScn) << endl;
-		}
-
 		while (transaction != nullptr) {
 			if (oracleEnvironment->trace >= 1) {
 				cout << "FirstScn: " << PRINTSCN(transaction->firstScn) <<
@@ -848,7 +860,6 @@ namespace OpenLogReplicatorOracle {
 							" commit: " << transaction->isCommit << endl;
 				}
 			}
-			//cout << "##########################" << endl;
 		}
 	}
 

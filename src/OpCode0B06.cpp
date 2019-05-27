@@ -29,18 +29,28 @@ namespace OpenLogReplicatorOracle {
 
 	OpCode0B06::OpCode0B06(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
+	}
 
+	OpCode0B06::~OpCode0B06() {
+	}
+
+	uint16_t OpCode0B06::getOpCode(void) {
+		return 0x0B06;
+	}
+
+	void OpCode0B06::process() {
 		uint8_t *nullstmp, bits = 1;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
-				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 			} else if (i == 2) {
-				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-				nullstmp = redoLogRecord->nulls = redoLogRecord->data + fieldPosTmp + 45;
+				kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+				redoLogRecord->nullsDelta = fieldPosTmp + 45;
+				nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta;
 			} else if (i > 2 && i <= 2 + (uint32_t)redoLogRecord->cc) {
 				if (oracleEnvironment->dumpLogFile) {
-					dumpCols(redoLogRecord->data + fieldPosTmp, i - 3, redoLogRecord->fieldLengths[i], *nullstmp & bits);
+					dumpCols(redoLogRecord->data + fieldPosTmp, i - 3, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nullstmp & bits);
 					bits <<= 1;
 					if (bits == 0) {
 						bits = 1;
@@ -49,24 +59,7 @@ namespace OpenLogReplicatorOracle {
 				}
 			}
 
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 		}
-	}
-
-	OpCode0B06::~OpCode0B06() {
-	}
-
-
-	uint16_t OpCode0B06::getOpCode(void) {
-		return 0x0B06;
-	}
-
-	string OpCode0B06::getName() {
-		return "REDO OVR   ";
-	}
-
-	//lock row
-	void OpCode0B06::process() {
-		dump();
 	}
 }

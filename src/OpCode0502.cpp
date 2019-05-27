@@ -20,7 +20,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0502.h"
-#include "RedoLogException.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -28,30 +27,31 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0502::OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, uint16_t usn) :
+	OpCode0502::OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 		OpCode(oracleEnvironment, redoLogRecord) {
-
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktudh(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
-			} else if (i == 2) {
-				if (redoLogRecord->flg == 0x0080)
-					kteop(fieldPosTmp, redoLogRecord->fieldLengths[i], usn);
-			}
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
-		}
 	}
 
 	OpCode0502::~OpCode0502() {
 	}
 
-
 	uint16_t OpCode0502::getOpCode(void) {
 		return 0x0502;
 	}
 
-	void OpCode0502::kteop(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
+	void OpCode0502::process() {
+		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+			if (i == 1) {
+				ktudh(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			} else if (i == 2) {
+				if (redoLogRecord->flg == 0x0080)
+					kteop(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			}
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+		}
+	}
+
+	void OpCode0502::kteop(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 36) {
 			oracleEnvironment->dumpStream << "too short field kteop: " << dec << fieldLength << endl;
 			return;
@@ -81,13 +81,13 @@ namespace OpenLogReplicatorOracle {
 		}
 	}
 
-	void OpCode0502::ktudh(uint32_t fieldPos, uint32_t fieldLength, uint16_t usn) {
+	void OpCode0502::ktudh(uint32_t fieldPos, uint32_t fieldLength) {
 		if (fieldLength < 32) {
 			oracleEnvironment->dumpStream << "too short field ktudh: " << dec << fieldLength << endl;
 			return;
 		}
 
-		redoLogRecord->xid = XID(usn,
+		redoLogRecord->xid = XID(redoLogRecord->usn,
 				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
 				oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4));
 		redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
@@ -111,14 +111,5 @@ namespace OpenLogReplicatorOracle {
 					" uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
 					" pxid:  " << PRINTXID(pxid) << endl;
 		}
-	}
-
-	string OpCode0502::getName() {
-		return "UNDO START ";
-	}
-
-	//undo header
-	void OpCode0502::process() {
-		dump();
 	}
 }

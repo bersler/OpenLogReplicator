@@ -21,7 +21,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "OpCode0506.h"
-#include "RedoLogException.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -31,23 +30,28 @@ namespace OpenLogReplicatorOracle {
 
 	OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 		OpCode(oracleEnvironment, redoLogRecord) {
+	}
 
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-
-				if (redoLogRecord->opc == 0x0B01)
-					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-			} else if (i == 2) {
-				ktuxvoff(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-			}
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
-		}
+	OpCode0506::~OpCode0506() {
 	}
 
 	uint16_t OpCode0506::getOpCode(void) {
 		return 0x0506;
+	}
+
+	void OpCode0506::process() {
+		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+			if (i == 1) {
+				ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+
+				if (redoLogRecord->opc == 0x0B01)
+					ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			} else if (i == 2) {
+				ktuxvoff(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			}
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+		}
 	}
 
 	const char* OpCode0506::getUndoType() {
@@ -61,23 +65,11 @@ namespace OpenLogReplicatorOracle {
 		}
 
 		if (oracleEnvironment->dumpLogFile) {
-			uint16_t off = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
-			uint16_t flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
+			uint32_t off = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+			uint32_t flg = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
 
 			oracleEnvironment->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
 					" ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
 		}
-	}
-
-	OpCode0506::~OpCode0506() {
-	}
-
-	string OpCode0506::getName() {
-		return "ROLLBACK   ";
-	}
-
-	//rollback
-	void OpCode0506::process() {
-		dump();
 	}
 }

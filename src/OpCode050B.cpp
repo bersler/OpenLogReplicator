@@ -21,7 +21,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "OpCode050B.h"
-#include "RedoLogException.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
@@ -31,23 +30,28 @@ namespace OpenLogReplicatorOracle {
 
 	OpCode050B::OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
+	}
 
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktub(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-
-				//if (redoLogRecord->opc == 0x0B15)
-					ktubu(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-			} else if (i == 2) {
-				buext(fieldPosTmp, redoLogRecord->fieldLengths[i]);
-			}
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
-		}
+	OpCode050B::~OpCode050B() {
 	}
 
 	uint16_t OpCode050B::getOpCode(void) {
 		return 0x050B;
+	}
+
+	void OpCode050B::process() {
+		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+			if (i == 1) {
+				ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+
+				//if (redoLogRecord->opc == 0x0B15)
+					ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			} else if (i == 2) {
+				buext(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+			}
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+		}
 	}
 
 	void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
@@ -65,19 +69,7 @@ namespace OpenLogReplicatorOracle {
 		}
 	}
 
-	OpCode050B::~OpCode050B() {
-	}
-
 	const char* OpCode050B::getUndoType() {
 		return "User undo done    Begin trans    ";
-	}
-
-	string OpCode050B::getName() {
-		return "ROLLBACK B ";
-	}
-
-	//rollback
-	void OpCode050B::process() {
-		dump();
 	}
 }

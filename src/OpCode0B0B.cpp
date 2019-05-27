@@ -30,22 +30,28 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill) :
-			OpCode(oracleEnvironment, redoLogRecord, fill) {
-	}
-
 	OpCode0B0B::OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
 			OpCode(oracleEnvironment, redoLogRecord) {
+	}
+
+	OpCode0B0B::~OpCode0B0B() {
+	}
+
+	uint16_t OpCode0B0B::getOpCode(void) {
+		return 0x0B0B;
+	}
+
+	void OpCode0B0B::process() {
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
 		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
 			if (i == 1) {
-				ktbRedo(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 			} else if (i == 2) {
-				kdoOpCode(fieldPosTmp, redoLogRecord->fieldLengths[i]);
+				kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 			} else if (i == 3) {
 				redoLogRecord->rowLenghsDelta = fieldPosTmp;
-				if (redoLogRecord->fieldLengths[i] < redoLogRecord->nrow * 2) {
-					oracleEnvironment->dumpStream << "field length list length too short: " << dec << redoLogRecord->fieldLengths[i] << endl;
+				if (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] < redoLogRecord->nrow * 2) {
+					oracleEnvironment->dumpStream << "field length list length too short: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] << endl;
 					return;
 				}
 			} else if (i == 4) {
@@ -53,8 +59,8 @@ namespace OpenLogReplicatorOracle {
 					uint32_t pos = 0;
 					char flStr[9] = "--------";
 
-					for (uint32_t j = 0; j < redoLogRecord->nrow; ++j) {
-						oracleEnvironment->dumpStream << "slot[" << dec << j << "]: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[j] << endl;
+					for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
+						oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[r] << endl;
 						uint8_t fl = redoLogRecord->data[fieldPosTmp + pos];
 						uint8_t lb = redoLogRecord->data[fieldPosTmp + pos + 1];
 						uint8_t jcc = redoLogRecord->data[fieldPosTmp + pos + 2];
@@ -68,7 +74,7 @@ namespace OpenLogReplicatorOracle {
 						if ((fl & 0x40) == 0x40) flStr[1] = 'C'; else flStr[1] = '-'; //Clustered table member
 						if ((fl & 0x80) == 0x80) flStr[0] = 'K'; else flStr[0] = '-'; //cluster Key
 
-						oracleEnvironment->dumpStream << "tl: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[j] <<
+						oracleEnvironment->dumpStream << "tl: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[r] <<
 								" fb: " << flStr <<
 								" lb: 0x" << hex << (uint32_t)lb << " " <<
 								" cc: " << dec << (uint32_t)jcc << endl;
@@ -108,21 +114,18 @@ namespace OpenLogReplicatorOracle {
 				}
 			}
 
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 		}
 	}
 
-	OpCode0B0B::~OpCode0B0B() {
-	}
-
-	void OpCode0B0B::parseDml() {
+	void OpCode0B0B::parseInsert(uint32_t objd) {
 		uint32_t pos = 0;
 		uint32_t fieldPosTmp = redoLogRecord->fieldPos, fieldPosTmp2;
 		bool prevValue;
 		uint16_t fieldLength;
 
 		for (uint32_t i = 1; i < 4; ++i)
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
+			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
 		fieldPosTmp2 = fieldPosTmp;
 
 		for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
@@ -146,6 +149,8 @@ namespace OpenLogReplicatorOracle {
 						->append(redoLogRecord->object->owner)
 						->append('.')
 						->append(redoLogRecord->object->objectName)
+						->append("\", \"rowid\": \"")
+						->appendRowid(objd, redoLogRecord->afn, redoLogRecord->bdba & 0xFFFF, ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[r])
 						->append("\", \"after\": {");
 				break;
 
@@ -296,17 +301,5 @@ namespace OpenLogReplicatorOracle {
 
 			fieldPosTmp2 += ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[r];
 		}
-	}
-
-	uint16_t OpCode0B0B::getOpCode(void) {
-		return 0x0B0B;
-	}
-
-	string OpCode0B0B::getName() {
-		return "REDO DEL   ";
-	}
-
-	void OpCode0B0B::process() {
-		dump();
 	}
 }

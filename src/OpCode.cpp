@@ -22,38 +22,25 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string.h>
 #include "OpCode.h"
 #include "OracleEnvironment.h"
-#include "RedoLogException.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode::OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord, bool fill):
-			oracleEnvironment(oracleEnvironment),
-			redoLogRecord(redoLogRecord) {
-		redoLogRecord->fieldLengths = (uint16_t*)(redoLogRecord->data + 24);
-	}
-
 	OpCode::OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord):
 			oracleEnvironment(oracleEnvironment),
 			redoLogRecord(redoLogRecord) {
-
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			fieldPosTmp += (redoLogRecord->fieldLengths[i] + 3) & 0xFFFC;
-		}
 	}
 
 	OpCode::~OpCode() {
 	}
 
-	void OpCode::process() {
-	}
-
-
 	uint16_t OpCode::getOpCode(void) {
 		return 0xFFFF;
+	}
+
+	void OpCode::process() {
 	}
 
 	void OpCode::ktbRedo(uint32_t fieldPos, uint32_t fieldLength) {
@@ -188,7 +175,7 @@ namespace OpenLogReplicatorOracle {
 
 		redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
 		redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
-		redoLogRecord->nulls = redoLogRecord->data + fieldPos + 45;
+		redoLogRecord->nullsDelta = fieldPos + 45;
 
 		if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
 			oracleEnvironment->dumpStream << "too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
@@ -257,7 +244,7 @@ namespace OpenLogReplicatorOracle {
 			else
 				oracleEnvironment->dumpStream << " ";
 
-			uint8_t *nullstmp = redoLogRecord->nulls, bits = 1;
+			uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
 			for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
 
 				if ((*nullstmp & bits) != 0)
@@ -314,7 +301,7 @@ namespace OpenLogReplicatorOracle {
 		}
 
 		redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
-		redoLogRecord->nulls = redoLogRecord->data + fieldPos + 26;
+		redoLogRecord->nullsDelta = fieldPos + 26;
 
 		if (fieldLength < 26 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
 			oracleEnvironment->dumpStream << "too short field KDO OpCode IRP for nulls: " << dec <<
@@ -396,7 +383,7 @@ namespace OpenLogReplicatorOracle {
 
 		redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
 		redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
-		redoLogRecord->nulls = redoLogRecord->data + fieldPos + 45;
+		redoLogRecord->nullsDelta = fieldPos + 45;
 
 		if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
 			oracleEnvironment->dumpStream << "too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
@@ -444,7 +431,7 @@ namespace OpenLogReplicatorOracle {
 			else
 				oracleEnvironment->dumpStream << " ";
 
-			uint8_t *nullstmp = redoLogRecord->nulls, bits = 1;
+			uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
 			for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
 
 				if ((*nullstmp & bits) != 0)
@@ -646,10 +633,6 @@ namespace OpenLogReplicatorOracle {
 
 			oracleEnvironment->dumpStream << endl;
 		}
-	}
-
-	string OpCode::getName() {
-		return "?????????? ";
 	}
 
 	void OpCode::appendValue(uint32_t typeNo, uint32_t fieldPosTmp, uint32_t fieldLength) {
@@ -868,23 +851,5 @@ namespace OpenLogReplicatorOracle {
 		default:
 			oracleEnvironment->commandBuffer->append('?');
 		}
-	}
-
-	void OpCode::dumpDetails() {
-		cout << "Append " <<
-				" dba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
-		    	" xid: " << PRINTXID(redoLogRecord->xid) <<
-				" uba: " << PRINTUBA(redoLogRecord->uba) <<
-				" len: " << dec << redoLogRecord->length <<
-				" OP: 0x" << setfill('0') << setw(4) << hex << getOpCode() << endl;
-	}
-
-	void OpCode::dump() {
-		cout << "  + " << getName() << " " << PRINTXID(redoLogRecord->xid) <<
-				" UBA " << PRINTUBA(redoLogRecord->uba) <<
-				" BDBA 0x" << setw(8) << hex << redoLogRecord->bdba <<
-				" ITLI 0x" << setw(2) << hex << (uint32_t)redoLogRecord->itli << " ";
-		dumpDetails();
-		cout << endl;
 	}
 }

@@ -28,12 +28,11 @@ namespace OpenLogReplicatorOracle {
 
 	class OpCode0B0C: public OpCode {
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
-
 		OpCode0B0C(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
 		virtual ~OpCode0B0C();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
 	};
 }
 

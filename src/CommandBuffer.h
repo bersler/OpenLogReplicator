@@ -37,6 +37,7 @@ namespace OpenLogReplicator {
 	protected:
 		volatile bool shutdown;
 	public:
+		static char translationMap[65];
 		uint32_t type;
 		uint8_t *intraThreadBuffer;
 		mutex mtx;
@@ -49,6 +50,7 @@ namespace OpenLogReplicator {
 
 		void setType(uint32_t type);
 		void terminate(void);
+		CommandBuffer* appendRowid(uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
 		CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
 		CommandBuffer* append(const string str);
 		CommandBuffer* append(char chr);

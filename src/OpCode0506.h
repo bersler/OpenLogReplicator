@@ -32,12 +32,11 @@ namespace OpenLogReplicatorOracle {
 		void ktuxvoff(uint32_t fieldPos, uint32_t fieldLength);
 
 	public:
-		virtual void process();
-		virtual string getName();
-		virtual uint16_t getOpCode(void);
-
 		OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
 		virtual ~OpCode0506();
+
+		virtual uint16_t getOpCode(void);
+		virtual void process();
 	};
 }
 
