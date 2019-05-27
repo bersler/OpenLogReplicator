@@ -16,6 +16,9 @@ CPP_SRCS += \
 ../src/OpCode050B.cpp \
 ../src/OpCode0B02.cpp \
 ../src/OpCode0B03.cpp \
+../src/OpCode0B04.cpp \
+../src/OpCode0B05.cpp \
+../src/OpCode0B06.cpp \
 ../src/OpCode0B0B.cpp \
 ../src/OpCode0B0C.cpp \
 ../src/OpenLogReplicator.cpp \
@@ -48,6 +51,9 @@ OBJS += \
 ./src/OpCode050B.o \
 ./src/OpCode0B02.o \
 ./src/OpCode0B03.o \
+./src/OpCode0B04.o \
+./src/OpCode0B05.o \
+./src/OpCode0B06.o \
 ./src/OpCode0B0B.o \
 ./src/OpCode0B0C.o \
 ./src/OpenLogReplicator.o \
@@ -80,6 +86,9 @@ CPP_DEPS += \
 ./src/OpCode050B.d \
 ./src/OpCode0B02.d \
 ./src/OpCode0B03.d \
+./src/OpCode0B04.d \
+./src/OpCode0B05.d \
+./src/OpCode0B06.d \
 ./src/OpCode0B0B.d \
 ./src/OpCode0B0C.d \
 ./src/OpenLogReplicator.d \
