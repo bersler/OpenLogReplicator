@@ -33,29 +33,29 @@ using namespace OpenLogReplicator;
 using namespace RdKafka;
 
 namespace OpenLogReplicator {
-	class CommandBuffer;
+    class CommandBuffer;
 }
 
 namespace OpenLogReplicatorKafka {
 
-	class KafkaWriter : public Thread {
-	protected:
-		Conf *conf;
-		Conf *tconf;
-		string brokers;
-		string topic;
-		Producer *producer;
-		Topic *ktopic;
+    class KafkaWriter : public Thread {
+    protected:
+        Conf *conf;
+        Conf *tconf;
+        string brokers;
+        string topic;
+        Producer *producer;
+        Topic *ktopic;
 
-	public:
-		virtual void *run();
+    public:
+        virtual void *run();
 
-		void addTable(string mask);
-		int initialize();
+        void addTable(string mask);
+        int initialize();
 
-		KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer);
-		virtual ~KafkaWriter();
-	};
+        KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer);
+        virtual ~KafkaWriter();
+    };
 }
 
 #endif

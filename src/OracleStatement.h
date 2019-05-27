@@ -28,18 +28,18 @@ using namespace oracle::occi;
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleStatement {
-		Connection **conn;
-		Environment *env;
-	public:
-		Statement *stmt;
-		ResultSet *rset;
+    class OracleStatement {
+        Connection **conn;
+        Environment *env;
+    public:
+        Statement *stmt;
+        ResultSet *rset;
 
-		OracleStatement(Connection **conn, Environment *env);
-		void createStatement(string sql);
-		void executeQuery();
-		virtual ~OracleStatement();
-	};
+        OracleStatement(Connection **conn, Environment *env);
+        void createStatement(string sql);
+        void executeQuery();
+        virtual ~OracleStatement();
+    };
 }
 
 #endif

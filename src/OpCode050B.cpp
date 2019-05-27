@@ -28,48 +28,48 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode050B::OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-			OpCode(oracleEnvironment, redoLogRecord) {
-	}
+    OpCode050B::OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleEnvironment, redoLogRecord) {
+    }
 
-	OpCode050B::~OpCode050B() {
-	}
+    OpCode050B::~OpCode050B() {
+    }
 
-	uint16_t OpCode050B::getOpCode(void) {
-		return 0x050B;
-	}
+    uint16_t OpCode050B::getOpCode(void) {
+        return 0x050B;
+    }
 
-	void OpCode050B::process() {
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+    void OpCode050B::process() {
+        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            if (i == 1) {
+                ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
-				//if (redoLogRecord->opc == 0x0B15)
-					ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			} else if (i == 2) {
-				buext(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			}
-			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-		}
-	}
+                //if (redoLogRecord->opc == 0x0B15)
+                    ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            } else if (i == 2) {
+                buext(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            }
+            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+    }
 
-	void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 8) {
-			oracleEnvironment->dumpStream << "too short field buext: " << dec << fieldLength << endl;
-			return;
-		}
+    void OpCode050B::buext(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 8) {
+            oracleEnvironment->dumpStream << "too short field buext: " << dec << fieldLength << endl;
+            return;
+        }
 
-		if (oracleEnvironment->dumpLogFile) {
-			uint8_t idx = 0; //FIXME
-			uint8_t flg2 = 0; // FIXME
+        if (oracleEnvironment->dumpLogFile) {
+            uint8_t idx = 0; //FIXME
+            uint8_t flg2 = 0; // FIXME
 
-			oracleEnvironment->dumpStream << "BuExt idx: " << dec << (uint32_t)idx <<
-					" flg2: " << (uint32_t)flg2 << endl;
-		}
-	}
+            oracleEnvironment->dumpStream << "BuExt idx: " << dec << (uint32_t)idx <<
+                    " flg2: " << (uint32_t)flg2 << endl;
+        }
+    }
 
-	const char* OpCode050B::getUndoType() {
-		return "User undo done    Begin trans    ";
-	}
+    const char* OpCode050B::getUndoType() {
+        return "User undo done    Begin trans    ";
+    }
 }

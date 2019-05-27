@@ -32,26 +32,26 @@ using namespace std;
 using namespace OpenLogReplicator;
 
 namespace OpenLogReplicator {
-	class CommandBuffer;
+    class CommandBuffer;
 }
 
 namespace OpenLogReplicatorRedis {
 
-	class RedisWriter : public Thread {
-	protected:
-		string host;
-		uint32_t port;
-		redisContext *c;
+    class RedisWriter : public Thread {
+    protected:
+        string host;
+        uint32_t port;
+        redisContext *c;
 
-	public:
-		virtual void *run();
+    public:
+        virtual void *run();
 
-		void addTable(string mask);
-		int initialize();
+        void addTable(string mask);
+        int initialize();
 
-		RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer);
-		virtual ~RedisWriter();
-	};
+        RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer);
+        virtual ~RedisWriter();
+    };
 }
 
 #endif

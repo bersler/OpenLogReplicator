@@ -24,46 +24,46 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	class TransactionChunk;
-	class TransactionBuffer;
-	class OpCode;
-	class OpCode0502;
-	class OpCode0504;
-	class RedoLogRecord;
-	class OracleEnvironment;
+    class TransactionChunk;
+    class TransactionBuffer;
+    class OpCode;
+    class OpCode0502;
+    class OpCode0504;
+    class RedoLogRecord;
+    class OracleEnvironment;
 
-	class Transaction {
-	public:
-		typexid xid;
-		typescn firstScn;
-		typescn lastScn;
-		TransactionChunk *tc;
-		TransactionChunk *tcLast;
-		uint32_t opCodes;
-		uint32_t pos;
-		typeuba lastUba;
-		uint32_t lastDba;
-		uint8_t lastSlt;
-		uint8_t lastRci;
-		bool isBegin;
-		bool isCommit;
-		bool isRollback;
-		Transaction *next;
+    class Transaction {
+    public:
+        typexid xid;
+        typescn firstScn;
+        typescn lastScn;
+        TransactionChunk *tc;
+        TransactionChunk *tcLast;
+        uint32_t opCodes;
+        uint32_t pos;
+        typeuba lastUba;
+        uint32_t lastDba;
+        uint8_t lastSlt;
+        uint8_t lastRci;
+        bool isBegin;
+        bool isCommit;
+        bool isRollback;
+        Transaction *next;
 
-	    bool operator< (Transaction &p);
-	    void touch(typescn scn);
-	    void add(uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
-	    		TransactionBuffer *transactionBuffer);
-	    void rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer);
-	    bool rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        bool operator< (Transaction &p);
+        void touch(typescn scn);
+        void add(uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+                TransactionBuffer *transactionBuffer);
+        void rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer);
+        bool rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 
-	    void flush(OracleEnvironment *oracleEnvironment);
+        void flush(OracleEnvironment *oracleEnvironment);
 
-		Transaction(typexid xid, TransactionBuffer *transactionBuffer);
-		virtual ~Transaction();
+        Transaction(typexid xid, TransactionBuffer *transactionBuffer);
+        virtual ~Transaction();
 
-		friend ostream& operator<<(ostream& os, const Transaction& tran);
-	};
+        friend ostream& operator<<(ostream& os, const Transaction& tran);
+    };
 }
 
 #endif

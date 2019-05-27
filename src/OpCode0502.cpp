@@ -27,89 +27,89 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0502::OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-		OpCode(oracleEnvironment, redoLogRecord) {
-	}
+    OpCode0502::OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+        OpCode(oracleEnvironment, redoLogRecord) {
+    }
 
-	OpCode0502::~OpCode0502() {
-	}
+    OpCode0502::~OpCode0502() {
+    }
 
-	uint16_t OpCode0502::getOpCode(void) {
-		return 0x0502;
-	}
+    uint16_t OpCode0502::getOpCode(void) {
+        return 0x0502;
+    }
 
-	void OpCode0502::process() {
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktudh(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			} else if (i == 2) {
-				if (redoLogRecord->flg == 0x0080)
-					kteop(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			}
-			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-		}
-	}
+    void OpCode0502::process() {
+        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            if (i == 1) {
+                ktudh(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            } else if (i == 2) {
+                if (redoLogRecord->flg == 0x0080)
+                    kteop(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            }
+            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+    }
 
-	void OpCode0502::kteop(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 36) {
-			oracleEnvironment->dumpStream << "too short field kteop: " << dec << fieldLength << endl;
-			return;
-		}
+    void OpCode0502::kteop(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 36) {
+            oracleEnvironment->dumpStream << "too short field kteop: " << dec << fieldLength << endl;
+            return;
+        }
 
-		if (oracleEnvironment->dumpLogFile) {
-			uint32_t highwater = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 16);
-			uint16_t ext = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
-			uint16_t blk = 0; //FIXME
-			uint32_t extSize = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12);
-			uint16_t blocksFreelist = 0; //FIXME
-			uint16_t blocksBelow = 0; //FIXME
-			uint32_t mapblk = 0; //FIXME
-			uint16_t offset = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+        if (oracleEnvironment->dumpLogFile) {
+            uint32_t highwater = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 16);
+            uint16_t ext = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
+            uint16_t blk = 0; //FIXME
+            uint32_t extSize = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12);
+            uint16_t blocksFreelist = 0; //FIXME
+            uint16_t blocksBelow = 0; //FIXME
+            uint32_t mapblk = 0; //FIXME
+            uint16_t offset = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
 
-			oracleEnvironment->dumpStream << "kteop redo - redo operation on extent map" << endl;
-			oracleEnvironment->dumpStream << "   SETHWM:      " <<
-					" Highwater::  0x" << setfill('0') << setw(8) << hex << highwater << " " <<
-					" ext#: " << setfill(' ') << setw(6) << left << dec << ext <<
-					" blk#: " << setfill(' ') << setw(6) << left << dec << blk <<
-					" ext size: " << setfill(' ') << setw(6) << left << dec << extSize << endl;
-			oracleEnvironment->dumpStream << "  #blocks in seg. hdr's freelists: " << dec << blocksFreelist << "     " << endl;
-			oracleEnvironment->dumpStream << "  #blocks below: " << setfill(' ') << setw(6) << left << dec << blocksBelow << endl;
-			oracleEnvironment->dumpStream << "  mapblk  0x" << setfill('0') << setw(8) << hex << mapblk << " " <<
-					" offset: " << setfill(' ') << setw(6) << left << dec << offset << endl;
-			oracleEnvironment->dumpStream << right;
-		}
-	}
+            oracleEnvironment->dumpStream << "kteop redo - redo operation on extent map" << endl;
+            oracleEnvironment->dumpStream << "   SETHWM:      " <<
+                    " Highwater::  0x" << setfill('0') << setw(8) << hex << highwater << " " <<
+                    " ext#: " << setfill(' ') << setw(6) << left << dec << ext <<
+                    " blk#: " << setfill(' ') << setw(6) << left << dec << blk <<
+                    " ext size: " << setfill(' ') << setw(6) << left << dec << extSize << endl;
+            oracleEnvironment->dumpStream << "  #blocks in seg. hdr's freelists: " << dec << blocksFreelist << "     " << endl;
+            oracleEnvironment->dumpStream << "  #blocks below: " << setfill(' ') << setw(6) << left << dec << blocksBelow << endl;
+            oracleEnvironment->dumpStream << "  mapblk  0x" << setfill('0') << setw(8) << hex << mapblk << " " <<
+                    " offset: " << setfill(' ') << setw(6) << left << dec << offset << endl;
+            oracleEnvironment->dumpStream << right;
+        }
+    }
 
-	void OpCode0502::ktudh(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 32) {
-			oracleEnvironment->dumpStream << "too short field ktudh: " << dec << fieldLength << endl;
-			return;
-		}
+    void OpCode0502::ktudh(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 32) {
+            oracleEnvironment->dumpStream << "too short field ktudh: " << dec << fieldLength << endl;
+            return;
+        }
 
-		redoLogRecord->xid = XID(redoLogRecord->usn,
-				oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
-				oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4));
-		redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
-		redoLogRecord->flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
+        redoLogRecord->xid = XID(redoLogRecord->usn,
+                oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0),
+                oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4));
+        redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
+        redoLogRecord->flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
 
-		if (oracleEnvironment->dumpLogFile) {
-			uint8_t fbi = redoLogRecord->data[fieldPos + 20];
-			uint16_t siz = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
+        if (oracleEnvironment->dumpLogFile) {
+            uint8_t fbi = redoLogRecord->data[fieldPos + 20];
+            uint16_t siz = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
 
-			uint16_t pxid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24),
-					oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26),
-					oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28));
+            uint16_t pxid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24),
+                    oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26),
+                    oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28));
 
-			oracleEnvironment->dumpStream << "ktudh redo:" <<
-					" slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
-					" sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
-					" flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
-					" siz: " << dec << siz <<
-					" fbi: " << dec << (uint32_t)fbi << endl;
-			oracleEnvironment->dumpStream << "           " <<
-					" uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
-					" pxid:  " << PRINTXID(pxid) << endl;
-		}
-	}
+            oracleEnvironment->dumpStream << "ktudh redo:" <<
+                    " slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
+                    " sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
+                    " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
+                    " siz: " << dec << siz <<
+                    " fbi: " << dec << (uint32_t)fbi << endl;
+            oracleEnvironment->dumpStream << "           " <<
+                    " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
+                    " pxid:  " << PRINTXID(pxid) << endl;
+        }
+    }
 }

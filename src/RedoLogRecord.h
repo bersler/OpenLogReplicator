@@ -26,46 +26,46 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleObject;
+    class OracleObject;
 
-	class RedoLogRecord {
-	public:
-		typescn scn;			//scn
-		uint8_t *data;			//data
-		uint16_t fieldNum;
-		uint32_t fieldPos;
-		uint16_t nrow;
-		uint32_t slotsDelta;
-		uint32_t rowLenghsDelta;
-	    uint32_t fieldLengthsDelta;
-	    uint32_t nullsDelta;
+    class RedoLogRecord {
+    public:
+        typescn scn;              //scn
+        uint8_t *data;            //data
+        uint16_t fieldNum;
+        uint32_t fieldPos;
+        uint16_t nrow;
+        uint32_t slotsDelta;
+        uint32_t rowLenghsDelta;
+        uint32_t fieldLengthsDelta;
+        uint32_t nullsDelta;
 
-		uint32_t afn;			//file number
-		uint32_t length;		//length
-		uint32_t dba;
-		uint32_t bdba;			//block DBA
-		uint32_t objn;			//object ID
-		uint32_t objd;			//object version ID
-		uint32_t tsn;
-		uint32_t undo;
-		int16_t usn;
-		OracleObject *object;
-		typexid xid;			//transaction id
-		typeuba uba;			//Undo Block Address
+        uint32_t afn;             //file number
+        uint32_t length;          //length
+        uint32_t dba;
+        uint32_t bdba;            //block DBA
+        uint32_t objn;            //object ID
+        uint32_t objd;            //object version ID
+        uint32_t tsn;
+        uint32_t undo;
+        int16_t usn;
+        OracleObject *object;
+        typexid xid;              //transaction id
+        typeuba uba;              //Undo Block Address
 
-		uint8_t slt;
-		uint8_t rci;
-		uint16_t flg;			//flag (for opCode 0504)
-		uint16_t opCode;		//operation code
-		uint16_t opc;			//operation code for UNDO
+        uint8_t slt;
+        uint8_t rci;
+        uint16_t flg;             //flag (for opCode 0504)
+        uint16_t opCode;          //operation code
+        uint16_t opc;             //operation code for UNDO
 
-	    uint8_t op;
-	    uint8_t cc;
-		uint8_t itli;
-	    uint16_t slot;
+        uint8_t op;
+        uint8_t cc;
+        uint8_t itli;
+        uint16_t slot;
 
-		void dump();
-	};
+        void dump();
+    };
 
 #define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
 

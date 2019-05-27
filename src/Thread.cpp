@@ -27,31 +27,31 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	Thread::Thread(const string alias, CommandBuffer *commandBuffer) :
-		shutdown(false),
-		thread(0),
-		alias(alias.c_str()),
-		commandBuffer(commandBuffer) {
-	}
+    Thread::Thread(const string alias, CommandBuffer *commandBuffer) :
+        shutdown(false),
+        thread(0),
+        alias(alias.c_str()),
+        commandBuffer(commandBuffer) {
+    }
 
-	Thread::~Thread() {
-	}
+    Thread::~Thread() {
+    }
 
-	void *Thread::runStatic(void *context){
-		void *ret = nullptr;
-		try {
-			ret = ((Thread *) context)->run();
+    void *Thread::runStatic(void *context){
+        void *ret = nullptr;
+        try {
+            ret = ((Thread *) context)->run();
         } catch(RedoLogException &ex) {
                 cerr << "ERROR: " << ex.msg << endl;
         }
         return ret;
-	}
+    }
 
-	void Thread::terminate(void) {
-		this->shutdown = true;
-	}
+    void Thread::terminate(void) {
+        this->shutdown = true;
+    }
 
-	void *Thread::run(void) {
-		return 0;
-	}
+    void *Thread::run(void) {
+        return 0;
+    }
 }

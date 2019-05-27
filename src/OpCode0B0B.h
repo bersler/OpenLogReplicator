@@ -24,18 +24,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	class RedoLogRecord;
+    class RedoLogRecord;
 
-	class OpCode0B0B: public OpCode {
-	public:
-		OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
-		virtual ~OpCode0B0B();
+    class OpCode0B0B: public OpCode {
+    public:
+        OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        virtual ~OpCode0B0B();
 
-		virtual uint16_t getOpCode(void);
-		virtual void process();
+        virtual uint16_t getOpCode(void);
+        virtual void process();
 
-		virtual void parseInsert(uint32_t objd);
-	};
+        virtual void parseInsert(uint32_t objd);
+    };
 }
 
 #endif

@@ -28,24 +28,24 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleColumn;
+    class OracleColumn;
 
-	class OracleObject {
-	public:
-		uint32_t objd;
-		uint32_t cluCols;
-		uint32_t totalPk;
-		string owner;
-		string objectName;
-		vector<OracleColumn*> columns;
+    class OracleObject {
+    public:
+        uint32_t objd;
+        uint32_t cluCols;
+        uint32_t totalPk;
+        string owner;
+        string objectName;
+        vector<OracleColumn*> columns;
 
-		void addColumn(OracleColumn *column);
+        void addColumn(OracleColumn *column);
 
-		OracleObject(uint32_t objd, uint32_t cluCols, string owner, string objectName);
-		virtual ~OracleObject();
+        OracleObject(uint32_t objd, uint32_t cluCols, string owner, string objectName);
+        virtual ~OracleObject();
 
-		friend ostream& operator<<(ostream& os, const OracleObject& ors);
-	};
+        friend ostream& operator<<(ostream& os, const OracleObject& ors);
+    };
 }
 
 #endif

@@ -28,48 +28,48 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-		OpCode(oracleEnvironment, redoLogRecord) {
-	}
+    OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+        OpCode(oracleEnvironment, redoLogRecord) {
+    }
 
-	OpCode0506::~OpCode0506() {
-	}
+    OpCode0506::~OpCode0506() {
+    }
 
-	uint16_t OpCode0506::getOpCode(void) {
-		return 0x0506;
-	}
+    uint16_t OpCode0506::getOpCode(void) {
+        return 0x0506;
+    }
 
-	void OpCode0506::process() {
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+    void OpCode0506::process() {
+        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            if (i == 1) {
+                ktub(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
-				if (redoLogRecord->opc == 0x0B01)
-					ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			} else if (i == 2) {
-				ktuxvoff(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			}
-			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-		}
-	}
+                if (redoLogRecord->opc == 0x0B01)
+                    ktubu(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            } else if (i == 2) {
+                ktuxvoff(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            }
+            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+    }
 
-	const char* OpCode0506::getUndoType() {
-		return "User undo done   ";
-	}
+    const char* OpCode0506::getUndoType() {
+        return "User undo done   ";
+    }
 
-	void OpCode0506::ktuxvoff(uint32_t fieldPos, uint32_t fieldLength) {
-		if (fieldLength < 8) {
-			oracleEnvironment->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
-			return;
-		}
+    void OpCode0506::ktuxvoff(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 8) {
+            oracleEnvironment->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
+            return;
+        }
 
-		if (oracleEnvironment->dumpLogFile) {
-			uint32_t off = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
-			uint32_t flg = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
+        if (oracleEnvironment->dumpLogFile) {
+            uint32_t off = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+            uint32_t flg = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
 
-			oracleEnvironment->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
-					" ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
-		}
-	}
+            oracleEnvironment->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
+                    " ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
+        }
+    }
 }

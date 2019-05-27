@@ -26,20 +26,20 @@ namespace OpenLogReplicatorOracle {
 
 #define OPCODE0504_ROLLBACK 4
 
-	class RedoLogRecord;
+    class RedoLogRecord;
 
-	class OpCode0504: public OpCode {
-	protected:
-		void ktucm(uint32_t fieldPos, uint32_t fieldLength);
-		void ktucf(uint32_t fieldPos, uint32_t fieldLength);
+    class OpCode0504: public OpCode {
+    protected:
+        void ktucm(uint32_t fieldPos, uint32_t fieldLength);
+        void ktucf(uint32_t fieldPos, uint32_t fieldLength);
 
-	public:
-		OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
-		virtual ~OpCode0504();
+    public:
+        OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        virtual ~OpCode0504();
 
-		virtual uint16_t getOpCode(void);
-		virtual void process();
-	};
+        virtual uint16_t getOpCode(void);
+        virtual void process();
+    };
 }
 
 #endif

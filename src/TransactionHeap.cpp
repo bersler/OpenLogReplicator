@@ -28,118 +28,118 @@ using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
-	void TransactionHeap::initialize(uint32_t heapMaxSize) {
-		this->heapMaxSize = heapMaxSize;
-		this->heapSize = 0;
-		heap = new Transaction*[heapMaxSize];
-	}
+    void TransactionHeap::initialize(uint32_t heapMaxSize) {
+        this->heapMaxSize = heapMaxSize;
+        this->heapSize = 0;
+        heap = new Transaction*[heapMaxSize];
+    }
 
-	void TransactionHeap::pop() {
-		pop(1);
-	}
+    void TransactionHeap::pop() {
+        pop(1);
+    }
 
-	void TransactionHeap::pop(uint32_t pos) {
-		if (pos > heapSize)
-			throw MemoryException("heap inconsistency: pop of non existent transaction from heap");
+    void TransactionHeap::pop(uint32_t pos) {
+        if (pos > heapSize)
+            throw MemoryException("heap inconsistency: pop of non existent transaction from heap");
 
-		while ((pos << 1) < heapSize) {
-			if (*heap[pos << 1] < *heap[heapSize]) {
-				if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[pos << 1]) {
-					heap[pos] = heap[(pos << 1) + 1];
-					heap[pos]->pos = pos;
-					pos = (pos << 1) + 1;
-				} else {
-					heap[pos] = heap[pos << 1];
-					heap[pos]->pos = pos;
-					pos = pos << 1;
-				}
-			} else
-			if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[heapSize]) {
-				heap[pos] = heap[(pos << 1) + 1];
-				heap[pos]->pos = pos;
-				pos = (pos << 1) + 1;
-			} else
-				break;
-		}
+        while ((pos << 1) < heapSize) {
+            if (*heap[pos << 1] < *heap[heapSize]) {
+                if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[pos << 1]) {
+                    heap[pos] = heap[(pos << 1) + 1];
+                    heap[pos]->pos = pos;
+                    pos = (pos << 1) + 1;
+                } else {
+                    heap[pos] = heap[pos << 1];
+                    heap[pos]->pos = pos;
+                    pos = pos << 1;
+                }
+            } else
+            if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[heapSize]) {
+                heap[pos] = heap[(pos << 1) + 1];
+                heap[pos]->pos = pos;
+                pos = (pos << 1) + 1;
+            } else
+                break;
+        }
 
-		heap[pos] = heap[heapSize];
-		heap[pos]->pos = pos;
-		--heapSize;
-	}
+        heap[pos] = heap[heapSize];
+        heap[pos]->pos = pos;
+        --heapSize;
+    }
 
-	Transaction *TransactionHeap::top() {
-		if (heapSize > 0)
-			return heap[1];
-		else
-			return nullptr;
-	}
+    Transaction *TransactionHeap::top() {
+        if (heapSize > 0)
+            return heap[1];
+        else
+            return nullptr;
+    }
 
-	int TransactionHeap::add(Transaction *transaction) {
-		if (heapSize == heapMaxSize) {
-			cout << "Transaction heap content:" << endl;
-			for (uint32_t i = 1; i <= heapSize; ++i) {
-				cout << "[" << dec << i << "]: " << *heap[i] << endl;
-			}
-			throw MemoryException("out of memory: maximum heap size reached");
-		}
+    int TransactionHeap::add(Transaction *transaction) {
+        if (heapSize == heapMaxSize) {
+            cout << "Transaction heap content:" << endl;
+            for (uint32_t i = 1; i <= heapSize; ++i) {
+                cout << "[" << dec << i << "]: " << *heap[i] << endl;
+            }
+            throw MemoryException("out of memory: maximum heap size reached");
+        }
 
-		uint32_t pos = heapSize + 1;
-		++heapSize;
+        uint32_t pos = heapSize + 1;
+        ++heapSize;
 
-		while (pos > 1 && *transaction < *heap[pos >> 1]) {
-			heap[pos] = heap[pos >> 1];
-			heap[pos]->pos = pos;
-			pos >>= 1;
-		}
-		heap[pos] = transaction;
-		heap[pos]->pos = pos;
-		return pos;
-	}
+        while (pos > 1 && *transaction < *heap[pos >> 1]) {
+            heap[pos] = heap[pos >> 1];
+            heap[pos]->pos = pos;
+            pos >>= 1;
+        }
+        heap[pos] = transaction;
+        heap[pos]->pos = pos;
+        return pos;
+    }
 
-	void TransactionHeap::update(uint32_t pos) {
-		if (pos > heapSize)
-			throw MemoryException("heap inconsistency: update of non existent transaction from heap");
+    void TransactionHeap::update(uint32_t pos) {
+        if (pos > heapSize)
+            throw MemoryException("heap inconsistency: update of non existent transaction from heap");
 
-		Transaction *transaction = heap[pos];
-		while (true) {
-			if ((pos << 1) < heapSize && *heap[pos << 1] < *transaction) {
-				if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[pos << 1]) {
-					heap[pos] = heap[(pos << 1) + 1];
-					heap[pos]->pos = pos;
-					pos = (pos << 1) + 1;
-				} else {
-					heap[pos] = heap[pos << 1];
-					heap[pos]->pos = pos;
-					pos <<= 1;
-				}
-			} else
-			if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *transaction) {
-				heap[pos] = heap[(pos << 1) + 1];
-				heap[pos]->pos = pos;
-				pos = (pos << 1) + 1;
-			} else
-			if (pos > 1 && *transaction < *heap[pos >> 1]) {
-				heap[pos] = heap[pos >> 1];
-				heap[pos]->pos = pos;
-				pos >>= 1;
-			} else
-				break;
-		}
+        Transaction *transaction = heap[pos];
+        while (true) {
+            if ((pos << 1) < heapSize && *heap[pos << 1] < *transaction) {
+                if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *heap[pos << 1]) {
+                    heap[pos] = heap[(pos << 1) + 1];
+                    heap[pos]->pos = pos;
+                    pos = (pos << 1) + 1;
+                } else {
+                    heap[pos] = heap[pos << 1];
+                    heap[pos]->pos = pos;
+                    pos <<= 1;
+                }
+            } else
+            if ((pos << 1) + 1 < heapSize && *heap[(pos << 1) + 1] < *transaction) {
+                heap[pos] = heap[(pos << 1) + 1];
+                heap[pos]->pos = pos;
+                pos = (pos << 1) + 1;
+            } else
+            if (pos > 1 && *transaction < *heap[pos >> 1]) {
+                heap[pos] = heap[pos >> 1];
+                heap[pos]->pos = pos;
+                pos >>= 1;
+            } else
+                break;
+        }
 
-		heap[pos] = transaction;
-		heap[pos]->pos = pos;
-	}
+        heap[pos] = transaction;
+        heap[pos]->pos = pos;
+    }
 
-	TransactionHeap::TransactionHeap() :
-		heapMaxSize(0),
-		heapSize(0),
-		heap(nullptr) {
-	}
+    TransactionHeap::TransactionHeap() :
+        heapMaxSize(0),
+        heapSize(0),
+        heap(nullptr) {
+    }
 
-	TransactionHeap::~TransactionHeap() {
-		if (heap != nullptr) {
-			delete[] heap;
-			heap = nullptr;
-		}
-	}
+    TransactionHeap::~TransactionHeap() {
+        if (heap != nullptr) {
+            delete[] heap;
+            heap = nullptr;
+        }
+    }
 }

@@ -24,21 +24,21 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	class Transaction;
+    class Transaction;
 
-	class TransactionMap {
-	protected:
-		uint32_t elements;
-		Transaction** hashMap;
+    class TransactionMap {
+    protected:
+        uint32_t elements;
+        Transaction** hashMap;
 
-	public:
-		TransactionMap();
-		virtual ~TransactionMap();
-		void erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
-		void set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction * transaction);
-		Transaction* get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
-		Transaction* getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
-	};
+    public:
+        TransactionMap();
+        virtual ~TransactionMap();
+        void erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        void set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction * transaction);
+        Transaction* get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        Transaction* getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+    };
 }
 
 #endif

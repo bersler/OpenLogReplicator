@@ -27,20 +27,20 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleColumn {
-	public:
-		uint32_t colNo;
-		uint32_t segColNo;
-		string columnName;
-		uint32_t typeNo;
-		uint32_t length;
-		uint32_t numPk;
+    class OracleColumn {
+    public:
+        uint32_t colNo;
+        uint32_t segColNo;
+        string columnName;
+        uint32_t typeNo;
+        uint32_t length;
+        uint32_t numPk;
 
-		OracleColumn(uint32_t colNo, uint32_t segSolNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk);
-		virtual ~OracleColumn();
+        OracleColumn(uint32_t colNo, uint32_t segSolNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk);
+        virtual ~OracleColumn();
 
-		friend ostream& operator<<(ostream& os, const OracleColumn& ors);
-	};
+        friend ostream& operator<<(ostream& os, const OracleColumn& ors);
+    };
 }
 
 #endif

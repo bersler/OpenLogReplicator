@@ -27,15 +27,15 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	class MemoryException: public exception {
-	public:
-		const char *msg;
+    class MemoryException: public exception {
+    public:
+        const char *msg;
 
-		MemoryException(const char* msg);
-		virtual ~MemoryException();
+        MemoryException(const char* msg);
+        virtual ~MemoryException();
 
-		friend ostream& operator<<(ostream& os, const MemoryException& ors);
-	};
+        friend ostream& operator<<(ostream& os, const MemoryException& ors);
+    };
 }
 
 #endif

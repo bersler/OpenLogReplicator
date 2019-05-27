@@ -27,27 +27,27 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OpCode0B0C::OpCode0B0C(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-			OpCode(oracleEnvironment, redoLogRecord) {
-	}
+    OpCode0B0C::OpCode0B0C(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleEnvironment, redoLogRecord) {
+    }
 
-	OpCode0B0C::~OpCode0B0C() {
-	}
+    OpCode0B0C::~OpCode0B0C() {
+    }
 
-	uint16_t OpCode0B0C::getOpCode(void) {
-		return 0x0B0C;
-	}
+    uint16_t OpCode0B0C::getOpCode(void) {
+        return 0x0B0C;
+    }
 
-	void OpCode0B0C::process() {
-		uint32_t fieldPosTmp = redoLogRecord->fieldPos;
-		for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-			if (i == 1) {
-				ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			} else if (i == 2) {
-				kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-			}
+    void OpCode0B0C::process() {
+        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            if (i == 1) {
+                ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            } else if (i == 2) {
+                kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+            }
 
-			fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-		}
-	}
+            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+    }
 }

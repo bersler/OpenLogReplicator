@@ -24,24 +24,24 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	class Transaction;
+    class Transaction;
 
-	class TransactionHeap {
-	public:
-		uint32_t heapMaxSize;
-		uint32_t heapSize;
-		Transaction **heap;
+    class TransactionHeap {
+    public:
+        uint32_t heapMaxSize;
+        uint32_t heapSize;
+        Transaction **heap;
 
-		void initialize(uint32_t heapMaxSize);
-		void pop();
-		void pop(uint32_t pos);
-		Transaction *top();
-		int add(Transaction *element);
-		void update(uint32_t pos);
+        void initialize(uint32_t heapMaxSize);
+        void pop();
+        void pop(uint32_t pos);
+        Transaction *top();
+        int add(Transaction *element);
+        void update(uint32_t pos);
 
-		TransactionHeap();
-		virtual ~TransactionHeap();
-	};
+        TransactionHeap();
+        virtual ~TransactionHeap();
+    };
 }
 
 #endif

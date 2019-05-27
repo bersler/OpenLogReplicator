@@ -23,16 +23,16 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	MemoryException::~MemoryException() {
-	}
+    MemoryException::~MemoryException() {
+    }
 
-	MemoryException::MemoryException(const char* msg) :
-			exception(),
-			msg(msg) {
-	}
+    MemoryException::MemoryException(const char* msg) :
+            exception(),
+            msg(msg) {
+    }
 
-	ostream& operator<<(ostream& os, const MemoryException& ors) {
-		os << ors.msg;
-		return os;
-	}
+    ostream& operator<<(ostream& os, const MemoryException& ors) {
+        os << ors.msg;
+        return os;
+    }
 }

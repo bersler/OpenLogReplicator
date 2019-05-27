@@ -37,35 +37,35 @@ using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleObject;
-	class Transaction;
+    class OracleObject;
+    class Transaction;
 
-	class OracleEnvironment : public DatabaseEnvironment {
-	public:
-		unordered_map<uint32_t, OracleObject*> objectMap;
-		unordered_map<typexid, Transaction*> xidTransactionMap;
-		TransactionMap lastOpTransactionMap;
-		TransactionHeap transactionHeap;
-		TransactionBuffer transactionBuffer;
-		uint8_t *redoBuffer;
-		uint8_t *headerBuffer;
-		uint8_t *recordBuffer;
-		CommandBuffer *commandBuffer;
-		ofstream dumpStream;
-		bool dumpLogFile;
-		bool dumpData;
-		bool directRead;
-		int trace;
-		uint32_t version; //11 or 12
+    class OracleEnvironment : public DatabaseEnvironment {
+    public:
+        unordered_map<uint32_t, OracleObject*> objectMap;
+        unordered_map<typexid, Transaction*> xidTransactionMap;
+        TransactionMap lastOpTransactionMap;
+        TransactionHeap transactionHeap;
+        TransactionBuffer transactionBuffer;
+        uint8_t *redoBuffer;
+        uint8_t *headerBuffer;
+        uint8_t *recordBuffer;
+        CommandBuffer *commandBuffer;
+        ofstream dumpStream;
+        bool dumpLogFile;
+        bool dumpData;
+        bool directRead;
+        int trace;
+        uint32_t version; //11 or 12
 
-		OracleObject *checkDict(uint32_t objn, uint32_t objd);
-		void addToDict(OracleObject *object);
-		void transactionNew(typexid xid);
-		void transactionAppend(typexid xid);
+        OracleObject *checkDict(uint32_t objn, uint32_t objd);
+        void addToDict(OracleObject *object);
+        void transactionNew(typexid xid);
+        void transactionAppend(typexid xid);
 
-		OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead);
-		virtual ~OracleEnvironment();
-	};
+        OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead);
+        virtual ~OracleEnvironment();
+    };
 }
 
 #endif

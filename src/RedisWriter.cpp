@@ -34,92 +34,92 @@ using namespace std;
 
 namespace OpenLogReplicatorRedis {
 
-	RedisWriter::RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer) :
-		Thread(alias, commandBuffer),
-		host(host),
-		port(port),
-		c(nullptr) {
-	}
+    RedisWriter::RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer) :
+        Thread(alias, commandBuffer),
+        host(host),
+        port(port),
+        c(nullptr) {
+    }
 
-	RedisWriter::~RedisWriter() {
-	    redisFree(c);
-	}
+    RedisWriter::~RedisWriter() {
+        redisFree(c);
+    }
 
-	void *RedisWriter::run() {
-		cout << "- Redis Writer for " << host << ":" << port << endl;
+    void *RedisWriter::run() {
+        cout << "- Redis Writer for " << host << ":" << port << endl;
 
-		while (!this->shutdown) {
-			uint32_t length, lengthProcessed;
-			{
-				unique_lock<mutex> lck(commandBuffer->mtx);
-				while (commandBuffer->posStart == commandBuffer->posEnd) {
-					commandBuffer->readers.wait(lck);
+        while (!this->shutdown) {
+            uint32_t length, lengthProcessed;
+            {
+                unique_lock<mutex> lck(commandBuffer->mtx);
+                while (commandBuffer->posStart == commandBuffer->posEnd) {
+                    commandBuffer->readers.wait(lck);
 
-					if (this->shutdown)
-						break;
-				}
-				if (this->shutdown)
-					break;
+                    if (this->shutdown)
+                        break;
+                }
+                if (this->shutdown)
+                    break;
 
-				if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-					commandBuffer->posStart = 0;
-					commandBuffer->posSize = 0;
-				}
-				length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
-			}
+                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                    commandBuffer->posStart = 0;
+                    commandBuffer->posSize = 0;
+                }
+                length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
+            }
 
-			redisReply *reply;
-			reply = (redisReply *)redisCommand(c, "MULTI");
-		    freeReplyObject(reply);
+            redisReply *reply;
+            reply = (redisReply *)redisCommand(c, "MULTI");
+            freeReplyObject(reply);
 
-		    lengthProcessed = 4;
-		    while (lengthProcessed < length) {
-				//FIXME: waste of time to run strlen
-		    	const char *key = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed;
-				uint32_t keylen = strlen(key);
-		    	const char *cmd = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed + keylen + 1;
-				uint32_t cmdlen = strlen(cmd);
+            lengthProcessed = 4;
+            while (lengthProcessed < length) {
+                //FIXME: waste of time to run strlen
+                const char *key = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed;
+                uint32_t keylen = strlen(key);
+                const char *cmd = (const char *)commandBuffer->intraThreadBuffer + commandBuffer->posStart + lengthProcessed + keylen + 1;
+                uint32_t cmdlen = strlen(cmd);
 
-		    	cout << "SET [" << key << "] [" << cmd << "]" << endl;
-				reply = (redisReply *)redisCommand(c, "SET %s %s", key, cmd);
-			    //cout << "RET [" << reply->str << "]" << endl;
-				freeReplyObject(reply);
+                cout << "SET [" << key << "] [" << cmd << "]" << endl;
+                reply = (redisReply *)redisCommand(c, "SET %s %s", key, cmd);
+                //cout << "RET [" << reply->str << "]" << endl;
+                freeReplyObject(reply);
 
-				lengthProcessed += keylen + 1 + cmdlen + 1;
-		    }
+                lengthProcessed += keylen + 1 + cmdlen + 1;
+            }
 
-			reply = (redisReply *)redisCommand(c, "EXEC");
-		    freeReplyObject(reply);
+            reply = (redisReply *)redisCommand(c, "EXEC");
+            freeReplyObject(reply);
 
-			{
-				unique_lock<mutex> lck(commandBuffer->mtx);
-				commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
+            {
+                unique_lock<mutex> lck(commandBuffer->mtx);
+                commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
 
-				if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-					commandBuffer->posStart = 0;
-					commandBuffer->posSize = 0;
-				}
+                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                    commandBuffer->posStart = 0;
+                    commandBuffer->posSize = 0;
+                }
 
-				commandBuffer->writer.notify_all();
-			}
-		}
+                commandBuffer->writer.notify_all();
+            }
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 
-	int RedisWriter::initialize() {
-		c = redisConnect(host.c_str(), port);
+    int RedisWriter::initialize() {
+        c = redisConnect(host.c_str(), port);
 
-		redisReply *reply = (redisReply *)redisCommand(c, "PING");
-		if (reply != nullptr)
-			printf("PING: %s\n", reply->str);
-	    freeReplyObject(reply);
+        redisReply *reply = (redisReply *)redisCommand(c, "PING");
+        if (reply != nullptr)
+            printf("PING: %s\n", reply->str);
+        freeReplyObject(reply);
 
-	    if (c->err) {
-	        cerr << "ERROR: Redis: " << c->errstr << endl;
-	        return 0;
-	    }
+        if (c->err) {
+            cerr << "ERROR: Redis: " << c->errstr << endl;
+            return 0;
+        }
 
-		return 1;
-	}
+        return 1;
+    }
 }

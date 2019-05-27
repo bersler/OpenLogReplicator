@@ -28,58 +28,58 @@ using namespace OpenLogReplicator;
 
 namespace OpenLogReplicatorOracle {
 
-	OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
-		DatabaseEnvironment(),
-		redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
-		headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
-		recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
-		commandBuffer(commandBuffer),
-		dumpLogFile(dumpLogFile),
-		dumpData(dumpData),
-		directRead(directRead),
-		trace(trace),
-		version(0) {
-		transactionHeap.initialize(MAX_CONCURRENT_TRANSACTIONS);
-	}
+    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
+        DatabaseEnvironment(),
+        redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
+        headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
+        recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
+        commandBuffer(commandBuffer),
+        dumpLogFile(dumpLogFile),
+        dumpData(dumpData),
+        directRead(directRead),
+        trace(trace),
+        version(0) {
+        transactionHeap.initialize(MAX_CONCURRENT_TRANSACTIONS);
+    }
 
-	OracleEnvironment::~OracleEnvironment() {
+    OracleEnvironment::~OracleEnvironment() {
 
-		for (auto it : objectMap) {
-			OracleObject *object = it.second;
-			delete object;
-		}
-		objectMap.clear();
+        for (auto it : objectMap) {
+            OracleObject *object = it.second;
+            delete object;
+        }
+        objectMap.clear();
 
-		for (auto it : xidTransactionMap) {
-			Transaction *transaction = it.second;
-			delete transaction;
-		}
-		xidTransactionMap.clear();
+        for (auto it : xidTransactionMap) {
+            Transaction *transaction = it.second;
+            delete transaction;
+        }
+        xidTransactionMap.clear();
 
-		if (redoBuffer != nullptr) {
-			delete[] redoBuffer;
-			redoBuffer = nullptr;
-		}
+        if (redoBuffer != nullptr) {
+            delete[] redoBuffer;
+            redoBuffer = nullptr;
+        }
 
-		if (headerBuffer != nullptr) {
-			delete[] headerBuffer;
-			headerBuffer = nullptr;
-		}
+        if (headerBuffer != nullptr) {
+            delete[] headerBuffer;
+            headerBuffer = nullptr;
+        }
 
-		if (recordBuffer != nullptr) {
-			delete[] recordBuffer;
-			recordBuffer = nullptr;
-		}
-	}
+        if (recordBuffer != nullptr) {
+            delete[] recordBuffer;
+            recordBuffer = nullptr;
+        }
+    }
 
-	OracleObject *OracleEnvironment::checkDict(uint32_t objn, uint32_t objd) {
-		OracleObject *object = objectMap[objd];
-		return object;
-	}
+    OracleObject *OracleEnvironment::checkDict(uint32_t objn, uint32_t objd) {
+        OracleObject *object = objectMap[objd];
+        return object;
+    }
 
-	void OracleEnvironment::addToDict(OracleObject *object) {
-		if (objectMap[object->objd] == nullptr) {
-			objectMap[object->objd] = object;
-		}
-	}
+    void OracleEnvironment::addToDict(OracleObject *object) {
+        if (objectMap[object->objd] == nullptr) {
+            objectMap[object->objd] = object;
+        }
+    }
 }

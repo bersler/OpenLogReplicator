@@ -22,20 +22,20 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk) :
-			colNo(colNo),
-			segColNo(segColNo),
-			columnName(columnName),
-			typeNo(typeNo),
-			length(length),
-			numPk(numPk) {
-	}
+    OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk) :
+            colNo(colNo),
+            segColNo(segColNo),
+            columnName(columnName),
+            typeNo(typeNo),
+            length(length),
+            numPk(numPk) {
+    }
 
-	OracleColumn::~OracleColumn() {
-	}
+    OracleColumn::~OracleColumn() {
+    }
 
-	ostream& operator<<(ostream& os, const OracleColumn& column) {
-		os << column.segColNo << ": (" << column.colNo << ", \"" << column.columnName << "\", " << column.typeNo << ", " << column.length << ")";
-		return os;
-	}
+    ostream& operator<<(ostream& os, const OracleColumn& column) {
+        os << column.segColNo << ": (" << column.colNo << ", \"" << column.columnName << "\", " << column.typeNo << ", " << column.length << ")";
+        return os;
+    }
 }

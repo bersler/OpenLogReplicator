@@ -24,17 +24,17 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	class TransactionChunk {
-	public:
-		uint32_t elements;
-		uint32_t size;
-		uint8_t *buffer;
-		TransactionChunk *prev;
-		TransactionChunk *next;
+    class TransactionChunk {
+    public:
+        uint32_t elements;
+        uint32_t size;
+        uint8_t *buffer;
+        TransactionChunk *prev;
+        TransactionChunk *next;
 
-		TransactionChunk(TransactionChunk *prev, uint8_t *buffer);
-		virtual ~TransactionChunk();
-	};
+        TransactionChunk(TransactionChunk *prev, uint8_t *buffer);
+        virtual ~TransactionChunk();
+    };
 }
 
 #endif

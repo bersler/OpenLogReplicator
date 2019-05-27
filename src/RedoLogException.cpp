@@ -23,18 +23,18 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	RedoLogException::~RedoLogException() {
-	}
+    RedoLogException::~RedoLogException() {
+    }
 
-	RedoLogException::RedoLogException(const char* msg, const char* parameter, int code) :
-			exception(),
-			msg(msg),
-			parameter(parameter),
-			code(code) {
-	}
+    RedoLogException::RedoLogException(const char* msg, const char* parameter, int code) :
+            exception(),
+            msg(msg),
+            parameter(parameter),
+            code(code) {
+    }
 
-	ostream& operator<<(ostream& os, const RedoLogException& ors) {
-		os << ors.msg << ors.parameter << " code: " << ors.code << ")";
-		return os;
-	}
+    ostream& operator<<(ostream& os, const RedoLogException& ors) {
+        os << ors.msg << ors.parameter << " code: " << ors.code << ")";
+        return os;
+    }
 }

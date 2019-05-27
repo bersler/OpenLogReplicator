@@ -35,98 +35,98 @@ using namespace RdKafka;
 
 namespace OpenLogReplicatorKafka {
 
-	KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer) :
-		Thread(alias, commandBuffer),
-		conf(nullptr),
-		tconf(nullptr),
-		brokers(brokers.c_str()),
-		topic(topic.c_str()),
-		producer(nullptr),
-		ktopic(nullptr) {
-	}
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer) :
+        Thread(alias, commandBuffer),
+        conf(nullptr),
+        tconf(nullptr),
+        brokers(brokers.c_str()),
+        topic(topic.c_str()),
+        producer(nullptr),
+        ktopic(nullptr) {
+    }
 
-	KafkaWriter::~KafkaWriter() {
-	    if (ktopic != nullptr) {
-	    	delete ktopic;
-	    	ktopic = nullptr;
-	    }
-	    if (producer != nullptr) {
-	    	delete producer;
-	    	producer = nullptr;
-	    }
-		if (tconf != nullptr) {
-			delete tconf;
-			tconf = nullptr;
-		}
-		if (conf != nullptr) {
-			delete conf;
-			conf = nullptr;
-		}
-	}
+    KafkaWriter::~KafkaWriter() {
+        if (ktopic != nullptr) {
+            delete ktopic;
+            ktopic = nullptr;
+        }
+        if (producer != nullptr) {
+            delete producer;
+            producer = nullptr;
+        }
+        if (tconf != nullptr) {
+            delete tconf;
+            tconf = nullptr;
+        }
+        if (conf != nullptr) {
+            delete conf;
+            conf = nullptr;
+        }
+    }
 
-	void *KafkaWriter::run() {
-		cout << "- Kafka Writer for: " << brokers << " topic: " << topic << endl;
+    void *KafkaWriter::run() {
+        cout << "- Kafka Writer for: " << brokers << " topic: " << topic << endl;
 
-		while (!this->shutdown) {
-			uint32_t length;
-			{
-				unique_lock<mutex> lck(commandBuffer->mtx);
-				while (commandBuffer->posStart == commandBuffer->posEnd) {
-					commandBuffer->readers.wait(lck);
+        while (!this->shutdown) {
+            uint32_t length;
+            {
+                unique_lock<mutex> lck(commandBuffer->mtx);
+                while (commandBuffer->posStart == commandBuffer->posEnd) {
+                    commandBuffer->readers.wait(lck);
 
-					if (this->shutdown)
-						break;
-				}
-				if (this->shutdown)
-					break;
+                    if (this->shutdown)
+                        break;
+                }
+                if (this->shutdown)
+                    break;
 
-				if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-					commandBuffer->posStart = 0;
-					commandBuffer->posSize = 0;
-				}
-				length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
-			}
+                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                    commandBuffer->posStart = 0;
+                    commandBuffer->posSize = 0;
+                }
+                length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
+            }
 
-			if (producer->produce(
-					ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
-					length - 4, nullptr, nullptr)) {
-				cerr << "ERROR: writing to topic " << endl;
-			}
+            if (producer->produce(
+                    ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
+                    length - 4, nullptr, nullptr)) {
+                cerr << "ERROR: writing to topic " << endl;
+            }
 
-			{
-				unique_lock<mutex> lck(commandBuffer->mtx);
-				commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
+            {
+                unique_lock<mutex> lck(commandBuffer->mtx);
+                commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
 
-				if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-					commandBuffer->posStart = 0;
-					commandBuffer->posSize = 0;
-				}
+                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                    commandBuffer->posStart = 0;
+                    commandBuffer->posSize = 0;
+                }
 
-				commandBuffer->writer.notify_all();
-			}
-		}
+                commandBuffer->writer.notify_all();
+            }
+        }
 
-		return 0;
-	}
+        return 0;
+    }
 
-	int KafkaWriter::initialize() {
-		string errstr;
-		Conf *conf = Conf::create(Conf::CONF_GLOBAL);
-		Conf *tconf = Conf::create(Conf::CONF_TOPIC);
-		conf->set("metadata.broker.list", brokers, errstr);
+    int KafkaWriter::initialize() {
+        string errstr;
+        Conf *conf = Conf::create(Conf::CONF_GLOBAL);
+        Conf *tconf = Conf::create(Conf::CONF_TOPIC);
+        conf->set("metadata.broker.list", brokers, errstr);
 
-	    producer = Producer::create(conf, errstr);
-	    if (producer == nullptr) {
-	        std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
-	        return 0;
-	    }
+        producer = Producer::create(conf, errstr);
+        if (producer == nullptr) {
+            std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
+            return 0;
+        }
 
-	    ktopic = Topic::create(producer, topic, tconf, errstr);
-		if (ktopic == nullptr) {
-			std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
-			return 0;
-		}
+        ktopic = Topic::create(producer, topic, tconf, errstr);
+        if (ktopic == nullptr) {
+            std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
+            return 0;
+        }
 
-		return 1;
-	}
+        return 1;
+    }
 }

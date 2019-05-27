@@ -29,121 +29,121 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	void TransactionMap::set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction* transaction) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    void TransactionMap::set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction* transaction) {
+        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		if (hashMap[hashKey] == nullptr) {
-			hashMap[hashKey] = transaction;
-		} else {
-			Transaction *transactionTemp = hashMap[hashKey];
-			while (transactionTemp->next != nullptr)
-				transactionTemp = transactionTemp->next;
-			transactionTemp->next = transaction;
-		}
-		++elements;
-	}
+        if (hashMap[hashKey] == nullptr) {
+            hashMap[hashKey] = transaction;
+        } else {
+            Transaction *transactionTemp = hashMap[hashKey];
+            while (transactionTemp->next != nullptr)
+                transactionTemp = transactionTemp->next;
+            transactionTemp->next = transaction;
+        }
+        ++elements;
+    }
 
-	void TransactionMap::erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    void TransactionMap::erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		if (hashMap[hashKey] == nullptr) {
-			cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
-					" DBA: " << setfill('0') << setw(8) << hex << dba <<
-					" SLT: " << dec << (uint32_t) slt <<
-					" RCI: " << dec << (uint32_t) rci << endl;
-			return;
-		}
+        if (hashMap[hashKey] == nullptr) {
+            cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
+                    " DBA: " << setfill('0') << setw(8) << hex << dba <<
+                    " SLT: " << dec << (uint32_t) slt <<
+                    " RCI: " << dec << (uint32_t) rci << endl;
+            return;
+        }
 
-		Transaction *transactionTemp = hashMap[hashKey];
-		if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba && transactionTemp->lastSlt == slt
-				 && transactionTemp->lastRci == rci) {
-			hashMap[hashKey] = transactionTemp->next;
-			transactionTemp->next = nullptr;
-			--elements;
-			return;
-		}
-		Transaction *transactionTempNext = transactionTemp->next;
-		while (transactionTempNext != nullptr) {
-			if (transactionTempNext->lastUba == uba && transactionTempNext->lastDba == dba
-					&& transactionTempNext->lastSlt == slt && transactionTempNext->lastRci == rci) {
-				transactionTemp->next = transactionTempNext->next;
-				transactionTempNext->next = nullptr;
-				--elements;
-				return;
-			}
-			transactionTemp = transactionTempNext;
-			transactionTempNext = transactionTemp->next;
-		}
+        Transaction *transactionTemp = hashMap[hashKey];
+        if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba && transactionTemp->lastSlt == slt
+                 && transactionTemp->lastRci == rci) {
+            hashMap[hashKey] = transactionTemp->next;
+            transactionTemp->next = nullptr;
+            --elements;
+            return;
+        }
+        Transaction *transactionTempNext = transactionTemp->next;
+        while (transactionTempNext != nullptr) {
+            if (transactionTempNext->lastUba == uba && transactionTempNext->lastDba == dba
+                    && transactionTempNext->lastSlt == slt && transactionTempNext->lastRci == rci) {
+                transactionTemp->next = transactionTempNext->next;
+                transactionTempNext->next = nullptr;
+                --elements;
+                return;
+            }
+            transactionTemp = transactionTempNext;
+            transactionTempNext = transactionTemp->next;
+        }
 
-		cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(uba) <<
-				" DBA: " << setfill('0') << setw(8) << hex << dba <<
-				" SLT: " << dec << (uint32_t) slt <<
-				" RCI: " << dec << (uint32_t) rci << endl;
-		return;
-	}
+        cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(uba) <<
+                " DBA: " << setfill('0') << setw(8) << hex << dba <<
+                " SLT: " << dec << (uint32_t) slt <<
+                " RCI: " << dec << (uint32_t) rci << endl;
+        return;
+    }
 
-	Transaction* TransactionMap::getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    Transaction* TransactionMap::getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
-		uint32_t partialMatches1 = 0, partialMatches2 = 0;
+        Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
+        uint32_t partialMatches1 = 0, partialMatches2 = 0;
 
-		while (transactionTemp != nullptr) {
-			if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
-					transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
-				return transactionTemp;
+        while (transactionTemp != nullptr) {
+            if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
+                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
+                return transactionTemp;
 
-			if (transactionTemp->lastUba == uba && (uba != 0 || transactionTemp->lastDba == dba) &&
-					transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
-				transactionTempPartial1 = transactionTemp;
-				++partialMatches1;
-			}
+            if (transactionTemp->lastUba == uba && (uba != 0 || transactionTemp->lastDba == dba) &&
+                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
+                transactionTempPartial1 = transactionTemp;
+                ++partialMatches1;
+            }
 
-			if (transactionTemp->lastUba == uba && transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
-				transactionTempPartial2 = transactionTemp;
-				++partialMatches2;
-			}
+            if (transactionTemp->lastUba == uba && transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
+                transactionTempPartial2 = transactionTemp;
+                ++partialMatches2;
+            }
 
-			transactionTemp = transactionTemp->next;
-		}
+            transactionTemp = transactionTemp->next;
+        }
 
-		if (partialMatches1 == 1)
-			return transactionTempPartial1;
+        if (partialMatches1 == 1)
+            return transactionTempPartial1;
 
-		if (partialMatches2 == 1)
-			return transactionTempPartial2;
+        if (partialMatches2 == 1)
+            return transactionTempPartial2;
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
-	Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-		uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-		Transaction *transactionTemp = hashMap[hashKey]; //, *transactionTempPartial1, *transactionTempPartial2;
-		//uint32_t partialMatches1 = 0, partialMatches2 = 0;
+        Transaction *transactionTemp = hashMap[hashKey]; //, *transactionTempPartial1, *transactionTempPartial2;
+        //uint32_t partialMatches1 = 0, partialMatches2 = 0;
 
-		while (transactionTemp != nullptr) {
-			if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
-					transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
-				return transactionTemp;
+        while (transactionTemp != nullptr) {
+            if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
+                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
+                return transactionTemp;
 
-			transactionTemp = transactionTemp->next;
-		}
+            transactionTemp = transactionTemp->next;
+        }
 
-		return nullptr;
-	}
+        return nullptr;
+    }
 
-	TransactionMap::TransactionMap() :
-		elements(0) {
-		hashMap = new Transaction*[MAX_CONCURRENT_TRANSACTIONS * 2];
-		memset(hashMap, 0, (sizeof(Transaction*)) * (MAX_CONCURRENT_TRANSACTIONS * 2));
-	}
+    TransactionMap::TransactionMap() :
+        elements(0) {
+        hashMap = new Transaction*[MAX_CONCURRENT_TRANSACTIONS * 2];
+        memset(hashMap, 0, (sizeof(Transaction*)) * (MAX_CONCURRENT_TRANSACTIONS * 2));
+    }
 
-	TransactionMap::~TransactionMap() {
-		if (hashMap != nullptr) {
-			delete[] hashMap;
-			hashMap = nullptr;
-		}
-	}
+    TransactionMap::~TransactionMap() {
+        if (hashMap != nullptr) {
+            delete[] hashMap;
+            hashMap = nullptr;
+        }
+    }
 
 }

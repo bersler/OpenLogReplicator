@@ -22,42 +22,42 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	OracleStatement::OracleStatement(Connection **conn, Environment *env) :
-		conn(conn),
-		env(env),
-		stmt(nullptr),
-		rset(nullptr) {
-	}
+    OracleStatement::OracleStatement(Connection **conn, Environment *env) :
+        conn(conn),
+        env(env),
+        stmt(nullptr),
+        rset(nullptr) {
+    }
 
-	void OracleStatement::createStatement(string sql) {
-		try {
-			stmt = (*conn)->createStatement(sql);
-		} catch(SQLException &ex) {
-			cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+    void OracleStatement::createStatement(string sql) {
+        try {
+            stmt = (*conn)->createStatement(sql);
+        } catch(SQLException &ex) {
+            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
 
-			//close dropped connection
-			if (ex.getErrorCode() == 3114) {
-				if (conn != nullptr) {
-					env->terminateConnection(*conn);
-					*conn = nullptr;
-				}
-			}
-		}
-	}
+            //close dropped connection
+            if (ex.getErrorCode() == 3114) {
+                if (conn != nullptr) {
+                    env->terminateConnection(*conn);
+                    *conn = nullptr;
+                }
+            }
+        }
+    }
 
-	void OracleStatement::executeQuery() {
-		rset = stmt->executeQuery();
-	}
+    void OracleStatement::executeQuery() {
+        rset = stmt->executeQuery();
+    }
 
-	OracleStatement::~OracleStatement() {
-		if (stmt != nullptr) {
-			if (rset != nullptr) {
-				stmt->closeResultSet(rset);
-				rset = nullptr;
-			}
-			if (*conn != nullptr)
-				(*conn)->terminateStatement(stmt);
-			stmt = nullptr;
-		}
-	}
+    OracleStatement::~OracleStatement() {
+        if (stmt != nullptr) {
+            if (rset != nullptr) {
+                stmt->closeResultSet(rset);
+                rset = nullptr;
+            }
+            if (*conn != nullptr)
+                (*conn)->terminateStatement(stmt);
+            stmt = nullptr;
+        }
+    }
 }

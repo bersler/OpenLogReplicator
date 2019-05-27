@@ -33,56 +33,56 @@ using namespace oracle::occi;
 using namespace OpenLogReplicator;
 
 namespace OpenLogReplicator {
-	class CommandBuffer;
+    class CommandBuffer;
 }
 
 namespace OpenLogReplicatorOracle {
 
-	class OracleEnvironment;
-	class OracleReaderRedo;
+    class OracleEnvironment;
+    class OracleReaderRedo;
 
-	struct OracleReaderRedoCompare {
-		bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
-	};
+    struct OracleReaderRedoCompare {
+        bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
+    };
 
-	struct OracleReaderRedoCompareReverse {
-		bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
-	};
+    struct OracleReaderRedoCompareReverse {
+        bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
+    };
 
 
-	class OracleReader : public Thread {
-	protected:
-		OracleEnvironment *oracleEnvironment;
-		OracleReaderRedo* currentRedo;
-		string database;
-		typeseq databaseSequence;
-		typeseq databaseSequenceArchMax;
-		typescn databaseScn;
-		Environment *env;
-		Connection *conn;
-		string user;
-		string passwd;
-		string connectString;
+    class OracleReader : public Thread {
+    protected:
+        OracleEnvironment *oracleEnvironment;
+        OracleReaderRedo* currentRedo;
+        string database;
+        typeseq databaseSequence;
+        typeseq databaseSequenceArchMax;
+        typescn databaseScn;
+        Environment *env;
+        Connection *conn;
+        string user;
+        string passwd;
+        string connectString;
 
-		priority_queue<OracleReaderRedo*, vector<OracleReaderRedo*>, OracleReaderRedoCompare> archiveRedoQueue;
-		set<OracleReaderRedo*> redoSet;
+        priority_queue<OracleReaderRedo*, vector<OracleReaderRedo*>, OracleReaderRedoCompare> archiveRedoQueue;
+        set<OracleReaderRedo*> redoSet;
 
-		void checkConnection(bool reconnect);
-		void archLogGetList();
-		void onlineLogGetList();
+        void checkConnection(bool reconnect);
+        void archLogGetList();
+        void onlineLogGetList();
 
-	public:
-		virtual void *run();
+    public:
+        virtual void *run();
 
-		void addTable(string mask);
-		void readCheckpoint();
-		void writeCheckpoint();
-		int initialize();
+        void addTable(string mask);
+        void readCheckpoint();
+        void writeCheckpoint();
+        int initialize();
 
-		OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-				const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead);
-		virtual ~OracleReader();
-	};
+        OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
+                const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead);
+        virtual ~OracleReader();
+    };
 }
 
 #endif

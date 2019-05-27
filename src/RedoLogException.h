@@ -27,17 +27,17 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	class RedoLogException: public exception {
-	public:
-		const char *msg;
-		const char *parameter;
-		int code;
+    class RedoLogException: public exception {
+    public:
+        const char *msg;
+        const char *parameter;
+        int code;
 
-		RedoLogException(const char* msg, const char *parameter, int code);
-		virtual ~RedoLogException();
+        RedoLogException(const char* msg, const char *parameter, int code);
+        virtual ~RedoLogException();
 
-		friend ostream& operator<<(ostream& os, const RedoLogException& ors);
-	};
+        friend ostream& operator<<(ostream& os, const RedoLogException& ors);
+    };
 }
 
 #endif

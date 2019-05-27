@@ -27,29 +27,29 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	OracleObject::OracleObject(uint32_t objd, uint32_t cluCols, string owner, string objectName) :
-		objd(objd),
-		cluCols(cluCols),
-		totalPk(0),
-		owner(owner),
-		objectName(objectName) {
-	}
+    OracleObject::OracleObject(uint32_t objd, uint32_t cluCols, string owner, string objectName) :
+        objd(objd),
+        cluCols(cluCols),
+        totalPk(0),
+        owner(owner),
+        objectName(objectName) {
+    }
 
-	OracleObject::~OracleObject() {
-		for (auto column: columns) {
-			delete column;
-		}
-		columns.clear();
-	}
+    OracleObject::~OracleObject() {
+        for (auto column: columns) {
+            delete column;
+        }
+        columns.clear();
+    }
 
-	void OracleObject::addColumn(OracleColumn *column) {
-		columns.push_back(column);
-	}
+    void OracleObject::addColumn(OracleColumn *column) {
+        columns.push_back(column);
+    }
 
-	ostream& operator<<(ostream& os, const OracleObject& object) {
-		os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << object.objd << ", " << object.cluCols << ")" << endl;
-		for (auto it : object.columns)
-			os << "     - " << *it << endl;
-		return os;
-	}
+    ostream& operator<<(ostream& os, const OracleObject& object) {
+        os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << object.objd << ", " << object.cluCols << ")" << endl;
+        for (auto it : object.columns)
+            os << "     - " << *it << endl;
+        return os;
+    }
 }

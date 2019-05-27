@@ -66,38 +66,38 @@ typedef uint32_t typeseq;
 #define PRINTSCN(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32))<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
 
 namespace OpenLogReplicator {
-	class typetime {
-		uint32_t val;
-	public:
-		typetime() {
-			this->val = 0;
-		}
+    class typetime {
+        uint32_t val;
+    public:
+        typetime() {
+            this->val = 0;
+        }
 
-		typetime(uint32_t val) {
-			this->val = val;
-		}
+        typetime(uint32_t val) {
+            this->val = val;
+        }
 
-		typetime& operator= (uint32_t val) {
-			this->val = val;
-			return *this;
-		}
+        typetime& operator= (uint32_t val) {
+            this->val = val;
+            return *this;
+        }
 
-		friend ostream& operator<<(ostream& os, const typetime& time) {
-			uint32_t rest = time.val;
-			uint32_t ss = rest % 60; rest /= 60;
-			uint32_t mi = rest % 60; rest /= 60;
-			uint32_t hh = rest % 24; rest /= 24;
-			uint32_t dd = (rest % 31) + 1; rest /= 31;
-			uint32_t mm = (rest % 12) + 1; rest /= 12;
-			uint32_t yy = rest + 1988;
-			os << dec << setfill('0') << setw(2) << mm << "/" << setfill('0') << setw(2) << dd << "/" << yy << " " <<
-					setfill('0') << setw(2) << hh << ":" << setfill('0') << setw(2) << mi << ":" << setfill('0') << setw(2) << ss;
-			return os;
-			//DDDDDDDDDD HHHHHHHH
-			//10/15/2018 22:25:36
+        friend ostream& operator<<(ostream& os, const typetime& time) {
+            uint32_t rest = time.val;
+            uint32_t ss = rest % 60; rest /= 60;
+            uint32_t mi = rest % 60; rest /= 60;
+            uint32_t hh = rest % 24; rest /= 24;
+            uint32_t dd = (rest % 31) + 1; rest /= 31;
+            uint32_t mm = (rest % 12) + 1; rest /= 12;
+            uint32_t yy = rest + 1988;
+            os << dec << setfill('0') << setw(2) << mm << "/" << setfill('0') << setw(2) << dd << "/" << yy << " " <<
+                    setfill('0') << setw(2) << hh << ":" << setfill('0') << setw(2) << mi << ":" << setfill('0') << setw(2) << ss;
+            return os;
+            //DDDDDDDDDD HHHHHHHH
+            //10/15/2018 22:25:36
 
-		}
-	};
+        }
+    };
 }
 
 #define CHECKPOINT_SIZE 12

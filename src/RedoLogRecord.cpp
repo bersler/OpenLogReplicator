@@ -26,24 +26,24 @@ using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
-	void RedoLogRecord::dump() {
-		cout << "DUMP: opCode: " << hex << opCode <<
-			" length: " << dec << length <<
-			" dba: " << hex << dba <<
-			" bdba: " << hex << bdba <<
-			" opc: " << hex << opc <<
-			" objn: " << dec << objn <<
-			" objd: " << dec << objd <<
-			" tsn: " << dec << tsn <<
-			" undo: " << dec << undo <<
-			" xid: " << PRINTXID(xid) <<
-			" uba: " << PRINTUBA(uba) <<
-			" slt: " << dec << (uint32_t)slt <<
-			" rci: " << dec << (uint32_t)rci <<
-			" flg: " << dec << (uint32_t)flg <<
-			" op: " << dec << (uint32_t)op <<
-			" cc: " << dec << (uint32_t)cc <<
-			" itli: " << dec << (uint32_t)itli <<
-			" slot: " << dec << slot << endl;
-	}
+    void RedoLogRecord::dump() {
+        cout << "DUMP: opCode: " << hex << opCode <<
+            " length: " << dec << length <<
+            " dba: " << hex << dba <<
+            " bdba: " << hex << bdba <<
+            " opc: " << hex << opc <<
+            " objn: " << dec << objn <<
+            " objd: " << dec << objd <<
+            " tsn: " << dec << tsn <<
+            " undo: " << dec << undo <<
+            " xid: " << PRINTXID(xid) <<
+            " uba: " << PRINTUBA(uba) <<
+            " slt: " << dec << (uint32_t)slt <<
+            " rci: " << dec << (uint32_t)rci <<
+            " flg: " << dec << (uint32_t)flg <<
+            " op: " << dec << (uint32_t)op <<
+            " cc: " << dec << (uint32_t)cc <<
+            " itli: " << dec << (uint32_t)itli <<
+            " slot: " << dec << slot << endl;
+    }
 }

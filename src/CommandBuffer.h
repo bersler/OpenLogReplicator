@@ -33,35 +33,35 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-	class CommandBuffer {
-	protected:
-		volatile bool shutdown;
-	public:
-		static char translationMap[65];
-		uint32_t type;
-		uint8_t *intraThreadBuffer;
-		mutex mtx;
-		condition_variable readers;
-		condition_variable writer;
-		volatile uint64_t posStart;
-		volatile uint64_t posEnd;
-		volatile uint64_t posEndTmp;
-		volatile uint32_t posSize;
+    class CommandBuffer {
+    protected:
+        volatile bool shutdown;
+    public:
+        static char translationMap[65];
+        uint32_t type;
+        uint8_t *intraThreadBuffer;
+        mutex mtx;
+        condition_variable readers;
+        condition_variable writer;
+        volatile uint64_t posStart;
+        volatile uint64_t posEnd;
+        volatile uint64_t posEndTmp;
+        volatile uint32_t posSize;
 
-		void setType(uint32_t type);
-		void terminate(void);
-		CommandBuffer* appendRowid(uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
-		CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
-		CommandBuffer* append(const string str);
-		CommandBuffer* append(char chr);
-		CommandBuffer* beginTran();
-		CommandBuffer* commitTran();
-		CommandBuffer* rewind();
-		uint32_t currentTranSize();
+        void setType(uint32_t type);
+        void terminate(void);
+        CommandBuffer* appendRowid(uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
+        CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
+        CommandBuffer* append(const string str);
+        CommandBuffer* append(char chr);
+        CommandBuffer* beginTran();
+        CommandBuffer* commitTran();
+        CommandBuffer* rewind();
+        uint32_t currentTranSize();
 
-		CommandBuffer();
-		virtual ~CommandBuffer();
-	};
+        CommandBuffer();
+        virtual ~CommandBuffer();
+    };
 }
 
 #endif

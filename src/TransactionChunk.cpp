@@ -21,20 +21,20 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicatorOracle {
 
-	TransactionChunk::TransactionChunk(TransactionChunk *prev, uint8_t *buffer) :
-			elements(0),
-			size(0),
-			buffer(buffer),
-			prev(prev),
-			next(nullptr) {
-		if (prev != nullptr)
-			prev->next = this;
-	}
+    TransactionChunk::TransactionChunk(TransactionChunk *prev, uint8_t *buffer) :
+            elements(0),
+            size(0),
+            buffer(buffer),
+            prev(prev),
+            next(nullptr) {
+        if (prev != nullptr)
+            prev->next = this;
+    }
 
-	TransactionChunk::~TransactionChunk() {
-		if (prev != nullptr)
-			prev->next = next;
-		if (next != nullptr)
-			next->prev = prev;
-	}
+    TransactionChunk::~TransactionChunk() {
+        if (prev != nullptr)
+            prev->next = next;
+        if (next != nullptr)
+            next->prev = prev;
+    }
 }
