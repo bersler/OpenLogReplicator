@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
 
     char CommandBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    CommandBuffer* CommandBuffer::appendRowid(uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot) {
+    CommandBuffer* CommandBuffer::appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot) {
         append(translationMap[(objd >> 30) & 0x3F]);
         append(translationMap[(objd >> 24) & 0x3F]);
         append(translationMap[(objd >> 18) & 0x3F]);

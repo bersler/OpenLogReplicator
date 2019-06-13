@@ -67,7 +67,7 @@ namespace OpenLogReplicatorOracle {
         }
     }
 
-    void OpCode0B02::parseInsert(uint32_t objd) {
+    void OpCode0B02::parseInsert(uint32_t objn, uint32_t objd) {
         uint32_t fieldPosTmp = redoLogRecord->fieldPos, fieldPosTmp2;
         uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
         bool prevValue = false;
@@ -84,7 +84,7 @@ namespace OpenLogReplicatorOracle {
                     ->append('.')
                     ->append(redoLogRecord->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(objd, redoLogRecord->afn, redoLogRecord->bdba & 0xFFFF, redoLogRecord->slot)
+                    ->appendRowid(objn, objd, redoLogRecord->afn, redoLogRecord->bdba & 0xFFFF, redoLogRecord->slot)
                     ->append("\", \"after\": {");
             break;
 

@@ -1,4 +1,4 @@
-/* Header for OpCode0B0B class
+/* Header for OpCode1801 class
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -19,22 +19,24 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include "OpCode.h"
 
-#ifndef OPCODE0B0B_H_
-#define OPCODE0B0B_H_
+#ifndef OPCODE1801_H_
+#define OPCODE1801_H_
 
 namespace OpenLogReplicatorOracle {
 
     class RedoLogRecord;
 
-    class OpCode0B0B: public OpCode {
+    class OpCode1801: public OpCode {
     public:
-        OpCode0B0B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
-        virtual ~OpCode0B0B();
+        bool validDDL;
+        uint16_t type;
+        OpCode1801(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        virtual ~OpCode1801();
+
+        void parseDDL();
 
         virtual uint16_t getOpCode(void);
         virtual void process();
-
-        virtual void parseInsert(uint32_t objn, uint32_t objd);
     };
 }
 

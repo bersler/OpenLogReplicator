@@ -59,9 +59,9 @@ namespace OpenLogReplicatorOracle {
             lastScn = scn;
     }
 
-    void Transaction::add(uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+    void Transaction::add(uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
             TransactionBuffer *transactionBuffer) {
-        tcLast = transactionBuffer->addTransactionChunk(tcLast, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+        tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
         touch(redoLogRecord1->scn);
     }
@@ -119,25 +119,27 @@ namespace OpenLogReplicatorOracle {
                 uint32_t pos = 0;
                 typescn oldScn = 0;
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
-                    uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 4));
-                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 8));
-                    RedoLogRecord *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 8 + sizeof(struct RedoLogRecord)));
+                    uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 8));
+                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12));
+                    RedoLogRecord *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord)));
                     typescn scn = *((typescn *)(tcTemp->buffer + pos + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                             redoLogRecord1->length + redoLogRecord2->length));
 
                     if (oracleEnvironment->trace >= 1) {
-                        uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos));
+                        uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
+                        uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
 
                         cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<
                                 " op: " << setfill('0') << setw(8) << hex << op <<
+                                " objn: " << dec << objn <<
                                 " objd: " << dec << objd <<
                                 " scn: " << PRINTSCN(scn) << endl;
                         if (oldScn != 0 && oldScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }
 
-                    redoLogRecord1->data = tcTemp->buffer + pos + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
-                    redoLogRecord2->data = tcTemp->buffer + pos + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
+                    redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
+                    redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
 
                     switch (op) {
                     //insert row piece
@@ -151,7 +153,7 @@ namespace OpenLogReplicatorOracle {
                                 }
                             }
                             OpCode0B02 *opCode0B02 = new OpCode0B02(oracleEnvironment, redoLogRecord2);
-                            opCode0B02->parseInsert(redoLogRecord1->objd);
+                            opCode0B02->parseInsert(redoLogRecord1->objn, redoLogRecord1->objd);
                             hasPrev = true;
                             delete opCode0B02;
                         }
@@ -168,7 +170,7 @@ namespace OpenLogReplicatorOracle {
                                 }
                             }
                             OpCode0B0B *opCode0B0B = new OpCode0B0B(oracleEnvironment, redoLogRecord2);
-                            opCode0B0B->parseInsert(redoLogRecord1->objd);
+                            opCode0B0B->parseInsert(redoLogRecord1->objn, redoLogRecord1->objd);
                             hasPrev = true;
                             delete opCode0B0B;
                         }
@@ -190,6 +192,8 @@ namespace OpenLogReplicatorOracle {
                             delete opCode0501;
                         }
                         break;
+                    default:
+                        cout << "Op: " << hex << op << endl;
                     }
 
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;

@@ -393,7 +393,7 @@ namespace OpenLogReplicatorOracle {
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
                 uint32_t totalPk = 0;
-                OracleObject *object = new OracleObject(objd, cluCols, owner.c_str(), objectName.c_str());
+                OracleObject *object = new OracleObject(objn, objd, cluCols, owner.c_str(), objectName.c_str());
 
                 if (oracleEnvironment->trace >= 1)
                     cout << "- found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")" << endl;

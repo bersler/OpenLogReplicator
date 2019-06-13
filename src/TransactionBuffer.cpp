@@ -78,11 +78,12 @@ namespace OpenLogReplicatorOracle {
         unused = tc;
     }
 
-    TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objdId, typeuba uba, uint32_t dba,
-            uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objn, uint32_t objd,
+            typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
-        //0:objId
-        //4:op
+        //0:objn
+        //4:objd
+        //8:op
         //X1:struct RedoLogRecord1
         //X2:struct RedoLogRecord2
         //d1:data1
@@ -96,7 +97,7 @@ namespace OpenLogReplicatorOracle {
         //8:scn   -8
 
         //last scn is higher
-        if (tcLast->size >= ROW_HEADER_MEMORY && *((typescn *)(tcLast->buffer + tcLast->size - 8)) > redoLogRecord1->scn) {
+        if (tcLast->size >= ROW_HEADER_MEMORY && *((typescn *)(tcLast->buffer + tcLast->size - 12)) > redoLogRecord1->scn) {
             //cerr << "WARN: scn out of order" << endl;
             //locate correct position
             TransactionChunk* tcTemp = tcLast;
@@ -115,7 +116,7 @@ namespace OpenLogReplicatorOracle {
                     cerr << "ERROR: bad data during finding scn out of order" << endl;
                     return tcLast;
                 }
-                if (*((typescn *)(tcTemp->buffer + pos - 8)) <= redoLogRecord1->scn)
+                if (*((typescn *)(tcTemp->buffer + pos - 12)) <= redoLogRecord1->scn)
                     break;
                 pos -= *((uint32_t *)(tcTemp->buffer + pos - 28));
                 ++elementsSkipped;
@@ -151,7 +152,7 @@ namespace OpenLogReplicatorOracle {
                 tcTemp->next = tcNew;
                 tcTemp = tcNew;
             }
-            appendTransactionChunk(tcTemp, objdId, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+            appendTransactionChunk(tcTemp, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         } else {
             //new block needed
             if (tcLast->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
@@ -163,39 +164,40 @@ namespace OpenLogReplicatorOracle {
                 tcLast->next = tcNew;
                 tcLast = tcNew;
             }
-            appendTransactionChunk(tcLast, objdId, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+            appendTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         }
 
         return tcLast;
     }
 
-    void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objdId, typeuba uba, uint32_t dba,
-            uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba,
+            uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         //append to the chunk at the end
-        *((uint32_t *)(tc->buffer + tc->size)) = objdId;
-        *((uint32_t *)(tc->buffer + tc->size + 4)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        memcpy(tc->buffer + tc->size + 8,
+        *((uint32_t *)(tc->buffer + tc->size)) = objn;
+        *((uint32_t *)(tc->buffer + tc->size + 4)) = objd;
+        *((uint32_t *)(tc->buffer + tc->size + 8)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
+        memcpy(tc->buffer + tc->size + 12,
                 redoLogRecord1, sizeof(struct RedoLogRecord));
-        memcpy(tc->buffer + tc->size + 8 + sizeof(struct RedoLogRecord),
+        memcpy(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord),
                 redoLogRecord2, sizeof(struct RedoLogRecord));
 
-        memcpy(tc->buffer + tc->size + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord),
+        memcpy(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord),
                 redoLogRecord1->data, redoLogRecord1->length);
-        memcpy(tc->buffer + tc->size + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length,
+        memcpy(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length,
                 redoLogRecord2->data, redoLogRecord2->length);
 
-        *((uint32_t *)(tc->buffer + tc->size + 8 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((uint32_t *)(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) =
                 redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
-        *((uint8_t *)(tc->buffer + tc->size + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((uint8_t *)(tc->buffer + tc->size + 16 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) = slt;
-        *((uint8_t *)(tc->buffer + tc->size + 13 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((uint8_t *)(tc->buffer + tc->size + 17 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) = rci;
-        *((uint32_t *)(tc->buffer + tc->size + 16 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((uint32_t *)(tc->buffer + tc->size + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) = dba;
-        *((typeuba *)(tc->buffer + tc->size + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((typeuba *)(tc->buffer + tc->size + 24 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) = uba;
-        *((typescn *)(tc->buffer + tc->size + 28 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+        *((typescn *)(tc->buffer + tc->size + 32 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                 redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->scn;
 
         tc->size += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;

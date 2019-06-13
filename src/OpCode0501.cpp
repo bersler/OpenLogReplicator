@@ -205,7 +205,7 @@ namespace OpenLogReplicatorOracle {
                     ->append('.')
                     ->append(redoLogRecord->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord->objd, afn, redoLogRecord->bdba & 0xFFFF, redoLogRecord->slot)
+                    ->appendRowid(redoLogRecord->objn, redoLogRecord->objd, afn, redoLogRecord->bdba & 0xFFFF, redoLogRecord->slot)
                     ->append("\", \"before\": {");
             break;
 
@@ -314,7 +314,7 @@ namespace OpenLogReplicatorOracle {
                 bits = 1;
                 ++nullstmp;
             }
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
         }
 
         switch (oracleEnvironment->commandBuffer->type) {

@@ -45,7 +45,7 @@ namespace OpenLogReplicatorOracle {
         uint32_t dba;
         uint32_t bdba;            //block DBA
         uint32_t objn;            //object ID
-        uint32_t objd;            //object version ID
+        uint32_t objd;            //data object ID
         uint32_t tsn;
         uint32_t undo;
         int16_t usn;
@@ -67,7 +67,7 @@ namespace OpenLogReplicatorOracle {
         void dump();
     };
 
-#define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
+#define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
 
 }
 

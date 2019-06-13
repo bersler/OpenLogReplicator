@@ -73,13 +73,13 @@ namespace OpenLogReplicatorOracle {
     }
 
     OracleObject *OracleEnvironment::checkDict(uint32_t objn, uint32_t objd) {
-        OracleObject *object = objectMap[objd];
+        OracleObject *object = objectMap[objn];
         return object;
     }
 
     void OracleEnvironment::addToDict(OracleObject *object) {
-        if (objectMap[object->objd] == nullptr) {
-            objectMap[object->objd] = object;
+        if (objectMap[object->objn] == nullptr) {
+            objectMap[object->objn] = object;
         }
     }
 }

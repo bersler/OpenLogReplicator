@@ -42,6 +42,7 @@ namespace OpenLogReplicatorOracle {
         uint32_t recordBeginPos;
         uint32_t recordBeginBlock;
         typetime recordTimestmap;
+        uint32_t recordObjn;
         uint32_t recordObjd;
 
         uint32_t blockSize;

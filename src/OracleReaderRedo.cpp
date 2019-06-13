@@ -49,6 +49,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B06.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
+#include "OpCode1801.h"
 
 using namespace std;
 using namespace OpenLogReplicator;
@@ -65,6 +66,7 @@ namespace OpenLogReplicatorOracle {
             recordBeginPos(0),
             recordBeginBlock(0),
             recordTimestmap(0),
+            recordObjn(0),
             recordObjd(0),
             blockSize(0),
             blockNumber(0),
@@ -471,8 +473,10 @@ namespace OpenLogReplicatorOracle {
                     redoLogRecordCur->opCode == 0x0504 ||
                     redoLogRecordCur->opCode == 0x0506 ||
                     redoLogRecordCur->opCode == 0x0508 ||
-                    redoLogRecordCur->opCode == 0x050B)
+                    redoLogRecordCur->opCode == 0x050B) {
+                recordObjn = 4294967295;
                 recordObjd = 4294967295;
+            }
 
             if (oracleEnvironment->dumpLogFile) {
                 typescn scn2 = oracleEnvironment->read48(oracleEnvironment->recordBuffer + pos + 12);
@@ -625,10 +629,19 @@ namespace OpenLogReplicatorOracle {
                     opCode = new OpCode0B0C(oracleEnvironment, redoLogRecordCur);
                     opCode->process();
                     break;
+
+                //DDL
+                case 0x1801:
+                    opCode = new OpCode1801(oracleEnvironment, redoLogRecordCur);
+                    opCode->process();
+                    break;
                 }
 
-                if (redoLogRecordCur->objd != 0)
+
+                if (redoLogRecordCur->objd != 0) {
+                    recordObjn = redoLogRecordCur->objn;
                     recordObjd = redoLogRecordCur->objd;
+                }
 
                 if (redoLogRecordCur->opCode != 0) {
                     if (redoLogRecordPrev == nullptr) {
@@ -665,6 +678,11 @@ namespace OpenLogReplicatorOracle {
             redoLogRecord->dump();
         }
 
+        if (redoLogRecord->opCode == 0x1801) {
+            //DDL
+            //...
+            return;
+        } else
         if (redoLogRecord->opCode != 0x0502 && redoLogRecord->opCode != 0x0504)
             return;
 
@@ -727,13 +745,11 @@ namespace OpenLogReplicatorOracle {
         case 0x05010B03:
         //insert multiple rows
         case 0x05010B0B:
-        //delete multiple row
-        //case 0x05010B0C:
             {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
                     transaction = new Transaction(redoLogRecord1->xid, &oracleEnvironment->transactionBuffer);
-                    transaction->add(objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                    transaction->add(objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleEnvironment->transactionHeap.add(transaction);
@@ -741,7 +757,7 @@ namespace OpenLogReplicatorOracle {
                     if (transaction->opCodes > 0)
                         oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                                 transaction->lastSlt, transaction->lastRci);
-                    transaction->add(objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                    transaction->add(objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                 }
@@ -767,11 +783,11 @@ namespace OpenLogReplicatorOracle {
         case 0x0B0C0506:
         case 0x0B0C050B:
         //rollback: insert single row
-        //case 0x0B020506:
-        //case 0x0B02050B:
+        case 0x0B020506:
+        case 0x0B02050B:
         //rollback: insert multiple row
-        //case 0x0B0B0506:
-        //case 0x0B0B050B:
+        case 0x0B0B0506:
+        case 0x0B0B050B:
             {
                 Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
@@ -933,6 +949,7 @@ namespace OpenLogReplicatorOracle {
         redoBufferFileStart = blockSize * 2;
         redoBufferFileEnd = blockSize * 2;
         blockNumber = 2;
+        recordObjn = 4294967295;
         recordObjd = 4294967295;
 
         while (blockNumber <= numBlocks && !reachedEndOfOnlineRedo && !oracleReader->shutdown) {

@@ -34,7 +34,7 @@ namespace OpenLogReplicatorOracle {
         virtual uint16_t getOpCode(void);
         virtual void process();
 
-        virtual void parseInsert(uint32_t objd);
+        virtual void parseInsert(uint32_t objn, uint32_t objd);
     };
 }
 
