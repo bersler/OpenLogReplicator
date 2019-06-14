@@ -22,6 +22,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTIONMAP_H_
 #define TRANSACTIONMAP_H_
 
+#define HASHINGFUNCTION(uba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^(slt<<9)^(rci<<17))%(MAX_CONCURRENT_TRANSACTIONS*2-1)
+
 namespace OpenLogReplicatorOracle {
 
     class Transaction;

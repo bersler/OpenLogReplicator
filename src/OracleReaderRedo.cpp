@@ -679,8 +679,42 @@ namespace OpenLogReplicatorOracle {
         }
 
         if (redoLogRecord->opCode == 0x1801) {
-            //DDL
-            //...
+            RedoLogRecord zero;
+            memset(&zero, 0, sizeof(struct RedoLogRecord));
+
+            redoLogRecord->object = oracleEnvironment->checkDict(redoLogRecord->objn, redoLogRecord->objd);
+            if (redoLogRecord->object == nullptr)
+                return;
+
+            Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
+            if (transaction == nullptr) {
+                cerr << "DDL without begin transaction" << endl;
+                transaction = new Transaction(redoLogRecord->xid, &oracleEnvironment->transactionBuffer);
+                transaction->add(redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                        redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
+                oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
+                oracleEnvironment->transactionHeap.add(transaction);
+            } else {
+                if (transaction->opCodes > 0)
+                    oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
+                            transaction->lastSlt, transaction->lastRci);
+                transaction->add(redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                        redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
+                oracleEnvironment->transactionHeap.update(transaction->pos);
+            }
+            transaction->lastUba = redoLogRecord->uba;
+            transaction->lastDba = redoLogRecord->dba;
+            transaction->lastSlt = redoLogRecord->slt;
+            transaction->lastRci = redoLogRecord->rci;
+            if (oracleEnvironment->lastOpTransactionMap.get(redoLogRecord->uba, redoLogRecord->dba,
+                    redoLogRecord->slt, redoLogRecord->rci) != nullptr) {
+                cerr << "ERROR: last UBA already occupied!" << endl;
+            } else {
+                oracleEnvironment->lastOpTransactionMap.set(redoLogRecord->uba, redoLogRecord->dba,
+                        redoLogRecord->slt, redoLogRecord->rci, transaction);
+            }
+            oracleEnvironment->transactionHeap.update(transaction->pos);
+
             return;
         } else
         if (redoLogRecord->opCode != 0x0502 && redoLogRecord->opCode != 0x0504)

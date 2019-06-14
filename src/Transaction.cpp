@@ -35,6 +35,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B03.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
+#include "OpCode1801.h"
 
 using namespace std;
 
@@ -120,15 +121,17 @@ namespace OpenLogReplicatorOracle {
                 typescn oldScn = 0;
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
                     uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 8));
+
                     RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12));
                     RedoLogRecord *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord)));
                     typescn scn = *((typescn *)(tcTemp->buffer + pos + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                             redoLogRecord1->length + redoLogRecord2->length));
+                    redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
+                    redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
 
                     if (oracleEnvironment->trace >= 1) {
                         uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
                         uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
-
                         cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<
                                 " op: " << setfill('0') << setw(8) << hex << op <<
                                 " objn: " << dec << objn <<
@@ -137,9 +140,7 @@ namespace OpenLogReplicatorOracle {
                         if (oldScn != 0 && oldScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }
-
-                    redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
-                    redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
+                    pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 
                     switch (op) {
                     //insert row piece
@@ -192,11 +193,27 @@ namespace OpenLogReplicatorOracle {
                             delete opCode0501;
                         }
                         break;
-                    default:
-                        cout << "Op: " << hex << op << endl;
-                    }
 
-                    pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
+                    //truncate table
+                    case 0x18010000:
+                        {
+                            if (hasPrev) {
+                                switch (oracleEnvironment->commandBuffer->type) {
+                                case COMMAND_BUFFER_JSON:
+                                    oracleEnvironment->commandBuffer->append(", ");
+                                    break;
+                                }
+                            }
+                            OpCode1801 *opCode1801 = new OpCode1801(oracleEnvironment, redoLogRecord1);
+                            opCode1801->parseDDL();
+                            hasPrev = true;
+                            delete opCode1801;
+                        }
+                        break;
+
+                    default:
+                        cerr << "ERROR: Unknown OpCode " << hex << op << endl;
+                    }
 
                     if (oracleEnvironment->commandBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
                         cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;

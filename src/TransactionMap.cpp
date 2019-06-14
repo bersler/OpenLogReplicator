@@ -23,13 +23,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "TransactionMap.h"
 #include "Transaction.h"
 
-#define HASHINGFUNCTION(uba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^(slt<<9)^(rci<<17))%(MAX_CONCURRENT_TRANSACTIONS*2-1)
-
 using namespace std;
 
 namespace OpenLogReplicatorOracle {
 
     void TransactionMap::set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction* transaction) {
+        if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
+            return;
         uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         if (hashMap[hashKey] == nullptr) {
@@ -44,6 +44,8 @@ namespace OpenLogReplicatorOracle {
     }
 
     void TransactionMap::erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+        if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
+            return;
         uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         if (hashMap[hashKey] == nullptr) {

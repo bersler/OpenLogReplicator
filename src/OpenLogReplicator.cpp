@@ -70,7 +70,7 @@ void signalHandler(int s) {
 int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
-    cout << "Open Log Replicator v. 0.0.7 (C) 2018-2019 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
+    cout << "Open Log Replicator v. 0.0.8 (C) 2018-2019 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
 
     ifstream config("OpenLogReplicator.json");
     string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
@@ -82,7 +82,7 @@ int main() {
         {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.0.7") != 0)
+    if (strcmp(version.GetString(), "0.0.8") != 0)
         {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
