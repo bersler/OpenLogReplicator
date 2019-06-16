@@ -25,6 +25,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 namespace OpenLogReplicatorOracle {
 
     class RedoLogRecord;
+    class OpCode0501;
 
     class OpCode0B05: public OpCode {
     public:
@@ -33,6 +34,8 @@ namespace OpenLogReplicatorOracle {
 
         virtual uint16_t getOpCode(void);
         virtual void process();
+
+        virtual void parseUpdate(uint32_t objn, uint32_t objd, OpCode0501 *opCode0501);
     };
 }
 

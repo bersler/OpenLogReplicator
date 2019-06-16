@@ -33,6 +33,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0504.h"
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
+#include "OpCode0B05.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
@@ -159,6 +160,25 @@ namespace OpenLogReplicatorOracle {
                             delete opCode0B02;
                         }
                         break;
+
+                        //update row piece
+                        case 0x05010B05:
+                            {
+                                if (hasPrev) {
+                                    switch (oracleEnvironment->commandBuffer->type) {
+                                    case COMMAND_BUFFER_JSON:
+                                        oracleEnvironment->commandBuffer->append(", ");
+                                        break;
+                                    }
+                                }
+                                OpCode0501 *opCode0501 = new OpCode0501(oracleEnvironment, redoLogRecord1);
+                                OpCode0B05 *opCode0B05 = new OpCode0B05(oracleEnvironment, redoLogRecord2);
+                                opCode0B05->parseUpdate(redoLogRecord1->objn, redoLogRecord1->objd, opCode0501);
+                                hasPrev = true;
+                                delete opCode0501;
+                                delete opCode0B05;
+                            }
+                            break;
 
                     //insert multiple rows
                     case 0x05010B0B:

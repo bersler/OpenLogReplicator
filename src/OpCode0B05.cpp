@@ -19,6 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include <iomanip>
+#include "OpCode0501.h"
 #include "OpCode0B05.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
@@ -63,8 +64,11 @@ namespace OpenLogReplicatorOracle {
                 }
             }
 
-
             fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
+    }
+
+    void OpCode0B05::parseUpdate(uint32_t objn, uint32_t objd, OpCode0501 *opCode0501) {
+        //cout << "UPDATE" << endl;
     }
 }

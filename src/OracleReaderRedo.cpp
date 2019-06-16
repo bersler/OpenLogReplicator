@@ -773,10 +773,12 @@ namespace OpenLogReplicatorOracle {
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
 
         switch (opCodeLong) {
-        //insert single row
+        //insert row piece
         case 0x05010B02:
-        //delete single row
+        //delete row piece
         case 0x05010B03:
+        //update row piece
+        case 0x05010B05:
         //insert multiple rows
         case 0x05010B0B:
             {
@@ -810,18 +812,21 @@ namespace OpenLogReplicatorOracle {
             }
             break;
 
-        //rollback: delete single row
+        //rollback: delete row piece
         case 0x0B030506:
         case 0x0B03050B:
         //rollback: delete multiple rows
         case 0x0B0C0506:
         case 0x0B0C050B:
-        //rollback: insert single row
+        //rollback: insert row piece
         case 0x0B020506:
         case 0x0B02050B:
         //rollback: insert multiple row
         case 0x0B0B0506:
         case 0x0B0B050B:
+        //rollback: update row piece
+        case 0x0B050506:
+        case 0x0B05050B:
             {
                 Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
