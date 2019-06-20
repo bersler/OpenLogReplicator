@@ -135,7 +135,11 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::beginTran(typescn scn) {
-        commandBuffer->beginTran();
+        commandBuffer
+                ->beginTran()
+                ->append("{\"scn\": \"")
+                ->append(to_string(scn))
+                ->append("\", dml: [");
     }
 
     void KafkaWriter::next() {
@@ -270,14 +274,14 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        uint16_t *colnums;
+        uint16_t *colnums = nullptr;
         uint32_t fieldPos = redoLogRecord1->fieldPos;
         uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
         bool prevValue = false;
 
         for (uint32_t i = 1; i <= 5; ++i) {
             if (i == 5)
-                colnums = (uint16_t*)(redoLogRecord2->data + fieldPos);
+                colnums = (uint16_t*)(redoLogRecord1->data + fieldPos);
             fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
         commandBuffer
@@ -289,27 +293,26 @@ namespace OpenLogReplicator {
                 ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
                 ->append("\", \"before\": {");
 
-        for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0
-                    || i >= redoLogRecord1->cc) {
+        for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
+            if (prevValue) {
+                commandBuffer->append(',');
+            } else
+                prevValue = true;
+
+            commandBuffer
+                    ->append('"')
+                    ->append(redoLogRecord1->object->columns[*colnums]->columnName)
+                    ->append("\": \"");
+
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0) {
                 //null
             } else {
-                if (prevValue) {
-                    commandBuffer->append(',');
-                } else
-                    prevValue = true;
-
-                commandBuffer
-                        ->append('"')
-                        ->append(redoLogRecord1->object->columns[*colnums]->columnName)
-                        ->append("\": \"");
-
                 appendValue(redoLogRecord1, redoLogRecord1->object->columns[*colnums]->typeNo, fieldPos,
                         ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
-
-                commandBuffer
-                        ->append('"');
             }
+
+            commandBuffer
+                    ->append('"');
 
             ++colnums;
             bits <<= 1;
@@ -333,26 +336,26 @@ namespace OpenLogReplicator {
 
         commandBuffer->append("}, \"after\":  {");
 
-        for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
-                    || i >= redoLogRecord2->cc) {
+        for (uint32_t i = 0; i < redoLogRecord2->cc; ++i) {
+            if (prevValue)
+                commandBuffer->append(',');
+            else
+                prevValue = true;
+
+            commandBuffer
+                    ->append('"')
+                    ->append(redoLogRecord2->object->columns[*colnums]->columnName)
+                    ->append("\": \"");
+
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0) {
                 //nulls
             } else {
-                if (prevValue)
-                    commandBuffer->append(',');
-                else
-                    prevValue = true;
-
-                commandBuffer
-                        ->append('"')
-                        ->append(redoLogRecord2->object->columns[*colnums]->columnName)
-                        ->append("\": \"");
-
                 appendValue(redoLogRecord2, redoLogRecord2->object->columns[*colnums]->typeNo, fieldPos,
                         ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
 
-                commandBuffer->append('"');
             }
+
+            commandBuffer->append('"');
 
             ++colnums;
             bits <<= 1;

@@ -128,11 +128,7 @@ namespace OpenLogReplicator {
     }
 
     void RedisWriter::beginTran(typescn scn) {
-        commandBuffer
-                ->beginTran()
-                ->append("{\"scn\": \"")
-                ->append(to_string(scn))
-                ->append("\", dml: [");
+        commandBuffer->beginTran();
     }
 
     void RedisWriter::next() {
