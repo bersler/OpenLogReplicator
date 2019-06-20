@@ -21,12 +21,14 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "OpCode0501.h"
 #include "OpCode0B05.h"
+#include "OracleObject.h"
+#include "OracleColumn.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OpCode0B05::OpCode0B05(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
             OpCode(oracleEnvironment, redoLogRecord) {
@@ -41,34 +43,30 @@ namespace OpenLogReplicatorOracle {
 
     void OpCode0B05::process() {
         uint16_t *colnums;
-        uint8_t *nullstmp, bits = 1;
-        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        uint8_t *nulls, bits = 1;
+        uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
             if (i == 1) {
-                ktbRedo(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktbRedo(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             } else if (i == 2) {
-                kdoOpCode(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-                redoLogRecord->nullsDelta = fieldPosTmp + 26;
-                nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta;
+                kdoOpCode(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                redoLogRecord->nullsDelta = fieldPos + 26;
+                nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
             } else if (i == 3) {
-                colnums = (uint16_t*)(redoLogRecord->data + fieldPosTmp);
+                colnums = (uint16_t*)(redoLogRecord->data + fieldPos);
             } else if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc) {
                 if (oracleEnvironment->dumpLogFile) {
-                    dumpCols(redoLogRecord->data + fieldPosTmp, *colnums, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nullstmp & bits);
+                    dumpCols(redoLogRecord->data + fieldPos, *colnums, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nulls & bits);
                     ++colnums;
                     bits <<= 1;
                     if (bits == 0) {
                         bits = 1;
-                        ++nullstmp;
+                        ++nulls;
                     }
                 }
             }
 
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
-    }
-
-    void OpCode0B05::parseUpdate(uint32_t objn, uint32_t objd, OpCode0501 *opCode0501) {
-        //cout << "UPDATE" << endl;
     }
 }

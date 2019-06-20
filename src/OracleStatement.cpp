@@ -20,7 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include "OracleStatement.h"
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleStatement::OracleStatement(Connection **conn, Environment *env) :
         conn(conn),

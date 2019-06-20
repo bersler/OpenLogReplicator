@@ -23,21 +23,19 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <occi.h>
 #include <hiredis.h>
 #include "types.h"
-#include "Thread.h"
+#include "Writer.h"
 
 #ifndef REDISWRITER_H_
 #define REDISWRITER_H_
 
 using namespace std;
-using namespace OpenLogReplicator;
 
 namespace OpenLogReplicator {
+
+    class RedoLogRecord;
     class CommandBuffer;
-}
 
-namespace OpenLogReplicatorRedis {
-
-    class RedisWriter : public Thread {
+    class RedisWriter : public Writer {
     protected:
         string host;
         uint32_t port;
@@ -48,6 +46,15 @@ namespace OpenLogReplicatorRedis {
 
         void addTable(string mask);
         int initialize();
+
+        virtual void beginTran(typescn scn);
+        virtual void next();
+        virtual void commitTran();
+        virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
+        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment);
 
         RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer);
         virtual ~RedisWriter();

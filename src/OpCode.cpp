@@ -26,7 +26,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OpCode::OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord):
             oracleEnvironment(oracleEnvironment),
@@ -244,10 +244,10 @@ namespace OpenLogReplicatorOracle {
             else
                 oracleEnvironment->dumpStream << " ";
 
-            uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
             for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
 
-                if ((*nullstmp & bits) != 0)
+                if ((*nulls & bits) != 0)
                     oracleEnvironment->dumpStream << "N";
                 else
                     oracleEnvironment->dumpStream << "-";
@@ -255,7 +255,7 @@ namespace OpenLogReplicatorOracle {
                 bits <<= 1;
                 if (bits == 0) {
                     bits = 1;
-                    ++nullstmp;
+                    ++nulls;
                 }
             }
             oracleEnvironment->dumpStream << endl;
@@ -431,10 +431,10 @@ namespace OpenLogReplicatorOracle {
             else
                 oracleEnvironment->dumpStream << " ";
 
-            uint8_t *nullstmp = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
             for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
 
-                if ((*nullstmp & bits) != 0)
+                if ((*nulls & bits) != 0)
                     oracleEnvironment->dumpStream << "N";
                 else
                     oracleEnvironment->dumpStream << "-";
@@ -442,7 +442,7 @@ namespace OpenLogReplicatorOracle {
                 bits <<= 1;
                 if (bits == 0) {
                     bits = 1;
-                    ++nullstmp;
+                    ++nulls;
                 }
             }
             oracleEnvironment->dumpStream << endl;
@@ -632,224 +632,6 @@ namespace OpenLogReplicatorOracle {
             }
 
             oracleEnvironment->dumpStream << endl;
-        }
-    }
-
-    void OpCode::appendValue(uint32_t typeNo, uint32_t fieldPosTmp, uint32_t fieldLength) {
-        uint32_t j, jMax; uint8_t digits;
-
-        switch(typeNo) {
-        case 1: //varchar(2)
-        case 96: //char
-            oracleEnvironment->commandBuffer
-                    ->appendEscape(redoLogRecord->data + fieldPosTmp, fieldLength);
-            break;
-
-        case 2: //numeric
-            digits = redoLogRecord->data[fieldPosTmp + 0];
-            //just zero
-            if (digits == 0x80) {
-                oracleEnvironment->commandBuffer->append('0');
-                break;
-            }
-
-            j = 1;
-            jMax = fieldLength - 1;
-
-            //positive number
-            if (digits >= 0xC0 && jMax >= 1) {
-                uint32_t val;
-                //part of the total
-                if (digits == 0xC0)
-                    oracleEnvironment->commandBuffer->append('0');
-                else {
-                    digits -= 0xC0;
-                    //part of the total - omitting first zero for first digit
-                    val = redoLogRecord->data[fieldPosTmp + j] - 1;
-                    if (val < 10)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + val);
-                    else
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val / 10))
-                                ->append('0' + (val % 10));
-
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        val = redoLogRecord->data[fieldPosTmp + j] - 1;
-                        if (j <= jMax) {
-                            oracleEnvironment->commandBuffer
-                                    ->append('0' + (val / 10))
-                                    ->append('0' + (val % 10));
-                            ++j;
-                        } else {
-                            oracleEnvironment->commandBuffer
-                                    ->append("00");
-                        }
-                        --digits;
-                    }
-                }
-
-                //fraction part
-                if (j <= jMax) {
-                    oracleEnvironment->commandBuffer
-                            ->append('.');
-
-                    while (j <= jMax - 1) {
-                        val = redoLogRecord->data[fieldPosTmp + j] - 1;
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val / 10))
-                                ->append('0' + (val % 10));
-                        ++j;
-                    }
-
-                    //last digit - omitting 0 at the end
-                    val = redoLogRecord->data[fieldPosTmp + j] - 1;
-                    oracleEnvironment->commandBuffer
-                            ->append('0' + (val / 10));
-                    if ((val % 10) != 0)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val % 10));
-                }
-            //negative number
-            } else if (digits <= 0x3F && fieldLength >= 2) {
-                uint32_t val;
-                oracleEnvironment->commandBuffer->append('-');
-
-                if (redoLogRecord->data[fieldPosTmp + jMax] == 0x66)
-                    --jMax;
-
-                //part of the total
-                if (digits == 0x3F)
-                    oracleEnvironment->commandBuffer->append('0');
-                else {
-                    digits = 0x3F - digits;
-
-                    val = 101 - redoLogRecord->data[fieldPosTmp + j];
-                    if (val < 10)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + val);
-                    else
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val / 10))
-                                ->append('0' + (val % 10));
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        if (j <= jMax) {
-                            val = 101 - redoLogRecord->data[fieldPosTmp + j];
-                            oracleEnvironment->commandBuffer
-                                    ->append('0' + (val / 10))
-                                    ->append('0' + (val % 10));
-                            ++j;
-                        } else {
-                            oracleEnvironment->commandBuffer
-                                    ->append("00");
-                        }
-                        --digits;
-                    }
-                }
-
-                if (j <= jMax) {
-                    oracleEnvironment->commandBuffer
-                            ->append('.');
-
-                    while (j <= jMax - 1) {
-                        val = 101 - redoLogRecord->data[fieldPosTmp + j];
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val / 10))
-                                ->append('0' + (val % 10));
-                        ++j;
-                    }
-
-                    val = 101 - redoLogRecord->data[fieldPosTmp + j];
-                    oracleEnvironment->commandBuffer
-                            ->append('0' + (val / 10));
-                    if ((val % 10) != 0)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val % 10));
-                }
-            } else {
-                cerr << "ERROR: unknown value (type: " << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint32_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPosTmp + j];
-                cout << endl;
-            }
-            break;
-        case 12:
-        case 180:
-            //2012-04-23T18:25:43.511Z - ISO 8601 format
-            jMax = fieldLength;
-
-            if (jMax != 7) {
-                cerr << "ERROR: unknown value (type: " << typeNo << "): ";
-                for (uint32_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPosTmp + j];
-                cout << endl;
-            } else {
-                uint32_t val1 = redoLogRecord->data[fieldPosTmp + 0],
-                         val2 = redoLogRecord->data[fieldPosTmp + 1];
-                bool bc = false;
-
-                //AD
-                if (val1 >= 100 && val2 >= 100) {
-                    val1 -= 100;
-                    val2 -= 100;
-                //BC
-                } else {
-                    val1 = 100 - val1;
-                    val2 = 100 - val2;
-                    bc = true;
-                }
-                if (val1 > 0) {
-                    if (val1 > 10)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val1 / 10))
-                                ->append('0' + (val1 % 10))
-                                ->append('0' + (val2 / 10))
-                                ->append('0' + (val2 % 10));
-                    else
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + val1)
-                                ->append('0' + (val2 / 10))
-                                ->append('0' + (val2 % 10));
-                } else {
-                    if (val2 > 10)
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + (val2 / 10))
-                                ->append('0' + (val2 % 10));
-                    else
-                        oracleEnvironment->commandBuffer
-                                ->append('0' + val2);
-                }
-
-                if (bc)
-                    oracleEnvironment->commandBuffer
-                            ->append("BC");
-
-                oracleEnvironment->commandBuffer
-                        ->append('-')
-                        ->append('0' + (redoLogRecord->data[fieldPosTmp + 2] / 10))
-                        ->append('0' + (redoLogRecord->data[fieldPosTmp + 2] % 10))
-                        ->append('-')
-                        ->append('0' + (redoLogRecord->data[fieldPosTmp + 3] / 10))
-                        ->append('0' + (redoLogRecord->data[fieldPosTmp + 3] % 10))
-                        ->append('T')
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 4] - 1) / 10))
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 4] - 1) % 10))
-                        ->append(':')
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 5] - 1) / 10))
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 5] - 1) % 10))
-                        ->append(':')
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 6] - 1) / 10))
-                        ->append('0' + ((redoLogRecord->data[fieldPosTmp + 6] - 1) % 10));
-            }
-            break;
-        default:
-            oracleEnvironment->commandBuffer->append('?');
         }
     }
 }

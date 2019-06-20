@@ -66,6 +66,7 @@ typedef uint32_t typeseq;
 #define PRINTSCN(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32))<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
 
 namespace OpenLogReplicator {
+
     class typetime {
         uint32_t val;
     public:

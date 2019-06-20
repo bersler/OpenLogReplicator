@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef OPCODE1801_H_
 #define OPCODE1801_H_
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class RedoLogRecord;
 
@@ -32,8 +32,6 @@ namespace OpenLogReplicatorOracle {
         uint16_t type;
         OpCode1801(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode1801();
-
-        void parseDDL();
 
         virtual uint16_t getOpCode(void);
         virtual void process();

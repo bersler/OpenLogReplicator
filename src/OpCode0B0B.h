@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef OPCODE0B0B_H_
 #define OPCODE0B0B_H_
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class RedoLogRecord;
 
@@ -33,8 +33,6 @@ namespace OpenLogReplicatorOracle {
 
         virtual uint16_t getOpCode(void);
         virtual void process();
-
-        virtual void parseInsert(uint32_t objn, uint32_t objd);
     };
 }
 

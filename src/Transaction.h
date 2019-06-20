@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTION_H_
 #define TRANSACTION_H_
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class TransactionChunk;
     class TransactionBuffer;

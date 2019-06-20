@@ -38,9 +38,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 using namespace std;
 using namespace rapidjson;
 using namespace oracle::occi;
-using namespace OpenLogReplicator;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
             const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead) :

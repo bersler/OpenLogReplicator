@@ -27,7 +27,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OpCode1801::OpCode1801(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
             OpCode(oracleEnvironment, redoLogRecord),
@@ -43,17 +43,17 @@ namespace OpenLogReplicatorOracle {
     }
 
     void OpCode1801::process() {
-        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        uint32_t fieldPos = redoLogRecord->fieldPos;
 
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
             if (i == 1) {
-                redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 4),
-                        oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 6),
-                        oracleEnvironment->read32(redoLogRecord->data + fieldPosTmp + 8));
-                type = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 12);
-                uint16_t tmp = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 16);
-                //uint16_t seq = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 18);
-                //uint16_t cnt = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 20);
+                redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4),
+                        oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6),
+                        oracleEnvironment->read32(redoLogRecord->data + fieldPos + 8));
+                type = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 12);
+                uint16_t tmp = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
+                //uint16_t seq = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
+                //uint16_t cnt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
                 if (type == 1 //create table
                         || type == 12 // drop table
                         || type == 15 // alter table
@@ -67,81 +67,10 @@ namespace OpenLogReplicatorOracle {
                 }
             } else if (i == 12) {
                 if (validDDL)
-                    redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPosTmp + 0);
+                    redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             }
 
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
     }
-
-    void OpCode1801::parseDDL() {
-        uint32_t fieldPosTmp = redoLogRecord->fieldPos, len;
-        uint16_t seq = 0, cnt = 0;
-
-        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-            if (i == 1) {
-                type = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 12);
-                seq = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 18);
-                cnt = oracleEnvironment->read16(redoLogRecord->data + fieldPosTmp + 20);
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "SEQ: " << dec << seq << "/" << dec << cnt << endl;
-                }
-            } else if (i == 8) {
-                //DDL text
-                if (oracleEnvironment->trace >= 1) {
-                    len = ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i];
-                    cout << "DDL[" << dec << len << "]: ";
-                    for (uint32_t j = 0; j < len; ++j) {
-                        cout << *(redoLogRecord->data + fieldPosTmp + j);
-                    }
-                    cout << endl;
-                }
-            } else if (i == 9) {
-                //owner
-                if (oracleEnvironment->trace >= 1) {
-                    len = ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i];
-                    cout << "OWNER[" << dec << len << "]: ";
-                    for (uint32_t j = 0; j < len; ++j) {
-                        cout << *(redoLogRecord->data + fieldPosTmp + j);
-                    }
-                    cout << endl;
-                }
-            } else if (i == 10) {
-                //table
-                if (oracleEnvironment->trace >= 1) {
-                    len = ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i];
-                    cout << "TABLE[" << len << "]: ";
-                    for (uint32_t j = 0; j < len; ++j) {
-                        cout << *(redoLogRecord->data + fieldPosTmp + j);
-                    }
-                    cout << endl;
-                }
-            } else if (i == 12) {
-                redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPosTmp + 0);
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "OBJN: " << dec << redoLogRecord->objn << endl;
-                }
-            }
-
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-        }
-
-        if (type == 85) {
-            switch (oracleEnvironment->commandBuffer->type) {
-            case COMMAND_BUFFER_JSON:
-                oracleEnvironment->commandBuffer
-                        ->append("{\"operation\":\"truncate\", \"table\": \"")
-                        ->append(redoLogRecord->object->owner)
-                        ->append('.')
-                        ->append(redoLogRecord->object->objectName)
-                        ->append("\"}");
-                break;
-
-            case COMMAND_BUFFER_REDIS:
-                //not yet supported
-                break;
-            }
-       }
-    }
-
 }

@@ -24,7 +24,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #define HASHINGFUNCTION(uba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^(slt<<9)^(rci<<17))%(MAX_CONCURRENT_TRANSACTIONS*2-1)
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class Transaction;
 

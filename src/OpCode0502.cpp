@@ -25,7 +25,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OpCode0502::OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
         OpCode(oracleEnvironment, redoLogRecord) {
@@ -39,15 +39,15 @@ namespace OpenLogReplicatorOracle {
     }
 
     void OpCode0502::process() {
-        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
             if (i == 1) {
-                ktudh(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktudh(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             } else if (i == 2) {
                 if (redoLogRecord->flg == 0x0080)
-                    kteop(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                    kteop(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             }
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
     }
 

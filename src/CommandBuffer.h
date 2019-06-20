@@ -26,29 +26,27 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
-#define COMMAND_BUFFER_JSON 1
-#define COMMAND_BUFFER_REDIS 2
-
 using namespace std;
 
 namespace OpenLogReplicator {
+
+    class Writer;
 
     class CommandBuffer {
     protected:
         volatile bool shutdown;
     public:
         static char translationMap[65];
-        uint32_t type;
+        Writer *writer;
         uint8_t *intraThreadBuffer;
         mutex mtx;
-        condition_variable readers;
-        condition_variable writer;
+        condition_variable readersCond;
+        condition_variable writerCond;
         volatile uint64_t posStart;
         volatile uint64_t posEnd;
         volatile uint64_t posEndTmp;
         volatile uint32_t posSize;
 
-        void setType(uint32_t type);
         void terminate(void);
         CommandBuffer* appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
         CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);

@@ -30,14 +30,10 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 using namespace oracle::occi;
-using namespace OpenLogReplicator;
 
 namespace OpenLogReplicator {
+
     class CommandBuffer;
-}
-
-namespace OpenLogReplicatorOracle {
-
     class OracleEnvironment;
     class OracleReaderRedo;
 

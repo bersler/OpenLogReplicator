@@ -24,7 +24,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     void RedoLogRecord::dump() {
         cout << "DUMP: opCode: " << hex << opCode <<

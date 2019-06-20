@@ -19,7 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include "TransactionChunk.h"
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     TransactionChunk::TransactionChunk(TransactionChunk *prev, uint8_t *buffer) :
             elements(0),

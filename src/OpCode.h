@@ -25,7 +25,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class OracleEnvironment;
     class RedoLogRecord;
@@ -57,8 +57,6 @@ namespace OpenLogReplicatorOracle {
 
         virtual uint16_t getOpCode(void);
         virtual void process();
-
-        void appendValue(uint32_t typeNo, uint32_t fieldPosTmp, uint32_t fieldLength);
     };
 }
 

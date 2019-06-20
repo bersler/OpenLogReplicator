@@ -26,7 +26,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OpCode0504::OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
         OpCode(oracleEnvironment, redoLogRecord) {
@@ -40,15 +40,15 @@ namespace OpenLogReplicatorOracle {
     }
 
     void OpCode0504::process() {
-        uint32_t fieldPosTmp = redoLogRecord->fieldPos;
+        uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
             if (i == 1) {
-                ktucm(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktucm(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             } else if (i == 2) {
                 if ((redoLogRecord->flg & 0x02) == 0x02)
-                    ktucf(fieldPosTmp, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                    ktucf(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             }
-            fieldPosTmp += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
 
         if (oracleEnvironment->dumpLogFile) {

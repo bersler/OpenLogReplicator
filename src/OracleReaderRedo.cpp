@@ -52,9 +52,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode1801.h"
 
 using namespace std;
-using namespace OpenLogReplicator;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, typescn firstScn,
                 typescn nextScn, typeseq sequence, const char* path) :
@@ -534,7 +533,7 @@ namespace OpenLogReplicatorOracle {
                 oracleEnvironment->dumpStream << endl;
             }
 
-            uint32_t fieldPosTmp = redoLogRecordCur->fieldPos;
+            uint32_t fieldPos = redoLogRecordCur->fieldPos;
             for (uint32_t i = 1; i <= redoLogRecordCur->fieldNum; ++i) {
                 if (oracleEnvironment->dumpData) {
                     oracleEnvironment->dumpStream << "##: " << dec << ((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] << " (" << i << ")";
@@ -543,13 +542,13 @@ namespace OpenLogReplicatorOracle {
                             oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
                         if ((j & 0x7) == 0)
                             oracleEnvironment->dumpStream << " ";
-                        oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) redoLogRecordCur->data[fieldPosTmp + j] << " ";
+                        oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) redoLogRecordCur->data[fieldPos + j] << " ";
                     }
                     oracleEnvironment->dumpStream << endl;
                 }
 
                 redoLogRecordCur->length += (fieldList[i] + 3) & 0xFFFC;
-                fieldPosTmp += (((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+                fieldPos += (((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] + 3) & 0xFFFC;
                 if (pos + redoLogRecordCur->length > recordLength)
                     throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecordCur->length);
             }

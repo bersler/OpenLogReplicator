@@ -25,7 +25,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleObject::OracleObject(uint32_t objn, uint32_t objd, uint32_t cluCols, string owner, string objectName) :
         objn(objn),

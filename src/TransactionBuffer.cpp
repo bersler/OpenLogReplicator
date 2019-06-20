@@ -30,9 +30,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "RedoLogRecord.h"
 
 using namespace std;
-using namespace OpenLogReplicator;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     TransactionBuffer::TransactionBuffer() :
         size(1) {

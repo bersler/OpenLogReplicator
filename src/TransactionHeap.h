@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTIONHEAP_H_
 #define TRANSACTIONHEAP_H_
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class Transaction;
 

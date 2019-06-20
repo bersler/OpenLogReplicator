@@ -28,14 +28,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <hiredis.h>
 #include "types.h"
 #include "RedisWriter.h"
+#include "OracleEnvironment.h"
 #include "CommandBuffer.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
+#include "RedoLogRecord.h"
 
 using namespace std;
 
-namespace OpenLogReplicatorRedis {
+namespace OpenLogReplicator {
 
     RedisWriter::RedisWriter(const string alias, const string host, uint32_t port, CommandBuffer *commandBuffer) :
-        Thread(alias, commandBuffer),
+        Writer(alias, commandBuffer),
         host(host),
         port(port),
         c(nullptr) {
@@ -53,7 +57,7 @@ namespace OpenLogReplicatorRedis {
             {
                 unique_lock<mutex> lck(commandBuffer->mtx);
                 while (commandBuffer->posStart == commandBuffer->posEnd) {
-                    commandBuffer->readers.wait(lck);
+                    commandBuffer->readersCond.wait(lck);
 
                     if (this->shutdown)
                         break;
@@ -100,7 +104,7 @@ namespace OpenLogReplicatorRedis {
                     commandBuffer->posSize = 0;
                 }
 
-                commandBuffer->writer.notify_all();
+                commandBuffer->writerCond.notify_all();
             }
         }
 
@@ -121,5 +125,295 @@ namespace OpenLogReplicatorRedis {
         }
 
         return 1;
+    }
+
+    void RedisWriter::beginTran(typescn scn) {
+        commandBuffer
+                ->beginTran()
+                ->append("{\"scn\": \"")
+                ->append(to_string(scn))
+                ->append("\", dml: [");
+    }
+
+    void RedisWriter::next() {
+    }
+
+    void RedisWriter::commitTran() {
+        commandBuffer->commitTran();
+    }
+
+    void RedisWriter::parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        uint32_t fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
+        uint8_t *nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta, bits = 1;
+        bool prevValue = false;
+
+        for (uint32_t i = 1; i <= 2; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        fieldPosStart = fieldPos;
+
+        commandBuffer
+                ->append(redoLogRecord2->object->owner)
+                ->append('.')
+                ->append(redoLogRecord2->object->objectName)
+                ->append('.');
+
+        for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            //is PK or table has no PK
+            if (redoLogRecord2->object->columns[i]->numPk > 0 || redoLogRecord2->object->totalPk == 0) {
+                if (prevValue)
+                    commandBuffer->append('.');
+                else
+                    prevValue = true;
+
+                if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
+                        || i >= redoLogRecord2->cc) {
+                    commandBuffer->append("NULL");
+                } else {
+                    commandBuffer->append('"');
+
+                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos,
+                            ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+
+                    commandBuffer->append('"');
+                }
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+        }
+        fieldPos = fieldPosStart;
+        nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta;
+
+        commandBuffer->append(0);
+        prevValue = false;
+
+        for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            if (prevValue)
+                commandBuffer->append(',');
+            else
+                prevValue = true;
+
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
+                    || i >= redoLogRecord2->cc) {
+                commandBuffer->append("NULL");
+            } else {
+                commandBuffer->append('"');
+
+                appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+
+                commandBuffer->append('"');
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append(0);
+    }
+
+    void RedisWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
+        uint32_t pos = 0;
+        uint32_t fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
+        bool prevValue;
+        uint16_t fieldLength;
+
+        for (uint32_t i = 1; i < 4; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        fieldPosStart = fieldPos;
+
+        for (uint32_t r = 0; r < redoLogRecord2->nrow; ++r) {
+
+            pos = 0;
+            prevValue = false;
+            fieldPos = fieldPosStart;
+            uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
+            pos = 3;
+
+            commandBuffer
+                    ->append(redoLogRecord2->object->owner)
+                    ->append('.')
+                    ->append(redoLogRecord2->object->objectName)
+                    ->append('.');
+
+            for (uint32_t i = 0; i < jcc; ++i) {
+                bool isNull = false;
+                fieldLength = redoLogRecord2->data[fieldPos + pos];
+                ++pos;
+                if (fieldLength == 0xFF) {
+                    isNull = true;
+                } else
+                if (fieldLength == 0xFE) {
+                    fieldLength = oracleEnvironment->read16(redoLogRecord2->data + fieldPos + pos);
+                    pos += 2;
+                }
+
+                //is PK or table has no PK
+                if (redoLogRecord2->object->columns[i]->numPk > 0 || redoLogRecord2->object->totalPk == 0) {
+                    if (prevValue)
+                        commandBuffer->append('.');
+                    else
+                        prevValue = true;
+
+                    //NULL values
+                    if (isNull) {
+                        commandBuffer->append("NULL");
+                    } else {
+                        commandBuffer->append('"');
+                        appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                        commandBuffer->append('"');
+                    }
+                }
+                pos += fieldLength;
+            }
+            for (uint32_t i = jcc; i < redoLogRecord2->object->columns.size(); ++i)
+                commandBuffer->append(".NULL");
+
+            pos = 0;
+            commandBuffer->append(0);
+
+            pos = 3;
+            prevValue = false;
+            fieldPos = fieldPosStart;
+
+            for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+                bool isNull = false;
+
+                if (i >= jcc)
+                    isNull = true;
+                else {
+                    fieldLength = redoLogRecord2->data[fieldPos + pos];
+                    ++pos;
+                    if (fieldLength == 0xFF) {
+                        isNull = true;
+                    } else
+                    if (fieldLength == 0xFE) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord2->data + fieldPos + pos);
+                        pos += 2;
+                    }
+                }
+
+                if (prevValue)
+                    commandBuffer->append(',');
+                else
+                    prevValue = true;
+
+                //NULL values
+                if (isNull) {
+                    commandBuffer->append("NULL");
+                } else {
+                    commandBuffer->append('"');
+                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                    commandBuffer->append('"');
+                }
+
+                pos += fieldLength;
+            }
+
+            commandBuffer->append(0);
+
+            fieldPosStart += ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta))[r];
+        }
+    }
+
+    void RedisWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        //todo
+    }
+
+    void RedisWriter::parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        uint32_t fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
+        uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
+        bool prevValue = false;
+
+        for (uint32_t i = 1; i <= 4; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        fieldPosStart = fieldPos;
+
+        commandBuffer
+                ->append(redoLogRecord1->object->owner)
+                ->append('.')
+                ->append(redoLogRecord1->object->objectName)
+                ->append('.');
+
+        for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            //is PK or table has no PK
+            if (redoLogRecord1->object->columns[i]->numPk > 0 || redoLogRecord1->object->totalPk == 0) {
+                if (prevValue) {
+                    commandBuffer
+                            ->append('.');
+                } else
+                    prevValue = true;
+
+                if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0 ||
+                        i >= redoLogRecord1->cc) {
+                    commandBuffer->append("NULL");
+                } else {
+                    commandBuffer->append('"');
+
+                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos,
+                            ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+
+                    commandBuffer->append('"');
+                }
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+        }
+        fieldPos = fieldPosStart;
+        nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta;
+
+        commandBuffer->append(0);
+
+        prevValue = false;
+
+        for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0 ||
+                    i >= redoLogRecord1->cc) {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
+
+                commandBuffer->append("NULL");
+            } else {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
+
+                commandBuffer->append('"');
+
+                appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+
+                commandBuffer->append('"');
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append(0);
+    }
+
+    void RedisWriter::parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) {
+        //TODO
     }
 }

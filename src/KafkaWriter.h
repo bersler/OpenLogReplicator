@@ -23,22 +23,20 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <occi.h>
 #include <librdkafka/rdkafkacpp.h>
 #include "types.h"
-#include "Thread.h"
+#include "Writer.h"
 
 #ifndef KAFKAWRITER_H_
 #define KAFKAWRITER_H_
 
 using namespace std;
-using namespace OpenLogReplicator;
 using namespace RdKafka;
 
 namespace OpenLogReplicator {
+
+    class RedoLogRecord;
     class CommandBuffer;
-}
 
-namespace OpenLogReplicatorKafka {
-
-    class KafkaWriter : public Thread {
+    class KafkaWriter : public Writer {
     protected:
         Conf *conf;
         Conf *tconf;
@@ -52,6 +50,15 @@ namespace OpenLogReplicatorKafka {
 
         void addTable(string mask);
         int initialize();
+
+        virtual void beginTran(typescn scn);
+        virtual void next();
+        virtual void commitTran();
+        virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
+        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment);
 
         KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer);
         virtual ~KafkaWriter();

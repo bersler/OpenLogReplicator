@@ -28,15 +28,19 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <librdkafka/rdkafkacpp.h>
 #include "types.h"
 #include "KafkaWriter.h"
+#include "OracleEnvironment.h"
 #include "CommandBuffer.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
+#include "RedoLogRecord.h"
 
 using namespace std;
 using namespace RdKafka;
 
-namespace OpenLogReplicatorKafka {
+namespace OpenLogReplicator {
 
     KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer) :
-        Thread(alias, commandBuffer),
+        Writer(alias, commandBuffer),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers.c_str()),
@@ -72,7 +76,7 @@ namespace OpenLogReplicatorKafka {
             {
                 unique_lock<mutex> lck(commandBuffer->mtx);
                 while (commandBuffer->posStart == commandBuffer->posEnd) {
-                    commandBuffer->readers.wait(lck);
+                    commandBuffer->readersCond.wait(lck);
 
                     if (this->shutdown)
                         break;
@@ -102,7 +106,7 @@ namespace OpenLogReplicatorKafka {
                     commandBuffer->posSize = 0;
                 }
 
-                commandBuffer->writer.notify_all();
+                commandBuffer->writerCond.notify_all();
             }
         }
 
@@ -128,5 +132,349 @@ namespace OpenLogReplicatorKafka {
         }
 
         return 1;
+    }
+
+    void KafkaWriter::beginTran(typescn scn) {
+        commandBuffer->beginTran();
+    }
+
+    void KafkaWriter::next() {
+        commandBuffer->append(", ");
+    }
+
+    void KafkaWriter::commitTran() {
+        commandBuffer
+                ->append("]}")
+                ->commitTran();
+    }
+
+    void KafkaWriter::parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        uint32_t fieldPos = redoLogRecord2->fieldPos;
+        uint8_t *nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta, bits = 1;
+        bool prevValue = false;
+
+        for (uint32_t i = 1; i <= 2; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+
+        commandBuffer
+                ->append("{\"operation\":\"insert\", \"table\": \"")
+                ->append(redoLogRecord2->object->owner)
+                ->append('.')
+                ->append(redoLogRecord2->object->objectName)
+                ->append("\", \"rowid\": \"")
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF, redoLogRecord2->slot)
+                ->append("\", \"after\": {");
+
+        for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
+                    || i >= redoLogRecord2->cc) {
+                //null
+            } else {
+                if (prevValue)
+                    commandBuffer->append(',');
+                else
+                    prevValue = true;
+
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord2->object->columns[i]->columnName)
+                        ->append("\": \"");
+
+                appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+
+                commandBuffer->append('"');
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append("}}");
+    }
+
+    void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
+        uint32_t pos = 0;
+        uint32_t fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
+        bool prevValue;
+        uint16_t fieldLength;
+
+        for (uint32_t i = 1; i < 4; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        fieldPosStart = fieldPos;
+
+        for (uint32_t r = 0; r < redoLogRecord2->nrow; ++r) {
+            if (r > 0)
+                commandBuffer->append(", ");
+
+            pos = 0;
+            prevValue = false;
+            fieldPos = fieldPosStart;
+            uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
+            pos = 3;
+
+            commandBuffer
+                    ->append("{\"operation\":\"insert\", \"table\": \"")
+                    ->append(redoLogRecord2->object->owner)
+                    ->append('.')
+                    ->append(redoLogRecord2->object->objectName)
+                    ->append("\", \"rowid\": \"")
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF,
+                            ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->slotsDelta))[r])
+                    ->append("\", \"after\": {");
+
+            for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+                bool isNull = false;
+
+                if (i >= jcc)
+                    isNull = true;
+                else {
+                    fieldLength = redoLogRecord2->data[fieldPos + pos];
+                    ++pos;
+                    if (fieldLength == 0xFF) {
+                        isNull = true;
+                    } else
+                    if (fieldLength == 0xFE) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord2->data + fieldPos + pos);
+                        pos += 2;
+                    }
+                }
+
+                //NULL values
+                if (!isNull) {
+                    if (prevValue)
+                        commandBuffer->append(',');
+                    else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord2->object->columns[i]->columnName)
+                            ->append("\": \"");
+
+                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                    commandBuffer->append('"');
+                }
+
+                pos += fieldLength;
+            }
+
+            commandBuffer->append("}}");
+
+            fieldPosStart += ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta))[r];
+        }
+    }
+
+    void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        uint16_t *colnums;
+        uint32_t fieldPos = redoLogRecord1->fieldPos;
+        uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
+        bool prevValue = false;
+
+        for (uint32_t i = 1; i <= 5; ++i) {
+            if (i == 5)
+                colnums = (uint16_t*)(redoLogRecord2->data + fieldPos);
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+        commandBuffer
+                ->append("{\"operation\":\"update\", \"table\": \"")
+                ->append(redoLogRecord1->object->owner)
+                ->append('.')
+                ->append(redoLogRecord1->object->objectName)
+                ->append("\", \"rowid\": \"")
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
+                ->append("\", \"before\": {");
+
+        for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0
+                    || i >= redoLogRecord1->cc) {
+                //null
+            } else {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
+
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord1->object->columns[*colnums]->columnName)
+                        ->append("\": \"");
+
+                appendValue(redoLogRecord1, redoLogRecord1->object->columns[*colnums]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+
+                commandBuffer
+                        ->append('"');
+            }
+
+            ++colnums;
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+        }
+
+        fieldPos = redoLogRecord2->fieldPos;
+        nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta;
+        bits = 1;
+        prevValue = false;
+
+        for (uint32_t i = 1; i <= 3; ++i) {
+            if (i == 3)
+                colnums = (uint16_t*)(redoLogRecord2->data + fieldPos);
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append("}, \"after\":  {");
+
+        for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
+                    || i >= redoLogRecord2->cc) {
+                //nulls
+            } else {
+                if (prevValue)
+                    commandBuffer->append(',');
+                else
+                    prevValue = true;
+
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord2->object->columns[*colnums]->columnName)
+                        ->append("\": \"");
+
+                appendValue(redoLogRecord2, redoLogRecord2->object->columns[*colnums]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+
+                commandBuffer->append('"');
+            }
+
+            ++colnums;
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append("}}");
+    }
+
+    void KafkaWriter::parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        uint32_t fieldPos = redoLogRecord1->fieldPos;
+        uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
+        bool prevValue = false;
+
+        for (uint32_t i = 1; i <= 4; ++i)
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+
+        commandBuffer
+                ->append("{\"operation\":\"delete\", \"table\": \"")
+                ->append(redoLogRecord1->object->owner)
+                ->append('.')
+                ->append(redoLogRecord1->object->objectName)
+                ->append("\", \"rowid\": \"")
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
+                ->append("\", \"before\": {");
+
+        for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0
+                    || i >= redoLogRecord1->cc) {
+                //null
+            } else {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
+
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord1->object->columns[i]->columnName)
+                        ->append("\": \"");
+
+                appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos,
+                        ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+
+                commandBuffer
+                        ->append('"');
+            }
+
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+        }
+
+        commandBuffer->append("}}");
+    }
+
+    void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) {
+        uint32_t fieldPos = redoLogRecord1->fieldPos, len;
+        uint16_t seq = 0, cnt = 0, type;
+
+        for (uint32_t i = 1; i <= redoLogRecord1->fieldNum; ++i) {
+            if (i == 1) {
+                type = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 12);
+                seq = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 18);
+                cnt = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 20);
+                if (oracleEnvironment->trace >= 1) {
+                    cout << "SEQ: " << dec << seq << "/" << dec << cnt << endl;
+                }
+            } else if (i == 8) {
+                //DDL text
+                if (oracleEnvironment->trace >= 1) {
+                    len = ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i];
+                    cout << "DDL[" << dec << len << "]: ";
+                    for (uint32_t j = 0; j < len; ++j) {
+                        cout << *(redoLogRecord1->data + fieldPos + j);
+                    }
+                    cout << endl;
+                }
+            } else if (i == 9) {
+                //owner
+                if (oracleEnvironment->trace >= 1) {
+                    len = ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i];
+                    cout << "OWNER[" << dec << len << "]: ";
+                    for (uint32_t j = 0; j < len; ++j) {
+                        cout << *(redoLogRecord1->data + fieldPos + j);
+                    }
+                    cout << endl;
+                }
+            } else if (i == 10) {
+                //table
+                if (oracleEnvironment->trace >= 1) {
+                    len = ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i];
+                    cout << "TABLE[" << len << "]: ";
+                    for (uint32_t j = 0; j < len; ++j) {
+                        cout << *(redoLogRecord1->data + fieldPos + j);
+                    }
+                    cout << endl;
+                }
+            } else if (i == 12) {
+                redoLogRecord1->objn = oracleEnvironment->read32(redoLogRecord1->data + fieldPos + 0);
+                if (oracleEnvironment->trace >= 1) {
+                    cout << "OBJN: " << dec << redoLogRecord1->objn << endl;
+                }
+            }
+
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
+
+        if (type == 85) {
+            commandBuffer
+                    ->append("{\"operation\":\"truncate\", \"table\": \"")
+                    ->append(redoLogRecord1->object->owner)
+                    ->append('.')
+                    ->append(redoLogRecord1->object->objectName)
+                    ->append("\"}");
+       }
     }
 }

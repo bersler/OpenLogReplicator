@@ -33,9 +33,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #define ORACLEENVIRONMENT_H_
 
 using namespace std;
-using namespace OpenLogReplicator;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class OracleObject;
     class Transaction;

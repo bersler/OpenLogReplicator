@@ -27,6 +27,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "TransactionBuffer.h"
 #include "TransactionChunk.h"
 #include "RedoLogRecord.h"
+#include "Writer.h"
 #include "OpCode.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
@@ -40,7 +41,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     bool Transaction::operator< (Transaction &p) {
         if (isCommit && !p.isCommit)
@@ -103,19 +104,7 @@ namespace OpenLogReplicatorOracle {
             if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
                 oracleEnvironment->commandBuffer->rewind();
 
-            switch (oracleEnvironment->commandBuffer->type) {
-            case COMMAND_BUFFER_JSON:
-                oracleEnvironment->commandBuffer
-                        ->beginTran()
-                        ->append("{\"scn\": \"")
-                        ->append(to_string(lastScn))
-                        ->append("\", dml: [");
-                break;
-            case COMMAND_BUFFER_REDIS:
-                oracleEnvironment->commandBuffer
-                        ->beginTran();
-                break;
-            }
+            oracleEnvironment->commandBuffer->writer->beginTran(lastScn);
 
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
@@ -146,127 +135,55 @@ namespace OpenLogReplicatorOracle {
                     switch (op) {
                     //insert row piece
                     case 0x05010B02:
-                        {
-                            if (hasPrev) {
-                                switch (oracleEnvironment->commandBuffer->type) {
-                                case COMMAND_BUFFER_JSON:
-                                    oracleEnvironment->commandBuffer->append(", ");
-                                    break;
-                                }
-                            }
-                            OpCode0B02 *opCode0B02 = new OpCode0B02(oracleEnvironment, redoLogRecord2);
-                            opCode0B02->parseInsert(redoLogRecord1->objn, redoLogRecord1->objd);
-                            hasPrev = true;
-                            delete opCode0B02;
-                        }
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseInsert(redoLogRecord1, redoLogRecord2);
+                        hasPrev = true;
                         break;
 
                         //update row piece
                         case 0x05010B05:
-                            {
-                                if (hasPrev) {
-                                    switch (oracleEnvironment->commandBuffer->type) {
-                                    case COMMAND_BUFFER_JSON:
-                                        oracleEnvironment->commandBuffer->append(", ");
-                                        break;
-                                    }
-                                }
-                                OpCode0501 *opCode0501 = new OpCode0501(oracleEnvironment, redoLogRecord1);
-                                OpCode0B05 *opCode0B05 = new OpCode0B05(oracleEnvironment, redoLogRecord2);
-                                opCode0B05->parseUpdate(redoLogRecord1->objn, redoLogRecord1->objd, opCode0501);
-                                hasPrev = true;
-                                delete opCode0501;
-                                delete opCode0B05;
-                            }
+                            if (hasPrev)
+                                oracleEnvironment->commandBuffer->writer->next();
+                            oracleEnvironment->commandBuffer->writer->parseUpdate(redoLogRecord1, redoLogRecord2);
+                            hasPrev = true;
                             break;
 
                     //insert multiple rows
                     case 0x05010B0B:
-                        {
-                            if (hasPrev) {
-                                switch (oracleEnvironment->commandBuffer->type) {
-                                case COMMAND_BUFFER_JSON:
-                                    oracleEnvironment->commandBuffer->append(", ");
-                                    break;
-                                }
-                            }
-                            OpCode0B0B *opCode0B0B = new OpCode0B0B(oracleEnvironment, redoLogRecord2);
-                            opCode0B0B->parseInsert(redoLogRecord1->objn, redoLogRecord1->objd);
-                            hasPrev = true;
-                            delete opCode0B0B;
-                        }
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2, oracleEnvironment);
+                        hasPrev = true;
                         break;
 
                     //delete row piece
                     case 0x05010B03:
-                        {
-                            if (hasPrev) {
-                                switch (oracleEnvironment->commandBuffer->type) {
-                                case COMMAND_BUFFER_JSON:
-                                    oracleEnvironment->commandBuffer->append(", ");
-                                    break;
-                                }
-                            }
-                            OpCode0501 *opCode0501 = new OpCode0501(oracleEnvironment, redoLogRecord1);
-                            opCode0501->parseDelete(redoLogRecord2->afn);
-                            hasPrev = true;
-                            delete opCode0501;
-                        }
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseDelete(redoLogRecord1, redoLogRecord2);
+                        hasPrev = true;
                         break;
 
                     //truncate table
                     case 0x18010000:
-                        {
-                            if (hasPrev) {
-                                switch (oracleEnvironment->commandBuffer->type) {
-                                case COMMAND_BUFFER_JSON:
-                                    oracleEnvironment->commandBuffer->append(", ");
-                                    break;
-                                }
-                            }
-                            OpCode1801 *opCode1801 = new OpCode1801(oracleEnvironment, redoLogRecord1);
-                            opCode1801->parseDDL();
-                            hasPrev = true;
-                            delete opCode1801;
-                        }
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseDDL(redoLogRecord1, oracleEnvironment);
+                        hasPrev = true;
                         break;
 
                     default:
                         cerr << "ERROR: Unknown OpCode " << hex << op << endl;
                     }
 
+                    //split very big transactions
                     if (oracleEnvironment->commandBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
                         cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;
-                        switch (oracleEnvironment->commandBuffer->type) {
-                        case COMMAND_BUFFER_JSON:
-                            oracleEnvironment->commandBuffer
-                                    ->append("]}")
-                                    ->commitTran();
-                            break;
-                        case COMMAND_BUFFER_REDIS:
-                            oracleEnvironment->commandBuffer
-                                    ->append("EXEC\n")
-                                    ->commitTran();
-                            break;
-                        }
-
+                        oracleEnvironment->commandBuffer->writer->commitTran();
                         if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
                             oracleEnvironment->commandBuffer->rewind();
-
-                        switch (oracleEnvironment->commandBuffer->type) {
-                        case COMMAND_BUFFER_JSON:
-                            oracleEnvironment->commandBuffer
-                                    ->beginTran()
-                                    ->append("{\"scn\": \"")
-                                    ->append(to_string(lastScn))
-                                    ->append("\", dml: [");
-                            break;
-                        case COMMAND_BUFFER_REDIS:
-                            oracleEnvironment->commandBuffer
-                                    ->beginTran();
-                            break;
-                        }
-
+                        oracleEnvironment->commandBuffer->writer->beginTran(lastScn);
                     }
 
                     oldScn = scn;
@@ -274,17 +191,7 @@ namespace OpenLogReplicatorOracle {
                 tcTemp = tcTemp->next;
             }
 
-            switch (oracleEnvironment->commandBuffer->type) {
-            case COMMAND_BUFFER_JSON:
-                oracleEnvironment->commandBuffer
-                        ->append("]}")
-                        ->commitTran();
-                break;
-            case COMMAND_BUFFER_REDIS:
-                oracleEnvironment->commandBuffer
-                        ->commitTran();
-                break;
-            }
+            oracleEnvironment->commandBuffer->writer->commitTran();
         }
 
         oracleEnvironment->transactionBuffer.deleteTransactionChunks(tc, tcLast);

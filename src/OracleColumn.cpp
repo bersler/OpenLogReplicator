@@ -20,7 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include "OracleColumn.h"
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk) :
             colNo(colNo),

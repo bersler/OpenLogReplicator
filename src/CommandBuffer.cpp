@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     CommandBuffer::CommandBuffer() :
             shutdown(false),
-            type(COMMAND_BUFFER_JSON),
+            writer(nullptr),
             posStart(0),
             posEnd(0),
             posEndTmp(0),
@@ -40,10 +40,6 @@ namespace OpenLogReplicator {
         this->shutdown = true;
     }
 
-    void CommandBuffer::setType(uint32_t type) {
-        this->type = type;
-    }
-
     CommandBuffer* CommandBuffer::appendEscape(const uint8_t *str, uint32_t length) {
         if (this->shutdown)
             return this;
@@ -52,7 +48,7 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length * 2 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (1)" << endl;
-                writer.wait(lck);
+                writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }
@@ -84,7 +80,7 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
-                writer.wait(lck);
+                writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }
@@ -135,7 +131,7 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + 1 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
-                writer.wait(lck);
+                writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }
@@ -159,7 +155,7 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + 4 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (4)" << endl;
-                writer.wait(lck);
+                writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }
@@ -187,7 +183,7 @@ namespace OpenLogReplicator {
             posEndTmp = (posEndTmp + 3) & 0xFFFFFFFC;
             posEnd = posEndTmp;
 
-            readers.notify_all();
+            readersCond.notify_all();
         }
 
         if (posEndTmp + 1 >= INTRA_THREAD_BUFFER_SIZE) {
@@ -206,7 +202,7 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 || posStart == 0) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
-                writer.wait(lck);
+                writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }

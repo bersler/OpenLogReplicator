@@ -26,7 +26,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 using namespace std;
 using namespace oracle::occi;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class OracleStatement {
         Connection **conn;

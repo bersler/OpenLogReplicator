@@ -1,4 +1,4 @@
-/* Header for Thread class
+/* Header for Writer class
    Copyright (C) 2018-2019 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -20,9 +20,10 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string>
 #include <pthread.h>
 #include "types.h"
+#include "Thread.h"
 
-#ifndef THREAD_H_
-#define THREAD_H_
+#ifndef WRITER_H_
+#define WRITER_H_
 
 using namespace std;
 
@@ -32,22 +33,25 @@ namespace OpenLogReplicator {
     class RedoLogRecord;
     class OracleEnvironment;
 
-    class Thread {
+    class Writer : public Thread {
 
     public:
-        volatile bool shutdown;
-        pthread_t pthread;
-        string alias;
-        CommandBuffer *commandBuffer;
-
-        static void *runStatic(void *context);
-
         void terminate(void);
         virtual void *run() = 0;
         int initialize();
 
-        Thread(const string alias, CommandBuffer *commandBuffer);
-        virtual ~Thread();
+        void appendValue(RedoLogRecord *redoLogRecord, uint32_t typeNo, uint32_t fieldPos, uint32_t fieldLength);
+        virtual void beginTran(typescn scn) = 0;
+        virtual void next() = 0;
+        virtual void commitTran() = 0;
+        virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
+        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
+        virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) = 0;
+
+        Writer(const string alias, CommandBuffer *commandBuffer);
+        virtual ~Writer();
     };
 }
 

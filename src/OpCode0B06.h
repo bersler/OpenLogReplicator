@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef OPCODE0B06_H_
 #define OPCODE0B06_H_
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     class RedoLogRecord;
 

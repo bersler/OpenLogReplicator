@@ -39,9 +39,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 using namespace std;
 using namespace rapidjson;
 using namespace OpenLogReplicator;
-using namespace OpenLogReplicatorOracle;
-using namespace OpenLogReplicatorKafka;
-using namespace OpenLogReplicatorRedis;
 
 const Value& getJSONfield(const Value& value, const char* field) {
     if (!value.HasMember(field)) {
@@ -144,7 +141,7 @@ int main() {
             }
 
             //run
-            pthread_create(&oracleReader->thread, nullptr, &OracleReader::runStatic, (void*)oracleReader);
+            pthread_create(&oracleReader->pthread, nullptr, &OracleReader::runStatic, (void*)oracleReader);
         }
     }
 
@@ -163,17 +160,15 @@ int main() {
             const Value& source = getJSONfield(target, "source");
             CommandBuffer *commandBuffer = nullptr;
 
-            for (auto reader : readers) {
-                if (reader->alias.compare(source.GetString()) == 0) {
+            for (auto reader : readers)
+                if (reader->alias.compare(source.GetString()) == 0)
                     commandBuffer = reader->commandBuffer;
-                    commandBuffer->type = COMMAND_BUFFER_JSON;
-                }
-            }
             if (commandBuffer == nullptr)
                 {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
             cout << "Adding target: " << alias.GetString() << endl;
             KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer);
+            commandBuffer->writer = kafkaWriter;
             writers.push_back(kafkaWriter);
 
             //initialize
@@ -185,7 +180,7 @@ int main() {
             }
 
             //run
-            pthread_create(&kafkaWriter->thread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
+            pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
         } else
         if (strcmp("REDIS", type.GetString()) == 0) {
             const Value& alias = getJSONfield(target, "alias");
@@ -193,16 +188,6 @@ int main() {
             const Value& source = getJSONfield(target, "source");
             CommandBuffer *commandBuffer = nullptr;
 
-            for (auto reader : readers) {
-                if (reader->alias.compare(source.GetString()) == 0) {
-                    commandBuffer = reader->commandBuffer;
-                    commandBuffer->type = COMMAND_BUFFER_REDIS;
-                }
-            }
-            if (commandBuffer == nullptr)
-                {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
-
-            cout << "Adding target: " << alias.GetString() << endl;
             uint32_t serverLength = server.GetStringLength() + 1;
             char *host = new char[serverLength];
             memcpy(host, server.GetString(), serverLength);
@@ -214,9 +199,19 @@ int main() {
             }
             *colon = 0;
             uint32_t port = atoi(colon + 1);
+
+            for (auto reader : readers)
+                if (reader->alias.compare(source.GetString()) == 0)
+                    commandBuffer = reader->commandBuffer;
+            if (commandBuffer == nullptr)
+                {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
+
+            cout << "Adding target: " << alias.GetString() << endl;
             RedisWriter *redisWriter = new RedisWriter(alias.GetString(), host, port, commandBuffer);
+            commandBuffer->writer = redisWriter;
             writers.push_back(redisWriter);
             delete host;
+
 
             //initialize
             if (!redisWriter->initialize()) {
@@ -227,7 +222,7 @@ int main() {
             }
 
             //run
-            pthread_create(&redisWriter->thread, nullptr, &RedisWriter::runStatic, (void*)redisWriter);
+            pthread_create(&redisWriter->pthread, nullptr, &RedisWriter::runStatic, (void*)redisWriter);
         }
     }
 
@@ -248,13 +243,13 @@ int main() {
 
     for (auto commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
-        commandBuffer->readers.notify_all();
-        commandBuffer->writer.notify_all();
+        commandBuffer->readersCond.notify_all();
+        commandBuffer->writerCond.notify_all();
     }
 
     cout << "Waiting for writers to terminate" << endl;
     for (auto writer : writers) {
-        pthread_join(writer->thread, nullptr);
+        pthread_join(writer->pthread, nullptr);
         delete writer;
         cout << "- stopped" << endl;
     }
@@ -263,7 +258,7 @@ int main() {
     cout << "Waiting for readers to terminate" << endl;
     for (auto reader : readers) {
         reader->terminate();
-        pthread_join(reader->thread, nullptr);
+        pthread_join(reader->pthread, nullptr);
         delete reader;
         cout << "- stopped" << endl;
     }

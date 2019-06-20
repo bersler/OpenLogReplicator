@@ -24,9 +24,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "Transaction.h"
 
 using namespace std;
-using namespace OpenLogReplicator;
 
-namespace OpenLogReplicatorOracle {
+namespace OpenLogReplicator {
 
     OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
         DatabaseEnvironment(),
