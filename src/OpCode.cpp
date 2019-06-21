@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
 
     void OpCode::ktbRedo(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 8) {
-            oracleEnvironment->dumpStream << "too short field KTB Redo: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo: " << dec << fieldLength << endl;
             return;
         }
 
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
 
         if ((op & 0x0F) == 0x02) {
             if (fieldLength < 16) {
-                oracleEnvironment->dumpStream << "too short field KTB Redo 4: " << dec << fieldLength << endl;
+                oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
                 return;
             }
 
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
             }
         } else if ((op & 0x0F) == 0x04) {
             if (fieldLength < 32) {
-                oracleEnvironment->dumpStream << "too short field KTB Redo 4: " << dec << fieldLength << endl;
+                oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
 
         } else if ((op & 0x0F) == 0x01) {
             if (fieldLength < 24) {
-                oracleEnvironment->dumpStream << "too short field KTB Redo F: " << dec << fieldLength << endl;
+                oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo F: " << dec << fieldLength << endl;
                 return;
             }
 
@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
                         ", entries follow..." << endl;
 
                 if (fieldLength < 56 + entries * (uint32_t)8) {
-                    oracleEnvironment->dumpStream << "too short field KTB Redo F 0x11: " << dec << fieldLength << endl;
+                    oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo F 0x11: " << dec << fieldLength << endl;
                     return;
                 }
 
@@ -159,9 +159,14 @@ namespace OpenLogReplicator {
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typescn scn = (((uint64_t)oracleEnvironment->read16(redoLogRecord->data + fieldPos + 58 + j * 8)) << 32) |
                                     oracleEnvironment->read32(redoLogRecord->data + fieldPos + 60 + j * 8);
-                    oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
-                            " flg: " << (uint32_t)flg << " " <<
-                            " scn: " << PRINTSCN(scn) << endl;
+                    if (oracleEnvironment->version >= 12102)
+                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                                " flg: (opt=" << (uint32_t)(flg & 0x03) << " whr=" << (uint32_t)(flg >>2) << ") " <<
+                                " scn: " << PRINTSCN(scn) << endl;
+                    else
+                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                                " flg: " << (uint32_t)flg << " " <<
+                                " scn: " << PRINTSCN(scn) << endl;
                 }
             }
         }
@@ -169,7 +174,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeIRP(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 48) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode IRP: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP: " << dec << fieldLength << endl;
             return;
         }
 
@@ -178,7 +183,7 @@ namespace OpenLogReplicator {
         redoLogRecord->nullsDelta = fieldPos + 45;
 
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
                     " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
         }
@@ -264,7 +269,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeDRP(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 20) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode DRP: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode DRP: " << dec << fieldLength << endl;
             return;
         }
 
@@ -279,7 +284,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 20) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode LKR: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode LKR: " << dec << fieldLength << endl;
             return;
         }
 
@@ -296,7 +301,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 28) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode URP: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode URP: " << dec << fieldLength << endl;
             return;
         }
 
@@ -304,7 +309,7 @@ namespace OpenLogReplicator {
         redoLogRecord->nullsDelta = fieldPos + 26;
 
         if (fieldLength < 26 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode IRP for nulls: " << dec <<
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec <<
                     fieldLength << " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
         }
@@ -331,7 +336,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeSKL(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 20) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode SKL: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode SKL: " << dec << fieldLength << endl;
             return;
         }
 
@@ -377,7 +382,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 48) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode QMI: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI: " << dec << fieldLength << endl;
             return;
         }
 
@@ -386,7 +391,7 @@ namespace OpenLogReplicator {
         redoLogRecord->nullsDelta = fieldPos + 45;
 
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
                     " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
         }
@@ -451,7 +456,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 24) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode QMI (1): " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI (1): " << dec << fieldLength << endl;
             return;
         }
 
@@ -466,8 +471,9 @@ namespace OpenLogReplicator {
                 " lock: " << dec << (uint32_t)lock <<
                 " nrow: " << dec << redoLogRecord->nrow << endl;
 
-            if (fieldLength < 24 + (uint32_t)redoLogRecord->nrow * 2) {
-                oracleEnvironment->dumpStream << "too short field KDO OpCode QMI (2): " << dec << fieldLength << endl;
+            if (fieldLength < 22 + (uint32_t)redoLogRecord->nrow * 2) {
+                oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI (2): " << dec << fieldLength << ", " <<
+                        redoLogRecord->nrow << endl;
                 return;
             }
 
@@ -480,7 +486,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCode(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 16) {
-            oracleEnvironment->dumpStream << "too short field KDO OpCode: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode: " << dec << fieldLength << endl;
             return;
         }
 
@@ -491,6 +497,7 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->dumpLogFile) {
             uint32_t hdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
             uint16_t maxFr = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
+            uint32_t flags = 0;
             uint8_t xtype = redoLogRecord->data[fieldPos + 11];
             uint8_t ispac = redoLogRecord->data[fieldPos + 13];
 
@@ -515,14 +522,17 @@ namespace OpenLogReplicator {
             }
 
             string xtypeStr;
-            if (xtype == 1) xtypeStr = "XA"; //redo
-            else if (xtype == 2) xtypeStr = "XR"; //rollback
-            else if (xtype == 2) xtypeStr = "CR"; //unknown
+            if (xtype == 0x01) xtypeStr = "XA"; //redo
+            else if (xtype == 0x81) {
+                xtypeStr = "XAxtype KDO_KDOM2"; //redo
+                flags |= 0x80;
+            } else if (xtype == 0x02) xtypeStr = "XR"; //rollback
+            else if (xtype == 0x03) xtypeStr = "CR"; //unknown
             else xtypeStr = "??";
 
             oracleEnvironment->dumpStream << "KDO Op code: " << opCode << " row dependencies Disabled" << endl;
             oracleEnvironment->dumpStream << "  xtype: " << xtypeStr <<
-                    " flags: 0x00000000 " <<
+                    " flags: 0x" << setfill('0') << setw(8) << hex << flags << " " <<
                     " bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->bdba << " " <<
                     " hdba: 0x" << setfill('0') << setw(8) << hex << hdba << endl;
             oracleEnvironment->dumpStream << "itli: " << dec << (uint32_t)redoLogRecord->itli << " " <<
@@ -564,7 +574,7 @@ namespace OpenLogReplicator {
 
     void OpCode::ktub(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 24) {
-            oracleEnvironment->dumpStream << "too short field ktub: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
             return;
         }
 
@@ -586,7 +596,7 @@ namespace OpenLogReplicator {
 
     void OpCode::ktubu(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 24) {
-            oracleEnvironment->dumpStream << "too short field ktubu.B.1: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field ktubu.B.1: " << dec << fieldLength << endl;
             return;
         }
 

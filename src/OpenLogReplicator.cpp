@@ -110,7 +110,10 @@ int main() {
         const Value& type = getJSONfield(source, "type");
 
         if (strcmp("ORACLE11204", type.GetString()) == 0 ||
-            strcmp("ORACLE12102", type.GetString()) == 0) {
+            strcmp("ORACLE12102", type.GetString()) == 0 ||
+            strcmp("ORACLE12201", type.GetString()) == 0 ||
+            strcmp("ORACLE18000", type.GetString()) == 0 ||
+            strcmp("ORACLE19000", type.GetString()) == 0) {
             const Value& alias = getJSONfield(source, "alias");
             const Value& name = getJSONfield(source, "name");
             const Value& user = getJSONfield(source, "user");

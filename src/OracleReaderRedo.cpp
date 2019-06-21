@@ -149,10 +149,19 @@ namespace OpenLogReplicator {
         typescn nextScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 192);
 
         if (compatVsn == 0x0B200400) //11.2.0.4
-            oracleEnvironment->version = 11;
-        //else
-        //if (compatVsn == 0x0C100200) //12.1.0.2
-        //    oracleEnvironment->version = 12;
+            oracleEnvironment->version = 11204;
+        else
+        if (compatVsn == 0x0C100200) //12.1.0.2
+            oracleEnvironment->version = 12102;
+        else
+        if (compatVsn == 0x0C200100) //12.2.0.1
+            oracleEnvironment->version = 12201;
+        else
+        if (compatVsn == 0x12060000) //18.6.0.0
+            oracleEnvironment->version = 18600;
+        else
+        if (compatVsn == 0x13030000) //19.3.0.0
+            oracleEnvironment->version = 19300;
         else {
             cerr << "ERROR: Unsupported database version: " << compatVsn << endl;
             return REDO_ERROR;
@@ -296,9 +305,9 @@ namespace OpenLogReplicator {
                     " Zero blocks: " << dec << zeroBlocks << endl <<
                     " Format ID is " << dec << formatId << endl;
 
-            oracleEnvironment->dumpStream << " redo log key is " << hex;
+            oracleEnvironment->dumpStream << " redo log key is ";
             for (uint32_t i = 448; i < 448 + 16; ++i)
-                oracleEnvironment->dumpStream << (uint32_t) oracleEnvironment->headerBuffer[blockSize + i];
+                oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) oracleEnvironment->headerBuffer[blockSize + i];
             oracleEnvironment->dumpStream << endl;
 
             uint32_t redoKeyFlag = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 480);
@@ -443,8 +452,9 @@ namespace OpenLogReplicator {
                 encrypted = true;
 
             uint32_t fieldOffset = 24;
-            if (oracleEnvironment->version == 11) fieldOffset = 24;
-            else if (oracleEnvironment->version == 12) fieldOffset = 32;
+            if (oracleEnvironment->version == 11204) fieldOffset = 24;
+            else if (oracleEnvironment->version == 12102) fieldOffset = 32;
+            else if (oracleEnvironment->version == 12201) fieldOffset = 32; //??
 
             if (pos + fieldOffset + 1 >= recordLength)
                 throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
@@ -482,7 +492,7 @@ namespace OpenLogReplicator {
                 uint8_t seq = oracleEnvironment->recordBuffer[pos + 20];
                 uint32_t rbl = 0; //FIXME
 
-                if (oracleEnvironment->version == 11) {
+                if (oracleEnvironment->version == 11204) {
                     if (typ == 6)
                         oracleEnvironment->dumpStream << "CHANGE #" << dec << vectorNo <<
                             " MEDIA RECOVERY MARKER" <<
@@ -502,7 +512,7 @@ namespace OpenLogReplicator {
                             " OP:" << (uint32_t)(redoLogRecordCur->opCode >> 8) << "." << (uint32_t)(redoLogRecordCur->opCode & 0xFF) <<
                             " ENC:" << dec << (uint32_t)encrypted <<
                             " RBL:" << dec << rbl << endl;
-                } else if (oracleEnvironment->version == 12) {
+                } else /*if (oracleEnvironment->version == 12)*/ {
                     uint32_t conId = 0; //FIXME
                     uint32_t flg = 0; //FIXME
                     oracleEnvironment->dumpStream << "CHANGE #" << dec << vectorNo <<
