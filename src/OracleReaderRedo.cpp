@@ -375,20 +375,22 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::analyzeRecord() {
-        bool encrypted = false;
         bool checkpoint = false;
-        RedoLogRecord redoLogRecord[2], *redoLogRecordCur, *redoLogRecordPrev;
-        uint32_t redoLogCur = 0;
-        redoLogRecordCur = &redoLogRecord[redoLogCur];
-        redoLogRecordPrev = nullptr;
+        RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
+        OpCode *opCodes[VECTOR_MAX_LENGTH];
+        uint32_t isUndoRedo[VECTOR_MAX_LENGTH];
+        uint32_t vectors = 0;
+        uint32_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
+        uint32_t vectorsUndo = 0;
+        uint32_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
+        uint32_t vectorsRedo = 0;
 
         uint32_t recordLength = oracleEnvironment->read32(oracleEnvironment->recordBuffer);
         uint8_t vld = oracleEnvironment->recordBuffer[4];
         curScn = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 8) |
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
-        uint32_t vectorNo = 1;
+        uint32_t headerLength;
 
-        uint16_t headerLength;
         if ((vld & 4) == 4) {
             checkpoint = true;
             headerLength = 68;
@@ -396,16 +398,27 @@ namespace OpenLogReplicator {
             headerLength = 24;
 
         if (oracleEnvironment->dumpLogFile) {
-            uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12); //12 or 26 or 52
+            uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12); //candidates: 12 or 26 or 52
             uint16_t thread = 1; //FIXME
             oracleEnvironment->dumpStream << " " << endl;
 
-            oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
-                    " RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
-                                hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
-                                hex << setfill('0') << setw(4) << recordBeginPos <<
-                    " LEN: 0x" << hex << setfill('0') << setw(4) << recordLength <<
-                    " VLD: 0x" << hex << setfill('0') << setw(2) << (uint32_t) vld << endl;
+            if (oracleEnvironment->version < 12100)
+                oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
+                        " RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
+                                    hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
+                                    hex << setfill('0') << setw(4) << recordBeginPos <<
+                        " LEN: 0x" << hex << setfill('0') << setw(4) << recordLength <<
+                        " VLD: 0x" << hex << setfill('0') << setw(2) << (uint32_t) vld << endl;
+            else {
+                uint32_t conUid = 0; //FIXME
+                oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
+                        " RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
+                                    hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
+                                    hex << setfill('0') << setw(4) << recordBeginPos <<
+                        " LEN: 0x" << hex << setfill('0') << setw(4) << recordLength <<
+                        " VLD: 0x" << hex << setfill('0') << setw(2) << (uint32_t) vld <<
+                        " CON_UID: " << dec << conUid << endl;
+            }
 
             if (oracleEnvironment->dumpData) {
                 oracleEnvironment->dumpStream << "##: " << dec << recordLength;
@@ -442,238 +455,168 @@ namespace OpenLogReplicator {
 
         uint32_t pos = headerLength;
         while (pos < recordLength) {
+            memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
+            redoLogRecord[vectors].vectorNo = vectors + 1;
             //uint16_t opc = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos);
-            uint16_t cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
-            uint16_t afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
-            uint32_t dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
-            int16_t usn = (cls >= 15) ? (cls - 15) / 2 : -1;
-            uint8_t typ = oracleEnvironment->recordBuffer[pos + 21];
-            if ((typ & 0x80) == 0x80)
-                encrypted = true;
+            redoLogRecord[vectors].cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
+            redoLogRecord[vectors].afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
+            redoLogRecord[vectors].dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
+            redoLogRecord[vectors].scnRecord = oracleEnvironment->read48(oracleEnvironment->recordBuffer + pos + 12);
+            redoLogRecord[vectors].rbl = 0; //FIXME
+            redoLogRecord[vectors].seq = oracleEnvironment->recordBuffer[pos + 20];
+            redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
+            redoLogRecord[vectors].conId = 0; //FIXME
+            redoLogRecord[vectors].flgRecord = 0; //FIXME
+            int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint32_t fieldOffset = 24;
-            if (oracleEnvironment->version == 11204) fieldOffset = 24;
-            else if (oracleEnvironment->version == 12102) fieldOffset = 32;
-            else if (oracleEnvironment->version == 12201) fieldOffset = 32; //??
-
+            if (oracleEnvironment->version >= 12102) fieldOffset = 32;
             if (pos + fieldOffset + 1 >= recordLength)
                 throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
 
             uint16_t *fieldList = (uint16_t*)(oracleEnvironment->recordBuffer + pos + fieldOffset);
 
-            memset(redoLogRecordCur, 0, sizeof(struct RedoLogRecord));
-            redoLogRecordCur->opCode = (((uint16_t)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
+            redoLogRecord[vectors].opCode = (((uint16_t)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
                     oracleEnvironment->recordBuffer[pos + 1];
-            redoLogRecordCur->length = fieldOffset + ((fieldList[0] + 2) & 0xFFFC);
-            redoLogRecordCur->afn = afn;
-            redoLogRecordCur->dba = dba;
-            redoLogRecordCur->scn = curScn;
-            redoLogRecordCur->usn = usn;
-            redoLogRecordCur->data = oracleEnvironment->recordBuffer + pos;
-            redoLogRecordCur->fieldLengthsDelta = fieldOffset;
-            redoLogRecordCur->fieldNum = (*((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta)) - 2) / 2;
-            redoLogRecordCur->fieldPos = fieldOffset + ((*((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta)) + 2) & 0xFFFC);
+            redoLogRecord[vectors].length = fieldOffset + ((fieldList[0] + 2) & 0xFFFC);
+            redoLogRecord[vectors].scn = curScn;
+            redoLogRecord[vectors].usn = usn;
+            redoLogRecord[vectors].data = oracleEnvironment->recordBuffer + pos;
+            redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
+            redoLogRecord[vectors].fieldNum = (*((uint16_t*)(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta)) - 2) / 2;
+            redoLogRecord[vectors].fieldPos = fieldOffset + ((*((uint16_t*)(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta)) + 2) & 0xFFFC);
 
-            if (redoLogRecordCur->fieldPos > redoLogRecordCur->length)
+            uint32_t fieldPos = redoLogRecord[vectors].fieldPos;
+            for (uint32_t i = 1; i <= redoLogRecord[vectors].fieldNum; ++i) {
+                redoLogRecord[vectors].length += (fieldList[i] + 3) & 0xFFFC;
+                fieldPos += (((uint16_t*)(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta))[i] + 3) & 0xFFFC;
+                if (pos + redoLogRecord[vectors].length > recordLength)
+                    throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecord[vectors].length);
+            }
+
+            if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length)
                 throw RedoLogException("incomplete record", nullptr, 0);
 
-            if (redoLogRecordCur->opCode == 0x0501 ||
-                    redoLogRecordCur->opCode == 0x0502 ||
-                    redoLogRecordCur->opCode == 0x0504 ||
-                    redoLogRecordCur->opCode == 0x0506 ||
-                    redoLogRecordCur->opCode == 0x0508 ||
-                    redoLogRecordCur->opCode == 0x050B) {
-                recordObjn = 4294967295;
-                recordObjd = 4294967295;
+            redoLogRecord[vectors].recordObjn = 4294967295;
+            redoLogRecord[vectors].recordObjd = 4294967295;
+
+            pos += redoLogRecord[vectors].length;
+
+            switch (redoLogRecord[vectors].opCode) {
+            case 0x0501: //Undo
+                opCodes[vectors] = new OpCode0501(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0502: //Begin transaction
+                opCodes[vectors] = new OpCode0502(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0504: //Commit/rollback transaction
+                opCodes[vectors] = new OpCode0504(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0506: //Partial rollback
+                opCodes[vectors] = new OpCode0506(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x050B:
+                opCodes[vectors] = new OpCode050B(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B02: //REDO: Insert row piece
+                opCodes[vectors] = new OpCode0B02(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B03: //REDO: Delete row piece
+                opCodes[vectors] = new OpCode0B03(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B04: //REDO: Lock row piece
+                opCodes[vectors] = new OpCode0B04(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B05: //REDO: Update row piece
+                opCodes[vectors] = new OpCode0B05(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B06: //REDO: Overwrite row piece
+                opCodes[vectors] = new OpCode0B06(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B0B: //REDO: Insert multiple rows
+                opCodes[vectors] = new OpCode0B0B(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0B0C: //REDO: Delete multiple rows
+                opCodes[vectors] = new OpCode0B0C(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x1801: //DDL
+                opCodes[vectors] = new OpCode1801(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            default:
+                opCodes[vectors] = new OpCode(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
             }
 
-            if (oracleEnvironment->dumpLogFile) {
-                typescn scn2 = oracleEnvironment->read48(oracleEnvironment->recordBuffer + pos + 12);
-                uint8_t seq = oracleEnvironment->recordBuffer[pos + 20];
-                uint32_t rbl = 0; //FIXME
-
-                if (oracleEnvironment->version == 11204) {
-                    if (typ == 6)
-                        oracleEnvironment->dumpStream << "CHANGE #" << dec << vectorNo <<
-                            " MEDIA RECOVERY MARKER" <<
-                            " SCN:" << PRINTSCN(scn2) <<
-                            " SEQ:" << dec << (uint32_t)seq <<
-                            " OP:" << (uint32_t)(redoLogRecordCur->opCode >> 8) << "." << (uint32_t)(redoLogRecordCur->opCode & 0xFF) <<
-                            " ENC:" << dec << (uint32_t)encrypted << endl;
-                    else
-                        oracleEnvironment->dumpStream << "CHANGE #" << dec << vectorNo <<
-                            " TYP:" << (uint32_t)typ <<
-                            " CLS:" << cls <<
-                            " AFN:" << afn <<
-                            " DBA:0x" << setfill('0') << setw(8) << hex << dba <<
-                            " OBJ:" << dec << recordObjd <<
-                            " SCN:" << PRINTSCN(scn2) <<
-                            " SEQ:" << dec << (uint32_t)seq <<
-                            " OP:" << (uint32_t)(redoLogRecordCur->opCode >> 8) << "." << (uint32_t)(redoLogRecordCur->opCode & 0xFF) <<
-                            " ENC:" << dec << (uint32_t)encrypted <<
-                            " RBL:" << dec << rbl << endl;
-                } else /*if (oracleEnvironment->version == 12)*/ {
-                    uint32_t conId = 0; //FIXME
-                    uint32_t flg = 0; //FIXME
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << vectorNo <<
-                        " CON_ID:" << conId <<
-                        " TYP:" << (uint32_t)typ <<
-                        " CLS:" << cls <<
-                        " AFN:" << afn <<
-                        " DBA:0x" << setfill('0') << setw(8) << hex << dba <<
-                        " OBJ:" << dec << recordObjd <<
-                        " SCN:" << PRINTSCN(scn2) <<
-                        " SEQ:" << dec << (uint32_t)seq <<
-                        " OP:" << (uint32_t)(redoLogRecordCur->opCode >> 8) << "." << (uint32_t)(redoLogRecordCur->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
-                        " RBL:" << dec << rbl <<
-                        " FLG:0x" << setw(4) << hex << flg << endl;
+            isUndoRedo[vectors] = 0;
+            //UNDO
+            if (redoLogRecord[vectors].opCode == 0x0501
+                    || redoLogRecord[vectors].opCode == 0x0506
+                    || redoLogRecord[vectors].opCode == 0x050B) {
+                opCodesUndo[vectorsUndo++] = vectors;
+                isUndoRedo[vectors] = 1;
+                if (vectorsUndo <= vectorsRedo) {
+                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObjd = redoLogRecord[opCodesUndo[vectorsUndo - 1]].objd;
+                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObjn = redoLogRecord[opCodesUndo[vectorsUndo - 1]].objn;
+                }
+            //REDO
+            } else if ((redoLogRecord[vectors].opCode & 0xFF00) == 0x0A00 ||
+                    (redoLogRecord[vectors].opCode & 0xFF00) == 0x0B00) {
+                opCodesRedo[vectorsRedo++] = vectors;
+                isUndoRedo[vectors] = 2;
+                if (vectorsRedo <= vectorsUndo) {
+                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObjd = redoLogRecord[opCodesUndo[vectorsRedo - 1]].objd;
+                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObjn = redoLogRecord[opCodesUndo[vectorsRedo - 1]].objn;
                 }
             }
 
-            if (oracleEnvironment->dumpData) {
-                oracleEnvironment->dumpStream << "##: " << dec << fieldOffset;
-                for (uint32_t j = 0; j < fieldOffset; ++j) {
-                    if ((j & 0xF) == 0)
-                        oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
-                    if ((j & 0x7) == 0)
-                        oracleEnvironment->dumpStream << " ";
-                    oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) oracleEnvironment->recordBuffer[j] << " ";
-                }
-                oracleEnvironment->dumpStream << endl;
-            }
-
-            uint32_t fieldPos = redoLogRecordCur->fieldPos;
-            for (uint32_t i = 1; i <= redoLogRecordCur->fieldNum; ++i) {
-                if (oracleEnvironment->dumpData) {
-                    oracleEnvironment->dumpStream << "##: " << dec << ((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] << " (" << i << ")";
-                    for (uint32_t j = 0; j < ((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i]; ++j) {
-                        if ((j & 0xF) == 0)
-                            oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
-                        if ((j & 0x7) == 0)
-                            oracleEnvironment->dumpStream << " ";
-                        oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) redoLogRecordCur->data[fieldPos + j] << " ";
-                    }
-                    oracleEnvironment->dumpStream << endl;
-                }
-
-                redoLogRecordCur->length += (fieldList[i] + 3) & 0xFFFC;
-                fieldPos += (((uint16_t*)(redoLogRecordCur->data + redoLogRecordCur->fieldLengthsDelta))[i] + 3) & 0xFFFC;
-                if (pos + redoLogRecordCur->length > recordLength)
-                    throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecordCur->length);
-            }
-
-            OpCode *opCode = nullptr;
-            pos += redoLogRecordCur->length;
-
-            //begin transaction
-            if (redoLogRecordCur->opCode == 0x0502) {
-                opCode = new OpCode0502(oracleEnvironment, redoLogRecordCur);
-                opCode->process();
-                if (SQN(redoLogRecordCur->xid) > 0)
-                    appendToTransaction(redoLogRecordCur);
-            } else
-            //commit transaction (or rollback)
-            if (redoLogRecordCur->opCode == 0x0504) {
-                opCode = new OpCode0504(oracleEnvironment, redoLogRecordCur);
-                opCode->process();
-                appendToTransaction(redoLogRecordCur);
-            } else {
-                switch (redoLogRecordCur->opCode) {
-                //Undo
-                case 0x0501:
-                    opCode = new OpCode0501(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //Partial rollback
-                case 0x0506:
-                    opCode = new OpCode0506(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                case 0x050B:
-                    opCode = new OpCode050B(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Insert row piece
-                case 0x0B02:
-                    opCode = new OpCode0B02(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Delete row piece
-                case 0x0B03:
-                    opCode = new OpCode0B03(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Lock row piece
-                case 0x0B04:
-                    opCode = new OpCode0B04(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Update row piece
-                case 0x0B05:
-                    opCode = new OpCode0B05(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Overwrite row piece
-                case 0x0B06:
-                    opCode = new OpCode0B06(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Insert multiple rows
-                case 0x0B0B:
-                    opCode = new OpCode0B0B(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //REDO: Delete multiple rows
-                case 0x0B0C:
-                    opCode = new OpCode0B0C(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-
-                //DDL
-                case 0x1801:
-                    opCode = new OpCode1801(oracleEnvironment, redoLogRecordCur);
-                    opCode->process();
-                    break;
-                }
-
-
-                if (redoLogRecordCur->objd != 0) {
-                    recordObjn = redoLogRecordCur->objn;
-                    recordObjd = redoLogRecordCur->objd;
-                }
-
-                if (redoLogRecordCur->opCode != 0) {
-                    if (redoLogRecordPrev == nullptr) {
-                        redoLogRecordPrev = redoLogRecordCur;
-                        redoLogCur = 1 - redoLogCur;
-                        redoLogRecordCur = &redoLogRecord[redoLogCur];
-                    } else {
-                        appendToTransaction(redoLogRecordPrev, redoLogRecordCur);
-                        redoLogRecordPrev = nullptr;
-                    }
-                }
-            }
-
-            if (opCode != nullptr) {
-                delete opCode;
-                opCode = nullptr;
-            }
-            ++vectorNo;
+            ++vectors;
         }
 
-        if (redoLogRecordPrev != nullptr) {
-            appendToTransaction(redoLogRecordPrev);
-            redoLogRecordPrev = nullptr;
+        for (uint32_t i = 0; i < vectors; ++i) {
+            opCodes[i]->process();
+            delete opCodes[i];
+            opCodes[i] = nullptr;
+        }
+
+        for (uint32_t i = 0; i < vectors; ++i) {
+            //begin transaction
+            if (redoLogRecord[i].opCode == 0x0502) {
+            }
+        }
+
+        uint32_t iPair = 0;
+        for (uint32_t i = 0; i < vectors; ++i) {
+            //begin transaction
+            if (redoLogRecord[i].opCode == 0x0502) {
+                if (SQN(redoLogRecord[i].xid) > 0)
+                    appendToTransaction(&redoLogRecord[i]);
+            //commit/rollback transaction
+            } else if (redoLogRecord[i].opCode == 0x0504) {
+                appendToTransaction(&redoLogRecord[i]);
+            //ddl, etc.
+            } else if (isUndoRedo[i] == 0) {
+                appendToTransaction(&redoLogRecord[i]);
+            } else if (iPair < vectorsUndo) {
+                if (opCodesUndo[iPair] == i) {
+                    if (opCodesRedo[iPair] < vectorsRedo)
+                        appendToTransaction(&redoLogRecord[opCodesUndo[iPair]], &redoLogRecord[opCodesRedo[iPair]]);
+                    else
+                        appendToTransaction(&redoLogRecord[opCodesUndo[iPair]]);
+                    ++iPair;
+                } else if (opCodesRedo[iPair] == i) {
+                    if (opCodesUndo[iPair] < vectorsUndo)
+                        appendToTransaction(&redoLogRecord[opCodesRedo[iPair]], &redoLogRecord[opCodesUndo[iPair]]);
+                    else
+                        appendToTransaction(&redoLogRecord[opCodesRedo[iPair]]);
+                    ++iPair;
+                }
+            }
+        }
+
+        for (uint32_t i = 0; i < vectors; ++i) {
+            //commit transaction
+            if (redoLogRecord[i].opCode == 0x0504) {
+            }
         }
 
         if (checkpoint)
@@ -771,6 +714,8 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord2->bdba != 0) {
             cerr << "ERROR: BDBA does not match!" << endl;
+            if (oracleEnvironment->dumpLogFile)
+                oracleEnvironment->dumpStream << "ERROR: BDBA does not match!" << endl;
             return;
         }
 

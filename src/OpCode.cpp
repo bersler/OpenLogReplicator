@@ -37,10 +37,91 @@ namespace OpenLogReplicator {
     }
 
     uint16_t OpCode::getOpCode(void) {
-        return 0xFFFF;
+        return redoLogRecord->opCode;
     }
 
     void OpCode::process() {
+        if (oracleEnvironment->dumpLogFile) {
+            bool encrypted = false;
+            if ((redoLogRecord->typ & 0x80) == 0x80)
+                encrypted = true;
+
+            if (oracleEnvironment->version < 12000) {
+                if (redoLogRecord->typ == 6)
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " MEDIA RECOVERY MARKER" <<
+                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted << endl;
+                else
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                        " CLS:" << redoLogRecord->cls <<
+                        " AFN:" << redoLogRecord->afn <<
+                        " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
+                        " OBJ:" << dec << redoLogRecord->recordObjd <<
+                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " RBL:" << dec << redoLogRecord->rbl << endl;
+            } else {
+                if (redoLogRecord->typ == 6)
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " MEDIA RECOVERY MARKER" <<
+                        " CON_ID:" << redoLogRecord->conId <<
+                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
+                else
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " CON_ID:" << redoLogRecord->conId <<
+                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                        " CLS:" << redoLogRecord->cls <<
+                        " AFN:" << redoLogRecord->afn <<
+                        " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
+                        " OBJ:" << dec << redoLogRecord->recordObjd <<
+                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " RBL:" << dec << redoLogRecord->rbl <<
+                        " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
+            }
+        }
+
+        if (oracleEnvironment->dumpData) {
+            uint32_t fieldOffset = 24;
+            if (oracleEnvironment->version >= 12102) fieldOffset = 32;
+
+            oracleEnvironment->dumpStream << "##: " << dec << fieldOffset;
+            for (uint32_t j = 0; j < fieldOffset; ++j) {
+                if ((j & 0xF) == 0)
+                    oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
+                if ((j & 0x7) == 0)
+                    oracleEnvironment->dumpStream << " ";
+                oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) oracleEnvironment->recordBuffer[j] << " ";
+            }
+            oracleEnvironment->dumpStream << endl;
+
+            uint32_t fieldPos = redoLogRecord->fieldPos;
+            for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+                oracleEnvironment->dumpStream << "##: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] << " (" << i << ")";
+                for (uint32_t j = 0; j < ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]; ++j) {
+                    if ((j & 0xF) == 0)
+                        oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
+                    if ((j & 0x7) == 0)
+                        oracleEnvironment->dumpStream << " ";
+                    oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) redoLogRecord->data[fieldPos + j] << " ";
+                }
+                oracleEnvironment->dumpStream << endl;
+
+                fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            }
+        }
     }
 
     void OpCode::ktbRedo(uint32_t fieldPos, uint32_t fieldLength) {
@@ -382,7 +463,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 48) {
-            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI: " << dec << fieldLength << endl;
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP: " << dec << fieldLength << endl;
             return;
         }
 
@@ -475,11 +556,6 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI (2): " << dec << fieldLength << ", " <<
                         redoLogRecord->nrow << endl;
                 return;
-            }
-
-            for (uint i = 0; i < redoLogRecord->nrow; ++i) {
-                uint16_t slotVal = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 22 + i * 2);
-                oracleEnvironment->dumpStream << "slot[" << dec << i << "]: " << dec <<   slotVal << endl;
             }
         }
     }

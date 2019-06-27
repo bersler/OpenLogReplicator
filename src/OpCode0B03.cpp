@@ -34,11 +34,8 @@ namespace OpenLogReplicator {
     OpCode0B03::~OpCode0B03() {
     }
 
-    uint16_t OpCode0B03::getOpCode(void) {
-        return 0x0B03;
-    }
-
     void OpCode0B03::process() {
+        OpCode::process();
         uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
             if (i == 1) {

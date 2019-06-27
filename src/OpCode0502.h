@@ -31,7 +31,6 @@ namespace OpenLogReplicator {
         OpCode0502(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0502();
 
-        virtual uint16_t getOpCode(void);
         virtual void process();
 
         void kteop(uint32_t fieldPos, uint32_t fieldLength);

@@ -28,17 +28,29 @@ using namespace std;
 namespace OpenLogReplicator {
 
     OpCode0501::OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-        OpCode(oracleEnvironment, redoLogRecord) {
+            OpCode(oracleEnvironment, redoLogRecord) {
+
+        uint32_t fieldPos = redoLogRecord->fieldPos, fieldLength;
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum && i <= 2; ++i) {
+            fieldLength = ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i];
+            if (i == 2) {
+                if (fieldLength < 8) {
+                    oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+                    return;
+                }
+
+                redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+                redoLogRecord->objd = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
+            }
+            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        }
     }
 
     OpCode0501::~OpCode0501() {
     }
 
-    uint16_t OpCode0501::getOpCode(void) {
-        return 0x0501;
-    }
-
     void OpCode0501::process() {
+        OpCode::process();
         uint16_t *colnums;
         uint8_t *nulls = nullptr, bits = 1;
         uint32_t fieldPos = redoLogRecord->fieldPos;
@@ -50,11 +62,11 @@ namespace OpenLogReplicator {
                 ktub(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
                 if ((redoLogRecord->flg & 0x8) != 0)
                     ktubl(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-                else //if (redoLogRecord->opc == 0x0B01)
+                else
                     ktubu(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
             } else if (i == 3) {
-                if (redoLogRecord->opc == 0x0B01) {
+                if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
                     ktbRedo(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
                 }
 
@@ -62,6 +74,7 @@ namespace OpenLogReplicator {
                 if (redoLogRecord->opc == 0x0B01) {
                     kdoOpCode(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+
                     //Quick Multi-row Delete
                     if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
                         for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)

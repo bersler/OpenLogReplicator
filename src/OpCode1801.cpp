@@ -38,11 +38,8 @@ namespace OpenLogReplicator {
     OpCode1801::~OpCode1801() {
     }
 
-    uint16_t OpCode1801::getOpCode(void) {
-        return 0x1801;
-    }
-
     void OpCode1801::process() {
+        OpCode::process();
         uint32_t fieldPos = redoLogRecord->fieldPos;
 
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {

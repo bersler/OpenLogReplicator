@@ -25,6 +25,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
+#define VECTOR_MAX_LENGTH 512
+
 namespace OpenLogReplicator {
 
     class OracleReader;

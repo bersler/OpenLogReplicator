@@ -30,6 +30,17 @@ namespace OpenLogReplicator {
 
     class RedoLogRecord {
     public:
+        uint16_t cls;
+        typescn scnRecord;
+        uint32_t rbl;
+        uint8_t seq;
+        uint8_t typ;
+        uint32_t conId;
+        uint32_t flgRecord;
+        uint32_t vectorNo;
+        uint32_t recordObjn;
+        uint32_t recordObjd;
+
         typescn scn;              //scn
         uint8_t *data;            //data
         uint16_t fieldNum;

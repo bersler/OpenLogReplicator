@@ -36,7 +36,6 @@ namespace OpenLogReplicator {
         OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0501();
 
-        virtual uint16_t getOpCode(void);
         virtual void process();
     };
 }
