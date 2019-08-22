@@ -52,6 +52,7 @@ namespace OpenLogReplicator {
         CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
         CommandBuffer* append(const string str);
         CommandBuffer* append(char chr);
+        CommandBuffer* appendHex(uint64_t val, uint32_t length);
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();

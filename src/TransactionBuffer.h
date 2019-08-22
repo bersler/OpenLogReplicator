@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         void appendTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
     public:
-        TransactionChunk *newTransactionChunk();
+        TransactionChunk* newTransactionChunk();
         TransactionChunk* addTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         TransactionChunk* rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba,

@@ -239,6 +239,10 @@ namespace OpenLogReplicator {
                 sequence = stmt.rset->getInt(2);
                 firstScn = stmt.rset->getNumber(3);
                 nextScn = stmt.rset->getNumber(5);
+                if (path.length() == 0) {
+                    cerr << "ERROR: Missing archive log for SEQ " << sequence << " SCN: " << firstScn << "-" << nextScn << endl;
+                    throw RedoLogException("archive file missing", nullptr, 0);
+                }
 
                 OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, firstScn, nextScn, sequence, path.c_str());
                 archiveRedoQueue.push(redo);
@@ -371,7 +375,8 @@ namespace OpenLogReplicator {
 
     void OracleReader::addTable(string mask) {
         checkConnection(false);
-        cout << "- reading table schema for: " << mask << endl;
+        cout << "- reading table schema for: " << mask;
+        uint32_t tabCnt = 0;
 
         try {
             OracleStatement stmt(&conn, env);
@@ -393,9 +398,10 @@ namespace OpenLogReplicator {
                 string objectName = stmt.rset->getString(5);
                 uint32_t totalPk = 0;
                 OracleObject *object = new OracleObject(objn, objd, cluCols, owner.c_str(), objectName.c_str());
+                ++tabCnt;
 
-                if (oracleEnvironment->trace >= 1)
-                    cout << "- found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")" << endl;
+                //if (oracleEnvironment->trace >= 1)
+                    cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
 
                 stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                 stmt2.stmt->setInt(1, objn);
@@ -420,6 +426,7 @@ namespace OpenLogReplicator {
         } catch(SQLException &ex) {
             cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
         }
+        cout << " (total: " << tabCnt << ")" << endl;
     }
 
     void OracleReader::readCheckpoint() {

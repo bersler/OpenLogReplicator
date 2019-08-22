@@ -569,12 +569,12 @@ namespace OpenLogReplicator {
         redoLogRecord->itli = redoLogRecord->data[fieldPos + 12];
         redoLogRecord->op = redoLogRecord->data[fieldPos + 10];
         redoLogRecord->bdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->xtype = redoLogRecord->data[fieldPos + 11];
 
         if (oracleEnvironment->dumpLogFile) {
             uint32_t hdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
             uint16_t maxFr = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
             uint32_t flags = 0;
-            uint8_t xtype = redoLogRecord->data[fieldPos + 11];
             uint8_t ispac = redoLogRecord->data[fieldPos + 13];
 
             const char* opCode = "???";
@@ -595,16 +595,24 @@ namespace OpenLogReplicator {
                 case 0x0E: opCode = "DSC"; break;
                 case 0x10: opCode = "LMN"; break;
                 case 0x11: opCode = "LLB"; break;
+                case 0x13: opCode = " 21"; break;
+                default:
+                    if (oracleEnvironment->dumpLogFile)
+                        oracleEnvironment->dumpStream << "DEBUG op: " << dec << (uint32_t)(redoLogRecord->op & 0x1F) << endl;
             }
 
             string xtypeStr;
-            if (xtype == 0x01) xtypeStr = "XA"; //redo
-            else if (xtype == 0x81) {
+            if (redoLogRecord->xtype == 0x01) xtypeStr = "XA"; //redo
+            else if (redoLogRecord->xtype == 0x81) {
                 xtypeStr = "XAxtype KDO_KDOM2"; //redo
                 flags |= 0x80;
-            } else if (xtype == 0x02) xtypeStr = "XR"; //rollback
-            else if (xtype == 0x03) xtypeStr = "CR"; //unknown
-            else xtypeStr = "??";
+            } else if (redoLogRecord->xtype == 0x02) xtypeStr = "XR"; //rollback
+            else if (redoLogRecord->xtype == 0x03) xtypeStr = "CR"; //unknown
+            else {
+                if (oracleEnvironment->dumpLogFile)
+                    oracleEnvironment->dumpStream << "DEBUG xtype: " << dec << redoLogRecord->xtype << endl;
+                xtypeStr = "??";
+            }
 
             oracleEnvironment->dumpStream << "KDO Op code: " << opCode << " row dependencies Disabled" << endl;
             oracleEnvironment->dumpStream << "  xtype: " << xtypeStr <<
@@ -697,6 +705,29 @@ namespace OpenLogReplicator {
 
     bool OpCode::isKdoUndo() {
         return false;
+    }
+
+    void OpCode::dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength) {
+        uint32_t pos = 0;
+
+        if (oracleEnvironment->dumpLogFile)
+            oracleEnvironment->dumpStream << "Vector content: " << endl;
+
+        for (uint32_t k = 0; k < redoLogRecord->cc; ++k) {
+            uint16_t fieldLength = data[pos];
+            ++pos;
+            uint8_t isNull = (fieldLength == 0xFF);
+
+            if (fieldLength == 0xFE) {
+                fieldLength = oracleEnvironment->read16(data + pos);
+                pos += 2;
+            }
+
+            dumpCols(data + pos, colnum + k, fieldLength, isNull);
+
+            if (!isNull)
+                pos += fieldLength;
+        }
     }
 
     void OpCode::dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull) {

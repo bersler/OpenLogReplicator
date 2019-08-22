@@ -50,6 +50,7 @@ namespace OpenLogReplicator {
         virtual const char* getUndoType();
         virtual bool isKdoUndo();
         void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
+        void dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength);
 
     public:
         OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
             if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
                 oracleEnvironment->commandBuffer->rewind();
 
-            oracleEnvironment->commandBuffer->writer->beginTran(lastScn);
+            oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
 
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
                         case 0x05010B05:
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseUpdate(redoLogRecord1, redoLogRecord2);
+                            oracleEnvironment->commandBuffer->writer->parseUpdate(redoLogRecord1, redoLogRecord2, oracleEnvironment);
                             hasPrev = true;
                             break;
 
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                         oracleEnvironment->commandBuffer->writer->commitTran();
                         if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
                             oracleEnvironment->commandBuffer->rewind();
-                        oracleEnvironment->commandBuffer->writer->beginTran(lastScn);
+                        oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
                     }
 
                     oldScn = scn;
@@ -217,6 +217,11 @@ namespace OpenLogReplicator {
 
     Transaction::~Transaction() {
     }
+
+    //void Transaction::free(TransactionBuffer *transactionBuffer) {
+    //    transactionBuffer->deleteTransactionChunks(tc, tcLast);
+    //}
+
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
         os << "xid: " << PRINTXID(tran.xid) <<

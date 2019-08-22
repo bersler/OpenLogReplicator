@@ -80,32 +80,17 @@ namespace OpenLogReplicator {
                         for (uint32_t k = 0; k < jcc; ++k) {
                             uint16_t fieldLength = redoLogRecord->data[fieldPos + pos];
                             ++pos;
+                            uint8_t isNull = (fieldLength == 0xFF);
 
-                            if (fieldLength == 0xFF) {
-                                oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << k << ": *NULL*" << endl;
-                            } else {
-                                if (fieldLength == 0xFE) {
-                                    fieldLength = oracleEnvironment->read16(redoLogRecord->data + fieldPos + pos);
-                                    pos += 2;
-                                }
-
-                                oracleEnvironment->dumpStream << "col " << setfill(' ') << setw(2) << dec << k << ": " <<
-                                        "[" << setfill(' ') << setw(2) << dec << fieldLength << "]";
-
-                                if (fieldLength <= 20)
-                                    oracleEnvironment->dumpStream << " ";
-                                else
-                                    oracleEnvironment->dumpStream << endl;
-
-                                for (uint32_t l = 0; l < fieldLength; ++l) {
-                                    oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPos + pos];
-                                    if ((l % 25) == 24 && l != (uint32_t)fieldLength - 1)
-                                        oracleEnvironment->dumpStream << endl;
-                                    ++pos;
-                                }
-
-                                oracleEnvironment->dumpStream << endl;
+                            if (fieldLength == 0xFE) {
+                                fieldLength = oracleEnvironment->read16(redoLogRecord->data + fieldPos + pos);
+                                pos += 2;
                             }
+
+                            dumpCols(redoLogRecord->data + fieldPos + pos, k, fieldLength, isNull);
+
+                            if (!isNull)
+                                pos += fieldLength;
                         }
                     }
                 }

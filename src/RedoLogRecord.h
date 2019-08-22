@@ -74,6 +74,7 @@ namespace OpenLogReplicator {
         uint8_t cc;
         uint8_t itli;
         uint16_t slot;
+        uint8_t xtype;            //xtype for kdoOpCode
 
         void dump();
     };

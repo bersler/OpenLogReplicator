@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         return 1;
     }
 
-    void RedisWriter::beginTran(typescn scn) {
+    void RedisWriter::beginTran(typescn scn, typexid xid) {
         commandBuffer->beginTran();
     }
 
@@ -320,7 +320,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedisWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void RedisWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
         //todo
     }
 

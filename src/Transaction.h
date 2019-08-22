@@ -58,6 +58,7 @@ namespace OpenLogReplicator {
         bool rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 
         void flush(OracleEnvironment *oracleEnvironment);
+        //void free(TransactionBuffer *transactionBuffer);
 
         Transaction(typexid xid, TransactionBuffer *transactionBuffer);
         virtual ~Transaction();

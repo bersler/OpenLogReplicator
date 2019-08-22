@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         string topic;
         Producer *producer;
         Topic *ktopic;
+        uint32_t trace;
 
     public:
         virtual void *run();
@@ -51,16 +52,16 @@ namespace OpenLogReplicator {
         void addTable(string mask);
         int initialize();
 
-        virtual void beginTran(typescn scn);
+        virtual void beginTran(typescn scn, typexid xid);
         virtual void next();
         virtual void commitTran();
         virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
-        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
         virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment);
 
-        KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer);
+        KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint32_t trace);
         virtual ~KafkaWriter();
     };
 }

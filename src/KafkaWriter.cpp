@@ -39,14 +39,15 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer) :
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint32_t trace) :
         Writer(alias, commandBuffer),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers.c_str()),
         topic(topic.c_str()),
         producer(nullptr),
-        ktopic(nullptr) {
+        ktopic(nullptr),
+        trace(trace){
     }
 
     KafkaWriter::~KafkaWriter() {
@@ -91,10 +92,17 @@ namespace OpenLogReplicator {
                 length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
             }
 
-            if (producer->produce(
-                    ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
-                    length - 4, nullptr, nullptr)) {
-                cerr << "ERROR: writing to topic " << endl;
+            if (trace <= 0) {
+                if (producer->produce(
+                        ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
+                        length - 4, nullptr, nullptr)) {
+                    cerr << "ERROR: writing to topic " << endl;
+                }
+            } else {
+                cout << "KAFKA: ";
+                for (uint32_t i = 0; i < length - 4; ++i)
+                    cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 4 + i];
+                cout << endl;
             }
 
             {
@@ -119,26 +127,34 @@ namespace OpenLogReplicator {
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
         conf->set("metadata.broker.list", brokers, errstr);
 
-        producer = Producer::create(conf, errstr);
-        if (producer == nullptr) {
-            std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
-            return 0;
-        }
+        if (trace <= 0) {
+            producer = Producer::create(conf, errstr);
+            if (producer == nullptr) {
+                std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
+                return 0;
+            }
 
-        ktopic = Topic::create(producer, topic, tconf, errstr);
-        if (ktopic == nullptr) {
-            std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
-            return 0;
+            ktopic = Topic::create(producer, topic, tconf, errstr);
+            if (ktopic == nullptr) {
+                std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
+                return 0;
+            }
         }
 
         return 1;
     }
 
-    void KafkaWriter::beginTran(typescn scn) {
+    void KafkaWriter::beginTran(typescn scn, typexid xid) {
         commandBuffer
                 ->beginTran()
                 ->append("{\"scn\": \"")
                 ->append(to_string(scn))
+                ->append("\", \"xid\": \"0x")
+                ->appendHex(USN(xid), 4)
+                ->append('.')
+                ->appendHex(SLT(xid), 3)
+                ->append('.')
+                ->appendHex(SQN(xid), 8)
                 ->append("\", dml: [");
     }
 
@@ -273,7 +289,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
         uint16_t *colnums = nullptr;
         uint32_t fieldPos = redoLogRecord1->fieldPos;
         uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
@@ -293,34 +309,70 @@ namespace OpenLogReplicator {
                 ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
                 ->append("\", \"before\": {");
 
-        for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
-            if (prevValue) {
-                commandBuffer->append(',');
-            } else
-                prevValue = true;
+        if ((redoLogRecord1->xtype & 0x80) != 0) {
+            uint32_t pos = 0;
+            for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
 
-            commandBuffer
-                    ->append('"')
-                    ->append(redoLogRecord1->object->columns[*colnums]->columnName)
-                    ->append("\": \"");
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord1->object->columns[*colnums]->columnName)
+                        ->append("\": \"");
 
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0) {
-                //null
-            } else {
-                appendValue(redoLogRecord1, redoLogRecord1->object->columns[*colnums]->typeNo, fieldPos,
-                        ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+                uint16_t fieldLength = redoLogRecord1->data[pos];
+                ++pos;
+                uint8_t isNull = (fieldLength == 0xFF);
+
+                if (fieldLength == 0xFE) {
+                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + pos);
+                    pos += 2;
+                }
+
+                if (isNull) {
+                    //null
+                } else {
+                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[*colnums]->typeNo, fieldPos + pos, fieldLength);
+                    pos += fieldLength;
+                }
+
+                commandBuffer
+                        ->append('"');
+
+                ++colnums;
             }
+        } else {
+            for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
+                if (prevValue) {
+                    commandBuffer->append(',');
+                } else
+                    prevValue = true;
 
-            commandBuffer
-                    ->append('"');
+                commandBuffer
+                        ->append('"')
+                        ->append(redoLogRecord1->object->columns[*colnums]->columnName)
+                        ->append("\": \"");
 
-            ++colnums;
-            bits <<= 1;
-            if (bits == 0) {
-                bits = 1;
-                ++nulls;
+                if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 6] == 0) {
+                    //null
+                } else {
+                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[*colnums]->typeNo, fieldPos,
+                            ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 6]);
+                }
+
+                commandBuffer
+                        ->append('"');
+
+                ++colnums;
+                bits <<= 1;
+                if (bits == 0) {
+                    bits = 1;
+                    ++nulls;
+                }
+                fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 6] + 3) & 0xFFFC;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
         }
 
         fieldPos = redoLogRecord2->fieldPos;
@@ -334,7 +386,7 @@ namespace OpenLogReplicator {
             fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
 
-        commandBuffer->append("}, \"after\":  {");
+        commandBuffer->append("}, \"after\": {");
 
         for (uint32_t i = 0; i < redoLogRecord2->cc; ++i) {
             if (prevValue)
@@ -347,11 +399,11 @@ namespace OpenLogReplicator {
                     ->append(redoLogRecord2->object->columns[*colnums]->columnName)
                     ->append("\": \"");
 
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0) {
+            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 4] == 0) {
                 //nulls
             } else {
                 appendValue(redoLogRecord2, redoLogRecord2->object->columns[*colnums]->typeNo, fieldPos,
-                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 4]);
 
             }
 
@@ -363,7 +415,7 @@ namespace OpenLogReplicator {
                 bits = 1;
                 ++nulls;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 4] + 3) & 0xFFFC;
         }
 
         commandBuffer->append("}}");

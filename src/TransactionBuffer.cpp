@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
         //8:scn   -8
 
         //last scn is higher
-        if (tcLast->size >= ROW_HEADER_MEMORY && *((typescn *)(tcLast->buffer + tcLast->size - 12)) > redoLogRecord1->scn) {
+        if (tcLast->size >= ROW_HEADER_MEMORY && *((typescn *)(tcLast->buffer + tcLast->size - 8)) > redoLogRecord1->scn) {
             //cerr << "WARN: scn out of order" << endl;
             //locate correct position
             TransactionChunk* tcTemp = tcLast;
@@ -204,6 +204,7 @@ namespace OpenLogReplicator {
     }
 
     bool TransactionBuffer::deleteTransactionPart(TransactionChunk* tc, typeuba &uba, uint32_t &dba, uint8_t &slt, uint8_t &rci) {
+        cerr << "deleteTransactionPart: not yet implemented" << endl;
         if (tc->size < ROW_HEADER_MEMORY || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
             return false;

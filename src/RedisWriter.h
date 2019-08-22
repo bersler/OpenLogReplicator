@@ -47,12 +47,12 @@ namespace OpenLogReplicator {
         void addTable(string mask);
         int initialize();
 
-        virtual void beginTran(typescn scn);
+        virtual void beginTran(typescn scn, typexid xid);
         virtual void next();
         virtual void commitTran();
         virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
-        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
         virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment);
 

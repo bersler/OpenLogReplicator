@@ -586,25 +586,32 @@ namespace OpenLogReplicator {
 
         uint32_t iPair = 0;
         for (uint32_t i = 0; i < vectors; ++i) {
+            //cout << "** " << hex << setfill('0') << setw(4) << redoLogRecord[i].opCode <<
+            //        " OBJD: " << dec << redoLogRecord[i].recordObjd <<
+            //        " OBJN: " << redoLogRecord[i].recordObjn <<
+            //        " XID: " << PRINTXID(redoLogRecord[i].xid) << endl;
+
             //begin transaction
             if (redoLogRecord[i].opCode == 0x0502) {
                 if (SQN(redoLogRecord[i].xid) > 0)
                     appendToTransaction(&redoLogRecord[i]);
-            //commit/rollback transaction
+
+                //commit/rollback transaction
             } else if (redoLogRecord[i].opCode == 0x0504) {
                 appendToTransaction(&redoLogRecord[i]);
+
             //ddl, etc.
             } else if (isUndoRedo[i] == 0) {
                 appendToTransaction(&redoLogRecord[i]);
             } else if (iPair < vectorsUndo) {
                 if (opCodesUndo[iPair] == i) {
-                    if (opCodesRedo[iPair] < vectorsRedo)
+                    if (iPair < vectorsRedo)
                         appendToTransaction(&redoLogRecord[opCodesUndo[iPair]], &redoLogRecord[opCodesRedo[iPair]]);
                     else
                         appendToTransaction(&redoLogRecord[opCodesUndo[iPair]]);
                     ++iPair;
                 } else if (opCodesRedo[iPair] == i) {
-                    if (opCodesUndo[iPair] < vectorsUndo)
+                    if (iPair < vectorsUndo)
                         appendToTransaction(&redoLogRecord[opCodesRedo[iPair]], &redoLogRecord[opCodesUndo[iPair]]);
                     else
                         appendToTransaction(&redoLogRecord[opCodesRedo[iPair]]);
@@ -747,6 +754,7 @@ namespace OpenLogReplicator {
                     if (transaction->opCodes > 0)
                         oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                                 transaction->lastSlt, transaction->lastRci);
+
                     transaction->add(objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
@@ -799,7 +807,8 @@ namespace OpenLogReplicator {
                     for (uint32_t i = 0; i < oracleEnvironment->transactionHeap.heapSize; ++i) {
                         transaction = oracleEnvironment->transactionHeap.heap[i];
 
-                        if (transaction->opCodes > 0 &&
+                        if (transaction != nullptr &&
+                                transaction->opCodes > 0 &&
                                 transaction->rollbackPreviousOp(curScn, &oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
                                 redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
                             oracleEnvironment->transactionHeap.update(transaction->pos);
@@ -851,6 +860,7 @@ namespace OpenLogReplicator {
                             transaction->lastSlt, transaction->lastRci);
                 oracleEnvironment->xidTransactionMap.erase(transaction->xid);
 
+                //oracleEnvironment->xidTransactionMap[transaction->xid]->free(&oracleEnvironment->transactionBuffer);
                 delete oracleEnvironment->xidTransactionMap[transaction->xid];
                 transaction = oracleEnvironment->transactionHeap.top();
             } else
@@ -931,9 +941,12 @@ namespace OpenLogReplicator {
         }
         clock_t cStart = clock();
 
-        initFile();
+        int ret = initFile();
+        if (ret != REDO_OK)
+            return ret;
+
         bool reachedEndOfOnlineRedo = false;
-        int ret = checkRedoHeader(true);
+        ret = checkRedoHeader(true);
         if (ret != REDO_OK) {
             oracleEnvironment->dumpStream.close();
             return ret;

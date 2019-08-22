@@ -71,6 +71,33 @@ namespace OpenLogReplicator {
         return this;
     }
 
+    CommandBuffer* CommandBuffer::appendHex(uint64_t val, uint32_t length) {
+        static const char* digits = "0123456789abcdef";
+        if (this->shutdown)
+            return this;
+
+        {
+            unique_lock<mutex> lck(mtx);
+            while (posSize > 0 && posEndTmp + length >= posStart) {
+                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                writerCond.wait(lck);
+                if (this->shutdown)
+                    return this;
+            }
+        }
+
+        if (posEndTmp + length >= INTRA_THREAD_BUFFER_SIZE) {
+            cerr << "ERROR: JSON buffer overflow (5)" << endl;
+            return this;
+        }
+
+        for (uint32_t i = 0, j = (length - 1) * 4; i < length; ++i, j -= 4)
+            intraThreadBuffer[posEndTmp + i] = digits[(val >> j) & 0xF];
+        posEndTmp += length;
+
+        return this;
+    }
+
     CommandBuffer* CommandBuffer::append(const string str) {
         if (this->shutdown)
             return this;
