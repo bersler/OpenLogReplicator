@@ -37,7 +37,8 @@ CPP_SRCS += \
 ../src/TransactionBuffer.cpp \
 ../src/TransactionChunk.cpp \
 ../src/TransactionHeap.cpp \
-../src/TransactionMap.cpp 
+../src/TransactionMap.cpp \
+../src/Writer.cpp 
 
 OBJS += \
 ./src/CommandBuffer.o \
@@ -73,7 +74,8 @@ OBJS += \
 ./src/TransactionBuffer.o \
 ./src/TransactionChunk.o \
 ./src/TransactionHeap.o \
-./src/TransactionMap.o 
+./src/TransactionMap.o \
+./src/Writer.o 
 
 CPP_DEPS += \
 ./src/CommandBuffer.d \
@@ -109,7 +111,8 @@ CPP_DEPS += \
 ./src/TransactionBuffer.d \
 ./src/TransactionChunk.d \
 ./src/TransactionHeap.d \
-./src/TransactionMap.d 
+./src/TransactionMap.d \
+./src/Writer.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
