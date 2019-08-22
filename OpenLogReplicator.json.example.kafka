@@ -1,5 +1,5 @@
 {
-  "version": "0.0.8",
+  "version": "0.1.0",
   "dumplogfile": "0",
   "dumpdata": "0",
   "trace": "0",
@@ -24,7 +24,8 @@
       "alias": "T2",
       "brokers": "localhost:9092",
       "topic": "O112A",
-      "source": "S1"
+      "source": "S1",
+      "trace": "0"
     }
   ]
 }
