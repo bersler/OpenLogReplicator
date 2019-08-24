@@ -6,7 +6,7 @@
   "directread": "0",
   "sources": [
     {
-      "type": "ORACLE11204",
+      "type": "ORACLE",
       "alias": "S1", 
       "name": "O112A", 
       "user": "system", 
