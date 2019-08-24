@@ -148,6 +148,9 @@ namespace OpenLogReplicator {
         typescn firstScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 180);
         typescn nextScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 192);
 
+        if (compatVsn == 0x0B200300) //11.2.0.3
+            oracleEnvironment->version = 11203;
+        else
         if (compatVsn == 0x0B200400) //11.2.0.4
             oracleEnvironment->version = 11204;
         else
@@ -157,15 +160,33 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x0C200100) //12.2.0.1
             oracleEnvironment->version = 12201;
         else
+        if (compatVsn == 0x12030000) //18.3.0.0
+            oracleEnvironment->version = 18300;
+        else
+        if (compatVsn == 0x12040000) //18.4.0.0
+            oracleEnvironment->version = 18300;
+        else
+        if (compatVsn == 0x12050000) //18.5.0.0
+            oracleEnvironment->version = 18500;
+        else
         if (compatVsn == 0x12060000) //18.6.0.0
             oracleEnvironment->version = 18600;
         else
+        if (compatVsn == 0x12070000) //18.7.0.0
+            oracleEnvironment->version = 18700;
+        else
         if (compatVsn == 0x13030000) //19.3.0.0
             oracleEnvironment->version = 19300;
+        else
+        if (compatVsn == 0x13040000) //19.4.0.0
+            oracleEnvironment->version = 19400;
         else {
-            cerr << "ERROR: Unsupported database version: " << compatVsn << endl;
+            cerr << "ERROR: Unsupported database version: " << hex << compatVsn << endl;
             return REDO_ERROR;
         }
+
+        if (compatVsn >= 0x0C200000)
+            firstScnHeader &= 0x7FFFFFFFFFFF;
 
         int ret = checkBlockHeader(oracleEnvironment->headerBuffer + blockSize, 1);
         if (ret == REDO_ERROR) {
@@ -176,7 +197,7 @@ namespace OpenLogReplicator {
         if (firstScnHeader != firstScn) {
             //archive log incorrect sequence
             if (group == 0) {
-                cerr << "ERROR: first SCN (" << firstScnHeader << ") does not match database information (" <<
+                cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") does not match database information (" <<
                         firstScn << "): " << path.c_str() << endl;
                 return REDO_ERROR;
             //redo log switch appeared and header is now overwritten
@@ -719,10 +740,10 @@ namespace OpenLogReplicator {
             objd = redoLogRecord2->objd;
         }
 
-        if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord2->bdba != 0) {
-            cerr << "ERROR: BDBA does not match!" << endl;
+        if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
+            cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             if (oracleEnvironment->dumpLogFile)
-                oracleEnvironment->dumpStream << "ERROR: BDBA does not match!" << endl;
+                oracleEnvironment->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             return;
         }
 

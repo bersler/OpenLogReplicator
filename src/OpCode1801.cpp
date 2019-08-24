@@ -51,11 +51,12 @@ namespace OpenLogReplicator {
                 uint16_t tmp = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 16);
                 //uint16_t seq = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 18);
                 //uint16_t cnt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
-                if (type == 1 //create table
-                        || type == 12 // drop table
-                        || type == 15 // alter table
-                        || type == 85 // truncate table
-                        || type == 86) // truncate partition
+                if (type == 85 // truncate table
+                        //|| type == 1 //create table
+                        //|| type == 12 // drop table
+                        //|| type == 15 // alter table
+                        //|| type == 86 // truncate partition
+                )
                     validDDL = true;
 
                 //temporary object
