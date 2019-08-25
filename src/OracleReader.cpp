@@ -373,7 +373,7 @@ namespace OpenLogReplicator {
             return 1;
     }
 
-    void OracleReader::addTable(string mask) {
+    void OracleReader::addTable(string mask, uint32_t options) {
         checkConnection(false);
         cout << "- reading table schema for: " << mask;
         uint32_t tabCnt = 0;
@@ -397,10 +397,10 @@ namespace OpenLogReplicator {
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
                 uint32_t totalPk = 0;
-                OracleObject *object = new OracleObject(objn, objd, cluCols, owner.c_str(), objectName.c_str());
+                OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner.c_str(), objectName.c_str());
                 ++tabCnt;
 
-                //if (oracleEnvironment->trace >= 1)
+                if (oracleEnvironment->trace >= 1)
                     cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
 
                 stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");

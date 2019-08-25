@@ -30,8 +30,10 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 #include "OracleReader.h"
 #include "OracleReaderRedo.h"
+#include "OracleObject.h"
 #include "RedoLogException.h"
 #include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
@@ -658,12 +660,13 @@ namespace OpenLogReplicator {
             redoLogRecord->dump();
         }
 
+        //DDL
         if (redoLogRecord->opCode == 0x1801) {
             RedoLogRecord zero;
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
             redoLogRecord->object = oracleEnvironment->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-            if (redoLogRecord->object == nullptr)
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
                 return;
 
             Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
@@ -750,9 +753,15 @@ namespace OpenLogReplicator {
         redoLogRecord1->object = oracleEnvironment->checkDict(objn, objd);
         if (redoLogRecord1->object == nullptr)
             return;
+
         redoLogRecord2->object = redoLogRecord1->object;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
+        if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
+            cout << "Exiting on user request" << endl;
+            kill(getpid(), SIGINT);
+            return;
+        }
 
         switch (opCodeLong) {
         //insert row piece
@@ -940,9 +949,8 @@ namespace OpenLogReplicator {
                 curBlockPos += toCopy;
                 recordPos += toCopy;
 
-                if (recordLeftToCopy == 0) {
+                if (recordLeftToCopy == 0)
                     analyzeRecord();
-                }
             }
 
             ++blockNumber;
@@ -981,6 +989,7 @@ namespace OpenLogReplicator {
 
         while (blockNumber <= numBlocks && !reachedEndOfOnlineRedo && !oracleReader->shutdown) {
             processBuffer();
+
             while (redoBufferFileStart == redoBufferFileEnd && blockNumber <= numBlocks && !reachedEndOfOnlineRedo
                     && !oracleReader->shutdown) {
                 int ret = readFileMore();

@@ -115,6 +115,7 @@ int main() {
             const Value& user = getJSONfield(source, "user");
             const Value& password = getJSONfield(source, "password");
             const Value& server = getJSONfield(source, "server");
+            const Value& eventtable = getJSONfield(source, "eventtable");
             const Value& tables = getJSONfield(source, "tables");
             if (!tables.IsArray())
                 {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
@@ -134,9 +135,10 @@ int main() {
                 return -1;
             }
 
+            oracleReader->addTable(eventtable.GetString(), 1);
             for (SizeType j = 0; j < tables.Size(); ++j) {
                 const Value& table = getJSONfield(tables[j], "table");
-                oracleReader->addTable(table.GetString());
+                oracleReader->addTable(table.GetString(), 0);
             }
 
             //run

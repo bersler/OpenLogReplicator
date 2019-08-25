@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
     public:
         virtual void *run();
 
-        void addTable(string mask);
+        void addTable(string mask, uint32_t options);
         void readCheckpoint();
         void writeCheckpoint();
         int initialize();
