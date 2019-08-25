@@ -12,6 +12,7 @@
       "user": "system", 
       "password": "unknPwd4%", 
       "server": "//server:4999/O112A.ORADOMAIN",
+      "eventtable": "SYSTEM.OPENLOREPLICATOR",
       "tables": [
         {"table": "OWNER.TABLENAME1"},
         {"table": "OWNER.TABLENAME2"},
