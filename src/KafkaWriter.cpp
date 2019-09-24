@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
                 }
                 length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
             }
-            cout << "Buffer: " << commandBuffer->posStart << " - " << commandBuffer->posEnd << endl;
+            //cout << "Buffer: " << commandBuffer->posStart << " - " << commandBuffer->posEnd << endl;
 
             if (trace <= 0) {
                 if (producer->produce(

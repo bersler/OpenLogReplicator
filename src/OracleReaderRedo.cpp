@@ -216,8 +216,8 @@ namespace OpenLogReplicator {
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
-            cerr << "ERROR: next SCN (" << firstScnHeader << ") does not match database information (" <<
-                    firstScn << "): " << path.c_str() << endl;
+            cerr << "ERROR: next SCN (" << nextScn << ") does not match database information (" <<
+                    nextScnHeader << "): " << path.c_str() << endl;
             return REDO_ERROR;
         }
 

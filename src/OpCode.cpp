@@ -395,13 +395,13 @@ namespace OpenLogReplicator {
             return;
         }
 
+        redoLogRecord->cc = redoLogRecord->data[fieldPos + 23]; //nnew field
         if (oracleEnvironment->dumpLogFile) {
             uint8_t flag = redoLogRecord->data[fieldPos + 16];
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
             uint8_t ckix = redoLogRecord->data[fieldPos + 18];
             uint8_t tabn = redoLogRecord->data[fieldPos + 19];
             uint8_t ncol = redoLogRecord->data[fieldPos + 22];
-            redoLogRecord->cc = redoLogRecord->data[fieldPos + 23]; //nnew field
             int16_t size = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24); //signed
 
             oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
