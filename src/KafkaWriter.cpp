@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
                 //null
             } else {
                 if (prevValue)
-                    commandBuffer->append(',');
+                    commandBuffer->append(", ");
                 else
                     prevValue = true;
 
@@ -268,7 +268,7 @@ namespace OpenLogReplicator {
                 //NULL values
                 if (!isNull) {
                     if (prevValue)
-                        commandBuffer->append(',');
+                        commandBuffer->append(", ");
                     else
                         prevValue = true;
 
@@ -279,9 +279,9 @@ namespace OpenLogReplicator {
 
                     appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
                     commandBuffer->append('"');
-                }
 
-                pos += fieldLength;
+                    pos += fieldLength;
+                }
             }
 
             commandBuffer->append("}}");
@@ -314,7 +314,7 @@ namespace OpenLogReplicator {
             uint32_t pos = 0;
             for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
                 if (prevValue) {
-                    commandBuffer->append(',');
+                    commandBuffer->append(", ");
                 } else
                     prevValue = true;
 
@@ -347,7 +347,7 @@ namespace OpenLogReplicator {
         } else {
             for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
                 if (prevValue) {
-                    commandBuffer->append(',');
+                    commandBuffer->append(", ");
                 } else
                     prevValue = true;
 
@@ -391,7 +391,7 @@ namespace OpenLogReplicator {
 
         for (uint32_t i = 0; i < redoLogRecord2->cc; ++i) {
             if (prevValue)
-                commandBuffer->append(',');
+                commandBuffer->append(", ");
             else
                 prevValue = true;
 
@@ -445,7 +445,7 @@ namespace OpenLogReplicator {
                 //null
             } else {
                 if (prevValue) {
-                    commandBuffer->append(',');
+                    commandBuffer->append(", ");
                 } else
                     prevValue = true;
 
