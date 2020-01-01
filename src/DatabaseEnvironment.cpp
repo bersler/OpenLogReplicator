@@ -28,11 +28,13 @@ namespace OpenLogReplicator {
         read48(read48Little),
         read56(read56Little),
         read64(read64Little),
+        read64SCN(read64SCNLittle),
         write16(write16Little),
         write32(write32Little),
         write48(write48Little),
         write56(write56Little),
-        write64(write64Little) {
+        write64(write64Little),
+        write64SCN(write64SCNLittle) {
     }
 
     void DatabaseEnvironment::initialize(bool bigEndian) {
@@ -44,11 +46,13 @@ namespace OpenLogReplicator {
             read48 = read48Big;
             read56 = read56Big;
             read64 = read64Big;
+            read64SCN = read64SCNBig;
             write16 = write16Big;
             write32 = write32Big;
             write48 = write48Big;
             write56 = write56Big;
             write64 = write64Big;
+            write64SCN = write64SCNBig;
         }
     }
 
@@ -111,6 +115,20 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
                 ((uint64_t)buf[4] << 24) | ((uint64_t)buf[5] << 16) |
                 ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
+    }
+
+    uint64_t DatabaseEnvironment::read64SCNLittle(const uint8_t* buf) {
+        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
+                ((uint64_t)buf[6] << 48) | ((uint64_t)buf[7] << 56);
+    }
+
+    uint64_t DatabaseEnvironment::read64SCNBig(const uint8_t* buf) {
+        return ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48) |
+                ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
+                ((uint64_t)buf[6] << 24) | ((uint64_t)buf[7] << 16) |
+                ((uint64_t)buf[4] << 8) | (uint64_t)buf[5];
     }
 
 
@@ -196,5 +214,27 @@ namespace OpenLogReplicator {
         buf[5] = (val >> 16) & 0xFF;
         buf[6] = (val >> 8) & 0xFF;
         buf[7] = val & 0xFF;
+    }
+
+    void DatabaseEnvironment::write64SCNLittle(uint8_t* buf, uint64_t val) {
+        buf[0] = val & 0xFF;
+        buf[1] = (val >> 8) & 0xFF;
+        buf[2] = (val >> 16) & 0xFF;
+        buf[3] = (val >> 24) & 0xFF;
+        buf[6] = (val >> 32) & 0xFF;
+        buf[7] = (val >> 40) & 0xFF;
+        buf[4] = (val >> 48) & 0xFF;
+        buf[5] = (val >> 56) & 0xFF;
+    }
+
+    void DatabaseEnvironment::write64SCNBig(uint8_t* buf, uint64_t val) {
+        buf[0] = (val >> 56) & 0xFF;
+        buf[1] = (val >> 48) & 0xFF;
+        buf[2] = (val >> 40) & 0xFF;
+        buf[3] = (val >> 32) & 0xFF;
+        buf[6] = (val >> 24) & 0xFF;
+        buf[7] = (val >> 16) & 0xFF;
+        buf[4] = (val >> 8) & 0xFF;
+        buf[5] = val & 0xFF;
     }
 }

@@ -33,11 +33,13 @@ namespace OpenLogReplicator {
         uint64_t (*read48)(const uint8_t* buf);
         uint64_t (*read56)(const uint8_t* buf);
         uint64_t (*read64)(const uint8_t* buf);
+        uint64_t (*read64SCN)(const uint8_t* buf);
         void (*write16)(uint8_t* buf, uint16_t val);
         void (*write32)(uint8_t* buf, uint32_t val);
         void (*write48)(uint8_t* buf, uint64_t val);
         void (*write56)(uint8_t* buf, uint64_t val);
         void (*write64)(uint8_t* buf, uint64_t val);
+        void (*write64SCN)(uint8_t* buf, uint64_t val);
 
         static uint16_t read16Little(const uint8_t* buf);
         static uint16_t read16Big(const uint8_t* buf);
@@ -49,6 +51,8 @@ namespace OpenLogReplicator {
         static uint64_t read56Big(const uint8_t* buf);
         static uint64_t read64Little(const uint8_t* buf);
         static uint64_t read64Big(const uint8_t* buf);
+        static uint64_t read64SCNLittle(const uint8_t* buf);
+        static uint64_t read64SCNBig(const uint8_t* buf);
 
         static void write16Little(uint8_t* buf, uint16_t val);
         static void write16Big(uint8_t* buf, uint16_t val);
@@ -60,6 +64,8 @@ namespace OpenLogReplicator {
         static void write56Big(uint8_t* buf, uint64_t val);
         static void write64Little(uint8_t* buf, uint64_t val);
         static void write64Big(uint8_t* buf, uint64_t val);
+        static void write64SCNLittle(uint8_t* buf, uint64_t val);
+        static void write64SCNBig(uint8_t* buf, uint64_t val);
 
         void initialize(bool bigEndian);
 

@@ -147,8 +147,6 @@ namespace OpenLogReplicator {
 
         numBlocks = oracleEnvironment->read32(oracleEnvironment->headerBuffer + 24);
         uint32_t compatVsn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 20);
-        typescn firstScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 180);
-        typescn nextScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 192);
 
         if (compatVsn == 0x0B200300) //11.2.0.3
             oracleEnvironment->version = 11203;
@@ -187,6 +185,13 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
+        typescn firstScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 180);
+        typescn nextScnHeader;
+        if (oracleEnvironment->version >= 12201)
+            nextScnHeader = oracleEnvironment->read64SCN(oracleEnvironment->headerBuffer + blockSize + 192);
+        else
+            nextScnHeader = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 192);
+
         if (compatVsn >= 0x0C200000)
             firstScnHeader &= 0x7FFFFFFFFFFF;
 
@@ -221,7 +226,6 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        //typescn threadClosedScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 220);
         memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
         if (oracleEnvironment->dumpLogFile && first) {
@@ -232,7 +236,7 @@ namespace OpenLogReplicator {
                     " Times: creation thru eternity" << endl;
 
             uint32_t dbid = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 24);
-            uint16_t controlSeq = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 36);
+            uint32_t controlSeq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 36);
             uint32_t fileSize = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 40);
             uint16_t fileNumber = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 48);
             uint32_t activationId = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 52);
@@ -247,11 +251,11 @@ namespace OpenLogReplicator {
             uint32_t seq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 8);
             uint8_t descrip[65];
             memcpy (descrip, oracleEnvironment->headerBuffer + blockSize + 92, 64); descrip[64] = 0;
-            uint32_t thread = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 176);
+            uint16_t thread = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 176);
             uint32_t nab = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 156);
-            uint8_t hws = oracleEnvironment->headerBuffer[blockSize + 172];
-            uint8_t eot = 0; //FIXME
-            uint8_t dis = 0; //FIXME
+            uint32_t hws = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 172);
+            uint8_t eot = oracleEnvironment->headerBuffer[blockSize + 204];
+            uint8_t dis = oracleEnvironment->headerBuffer[blockSize + 205];
 
             oracleEnvironment->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
                     " thread: " << dec << thread <<
@@ -262,7 +266,7 @@ namespace OpenLogReplicator {
                     " dis: " << dec << (uint32_t) dis << endl;
 
             uint32_t resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
-            typescn resetlogsScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 164); //FIXME: 164 or 208
+            typescn resetlogsScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 164);
             oracleEnvironment->dumpStream << " resetlogs count: 0x" << hex << resetlogsCnt <<
                     " scn: " << PRINTSCN(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl;
 
@@ -281,62 +285,113 @@ namespace OpenLogReplicator {
                     " (" << dec << nextScn << ")" <<
                     " " << nextTime << endl;
 
-            typescn enabledScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 208);
+            typescn enabledScn;
+            if (oracleEnvironment->version >= 12201)
+                enabledScn = oracleEnvironment->read64SCN(oracleEnvironment->headerBuffer + blockSize + 208);
+            else
+                enabledScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 208);
             typetime enabledTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 216));
             oracleEnvironment->dumpStream << " Enabled scn: " << PRINTSCN(enabledScn) <<
                     " (" << dec << enabledScn << ")" <<
                     " " << enabledTime << endl;
 
-            typescn threadClosedScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 220);
+            typescn threadClosedScn;
+            if (oracleEnvironment->version >= 12201)
+                threadClosedScn = oracleEnvironment->read64SCN(oracleEnvironment->headerBuffer + blockSize + 220);
+            else
+                threadClosedScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 220);
             typetime threadClosedTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 228));
             oracleEnvironment->dumpStream <<
                     " Thread closed scn: " << PRINTSCN(threadClosedScn) << " (" << dec << threadClosedScn << ")" <<
                     " " << threadClosedTime << endl;
 
-            uint16_t chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
-            uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
-            oracleEnvironment->dumpStream <<
-                    " Disk cksum: 0x" << hex << chSum << " Calc cksum: 0x" << hex << chSum2 << endl;
+            if (oracleEnvironment->version >= 12201) {
+                typescn realNextScn;
+                realNextScn = oracleEnvironment->read64SCN(oracleEnvironment->headerBuffer + blockSize + 272);
+                oracleEnvironment->dumpStream <<
+                    " Real next scn: " << PRINTSCN(realNextScn) << endl;
+            } else {
+                uint16_t chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
+                uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
+                oracleEnvironment->dumpStream <<
+                        " Disk cksum: 0x" << hex << chSum << " Calc cksum: 0x" << hex << chSum2 << endl;
+            }
 
-            typescn termialRecScn = 0; //FIXME
-            typetime termialRecTime(0); //FIXME
+            typescn termialRecScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 240);
+            typetime termialRecTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 248));
             oracleEnvironment->dumpStream << " Terminal recovery stop scn: " << PRINTSCN(termialRecScn) << endl <<
                     " Terminal recovery  " << termialRecTime << endl;
 
-            typescn mostRecentScn = 0;
+            typescn mostRecentScn = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 260);
             oracleEnvironment->dumpStream << " Most recent redo scn: " << PRINTSCN(mostRecentScn) << endl;
 
             uint32_t largestLwn = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 268);
             oracleEnvironment->dumpStream <<
                     " Largest LWN: " << dec << largestLwn << " blocks" << endl;
 
-            string endOfRedo = "No"; //FIXME
-            oracleEnvironment->dumpStream << " End-of-redo stream : " << endOfRedo << endl <<
-                    " Unprotected mode" << endl;
-
             uint32_t miscFlags = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 236);
+            string endOfRedo;
+            if ((miscFlags & 0x8) == 0x8)
+                endOfRedo = "Yes";
+            else
+                endOfRedo = "No";
+            if ((miscFlags & 0x1000) == 0x1000)
+                oracleEnvironment->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << endl;
+            else
+                oracleEnvironment->dumpStream << " End-of-redo stream : " << endOfRedo << endl;
+
+            if ((miscFlags & 0x100) == 0x100)
+                oracleEnvironment->dumpStream << " Archivelog created using asynchronous network transmittal" << endl;
+
+            if ((miscFlags & 0x200) == 0x200)
+                oracleEnvironment->dumpStream << " No data-loss mode" << endl;
+            if ((miscFlags & 0x800) == 0x800)
+                oracleEnvironment->dumpStream << " Resynchronization mode" << endl;
+            else
+                oracleEnvironment->dumpStream << " Unprotected mode" << endl;
+
+            if ((miscFlags & 0x1000) == 0x1000)
+                oracleEnvironment->dumpStream << " Closed thread archival" << endl;
+
+            if ((miscFlags & 0x2000) == 0x2000)
+                oracleEnvironment->dumpStream << " Maximize performance mode" << endl;
+
             oracleEnvironment->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
 
-            uint32_t thr = 0; //FIXME
-            uint32_t seq2 = 0; //FIXME
-            typescn scn2 = 0; //FIXME
-            uint32_t zeroBlocks = 8; //FIXME
-            uint32_t formatId = 2; //FIXME
+            if (oracleEnvironment->version >= 12201) {
+                uint32_t miscFlags2 = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 296);
+                oracleEnvironment->dumpStream << " Miscellaneous second flags: 0x" << hex << miscFlags << endl;
+            }
+
+            int32_t thr = (int32_t)oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 432);
+            int32_t seq2 = (int32_t)oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 436);
+            typescn scn2 = oracleEnvironment->read48(oracleEnvironment->headerBuffer + blockSize + 440);
+            uint8_t zeroBlocks = oracleEnvironment->headerBuffer[blockSize + 206];
+            uint8_t formatId = oracleEnvironment->headerBuffer[blockSize + 207];
             oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                     " seq: " << dec << seq2 <<
                     " scn: " << PRINTSCN(scn2) << endl <<
-                    " Zero blocks: " << dec << zeroBlocks << endl <<
-                    " Format ID is " << dec << formatId << endl;
+                    " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
+                    " Format ID is " << dec << (uint32_t)formatId << endl;
+
+            uint32_t standbyApplyDelay = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 280);
+            if (standbyApplyDelay > 0)
+                oracleEnvironment->dumpStream << " Standby Apply Delay: " << dec << standbyApplyDelay << " minute(s) " << endl;
+
+            typetime standbyLogCloseTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 304));
+            oracleEnvironment->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
 
             oracleEnvironment->dumpStream << " redo log key is ";
             for (uint32_t i = 448; i < 448 + 16; ++i)
                 oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) oracleEnvironment->headerBuffer[blockSize + i];
             oracleEnvironment->dumpStream << endl;
 
-            uint32_t redoKeyFlag = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 480);
-            uint32_t enabledRedoThreads = 1; //FIXME
-            oracleEnvironment->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl <<
-                    " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
+            uint16_t redoKeyFlag = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 480);
+            oracleEnvironment->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl;
+            if (oracleEnvironment->version < 12201) {
+                uint16_t enabledRedoThreads = 1; //FIXME
+                oracleEnvironment->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
+            }
         }
 
         return ret;
@@ -481,6 +536,8 @@ namespace OpenLogReplicator {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
             //uint16_t opc = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos);
+            //uint32_t recordObjd = (oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 6) << 16) |
+            //                 oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 20);
             redoLogRecord[vectors].cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
             redoLogRecord[vectors].afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
             redoLogRecord[vectors].dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
@@ -488,8 +545,8 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].rbl = 0; //FIXME
             redoLogRecord[vectors].seq = oracleEnvironment->recordBuffer[pos + 20];
             redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
-            redoLogRecord[vectors].conId = 0; //FIXME
-            redoLogRecord[vectors].flgRecord = 0; //FIXME
+            redoLogRecord[vectors].conId = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 22);
+            redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 24);
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint32_t fieldOffset = 24;
