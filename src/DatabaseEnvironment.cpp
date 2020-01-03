@@ -25,16 +25,14 @@ namespace OpenLogReplicator {
         bigEndian(false),
         read16(read16Little),
         read32(read32Little),
-        read48(read48Little),
         read56(read56Little),
         read64(read64Little),
-        read64SCN(read64SCNLittle),
+        readSCN(readSCNLittle),
         write16(write16Little),
         write32(write32Little),
-        write48(write48Little),
         write56(write56Little),
         write64(write64Little),
-        write64SCN(write64SCNLittle) {
+        writeSCN(writeSCNLittle) {
     }
 
     void DatabaseEnvironment::initialize(bool bigEndian) {
@@ -43,16 +41,14 @@ namespace OpenLogReplicator {
         if (bigEndian) {
             read16 = read16Big;
             read32 = read32Big;
-            read48 = read48Big;
             read56 = read56Big;
             read64 = read64Big;
-            read64SCN = read64SCNBig;
+            readSCN = readSCNBig;
             write16 = write16Big;
             write32 = write32Big;
-            write48 = write48Big;
             write56 = write56Big;
             write64 = write64Big;
-            write64SCN = write64SCNBig;
+            writeSCN = writeSCNBig;
         }
     }
 
@@ -75,18 +71,6 @@ namespace OpenLogReplicator {
     uint32_t DatabaseEnvironment::read32Big(const uint8_t* buf) {
         return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
                 ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
-    }
-
-    uint64_t DatabaseEnvironment::read48Little(const uint8_t* buf) {
-        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
-                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40);
-    }
-
-    uint64_t DatabaseEnvironment::read48Big(const uint8_t* buf) {
-        return (((uint64_t)buf[0] << 40) | ((uint64_t)buf[1] << 32) |
-                ((uint64_t)buf[2] << 24) | ((uint64_t)buf[3] << 16) |
-                ((uint64_t)buf[4] << 8) | (uint64_t)buf[5]);
     }
 
     uint64_t DatabaseEnvironment::read56Little(const uint8_t* buf) {
@@ -117,18 +101,32 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
     }
 
-    uint64_t DatabaseEnvironment::read64SCNLittle(const uint8_t* buf) {
-        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+    typescn DatabaseEnvironment::readSCNLittle(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[5] & 0x80) == 0x80)
+            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
                 ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
-                ((uint64_t)buf[6] << 48) | ((uint64_t)buf[7] << 56);
+                ((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
+                ((uint64_t)buf[4] << 48) | ((uint64_t)(buf[5] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40);
     }
 
-    uint64_t DatabaseEnvironment::read64SCNBig(const uint8_t* buf) {
-        return ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48) |
-                ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
-                ((uint64_t)buf[6] << 24) | ((uint64_t)buf[7] << 16) |
-                ((uint64_t)buf[4] << 8) | (uint64_t)buf[5];
+    typescn DatabaseEnvironment::readSCNBig(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[0] & 0x80) == 0x80)
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
+                ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
     }
 
 
@@ -154,24 +152,6 @@ namespace OpenLogReplicator {
         buf[1] = (val >> 16) & 0xFF;
         buf[2] = (val >> 8) & 0xFF;
         buf[3] = val & 0xFF;
-    }
-
-    void DatabaseEnvironment::write48Little(uint8_t* buf, uint64_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-        buf[2] = (val >> 16) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-        buf[4] = (val >> 32) & 0xFF;
-        buf[5] = (val >> 40) & 0xFF;
-    }
-
-    void DatabaseEnvironment::write48Big(uint8_t* buf, uint64_t val) {
-        buf[0] = (val >> 40) & 0xFF;
-        buf[1] = (val >> 32) & 0xFF;
-        buf[2] = (val >> 24) & 0xFF;
-        buf[3] = (val >> 16) & 0xFF;
-        buf[4] = (val >> 8) & 0xFF;
-        buf[5] = val & 0xFF;
     }
 
     void DatabaseEnvironment::write56Little(uint8_t* buf, uint64_t val) {
@@ -216,25 +196,43 @@ namespace OpenLogReplicator {
         buf[7] = val & 0xFF;
     }
 
-    void DatabaseEnvironment::write64SCNLittle(uint8_t* buf, uint64_t val) {
-        buf[0] = val & 0xFF;
-        buf[1] = (val >> 8) & 0xFF;
-        buf[2] = (val >> 16) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-        buf[6] = (val >> 32) & 0xFF;
-        buf[7] = (val >> 40) & 0xFF;
-        buf[4] = (val >> 48) & 0xFF;
-        buf[5] = (val >> 56) & 0xFF;
+    void DatabaseEnvironment::writeSCNLittle(uint8_t* buf, typescn val) {
+        if (val < 0x800000000000) {
+            buf[0] = val & 0xFF;
+            buf[1] = (val >> 8) & 0xFF;
+            buf[2] = (val >> 16) & 0xFF;
+            buf[3] = (val >> 24) & 0xFF;
+            buf[4] = (val >> 32) & 0xFF;
+            buf[5] = (val >> 40) & 0xFF;
+        } else {
+            buf[0] = val & 0xFF;
+            buf[1] = (val >> 8) & 0xFF;
+            buf[2] = (val >> 16) & 0xFF;
+            buf[3] = (val >> 24) & 0xFF;
+            buf[4] = (val >> 48) & 0xFF;
+            buf[5] = ((val >> 56) & 0xFF) | 0x80;
+            buf[6] = (val >> 32) & 0xFF;
+            buf[7] = (val >> 40) & 0xFF;
+        }
     }
 
-    void DatabaseEnvironment::write64SCNBig(uint8_t* buf, uint64_t val) {
-        buf[0] = (val >> 56) & 0xFF;
-        buf[1] = (val >> 48) & 0xFF;
-        buf[2] = (val >> 40) & 0xFF;
-        buf[3] = (val >> 32) & 0xFF;
-        buf[6] = (val >> 24) & 0xFF;
-        buf[7] = (val >> 16) & 0xFF;
-        buf[4] = (val >> 8) & 0xFF;
-        buf[5] = val & 0xFF;
+    void DatabaseEnvironment::writeSCNBig(uint8_t* buf, typescn val) {
+        if (val < 0x800000000000) {
+            buf[5] = val & 0xFF;
+            buf[4] = (val >> 8) & 0xFF;
+            buf[3] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 32) & 0xFF;
+            buf[0] = (val >> 40) & 0xFF;
+        } else {
+            buf[5] = val & 0xFF;
+            buf[4] = (val >> 8) & 0xFF;
+            buf[3] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 48) & 0xFF;
+            buf[0] = ((val >> 56) & 0xFF) | 0x80;
+            buf[7] = (val >> 32) & 0xFF;
+            buf[6] = (val >> 40) & 0xFF;
+        }
     }
 }

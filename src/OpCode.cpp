@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
         //block cleanout record
         if ((op & 0x10) == 0x10) {
             if (oracleEnvironment->dumpLogFile) {
-                typescn scn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 48); //34?
+                typescn scn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 48); //34?
                 uint8_t opt = redoLogRecord->data[fieldPos + 44];
                 uint8_t ver = redoLogRecord->data[fieldPos + 46];
                 uint8_t entries = redoLogRecord->data[fieldPos + 45];

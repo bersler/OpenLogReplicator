@@ -30,7 +30,7 @@ typedef uint64_t typeuba;
 typedef uint64_t typexid;
 typedef uint64_t typescn;
 typedef uint32_t typeseq;
-#define ZERO_SCN ((uint64_t)0xFFFFFFFFFFFF)
+#define ZERO_SCN ((typescn)0xFFFFFFFFFFFFFFFF)
 
 #define MAX_TRANSACTION_SIZE (16*1024*1024)
 #define INTRA_THREAD_BUFFER_SIZE (64*1024*1024)

@@ -168,9 +168,9 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->dumpLogFile) {
             uint32_t x1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 24);
             typeuba prevCtlUba = oracleEnvironment->read64(redoLogRecord->data + fieldPos + 28);
-            typescn prevCtlMaxCmtScn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 36);
-            typescn prevTxCmtScn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 44);
-            typescn txStartScn = oracleEnvironment->read48(redoLogRecord->data + fieldPos + 56);
+            typescn prevCtlMaxCmtScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 36);
+            typescn prevTxCmtScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 44);
+            typescn txStartScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 56);
             uint32_t prevBrb = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 64);
             uint32_t logonUser = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 72);
 
