@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.1
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -75,10 +75,17 @@ namespace OpenLogReplicator {
                     kdoOpCode(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
-                    //Quick Multi-row Delete
-                    if (oracleEnvironment->dumpLogFile && (redoLogRecord->op & 0x1F) == 0x0C) {
-                        for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
-                            oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
+                    if (oracleEnvironment->dumpLogFile) {
+                        //Quick Multi-row Insert
+                        if ((redoLogRecord->op & 0x1F) == 0x0B) {
+                            for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
+                                oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
+
+                        //Quick Multi-row Delete
+                        } else if ((redoLogRecord->op & 0x1F) == 0x0C) {
+                            for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
+                                oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
+                        }
                     }
                 }
 
@@ -191,14 +198,25 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << "Tablespace Undo:  " << tablespaceUndo << endl;
             oracleEnvironment->dumpStream << "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
                     " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl;
-            oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN(prevCtlMaxCmtScn) << " " <<
-                    " prev tx cmt scn:  " << PRINTSCN(prevTxCmtScn) << " " << endl;
-            oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN(txStartScn) << " " <<
-                    " logon user: " << dec << logonUser << " " <<
-                    " prev brb: " << prevBrb << " " <<
-                    " prev bcl: " << dec << prevBcl <<
-                    " BuExt idx: " << dec << buExtIdx <<
-                    " flg2: " << dec << flg2 << endl;
+            if (oracleEnvironment->version < 12200) {
+                oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
+                        " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " " << endl;
+                oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
+                        " logon user: " << dec << logonUser << " " <<
+                        " prev brb: " << prevBrb << " " <<
+                        " prev bcl: " << dec << prevBcl <<
+                        " BuExt idx: " << dec << buExtIdx <<
+                        " flg2: " << dec << flg2 << endl;
+            } else {
+                oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
+                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl;
+                oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
+                        " logon user: " << dec << logonUser << " " <<
+                        " prev brb: " << prevBrb << " " <<
+                        " prev bcl: " << dec << prevBcl <<
+                        " BuExt idx: " << dec << buExtIdx <<
+                        " flg2: " << dec << flg2 << endl;
+            }
         }
     }
 }

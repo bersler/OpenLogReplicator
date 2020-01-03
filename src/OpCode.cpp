@@ -1,5 +1,5 @@
 /* Oracle Redo Generic OpCode
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
                 if (redoLogRecord->typ == 6)
                     oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
-                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
                         " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
                         " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint32_t)encrypted << endl;
@@ -61,17 +61,17 @@ namespace OpenLogReplicator {
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
                         " OBJ:" << dec << redoLogRecord->recordObjd <<
-                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
                         " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
                         " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint32_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl << endl;
-            } else {
+            } else if (oracleEnvironment->version < 12200) {
                 if (redoLogRecord->typ == 6)
                     oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
                         " CON_ID:" << redoLogRecord->conId <<
-                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
                         " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
                         " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint32_t)encrypted <<
@@ -84,7 +84,31 @@ namespace OpenLogReplicator {
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
                         " OBJ:" << dec << redoLogRecord->recordObjd <<
-                        " SCN:" << PRINTSCN(redoLogRecord->scnRecord) <<
+                        " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " RBL:" << dec << redoLogRecord->rbl <<
+                        " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
+            } else {
+                if (redoLogRecord->typ == 6)
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " MEDIA RECOVERY MARKER" <<
+                        " CON_ID:" << redoLogRecord->conId <<
+                        " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
+                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
+                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
+                else
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                        " CON_ID:" << redoLogRecord->conId <<
+                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                        " CLS:" << redoLogRecord->cls <<
+                        " AFN:" << redoLogRecord->afn <<
+                        " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
+                        " OBJ:" << dec << redoLogRecord->recordObjd <<
+                        " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
                         " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
                         " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint32_t)encrypted <<
@@ -187,13 +211,18 @@ namespace OpenLogReplicator {
                 if ((flag & 0x40) == 0x40) flagStr[1] = '?';
                 if ((flag & 0x20) == 0x20) flagStr[2] = 'U';
                 if ((flag & 0x10) == 0x10) flagStr[3] = '?';
-                typescn scnx = SCN(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26),
-                        oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28));
+                typescn scnx = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                oracleEnvironment->dumpStream << "                     " <<
-                        " flg: " << flagStr << "   " <<
-                        " lkc:  " << (uint32_t)lkc << "    " <<
-                        " scn: " << PRINTSCN(scnx) << endl;
+                if (oracleEnvironment->version < 12200)
+                    oracleEnvironment->dumpStream << "                     " <<
+                            " flg: " << flagStr << "   " <<
+                            " lkc:  " << (uint32_t)lkc << "    " <<
+                            " scn: " << PRINTSCN48(scnx) << endl;
+                else
+                    oracleEnvironment->dumpStream << "                     " <<
+                            " flg: " << flagStr << "   " <<
+                            " lkc:  " << (uint32_t)lkc << "    " <<
+                            " scn:  " << PRINTSCN64(scnx) << endl;
             }
 
         } else if ((op & 0x0F) == 0x01) {
@@ -219,16 +248,34 @@ namespace OpenLogReplicator {
         //block cleanout record
         if ((op & 0x10) == 0x10) {
             if (oracleEnvironment->dumpLogFile) {
-                typescn scn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 48); //34?
+                typescn scn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 48);
                 uint8_t opt = redoLogRecord->data[fieldPos + 44];
                 uint8_t ver = redoLogRecord->data[fieldPos + 46];
                 uint8_t entries = redoLogRecord->data[fieldPos + 45];
 
-                oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
-                        " " << PRINTSCN(scn) <<
-                        " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
-                        " opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
-                        ", entries follow..." << endl;
+                if (oracleEnvironment->version < 12200)
+                    oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
+                            " " << PRINTSCN48(scn) <<
+                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
+                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
+                            ", entries follow..." << endl;
+                else {
+                    char bigscn = 'N', compat = 'N';
+                    if ((ver & 0x08) == 0x08)
+                        bigscn = 'Y';
+                    if ((ver & 0x04) == 0x04)
+                        compat = 'Y';
+                    uint32_t spare = 0; //FIXME
+                    ver &= 0x03;
+                    oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
+                            " " << PRINTSCN64(scn) <<
+                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
+                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
+                            " bigscn: " << bigscn <<
+                            " compact: " << compat <<
+                            " spare: " << setfill('0') << setw(8) << hex << spare <<
+                            ", entries follow..." << endl;
+                }
 
                 if (fieldLength < 56 + entries * (uint32_t)8) {
                     oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo F 0x11: " << dec << fieldLength << endl;
@@ -238,16 +285,22 @@ namespace OpenLogReplicator {
                 for (uint32_t j = 0; j < entries; ++j) {
                     uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
-                    typescn scn = (((uint64_t)oracleEnvironment->read16(redoLogRecord->data + fieldPos + 58 + j * 8)) << 32) |
-                                    oracleEnvironment->read32(redoLogRecord->data + fieldPos + 60 + j * 8);
-                    if (oracleEnvironment->version >= 12102)
-                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
-                                " flg: (opt=" << (uint32_t)(flg & 0x03) << " whr=" << (uint32_t)(flg >>2) << ") " <<
-                                " scn: " << PRINTSCN(scn) << endl;
-                    else
+                    typescn scn = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
+                    if (oracleEnvironment->version < 12100)
                         oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
                                 " flg: " << (uint32_t)flg << " " <<
-                                " scn: " << PRINTSCN(scn) << endl;
+                                " scn: " << PRINTSCN48(scn) << endl;
+                    else if (oracleEnvironment->version < 12200)
+                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                                " flg: (opt=" << (uint32_t)(flg & 0x03) << " whr=" << (uint32_t)(flg >>2) << ") " <<
+                                " scn: " << PRINTSCN48(scn) << endl;
+                    else {
+                        uint8_t opt = flg & 0x03;
+                        uint8_t whr = flg >> 2;
+                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                                " flg: (opt=" << (uint32_t)opt << " whr=" << (uint32_t)whr << ") " <<
+                                " scn:  " << PRINTSCN64(scn) << endl;
+                    }
                 }
             }
         }

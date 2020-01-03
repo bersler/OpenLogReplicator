@@ -1,5 +1,5 @@
 /* Transaction from Oracle database
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -96,8 +96,8 @@ namespace OpenLogReplicator {
         if (opCodes > 0 && !isRollback) {
             if (oracleEnvironment->trace >= 1) {
                 cout << "Transaction xid:  " << PRINTXID(xid) <<
-                        " SCN: " << PRINTSCN(firstScn) <<
-                        " - " << PRINTSCN(lastScn) <<
+                        " SCN: " << PRINTSCN64(firstScn) <<
+                        " - " << PRINTSCN64(lastScn) <<
                         " opCodes: " << dec << opCodes <<  endl;
             }
 
@@ -126,7 +126,7 @@ namespace OpenLogReplicator {
                                 " op: " << setfill('0') << setw(8) << hex << op <<
                                 " objn: " << dec << objn <<
                                 " objd: " << dec << objd <<
-                                " scn: " << PRINTSCN(scn) << endl;
+                                " scn: " << PRINTSCN64(scn) << endl;
                         if (oldScn != 0 && oldScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }
@@ -141,13 +141,13 @@ namespace OpenLogReplicator {
                         hasPrev = true;
                         break;
 
-                        //update row piece
-                        case 0x05010B05:
-                            if (hasPrev)
-                                oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseUpdate(redoLogRecord1, redoLogRecord2, oracleEnvironment);
-                            hasPrev = true;
-                            break;
+                    //update row piece
+                    case 0x05010B05:
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseUpdate(redoLogRecord1, redoLogRecord2, oracleEnvironment);
+                        hasPrev = true;
+                        break;
 
                     //insert multiple rows
                     case 0x05010B0B:
@@ -225,7 +225,7 @@ namespace OpenLogReplicator {
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
         os << "xid: " << PRINTXID(tran.xid) <<
-                " scn: " << PRINTSCN(tran.firstScn) << " - " << PRINTSCN(tran.lastScn) <<
+                " scn: " << PRINTSCN64(tran.firstScn) << " - " << PRINTSCN64(tran.lastScn) <<
                 " begin: " << tran.isBegin <<
                 " commit: " << tran.isCommit <<
                 " rollback: " << tran.isRollback;

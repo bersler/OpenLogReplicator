@@ -1,5 +1,5 @@
 /* Generic class for environment variables
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -28,6 +28,7 @@ namespace OpenLogReplicator {
         read56(read56Little),
         read64(read64Little),
         readSCN(readSCNLittle),
+        readSCNr(readSCNrLittle),
         write16(write16Little),
         write32(write32Little),
         write56(write56Little),
@@ -44,6 +45,7 @@ namespace OpenLogReplicator {
             read56 = read56Big;
             read64 = read64Big;
             readSCN = readSCNBig;
+            readSCNr = readSCNrBig;
             write16 = write16Big;
             write32 = write32Big;
             write56 = write56Big;
@@ -129,6 +131,33 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
     }
 
+    typescn DatabaseEnvironment::readSCNrLittle(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[1] & 0x80) == 0x80)
+            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
+                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
+                //((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
+                ((uint64_t)buf[0] << 48) | ((uint64_t)(buf[1] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
+                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
+                ((uint64_t)buf[0] << 32) | ((uint64_t)buf[1] << 40);
+    }
+
+    typescn DatabaseEnvironment::readSCNrBig(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[1] & 0x80) == 0x80)
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                //((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
+                ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
+    }
 
     void DatabaseEnvironment::write16Little(uint8_t* buf, uint16_t val) {
         buf[0] = val & 0xFF;

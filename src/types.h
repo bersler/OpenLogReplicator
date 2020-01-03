@@ -1,5 +1,5 @@
 /* Definition of types and macros
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -63,7 +63,8 @@ typedef uint32_t typeseq;
 #define PRINTUBA(uba) "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(uba)<<"."<<setfill('0')<<setw(2)<<hex<<(uint32_t)RECORD(uba)
 
 #define SCN(scn1,scn2) ((((uint64_t)scn1)<<32)|(scn2))
-#define PRINTSCN(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32))<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
+#define PRINTSCN48(scn) "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32)&0xFFFF)<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
+#define PRINTSCN64(scn) "0x"<<setfill('0')<<setw(16)<<hex<<(scn)
 
 namespace OpenLogReplicator {
 
@@ -76,6 +77,10 @@ namespace OpenLogReplicator {
 
         typetime(uint32_t val) {
             this->val = val;
+        }
+
+        uint32_t getVal(void) {
+            return this->val;
         }
 
         typetime& operator= (uint32_t val) {

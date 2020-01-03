@@ -1,5 +1,5 @@
 /* Header for DatabaseEnvironment class
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
         uint64_t (*read56)(const uint8_t* buf);
         uint64_t (*read64)(const uint8_t* buf);
         typescn (*readSCN)(const uint8_t* buf);
+        typescn (*readSCNr)(const uint8_t* buf);
         void (*write16)(uint8_t* buf, uint16_t val);
         void (*write32)(uint8_t* buf, uint32_t val);
         void (*write56)(uint8_t* buf, uint64_t val);
@@ -49,6 +50,8 @@ namespace OpenLogReplicator {
         static uint64_t read64Big(const uint8_t* buf);
         static typescn readSCNLittle(const uint8_t* buf);
         static typescn readSCNBig(const uint8_t* buf);
+        static typescn readSCNrLittle(const uint8_t* buf);
+        static typescn readSCNrBig(const uint8_t* buf);
 
         static void write16Little(uint8_t* buf, uint16_t val);
         static void write16Big(uint8_t* buf, uint16_t val);

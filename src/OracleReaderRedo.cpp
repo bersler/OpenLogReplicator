@@ -1,5 +1,5 @@
 /* Class reading a redo log file
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -222,11 +222,18 @@ namespace OpenLogReplicator {
         memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
         if (oracleEnvironment->dumpLogFile && first) {
-            oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl <<
-                    " Opcodes *.*" << endl <<
-                    " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl <<
-                    " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << endl <<
-                    " Times: creation thru eternity" << endl;
+            oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
+            if (oracleEnvironment->version >= 12200)
+                oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
+            oracleEnvironment->dumpStream << " Opcodes *.*" << endl;
+            if (oracleEnvironment->version >= 12200)
+                oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
+            oracleEnvironment->dumpStream << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl;
+            if (oracleEnvironment->version < 12200)
+                oracleEnvironment->dumpStream << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << endl;
+            else
+                oracleEnvironment->dumpStream << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << endl;
+            oracleEnvironment->dumpStream << " Times: creation thru eternity" << endl;
 
             uint32_t dbid = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 24);
             uint32_t controlSeq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 36);
@@ -260,56 +267,51 @@ namespace OpenLogReplicator {
 
             uint32_t resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
             typescn resetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 164);
-            oracleEnvironment->dumpStream << " resetlogs count: 0x" << hex << resetlogsCnt <<
-                    " scn: " << PRINTSCN(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl;
-
             uint32_t prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
             typescn prevResetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 284);
-            oracleEnvironment->dumpStream << " prev resetlogs count: 0x" << hex << prevResetlogsCnt <<
-                    " scn: " << PRINTSCN(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl;
-
             typetime firstTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 188));
-            oracleEnvironment->dumpStream << " Low  scn: " << PRINTSCN(firstScnHeader) <<
-                    " (" << dec << firstScnHeader << ")" <<
-                    " " << firstTime << endl;
-
             typetime nextTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 200));
-            oracleEnvironment->dumpStream << " Next scn: " << PRINTSCN(nextScnHeader) <<
-                    " (" << dec << nextScn << ")" <<
-                    " " << nextTime << endl;
-
             typescn enabledScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 208);
             typetime enabledTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 216));
-            oracleEnvironment->dumpStream << " Enabled scn: " << PRINTSCN(enabledScn) <<
-                    " (" << dec << enabledScn << ")" <<
-                    " " << enabledTime << endl;
-
             typescn threadClosedScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 220);
             typetime threadClosedTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 228));
-            oracleEnvironment->dumpStream <<
-                    " Thread closed scn: " << PRINTSCN(threadClosedScn) << " (" << dec << threadClosedScn << ")" <<
-                    " " << threadClosedTime << endl;
-
-            if (oracleEnvironment->version >= 12201) {
-                typescn realNextScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 272);
-                oracleEnvironment->dumpStream <<
-                    " Real next scn: " << PRINTSCN(realNextScn) << endl;
-            } else {
-                uint16_t chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
-                uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
-                oracleEnvironment->dumpStream <<
-                        " Disk cksum: 0x" << hex << chSum << " Calc cksum: 0x" << hex << chSum2 << endl;
-            }
-
             typescn termialRecScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 240);
             typetime termialRecTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 248));
-            oracleEnvironment->dumpStream << " Terminal recovery stop scn: " << PRINTSCN(termialRecScn) << endl <<
-                    " Terminal recovery  " << termialRecTime << endl;
-
             typescn mostRecentScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 260);
-            oracleEnvironment->dumpStream << " Most recent redo scn: " << PRINTSCN(mostRecentScn) << endl;
+            uint16_t chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
+            uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
 
-            uint32_t largestLwn = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 268);
+            if (oracleEnvironment->version < 12200) {
+
+                oracleEnvironment->dumpStream <<
+                        " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
+                        " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
+                        " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << dec << firstScnHeader << ")" << " " << firstTime << endl <<
+                        " Next scn: " << PRINTSCN48(nextScnHeader) << " (" << dec << nextScn << ")" << " " << nextTime << endl <<
+                        " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << dec << enabledScn << ")" << " " << enabledTime << endl <<
+                        " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << dec << threadClosedScn << ")" << " " << threadClosedTime << endl <<
+                        " Disk cksum: 0x" << hex << chSum << " Calc cksum: 0x" << hex << chSum2 << endl <<
+                        " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << endl <<
+                        " Terminal recovery  " << termialRecTime << endl <<
+                        " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << endl;
+            } else {
+                typescn realNextScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 272);
+
+                oracleEnvironment->dumpStream <<
+                        " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN64(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
+                        " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
+                        " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTime << endl <<
+                        " Next scn: " << PRINTSCN64(nextScnHeader) << " " << nextTime << endl <<
+                        " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << endl <<
+                        " Thread closed scn: " << PRINTSCN64(threadClosedScn) << " " << threadClosedTime << endl <<
+                        " Real next scn: " << PRINTSCN64(realNextScn) << endl <<
+                        " Disk cksum: 0x" << hex << chSum << " Calc cksum: 0x" << hex << chSum2 << endl <<
+                        " Terminal recovery stop scn: " << PRINTSCN64(termialRecScn) << endl <<
+                        " Terminal recovery  " << termialRecTime << endl <<
+                        " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << endl;
+            }
+
+            uint32_t largestLwn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 268);
             oracleEnvironment->dumpStream <<
                     " Largest LWN: " << dec << largestLwn << " blocks" << endl;
 
@@ -352,18 +354,26 @@ namespace OpenLogReplicator {
             typescn scn2 = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 440);
             uint8_t zeroBlocks = oracleEnvironment->headerBuffer[blockSize + 206];
             uint8_t formatId = oracleEnvironment->headerBuffer[blockSize + 207];
-            oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
-                    " seq: " << dec << seq2 <<
-                    " scn: " << PRINTSCN(scn2) << endl <<
-                    " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
-                    " Format ID is " << dec << (uint32_t)formatId << endl;
+            if (oracleEnvironment->version < 12200)
+                oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
+                        " seq: " << dec << seq2 <<
+                        " scn: " << PRINTSCN48(scn2) << endl <<
+                        " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
+                        " Format ID is " << dec << (uint32_t)formatId << endl;
+            else
+                oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
+                        " seq: " << dec << seq2 <<
+                        " scn: " << PRINTSCN64(scn2) << endl <<
+                        " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
+                        " Format ID is " << dec << (uint32_t)formatId << endl;
 
             uint32_t standbyApplyDelay = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 280);
             if (standbyApplyDelay > 0)
                 oracleEnvironment->dumpStream << " Standby Apply Delay: " << dec << standbyApplyDelay << " minute(s) " << endl;
 
             typetime standbyLogCloseTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 304));
-            oracleEnvironment->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
+            if (standbyLogCloseTime.getVal() > 0)
+                oracleEnvironment->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
 
             oracleEnvironment->dumpStream << " redo log key is ";
             for (uint32_t i = 448; i < 448 + 16; ++i)
@@ -372,10 +382,8 @@ namespace OpenLogReplicator {
 
             uint16_t redoKeyFlag = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 480);
             oracleEnvironment->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl;
-            if (oracleEnvironment->version < 12201) {
-                uint16_t enabledRedoThreads = 1; //FIXME
-                oracleEnvironment->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
-            }
+            uint16_t enabledRedoThreads = 1; //FIXME
+            oracleEnvironment->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
         }
 
         return ret;
@@ -496,19 +504,33 @@ namespace OpenLogReplicator {
 
             if (headerLength == 68) {
                 recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
-                oracleEnvironment->dumpStream << "SCN: " << PRINTSCN(curScn) << " SUBSCN:  " << dec << subScn << " " << recordTimestmap << endl;
+                if (oracleEnvironment->version < 12200)
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                else
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
                 uint32_t lwnLen = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 28); //28 or 32
 
                 typescn extScn = oracleEnvironment->readSCN(oracleEnvironment->recordBuffer + 40);
-                oracleEnvironment->dumpStream << "(LWN RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
-                                hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
-                                hex << setfill('0') << setw(4) << recordBeginPos <<
-                    " LEN: " << dec << setfill('0') << setw(4) << lwnLen <<
-                    " NST: " << dec << setfill('0') << setw(4) << nst <<
-                    " SCN: " << PRINTSCN(extScn) << ")" << endl;
+                if (oracleEnvironment->version < 12200)
+                    oracleEnvironment->dumpStream << "(LWN RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
+                                    hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
+                                    hex << setfill('0') << setw(4) << recordBeginPos <<
+                        " LEN: " << dec << setfill('0') << setw(4) << lwnLen <<
+                        " NST: " << dec << setfill('0') << setw(4) << nst <<
+                        " SCN: " << PRINTSCN48(extScn) << ")" << endl;
+                else
+                    oracleEnvironment->dumpStream << "(LWN RBA: 0x" << hex << setfill('0') << setw(6) << sequence << "." <<
+                                    hex << setfill('0') << setw(8) << recordBeginBlock << "." <<
+                                    hex << setfill('0') << setw(4) << recordBeginPos <<
+                        " LEN: 0x" << hex << setfill('0') << setw(8) << lwnLen <<
+                        " NST: 0x" << hex << setfill('0') << setw(4) << nst <<
+                        " SCN: " << PRINTSCN64(extScn) << ")" << endl;
             } else {
-                oracleEnvironment->dumpStream << "SCN: " << PRINTSCN(curScn) << " SUBSCN:  " << dec << subScn << " " << recordTimestmap << endl;
+                if (oracleEnvironment->version < 12200)
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                else
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
             }
         }
 
@@ -529,7 +551,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].rbl = 0; //FIXME
             redoLogRecord[vectors].seq = oracleEnvironment->recordBuffer[pos + 20];
             redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
-            redoLogRecord[vectors].conId = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 22);
+            redoLogRecord[vectors].conId = 0; //FIXME oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 22);
             redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 24);
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
@@ -770,7 +792,7 @@ namespace OpenLogReplicator {
             cout << "** Append: " <<
                     setfill('0') << setw(4) << hex << redoLogRecord1->opCode << " + " <<
                     setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
-            cout << "SCN: " << PRINTSCN(redoLogRecord1->scn) << endl;
+            cout << "SCN: " << PRINTSCN64(redoLogRecord1->scn) << endl;
             redoLogRecord1->dump();
             redoLogRecord2->dump();
         }
@@ -906,8 +928,8 @@ namespace OpenLogReplicator {
 
         while (transaction != nullptr) {
             if (oracleEnvironment->trace >= 1) {
-                cout << "FirstScn: " << PRINTSCN(transaction->firstScn) <<
-                        " lastScn: " << PRINTSCN(transaction->lastScn) <<
+                cout << "FirstScn: " << PRINTSCN64(transaction->firstScn) <<
+                        " lastScn: " << PRINTSCN64(transaction->lastScn) <<
                         " xid: " << PRINTXID(transaction->xid) <<
                         " pos: " << dec << transaction->pos <<
                         " opCodes: " << transaction->opCodes <<
@@ -942,8 +964,8 @@ namespace OpenLogReplicator {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
                 if (transaction != nullptr) {
-                    cout << "Queue: " << PRINTSCN(transaction->firstScn) <<
-                            " lastScn: " << PRINTSCN(transaction->lastScn) <<
+                    cout << "Queue: " << PRINTSCN64(transaction->firstScn) <<
+                            " lastScn: " << PRINTSCN64(transaction->lastScn) <<
                             " xid: " << PRINTXID(transaction->xid) <<
                             " pos: " << dec << transaction->pos <<
                             " opCodes: " << transaction->opCodes <<
