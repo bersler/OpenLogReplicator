@@ -738,17 +738,51 @@ namespace OpenLogReplicator {
         }
 
         if (oracleEnvironment->dumpLogFile) {
+            string undoType = "Regular undo "; //FIXME
             string lastBufferSplit = "No "; //FIXME
             string tablespaceUndo = "No "; //FIXME
 
-            oracleEnvironment->dumpStream << "ktubu redo:" <<
-                    " slt: " << dec << (uint32_t)redoLogRecord->slt <<
-                    " rci: " << dec << (uint32_t)redoLogRecord->rci <<
-                    " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
-                    " objn: " << redoLogRecord->objn << " objd: " << redoLogRecord->objd << " tsn: " << redoLogRecord->tsn << endl;
-            oracleEnvironment->dumpStream << "Undo type:  Regular undo       Undo type:  " << getUndoType() << "Last buffer split:  " << lastBufferSplit << endl;
-            oracleEnvironment->dumpStream << "Tablespace Undo:  " << tablespaceUndo << endl;
-            oracleEnvironment->dumpStream << "             0x" << hex << setfill('0') << setw(8) << redoLogRecord->undo << endl;
+            if (oracleEnvironment->version < 18000) {
+                oracleEnvironment->dumpStream <<
+                        "ktubu redo:" <<
+                        " slt: " << dec << (uint32_t)redoLogRecord->slt <<
+                        " rci: " << dec << (uint32_t)redoLogRecord->rci <<
+                        " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                        " objn: " << dec << redoLogRecord->objn <<
+                        " objd: " << dec << redoLogRecord->objd <<
+                        " tsn: " << dec << redoLogRecord->tsn << endl <<
+                        "Undo type:  " << undoType <<
+                        " Undo type:  " << getUndoType() << "    " <<
+                        " Last buffer split:  " << lastBufferSplit << endl <<
+                        "Tablespace Undo:  " << tablespaceUndo << endl <<
+                        "             0x" << hex << setfill('0') << setw(8) << redoLogRecord->undo << endl;
+            } else {
+                uint8_t wrp = 0; //FIXME
+                uint16_t flg = 0; //FIXME
+                uint32_t prevDba = 0; //FIXME
+                string userUndoDone = "No "; //FIXME
+                string lastBufferSplit = "No "; //FIXME
+                string tempObject = "No "; //FIXME
+                string userOnly = "No "; //FIXME
+
+                oracleEnvironment->dumpStream <<
+                        "ktubu redo: slt: " << dec << (uint32_t)redoLogRecord->slt <<
+                        " wrp: " << dec << (uint32_t)wrp <<
+                        " flg: 0x" << setfill('0') << setw(4) << hex << flg <<
+                        " prev dba:  0x" << setfill('0') << setw(8) << hex << prevDba <<
+                        " rci: " << dec << (uint32_t)redoLogRecord->rci <<
+                        " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                        " [objn: " << dec << redoLogRecord->objn <<
+                        " objd: " << dec << redoLogRecord->objd <<
+                        " tsn: 1]" << endl <<
+                        "[Undo type  ] " << undoType <<
+                        " [User undo done   ]  " << userUndoDone <<
+                        " [Last buffer split]  " << lastBufferSplit << endl <<
+                        "[Temp object]           " << tempObject <<
+                        " [Tablespace Undo  ]  " << tablespaceUndo <<
+                        " [User only        ]  " << userOnly << endl;
+            }
+
         }
     }
 

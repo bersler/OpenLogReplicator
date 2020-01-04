@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
             oracleEnvironment->version = 18300;
         else
         if (compatVsn == 0x12040000) //18.4.0.0
-            oracleEnvironment->version = 18300;
+            oracleEnvironment->version = 18400;
         else
         if (compatVsn == 0x12050000) //18.5.0.0
             oracleEnvironment->version = 18500;
