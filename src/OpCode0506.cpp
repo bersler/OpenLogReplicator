@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.6
-   Copyright (C) 2018-2019 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
 
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
             if (i == 1) {
                 ktub(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
 
-                if (redoLogRecord->opc == 0x0B01)
+                if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01)
                     ktubu(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             } else if (i == 2) {
                 ktuxvoff(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);

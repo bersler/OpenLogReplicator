@@ -181,40 +181,93 @@ namespace OpenLogReplicator {
             uint32_t prevBrb = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 64);
             uint32_t logonUser = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 72);
 
-            string lastBufferSplit = "No "; //FIXME
-            string tempObject = "No "; //FIXME
-            string tablespaceUndo = "No "; //FIXME
+            string lastBufferSplit = " No"; //FIXME
+            string tempObject = " No"; //FIXME
+            string tablespaceUndo = " No"; //FIXME
+            string undoType = "Regular undo "; //FIXME
             uint32_t prevBcl = 0; //FIXME
             uint32_t buExtIdx = 0; // FIXME
             uint32_t flg2 = 0; //FIXME
 
-            oracleEnvironment->dumpStream << "ktubl redo:" <<
-                    " slt: " << dec << (uint32_t)redoLogRecord->slt <<
-                    " rci: " << dec << (uint32_t)redoLogRecord->rci <<
-                    " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
-                    " [objn: " << redoLogRecord->objn << " objd: " << redoLogRecord->objd << " tsn: " << redoLogRecord->tsn << "]" << endl;
-            oracleEnvironment->dumpStream << "Undo type:  Regular undo        Begin trans    Last buffer split:  " << lastBufferSplit << endl;
-            oracleEnvironment->dumpStream << "Temp Object:  " << tempObject << endl;
-            oracleEnvironment->dumpStream << "Tablespace Undo:  " << tablespaceUndo << endl;
-            oracleEnvironment->dumpStream << "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
-                    " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl;
             if (oracleEnvironment->version < 12200) {
-                oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
-                        " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " " << endl;
-                oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
+                oracleEnvironment->dumpStream <<
+                        "ktubl redo:" <<
+                        " slt: " << dec << (uint32_t)redoLogRecord->slt <<
+                        " rci: " << dec << (uint32_t)redoLogRecord->rci <<
+                        " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                        " [objn: " << dec << redoLogRecord->objn <<
+                        " objd: " << dec << redoLogRecord->objd <<
+                        " tsn: " << dec << redoLogRecord->tsn << "]" << endl <<
+                        "Undo type:  " << undoType <<
+                        "       Begin trans    Last buffer split: " << lastBufferSplit << " " << endl <<
+                        "Temp Object: " << tempObject << " " << endl <<
+                        "Tablespace Undo: " << tablespaceUndo << " " << endl <<
+                        "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
+                        " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl <<
+                        "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
+                        " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " " << endl <<
+                        "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
+                        " logon user: " << dec << logonUser << " " <<
+                        " prev brb: " << prevBrb << " " <<
+                        " prev bcl: " << dec << prevBcl <<
+                        " BuExt idx: " << dec << buExtIdx <<
+                        " flg2: " << dec << flg2 << endl;
+            } else if (oracleEnvironment->version < 19000) {
+                oracleEnvironment->dumpStream <<
+                        "ktubl redo:" <<
+                        " slt: " << dec << (uint32_t)redoLogRecord->slt <<
+                        " rci: " << dec << (uint32_t)redoLogRecord->rci <<
+                        " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                        " [objn: " << dec << redoLogRecord->objn <<
+                        " objd: " << dec << redoLogRecord->objd <<
+                        " tsn: " << dec << redoLogRecord->tsn << "]" << endl <<
+                        "Undo type:  " << undoType <<
+                        "       Begin trans    Last buffer split: " << lastBufferSplit << " " << endl <<
+                        "Temp Object: " << tempObject << " " << endl <<
+                        "Tablespace Undo: " << tablespaceUndo << " " << endl <<
+                        "             0x" << setfill('0') << setw(8) << hex << x1 << " " <<
+                        " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl <<
+                        "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
+                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl <<
+                        "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
                         " logon user: " << dec << logonUser << " " <<
                         " prev brb: " << prevBrb << " " <<
                         " prev bcl: " << dec << prevBcl <<
                         " BuExt idx: " << dec << buExtIdx <<
                         " flg2: " << dec << flg2 << endl;
             } else {
-                oracleEnvironment->dumpStream << "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
-                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl;
-                oracleEnvironment->dumpStream << "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
-                        " logon user: " << dec << logonUser << " " <<
-                        " prev brb: " << prevBrb << " " <<
-                        " prev bcl: " << dec << prevBcl <<
-                        " BuExt idx: " << dec << buExtIdx <<
+                uint16_t flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
+                uint16_t wrp = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 22);
+                uint32_t prevDba = 0; //FIXME
+                string userUndoDone = " No"; //FIXME
+                string userOnly = " No"; //FIXME
+
+                oracleEnvironment->dumpStream <<
+                        "ktubl redo:" <<
+                        " slt: "  << dec << (uint32_t)redoLogRecord->slt <<
+                        " wrp: " << dec << wrp <<
+                        " flg: 0x" << setfill('0') << setw(4) << hex << flg <<
+                        " prev dba:  0x" << setfill('0') << setw(8) << hex << prevDba <<
+                        " rci: " << dec << (uint32_t)redoLogRecord->rci <<
+                        " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                        " [objn: " << dec << redoLogRecord->objn <<
+                        " objd: " << dec << redoLogRecord->objd <<
+                        " tsn: " << dec << redoLogRecord->tsn << "]" << endl <<
+                        "[Undo type  ] " << undoType <<
+                        " [User undo done   ] " << userUndoDone << " " <<
+                        " [Last buffer split] " << lastBufferSplit << " " << endl <<
+                        "[Temp object]          " << tempObject << " " <<
+                        " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                        " [User only        ] " << userOnly << " " << endl <<
+                        "Begin trans    " << endl <<
+                        " prev ctl uba: " << PRINTUBA(prevCtlUba) <<
+                        " prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " << endl <<
+                        " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl <<
+                        " txn start scn:  " << PRINTSCN64(txStartScn) <<
+                        "  logon user: " << dec << logonUser << endl <<
+                        " prev brb:  0x" << setfill('0') << setw(8) << hex << prevBrb <<
+                        "  prev bcl:  0x" << setfill('0') << setw(8) << hex << prevBcl << endl <<
+                        "BuExt idx: " << dec << buExtIdx <<
                         " flg2: " << dec << flg2 << endl;
             }
         }
