@@ -46,7 +46,6 @@ namespace OpenLogReplicator {
         virtual void kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength);
 
         void ktub(uint32_t fieldPos, uint32_t fieldLength);
-        void ktubu(uint32_t fieldPos, uint32_t fieldLength);
         virtual const char* getUndoType();
         virtual bool isKdoUndo();
         void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);

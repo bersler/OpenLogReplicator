@@ -29,7 +29,6 @@ namespace OpenLogReplicator {
     class OpCode0501: public OpCode {
     protected:
         void ktudb(uint32_t fieldPos, uint32_t fieldLength);
-        void ktubl(uint32_t fieldPos, uint32_t fieldLength);
         virtual const char* getUndoType();
         virtual bool isKdoUndo();
     public:
