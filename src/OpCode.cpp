@@ -366,16 +366,16 @@ namespace OpenLogReplicator {
             } else
                 oracleEnvironment->dumpStream << endl;
 
-            if (fl == 0x20) {
+            if (flStr[5] != 'L') {
                 uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
                 uint16_t nrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
                 oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << nrid2 << endl;
             }
 
-            if (flStr[2] != 'H') {
-                uint32_t hrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
-                uint16_t hrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
-                oracleEnvironment->dumpStream << "hrid: 0x" << setfill('0') << setw(8) << hex << hrid1 << "." << hex << hrid2 << endl;
+            if (flStr[2] == 'H') {
+                //uint32_t hrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
+                //uint16_t hrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+                //oracleEnvironment->dumpStream << "hrid: 0x" << setfill('0') << setw(8) << hex << hrid1 << "." << hex << hrid2 << endl;
             }
 
             if (flStr[0] == 'K') {
@@ -405,6 +405,8 @@ namespace OpenLogReplicator {
                     oracleEnvironment->dumpStream << "N";
                 else
                     oracleEnvironment->dumpStream << "-";
+                if ((i % 80) == 79 && i < redoLogRecord->cc)
+                    oracleEnvironment->dumpStream << endl;
 
                 bits <<= 1;
                 if (bits == 0) {
@@ -591,6 +593,8 @@ namespace OpenLogReplicator {
                     oracleEnvironment->dumpStream << "N";
                 else
                     oracleEnvironment->dumpStream << "-";
+                if ((i % 80) == 79 && i < redoLogRecord->cc)
+                    oracleEnvironment->dumpStream << endl;
 
                 bits <<= 1;
                 if (bits == 0) {
