@@ -47,9 +47,9 @@ namespace OpenLogReplicator {
 
         void ktub(uint32_t fieldPos, uint32_t fieldLength);
         virtual const char* getUndoType();
-        virtual bool isKdoUndo();
         void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
         void dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength);
+        void dumpRows(uint8_t *data);
 
     public:
         OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

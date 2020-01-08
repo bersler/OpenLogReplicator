@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
     protected:
         void ktudb(uint32_t fieldPos, uint32_t fieldLength);
         virtual const char* getUndoType();
-        virtual bool isKdoUndo();
     public:
         OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0501();

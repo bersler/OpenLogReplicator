@@ -310,7 +310,7 @@ namespace OpenLogReplicator {
                 ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
                 ->append("\", \"before\": {");
 
-        if ((redoLogRecord1->xtype & 0x80) != 0) {
+        if ((redoLogRecord1->flags & 0x80) != 0) {
             uint32_t pos = 0;
             for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
                 if (prevValue) {
@@ -470,6 +470,82 @@ namespace OpenLogReplicator {
         }
 
         commandBuffer->append("}}");
+    }
+
+    void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
+        uint32_t pos = 0;
+        uint32_t fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
+        bool prevValue;
+        uint16_t fieldLength;
+        //uint16_t rowLengths;
+
+        for (uint32_t i = 1; i < 6; ++i) {
+            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            //if (i == 5)
+            //    rowLengths = fieldPos;
+        }
+        fieldPosStart = fieldPos;
+
+        for (uint32_t r = 0; r < redoLogRecord1->nrow; ++r) {
+            if (r > 0)
+                commandBuffer->append(", ");
+
+            pos = 0;
+            prevValue = false;
+            fieldPos = fieldPosStart;
+            uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
+            pos = 3;
+
+            commandBuffer
+                    ->append("{\"operation\":\"delete\", \"table\": \"")
+                    ->append(redoLogRecord1->object->owner)
+                    ->append('.')
+                    ->append(redoLogRecord1->object->objectName)
+                    ->append("\", \"rowid\": \"")
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF,
+                            ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->slotsDelta))[r])
+                    ->append("\", \"before\": {");
+
+            for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+                bool isNull = false;
+
+                if (i >= jcc)
+                    isNull = true;
+                else {
+                    fieldLength = redoLogRecord1->data[fieldPos + pos];
+                    ++pos;
+                    if (fieldLength == 0xFF) {
+                        isNull = true;
+                    } else
+                    if (fieldLength == 0xFE) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + pos);
+                        pos += 2;
+                    }
+                }
+
+                //NULL values
+                if (!isNull) {
+                    if (prevValue)
+                        commandBuffer->append(", ");
+                    else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord1->object->columns[i]->columnName)
+                            ->append("\": \"");
+
+                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                    commandBuffer->append('"');
+
+                    pos += fieldLength;
+                }
+            }
+
+            commandBuffer->append("}}");
+
+            fieldPosStart += ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta))[r];
+        }
     }
 
     void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) {

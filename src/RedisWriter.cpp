@@ -320,8 +320,12 @@ namespace OpenLogReplicator {
         }
     }
 
+    void RedisWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
+        //TODO
+    }
+
     void RedisWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
-        //todo
+        //TODO
     }
 
     void RedisWriter::parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {

@@ -70,13 +70,8 @@ namespace OpenLogReplicator {
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
                     if (oracleEnvironment->dumpLogFile) {
-                        //Quick Multi-row Insert
-                        if ((redoLogRecord->op & 0x1F) == 0x0B) {
-                            for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
-                                oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
-
                         //Quick Multi-row Delete
-                        } else if ((redoLogRecord->op & 0x1F) == 0x0C) {
+                        if ((redoLogRecord->op & 0x1F) == 0x0C) {
                             for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
                                 oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
                         }
@@ -87,10 +82,10 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == 0x05) {
                 if (i == 5)
                     colnums = (uint16_t*)(redoLogRecord->data + fieldPos);
-                else if (i == 6 && (redoLogRecord->xtype & 0x80) != 0) {
+                else if (i == 6 && (redoLogRecord->flags & 0x80) != 0) {
                     if (oracleEnvironment->dumpLogFile)
                         dumpColsVector(redoLogRecord->data + fieldPos, colnums[0], ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
-                } else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc && (redoLogRecord->xtype & 0x80) == 0) {
+                } else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc && (redoLogRecord->flags & 0x80) == 0) {
                     if (oracleEnvironment->dumpLogFile) {
                         dumpCols(redoLogRecord->data + fieldPos, *colnums, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nulls & bits);
                         ++colnums;
@@ -106,8 +101,8 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == 0x02 || (redoLogRecord->op & 0x1F) == 0x06) {
                 if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
                     if (nulls == nullptr) {
-                        cout << "nulls = null" << endl;
-                        exit(1);
+                        cerr << "nulls = null" << endl;
+                        return;
                     }
                     if (oracleEnvironment->dumpLogFile) {
                         dumpCols(redoLogRecord->data + fieldPos, i - 5, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i], *nulls & bits);
@@ -118,14 +113,19 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
+            //Quick Multi-row Insert
+            } else if ((redoLogRecord->op & 0x1F) == 0x0B) {
+                if (i == 5) {
+                    redoLogRecord->rowLenghsDelta = fieldPos;
+                } else if (i == 6) {
+                    if (oracleEnvironment->dumpLogFile) {
+                        dumpRows(redoLogRecord->data + fieldPos);
+                    }
+                }
             }
 
             fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
         }
-    }
-
-    bool OpCode0501::isKdoUndo() {
-        return true;
     }
 
     const char* OpCode0501::getUndoType() {

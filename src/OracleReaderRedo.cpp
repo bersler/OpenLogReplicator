@@ -835,6 +835,8 @@ namespace OpenLogReplicator {
         case 0x05010B05:
         //insert multiple rows
         case 0x05010B0B:
+        //delete multiple rows
+        case 0x05010B0C:
             {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {

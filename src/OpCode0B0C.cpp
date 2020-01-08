@@ -42,6 +42,14 @@ namespace OpenLogReplicator {
                 ktbRedo(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
             } else if (i == 2) {
                 kdoOpCode(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+
+                if (oracleEnvironment->dumpLogFile) {
+                    //Quick Multi-row Delete
+                    if ((redoLogRecord->op & 0x1F) == 0x0C) {
+                        for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
+                            oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << ((uint16_t*)(redoLogRecord->data+redoLogRecord->slotsDelta))[i] << endl;
+                    }
+                }
             }
 
             fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;

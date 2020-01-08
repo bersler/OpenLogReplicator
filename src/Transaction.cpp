@@ -157,6 +157,14 @@ namespace OpenLogReplicator {
                         hasPrev = true;
                         break;
 
+                    //delete multiple rows
+                    case 0x05010B0C:
+                        if (hasPrev)
+                            oracleEnvironment->commandBuffer->writer->next();
+                        oracleEnvironment->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2, oracleEnvironment);
+                        hasPrev = true;
+                        break;
+
                     //delete row piece
                     case 0x05010B03:
                         if (hasPrev)

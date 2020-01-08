@@ -154,17 +154,26 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (isKdoUndo())
+        if (redoLogRecord->opc == 0x0A16)
+            oracleEnvironment->dumpStream <<  "index undo for leaf key operations" << endl;
+        else if (redoLogRecord->opc == 0x0B01)
             oracleEnvironment->dumpStream << "KDO undo record:" << endl;
 
-        uint8_t op = redoLogRecord->data[fieldPos + 0];
+        int8_t op = redoLogRecord->data[fieldPos + 0];
         if (oracleEnvironment->dumpLogFile) {
-            uint8_t ver = redoLogRecord->data[fieldPos + 1] & 0x03;
+            uint8_t flg = redoLogRecord->data[fieldPos + 1];
+            uint8_t ver = flg & 0x03;
+            uint32_t padding = 1; //FIXME
 
             oracleEnvironment->dumpStream << "KTB Redo " << endl;
-            oracleEnvironment->dumpStream << "op: 0x" << setfill('0') << setw(2) << hex << (uint32_t)op << " " <<
+            oracleEnvironment->dumpStream << "op: 0x" << setfill('0') << setw(2) << hex << (int32_t)op << " " <<
                     " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver << "  " << endl;
-            oracleEnvironment->dumpStream << "compat bit: 4 (post-11) padding: 1" << endl;
+            oracleEnvironment->dumpStream << "compat bit: " << dec << (uint32_t)(flg & 0x04) << " ";
+            if ((flg & 0x04) == 0x04)
+                oracleEnvironment->dumpStream << "(post-11)";
+            else
+                oracleEnvironment->dumpStream << "(pre-11)";
+            oracleEnvironment->dumpStream << " padding: " << padding << endl;
         }
         char opCode = '?';
 
@@ -208,9 +217,9 @@ namespace OpenLogReplicator {
                 uint8_t flag = redoLogRecord->data[fieldPos + 25];
                 char flagStr[5] = "----";
                 if ((flag & 0x80) == 0x80) flagStr[0] = 'C';
-                if ((flag & 0x40) == 0x40) flagStr[1] = '?';
+                if ((flag & 0x40) == 0x40) flagStr[1] = 'B';
                 if ((flag & 0x20) == 0x20) flagStr[2] = 'U';
-                if ((flag & 0x10) == 0x10) flagStr[3] = '?';
+                if ((flag & 0x10) == 0x10) flagStr[3] = 'T';
                 typescn scnx = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 26);
 
                 if (oracleEnvironment->version < 12200)
@@ -223,6 +232,12 @@ namespace OpenLogReplicator {
                             " flg: " << flagStr << "   " <<
                             " lkc:  " << (uint32_t)lkc << "    " <<
                             " scn:  " << PRINTSCN64(scnx) << endl;
+            }
+
+        } else if ((op & 0x0F) == 0x06) {
+            if (oracleEnvironment->dumpLogFile) {
+                opCode = 'N';
+                oracleEnvironment->dumpStream << "op: " << opCode << endl;
             }
 
         } else if ((op & 0x0F) == 0x01) {
@@ -550,8 +565,8 @@ namespace OpenLogReplicator {
             if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
 
             oracleEnvironment->dumpStream << "fb: " << flStr <<
-                    " lb: 0x" << hex << (uint32_t) lb << " " <<
-                    " cc: " << dec << (uint32_t) redoLogRecord->cc;
+                    " lb: 0x" << hex << (uint32_t)lb << " " <<
+                    " cc: " << dec << (uint32_t)redoLogRecord->cc;
             if (flStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
                 oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
@@ -618,15 +633,14 @@ namespace OpenLogReplicator {
             return;
         }
 
-        redoLogRecord->itli = redoLogRecord->data[fieldPos + 12];
-        redoLogRecord->op = redoLogRecord->data[fieldPos + 10];
         redoLogRecord->bdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->xtype = redoLogRecord->data[fieldPos + 11];
+        redoLogRecord->op = redoLogRecord->data[fieldPos + 10];
+        redoLogRecord->flags = redoLogRecord->data[fieldPos + 11];
+        redoLogRecord->itli = redoLogRecord->data[fieldPos + 12];
 
         if (oracleEnvironment->dumpLogFile) {
             uint32_t hdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
             uint16_t maxFr = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
-            uint32_t flags = 0;
             uint8_t ispac = redoLogRecord->data[fieldPos + 13];
 
             const char* opCode = "???";
@@ -653,22 +667,31 @@ namespace OpenLogReplicator {
                         oracleEnvironment->dumpStream << "DEBUG op: " << dec << (uint32_t)(redoLogRecord->op & 0x1F) << endl;
             }
 
-            string xtypeStr;
-            if (redoLogRecord->xtype == 0x01) xtypeStr = "XA"; //redo
-            else if (redoLogRecord->xtype == 0x81) {
-                xtypeStr = "XAxtype KDO_KDOM2"; //redo
-                flags |= 0x80;
-            } else if (redoLogRecord->xtype == 0x02) xtypeStr = "XR"; //rollback
-            else if (redoLogRecord->xtype == 0x03) xtypeStr = "CR"; //unknown
-            else {
-                if (oracleEnvironment->dumpLogFile)
-                    oracleEnvironment->dumpStream << "DEBUG xtype: " << dec << redoLogRecord->xtype << endl;
-                xtypeStr = "??";
+            string xtype = "0";
+            string rtype = "";
+            switch (redoLogRecord->flags & 0x03) {
+            case 0x01:
+                xtype = "XA"; //redo
+                break;
+            case 0x02:
+                xtype = "XR"; //rollback
+                break;
+            case 0x03:
+                xtype = "CR"; //unknown
+                break;
             }
+            redoLogRecord->flags &= 0xFC;
 
-            oracleEnvironment->dumpStream << "KDO Op code: " << opCode << " row dependencies Disabled" << endl;
-            oracleEnvironment->dumpStream << "  xtype: " << xtypeStr <<
-                    " flags: 0x" << setfill('0') << setw(8) << hex << flags << " " <<
+            if ((redoLogRecord->flags & 0x80) != 0)
+                rtype = "xtype KDO_KDOM2";
+
+            string rowDependencies = "Disabled";
+            if ((redoLogRecord->op & 0x40) != 0)
+                rowDependencies = "Enabled";
+
+            oracleEnvironment->dumpStream << "KDO Op code: " << opCode << " row dependencies " << rowDependencies << endl;
+            oracleEnvironment->dumpStream << "  xtype: " << xtype << rtype <<
+                    " flags: 0x" << setfill('0') << setw(8) << hex << (uint32_t)redoLogRecord->flags << " " <<
                     " bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->bdba << " " <<
                     " hdba: 0x" << setfill('0') << setw(8) << hex << hdba << endl;
             oracleEnvironment->dumpStream << "itli: " << dec << (uint32_t)redoLogRecord->itli << " " <<
@@ -763,20 +786,29 @@ namespace OpenLogReplicator {
         string lastBufferSplit = "No";
         if ((redoLogRecord->flg & 0x0100) != 0)
             lastBufferSplit = "Yes";
+
         string userUndoDone = "No";
         if ((redoLogRecord->flg & 0x0010) != 0)
             userUndoDone = "Yes";
+
         string undoType = "Regular undo";
         if ((redoLogRecord->flg & 0x0001) != 0)
             undoType = "Multi-block undo - HEAD";
-        else if ((redoLogRecord->flg & 0x0002) != 0)
+        if ((redoLogRecord->flg & 0x0002) != 0)
             undoType = "Multi-block undo - TAIL";
+
+        bool isTxnStart = true;
+        if ((redoLogRecord->flg & 0x0004) != 0)
+            isTxnStart = false;
+
         string tempObject = "No";
         if ((redoLogRecord->flg & 0x0020) != 0)
             tempObject = "Yes";
+
         string tablespaceUndo = "No";
         if ((redoLogRecord->flg & 0x0080) != 0)
             tablespaceUndo = "Yes";
+
         string userOnly = "No"; //FIXME
 
         if (isKtubl) {
@@ -787,16 +819,15 @@ namespace OpenLogReplicator {
             }
 
             if (oracleEnvironment->dumpLogFile) {
-                uint16_t buExtIdx = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26);
+                uint16_t flg2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+                int16_t buExtIdx = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26);
                 typeuba prevCtlUba = oracleEnvironment->read64(redoLogRecord->data + fieldPos + 28);
                 typescn prevCtlMaxCmtScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 36);
                 typescn prevTxCmtScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 44);
                 typescn txStartScn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 56);
                 uint32_t prevBrb = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 64);
+                uint32_t prevBcl = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 68);
                 uint32_t logonUser = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 72);
-
-                uint32_t prevBcl = 0; //FIXME
-                uint32_t flg2 = 0; //FIXME
 
                 if (oracleEnvironment->version < 12200) {
                     oracleEnvironment->dumpStream <<
@@ -807,13 +838,17 @@ namespace OpenLogReplicator {
                             "             0x" << setfill('0') << setw(8) << hex << redoLogRecord->undo << " " <<
                             " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl <<
                             "prev ctl max cmt scn:  " << PRINTSCN48(prevCtlMaxCmtScn) << " " <<
-                            " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " " << endl <<
-                            "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
-                            " logon user: " << dec << logonUser << " " <<
-                            " prev brb: " << prevBrb << " " <<
-                            " prev bcl: " << dec << prevBcl <<
+                            " prev tx cmt scn:  " << PRINTSCN48(prevTxCmtScn) << " " << endl;
+
+                    if (isTxnStart)
+                        oracleEnvironment->dumpStream <<
+                                "txn start scn:  " << PRINTSCN48(txStartScn) << " " <<
+                                " logon user: " << dec << logonUser << " " <<
+                                " prev brb: " << prevBrb << " " <<
+                                " prev bcl: " << dec << prevBcl;
+                    oracleEnvironment->dumpStream <<
                             " BuExt idx: " << dec << buExtIdx <<
-                            " flg2: " << dec << flg2 << endl;
+                            " flg2: " << hex << flg2 << endl;
                 } else if (oracleEnvironment->version < 19000) {
                     oracleEnvironment->dumpStream <<
                             "Undo type:  " << undoType <<
@@ -823,13 +858,18 @@ namespace OpenLogReplicator {
                             "             0x" << setfill('0') << setw(8) << hex << redoLogRecord->undo << " " <<
                             " prev ctl uba: " << PRINTUBA(prevCtlUba) << " " << endl <<
                             "prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " <<
-                            " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl <<
-                            "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
-                            " logon user: " << dec << logonUser << " " <<
-                            " prev brb: " << prevBrb << " " <<
-                            " prev bcl: " << dec << prevBcl <<
+                            " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl;
+
+                    if (isTxnStart)
+                        oracleEnvironment->dumpStream <<
+                                "txn start scn:  " << PRINTSCN64(txStartScn) << " " <<
+                                " logon user: " << dec << logonUser << " " <<
+                                " prev brb: " << prevBrb << " " <<
+                                " prev bcl: " << dec << prevBcl;
+
+                    oracleEnvironment->dumpStream <<
                             " BuExt idx: " << dec << buExtIdx <<
-                            " flg2: " << dec << flg2 << endl;
+                            " flg2: " << hex << flg2 << endl;
                 } else {
                     oracleEnvironment->dumpStream <<
                             "[Undo type  ] " << undoType << " " <<
@@ -841,13 +881,18 @@ namespace OpenLogReplicator {
                             "Begin trans    " << endl <<
                             " prev ctl uba: " << PRINTUBA(prevCtlUba) <<
                             " prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " << endl <<
-                            " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl <<
-                            " txn start scn:  " << PRINTSCN64(txStartScn) <<
-                            "  logon user: " << dec << logonUser << endl <<
-                            " prev brb:  0x" << setfill('0') << setw(8) << hex << prevBrb <<
-                            "  prev bcl:  0x" << setfill('0') << setw(8) << hex << prevBcl << endl <<
+                            " prev tx cmt scn:  " << PRINTSCN64(prevTxCmtScn) << " " << endl;
+
+                    if (isTxnStart)
+                        oracleEnvironment->dumpStream <<
+                                " txn start scn:  " << PRINTSCN64(txStartScn) <<
+                                "  logon user: " << dec << logonUser << endl <<
+                                " prev brb:  0x" << setfill('0') << setw(8) << hex << prevBrb <<
+                                "  prev bcl:  0x" << setfill('0') << setw(8) << hex << prevBcl << endl;
+
+                    oracleEnvironment->dumpStream <<
                             "BuExt idx: " << dec << buExtIdx <<
-                            " flg2: " << dec << flg2 << endl;
+                            " flg2: " << hex << flg2 << endl;
                 }
             }
         } else {
@@ -856,8 +901,8 @@ namespace OpenLogReplicator {
                 if (oracleEnvironment->version < 19000) {
                     oracleEnvironment->dumpStream <<
                             "Undo type:  " << undoType <<
-                            "       Undo type: " << getUndoType() <<
-                            " Last buffer split:  " << lastBufferSplit << " " << endl <<
+                            "       Undo type:  " << getUndoType() <<
+                            "Last buffer split:  " << lastBufferSplit << " " << endl <<
                             "Tablespace Undo:  " << tablespaceUndo << " " << endl <<
                             "             0x" << hex << setfill('0') << setw(8) << redoLogRecord->undo << endl;
                 } else {
@@ -876,10 +921,6 @@ namespace OpenLogReplicator {
 
     const char* OpCode::getUndoType() {
         return "";
-    }
-
-    bool OpCode::isKdoUndo() {
-        return false;
     }
 
     void OpCode::dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength) {
@@ -924,6 +965,51 @@ namespace OpenLogReplicator {
             }
 
             oracleEnvironment->dumpStream << endl;
+        }
+    }
+
+    void OpCode::dumpRows(uint8_t *data) {
+        if (oracleEnvironment->dumpLogFile) {
+            uint32_t pos = 0;
+            char flStr[9] = "--------";
+
+            for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
+                oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[r] << endl;
+                uint8_t fl = data[pos];
+                uint8_t lb = data[pos + 1];
+                uint8_t jcc = data[pos + 2];
+
+                if ((fl & 0x01) == 0x01) flStr[7] = 'N'; else flStr[7] = '-'; //last column continues in Next piece
+                if ((fl & 0x02) == 0x02) flStr[6] = 'P'; else flStr[6] = '-'; //first column continues from Previous piece
+                if ((fl & 0x04) == 0x04) flStr[5] = 'L'; else flStr[5] = '-'; //Last data piece
+                if ((fl & 0x08) == 0x08) flStr[4] = 'F'; else flStr[4] = '-'; //First data piece
+                if ((fl & 0x10) == 0x10) flStr[3] = 'D'; else flStr[3] = '-'; //Deleted row
+                if ((fl & 0x20) == 0x20) flStr[2] = 'H'; else flStr[2] = '-'; //Head piece of row
+                if ((fl & 0x40) == 0x40) flStr[1] = 'C'; else flStr[1] = '-'; //Clustered table member
+                if ((fl & 0x80) == 0x80) flStr[0] = 'K'; else flStr[0] = '-'; //cluster Key
+
+                oracleEnvironment->dumpStream << "tl: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[r] <<
+                        " fb: " << flStr <<
+                        " lb: 0x" << hex << (uint32_t)lb << " " <<
+                        " cc: " << dec << (uint32_t)jcc << endl;
+                pos += 3;
+
+                for (uint32_t k = 0; k < jcc; ++k) {
+                    uint16_t fieldLength = data[pos];
+                    ++pos;
+                    uint8_t isNull = (fieldLength == 0xFF);
+
+                    if (fieldLength == 0xFE) {
+                        fieldLength = oracleEnvironment->read16(data + pos);
+                        pos += 2;
+                    }
+
+                    dumpCols(data + pos, k, fieldLength, isNull);
+
+                    if (!isNull)
+                        pos += fieldLength;
+                }
+            }
         }
     }
 }
