@@ -1041,4 +1041,13 @@ namespace OpenLogReplicator {
             }
         }
     }
+
+    void OpCode::dumpVal(uint32_t fieldPos, uint32_t fieldLength, string msg) {
+        if (oracleEnvironment->dumpLogFile) {
+            oracleEnvironment->dumpStream << msg;
+            for (uint32_t j = 0; j < fieldLength; ++j)
+                oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
+            oracleEnvironment->dumpStream << endl;
+        }
+    }
 }

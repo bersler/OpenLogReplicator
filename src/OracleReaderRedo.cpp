@@ -44,6 +44,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0504.h"
 #include "OpCode0506.h"
 #include "OpCode050B.h"
+#include "OpCode0513.h"
 #include "OpCode0514.h"
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
@@ -610,6 +611,9 @@ namespace OpenLogReplicator {
                 break;
             case 0x050B:
                 opCodes[vectors] = new OpCode050B(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
+            case 0x0513: //Session information
+                opCodes[vectors] = new OpCode0513(oracleEnvironment, &redoLogRecord[vectors]);
                 break;
             case 0x0514: //Session information
                 opCodes[vectors] = new OpCode0514(oracleEnvironment, &redoLogRecord[vectors]);
