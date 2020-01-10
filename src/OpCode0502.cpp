@@ -38,13 +38,14 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
-                ktudh(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktudh(fieldPos, fieldLength);
             } else if (i == 2) {
                 if (redoLogRecord->flg == 0x0080)
-                    kteop(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                    kteop(fieldPos, fieldLength);
             }
-            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
     }
 

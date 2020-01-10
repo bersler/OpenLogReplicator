@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 11.4
+/* Oracle Redo OpCode: 18.1
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
                     redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             }
 
-            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
         }
     }
 }

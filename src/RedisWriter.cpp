@@ -138,13 +138,16 @@ namespace OpenLogReplicator {
         commandBuffer->commitTran();
     }
 
-    void RedisWriter::parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void RedisWriter::parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
         uint32_t fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
         uint8_t *nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta, bits = 1;
         bool prevValue = false;
 
-        for (uint32_t i = 1; i <= 2; ++i)
-            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        uint16_t fieldLength;
+        for (uint32_t i = 1; i <= 2; ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        }
         fieldPosStart = fieldPos;
 
         commandBuffer
@@ -154,6 +157,7 @@ namespace OpenLogReplicator {
                 ->append('.');
 
         for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + (i + 3) * 2);
             //is PK or table has no PK
             if (redoLogRecord2->object->columns[i]->numPk > 0 || redoLogRecord2->object->totalPk == 0) {
                 if (prevValue)
@@ -161,14 +165,12 @@ namespace OpenLogReplicator {
                 else
                     prevValue = true;
 
-                if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
-                        || i >= redoLogRecord2->cc) {
+                if ((*nulls & bits) != 0 || fieldLength == 0 || i >= redoLogRecord2->cc) {
                     commandBuffer->append("NULL");
                 } else {
                     commandBuffer->append('"');
 
-                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos,
-                            ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos, fieldLength);
 
                     commandBuffer->append('"');
                 }
@@ -179,7 +181,7 @@ namespace OpenLogReplicator {
                 bits = 1;
                 ++nulls;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
         fieldPos = fieldPosStart;
         nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta;
@@ -188,19 +190,18 @@ namespace OpenLogReplicator {
         prevValue = false;
 
         for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + (i + 3) * 2);
             if (prevValue)
                 commandBuffer->append(',');
             else
                 prevValue = true;
 
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] == 0
-                    || i >= redoLogRecord2->cc) {
+            if ((*nulls & bits) != 0 || fieldLength == 0 || i >= redoLogRecord2->cc) {
                 commandBuffer->append("NULL");
             } else {
                 commandBuffer->append('"');
 
-                appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos,
-                        ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3]);
+                appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos, fieldLength);
 
                 commandBuffer->append('"');
             }
@@ -210,7 +211,7 @@ namespace OpenLogReplicator {
                 bits = 1;
                 ++nulls;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i + 3] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
 
         commandBuffer->append(0);
@@ -222,12 +223,13 @@ namespace OpenLogReplicator {
         bool prevValue;
         uint16_t fieldLength;
 
-        for (uint32_t i = 1; i < 4; ++i)
-            fieldPos += (((uint16_t*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        for (uint32_t i = 1; i < 4; ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        }
         fieldPosStart = fieldPos;
 
         for (uint32_t r = 0; r < redoLogRecord2->nrow; ++r) {
-
             pos = 0;
             prevValue = false;
             fieldPos = fieldPosStart;
@@ -316,7 +318,7 @@ namespace OpenLogReplicator {
 
             commandBuffer->append(0);
 
-            fieldPosStart += ((uint16_t*)(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta))[r];
+            fieldPosStart += oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
         }
     }
 
@@ -328,13 +330,16 @@ namespace OpenLogReplicator {
         //TODO
     }
 
-    void RedisWriter::parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void RedisWriter::parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
         uint32_t fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
         uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
         bool prevValue = false;
+        uint16_t fieldLength;
 
-        for (uint32_t i = 1; i <= 4; ++i)
-            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+        for (uint32_t i = 1; i <= 4; ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        }
         fieldPosStart = fieldPos;
 
         commandBuffer
@@ -344,6 +349,7 @@ namespace OpenLogReplicator {
                 ->append('.');
 
         for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (i + 5) * 2);
             //is PK or table has no PK
             if (redoLogRecord1->object->columns[i]->numPk > 0 || redoLogRecord1->object->totalPk == 0) {
                 if (prevValue) {
@@ -352,14 +358,12 @@ namespace OpenLogReplicator {
                 } else
                     prevValue = true;
 
-                if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0 ||
-                        i >= redoLogRecord1->cc) {
+                if ((*nulls & bits) != 0 || fieldLength == 0 || i >= redoLogRecord1->cc) {
                     commandBuffer->append("NULL");
                 } else {
                     commandBuffer->append('"');
 
-                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos,
-                            ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos, fieldLength);
 
                     commandBuffer->append('"');
                 }
@@ -370,7 +374,7 @@ namespace OpenLogReplicator {
                 bits = 1;
                 ++nulls;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
         fieldPos = fieldPosStart;
         nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta;
@@ -380,8 +384,8 @@ namespace OpenLogReplicator {
         prevValue = false;
 
         for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
-            if ((*nulls & bits) != 0 || ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] == 0 ||
-                    i >= redoLogRecord1->cc) {
+            fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (i + 5) * 2);
+            if ((*nulls & bits) != 0 || fieldLength == 0 || i >= redoLogRecord1->cc) {
                 if (prevValue) {
                     commandBuffer->append(',');
                 } else
@@ -396,8 +400,7 @@ namespace OpenLogReplicator {
 
                 commandBuffer->append('"');
 
-                appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos,
-                        ((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5]);
+                appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos, fieldLength);
 
                 commandBuffer->append('"');
             }
@@ -407,7 +410,7 @@ namespace OpenLogReplicator {
                 bits = 1;
                 ++nulls;
             }
-            fieldPos += (((uint16_t*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta))[i + 5] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
 
         commandBuffer->append(0);

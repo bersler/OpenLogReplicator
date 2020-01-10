@@ -96,8 +96,8 @@ namespace OpenLogReplicator {
             uint32_t dd = (rest % 31) + 1; rest /= 31;
             uint32_t mm = (rest % 12) + 1; rest /= 12;
             uint32_t yy = rest + 1988;
-            os << dec << setfill('0') << setw(2) << mm << "/" << setfill('0') << setw(2) << dd << "/" << yy << " " <<
-                    setfill('0') << setw(2) << hh << ":" << setfill('0') << setw(2) << mi << ":" << setfill('0') << setw(2) << ss;
+            os << setfill('0') << setw(2) << dec << mm << "/" << setfill('0') << setw(2) << dec << dd << "/" << yy << " " <<
+                    setfill('0') << setw(2) << dec << hh << ":" << setfill('0') << setw(2) << dec << mi << ":" << setfill('0') << setw(2) << dec << ss;
             return os;
             //DDDDDDDDDD HHHHHHHH
             //10/15/2018 22:25:36

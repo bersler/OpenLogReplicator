@@ -1,0 +1,116 @@
+/* Oracle Redo OpCode: 5.14
+   Copyright (C) 2018-2020 Adam Leszczynski.
+
+This file is part of Open Log Replicator.
+
+Open Log Replicator is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published
+by the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+Open Log Replicator is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Open Log Replicator; see the file LICENSE.txt  If not see
+<http://www.gnu.org/licenses/>.  */
+
+#include <iostream>
+#include <iomanip>
+#include "OpCode0514.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
+#include "OracleEnvironment.h"
+#include "RedoLogRecord.h"
+
+using namespace std;
+
+namespace OpenLogReplicator {
+
+    OpCode0514::OpCode0514(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleEnvironment, redoLogRecord) {
+    }
+
+    OpCode0514::~OpCode0514() {
+    }
+
+    void OpCode0514::process() {
+        OpCode::process();
+        uint32_t fieldPos = redoLogRecord->fieldPos;
+
+        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+
+            if (i == 1) {
+                if (oracleEnvironment->dumpLogFile) {
+                    uint16_t serialNumber = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
+                    uint16_t sessionNumber;
+                    if (oracleEnvironment->version < 19000)
+                        sessionNumber = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
+                    else
+                        sessionNumber = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
+
+                    oracleEnvironment->dumpStream <<
+                            "session number   = " << dec << sessionNumber << endl <<
+                            "serial  number   = " << dec << serialNumber << endl;
+                }
+            } else
+            if (i == 2) {
+                if (oracleEnvironment->dumpLogFile) {
+                    oracleEnvironment->dumpStream << "transaction name = ";
+                    for (uint32_t j = 0; j < fieldLength; ++j)
+                        oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
+                    oracleEnvironment->dumpStream << endl;
+                }
+            } else if (i == 3) {
+                if (oracleEnvironment->dumpLogFile) {
+                    uint32_t flags = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
+                    if ((flags & 0x0001) != 0) oracleEnvironment->dumpStream << "DDL transaction" << endl;
+                    if ((flags & 0x0002) != 0) oracleEnvironment->dumpStream << "Space Management transaction" << endl;
+                    if ((flags & 0x0004) != 0) oracleEnvironment->dumpStream << "Recursive transaction" << endl;
+                    if ((flags & 0x0008) != 0) oracleEnvironment->dumpStream << "Logmnr Internal transaction" << endl;
+                    if ((flags & 0x0010) != 0) oracleEnvironment->dumpStream << "DB Open in Migrate Mode" << endl;
+                    if ((flags & 0x0020) != 0) oracleEnvironment->dumpStream << "LSBY ignore" << endl;
+                    if ((flags & 0x0040) != 0) oracleEnvironment->dumpStream << "LogMiner no tx chunking" << endl;
+                    if ((flags & 0x0080) != 0) oracleEnvironment->dumpStream << "LogMiner Stealth transaction" << endl;
+                    if ((flags & 0x0100) != 0) oracleEnvironment->dumpStream << "LSBY preserve" << endl;
+                    if ((flags & 0x0200) != 0) oracleEnvironment->dumpStream << "LogMiner Marker transaction" << endl;
+                    if ((flags & 0x0400) != 0) oracleEnvironment->dumpStream << "Transaction in pragama'ed plsql" << endl;
+                    if ((flags & 0x0800) != 0) oracleEnvironment->dumpStream << "Tx audit CV flags undefined" << endl;
+                }
+            } else
+            if (i == 4) {
+                if (oracleEnvironment->dumpLogFile) {
+                    uint32_t version = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+                    oracleEnvironment->dumpStream << "version " << dec << version << endl;
+                }
+            } else
+            if (i == 5) {
+                if (oracleEnvironment->dumpLogFile) {
+                    uint32_t auditSessionid = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+                    oracleEnvironment->dumpStream << "audit sessionid " << auditSessionid << endl;
+                }
+            } else
+            if (i == 7) {
+                if (oracleEnvironment->dumpLogFile) {
+                    oracleEnvironment->dumpStream << "Client Id = ";
+                    for (uint32_t j = 0; j < fieldLength; ++j)
+                        oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
+                    oracleEnvironment->dumpStream << endl;
+                }
+            } else
+            if (i == 8) {
+                if (oracleEnvironment->dumpLogFile) {
+                    oracleEnvironment->dumpStream << "login   username = ";
+                    for (uint32_t j = 0; j < fieldLength; ++j)
+                        oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
+                    oracleEnvironment->dumpStream << endl;
+                }
+            }
+
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        }
+    }
+}

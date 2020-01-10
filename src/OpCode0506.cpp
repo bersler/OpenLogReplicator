@@ -31,8 +31,8 @@ namespace OpenLogReplicator {
     OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
             OpCode(oracleEnvironment, redoLogRecord) {
 
-        uint32_t fieldPos = redoLogRecord->fieldPos, fieldLength;
-        fieldLength = ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[1];
+        uint32_t fieldPos = redoLogRecord->fieldPos;
+        uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
             return;
@@ -49,12 +49,13 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
-                ktub(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktub(fieldPos, fieldLength);
             } else if (i == 2) {
-                ktuxvoff(fieldPos, ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]);
+                ktuxvoff(fieldPos, fieldLength);
             }
-            fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
     }
 

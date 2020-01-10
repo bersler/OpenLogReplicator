@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
                 cout << "Transaction xid:  " << PRINTXID(xid) <<
                         " SCN: " << PRINTSCN64(firstScn) <<
                         " - " << PRINTSCN64(lastScn) <<
-                        " opCodes: " << dec << opCodes <<  endl;
+                        " opCodes: " << dec << opCodes << endl;
             }
 
             if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
@@ -137,7 +137,7 @@ namespace OpenLogReplicator {
                     case 0x05010B02:
                         if (hasPrev)
                             oracleEnvironment->commandBuffer->writer->next();
-                        oracleEnvironment->commandBuffer->writer->parseInsert(redoLogRecord1, redoLogRecord2);
+                        oracleEnvironment->commandBuffer->writer->parseInsert(redoLogRecord1, redoLogRecord2, oracleEnvironment);
                         hasPrev = true;
                         break;
 
@@ -169,7 +169,7 @@ namespace OpenLogReplicator {
                     case 0x05010B03:
                         if (hasPrev)
                             oracleEnvironment->commandBuffer->writer->next();
-                        oracleEnvironment->commandBuffer->writer->parseDelete(redoLogRecord1, redoLogRecord2);
+                        oracleEnvironment->commandBuffer->writer->parseDelete(redoLogRecord1, redoLogRecord2, oracleEnvironment);
                         hasPrev = true;
                         break;
 

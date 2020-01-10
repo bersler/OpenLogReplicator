@@ -124,26 +124,27 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << "##: " << dec << fieldOffset;
             for (uint32_t j = 0; j < fieldOffset; ++j) {
                 if ((j & 0xF) == 0)
-                    oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
+                    oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
                 if ((j & 0x7) == 0)
                     oracleEnvironment->dumpStream << " ";
-                oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) oracleEnvironment->recordBuffer[j] << " ";
+                oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)oracleEnvironment->recordBuffer[j] << " ";
             }
             oracleEnvironment->dumpStream << endl;
 
             uint32_t fieldPos = redoLogRecord->fieldPos;
             for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
-                oracleEnvironment->dumpStream << "##: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] << " (" << i << ")";
-                for (uint32_t j = 0; j < ((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i]; ++j) {
+                uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+                oracleEnvironment->dumpStream << "##: " << dec << fieldLength << " (" << i << ")";
+                for (uint32_t j = 0; j < fieldLength; ++j) {
                     if ((j & 0xF) == 0)
-                        oracleEnvironment->dumpStream << endl << "##  " << hex << setfill(' ') << setw(2) <<  j << ": ";
+                        oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
                     if ((j & 0x7) == 0)
                         oracleEnvironment->dumpStream << " ";
-                    oracleEnvironment->dumpStream << hex << setfill('0') << setw(2) << (uint32_t) redoLogRecord->data[fieldPos + j] << " ";
+                    oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPos + j] << " ";
                 }
                 oracleEnvironment->dumpStream << endl;
 
-                fieldPos += (((uint16_t*)(redoLogRecord->data + redoLogRecord->fieldLengthsDelta))[i] + 3) & 0xFFFC;
+                fieldPos += (fieldLength + 3) & 0xFFFC;
             }
         }
     }
@@ -155,7 +156,7 @@ namespace OpenLogReplicator {
         }
 
         if (redoLogRecord->opc == 0x0A16)
-            oracleEnvironment->dumpStream <<  "index undo for leaf key operations" << endl;
+            oracleEnvironment->dumpStream << "index undo for leaf key operations" << endl;
         else if (redoLogRecord->opc == 0x0B01)
             oracleEnvironment->dumpStream << "KDO undo record:" << endl;
 
@@ -302,17 +303,17 @@ namespace OpenLogReplicator {
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typescn scn = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
                     if (oracleEnvironment->version < 12100)
-                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
                                 " flg: " << (uint32_t)flg << " " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
                     else if (oracleEnvironment->version < 12200)
-                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
                                 " flg: (opt=" << (uint32_t)(flg & 0x03) << " whr=" << (uint32_t)(flg >>2) << ") " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
                     else {
                         uint8_t opt = flg & 0x03;
                         uint8_t whr = flg >> 2;
-                        oracleEnvironment->dumpStream << "  itli: " << dec <<     (uint32_t)itli << " " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
                                 " flg: (opt=" << (uint32_t)opt << " whr=" << (uint32_t)whr << ") " <<
                                 " scn:  " << PRINTSCN64(scn) << endl;
                     }
@@ -787,13 +788,25 @@ namespace OpenLogReplicator {
                     " tsn: " << dec << redoLogRecord->tsn << "]" << endl;
         }
 
-        string lastBufferSplit = "No";
+        string lastBufferSplit;
         if ((redoLogRecord->flg & 0x0100) != 0)
             lastBufferSplit = "Yes";
+        else {
+            if (oracleEnvironment->version < 19000)
+                lastBufferSplit = "No";
+            else
+                lastBufferSplit = " No";
+        }
 
-        string userUndoDone = "No";
+        string userUndoDone;
         if ((redoLogRecord->flg & 0x0010) != 0)
             userUndoDone = "Yes";
+        else {
+            if (oracleEnvironment->version < 19000)
+                userUndoDone = "No";
+            else
+                userUndoDone = " No";
+        }
 
         string undoType = "Regular undo";
         if ((redoLogRecord->flg & 0x0001) != 0)
@@ -805,15 +818,27 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & 0x0004) != 0)
             isTxnStart = false;
 
-        string tempObject = "No";
+        string tempObject;
         if ((redoLogRecord->flg & 0x0020) != 0)
             tempObject = "Yes";
+        else {
+            if (oracleEnvironment->version < 19000)
+                tempObject = "No";
+            else
+                tempObject = " No";
+        }
 
-        string tablespaceUndo = "No";
+        string tablespaceUndo;
         if ((redoLogRecord->flg & 0x0080) != 0)
             tablespaceUndo = "Yes";
+        else {
+            if (oracleEnvironment->version < 19000)
+                tablespaceUndo = "No";
+            else
+                tablespaceUndo = " No";
+        }
 
-        string userOnly = "No"; //FIXME
+        string userOnly = " No"; //FIXME
 
         if (isKtubl) {
             //KTUBL
@@ -877,11 +902,11 @@ namespace OpenLogReplicator {
                 } else {
                     oracleEnvironment->dumpStream <<
                             "[Undo type  ] " << undoType << " " <<
-                            " [User undo done   ]  " << userUndoDone << " " <<
-                            " [Last buffer split]  " << lastBufferSplit << " " << endl <<
-                            "[Temp object]           " << tempObject << " " <<
-                            " [Tablespace Undo  ]  " << tablespaceUndo << " " <<
-                            " [User only        ]  " << userOnly << " " << endl <<
+                            " [User undo done   ] " << userUndoDone << " " <<
+                            " [Last buffer split] " << lastBufferSplit << " " << endl <<
+                            "[Temp object]          " << tempObject << " " <<
+                            " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                            " [User only        ] " << userOnly << " " << endl <<
                             "Begin trans    " << endl <<
                             " prev ctl uba: " << PRINTUBA(prevCtlUba) <<
                             " prev ctl max cmt scn:  " << PRINTSCN64(prevCtlMaxCmtScn) << " " << endl <<
@@ -908,15 +933,15 @@ namespace OpenLogReplicator {
                             "       Undo type:  " << getUndoType() <<
                             "Last buffer split:  " << lastBufferSplit << " " << endl <<
                             "Tablespace Undo:  " << tablespaceUndo << " " << endl <<
-                            "             0x" << hex << setfill('0') << setw(8) << redoLogRecord->undo << endl;
+                            "             0x" << setfill('0') << setw(8) << hex << redoLogRecord->undo << endl;
                 } else {
                     oracleEnvironment->dumpStream <<
                             "[Undo type  ] " << undoType << " " <<
-                            " [User undo done   ]  " << userUndoDone << " " <<
-                            " [Last buffer split]  " << lastBufferSplit << " " << endl <<
-                            "[Temp object]           " << tempObject << " " <<
-                            " [Tablespace Undo  ]  " << tablespaceUndo << " " <<
-                            " [User only        ]  " << userOnly << " " << endl;
+                            " [User undo done   ] " << userUndoDone << " " <<
+                            " [Last buffer split] " << lastBufferSplit << " " << endl <<
+                            "[Temp object]          " << tempObject << " " <<
+                            " [Tablespace Undo  ] " << tablespaceUndo << " " <<
+                            " [User only        ] " << userOnly << " " << endl;
                 }
             }
         }
@@ -978,7 +1003,7 @@ namespace OpenLogReplicator {
             char flStr[9] = "--------";
 
             for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
-                oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->slotsDelta))[r] << endl;
+                oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->slotsDelta + r * 2) << endl;
                 uint8_t fl = data[pos];
                 uint8_t lb = data[pos + 1];
                 uint8_t jcc = data[pos + 2];
@@ -992,7 +1017,7 @@ namespace OpenLogReplicator {
                 if ((fl & 0x40) == 0x40) flStr[1] = 'C'; else flStr[1] = '-'; //Clustered table member
                 if ((fl & 0x80) == 0x80) flStr[0] = 'K'; else flStr[0] = '-'; //cluster Key
 
-                oracleEnvironment->dumpStream << "tl: " << dec << ((uint16_t*)(redoLogRecord->data + redoLogRecord->rowLenghsDelta))[r] <<
+                oracleEnvironment->dumpStream << "tl: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->rowLenghsDelta + r * 2) <<
                         " fb: " << flStr <<
                         " lb: 0x" << hex << (uint32_t)lb << " " <<
                         " cc: " << dec << (uint32_t)jcc << endl;
