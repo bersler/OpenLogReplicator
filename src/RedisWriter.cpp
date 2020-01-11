@@ -169,9 +169,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append("NULL");
                 } else {
                     commandBuffer->append('"');
-
                     appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos, fieldLength);
-
                     commandBuffer->append('"');
                 }
             }
@@ -200,9 +198,7 @@ namespace OpenLogReplicator {
                 commandBuffer->append("NULL");
             } else {
                 commandBuffer->append('"');
-
                 appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos, fieldLength);
-
                 commandBuffer->append('"');
             }
 
@@ -362,9 +358,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append("NULL");
                 } else {
                     commandBuffer->append('"');
-
                     appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos, fieldLength);
-
                     commandBuffer->append('"');
                 }
             }
@@ -399,9 +393,7 @@ namespace OpenLogReplicator {
                     prevValue = true;
 
                 commandBuffer->append('"');
-
                 appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos, fieldLength);
-
                 commandBuffer->append('"');
             }
 

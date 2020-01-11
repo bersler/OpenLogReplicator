@@ -577,11 +577,11 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].usn = usn;
             redoLogRecord[vectors].data = oracleEnvironment->recordBuffer + pos;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
-            redoLogRecord[vectors].fieldNum = (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
+            redoLogRecord[vectors].fieldCnt = (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
             redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
 
             uint32_t fieldPos = redoLogRecord[vectors].fieldPos;
-            for (uint32_t i = 1; i <= redoLogRecord[vectors].fieldNum; ++i) {
+            for (uint32_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
                 redoLogRecord[vectors].length += (oracleEnvironment->read16(fieldList + i * 2) + 3) & 0xFFFC;
                 fieldPos += (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
                 if (pos + redoLogRecord[vectors].length > recordLength)

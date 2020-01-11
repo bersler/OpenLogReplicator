@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
 
         typescn scn;              //scn
         uint8_t *data;            //data
-        uint16_t fieldNum;
+        uint16_t fieldCnt;
         uint32_t fieldPos;
         uint16_t nrow;
         uint32_t slotsDelta;

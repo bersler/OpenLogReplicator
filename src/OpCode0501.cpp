@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
             OpCode(oracleEnvironment, redoLogRecord) {
 
         uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldNum && i <= 2; ++i) {
+        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt && i <= 2; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 2) {
                 if (fieldLength < 8) {
@@ -51,10 +51,10 @@ namespace OpenLogReplicator {
 
     void OpCode0501::process() {
         OpCode::process();
-        uint8_t *colnums;
+        uint8_t *colNums;
         uint8_t *nulls = nullptr, bits = 1;
         uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldNum; ++i) {
+        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktudb(fieldPos, fieldLength);
@@ -82,14 +82,14 @@ namespace OpenLogReplicator {
             //Update Row Piece
             } else if ((redoLogRecord->op & 0x1F) == 0x05) {
                 if (i == 5)
-                    colnums = redoLogRecord->data + fieldPos;
+                    colNums = redoLogRecord->data + fieldPos;
                 else if (i == 6 && (redoLogRecord->flags & 0x80) != 0) {
                     if (oracleEnvironment->dumpLogFile)
-                        dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colnums), fieldLength);
+                        dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
                 } else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc && (redoLogRecord->flags & 0x80) == 0) {
                     if (oracleEnvironment->dumpLogFile) {
-                        dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colnums), fieldLength, *nulls & bits);
-                        colnums += 2;
+                        dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
+                        colNums += 2;
                         bits <<= 1;
                         if (bits == 0) {
                             bits = 1;
