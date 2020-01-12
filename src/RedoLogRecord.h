@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
         uint8_t itli;
         uint16_t slot;
         uint8_t flags;            //flags like xtype, kdoOpCode
+        uint8_t fb;               //row flags like F,L
 
         void dump();
     };

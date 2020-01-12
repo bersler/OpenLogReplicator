@@ -125,7 +125,7 @@ namespace OpenLogReplicator {
             for (uint32_t j = 0; j < fieldOffset; ++j) {
                 if ((j & 0xF) == 0)
                     oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
-                if ((j & 0x7) == 0)
+                if ((j & 0x07) == 0)
                     oracleEnvironment->dumpStream << " ";
                 oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)oracleEnvironment->recordBuffer[j] << " ";
             }
@@ -138,7 +138,7 @@ namespace OpenLogReplicator {
                 for (uint32_t j = 0; j < fieldLength; ++j) {
                     if ((j & 0xF) == 0)
                         oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
-                    if ((j & 0x7) == 0)
+                    if ((j & 0x07) == 0)
                         oracleEnvironment->dumpStream << " ";
                     oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->data[fieldPos + j] << " ";
                 }
@@ -328,8 +328,9 @@ namespace OpenLogReplicator {
             return;
         }
 
-        redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
+        redoLogRecord->fb = redoLogRecord->data[fieldPos + 16];
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
+        redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
         redoLogRecord->nullsDelta = fieldPos + 45;
 
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
@@ -345,41 +346,33 @@ namespace OpenLogReplicator {
                     " slot: " << dec << (uint32_t)redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
                     " size/delt: " << dec << sizeDelt << endl;
 
-            uint8_t fl = redoLogRecord->data[fieldPos + 16];
+            char fbStr[9] = "--------";
+            processFbFlags(redoLogRecord->fb, fbStr);
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
-            char flStr[9] = "--------";
 
-            if ((fl & 0x01) == 0x01) flStr[7] = 'N'; //last column continues in Next piece
-            if ((fl & 0x02) == 0x02) flStr[6] = 'P'; //first column continues from Previous piece
-            if ((fl & 0x04) == 0x04) flStr[5] = 'L'; //Last data piece
-            if ((fl & 0x08) == 0x08) flStr[4] = 'F'; //First data piece
-            if ((fl & 0x10) == 0x10) flStr[3] = 'D'; //Deleted row
-            if ((fl & 0x20) == 0x20) flStr[2] = 'H'; //Head piece of row
-            if ((fl & 0x40) == 0x40) flStr[1] = 'C'; //Clustered table member
-            if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
-
-            oracleEnvironment->dumpStream << "fb: " << flStr <<
+            oracleEnvironment->dumpStream << "fb: " << fbStr <<
                     " lb: 0x" << hex << (uint32_t)lb << " " <<
                     " cc: " << dec << (uint32_t)redoLogRecord->cc;
-            if (flStr[1] == 'C') {
+            if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
                 oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
             } else
                 oracleEnvironment->dumpStream << endl;
 
-            if (flStr[5] != 'L') {
+            //next DBA/SLT
+            if (fbStr[5] != 'L') {
                 uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
                 uint16_t nrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
                 oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << nrid2 << endl;
             }
 
-            if (flStr[2] == 'H') {
+            if (fbStr[2] == 'H') {
                 //uint32_t hrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
                 //uint16_t hrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
                 //oracleEnvironment->dumpStream << "hrid: 0x" << setfill('0') << setw(8) << hex << hrid1 << "." << hex << hrid2 << endl;
             }
 
-            if (flStr[0] == 'K') {
+            if (fbStr[0] == 'K') {
                 uint8_t curc = 0; //FIXME
                 uint8_t comc = 0; //FIXME
                 uint32_t pk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
@@ -457,6 +450,7 @@ namespace OpenLogReplicator {
             return;
         }
 
+        redoLogRecord->fb = redoLogRecord->data[fieldPos + 16];
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
         redoLogRecord->nullsDelta = fieldPos + 26;
 
@@ -468,7 +462,6 @@ namespace OpenLogReplicator {
 
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 23]; //nnew field
         if (oracleEnvironment->dumpLogFile) {
-            uint8_t flag = redoLogRecord->data[fieldPos + 16];
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
             uint8_t ckix = redoLogRecord->data[fieldPos + 18];
             uint8_t tabn = redoLogRecord->data[fieldPos + 19];
@@ -477,7 +470,7 @@ namespace OpenLogReplicator {
 
             oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)tabn <<
                     " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
-                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)flag <<
+                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->fb <<
                     " lock: " << dec << (uint32_t)lock <<
                     " ckix: " << dec << (uint32_t)ckix << endl;
             oracleEnvironment->dumpStream << "ncol: " << dec << (uint32_t)ncol <<
@@ -498,14 +491,14 @@ namespace OpenLogReplicator {
             uint8_t flagStr[3] = "--";
             uint8_t lock = redoLogRecord->data[fieldPos + 29];
             uint8_t flag = redoLogRecord->data[fieldPos + 28];
-            if ((flag & 0x1) == 0x1) flagStr[0] = 'F';
-            if ((flag & 0x2) == 0x2) flagStr[1] = 'B';
+            if ((flag & 0x01) == 0x01) flagStr[0] = 'F';
+            if ((flag & 0x02) == 0x02) flagStr[1] = 'B';
 
             oracleEnvironment->dumpStream << "flag: " << flagStr <<
                     " lock: " << dec << (uint32_t)lock <<
                     " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" << endl;
 
-            if ((flag & 0x1) == 0x1) {
+            if ((flag & 0x01) == 0x01) {
                 uint8_t fwd[4];
                 uint16_t fwd2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
                 memcpy(fwd, redoLogRecord->data + fieldPos + 16, 4);
@@ -517,7 +510,7 @@ namespace OpenLogReplicator {
                         dec << fwd2 << " " << endl;
             }
 
-            if ((flag & 0x2) == 0x2) {
+            if ((flag & 0x02) == 0x02) {
                 uint8_t bkw[4];
                 uint16_t bkw2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26);
                 memcpy(bkw, redoLogRecord->data + fieldPos + 22, 4);
@@ -540,6 +533,7 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
         redoLogRecord->nullsDelta = fieldPos + 45;
+        redoLogRecord->fb = redoLogRecord->data[fieldPos + 16];
 
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
@@ -554,23 +548,14 @@ namespace OpenLogReplicator {
                 " slot: " << dec << (uint32_t)redoLogRecord->slot << "(0x" << hex << (uint32_t)redoLogRecord->slot << ")" <<
                 " size/delt: " << dec << sizeDelt << endl;
 
-            uint8_t fl = redoLogRecord->data[fieldPos + 16];
+            char fbStr[9] = "--------";
+            processFbFlags(redoLogRecord->fb, fbStr);
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
-            char flStr[9] = "--------";
 
-            if ((fl & 0x01) == 0x01) flStr[7] = 'N'; //last column continues in Next piece
-            if ((fl & 0x02) == 0x02) flStr[6] = 'P'; //first column continues from Previous piece
-            if ((fl & 0x04) == 0x04) flStr[5] = 'L'; //Last data piece
-            if ((fl & 0x08) == 0x08) flStr[4] = 'F'; //First data piece
-            if ((fl & 0x10) == 0x10) flStr[3] = 'D'; //Deleted row
-            if ((fl & 0x20) == 0x20) flStr[2] = 'H'; //Head piece of row
-            if ((fl & 0x40) == 0x40) flStr[1] = 'C'; //Clustered table member
-            if ((fl & 0x80) == 0x80) flStr[0] = 'K'; //cluster Key
-
-            oracleEnvironment->dumpStream << "fb: " << flStr <<
+            oracleEnvironment->dumpStream << "fb: " << fbStr <<
                     " lb: 0x" << hex << (uint32_t)lb << " " <<
                     " cc: " << dec << (uint32_t)redoLogRecord->cc;
-            if (flStr[1] == 'C') {
+            if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
                 oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
             } else
@@ -578,7 +563,7 @@ namespace OpenLogReplicator {
 
             uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
             uint8_t nrid2 = redoLogRecord->data[fieldPos + 32];
-            if (fl == 0x20)
+            if ((redoLogRecord->fb & 0x20) == 0x20)
                 oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << (uint32_t) nrid2 << endl;
 
             oracleEnvironment->dumpStream << "null:";
@@ -773,7 +758,7 @@ namespace OpenLogReplicator {
                     " tsn: " << dec << redoLogRecord->tsn << postObj << endl;
         } else {
             uint16_t wrp = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 22);
-            uint32_t prevDba = 0; //FIXME
+            uint32_t prevDba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12);
 
             oracleEnvironment->dumpStream <<
                     ktuType << " redo:" <<
@@ -1000,26 +985,17 @@ namespace OpenLogReplicator {
     void OpCode::dumpRows(uint8_t *data) {
         if (oracleEnvironment->dumpLogFile) {
             uint32_t pos = 0;
-            char flStr[9] = "--------";
+            char fbStr[9] = "--------";
 
             for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
                 oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->slotsDelta + r * 2) << endl;
-                uint8_t fl = data[pos];
+                processFbFlags(data[pos + 0], fbStr);
                 uint8_t lb = data[pos + 1];
                 uint8_t jcc = data[pos + 2];
 
-                if ((fl & 0x01) == 0x01) flStr[7] = 'N'; else flStr[7] = '-'; //last column continues in Next piece
-                if ((fl & 0x02) == 0x02) flStr[6] = 'P'; else flStr[6] = '-'; //first column continues from Previous piece
-                if ((fl & 0x04) == 0x04) flStr[5] = 'L'; else flStr[5] = '-'; //Last data piece
-                if ((fl & 0x08) == 0x08) flStr[4] = 'F'; else flStr[4] = '-'; //First data piece
-                if ((fl & 0x10) == 0x10) flStr[3] = 'D'; else flStr[3] = '-'; //Deleted row
-                if ((fl & 0x20) == 0x20) flStr[2] = 'H'; else flStr[2] = '-'; //Head piece of row
-                if ((fl & 0x40) == 0x40) flStr[1] = 'C'; else flStr[1] = '-'; //Clustered table member
-                if ((fl & 0x80) == 0x80) flStr[0] = 'K'; else flStr[0] = '-'; //cluster Key
-
                 oracleEnvironment->dumpStream << "tl: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->rowLenghsDelta + r * 2) <<
-                        " fb: " << flStr <<
-                        " lb: 0x" << hex << (uint32_t)lb << " " <<
+                        " fb: " << fbStr <<
+                        " dba" << hex << (uint32_t)lb << " " <<
                         " cc: " << dec << (uint32_t)jcc << endl;
                 pos += 3;
 
@@ -1049,5 +1025,17 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
             oracleEnvironment->dumpStream << endl;
         }
+    }
+
+    void OpCode::processFbFlags(uint8_t fb, char *fbStr) {
+        if ((fb & 0x01) == 0x01) fbStr[7] = 'N'; else fbStr[7] = '-'; //last column continues in Next piece
+        if ((fb & 0x02) == 0x02) fbStr[6] = 'P'; else fbStr[6] = '-'; //first column continues from Previous piece
+        if ((fb & 0x04) == 0x04) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last data piece
+        if ((fb & 0x08) == 0x08) fbStr[4] = 'F'; else fbStr[4] = '-'; //First data piece
+        if ((fb & 0x10) == 0x10) fbStr[3] = 'D'; else fbStr[3] = '-'; //Deleted row
+        if ((fb & 0x20) == 0x20) fbStr[2] = 'H'; else fbStr[2] = '-'; //Head piece of row
+        if ((fb & 0x40) == 0x40) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
+        if ((fb & 0x80) == 0x80) fbStr[0] = 'K'; else fbStr[0] = '-'; //cluster Key
+        fbStr[8] = 0;
     }
 }

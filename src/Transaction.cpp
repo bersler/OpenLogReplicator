@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
 
                     RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12));
                     RedoLogRecord *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord)));
-                    typescn scn = *((typescn *)(tcTemp->buffer + pos + 20 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
+                    typescn scn = *((typescn *)(tcTemp->buffer + pos + 32 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
                             redoLogRecord1->length + redoLogRecord2->length));
                     redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
                     redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
@@ -122,7 +122,9 @@ namespace OpenLogReplicator {
                     if (oracleEnvironment->trace >= 1) {
                         uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
                         uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
-                        cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<
+                        cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<\
+                                " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
+                                    ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
                                 " op: " << setfill('0') << setw(8) << hex << op <<
                                 " objn: " << dec << objn <<
                                 " objd: " << dec << objd <<

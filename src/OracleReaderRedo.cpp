@@ -306,8 +306,8 @@ namespace OpenLogReplicator {
                 typescn realNextScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 272);
 
                 oracleEnvironment->dumpStream <<
-                        " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN64(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
-                        " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
+                        " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
+                        " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << endl <<
                         " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTime << endl <<
                         " Next scn: " << PRINTSCN64(nextScnHeader) << " " << nextTime << endl <<
                         " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << endl <<
@@ -325,7 +325,7 @@ namespace OpenLogReplicator {
 
             uint32_t miscFlags = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 236);
             string endOfRedo;
-            if ((miscFlags & 0x8) == 0x8)
+            if ((miscFlags & 0x08) == 0x08)
                 endOfRedo = "Yes";
             else
                 endOfRedo = "No";
@@ -469,14 +469,14 @@ namespace OpenLogReplicator {
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
         uint32_t headerLength;
 
-        if ((vld & 4) == 4) {
+        if ((vld & 0x04) == 0x04) {
             checkpoint = true;
             headerLength = 68;
         } else
             headerLength = 24;
 
         if (oracleEnvironment->dumpLogFile) {
-            uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12); //candidates: 12 or 26 or 52
+            uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
             uint16_t thread = 1; //FIXME
             oracleEnvironment->dumpStream << " " << endl;
 
@@ -501,9 +501,9 @@ namespace OpenLogReplicator {
             if (oracleEnvironment->dumpData) {
                 oracleEnvironment->dumpStream << "##: " << dec << recordLength;
                 for (uint32_t j = 0; j < headerLength; ++j) {
-                    if ((j & 0xF) == 0)
+                    if ((j & 0x0F) == 0)
                         oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
-                    if ((j & 0x7) == 0)
+                    if ((j & 0x07) == 0)
                         oracleEnvironment->dumpStream << " ";
                     oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)oracleEnvironment->recordBuffer[j] << " ";
                 }
@@ -591,8 +591,8 @@ namespace OpenLogReplicator {
             if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length)
                 throw RedoLogException("incomplete record", nullptr, 0);
 
-            redoLogRecord[vectors].recordObjn = 4294967295;
-            redoLogRecord[vectors].recordObjd = 4294967295;
+            redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
+            redoLogRecord[vectors].recordObjd = 0xFFFFFFFF;
 
             pos += redoLogRecord[vectors].length;
 
@@ -1063,8 +1063,8 @@ namespace OpenLogReplicator {
         redoBufferFileStart = blockSize * 2;
         redoBufferFileEnd = blockSize * 2;
         blockNumber = 2;
-        recordObjn = 4294967295;
-        recordObjd = 4294967295;
+        recordObjn = 0xFFFFFFFF;
+        recordObjd = 0xFFFFFFFF;
 
         while (blockNumber <= numBlocks && !reachedEndOfOnlineRedo && !oracleReader->shutdown) {
             processBuffer();

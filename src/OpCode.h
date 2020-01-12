@@ -51,6 +51,7 @@ namespace OpenLogReplicator {
         void dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength);
         void dumpRows(uint8_t *data);
         void dumpVal(uint32_t fieldPos, uint32_t fieldLength, string msg);
+        void processFbFlags(uint8_t fb, char *fbStr);
 
     public:
         OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
