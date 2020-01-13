@@ -472,6 +472,12 @@ namespace OpenLogReplicator {
         if ((vld & 0x04) == 0x04) {
             checkpoint = true;
             headerLength = 68;
+            if (oracleEnvironment->trace >= 1) {
+                if (oracleEnvironment->version < 12200)
+                    cout << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
+                else
+                    cout << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << endl;
+            }
         } else
             headerLength = 24;
 
@@ -726,8 +732,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (checkpoint)
-            flushTransactions();
+        flushTransactions(checkpoint);
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
@@ -939,8 +944,15 @@ namespace OpenLogReplicator {
     }
 
 
-    void OracleReaderRedo::flushTransactions() {
+    void OracleReaderRedo::flushTransactions(bool checkpoint) {
         Transaction *transaction = oracleEnvironment->transactionHeap.top();
+        typescn checkpointScn;
+        if (checkpoint)
+            checkpointScn = curScn;
+        else if (curScn > 100) //TODO: parametrize
+            checkpointScn = curScn - 100;
+        else
+            return;
 
         while (transaction != nullptr) {
             if (oracleEnvironment->trace >= 1) {
@@ -956,12 +968,27 @@ namespace OpenLogReplicator {
                         endl;
             }
 
-            if (transaction->lastScn <= curScn && transaction->isCommit) {
+            if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->isBegin)
                     //FIXME: it should be checked if transaction begin SCN is within captured range of SCNs
                     transaction->flush(oracleEnvironment);
-                else
+                else {
+                    if (curScn + 100 > transaction->lastScn) //TODO: parametrize
+                        return;
+
                     cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
+
+                    if (oracleEnvironment->trace >= 1) {
+                        for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+                            Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
+                            cerr << "WARNING: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
+                                    ", begin: " << transactionI->isBegin <<
+                                    ", commit: " << transactionI->isCommit <<
+                                    ", rollback: " << transactionI->isRollback << endl;
+
+                        }
+                    }
+                }
 
                 oracleEnvironment->transactionHeap.pop();
                 if (transaction->opCodes > 0)
@@ -1027,6 +1054,9 @@ namespace OpenLogReplicator {
                 recordLeftToCopy -= toCopy;
                 curBlockPos += toCopy;
                 recordPos += toCopy;
+
+                if (oracleEnvironment->trace >= 1)
+                    cout << "Block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
 
                 if (recordLeftToCopy == 0)
                     analyzeRecord();
@@ -1099,7 +1129,7 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    flushTransactions();
+                    flushTransactions(true);
                     //online redo log problem
                     if (oracleReader->shutdown)
                         break;

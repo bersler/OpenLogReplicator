@@ -99,6 +99,7 @@ namespace OpenLogReplicator {
                     oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26),
                     oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28));
 
+            oracleEnvironment->dumpStream << "XID: " << PRINTXID(redoLogRecord->xid) << endl;
             oracleEnvironment->dumpStream << "ktudh redo:" <<
                     " slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
                     " sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<

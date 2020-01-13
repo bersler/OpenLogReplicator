@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
         int checkRedoHeader(bool first);
         int processBuffer();
         void analyzeRecord();
-        void flushTransactions();
+        void flushTransactions(bool checkpoint);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         uint16_t calcChSum(uint8_t *buffer, uint32_t size);
