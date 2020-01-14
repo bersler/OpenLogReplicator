@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "dumplogfile": "0",
   "dumpdata": "0",
-  "trace": "0",
+  "trace": "2",
   "directread": "0",
   "sources": [
     {
