@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
                 group = stmt.rset->getInt(5);
                 path = stmt.rset->getString(6);
 
-                if (oracleEnvironment->trace >= TRACE_INFO) {
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
                             ", GROUP: " << group << ", PATH: " << path << endl;
                 }
@@ -400,8 +400,7 @@ namespace OpenLogReplicator {
                 OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner.c_str(), objectName.c_str());
                 ++tabCnt;
 
-                if (oracleEnvironment->trace >= TRACE_INFO)
-                    cerr << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+                cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
 
                 stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                 stmt2.stmt->setInt(1, objn);

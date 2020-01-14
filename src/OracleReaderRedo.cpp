@@ -220,8 +220,8 @@ namespace OpenLogReplicator {
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (oracleEnvironment->trace >= TRACE_WARN)
-                cerr << "WARNING: log switch to " << nextScnHeader << endl;
+            if (oracleEnvironment->trace >= TRACE_INFO)
+                cerr << "Log switch to " << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -1090,7 +1090,7 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
         if (oracleEnvironment->trace >= TRACE_INFO)
-            cout << "Processing log: " << *this << endl;
+            cerr << "Processing log: " << *this << endl;
         if (oracleEnvironment->dumpLogFile) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
