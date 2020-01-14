@@ -613,40 +613,40 @@ namespace OpenLogReplicator {
                 type = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 12);
                 seq = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 18);
                 cnt = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 20);
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "SEQ: " << dec << seq << "/" << dec << cnt << endl;
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                    cerr << "SEQ: " << dec << seq << "/" << dec << cnt << endl;
                 }
             } else if (i == 8) {
                 //DDL text
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "DDL[" << dec << fieldLength << "]: ";
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "DDL[" << dec << fieldLength << "]: ";
                     for (uint32_t j = 0; j < fieldLength; ++j) {
-                        cout << *(redoLogRecord1->data + fieldPos + j);
+                        cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
-                    cout << endl;
+                    cerr << endl;
                 }
             } else if (i == 9) {
                 //owner
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "OWNER[" << dec << fieldLength << "]: ";
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "OWNER[" << dec << fieldLength << "]: ";
                     for (uint32_t j = 0; j < fieldLength; ++j) {
-                        cout << *(redoLogRecord1->data + fieldPos + j);
+                        cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
-                    cout << endl;
+                    cerr << endl;
                 }
             } else if (i == 10) {
                 //table
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "TABLE[" << fieldLength << "]: ";
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "TABLE[" << fieldLength << "]: ";
                     for (uint32_t j = 0; j < fieldLength; ++j) {
-                        cout << *(redoLogRecord1->data + fieldPos + j);
+                        cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
-                    cout << endl;
+                    cerr << endl;
                 }
             } else if (i == 12) {
                 redoLogRecord1->objn = oracleEnvironment->read32(redoLogRecord1->data + fieldPos + 0);
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "OBJN: " << dec << redoLogRecord1->objn << endl;
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "OBJN: " << dec << redoLogRecord1->objn << endl;
                 }
             }
 

@@ -94,8 +94,8 @@ namespace OpenLogReplicator {
         //transaction that has some DML's
 
         if (opCodes > 0 && !isRollback) {
-            if (oracleEnvironment->trace >= 1) {
-                cout << "Transaction xid:  " << PRINTXID(xid) <<
+            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                cerr << "Transaction xid:  " << PRINTXID(xid) <<
                         " SCN: " << PRINTSCN64(firstScn) <<
                         " - " << PRINTSCN64(lastScn) <<
                         " opCodes: " << dec << opCodes << endl;
@@ -119,16 +119,18 @@ namespace OpenLogReplicator {
                     redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
                     redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
 
-                    if (oracleEnvironment->trace >= 1) {
-                        uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
-                        uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
-                        cout << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<\
-                                " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
-                                    ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
-                                " op: " << setfill('0') << setw(8) << hex << op <<
-                                " objn: " << dec << objn <<
-                                " objd: " << dec << objd <<
-                                " scn: " << PRINTSCN64(scn) << endl;
+                    if (oracleEnvironment->trace >= TRACE_WARN) {
+                        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                            uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
+                            uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
+                            cerr << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<\
+                                    " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
+                                        ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
+                                    " op: " << setfill('0') << setw(8) << hex << op <<
+                                    " objn: " << dec << objn <<
+                                    " objd: " << dec << objd <<
+                                    " scn: " << PRINTSCN64(scn) << endl;
+                        }
                         if (oldScn != 0 && oldScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }

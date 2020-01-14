@@ -27,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     void RedoLogRecord::dump() {
-        cout << "DUMP: opCode: " << hex << opCode <<
+        cerr << "DUMP: opCode: " << hex << opCode <<
             " length: " << dec << length <<
             " dba: " << hex << dba <<
             " bdba: " << hex << bdba <<

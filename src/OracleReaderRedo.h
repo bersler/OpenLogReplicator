@@ -37,6 +37,7 @@ namespace OpenLogReplicator {
     private:
         OracleEnvironment *oracleEnvironment;
         int group;
+        typescn lastCheckpointScn;
         typescn curScn;
         typescn firstScn;
         typescn nextScn;
@@ -58,6 +59,7 @@ namespace OpenLogReplicator {
         uint32_t headerBufferFileEnd;
         bool lastReadSuccessfull;
         bool redoOverwritten;
+        bool lastCheckpointInfo;
         char SID[9];
         int fileDes;
 

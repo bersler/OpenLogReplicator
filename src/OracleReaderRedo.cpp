@@ -63,6 +63,7 @@ namespace OpenLogReplicator {
                 typescn nextScn, typeseq sequence, const char* path) :
             oracleEnvironment(oracleEnvironment),
             group(group),
+            lastCheckpointScn(0),
             curScn(ZERO_SCN),
             firstScn(firstScn),
             nextScn(nextScn),
@@ -83,6 +84,7 @@ namespace OpenLogReplicator {
             headerBufferFileEnd(0),
             lastReadSuccessfull(false),
             redoOverwritten(false),
+            lastCheckpointInfo(false),
             fileDes(-1),
             path(path),
             sequence(sequence) {
@@ -218,7 +220,8 @@ namespace OpenLogReplicator {
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            cerr << "WARNING: log switch to " << nextScnHeader << endl;
+            if (oracleEnvironment->trace >= TRACE_WARN)
+                cerr << "WARNING: log switch to " << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -472,11 +475,11 @@ namespace OpenLogReplicator {
         if ((vld & 0x04) == 0x04) {
             checkpoint = true;
             headerLength = 68;
-            if (oracleEnvironment->trace >= 1) {
+            if (oracleEnvironment->trace >= TRACE_DETAIL) {
                 if (oracleEnvironment->version < 12200)
-                    cout << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
+                    cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
                 else
-                    cout << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << endl;
+                    cerr << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << endl;
             }
         } else
             headerLength = 24;
@@ -736,8 +739,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
-        if (oracleEnvironment->trace >= 1) {
-            cout << "** Append: " <<
+        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+            cerr << "** Append: " <<
                     setfill('0') << setw(4) << hex << redoLogRecord->opCode << endl;
             redoLogRecord->dump();
         }
@@ -807,11 +810,11 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        if (oracleEnvironment->trace >= 1) {
-            cout << "** Append: " <<
+        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+            cerr << "** Append: " <<
                     setfill('0') << setw(4) << hex << redoLogRecord1->opCode << " + " <<
                     setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
-            cout << "SCN: " << PRINTSCN64(redoLogRecord1->scn) << endl;
+            cerr << "SCN: " << PRINTSCN64(redoLogRecord1->scn) << endl;
             redoLogRecord1->dump();
             redoLogRecord2->dump();
         }
@@ -931,11 +934,13 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    if (!foundPrevious)
-                        cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
-                                " DBA: " << hex << redoLogRecord2->dba <<
-                                " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
-                                " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+                    if (!foundPrevious) {
+                        if (oracleEnvironment->trace >= TRACE_WARN)
+                            cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                                    " DBA: " << hex << redoLogRecord2->dba <<
+                                    " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
+                                    " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+                    }
                 }
             }
 
@@ -947,16 +952,30 @@ namespace OpenLogReplicator {
     void OracleReaderRedo::flushTransactions(bool checkpoint) {
         Transaction *transaction = oracleEnvironment->transactionHeap.top();
         typescn checkpointScn;
-        if (checkpoint)
+        if (checkpoint) {
             checkpointScn = curScn;
-        else if (curScn > 100) //TODO: parametrize
-            checkpointScn = curScn - 100;
-        else
+            lastCheckpointScn = curScn;
+            lastCheckpointInfo = false;
+        } else if (curScn > 200) { //TODO: parametrize
+            checkpointScn = curScn - 200;
+            if (checkpointScn < lastCheckpointScn)
+                return;
+
+            if (!lastCheckpointInfo) {
+                if (oracleEnvironment->trace >= TRACE_WARN) {
+                    if (oracleEnvironment->version >= 12200)
+                        cerr << "WARNING, current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
+                    else
+                        cerr << "WARNING, current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
+                }
+                lastCheckpointInfo = true;
+            }
+        } else
             return;
 
         while (transaction != nullptr) {
-            if (oracleEnvironment->trace >= 1) {
-                cout << "FirstScn: " << PRINTSCN64(transaction->firstScn) <<
+            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                cerr << "FirstScn: " << PRINTSCN64(transaction->firstScn) <<
                         " lastScn: " << PRINTSCN64(transaction->lastScn) <<
                         " xid: " << PRINTXID(transaction->xid) <<
                         " pos: " << dec << transaction->pos <<
@@ -976,9 +995,9 @@ namespace OpenLogReplicator {
                     if (curScn + 100 > transaction->lastScn) //TODO: parametrize
                         return;
 
-                    cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
+                    if (oracleEnvironment->trace >= TRACE_WARN) {
+                        cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
 
-                    if (oracleEnvironment->trace >= 1) {
                         for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
                             Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
                             cerr << "WARNING: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
@@ -1003,11 +1022,11 @@ namespace OpenLogReplicator {
                 break;
         }
 
-        if (oracleEnvironment->trace >= 1) {
+        if (oracleEnvironment->trace >= TRACE_DETAIL) {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
                 if (transaction != nullptr) {
-                    cout << "Queue: " << PRINTSCN64(transaction->firstScn) <<
+                    cerr << "Queue: " << PRINTSCN64(transaction->firstScn) <<
                             " lastScn: " << PRINTSCN64(transaction->lastScn) <<
                             " xid: " << PRINTXID(transaction->xid) <<
                             " pos: " << dec << transaction->pos <<
@@ -1055,8 +1074,8 @@ namespace OpenLogReplicator {
                 curBlockPos += toCopy;
                 recordPos += toCopy;
 
-                if (oracleEnvironment->trace >= 1)
-                    cout << "Block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
+                if (oracleEnvironment->trace >= TRACE_DETAIL)
+                    cerr << "Block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
 
                 if (recordLeftToCopy == 0)
                     analyzeRecord();
@@ -1070,7 +1089,8 @@ namespace OpenLogReplicator {
     }
 
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
-        cout << "processLog: " << *this << endl;
+        if (oracleEnvironment->trace >= TRACE_INFO)
+            cout << "Processing log: " << *this << endl;
         if (oracleEnvironment->dumpLogFile) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
@@ -1148,12 +1168,12 @@ namespace OpenLogReplicator {
             fileDes = 0;
         }
 
-        if (oracleEnvironment->trace >= 1) {
+        if (oracleEnvironment->trace >= TRACE_INFO) {
             clock_t cEnd = clock();
             double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
             if (myTime > 0)
                 mySpeed = blockNumber * blockSize / 1024 / 1024 / myTime * 1000;
-            cout << "processLog: " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
+            cerr << "processLog: " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
         }
 
         oracleEnvironment->dumpStream.close();

@@ -32,6 +32,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef ORACLEENVIRONMENT_H_
 #define ORACLEENVIRONMENT_H_
 
+#define TRACE_NO 0
+#define TRACE_WARN 1
+#define TRACE_INFO 2
+#define TRACE_DETAIL 3
+#define TRACE_FULL 4
+
 using namespace std;
 
 namespace OpenLogReplicator {

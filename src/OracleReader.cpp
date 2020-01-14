@@ -273,8 +273,8 @@ namespace OpenLogReplicator {
                 group = stmt.rset->getInt(5);
                 path = stmt.rset->getString(6);
 
-                if (oracleEnvironment->trace >= 1) {
-                    cout << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
+                if (oracleEnvironment->trace >= TRACE_INFO) {
+                    cerr << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
                             ", GROUP: " << group << ", PATH: " << path << endl;
                 }
 
@@ -400,8 +400,8 @@ namespace OpenLogReplicator {
                 OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner.c_str(), objectName.c_str());
                 ++tabCnt;
 
-                if (oracleEnvironment->trace >= 1)
-                    cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+                if (oracleEnvironment->trace >= TRACE_INFO)
+                    cerr << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
 
                 stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                 stmt2.stmt->setInt(1, objn);
@@ -444,9 +444,9 @@ namespace OpenLogReplicator {
                     ((typescn)buffer[9] << 40) | ((typescn)buffer[8] << 32) |
                     ((typescn)buffer[7] << 24) | ((typescn)buffer[6] << 16) |
                     ((typescn)buffer[5] << 8) | buffer[4];
-            if (oracleEnvironment->trace >= 1) {
-                cout << "Read checkpoint sequence: " << databaseSequence << endl;
-                cout << "Read checkpoint scn: " << databaseScn << endl;
+            if (oracleEnvironment->trace >= TRACE_INFO) {
+                cerr << "Read checkpoint sequence: " << databaseSequence << endl;
+                cerr << "Read checkpoint scn: " << databaseScn << endl;
             }
         }
 
@@ -455,17 +455,17 @@ namespace OpenLogReplicator {
     }
 
     void OracleReader::writeCheckpoint() {
-        if (oracleEnvironment->trace >= 1)
-            cout << "Writing checkpoint information" << endl;
+        if (oracleEnvironment->trace >= TRACE_INFO)
+            cerr << "Writing checkpoint information" << endl;
         FILE *fp = fopen((database + ".cfg").c_str(), "wb");
         if (fp == nullptr) {
             cerr << "ERROR: Error writing checkpoint data for " << database << endl;
             return;
         }
 
-        if (oracleEnvironment->trace >= 1) {
-            cout << "write: databaseSequence: " << databaseSequence << endl;
-            cout << "write: databaseScn: " << databaseScn << endl;
+        if (oracleEnvironment->trace >= TRACE_INFO) {
+            cerr << "write: databaseSequence: " << databaseSequence << endl;
+            cerr << "write: databaseScn: " << databaseScn << endl;
         }
         uint8_t *buffer = new uint8_t[CHECKPOINT_SIZE];
         buffer[0] = databaseSequence & 0xFF;
