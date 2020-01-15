@@ -28,22 +28,40 @@ namespace OpenLogReplicator {
 
     void RedoLogRecord::dump() {
         cerr << "DUMP: opCode: " << hex << opCode <<
-            " length: " << dec << length <<
-            " dba: " << hex << dba <<
-            " bdba: " << hex << bdba <<
-            " opc: " << hex << opc <<
-            " objn: " << dec << objn <<
-            " objd: " << dec << objd <<
-            " tsn: " << dec << tsn <<
-            " undo: " << dec << undo <<
-            " xid: " << PRINTXID(xid) <<
-            " uba: " << PRINTUBA(uba) <<
-            " slt: " << dec << (uint32_t)slt <<
-            " rci: " << dec << (uint32_t)rci <<
-            " flg: " << dec << (uint32_t)flg <<
-            " op: " << dec << (uint32_t)op <<
-            " cc: " << dec << (uint32_t)cc <<
-            " itli: " << dec << (uint32_t)itli <<
-            " slot: " << dec << slot << endl;
+                " cls: " << dec << cls <<
+                " scnRecord: " << PRINTSCN64(scnRecord) <<
+                " rbl: " << dec << rbl <<
+                " seq: " << dec << (uint32_t)seq <<
+                " typ: " << dec << (uint32_t)typ <<
+                " conId: " << dec << conId <<
+                " flgRecord: " << dec << flgRecord <<
+                " vectorNo: " << dec << vectorNo <<
+                " recordObjn: " << dec << recordObjn <<
+                " recordObjd: " << dec << recordObjd <<
+                " scn: " << PRINTSCN64(scn) <<
+                " nrow: " << dec << nrow <<
+                " afn: " << dec << afn <<
+                " length: " << dec << length <<
+                " dba: " << hex << dba <<
+                " bdba: " << hex << bdba <<
+                " objn: " << dec << objn <<
+                " objd: " << dec << objd <<
+                " tsn: " << dec << tsn <<
+                " undo: " << dec << undo <<
+                " usn: " << dec << usn <<
+                " xid: " << PRINTXID(xid) <<
+                " uba: " << PRINTUBA(uba) <<
+                " slt: " << dec << (uint32_t)slt <<
+                " rci: " << dec << (uint32_t)rci <<
+                " flg: " << dec << (uint32_t)flg <<
+                " opc: 0x" << hex << opc <<
+                " op: " << dec << (uint32_t)op <<
+                " cc: " << dec << (uint32_t)cc <<
+                " itli: " << dec << (uint32_t)itli <<
+                " slot: " << dec << slot <<
+                " flags: 0x" << hex << (uint32_t)flags <<
+                " fb: 0x" << hex << (uint32_t)fb <<
+                " nridDba: " << hex << nridDba <<
+                " nridSlt: " << dec << (uint32_t)nridSlt << endl;
     }
 }

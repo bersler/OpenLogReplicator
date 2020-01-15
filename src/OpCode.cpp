@@ -333,6 +333,12 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
         redoLogRecord->nullsDelta = fieldPos + 45;
 
+        //not last
+        if ((redoLogRecord->fb & 0x04) == 0) {
+            redoLogRecord->nridDba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
+            redoLogRecord->nridSlt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
+        }
+
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
                     " (cc: " << redoLogRecord->cc << ")" << endl;
@@ -361,9 +367,7 @@ namespace OpenLogReplicator {
 
             //next DBA/SLT
             if (fbStr[5] != 'L') {
-                uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
-                uint16_t nrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
-                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << nrid2 << endl;
+                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridDba << "." << hex << redoLogRecord->nridSlt << endl;
             }
 
             if (fbStr[2] == 'H') {
@@ -793,12 +797,22 @@ namespace OpenLogReplicator {
                 userUndoDone = " No";
         }
 
-        string undoType = "Regular undo";
-        if ((redoLogRecord->flg & 0x0001) != 0)
-            undoType = "Multi-block undo - HEAD";
-        if ((redoLogRecord->flg & 0x0002) != 0)
-            undoType = "Multi-block undo - TAIL";
-
+        string undoType;
+        if (oracleEnvironment->version < 12200) {
+            if ((redoLogRecord->flg & 0x0001) != 0)
+                undoType = "Multi-block undo - HEAD";
+            else if ((redoLogRecord->flg & 0x0002) != 0)
+                undoType = "Multi-Block undo - TAIL";
+            else
+                undoType = "Regular undo      ";
+        } else {
+            if ((redoLogRecord->flg & 0x0001) != 0)
+                undoType = "Multi-Block undo - HEAD";
+            else if ((redoLogRecord->flg & 0x0002) != 0)
+                undoType = "Multi-Block undo - TAIL";
+            else
+                undoType = "Regular undo";
+        }
         bool isTxnStart = true;
         if ((redoLogRecord->flg & 0x0004) != 0)
             isTxnStart = false;
@@ -845,8 +859,8 @@ namespace OpenLogReplicator {
 
                 if (oracleEnvironment->version < 12200) {
                     oracleEnvironment->dumpStream <<
-                            "Undo type:  " << undoType <<
-                            "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
+                            "Undo type:  " << undoType << "  " <<
+                            "Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
                             "Temp Object:  " << tempObject << " " << endl <<
                             "Tablespace Undo:  " << tablespaceUndo << " " << endl <<
                             "             0x" << setfill('0') << setw(8) << hex << redoLogRecord->undo << " " <<
@@ -914,8 +928,8 @@ namespace OpenLogReplicator {
             if (oracleEnvironment->dumpLogFile) {
                 if (oracleEnvironment->version < 19000) {
                     oracleEnvironment->dumpStream <<
-                            "Undo type:  " << undoType <<
-                            "       Undo type:  " << getUndoType() <<
+                            "Undo type:  " << undoType << " " <<
+                            "Undo type:  " << getUndoType() <<
                             "Last buffer split:  " << lastBufferSplit << " " << endl <<
                             "Tablespace Undo:  " << tablespaceUndo << " " << endl <<
                             "             0x" << setfill('0') << setw(8) << hex << redoLogRecord->undo << endl;

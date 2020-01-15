@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         uint32_t fieldLengthsDelta;
         uint32_t nullsDelta;
 
-        uint32_t afn;             //file number
+        uint32_t afn;             //absolute file number
         uint32_t length;          //length
         uint32_t dba;
         uint32_t bdba;            //block DBA
@@ -76,6 +76,9 @@ namespace OpenLogReplicator {
         uint16_t slot;
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
+
+        uint32_t nridDba;         //next row id dba
+        uint16_t nridSlt;         //next row id slt
 
         void dump();
     };
