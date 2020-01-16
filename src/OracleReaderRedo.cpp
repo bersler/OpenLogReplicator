@@ -152,6 +152,9 @@ namespace OpenLogReplicator {
         numBlocks = oracleEnvironment->read32(oracleEnvironment->headerBuffer + 24);
         uint32_t compatVsn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 20);
 
+        if (compatVsn == 0x0B200200) //11.2.0.2
+            oracleEnvironment->version = 11202;
+        else
         if (compatVsn == 0x0B200300) //11.2.0.3
             oracleEnvironment->version = 11203;
         else

@@ -814,13 +814,6 @@ namespace OpenLogReplicator {
                 undoType = "Regular undo";
         } else {
             if ((redoLogRecord->flg & 0x0001) != 0)
-                undoType = "Multi-Block undo - HEAD";
-            else if ((redoLogRecord->flg & 0x0002) != 0)
-                undoType = "Multi-Block undo - TAIL";
-            else
-                undoType = "Regular undo";
-        }{
-            if ((redoLogRecord->flg & 0x0001) != 0)
                 undoType = "MBU - HEAD  ";
             else if ((redoLogRecord->flg & 0x0002) != 0)
                 undoType = "MBU - TAIL  ";
