@@ -335,8 +335,8 @@ namespace OpenLogReplicator {
 
         //not last
         if ((redoLogRecord->fb & 0x04) == 0) {
-            redoLogRecord->nridDba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
-            redoLogRecord->nridSlt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
+            redoLogRecord->nridBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
+            redoLogRecord->nridSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
         }
 
         if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
 
             //next DBA/SLT
             if (fbStr[5] != 'L') {
-                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridDba << "." << hex << redoLogRecord->nridSlt << endl;
+                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridBdba << "." << hex << redoLogRecord->nridSlot << endl;
             }
 
             if (fbStr[2] == 'H') {
@@ -1016,7 +1016,7 @@ namespace OpenLogReplicator {
 
                 oracleEnvironment->dumpStream << "tl: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->rowLenghsDelta + r * 2) <<
                         " fb: " << fbStr <<
-                        " dba" << hex << (uint32_t)lb << " " <<
+                        " lb: 0x" << hex << (uint32_t)lb << " " <<
                         " cc: " << dec << (uint32_t)jcc << endl;
                 pos += 3;
 
@@ -1049,14 +1049,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char *fbStr) {
-        if ((fb & 0x01) == 0x01) fbStr[7] = 'N'; else fbStr[7] = '-'; //last column continues in Next piece
-        if ((fb & 0x02) == 0x02) fbStr[6] = 'P'; else fbStr[6] = '-'; //first column continues from Previous piece
-        if ((fb & 0x04) == 0x04) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last data piece
-        if ((fb & 0x08) == 0x08) fbStr[4] = 'F'; else fbStr[4] = '-'; //First data piece
-        if ((fb & 0x10) == 0x10) fbStr[3] = 'D'; else fbStr[3] = '-'; //Deleted row
-        if ((fb & 0x20) == 0x20) fbStr[2] = 'H'; else fbStr[2] = '-'; //Head piece of row
-        if ((fb & 0x40) == 0x40) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
-        if ((fb & 0x80) == 0x80) fbStr[0] = 'K'; else fbStr[0] = '-'; //cluster Key
+        if ((fb & 0x01) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; //last column continues in Next piece
+        if ((fb & 0x02) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; //first column continues from Previous piece
+        if ((fb & 0x04) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last data piece
+        if ((fb & 0x08) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; //First data piece
+        if ((fb & 0x10) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; //Deleted row
+        if ((fb & 0x20) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; //Head piece of row
+        if ((fb & 0x40) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
+        if ((fb & 0x80) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; //cluster Key
         fbStr[8] = 0;
     }
 }

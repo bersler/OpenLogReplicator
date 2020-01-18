@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
                 " slot: " << dec << slot <<
                 " flags: 0x" << hex << (uint32_t)flags <<
                 " fb: 0x" << hex << (uint32_t)fb <<
-                " nridDba: " << hex << nridDba <<
-                " nridSlt: " << dec << (uint32_t)nridSlt << endl;
+                " nridBdba: " << hex << nridBdba <<
+                " nridSlot: " << dec << (uint32_t)nridSlot << endl;
     }
 }

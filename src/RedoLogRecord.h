@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
 
     class RedoLogRecord {
     public:
+        RedoLogRecord *next;
         uint16_t cls;
         typescn scnRecord;
         uint32_t rbl;
@@ -77,8 +78,8 @@ namespace OpenLogReplicator {
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
 
-        uint32_t nridDba;         //next row id dba
-        uint16_t nridSlt;         //next row id slt
+        uint32_t nridBdba;        //next row id bdba
+        uint16_t nridSlot;        //next row id slot
 
         void dump();
     };
