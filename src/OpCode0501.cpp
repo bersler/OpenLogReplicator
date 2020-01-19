@@ -58,7 +58,6 @@ namespace OpenLogReplicator {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktudb(fieldPos, fieldLength);
-
             } else if (i == 2) {
                 ktub(fieldPos, fieldLength);
             } else if (i == 3) {
@@ -71,35 +70,39 @@ namespace OpenLogReplicator {
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
                     if (oracleEnvironment->dumpLogFile) {
-                        //Quick Multi-row Delete
-                        if ((redoLogRecord->op & 0x1F) == 0x0C) {
+                        if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                             for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
                                 oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
                         }
                     }
                 }
 
-            //Update Row Piece
-            } else if ((redoLogRecord->op & 0x1F) == 0x05) {
-                if (i == 5)
+            } else if ((redoLogRecord->op & 0x1F) == OP_URP) {
+                if (i == 5) {
                     colNums = redoLogRecord->data + fieldPos;
-                else if (i == 6 && (redoLogRecord->flags & 0x80) != 0) {
-                    if (oracleEnvironment->dumpLogFile)
-                        dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
-                } else if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc && (redoLogRecord->flags & 0x80) == 0) {
-                    if (oracleEnvironment->dumpLogFile) {
-                        dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
-                        colNums += 2;
-                        bits <<= 1;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
+                } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
+                    if (i == 6) {
+                        if (oracleEnvironment->dumpLogFile)
+                            dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
+                    } else if (i == 7) {
+                        suppLog(fieldPos, fieldLength);
+                    }
+                } else {
+                    if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
+                        if (oracleEnvironment->dumpLogFile) {
+                            dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
+                            colNums += 2;
+                            bits <<= 1;
+                            if (bits == 0) {
+                                bits = 1;
+                                ++nulls;
+                            }
                         }
+                    } else if (i == 6 + (uint32_t)redoLogRecord->cc) {
+                        suppLog(fieldPos, fieldLength);
                     }
                 }
-
-            //Insert Row Piece / Overwrite Row Piece
-            } else if ((redoLogRecord->op & 0x1F) == 0x02 || (redoLogRecord->op & 0x1F) == 0x06) {
+            } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
                     if (nulls == nullptr) {
                         cerr << "nulls = null" << endl;
@@ -114,8 +117,8 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
-            //Quick Multi-row Insert
-            } else if ((redoLogRecord->op & 0x1F) == 0x0B) {
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
                 if (i == 5) {
                     redoLogRecord->rowLenghsDelta = fieldPos;
                 } else if (i == 6) {
@@ -159,5 +162,21 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << "           " <<
                     " xid:  " << PRINTXID(redoLogRecord->xid) << "  " << endl;
         }
+    }
+
+    void OpCode0501::suppLog(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 20) {
+            oracleEnvironment->dumpStream << "ERROR: too short supplemental log: " << dec << fieldLength << endl;
+            return;
+        }
+
+        redoLogRecord->suppLogType = redoLogRecord->data[fieldPos + 0];
+        redoLogRecord->suppLogFb = redoLogRecord->data[fieldPos + 1];
+        redoLogRecord->suppLogCC = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
+        redoLogRecord->suppLogBefore = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6);
+        redoLogRecord->suppLogAfter = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
+
+        if (fieldLength >= 24)
+            redoLogRecord->suppLogBDBA = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
     }
 }

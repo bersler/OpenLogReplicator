@@ -45,8 +45,7 @@ namespace OpenLogReplicator {
                 kdoOpCode(fieldPos, oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
 
                 if (oracleEnvironment->dumpLogFile) {
-                    //Quick Multi-row Delete
-                    if ((redoLogRecord->op & 0x1F) == 0x0C) {
+                    if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                         for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
                             oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
                     }

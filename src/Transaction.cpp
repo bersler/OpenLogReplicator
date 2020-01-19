@@ -143,8 +143,8 @@ namespace OpenLogReplicator {
                     }
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 
-                    switch (redoLogRecord1->fb & (0x04 | 0x08)) {
-                    case 0x04: //L
+                    switch (redoLogRecord1->fb & (FB_L | FB_F)) {
+                    case FB_L:
                         last1 = redoLogRecord1;
                         if (dir1 == 0) {
                             dir1 = 2;
@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
                             }
                         }
                         break;
-                    case 0x08: //F
+                    case FB_F:
                         first1 = redoLogRecord1;
                         if (dir1 == 0) {
                             dir1 = 1;
@@ -170,11 +170,11 @@ namespace OpenLogReplicator {
                             }
                         }
                         break;
-                    case 0x0C: //F + L
+                    case (FB_F | FB_L):
                         first1 = redoLogRecord1;
                         last1 = redoLogRecord1;
                         break;
-                    case 0x00: //none
+                    case 0:
                         if (prev1 != nullptr) {
                             if (dir1 == 1) {
                                 if (prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
@@ -195,8 +195,8 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    switch (redoLogRecord2->fb & (0x04 | 0x08)) {
-                    case 0x04: //L
+                    switch (redoLogRecord2->fb & (FB_L | FB_F)) {
+                    case FB_L:
                         last2 = redoLogRecord2;
                         if (dir2 == 0) {
                             dir2 = 2;
@@ -209,7 +209,7 @@ namespace OpenLogReplicator {
                             }
                         }
                         break;
-                    case 0x08: //F
+                    case FB_F:
                         first2 = redoLogRecord2;
                         if (dir2 == 0) {
                             dir2 = 1;
@@ -222,11 +222,11 @@ namespace OpenLogReplicator {
                             }
                         }
                         break;
-                    case 0x0C: //F + L
+                    case (FB_L | FB_F):
                         first2 = redoLogRecord2;
                         last2 = redoLogRecord2;
                         break;
-                    case 0x00: //none
+                    case 0:
                         if (prev2 != nullptr) {
                             if (dir2 == 1) {
                                 if (prev2->nridBdba == redoLogRecord2->bdba && prev2->nridSlot == redoLogRecord2->slot) {

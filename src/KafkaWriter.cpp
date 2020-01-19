@@ -321,7 +321,7 @@ namespace OpenLogReplicator {
                 ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
                 ->append("\", \"before\": {");
 
-        if ((redoLogRecord1->flags & 0x80) != 0) {
+        if ((redoLogRecord1->flags & FLAGS_KDO_KDOM2) != 0) {
             uint32_t pos = 0;
             for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
                 if (prevValue) {
@@ -389,10 +389,9 @@ namespace OpenLogReplicator {
             //supplemental columns
             if (redoLogRecord1->cc + 6 <= redoLogRecord1->fieldCnt) {
                 fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 6) * 2);
-                uint16_t suppColsCnt = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 2);
                 fieldPos += (fieldLength + 3) & 0xFFFC;
 
-                if (suppColsCnt > 0 && redoLogRecord1->cc + 9 <= redoLogRecord1->fieldCnt) {
+                if (redoLogRecord1->suppLogCC > 0 && redoLogRecord1->cc + 9 <= redoLogRecord1->fieldCnt) {
                     fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 7) * 2);
                     colNums = redoLogRecord1->data + fieldPos;
                     fieldPos += (fieldLength + 3) & 0xFFFC;
@@ -401,7 +400,7 @@ namespace OpenLogReplicator {
                     uint8_t* colSizes = redoLogRecord1->data + fieldPos;
                     fieldPos += (fieldLength + 3) & 0xFFFC;
 
-                    for (uint32_t i = 0; i < suppColsCnt && redoLogRecord1->cc + 8 + i <= redoLogRecord1->fieldCnt; ++i) {
+                    for (uint32_t i = 0; i < redoLogRecord1->suppLogCC && redoLogRecord1->cc + 8 + i <= redoLogRecord1->fieldCnt; ++i) {
                         fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 8 + i) * 2);
                         if (prevValue) {
                             commandBuffer->append(", ");

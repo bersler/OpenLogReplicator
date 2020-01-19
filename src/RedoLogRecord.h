@@ -26,6 +26,62 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
+#define FLAGS_XA                0x01
+#define FLAGS_XR                0x02
+#define FLAGS_CR                0x03
+#define FLAGS_KDO_KDOM2         0x80
+
+#define FLG_KTUCF_OP0504        0x0002
+#define FLG_ROLLBACK_OP0504     0x0004
+
+#define FLG_MULTIBLOCKUNDOHEAD  0x0001
+#define FLG_MULTIBLOCKUNDOTAIL  0x0002
+#define FLG_NOTRANSTART         0x0004
+#define FLG_KTUBL               0x0008
+#define FLG_USERUNDODDONE       0x0010
+#define FLG_ISTEMPOBJECT        0x0020
+#define FLG_TABLESPACEUNDO      0x0080
+#define FLG_LASTBUFFERSPLIT     0x0100
+
+#define FB_N                    0x01
+#define FB_P                    0x02
+#define FB_L                    0x04
+#define FB_F                    0x08
+#define FB_D                    0x10
+#define FB_H                    0x20
+#define FB_C                    0x40
+#define FB_K                    0x80
+
+#define OP_IUR                  0x01
+#define OP_IRP                  0x02
+#define OP_DRP                  0x03
+#define OP_LKR                  0x04
+#define OP_URP                  0x05
+#define OP_ORP                  0x06
+#define OP_MFC                  0x07
+#define OP_CFA                  0x08
+#define OP_CKI                  0x09
+#define OP_SKL                  0x0A
+#define OP_QMI                  0x0B
+#define OP_QMD                  0x0C
+#define OP_TBF                  0x0D
+#define OP_DSC                  0x0E
+#define OP_LMN                  0x10
+#define OP_LLB                  0x11
+#define OP_21                   0x13
+#define OP_ROWDEPENDENCIES      0x40
+
+#define KTBOP_F                 0x01
+#define KTBOP_C                 0x02
+#define KTBOP_Z                 0x03
+#define KTBOP_L                 0x04
+#define KTBOP_N                 0x06
+#define KTBOP_BLOCKCLEANOUT     0x10
+
+#define SUPPLOG_UPDATE          0x01
+#define SUPPLOG_INSERT          0x02
+#define SUPPLOG_DELETE          0x04
+
     class OracleObject;
 
     class RedoLogRecord {
@@ -80,6 +136,13 @@ namespace OpenLogReplicator {
 
         uint32_t nridBdba;        //next row id bdba
         uint16_t nridSlot;        //next row id slot
+
+        uint8_t suppLogType;
+        uint8_t suppLogFb;
+        uint16_t suppLogCC;
+        uint16_t suppLogBefore;
+        uint16_t suppLogAfter;
+        uint32_t suppLogBDBA;
 
         void dump();
     };

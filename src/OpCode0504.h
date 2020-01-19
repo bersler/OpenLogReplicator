@@ -22,8 +22,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef OPCODE0504_H_
 #define OPCODE0504_H_
 
-#define OPCODE0504_ROLLBACK 4
-
 namespace OpenLogReplicator {
 
     class RedoLogRecord;

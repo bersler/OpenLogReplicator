@@ -331,29 +331,29 @@ namespace OpenLogReplicator {
 
             uint32_t miscFlags = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 236);
             string endOfRedo;
-            if ((miscFlags & 0x08) == 0x08)
+            if ((miscFlags & 0x08) != 0)
                 endOfRedo = "Yes";
             else
                 endOfRedo = "No";
-            if ((miscFlags & 0x1000) == 0x1000)
+            if ((miscFlags & 0x1000) != 0)
                 oracleEnvironment->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << endl;
             else
                 oracleEnvironment->dumpStream << " End-of-redo stream : " << endOfRedo << endl;
 
-            if ((miscFlags & 0x100) == 0x100)
+            if ((miscFlags & 0x100) != 0)
                 oracleEnvironment->dumpStream << " Archivelog created using asynchronous network transmittal" << endl;
 
-            if ((miscFlags & 0x200) == 0x200)
+            if ((miscFlags & 0x200) != 0)
                 oracleEnvironment->dumpStream << " No data-loss mode" << endl;
-            if ((miscFlags & 0x800) == 0x800)
+            if ((miscFlags & 0x800) != 0)
                 oracleEnvironment->dumpStream << " Resynchronization mode" << endl;
             else
                 oracleEnvironment->dumpStream << " Unprotected mode" << endl;
 
-            if ((miscFlags & 0x1000) == 0x1000)
+            if ((miscFlags & 0x1000) != 0)
                 oracleEnvironment->dumpStream << " Closed thread archival" << endl;
 
-            if ((miscFlags & 0x2000) == 0x2000)
+            if ((miscFlags & 0x2000) != 0)
                 oracleEnvironment->dumpStream << " Maximize performance mode" << endl;
 
             oracleEnvironment->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
@@ -475,7 +475,7 @@ namespace OpenLogReplicator {
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
         uint32_t headerLength;
 
-        if ((vld & 0x04) == 0x04) {
+        if ((vld & 0x04) != 0) {
             checkpoint = true;
             headerLength = 68;
             if (oracleEnvironment->trace >= TRACE_DETAIL) {
@@ -806,7 +806,7 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord->opCode == 0x0504) {
             transaction->isCommit = true;
-            if ((redoLogRecord->flg & OPCODE0504_ROLLBACK) != 0)
+            if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 transaction->isRollback = true;
             oracleEnvironment->transactionHeap.update(transaction->pos);
         }

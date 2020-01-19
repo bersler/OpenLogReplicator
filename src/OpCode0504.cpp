@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
             if (i == 1) {
                 ktucm(fieldPos, fieldLength);
             } else if (i == 2) {
-                if ((redoLogRecord->flg & 0x02) == 0x02)
+                if ((redoLogRecord->flg & FLG_KTUCF_OP0504) != 0)
                     ktucf(fieldPos, fieldLength);
             }
             fieldPos += (fieldLength + 3) & 0xFFFC;
@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
 
         if (oracleEnvironment->dumpLogFile) {
             oracleEnvironment->dumpStream << endl;
-            if ((redoLogRecord->flg & 0x04) == 0x04)
+            if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 oracleEnvironment->dumpStream << "rolled back transaction" << endl;
         }
     }

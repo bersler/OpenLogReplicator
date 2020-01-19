@@ -52,10 +52,10 @@ namespace OpenLogReplicator {
                 nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
             } else if (i == 3) {
                 colNums = redoLogRecord->data + fieldPos;
-            } else if (i == 4 && (redoLogRecord->flags & 0x80) != 0) {
+            } else if (i == 4 && (redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                 if (oracleEnvironment->dumpLogFile)
                     dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
-            } else if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc && (redoLogRecord->flags & 0x80) == 0) {
+            } else if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc && (redoLogRecord->flags & FLAGS_KDO_KDOM2) == 0) {
                 if (oracleEnvironment->dumpLogFile) {
                     dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
                     colNums += 2;
