@@ -535,7 +535,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
-        redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
+        redoLogRecord->cc = redoLogRecord->data[fieldPos + 18];
         redoLogRecord->nullsDelta = fieldPos + 45;
         redoLogRecord->fb = redoLogRecord->data[fieldPos + 16];
 

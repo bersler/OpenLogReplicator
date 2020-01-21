@@ -300,18 +300,6 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
-        uint8_t *colNums = nullptr;
-        uint32_t fieldPos = redoLogRecord1->fieldPos;
-        uint8_t *nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta, bits = 1;
-        bool prevValue = false;
-
-        uint16_t fieldLength;
-        for (uint32_t i = 1; i <= 5; ++i) {
-            fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
-            if (i == 5)
-                colNums = redoLogRecord1->data + fieldPos;
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
         commandBuffer
                 ->append("{\"operation\":\"update\", \"table\": \"")
                 ->append(redoLogRecord1->object->owner)
@@ -320,62 +308,192 @@ namespace OpenLogReplicator {
                 ->append("\", \"rowid\": \"")
                 ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
                 ->append("\", \"before\": {");
+        bool prevValue = false;
+        uint8_t *colNums = nullptr;
+        uint32_t fieldPos = 0;
+        uint8_t *nulls, bits;
+        uint16_t fieldLength, colNum;
+        uint32_t colnumBase = 0;
 
-        if ((redoLogRecord1->flags & FLAGS_KDO_KDOM2) != 0) {
-            uint32_t pos = 0;
-            for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
-                if (prevValue) {
-                    commandBuffer->append(", ");
-                } else
-                    prevValue = true;
+        while (redoLogRecord1 != nullptr) {
+            fieldPos = redoLogRecord1->fieldPos;
+            nulls = redoLogRecord1->data + redoLogRecord1->nullsDelta;
+            bits = 1;
+            if (redoLogRecord1->suppLogBefore > 0)
+                colnumBase = redoLogRecord1->suppLogBefore - 1;
 
-                commandBuffer
-                        ->append('"')
-                        ->append(redoLogRecord1->object->columns[oracleEnvironment->read16(colNums)]->columnName)
-                        ->append("\": \"");
-
-                uint16_t fieldLength = redoLogRecord1->data[pos];
-                ++pos;
-                uint8_t isNull = (fieldLength == 0xFF);
-
-                if (fieldLength == 0xFE) {
-                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + pos);
-                    pos += 2;
-                }
-
-                if (isNull) {
-                    //null
-                } else {
-                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[oracleEnvironment->read16(colNums)]->typeNo, fieldPos + pos, fieldLength);
-                    pos += fieldLength;
-                }
-
-                commandBuffer
-                        ->append('"');
-
-                colNums += 2;
+            for (uint32_t i = 1; i <= 5; ++i) {
+                fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
+                if (i == 5)
+                    colNums = redoLogRecord1->data + fieldPos;
+                fieldPos += (fieldLength + 3) & 0xFFFC;
             }
-        } else {
-            for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
-                fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (i + 6) * 2);
-                if (prevValue) {
+
+            if ((redoLogRecord1->flags & FLAGS_KDO_KDOM2) != 0) {
+                uint32_t pos = 0;
+                for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
+                    colNum = oracleEnvironment->read16(colNums);
+                    if (colnumBase > 0 && i == 0)
+                        colnumBase -= colNum;
+
+                    if (prevValue) {
+                        commandBuffer->append(", ");
+                    } else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord1->object->columns[colnumBase + colNum]->columnName)
+                            ->append("\": \"");
+
+                    uint16_t fieldLength = redoLogRecord1->data[pos];
+                    ++pos;
+                    uint8_t isNull = (fieldLength == 0xFF);
+
+                    if (fieldLength == 0xFE) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + pos);
+                        pos += 2;
+                    }
+
+                    if (isNull) {
+                        //null
+                    } else {
+                        appendValue(redoLogRecord1, redoLogRecord1->object->columns[colnumBase + colNum]->typeNo, fieldPos + pos, fieldLength);
+                        pos += fieldLength;
+                    }
+
+                    commandBuffer
+                            ->append('"');
+
+                    colNums += 2;
+                }
+            } else {
+                for (uint32_t i = 0; i < redoLogRecord1->cc; ++i) {
+                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (i + 6) * 2);
+                    colNum = oracleEnvironment->read16(colNums);
+                    if (colnumBase > 0 && i == 0)
+                        colnumBase -= colNum;
+
+                    if (prevValue) {
+                        commandBuffer->append(", ");
+                    } else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord1->object->columns[colnumBase + colNum]->columnName)
+                            ->append("\": \"");
+
+                    if ((*nulls & bits) != 0 || fieldLength == 0) {
+                        //null
+                    } else {
+                        appendValue(redoLogRecord1, redoLogRecord1->object->columns[colnumBase + colNum]->typeNo, fieldPos, fieldLength);
+                    }
+
+                    commandBuffer
+                            ->append('"');
+
+                    colNums += 2;
+                    bits <<= 1;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
+                    }
+                    fieldPos += (fieldLength + 3) & 0xFFFC;
+                }
+
+                //supplemental columns
+                if (redoLogRecord1->cc + 6 <= redoLogRecord1->fieldCnt) {
+                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 6) * 2);
+                    fieldPos += (fieldLength + 3) & 0xFFFC;
+
+                    if (redoLogRecord1->suppLogCC > 0 && redoLogRecord1->cc + 9 <= redoLogRecord1->fieldCnt) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 7) * 2);
+                        colNums = redoLogRecord1->data + fieldPos;
+                        fieldPos += (fieldLength + 3) & 0xFFFC;
+
+                        fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 8) * 2);
+                        uint8_t* colSizes = redoLogRecord1->data + fieldPos;
+                        fieldPos += (fieldLength + 3) & 0xFFFC;
+
+                        for (uint32_t i = 0; i < redoLogRecord1->suppLogCC && redoLogRecord1->cc + 8 + i <= redoLogRecord1->fieldCnt; ++i) {
+                            fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 8 + i) * 2);
+                            colNum = oracleEnvironment->read16(colNums);
+                            if (colnumBase > 0 && i == 0)
+                                colnumBase -= colNum;
+
+                            if (prevValue) {
+                                commandBuffer->append(", ");
+                            } else
+                                prevValue = true;
+
+                            commandBuffer
+                                    ->append('"')
+                                    ->append(redoLogRecord1->object->columns[colNum - 1]->columnName)
+                                    ->append("\": \"");
+
+                            uint16_t colLength = oracleEnvironment->read16(colSizes);
+                            if (colLength == 0xFFFF) {
+                                //null
+                            } else {
+                                appendValue(redoLogRecord1, redoLogRecord1->object->columns[colNum - 1]->typeNo, fieldPos, colLength);
+                            }
+
+                            commandBuffer
+                                    ->append('"');
+
+                            colNums += 2;
+                            colSizes += 2;
+                            fieldPos += (fieldLength + 3) & 0xFFFC;
+                        }
+                    }
+                }
+
+                redoLogRecord1 = redoLogRecord1->next;
+            }
+        }
+
+        commandBuffer->append("}, \"after\": {");
+        prevValue = false;
+
+        while (redoLogRecord2 != nullptr) {
+            fieldPos = redoLogRecord2->fieldPos;
+            nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta;
+            bits = 1;
+            if (redoLogRecord2->suppLogAfter > 0)
+                colnumBase = redoLogRecord2->suppLogAfter - 1;
+
+            for (uint32_t i = 1; i <= 3; ++i) {
+                fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
+                if (i == 3)
+                    colNums = redoLogRecord2->data + fieldPos;
+                fieldPos += (fieldLength + 3) & 0xFFFC;
+            }
+
+            for (uint32_t i = 0; i < redoLogRecord2->cc; ++i) {
+                fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + (i + 4) * 2);
+                colNum = oracleEnvironment->read16(colNums);
+                if (colnumBase > 0 && i == 0)
+                    colnumBase -= colNum;
+
+                if (prevValue)
                     commandBuffer->append(", ");
-                } else
+                else
                     prevValue = true;
 
                 commandBuffer
                         ->append('"')
-                        ->append(redoLogRecord1->object->columns[oracleEnvironment->read16(colNums)]->columnName)
+                        ->append(redoLogRecord2->object->columns[colnumBase + colNum]->columnName)
                         ->append("\": \"");
 
                 if ((*nulls & bits) != 0 || fieldLength == 0) {
-                    //null
+                    //nulls
                 } else {
-                    appendValue(redoLogRecord1, redoLogRecord1->object->columns[oracleEnvironment->read16(colNums)]->typeNo, fieldPos, fieldLength);
+                    appendValue(redoLogRecord2, redoLogRecord2->object->columns[colnumBase + colNum]->typeNo, fieldPos, fieldLength);
+
                 }
 
-                commandBuffer
-                        ->append('"');
+                commandBuffer->append('"');
 
                 colNums += 2;
                 bits <<= 1;
@@ -386,92 +504,7 @@ namespace OpenLogReplicator {
                 fieldPos += (fieldLength + 3) & 0xFFFC;
             }
 
-            //supplemental columns
-            if (redoLogRecord1->cc + 6 <= redoLogRecord1->fieldCnt) {
-                fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 6) * 2);
-                fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                if (redoLogRecord1->suppLogCC > 0 && redoLogRecord1->cc + 9 <= redoLogRecord1->fieldCnt) {
-                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 7) * 2);
-                    colNums = redoLogRecord1->data + fieldPos;
-                    fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                    fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 8) * 2);
-                    uint8_t* colSizes = redoLogRecord1->data + fieldPos;
-                    fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                    for (uint32_t i = 0; i < redoLogRecord1->suppLogCC && redoLogRecord1->cc + 8 + i <= redoLogRecord1->fieldCnt; ++i) {
-                        fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + (redoLogRecord1->cc + 8 + i) * 2);
-                        if (prevValue) {
-                            commandBuffer->append(", ");
-                        } else
-                            prevValue = true;
-
-                        commandBuffer
-                                ->append('"')
-                                ->append(redoLogRecord1->object->columns[oracleEnvironment->read16(colNums) - 1]->columnName)
-                                ->append("\": \"");
-
-                        uint16_t colLength = oracleEnvironment->read16(colSizes);
-                        if (colLength == 0xFFFF) {
-                            //null
-                        } else {
-                            appendValue(redoLogRecord1, redoLogRecord1->object->columns[oracleEnvironment->read16(colNums) - 1]->typeNo, fieldPos, colLength);
-                        }
-
-                        commandBuffer
-                                ->append('"');
-
-                        colNums += 2;
-                        colSizes += 2;
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
-                }
-            }
-        }
-
-        fieldPos = redoLogRecord2->fieldPos;
-        nulls = redoLogRecord2->data + redoLogRecord2->nullsDelta;
-        bits = 1;
-        prevValue = false;
-
-        for (uint32_t i = 1; i <= 3; ++i) {
-            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
-            if (i == 3)
-                colNums = redoLogRecord2->data + fieldPos;
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
-
-        commandBuffer->append("}, \"after\": {");
-
-        for (uint32_t i = 0; i < redoLogRecord2->cc; ++i) {
-            fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + (i + 4) * 2);
-            if (prevValue)
-                commandBuffer->append(", ");
-            else
-                prevValue = true;
-
-            commandBuffer
-                    ->append('"')
-                    ->append(redoLogRecord2->object->columns[oracleEnvironment->read16(colNums)]->columnName)
-                    ->append("\": \"");
-
-            if ((*nulls & bits) != 0 || fieldLength == 0) {
-                //nulls
-            } else {
-                appendValue(redoLogRecord2, redoLogRecord2->object->columns[oracleEnvironment->read16(colNums)]->typeNo, fieldPos, fieldLength);
-
-            }
-
-            commandBuffer->append('"');
-
-            colNums += 2;
-            bits <<= 1;
-            if (bits == 0) {
-                bits = 1;
-                ++nulls;
-            }
-            fieldPos += (fieldLength + 3) & 0xFFFC;
+            redoLogRecord2 = redoLogRecord2->next;
         }
 
         commandBuffer->append("}}");

@@ -28,6 +28,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <execinfo.h>
 #include <rapidjson/document.h>
 
 #include "CommandBuffer.h"
@@ -64,10 +65,19 @@ void signalHandler(int s) {
     mainThread.notify_all();
 }
 
+void signalCrash(int sig) {
+    void *array[20];
+    size_t size = backtrace(array, 20);
+    cerr << "Error: signal " << dec << sig << endl;
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    exit(1);
+}
+
 int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
-    cout << "Open Log Replicator v. 0.1.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
+    signal(SIGSEGV, signalCrash);
+    cout << "Open Log Replicator v. 0.2.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
 
     ifstream config("OpenLogReplicator.json");
     string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
@@ -79,7 +89,7 @@ int main() {
         {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.1.0") != 0)
+    if (strcmp(version.GetString(), "0.2.0") != 0)
         {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");

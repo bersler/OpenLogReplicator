@@ -35,6 +35,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
 #include "OpCode0B05.h"
+#include "OpCode0B06.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
@@ -108,9 +109,8 @@ namespace OpenLogReplicator {
 
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
-                typescn oldScn = 0;
                 RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *prev1 = nullptr, *prev2 = nullptr;
-                uint32_t dir1 = 0, dir2 = 0;
+                typescn prevScn = 0;
 
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
                     uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 8));
@@ -126,7 +126,8 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->trace >= TRACE_DETAIL) {
                             uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
                             uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
-                            cerr << "Row: " << dec << redoLogRecord1->length << ":" << redoLogRecord2->length <<\
+                            cerr << "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
+                                        ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<\
                                     " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
                                     " op: " << setfill('0') << setw(8) << hex << op <<
@@ -136,157 +137,106 @@ namespace OpenLogReplicator {
                                     " nrid1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->nridBdba << "." << hex << redoLogRecord1->nridSlot <<
                                     " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint32_t)redoLogRecord2->slot <<
                                     " nrid2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->nridBdba << "." << hex << redoLogRecord2->nridSlot <<
+                                    " supp1: (0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->suppLogFb <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogCC <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<
+                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBDBA << ") " <<
+                                    " supp2: (0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->suppLogFb <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogCC <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogBefore <<
+                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogAfter <<
+                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->suppLogBDBA << ") " <<
                                     " scn: " << PRINTSCN64(scn) << endl;
                         }
-                        if (oldScn != 0 && oldScn > scn)
+                        if (prevScn != 0 && prevScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 
-                    switch (redoLogRecord1->fb & (FB_L | FB_F)) {
-                    case FB_L:
-                        last1 = redoLogRecord1;
-                        if (dir1 == 0) {
-                            dir1 = 2;
-                        } else if (prev1 != nullptr) {
-                            if (prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
-                                prev1->next = redoLogRecord1;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                            }
-                        }
-                        break;
-                    case FB_F:
-                        first1 = redoLogRecord1;
-                        if (dir1 == 0) {
-                            dir1 = 1;
-                        } else if (prev1 != nullptr) {
-                            if (prev1->bdba == redoLogRecord1->nridBdba && prev1->slot == redoLogRecord1->nridSlot) {
-                                redoLogRecord1->next = prev1;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                            }
-                        }
-                        break;
-                    case (FB_F | FB_L):
-                        first1 = redoLogRecord1;
-                        last1 = redoLogRecord1;
-                        break;
-                    case 0:
-                        if (prev1 != nullptr) {
-                            if (dir1 == 1) {
-                                if (prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
-                                    prev1->next = redoLogRecord1;
-                                } else {
-                                    if (oracleEnvironment->trace >= TRACE_WARN)
-                                        cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                                }
-                            } else if (dir1 == 2) {
-                                if (prev1->bdba == redoLogRecord1->nridBdba && prev1->slot == redoLogRecord1->nridSlot) {
-                                    redoLogRecord1->next = prev1;
-                                } else {
-                                    if (oracleEnvironment->trace >= TRACE_WARN)
-                                        cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                                }
-                            }
-                        }
-                        break;
-                    }
-
-                    switch (redoLogRecord2->fb & (FB_L | FB_F)) {
-                    case FB_L:
-                        last2 = redoLogRecord2;
-                        if (dir2 == 0) {
-                            dir2 = 2;
-                        } else if (prev2 != nullptr) {
-                            if (prev2->nridBdba == redoLogRecord2->bdba && prev2->nridSlot == redoLogRecord2->slot) {
-                                prev2->next = redoLogRecord2;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                            }
-                        }
-                        break;
-                    case FB_F:
-                        first2 = redoLogRecord2;
-                        if (dir2 == 0) {
-                            dir2 = 1;
-                        } else if (prev2 != nullptr) {
-                            if (prev2->bdba == redoLogRecord2->nridBdba && prev2->slot == redoLogRecord2->nridSlot) {
-                                redoLogRecord2->next = prev2;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                            }
-                        }
-                        break;
-                    case (FB_L | FB_F):
-                        first2 = redoLogRecord2;
-                        last2 = redoLogRecord2;
-                        break;
-                    case 0:
-                        if (prev2 != nullptr) {
-                            if (dir2 == 1) {
-                                if (prev2->nridBdba == redoLogRecord2->bdba && prev2->nridSlot == redoLogRecord2->slot) {
-                                    prev2->next = redoLogRecord2;
-                                } else {
-                                    if (oracleEnvironment->trace >= TRACE_WARN)
-                                        cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                                }
-                            } else if (dir2 == 2) {
-                                if (prev2->bdba == redoLogRecord2->nridBdba && prev2->slot == redoLogRecord2->nridSlot) {
-                                    redoLogRecord2->next = prev2;
-                                } else {
-                                    if (oracleEnvironment->trace >= TRACE_WARN)
-                                        cerr << "WARNING: next BDBA/SLOT does not match" << endl;
-                                }
-                            }
-                        }
-                        break;
-                    }
-
                     switch (op) {
                     //insert row piece
                     case 0x05010B02:
+                        if ((redoLogRecord2->fb & FB_L) != 0)
+                            last2 = redoLogRecord2;
+                        else {
+                            if (prev2 != nullptr && prev2->bdba == redoLogRecord2->nridBdba && prev2->slot == redoLogRecord2->nridSlot) {
+                                redoLogRecord2->next = prev2;
+                            } else {
+                                if (oracleEnvironment->trace >= TRACE_WARN)
+                                    cerr << "WARNING: next BDBA/SLOT does not match (I)" << endl;
+                            }
+                        }
+                        if ((redoLogRecord2->fb & FB_F) != 0) {
+                            first1 = redoLogRecord1;
+                            first2 = redoLogRecord2;
+                        }
+
                         if (first2 != nullptr && last2 != nullptr) {
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseInsert(redoLogRecord1, first2, oracleEnvironment);
+                            oracleEnvironment->commandBuffer->writer->parseInsert(first1, first2, oracleEnvironment);
                             hasPrev = true;
                             first2 = nullptr;
                             last2 = nullptr;
-                            dir2 = 0;
                         }
                         break;
 
                     //delete row piece
                     case 0x05010B03:
+                        if ((redoLogRecord1->fb & FB_F) != 0) {
+                            first1 = redoLogRecord1;
+                            first2 = redoLogRecord2;
+                        } else {
+                            if (prev1 != nullptr && prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
+                                prev1->next = redoLogRecord1;
+                            } else {
+                                if (oracleEnvironment->trace >= TRACE_WARN)
+                                    cerr << "WARNING: next BDBA/SLOT does not match (D)" << endl;
+                            }
+                        }
+                        if ((redoLogRecord1->fb & FB_L) != 0)
+                            last1 = redoLogRecord1;
+
                         if (first1 != nullptr && last1 != nullptr) {
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseDelete(first1, redoLogRecord2, oracleEnvironment);
+                            oracleEnvironment->commandBuffer->writer->parseDelete(first1, first2, oracleEnvironment);
                             hasPrev = true;
                             first1 = nullptr;
                             last1 = nullptr;
-                            dir1 = 0;
                         }
                         break;
 
                     //update row piece
                     case 0x05010B05:
-                        if (first1 != nullptr && last1 != nullptr && first2 != nullptr && last2 != nullptr) {
+                        redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
+
+                        if ((redoLogRecord1->suppLogFb & FB_L) == 0) { // && (redoLogRecord1->fb & FB_L) == 0
+                            if (first1 != nullptr) {
+                                if (prev1 != nullptr && prev1->suppLogBDBA == redoLogRecord1->suppLogBDBA && prev2 != nullptr) {
+                                    prev1->next = redoLogRecord1;
+                                    prev2->next = redoLogRecord2;
+                                } else {
+                                    if (oracleEnvironment->trace >= TRACE_WARN)
+                                        cerr << "WARNING: next BDBA/SLOT does not match (U)" << endl;
+                                }
+                            } else {
+                                first1 = redoLogRecord1;
+                                first2 = redoLogRecord2;
+                            }
+                        } else {
+                            if (first1 == nullptr) {
+                                first1 = redoLogRecord1;
+                                first2 = redoLogRecord2;
+                            }
+
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
                             oracleEnvironment->commandBuffer->writer->parseUpdate(first1, first2, oracleEnvironment);
                             hasPrev = true;
                             first1 = nullptr;
-                            last1 = nullptr;
-                            dir1 = 0;
                             first2 = nullptr;
-                            last2 = nullptr;
-                            dir2 = 0;
                         }
                         break;
 
@@ -318,9 +268,6 @@ namespace OpenLogReplicator {
                         cerr << "ERROR: Unknown OpCode " << hex << op << endl;
                     }
 
-                    prev1 = redoLogRecord1;
-                    prev2 = redoLogRecord2;
-
                     //split very big transactions
                     if (oracleEnvironment->commandBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
                         cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;
@@ -330,7 +277,9 @@ namespace OpenLogReplicator {
                         oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
                     }
 
-                    oldScn = scn;
+                    prev1 = redoLogRecord1;
+                    prev2 = redoLogRecord2;
+                    prevScn = scn;
                 }
                 tcTemp = tcTemp->next;
             }

@@ -858,6 +858,8 @@ namespace OpenLogReplicator {
         case 0x05010B03:
         //update row piece
         case 0x05010B05:
+        //overwrite row piece
+        case 0x05010B06:
         //insert multiple rows
         case 0x05010B0B:
         //delete multiple rows
@@ -909,6 +911,9 @@ namespace OpenLogReplicator {
         //rollback: update row piece
         case 0x0B050506:
         case 0x0B05050B:
+        //rollback: overwrite row piece
+        case 0x0B050606:
+        case 0x0B05060B:
             {
                 Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
@@ -965,11 +970,11 @@ namespace OpenLogReplicator {
                 return;
 
             if (!lastCheckpointInfo) {
-                if (oracleEnvironment->trace >= TRACE_WARN) {
+                if (oracleEnvironment->trace >= TRACE_INFO) {
                     if (oracleEnvironment->version >= 12200)
-                        cerr << "WARNING, current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
+                        cerr << "INFO: current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
                     else
-                        cerr << "WARNING, current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
+                        cerr << "INFO: current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
                 }
                 lastCheckpointInfo = true;
             }

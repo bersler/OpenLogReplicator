@@ -178,7 +178,8 @@ namespace OpenLogReplicator {
                             return 0;
 
                         if (redo == nullptr && !isHigher) {
-                            cerr << "WARNING: Sleeping while waiting for new redo log sequence " << databaseSequence << endl;
+                            if (oracleEnvironment->trace >= TRACE_INFO)
+                                cerr << "INFO: Sleeping while waiting for new redo log sequence " << databaseSequence << endl;
                             usleep(REDO_SLEEP_RETRY);
                         } else
                             break;
