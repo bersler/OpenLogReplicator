@@ -14,6 +14,8 @@ CPP_SRCS += \
 ../src/OpCode0504.cpp \
 ../src/OpCode0506.cpp \
 ../src/OpCode050B.cpp \
+../src/OpCode0513.cpp \
+../src/OpCode0514.cpp \
 ../src/OpCode0B02.cpp \
 ../src/OpCode0B03.cpp \
 ../src/OpCode0B04.cpp \
@@ -51,6 +53,8 @@ OBJS += \
 ./src/OpCode0504.o \
 ./src/OpCode0506.o \
 ./src/OpCode050B.o \
+./src/OpCode0513.o \
+./src/OpCode0514.o \
 ./src/OpCode0B02.o \
 ./src/OpCode0B03.o \
 ./src/OpCode0B04.o \
@@ -88,6 +92,8 @@ CPP_DEPS += \
 ./src/OpCode0504.d \
 ./src/OpCode0506.d \
 ./src/OpCode050B.d \
+./src/OpCode0513.d \
+./src/OpCode0514.d \
 ./src/OpCode0B02.d \
 ./src/OpCode0B03.d \
 ./src/OpCode0B04.d \
