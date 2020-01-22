@@ -227,7 +227,6 @@ int main() {
             writers.push_back(redisWriter);
             delete host;
 
-
             //initialize
             if (!redisWriter->initialize()) {
                 delete redisWriter;
