@@ -51,6 +51,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B04.h"
 #include "OpCode0B05.h"
 #include "OpCode0B06.h"
+#include "OpCode0B08.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
@@ -645,6 +646,9 @@ namespace OpenLogReplicator {
             case 0x0B06: //REDO: Overwrite row piece
                 opCodes[vectors] = new OpCode0B06(oracleEnvironment, &redoLogRecord[vectors]);
                 break;
+            case 0x0B08: //REDO: Change forwarding address
+                opCodes[vectors] = new OpCode0B08(oracleEnvironment, &redoLogRecord[vectors]);
+                break;
             case 0x0B0B: //REDO: Insert multiple rows
                 opCodes[vectors] = new OpCode0B0B(oracleEnvironment, &redoLogRecord[vectors]);
                 break;
@@ -860,6 +864,8 @@ namespace OpenLogReplicator {
         case 0x05010B05:
         //overwrite row piece
         case 0x05010B06:
+        //change forwarding address
+        case 0x05010B08:
         //insert multiple rows
         case 0x05010B0B:
         //delete multiple rows

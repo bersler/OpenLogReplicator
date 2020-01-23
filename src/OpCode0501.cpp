@@ -126,6 +126,11 @@ namespace OpenLogReplicator {
                         dumpRows(redoLogRecord->data + fieldPos);
                     }
                 }
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
+                if (i == 5) {
+                    suppLog(fieldPos, fieldLength);
+                }
             }
 
             fieldPos += (fieldLength + 3) & 0xFFFC;
@@ -176,12 +181,13 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogBefore = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6);
         redoLogRecord->suppLogAfter = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
 
-        if (oracleEnvironment->trace >= TRACE_DETAIL) {
-            cerr << "suppLogType: " << dec << (uint32_t)redoLogRecord->suppLogType << endl;
-            cerr << "suppLogFb: " << dec << (uint32_t)redoLogRecord->suppLogFb << endl;
-            cerr << "suppLogCC: " << dec << redoLogRecord->suppLogCC << endl;
-            cerr << "suppLogBefore: " << dec << redoLogRecord->suppLogBefore << endl;
-            cerr << "suppLogAfter: " << dec << redoLogRecord->suppLogAfter << endl;
+        if (oracleEnvironment->dumpLogFile) {
+            oracleEnvironment->dumpStream <<
+                    "supp log type: " << dec << (uint32_t)redoLogRecord->suppLogType <<
+                    " fb: " << dec << (uint32_t)redoLogRecord->suppLogFb <<
+                    " cc: " << dec << redoLogRecord->suppLogCC <<
+                    " before: " << dec << redoLogRecord->suppLogBefore <<
+                    " after: " << dec << redoLogRecord->suppLogAfter << endl;
         }
 
         if (fieldLength >= 24)

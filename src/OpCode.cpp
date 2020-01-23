@@ -331,9 +331,7 @@ namespace OpenLogReplicator {
         redoLogRecord->fb = redoLogRecord->data[fieldPos + 16];
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 18]; //column count
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 42);
-        redoLogRecord->nullsDelta = fieldPos + 45;
 
-        //not last
         if ((redoLogRecord->fb & FB_L) == 0) {
             redoLogRecord->nridBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
             redoLogRecord->nridSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
@@ -344,6 +342,7 @@ namespace OpenLogReplicator {
                     " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
         }
+        redoLogRecord->nullsDelta = fieldPos + 45;
 
         if (oracleEnvironment->dumpLogFile) {
             uint8_t tabn = redoLogRecord->data[fieldPos + 44];
@@ -365,18 +364,18 @@ namespace OpenLogReplicator {
             } else
                 oracleEnvironment->dumpStream << endl;
 
+            if ((redoLogRecord->fb & FB_F) != 0  && (redoLogRecord->fb & FB_H) == 0) {
+                uint32_t hrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
+                uint16_t hrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+                oracleEnvironment->dumpStream << "hrid: 0x" << setfill('0') << setw(8) << hex << hrid1 << "." << hex << hrid2 << endl;
+            }
+
             //next DBA/SLT
-            if (fbStr[5] != 'L') {
+            if ((redoLogRecord->fb & FB_L) == 0) {
                 oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridBdba << "." << hex << redoLogRecord->nridSlot << endl;
             }
 
-            if (fbStr[2] == 'H') {
-                //uint32_t hrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
-                //uint16_t hrid2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
-                //oracleEnvironment->dumpStream << "hrid: 0x" << setfill('0') << setw(8) << hex << hrid1 << "." << hex << hrid2 << endl;
-            }
-
-            if (fbStr[0] == 'K') {
+            if ((redoLogRecord->fb & FB_K) != 0) {
                 uint8_t curc = 0; //FIXME
                 uint8_t comc = 0; //FIXME
                 uint32_t pk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
@@ -483,6 +482,29 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OpCode::kdoOpCodeCFA(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 32) {
+            oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP: " << dec << fieldLength << endl;
+            return;
+        }
+
+        redoLogRecord->nridBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 16);
+        redoLogRecord->nridSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
+        redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+
+        if (oracleEnvironment->dumpLogFile) {
+            uint8_t tabn = redoLogRecord->data[fieldPos + 26];
+            uint8_t flag = redoLogRecord->data[fieldPos + 27];
+            uint8_t lock = redoLogRecord->data[fieldPos + 28];
+            oracleEnvironment->dumpStream <<
+                    "tabn: " << dec << (uint32_t)tabn <<
+                    " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
+                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)flag << endl <<
+                    "lock: " << dec << (uint32_t)lock <<
+                    " nrid: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridBdba << "." << hex << redoLogRecord->nridSlot << endl;
+        }
+    }
+
     void OpCode::kdoOpCodeSKL(uint32_t fieldPos, uint32_t fieldLength) {
         if (fieldLength < 20) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode SKL: " << dec << fieldLength << endl;
@@ -545,6 +567,11 @@ namespace OpenLogReplicator {
             return;
         }
 
+        if ((redoLogRecord->fb & FB_L) == 0) {
+            redoLogRecord->nridBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
+            redoLogRecord->nridSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
+        }
+
         if (oracleEnvironment->dumpLogFile) {
             uint8_t tabn = redoLogRecord->data[fieldPos + 44];
             uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
@@ -565,10 +592,9 @@ namespace OpenLogReplicator {
             } else
                 oracleEnvironment->dumpStream << endl;
 
-            uint32_t nrid1 = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
-            uint8_t nrid2 = redoLogRecord->data[fieldPos + 32];
-            if ((redoLogRecord->fb & FB_H) != 0)
-                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << nrid1 << "." << hex << (uint32_t) nrid2 << endl;
+            if ((redoLogRecord->fb & FB_L) == 0) {
+                oracleEnvironment->dumpStream << "nrid:  0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridBdba << "." << hex << redoLogRecord->nridSlot << endl;
+            }
 
             oracleEnvironment->dumpStream << "null:";
             if (redoLogRecord->cc >= 11)
@@ -705,6 +731,8 @@ namespace OpenLogReplicator {
         case OP_ORP: kdoOpCodeORP(fieldPos, fieldLength);
                      break;
         case OP_CKI: kdoOpCodeSKL(fieldPos, fieldLength);
+                     break;
+        case OP_CFA: kdoOpCodeCFA(fieldPos, fieldLength);
                      break;
         case OP_QMI:
         case OP_QMD: kdoOpCodeQM(fieldPos, fieldLength);

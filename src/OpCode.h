@@ -42,6 +42,7 @@ namespace OpenLogReplicator {
         void kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength);
         void kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength);
         void kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength);
+        void kdoOpCodeCFA(uint32_t fieldPos, uint32_t fieldLength);
         void kdoOpCodeSKL(uint32_t fieldPos, uint32_t fieldLength);
         virtual void kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength);
 

@@ -36,6 +36,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B03.h"
 #include "OpCode0B05.h"
 #include "OpCode0B06.h"
+#include "OpCode0B08.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
