@@ -40,6 +40,7 @@ namespace OpenLogReplicator {
 #define FLG_KTUBL               0x0008
 #define FLG_USERUNDODDONE       0x0010
 #define FLG_ISTEMPOBJECT        0x0020
+#define FLG_USERONLY            0x0040
 #define FLG_TABLESPACEUNDO      0x0080
 #define FLG_LASTBUFFERSPLIT     0x0100
 
@@ -64,11 +65,13 @@ namespace OpenLogReplicator {
 #define OP_SKL                  0x0A
 #define OP_QMI                  0x0B
 #define OP_QMD                  0x0C
-#define OP_TBF                  0x0D
 #define OP_DSC                  0x0E
 #define OP_LMN                  0x10
 #define OP_LLB                  0x11
-#define OP_21                   0x13
+#define OP_SHK                  0x14
+#define OP_CMP                  0x16
+#define OP_DCU                  0x17
+#define OP_MRK                  0x18
 #define OP_ROWDEPENDENCIES      0x40
 
 #define KTBOP_F                 0x01
@@ -123,7 +126,7 @@ namespace OpenLogReplicator {
 
         uint8_t slt;
         uint8_t rci;
-        uint16_t flg;             //flag (for opCode 0504)
+        uint16_t flg;             //flag
         uint16_t opCode;          //operation code
         uint16_t opc;             //operation code for UNDO
 

@@ -493,8 +493,8 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
 
         if (oracleEnvironment->dumpLogFile) {
-            uint8_t tabn = redoLogRecord->data[fieldPos + 26];
-            uint8_t flag = redoLogRecord->data[fieldPos + 27];
+            uint8_t flag = redoLogRecord->data[fieldPos + 26];
+            uint8_t tabn = redoLogRecord->data[fieldPos + 27];
             uint8_t lock = redoLogRecord->data[fieldPos + 28];
             oracleEnvironment->dumpStream <<
                     "tabn: " << dec << (uint32_t)tabn <<
@@ -677,12 +677,15 @@ namespace OpenLogReplicator {
                 case OP_SKL: opCode = "SKL"; break; //Set Key Links
                 case OP_QMI: opCode = "QMI"; break; //Quick Multi-row Insert
                 case OP_QMD: opCode = "QMD"; break; //Quick Multi-row Delete
-                case OP_TBF: opCode = "TBF"; break;
                 case OP_DSC: opCode = "DSC"; break;
                 case OP_LMN: opCode = "LMN"; break;
                 case OP_LLB: opCode = "LLB"; break;
-                case OP_21: opCode = " 21"; break;
+                case OP_SHK: opCode = "SHK"; break;
+                case OP_CMP: opCode = "CMP"; break;
+                case OP_DCU: opCode = "DCU"; break;
+                case OP_MRK: opCode = "MRK"; break;
                 default:
+                    opCode = "XXX";
                     if (oracleEnvironment->dumpLogFile)
                         oracleEnvironment->dumpStream << "DEBUG op: " << dec << (uint32_t)(redoLogRecord->op & 0x1F) << endl;
             }
@@ -859,7 +862,15 @@ namespace OpenLogReplicator {
                 tablespaceUndo = " No";
         }
 
-        string userOnly = " No"; //FIXME
+        string userOnly = " No";
+        if ((redoLogRecord->flg & FLG_USERONLY) != 0)
+            userOnly = "Yes";
+        else {
+            if (oracleEnvironment->version < 19000)
+                userOnly = "No";
+            else
+                userOnly = " No";
+        }
 
         if (isKtubl) {
             //KTUBL
