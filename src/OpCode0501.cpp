@@ -60,6 +60,9 @@ namespace OpenLogReplicator {
                 ktudb(fieldPos, fieldLength);
             } else if (i == 2) {
                 ktub(fieldPos, fieldLength);
+            } else if (i > 2 && (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
+                if (oracleEnvironment->dumpLogFile >= 2)
+                    dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, false);
             } else if (i == 3) {
                 if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
                     ktbRedo(fieldPos, fieldLength);
@@ -69,7 +72,7 @@ namespace OpenLogReplicator {
                     kdoOpCode(fieldPos, fieldLength);
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
-                    if (oracleEnvironment->dumpLogFile) {
+                    if (oracleEnvironment->dumpLogFile >= 1) {
                         if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                             for (uint32_t i = 0; i < redoLogRecord->nrow; ++i)
                                 oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
@@ -82,14 +85,14 @@ namespace OpenLogReplicator {
                     colNums = redoLogRecord->data + fieldPos;
                 } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                     if (i == 6) {
-                        if (oracleEnvironment->dumpLogFile)
+                        if (oracleEnvironment->dumpLogFile >= 1)
                             dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
                     } else if (i == 7) {
                         suppLog(fieldPos, fieldLength);
                     }
                 } else {
                     if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
-                        if (oracleEnvironment->dumpLogFile) {
+                        if (oracleEnvironment->dumpLogFile >= 1) {
                             dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
                             colNums += 2;
                             bits <<= 1;
@@ -108,7 +111,7 @@ namespace OpenLogReplicator {
                         cerr << "nulls = null" << endl;
                         return;
                     }
-                    if (oracleEnvironment->dumpLogFile) {
+                    if (oracleEnvironment->dumpLogFile >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, i - 5, fieldLength, *nulls & bits);
                         bits <<= 1;
                         if (bits == 0) {
@@ -122,7 +125,7 @@ namespace OpenLogReplicator {
                 if (i == 5) {
                     redoLogRecord->rowLenghsDelta = fieldPos;
                 } else if (i == 6) {
-                    if (oracleEnvironment->dumpLogFile) {
+                    if (oracleEnvironment->dumpLogFile >= 1) {
                         dumpRows(redoLogRecord->data + fieldPos);
                     }
                 }
@@ -151,7 +154,7 @@ namespace OpenLogReplicator {
                 oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
                 oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12));
 
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t siz = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
             uint16_t spc = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t flgKtudb = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
@@ -181,7 +184,7 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogBefore = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6);
         redoLogRecord->suppLogAfter = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8);
 
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 2) {
             oracleEnvironment->dumpStream <<
                     "supp log type: " << dec << (uint32_t)redoLogRecord->suppLogType <<
                     " fb: " << dec << (uint32_t)redoLogRecord->suppLogFb <<

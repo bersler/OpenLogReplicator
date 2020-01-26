@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
                 redoLogRecord->nullsDelta = fieldPos + 45;
                 nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
             } else if (i > 2 && i <= 2 + (uint32_t)redoLogRecord->cc) {
-                if (oracleEnvironment->dumpLogFile) {
+                if (oracleEnvironment->dumpLogFile >= 1) {
                     dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, *nulls & bits);
                     bits <<= 1;
                     if (bits == 0) {

@@ -57,10 +57,10 @@ namespace OpenLogReplicator {
         uint8_t *recordBuffer;
         CommandBuffer *commandBuffer;
         ofstream dumpStream;
-        bool dumpLogFile;
+        uint32_t dumpLogFile;
         bool dumpData;
         bool directRead;
-        int trace;
+        uint32_t trace;
         uint32_t version; //11 or 12
 
         OracleObject *checkDict(uint32_t objn, uint32_t objd);
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         void transactionNew(typexid xid);
         void transactionAppend(typexid xid);
 
-        OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead);
+        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead);
         virtual ~OracleEnvironment();
     };
 }

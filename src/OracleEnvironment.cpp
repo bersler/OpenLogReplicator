@@ -27,7 +27,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
+    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead) :
         DatabaseEnvironment(),
         redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),

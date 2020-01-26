@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint8_t idx = 0; //FIXME
             uint8_t flg2 = 0; // FIXME
 

@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
 
         memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
-        if (oracleEnvironment->dumpLogFile && first) {
+        if (oracleEnvironment->dumpLogFile >= 1 && first) {
             oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
             if (oracleEnvironment->version >= 12200)
                 oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
@@ -488,7 +488,7 @@ namespace OpenLogReplicator {
         } else
             headerLength = 24;
 
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
             uint16_t thread = 1; //FIXME
             oracleEnvironment->dumpStream << " " << endl;
@@ -837,7 +837,7 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
             cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
-            if (oracleEnvironment->dumpLogFile)
+            if (oracleEnvironment->dumpLogFile >= 1)
                 oracleEnvironment->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             return;
         }
@@ -1105,7 +1105,7 @@ namespace OpenLogReplicator {
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "Processing log: " << *this << endl;
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
             oracleEnvironment->dumpStream.open(name.str());

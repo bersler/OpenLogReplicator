@@ -36,13 +36,13 @@ namespace OpenLogReplicator {
 
 #define FLG_MULTIBLOCKUNDOHEAD  0x0001
 #define FLG_MULTIBLOCKUNDOTAIL  0x0002
-#define FLG_NOTRANSTART         0x0004
+#define FLG_LASTBUFFERSPLIT     0x0004
 #define FLG_KTUBL               0x0008
 #define FLG_USERUNDODDONE       0x0010
 #define FLG_ISTEMPOBJECT        0x0020
 #define FLG_USERONLY            0x0040
 #define FLG_TABLESPACEUNDO      0x0080
-#define FLG_LASTBUFFERSPLIT     0x0100
+#define FLG_MULTIBLOCKUNDOMID   0x0100
 
 #define FB_N                    0x01
 #define FB_P                    0x02
@@ -136,6 +136,7 @@ namespace OpenLogReplicator {
         uint16_t slot;
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
+        uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
 
         uint32_t nridBdba;        //next row id bdba
         uint16_t nridSlot;        //next row id slot

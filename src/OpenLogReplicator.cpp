@@ -93,12 +93,11 @@ int main() {
         {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
-    bool dumpLogFileBool = false;
-    if (strcmp(dumpLogFile.GetString(), "1") == 0)
-        dumpLogFileBool = true;
+    uint32_t dumpLogFileInt = 0;
+    dumpLogFileInt = atoi(dumpLogFile.GetString());
 
     const Value& trace = getJSONfield(document, "trace");
-    int traceInt = 0;
+    uint32_t traceInt = 0;
     traceInt = atoi(trace.GetString());
 
     const Value& dumpData = getJSONfield(document, "dumpdata");
@@ -135,7 +134,7 @@ int main() {
 
             buffers.push_back(commandBuffer);
             OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                    password.GetString(), server.GetString(), traceInt, dumpLogFileBool, dumpDataBool, directReadBool);
+                    password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool);
             readers.push_back(oracleReader);
 
             //initialize

@@ -42,7 +42,7 @@ using namespace oracle::occi;
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, int trace, bool dumpLogFile, bool dumpData, bool directRead) :
+            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),

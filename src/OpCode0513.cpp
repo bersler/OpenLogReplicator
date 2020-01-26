@@ -76,25 +76,23 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::dumpMsgFlags(uint32_t fieldPos, uint32_t fieldLength) {
-        if (oracleEnvironment->dumpLogFile) {
-            uint32_t flags = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
-            if ((flags & 0x0001) != 0) oracleEnvironment->dumpStream << "DDL transaction" << endl;
-            if ((flags & 0x0002) != 0) oracleEnvironment->dumpStream << "Space Management transaction" << endl;
-            if ((flags & 0x0004) != 0) oracleEnvironment->dumpStream << "Recursive transaction" << endl;
-            if ((flags & 0x0008) != 0) oracleEnvironment->dumpStream << "Logmnr Internal transaction" << endl;
-            if ((flags & 0x0010) != 0) oracleEnvironment->dumpStream << "DB Open in Migrate Mode" << endl;
-            if ((flags & 0x0020) != 0) oracleEnvironment->dumpStream << "LSBY ignore" << endl;
-            if ((flags & 0x0040) != 0) oracleEnvironment->dumpStream << "LogMiner no tx chunking" << endl;
-            if ((flags & 0x0080) != 0) oracleEnvironment->dumpStream << "LogMiner Stealth transaction" << endl;
-            if ((flags & 0x0100) != 0) oracleEnvironment->dumpStream << "LSBY preserve" << endl;
-            if ((flags & 0x0200) != 0) oracleEnvironment->dumpStream << "LogMiner Marker transaction" << endl;
-            if ((flags & 0x0400) != 0) oracleEnvironment->dumpStream << "Transaction in pragama'ed plsql" << endl;
-            if ((flags & 0x0800) != 0) oracleEnvironment->dumpStream << "Tx audit CV flags undefined" << endl;
-        }
+        uint32_t flags = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
+        if ((flags & 0x0001) != 0) oracleEnvironment->dumpStream << "DDL transaction" << endl;
+        if ((flags & 0x0002) != 0) oracleEnvironment->dumpStream << "Space Management transaction" << endl;
+        if ((flags & 0x0004) != 0) oracleEnvironment->dumpStream << "Recursive transaction" << endl;
+        if ((flags & 0x0008) != 0) oracleEnvironment->dumpStream << "Logmnr Internal transaction" << endl;
+        if ((flags & 0x0010) != 0) oracleEnvironment->dumpStream << "DB Open in Migrate Mode" << endl;
+        if ((flags & 0x0020) != 0) oracleEnvironment->dumpStream << "LSBY ignore" << endl;
+        if ((flags & 0x0040) != 0) oracleEnvironment->dumpStream << "LogMiner no tx chunking" << endl;
+        if ((flags & 0x0080) != 0) oracleEnvironment->dumpStream << "LogMiner Stealth transaction" << endl;
+        if ((flags & 0x0100) != 0) oracleEnvironment->dumpStream << "LSBY preserve" << endl;
+        if ((flags & 0x0200) != 0) oracleEnvironment->dumpStream << "LogMiner Marker transaction" << endl;
+        if ((flags & 0x0400) != 0) oracleEnvironment->dumpStream << "Transaction in pragama'ed plsql" << endl;
+        if ((flags & 0x0800) != 0) oracleEnvironment->dumpStream << "Tx audit CV flags undefined" << endl;
     }
 
     void OpCode0513::dumpMsgSessionSerial(uint32_t fieldPos, uint32_t fieldLength) {
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t serialNumber = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t sessionNumber;
             if (oracleEnvironment->version < 19000)
@@ -109,14 +107,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::dumpMsgVersion(uint32_t fieldPos, uint32_t fieldLength) {
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t version = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             oracleEnvironment->dumpStream << "version " << dec << version << endl;
         }
     }
 
     void OpCode0513::dumpMsgAuditSessionid(uint32_t fieldPos, uint32_t fieldLength) {
-        if (oracleEnvironment->dumpLogFile) {
+        if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t auditSessionid = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             oracleEnvironment->dumpStream << "audit sessionid " << auditSessionid << endl;
         }
