@@ -161,10 +161,10 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << "KDO undo record:" << endl;
 
         int8_t op = redoLogRecord->data[fieldPos + 0];
+        uint8_t flg = redoLogRecord->data[fieldPos + 1];
         if (oracleEnvironment->dumpLogFile >= 1) {
-            uint8_t flg = redoLogRecord->data[fieldPos + 1];
             uint8_t ver = flg & 0x03;
-            uint32_t padding = 1; //FIXME
+            uint32_t padding = 1;
 
             oracleEnvironment->dumpStream << "KTB Redo " << endl;
             oracleEnvironment->dumpStream << "op: 0x" << setfill('0') << setw(2) << hex << (int32_t)op << " " <<
@@ -196,43 +196,82 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << "op: " << opCode << endl;
             }
         } else if ((op & 0x0F) == KTBOP_L) {
-            if (fieldLength < 32) {
-                oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
-                return;
-            }
-
             opCode = 'L';
-            redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 16);
+            if ((flg & 0x08) != 0) {
+                if (fieldLength < 28) {
+                    oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
+                    return;
+                }
+                redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 12);
 
-            if (oracleEnvironment->dumpLogFile >= 1) {
-                typexid itlXid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
-                        oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
-                        oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12));
+                if (oracleEnvironment->dumpLogFile >= 1) {
+                    typexid itlXid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4),
+                            oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6),
+                            oracleEnvironment->read32(redoLogRecord->data + fieldPos + 8));
 
-                oracleEnvironment->dumpStream << "op: " << opCode << " " <<
-                        " itl:" <<
-                        " xid:  " << PRINTXID(itlXid) <<
-                        " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
+                    oracleEnvironment->dumpStream << "op: " << opCode << " " <<
+                            " itl:" <<
+                            " xid:  " << PRINTXID(itlXid) <<
+                            " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 
-                uint8_t lkc = redoLogRecord->data[fieldPos + 24]; //FIXME
-                uint8_t flag = redoLogRecord->data[fieldPos + 25];
-                char flagStr[5] = "----";
-                if ((flag & 0x80) != 0) flagStr[0] = 'C';
-                if ((flag & 0x40) != 0) flagStr[1] = 'B';
-                if ((flag & 0x20) != 0) flagStr[2] = 'U';
-                if ((flag & 0x10) != 0) flagStr[3] = 'T';
-                typescn scnx = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 26);
+                    uint8_t lkc = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
+                    uint8_t flag = redoLogRecord->data[fieldPos + 19];
+                    char flagStr[5] = "----";
+                    if ((flag & 0x80) != 0) flagStr[0] = 'C';
+                    if ((flag & 0x40) != 0) flagStr[1] = 'B';
+                    if ((flag & 0x20) != 0) flagStr[2] = 'U';
+                    if ((flag & 0x10) != 0) flagStr[3] = 'T';
+                    typescn scnx = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "                     " <<
-                            " flg: " << flagStr << "   " <<
-                            " lkc:  " << (uint32_t)lkc << "    " <<
-                            " scn: " << PRINTSCN48(scnx) << endl;
-                else
-                    oracleEnvironment->dumpStream << "                     " <<
-                            " flg: " << flagStr << "   " <<
-                            " lkc:  " << (uint32_t)lkc << "    " <<
-                            " scn:  " << PRINTSCN64(scnx) << endl;
+                    if (oracleEnvironment->version < 12200)
+                        oracleEnvironment->dumpStream << "                     " <<
+                                " flg: " << flagStr << "   " <<
+                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " fac: " << PRINTSCN48(scnx) << endl;
+                    else
+                        oracleEnvironment->dumpStream << "                     " <<
+                                " flg: " << flagStr << "   " <<
+                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " fsc:  " << PRINTSCN64(scnx) << endl;
+                }
+
+            } else {
+                if (fieldLength < 32) {
+                    oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
+                    return;
+                }
+                redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 16);
+
+                if (oracleEnvironment->dumpLogFile >= 1) {
+                    typexid itlXid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 8),
+                            oracleEnvironment->read16(redoLogRecord->data + fieldPos + 10),
+                            oracleEnvironment->read32(redoLogRecord->data + fieldPos + 12));
+
+                    oracleEnvironment->dumpStream << "op: " << opCode << " " <<
+                            " itl:" <<
+                            " xid:  " << PRINTXID(itlXid) <<
+                            " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
+
+                    uint8_t lkc = 0;
+                    uint8_t flag = redoLogRecord->data[fieldPos + 25];
+                    char flagStr[5] = "----";
+                    if ((flag & 0x80) != 0) flagStr[0] = 'C';
+                    if ((flag & 0x40) != 0) flagStr[1] = 'B';
+                    if ((flag & 0x20) != 0) flagStr[2] = 'U';
+                    if ((flag & 0x10) != 0) flagStr[3] = 'T';
+                    typescn scnx = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 26);
+
+                    if (oracleEnvironment->version < 12200)
+                        oracleEnvironment->dumpStream << "                     " <<
+                                " flg: " << flagStr << "   " <<
+                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " scn: " << PRINTSCN48(scnx) << endl;
+                    else
+                        oracleEnvironment->dumpStream << "                     " <<
+                                " flg: " << flagStr << "   " <<
+                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " scn:  " << PRINTSCN64(scnx) << endl;
+                }
             }
 
         } else if ((op & 0x0F) == KTBOP_N) {

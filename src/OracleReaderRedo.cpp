@@ -216,8 +216,9 @@ namespace OpenLogReplicator {
                 return REDO_ERROR;
             //redo log switch appeared and header is now overwritten
             } else {
-                cerr << "WARNING: first SCN (" << firstScnHeader << ") does not match database information (" <<
-                        firstScn << "): " << path.c_str() << endl;
+                if (oracleEnvironment->trace >= TRACE_WARN)
+                    cerr << "WARNING: first SCN (" << firstScnHeader << ") does not match database information (" <<
+                            firstScn << "): " << path.c_str() << endl;
                 return REDO_WRONG_SEQUENCE_SWITCHED;
             }
         }
@@ -332,29 +333,30 @@ namespace OpenLogReplicator {
 
             uint32_t miscFlags = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 236);
             string endOfRedo;
-            if ((miscFlags & 0x08) != 0)
+            if ((miscFlags & REDO_END) != 0)
                 endOfRedo = "Yes";
             else
                 endOfRedo = "No";
-            if ((miscFlags & 0x1000) != 0)
+            if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
                 oracleEnvironment->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << endl;
             else
                 oracleEnvironment->dumpStream << " End-of-redo stream : " << endOfRedo << endl;
 
-            if ((miscFlags & 0x100) != 0)
+            if ((miscFlags & REDO_ASYNC) != 0)
                 oracleEnvironment->dumpStream << " Archivelog created using asynchronous network transmittal" << endl;
 
-            if ((miscFlags & 0x200) != 0)
+            if ((miscFlags & REDO_NODATALOSS) != 0)
                 oracleEnvironment->dumpStream << " No data-loss mode" << endl;
-            if ((miscFlags & 0x800) != 0)
+
+            if ((miscFlags & REDO_RESYNC) != 0)
                 oracleEnvironment->dumpStream << " Resynchronization mode" << endl;
             else
                 oracleEnvironment->dumpStream << " Unprotected mode" << endl;
 
-            if ((miscFlags & 0x1000) != 0)
+            if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
                 oracleEnvironment->dumpStream << " Closed thread archival" << endl;
 
-            if ((miscFlags & 0x2000) != 0)
+            if ((miscFlags & REDO_MAXPERFORMANCE) != 0)
                 oracleEnvironment->dumpStream << " Maximize performance mode" << endl;
 
             oracleEnvironment->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
@@ -702,10 +704,12 @@ namespace OpenLogReplicator {
 
         uint32_t iPair = 0;
         for (uint32_t i = 0; i < vectors; ++i) {
-            //cout << "** " << setfill('0') << setw(4) << hex << redoLogRecord[i].opCode <<
-            //        " OBJD: " << dec << redoLogRecord[i].recordObjd <<
-            //        " OBJN: " << redoLogRecord[i].recordObjn <<
-            //        " XID: " << PRINTXID(redoLogRecord[i].xid) << endl;
+            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                cerr << "** " << setfill('0') << setw(4) << hex << redoLogRecord[i].opCode <<
+                        " OBJD: " << dec << redoLogRecord[i].recordObjd <<
+                        " OBJN: " << redoLogRecord[i].recordObjn <<
+                        " XID: " << PRINTXID(redoLogRecord[i].xid) << endl;
+            }
 
             //begin transaction
             if (redoLogRecord[i].opCode == 0x0502) {

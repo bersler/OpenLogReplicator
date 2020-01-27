@@ -26,6 +26,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 using namespace std;
 
 #define VECTOR_MAX_LENGTH 512
+#define REDO_END                0x0008
+#define REDO_ASYNC              0x0100
+#define REDO_NODATALOSS         0x0200
+#define REDO_RESYNC             0x0800
+#define REDO_CLOSEDTHREAD       0x1000
+#define REDO_MAXPERFORMANCE     0x2000
 
 namespace OpenLogReplicator {
 
