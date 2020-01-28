@@ -110,7 +110,8 @@ namespace OpenLogReplicator {
 
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
-                RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *prev1 = nullptr, *prev2 = nullptr;
+                RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *prev1 = nullptr, *prev2 = nullptr,
+                        *head = nullptr, *tail = nullptr, *mid = nullptr;
                 typescn prevScn = 0;
 
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
@@ -134,6 +135,10 @@ namespace OpenLogReplicator {
                                     " op: " << setfill('0') << setw(8) << hex << op <<
                                     " objn: " << dec << objn <<
                                     " objd: " << dec << objd <<
+                                    " flg1: 0x" << setfill('0') << setw(4) << hex << redoLogRecord1->flg <<
+                                    " flg2: 0x" << setfill('0') << setw(4) << hex << redoLogRecord2->flg <<
+                                    " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
+                                    " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
                                     " bdba1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->bdba << "." << hex << (uint32_t)redoLogRecord1->slot <<
                                     " nrid1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->nridBdba << "." << hex << redoLogRecord1->nridSlot <<
                                     " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint32_t)redoLogRecord2->slot <<
@@ -155,7 +160,21 @@ namespace OpenLogReplicator {
                     }
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
 
+                    //multi-block UNDO
+                    if ((op & 0xFFFF0000) == 0x05010000) {
+                        if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
+                            head = redoLogRecord1;
+                        if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
+                            tail = redoLogRecord1;
+                        if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOMID) != 0)
+                            mid = redoLogRecord1;
+                    }
+
                     switch (op) {
+                    //undo part
+                    case 0x05010000:
+                        break;
+
                     //insert row piece
                     case 0x05010B02:
                         if ((redoLogRecord2->fb & FB_L) != 0)

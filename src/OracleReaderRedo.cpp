@@ -756,8 +756,16 @@ namespace OpenLogReplicator {
             redoLogRecord->dump();
         }
 
-        //DDL
-        if (redoLogRecord->opCode == 0x1801) {
+        //DDL or part of multi-block UNDO
+        if (redoLogRecord->opCode == 0x1801 || redoLogRecord->opCode == 0x0501) {
+            if (redoLogRecord->opCode == 0x0501) {
+                if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0) {
+                    return;
+                }
+                if (oracleEnvironment->trace >= TRACE_DETAIL)
+                    cerr << "ERROR: merging Multi-block" << endl;
+            }
+
             RedoLogRecord zero;
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
@@ -767,7 +775,9 @@ namespace OpenLogReplicator {
 
             Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
-                cerr << "DDL without begin transaction" << endl;
+                if (oracleEnvironment->trace >= TRACE_DETAIL)
+                    cerr << "ERROR: transaction missing" << endl;
+
                 transaction = new Transaction(redoLogRecord->xid, &oracleEnvironment->transactionBuffer);
                 transaction->add(redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
