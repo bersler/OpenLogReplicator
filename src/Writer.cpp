@@ -241,4 +241,9 @@ namespace OpenLogReplicator {
             commandBuffer->append('?');
         }
     }
+
+    void Writer::appendValueSplit(RedoLogRecord *redoLogRecord1, uint32_t typeNo, uint32_t fieldPos1, uint32_t fieldLength1,
+                RedoLogRecord *redoLogRecord2, uint32_t fieldPos2, uint32_t fieldLength2) {
+
+    }
 }

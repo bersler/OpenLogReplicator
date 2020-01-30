@@ -41,6 +41,8 @@ namespace OpenLogReplicator {
         int initialize();
 
         void appendValue(RedoLogRecord *redoLogRecord, uint32_t typeNo, uint32_t fieldPos, uint32_t fieldLength);
+        void appendValueSplit(RedoLogRecord *redoLogRecord1, uint32_t typeNo, uint32_t fieldPos1, uint32_t fieldLength1,
+                RedoLogRecord *redoLogRecord2, uint32_t fieldPos2, uint32_t fieldLength2);
         virtual void beginTran(typescn scn, typexid xid) = 0;
         virtual void next() = 0;
         virtual void commitTran() = 0;

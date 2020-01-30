@@ -197,7 +197,7 @@ namespace OpenLogReplicator {
             }
         } else if ((op & 0x0F) == KTBOP_L) {
             opCode = 'L';
-            if ((flg & 0x08) != 0) {
+            if ((flg & 0x08) == 0) {
                 if (fieldLength < 28) {
                     oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo 4: " << dec << fieldLength << endl;
                     return;
@@ -232,7 +232,7 @@ namespace OpenLogReplicator {
                         oracleEnvironment->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
                                 " lkc:  " << (uint32_t)lkc << "    " <<
-                                " fsc:  " << PRINTSCN64(scnx) << endl;
+                                " fac:  " << PRINTSCN64(scnx) << endl;
                 }
 
             } else {
