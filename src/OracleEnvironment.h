@@ -67,6 +67,7 @@ namespace OpenLogReplicator {
         void addToDict(OracleObject *object);
         void transactionNew(typexid xid);
         void transactionAppend(typexid xid);
+        uint32_t getBase();
 
         OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead);
         virtual ~OracleEnvironment();

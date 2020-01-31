@@ -193,7 +193,9 @@ namespace OpenLogReplicator {
                     " after: " << dec << redoLogRecord->suppLogAfter << endl;
         }
 
-        if (fieldLength >= 24)
-            redoLogRecord->suppLogBDBA = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
+        if (fieldLength >= 26) {
+            redoLogRecord->suppLogBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
+            redoLogRecord->suppLogSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+        }
     }
 }

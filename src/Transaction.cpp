@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
         if (opCodes > 0 && !isRollback) {
             if (oracleEnvironment->trace >= TRACE_DETAIL) {
-                cerr << "Transaction xid:  " << PRINTXID(xid) <<
+                cerr << endl << "Transaction xid:  " << PRINTXID(xid) <<
                         " SCN: " << PRINTSCN64(firstScn) <<
                         " - " << PRINTSCN64(lastScn) <<
                         " opCodes: " << dec << opCodes << endl;
@@ -147,12 +147,12 @@ namespace OpenLogReplicator {
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogCC <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<
-                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBDBA << ") " <<
+                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBdba << "." << hex << redoLogRecord1->suppLogSlot << ") " <<
                                     " supp2: (0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->suppLogFb <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogCC <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogBefore <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord2->suppLogAfter <<
-                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->suppLogBDBA << ") " <<
+                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->suppLogBdba << "." << hex << redoLogRecord2->suppLogSlot << ") " <<
                                     " scn: " << PRINTSCN64(scn) << endl;
                         }
                         if (prevScn != 0 && prevScn > scn)
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
 
                         if ((redoLogRecord1->suppLogFb & FB_L) == 0) { // && (redoLogRecord1->fb & FB_L) == 0
                             if (first1 != nullptr) {
-                                if (prev1 != nullptr && prev1->suppLogBDBA == redoLogRecord1->suppLogBDBA && prev2 != nullptr) {
+                                if (prev1 != nullptr && prev1->suppLogBdba == redoLogRecord1->suppLogBdba && prev1->suppLogSlot == redoLogRecord1->suppLogSlot && prev2 != nullptr) {
                                     prev1->next = redoLogRecord1;
                                     prev2->next = redoLogRecord2;
                                 } else {

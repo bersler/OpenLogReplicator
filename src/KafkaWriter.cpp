@@ -177,7 +177,7 @@ namespace OpenLogReplicator {
                 ->append('.')
                 ->append(redoLogRecord2->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF, redoLogRecord2->slot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(), redoLogRecord2->slot)
                 ->append("\", \"after\": {");
         uint32_t colnum = 0;
         bool prevValue = false;
@@ -255,7 +255,7 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord2->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF,
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
                             oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                     ->append("\", \"after\": {");
 
@@ -303,13 +303,21 @@ namespace OpenLogReplicator {
 
     //0x05010B05
     void KafkaWriter::parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
+        uint32_t bdba; uint16_t slot;
+        if (redoLogRecord1->suppLogBdba > 0) {
+            bdba = redoLogRecord1->suppLogBdba;
+            slot = redoLogRecord1->suppLogSlot;
+        } else {
+            bdba = redoLogRecord1->bdba;
+            slot = redoLogRecord1->slot;
+        }
         commandBuffer
                 ->append("{\"operation\":\"update\", \"table\": \"")
                 ->append(redoLogRecord1->object->owner)
                 ->append('.')
                 ->append(redoLogRecord1->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, bdba - oracleEnvironment->getBase(), slot)
                 ->append("\", \"before\": {");
         bool prevValue = false;
         uint8_t *colNums = nullptr;
@@ -524,7 +532,7 @@ namespace OpenLogReplicator {
                 ->append('.')
                 ->append(redoLogRecord1->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba & 0xFFFF, redoLogRecord1->slot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord1->bdba - oracleEnvironment->getBase(), redoLogRecord1->slot)
                 ->append("\", \"before\": {");
         uint32_t colnum = 0;
         bool prevValue = false;
@@ -622,7 +630,7 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0xFFFF,
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
                             oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                     ->append("\", \"before\": {");
 

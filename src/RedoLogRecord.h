@@ -147,7 +147,8 @@ namespace OpenLogReplicator {
         uint16_t suppLogCC;
         uint16_t suppLogBefore;
         uint16_t suppLogAfter;
-        uint32_t suppLogBDBA;
+        uint32_t suppLogBdba;
+        uint16_t suppLogSlot;
 
         void dump();
     };

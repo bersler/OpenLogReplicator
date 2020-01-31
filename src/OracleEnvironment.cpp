@@ -81,4 +81,11 @@ namespace OpenLogReplicator {
             objectMap[object->objn] = object;
         }
     }
+
+    uint32_t OracleEnvironment::getBase() {
+        if (version >= 12000)
+            return 0x00800000;
+        else
+            return 0x00400000;
+    }
 }
