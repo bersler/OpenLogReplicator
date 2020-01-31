@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
             if (oracleEnvironment->trace >= TRACE_INFO)
-                cerr << "Log switch to " << nextScnHeader << endl;
+                cerr << "Log switch to " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -481,7 +481,7 @@ namespace OpenLogReplicator {
         if ((vld & 0x04) != 0) {
             checkpoint = true;
             headerLength = 68;
-            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+            if (oracleEnvironment->trace >= TRACE_FULL) {
                 if (oracleEnvironment->version < 12200)
                     cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
                 else
@@ -704,7 +704,7 @@ namespace OpenLogReplicator {
 
         uint32_t iPair = 0;
         for (uint32_t i = 0; i < vectors; ++i) {
-            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+            if (oracleEnvironment->trace >= TRACE_FULL) {
                 cerr << "** " << setfill('0') << setw(4) << hex << redoLogRecord[i].opCode <<
                         " OBJD: " << dec << redoLogRecord[i].recordObjd <<
                         " OBJN: " << redoLogRecord[i].recordObjn <<
@@ -750,7 +750,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
-        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+        if (oracleEnvironment->trace >= TRACE_FULL) {
             cerr << "** Append: " <<
                     setfill('0') << setw(4) << hex << redoLogRecord->opCode << endl;
             redoLogRecord->dump();
@@ -762,8 +762,8 @@ namespace OpenLogReplicator {
                 if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0) {
                     return;
                 }
-                if (oracleEnvironment->trace >= TRACE_DETAIL)
-                    cerr << "ERROR: merging Multi-block" << endl;
+                if (oracleEnvironment->trace >= TRACE_FULL)
+                    cerr << "merging Multi-block" << endl;
             }
 
             RedoLogRecord zero;
@@ -831,7 +831,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+        if (oracleEnvironment->trace >= TRACE_FULL) {
             cerr << "** Append: " <<
                     setfill('0') << setw(4) << hex << redoLogRecord1->opCode << " + " <<
                     setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
@@ -1002,7 +1002,7 @@ namespace OpenLogReplicator {
             return;
 
         while (transaction != nullptr) {
-            if (oracleEnvironment->trace >= TRACE_DETAIL) {
+            if (oracleEnvironment->trace >= TRACE_FULL) {
                 cerr << "FirstScn: " << PRINTSCN64(transaction->firstScn) <<
                         " lastScn: " << PRINTSCN64(transaction->lastScn) <<
                         " xid: " << PRINTXID(transaction->xid) <<
@@ -1050,7 +1050,7 @@ namespace OpenLogReplicator {
                 break;
         }
 
-        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+        if (oracleEnvironment->trace >= TRACE_FULL) {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
                 if (transaction != nullptr) {
@@ -1102,7 +1102,7 @@ namespace OpenLogReplicator {
                 curBlockPos += toCopy;
                 recordPos += toCopy;
 
-                if (oracleEnvironment->trace >= TRACE_DETAIL)
+                if (oracleEnvironment->trace >= TRACE_FULL)
                     cerr << "Block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
 
                 if (recordLeftToCopy == 0)

@@ -111,7 +111,7 @@ namespace OpenLogReplicator {
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
                 RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *prev1 = nullptr, *prev2 = nullptr,
-                        *multiTail = nullptr, *multiPrev = nullptr;
+                        *multiPrev = nullptr;
                 typescn prevScn = 0;
 
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
@@ -164,11 +164,9 @@ namespace OpenLogReplicator {
                     if ((op & 0xFFFF0000) == 0x05010000) {
                         if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0) {
                             redoLogRecord1->multiNext = multiPrev;
-                            multiTail = nullptr;
                             multiPrev = nullptr;
                         }
                         if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                            multiTail = redoLogRecord1;
                             multiPrev = redoLogRecord1;
                         }
                         if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOMID) != 0) {
@@ -204,6 +202,8 @@ namespace OpenLogReplicator {
                                 oracleEnvironment->commandBuffer->writer->next();
                             oracleEnvironment->commandBuffer->writer->parseInsert(first1, first2, oracleEnvironment);
                             hasPrev = true;
+                            first1 = nullptr;
+                            last1 = nullptr;
                             first2 = nullptr;
                             last2 = nullptr;
                         }
@@ -232,13 +232,15 @@ namespace OpenLogReplicator {
                             hasPrev = true;
                             first1 = nullptr;
                             last1 = nullptr;
+                            first2 = nullptr;
+                            last2 = nullptr;
                         }
                         break;
 
                     //update row piece
                     case 0x05010B05:
                     //overwrite row piece
-                    case 0x05010B06:
+                    //case 0x05010B06:
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
                         if ((redoLogRecord1->suppLogFb & FB_L) == 0) { // && (redoLogRecord1->fb & FB_L) == 0

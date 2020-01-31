@@ -503,7 +503,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 19];
-        redoLogRecord->cc = redoLogRecord->data[fieldPos + 23]; //nnew field
+        redoLogRecord->cc = redoLogRecord->data[fieldPos + 23];
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
