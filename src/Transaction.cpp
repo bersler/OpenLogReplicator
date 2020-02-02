@@ -111,7 +111,7 @@ namespace OpenLogReplicator {
             while (tcTemp != nullptr) {
                 uint32_t pos = 0;
                 RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *prev1 = nullptr, *prev2 = nullptr,
-                        *multiPrev = nullptr;
+                        *multiPrev = nullptr, *insert1 = nullptr, *insert2 = nullptr;
                 typescn prevScn = 0;
 
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
@@ -198,10 +198,15 @@ namespace OpenLogReplicator {
                         }
 
                         if (first2 != nullptr && last2 != nullptr) {
-                            if (hasPrev)
-                                oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseInsert(first1, first2, oracleEnvironment);
-                            hasPrev = true;
+                            if (first1->suppLogBdba != 0) {
+                                insert1 = first1;
+                                insert2 = first2;
+                            } else {
+                                if (hasPrev)
+                                    oracleEnvironment->commandBuffer->writer->next();
+                                oracleEnvironment->commandBuffer->writer->parseInsert(first1, first2, oracleEnvironment);
+                                hasPrev = true;
+                            }
                             first1 = nullptr;
                             last1 = nullptr;
                             first2 = nullptr;
@@ -240,10 +245,10 @@ namespace OpenLogReplicator {
                     //update row piece
                     case 0x05010B05:
                     //overwrite row piece
-                    //case 0x05010B06:
+                    case 0x05010B06:
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
-                        if ((redoLogRecord1->suppLogFb & FB_L) == 0) { // && (redoLogRecord1->fb & FB_L) == 0
+                        if ((redoLogRecord1->suppLogFb & FB_L) == 0 && (redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) == 0) {
                             if (first1 != nullptr) {
                                 if (prev1 != nullptr && prev1->suppLogBdba == redoLogRecord1->suppLogBdba && prev1->suppLogSlot == redoLogRecord1->suppLogSlot && prev2 != nullptr) {
                                     prev1->next = redoLogRecord1;
@@ -264,7 +269,12 @@ namespace OpenLogReplicator {
 
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseUpdate(first1, first2, oracleEnvironment);
+                            if (insert1 != nullptr && insert2 != nullptr && first1->suppLogBdba == insert1->suppLogBdba) {
+                                oracleEnvironment->commandBuffer->writer->parseUpdate(first1, insert2, oracleEnvironment);
+                                insert1 = nullptr;
+                                insert2 = nullptr;
+                            } else
+                                oracleEnvironment->commandBuffer->writer->parseUpdate(first1, first2, oracleEnvironment);
                             hasPrev = true;
                             first1 = nullptr;
                             first2 = nullptr;

@@ -28,36 +28,9 @@ using namespace std;
 namespace OpenLogReplicator {
 
     OpCode0B06::OpCode0B06(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleEnvironment, redoLogRecord) {
+            OpCode0B03(oracleEnvironment, redoLogRecord) {
     }
 
     OpCode0B06::~OpCode0B06() {
-    }
-
-    void OpCode0B06::process() {
-        OpCode::process();
-        uint8_t *nulls, bits = 1;
-        uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            if (i == 1) {
-                ktbRedo(fieldPos, fieldLength);
-            } else if (i == 2) {
-                kdoOpCode(fieldPos, fieldLength);
-                redoLogRecord->nullsDelta = fieldPos + 45;
-                nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
-            } else if (i > 2 && i <= 2 + (uint32_t)redoLogRecord->cc) {
-                if (oracleEnvironment->dumpLogFile >= 1) {
-                    dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, *nulls & bits);
-                    bits <<= 1;
-                    if (bits == 0) {
-                        bits = 1;
-                        ++nulls;
-                    }
-                }
-            }
-
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
     }
 }

@@ -105,6 +105,9 @@ namespace OpenLogReplicator {
                         suppLog(fieldPos, fieldLength);
                     }
                 }
+            } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
+                if (i == 5)
+                    suppLog(fieldPos, fieldLength);
             } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
                     if (nulls == nullptr) {
@@ -119,6 +122,8 @@ namespace OpenLogReplicator {
                             ++nulls;
                         }
                     }
+                } else if (i == 5 + (uint32_t)redoLogRecord->cc) {
+                    suppLog(fieldPos, fieldLength);
                 }
 
             } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {

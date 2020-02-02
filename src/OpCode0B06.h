@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
+#include "OpCode0B03.h"
 
 #ifndef OPCODE0B06_H_
 #define OPCODE0B06_H_
@@ -26,12 +26,10 @@ namespace OpenLogReplicator {
 
     class RedoLogRecord;
 
-    class OpCode0B06: public OpCode {
+    class OpCode0B06: public OpCode0B03 {
     public:
         OpCode0B06(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0B06();
-
-        virtual void process();
     };
 }
 
