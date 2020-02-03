@@ -111,6 +111,7 @@ namespace OpenLogReplicator {
         uint32_t rowLenghsDelta;
         uint32_t fieldLengthsDelta;
         uint32_t nullsDelta;
+        uint32_t colNumsDelta;
 
         uint32_t afn;             //absolute file number
         uint32_t length;          //length

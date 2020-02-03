@@ -51,8 +51,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::process() {
         OpCode::process();
-        uint8_t *colNums;
-        uint8_t *nulls = nullptr, bits = 1;
+        uint8_t *colNums, *nulls = nullptr, bits = 1;
         uint32_t fieldPos = redoLogRecord->fieldPos;
         for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
@@ -61,8 +60,12 @@ namespace OpenLogReplicator {
             } else if (i == 2) {
                 ktub(fieldPos, fieldLength);
             } else if (i > 2 && (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
-                if (oracleEnvironment->dumpLogFile >= 2)
-                    dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, false);
+                if (i == redoLogRecord->fieldCnt && (redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
+                    suppLog(fieldPos, fieldLength);
+                } else {
+                    if (oracleEnvironment->dumpLogFile >= 2)
+                        dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, false);
+                }
             } else if (i == 3) {
                 if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
                     ktbRedo(fieldPos, fieldLength);
@@ -82,7 +85,8 @@ namespace OpenLogReplicator {
 
             } else if ((redoLogRecord->op & 0x1F) == OP_URP) {
                 if (i == 5) {
-                    colNums = redoLogRecord->data + fieldPos;
+                    redoLogRecord->colNumsDelta = fieldPos;
+                    colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
                 } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                     if (i == 6) {
                         if (oracleEnvironment->dumpLogFile >= 1)
@@ -201,6 +205,9 @@ namespace OpenLogReplicator {
         if (fieldLength >= 26) {
             redoLogRecord->suppLogBdba = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 20);
             redoLogRecord->suppLogSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24);
+            oracleEnvironment->dumpStream <<
+                    "supp log bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->suppLogBdba <<
+                    "." << hex << redoLogRecord->suppLogSlot << endl;
         }
     }
 }
