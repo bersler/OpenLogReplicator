@@ -370,8 +370,10 @@ namespace OpenLogReplicator {
                         multiLast = nullptr;
                         multiPrev = nullptr;
                     } else {
-                        prev1 = redoLogRecord1;
-                        prev2 = redoLogRecord2;
+                        if (op != 0x05010000) {
+                            prev1 = redoLogRecord1;
+                            prev2 = redoLogRecord2;
+                        }
                     }
                     prevScn = scn;
                 }
