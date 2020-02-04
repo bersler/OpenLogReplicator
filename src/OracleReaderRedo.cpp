@@ -186,6 +186,9 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x12080000) //18.8.0.0
             oracleEnvironment->version = 18800;
         else
+        if (compatVsn == 0x12090000) //18.9.0.0
+            oracleEnvironment->version = 18900;
+        else
         if (compatVsn == 0x13030000) //19.3.0.0
             oracleEnvironment->version = 19300;
         else
@@ -194,6 +197,9 @@ namespace OpenLogReplicator {
         else
         if (compatVsn == 0x13050000) //19.5.0.0
             oracleEnvironment->version = 19500;
+        else
+        if (compatVsn == 0x13060000) //19.6.0.0
+            oracleEnvironment->version = 19600;
         else {
             cerr << "ERROR: Unsupported database version: " << hex << compatVsn << endl;
             return REDO_ERROR;
