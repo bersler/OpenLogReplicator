@@ -304,9 +304,10 @@ namespace OpenLogReplicator {
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
                             if (insert1 != nullptr && insert2 != nullptr) {
-                                if (multiLast != nullptr && multiLast->suppLogBdba == insert1->suppLogBdba && multiLast->suppLogSlot == insert1->suppLogSlot)
+                                if ((multiLast != nullptr && multiLast->suppLogBdba == insert1->suppLogBdba && multiLast->suppLogSlot == insert1->suppLogSlot) ||
+                                    (redoLogRecord1 != nullptr && redoLogRecord1->suppLogBdba == insert1->suppLogBdba && redoLogRecord1->suppLogSlot == insert1->suppLogSlot)) {
                                     oracleEnvironment->commandBuffer->writer->parseUpdate(first1, insert2, oracleEnvironment);
-                                else  {
+                                } else  {
                                     cerr << "ERROR:" << endl;
                                     if (multiLast != nullptr)
                                         cerr << "multiLast->suppLogBdba: 0x" << setfill('0') << setw(8) << hex << (uint32_t)multiLast->suppLogBdba << "." << hex << multiLast->suppLogSlot << endl;
