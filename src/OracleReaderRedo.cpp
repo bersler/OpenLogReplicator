@@ -938,8 +938,8 @@ namespace OpenLogReplicator {
         case 0x0B050506:
         case 0x0B05050B:
         //rollback: overwrite row piece
-        case 0x0B050606:
-        case 0x0B05060B:
+        case 0x0B060506:
+        case 0x0B06050B:
             {
                 Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
@@ -967,10 +967,15 @@ namespace OpenLogReplicator {
                             break;
                         }
                     }
-
                     if (!foundPrevious) {
                         if (oracleEnvironment->trace >= TRACE_WARN)
                             cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                                    " DBA: " << hex << redoLogRecord2->dba <<
+                                    " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
+                                    " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+                    } else {
+                        if (oracleEnvironment->trace >= TRACE_WARN)
+                            cerr << "WARNING: would like to rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
                                     " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
                                     " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;

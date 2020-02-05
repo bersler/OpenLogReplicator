@@ -59,13 +59,8 @@ namespace OpenLogReplicator {
                 ktudb(fieldPos, fieldLength);
             } else if (i == 2) {
                 ktub(fieldPos, fieldLength);
-            } else if (i > 2 && (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
-                if (i == redoLogRecord->fieldCnt && (redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                    suppLog(fieldPos, fieldLength);
-                } else {
-                    if (oracleEnvironment->dumpLogFile >= 2)
-                        dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, false);
-                }
+            } else if (i > 2 && (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
+                //incomplete data
             } else if (i == 3) {
                 if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
                     ktbRedo(fieldPos, fieldLength);

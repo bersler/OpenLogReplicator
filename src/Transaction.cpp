@@ -189,11 +189,13 @@ namespace OpenLogReplicator {
                             first2 = redoLogRecord2;
                         }
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            if (prev2 != nullptr && prev2->bdba == redoLogRecord2->nridBdba && prev2->slot == redoLogRecord2->nridSlot) {
-                                redoLogRecord2->next = prev2;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match (I1)" << endl;
+                            if (prev2 != nullptr) {
+                                if (prev2->bdba == redoLogRecord2->nridBdba && prev2->slot == redoLogRecord2->nridSlot) {
+                                    redoLogRecord2->next = prev2;
+                                } else {
+                                    if (oracleEnvironment->trace >= TRACE_WARN)
+                                        cerr << "WARNING: next BDBA/SLOT does not match (I1)" << endl;
+                                }
                             }
                             last1 = redoLogRecord1;
                             last2 = redoLogRecord2;
@@ -236,12 +238,14 @@ namespace OpenLogReplicator {
                             first2 = redoLogRecord2;
                         }
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            if (prev1 != nullptr && prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
-                                prev1->next = redoLogRecord1;
-                                prev2->next = redoLogRecord2;
-                            } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
-                                    cerr << "WARNING: next BDBA/SLOT does not match (D1)" << endl;
+                            if (prev1 != nullptr) {
+                                if (prev1->nridBdba == redoLogRecord1->bdba && prev1->nridSlot == redoLogRecord1->slot) {
+                                    prev1->next = redoLogRecord1;
+                                    prev2->next = redoLogRecord2;
+                                } else {
+                                    if (oracleEnvironment->trace >= TRACE_WARN)
+                                        cerr << "WARNING: next BDBA/SLOT does not match (D1)" << endl;
+                                }
                             }
                             last1 = redoLogRecord1;
                             last2 = redoLogRecord2;
