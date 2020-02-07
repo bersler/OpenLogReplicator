@@ -785,7 +785,7 @@ namespace OpenLogReplicator {
                     cerr << "ERROR: transaction missing" << endl;
 
                 transaction = new Transaction(redoLogRecord->xid, &oracleEnvironment->transactionBuffer);
-                transaction->add(redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
                 oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
                 oracleEnvironment->transactionHeap.add(transaction);
@@ -793,7 +793,7 @@ namespace OpenLogReplicator {
                 if (transaction->opCodes > 0)
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                transaction->add(redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
                 oracleEnvironment->transactionHeap.update(transaction->pos);
             }
@@ -801,6 +801,7 @@ namespace OpenLogReplicator {
             transaction->lastDba = redoLogRecord->dba;
             transaction->lastSlt = redoLogRecord->slt;
             transaction->lastRci = redoLogRecord->rci;
+
             if (oracleEnvironment->lastOpTransactionMap.get(redoLogRecord->uba, redoLogRecord->dba,
                     redoLogRecord->slt, redoLogRecord->rci) != nullptr) {
                 cerr << "ERROR: last UBA already occupied!" << endl;
@@ -894,7 +895,7 @@ namespace OpenLogReplicator {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
                     transaction = new Transaction(redoLogRecord1->xid, &oracleEnvironment->transactionBuffer);
-                    transaction->add(objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                    transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleEnvironment->transactionHeap.add(transaction);
@@ -903,7 +904,7 @@ namespace OpenLogReplicator {
                         oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                                 transaction->lastSlt, transaction->lastRci);
 
-                    transaction->add(objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                    transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                 }
@@ -911,6 +912,7 @@ namespace OpenLogReplicator {
                 transaction->lastDba = redoLogRecord1->dba;
                 transaction->lastSlt = redoLogRecord1->slt;
                 transaction->lastRci = redoLogRecord1->rci;
+
                 if (oracleEnvironment->lastOpTransactionMap.get(redoLogRecord1->uba, redoLogRecord1->dba,
                         redoLogRecord1->slt, redoLogRecord1->rci) != nullptr) {
                     cerr << "ERROR: last UBA already occupied!" << endl;
@@ -943,16 +945,18 @@ namespace OpenLogReplicator {
             {
                 Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
+
                 //match
                 if (transaction != nullptr) {
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                    transaction->rollbackLastOp(curScn, &oracleEnvironment->transactionBuffer);
+                    transaction->rollbackLastOp(oracleEnvironment, curScn, &oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                     oracleEnvironment->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci, transaction);
+
                 } else {
-                    //check all previous transactions
+                    //check all previous transactions - not yet implemented
                     bool foundPrevious = false;
 
                     for (uint32_t i = 0; i < oracleEnvironment->transactionHeap.heapSize; ++i) {
@@ -960,7 +964,7 @@ namespace OpenLogReplicator {
 
                         if (transaction != nullptr &&
                                 transaction->opCodes > 0 &&
-                                transaction->rollbackPreviousOp(curScn, &oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
+                                transaction->rollbackPreviousOp(oracleEnvironment, curScn, &oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
                                 redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
                             oracleEnvironment->transactionHeap.update(transaction->pos);
                             foundPrevious = true;

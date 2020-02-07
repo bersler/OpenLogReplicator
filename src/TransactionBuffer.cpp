@@ -204,7 +204,7 @@ namespace OpenLogReplicator {
     }
 
     bool TransactionBuffer::deleteTransactionPart(TransactionChunk* tc, typeuba &uba, uint32_t &dba, uint8_t &slt, uint8_t &rci) {
-        cerr << "deleteTransactionPart: not yet implemented" << endl;
+        cerr << "ERROR: part transaction delete: not yet implemented" << endl;
         if (tc->size < ROW_HEADER_MEMORY || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
             return false;
@@ -217,6 +217,22 @@ namespace OpenLogReplicator {
         //}
 
         return false;
+    }
+
+    bool TransactionBuffer::getLastRecord(TransactionChunk* tc, uint32_t &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2) {
+        if (tc->size < ROW_HEADER_MEMORY || tc->elements == 0) {
+            return false;
+        }
+        uint32_t lastSize = *((uint32_t *)(tc->buffer + tc->size - 28));
+        uint8_t *buffer = tc->buffer + tc->size - lastSize;
+
+        opCode = *((uint32_t *)(buffer + 8));
+        redoLogRecord1 = (RedoLogRecord*)(buffer + 12);
+        redoLogRecord1->data = buffer + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
+        redoLogRecord2 = (RedoLogRecord*)(buffer + 12 + sizeof(struct RedoLogRecord));
+        redoLogRecord2->data = buffer + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
+
+        return true;
     }
 
     TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba,

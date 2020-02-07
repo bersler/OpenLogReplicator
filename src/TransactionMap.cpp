@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
 
         if (hashMap[hashKey] == nullptr) {
             cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
-                    " DBA: " << setfill('0') << setw(8) << hex << dba <<
+                    " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
                     " SLT: " << dec << (uint32_t) slt <<
                     " RCI: " << dec << (uint32_t) rci << endl;
             return;
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
         }
 
         cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(uba) <<
-                " DBA: " << setfill('0') << setw(8) << hex << dba <<
+                " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
                 " SLT: " << dec << (uint32_t) slt <<
                 " RCI: " << dec << (uint32_t) rci << endl;
         return;

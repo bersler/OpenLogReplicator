@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <iostream>
 #include "types.h"
 
 #ifndef REDOLOGRECORD_H_
@@ -86,6 +87,7 @@ namespace OpenLogReplicator {
 #define SUPPLOG_DELETE          0x04
 
     class OracleObject;
+    class OracleEnvironment;
 
     class RedoLogRecord {
     public:
@@ -151,6 +153,7 @@ namespace OpenLogReplicator {
         uint32_t suppLogBdba;
         uint16_t suppLogSlot;
 
+        void dumpHex(ostream &str, OracleEnvironment *oracleEnvironment);
         void dump();
     };
 

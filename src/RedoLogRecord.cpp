@@ -21,10 +21,40 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "RedoLogRecord.h"
+#include "OracleEnvironment.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
+
+    void RedoLogRecord::dumpHex(ostream &stream, OracleEnvironment *oracleEnvironment) {
+        stream << "##: " << dec << fieldLengthsDelta;
+        for (uint32_t j = 0; j < fieldLengthsDelta; ++j) {
+            if ((j & 0xF) == 0)
+                stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
+            if ((j & 0x07) == 0)
+                stream << " ";
+            stream << setfill('0') << setw(2) << hex << (uint32_t)data[j] << " ";
+        }
+        stream << endl;
+
+        uint32_t fieldPosLocal = fieldPos;
+        for (uint32_t i = 1; i <= fieldCnt; ++i) {
+            uint16_t fieldLength = oracleEnvironment->read16(data + fieldLengthsDelta + i * 2);
+            stream << "##: " << dec << fieldLength << " (" << i << ")";
+            for (uint32_t j = 0; j < fieldLength; ++j) {
+                if ((j & 0xF) == 0)
+                    stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                if ((j & 0x07) == 0)
+                    stream << " ";
+                stream << setfill('0') << setw(2) << hex << (uint32_t)data[fieldPosLocal + j] << " ";
+            }
+            stream << endl;
+
+            fieldPosLocal += (fieldLength + 3) & 0xFFFC;
+        }
+    }
+
 
     void RedoLogRecord::dump() {
         cerr << "DUMP: opCode: " << hex << opCode <<
@@ -42,8 +72,8 @@ namespace OpenLogReplicator {
                 " nrow: " << dec << nrow <<
                 " afn: " << dec << afn <<
                 " length: " << dec << length <<
-                " dba: " << hex << dba <<
-                " bdba: " << hex << bdba <<
+                " dba: 0x" << hex << dba <<
+                " bdba: 0x" << hex << bdba <<
                 " objn: " << dec << objn <<
                 " objd: " << dec << objd <<
                 " tsn: " << dec << tsn <<
@@ -61,7 +91,6 @@ namespace OpenLogReplicator {
                 " slot: " << dec << slot <<
                 " flags: 0x" << hex << (uint32_t)flags <<
                 " fb: 0x" << hex << (uint32_t)fb <<
-                " nridBdba: " << hex << nridBdba <<
-                " nridSlot: " << dec << (uint32_t)nridSlot << endl;
+                " nrid: 0x" << hex << nridBdba << "." << dec << nridSlot << endl;
     }
 }

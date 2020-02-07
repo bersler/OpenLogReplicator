@@ -52,10 +52,10 @@ namespace OpenLogReplicator {
 
         bool operator< (Transaction &p);
         void touch(typescn scn);
-        void add(uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
-                TransactionBuffer *transactionBuffer);
-        void rollbackLastOp(typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPreviousOp(typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        void add(OracleEnvironment *oracleEnvironment, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci,
+                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer);
+        void rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer);
+        bool rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 
         void flush(OracleEnvironment *oracleEnvironment);
         //void free(TransactionBuffer *transactionBuffer);

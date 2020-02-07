@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
             } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
                     if (nulls == nullptr) {
-                        cerr << "nulls = null" << endl;
+                        cerr << "ERROR: nulls = null" << endl;
                         return;
                     }
                     if (oracleEnvironment->dumpLogFile >= 1) {

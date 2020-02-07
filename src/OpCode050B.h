@@ -29,7 +29,6 @@ namespace OpenLogReplicator {
     class OpCode050B: public OpCode {
     protected:
         virtual const char* getUndoType();
-        void buext(uint32_t fieldPos, uint32_t fieldLength);
 
     public:
         OpCode050B(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
