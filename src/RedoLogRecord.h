@@ -92,7 +92,6 @@ namespace OpenLogReplicator {
     class RedoLogRecord {
     public:
         RedoLogRecord *next;
-        RedoLogRecord *multiNext;
         uint16_t cls;
         typescn scnRecord;
         uint32_t rbl;

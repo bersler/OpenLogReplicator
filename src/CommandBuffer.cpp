@@ -1,4 +1,4 @@
-/* Memory buffer for handling JSON/REDIS data
+/* Memory buffer for handling JSON data
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.

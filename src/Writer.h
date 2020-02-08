@@ -29,6 +29,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
+#define TRANSACTION_INSERT 1
+#define TRANSACTION_DELETE 2
+#define TRANSACTION_UPDATE 3
+
     class CommandBuffer;
     class RedoLogRecord;
     class OracleEnvironment;
@@ -41,16 +45,12 @@ namespace OpenLogReplicator {
         int initialize();
 
         void appendValue(RedoLogRecord *redoLogRecord, uint32_t typeNo, uint32_t fieldPos, uint32_t fieldLength);
-        void appendValueSplit(RedoLogRecord *redoLogRecord1, uint32_t typeNo, uint32_t fieldPos1, uint32_t fieldLength1,
-                RedoLogRecord *redoLogRecord2, uint32_t fieldPos2, uint32_t fieldLength2);
         virtual void beginTran(typescn scn, typexid xid) = 0;
         virtual void next() = 0;
         virtual void commitTran() = 0;
-        virtual void parseInsert(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
         virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
-        virtual void parseUpdate(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
-        virtual void parseDelete(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
+        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint32_t type, OracleEnvironment *oracleEnvironment) = 0;
         virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) = 0;
 
         Writer(const string alias, CommandBuffer *commandBuffer);

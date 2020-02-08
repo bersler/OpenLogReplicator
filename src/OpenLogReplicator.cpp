@@ -35,7 +35,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleEnvironment.h"
 #include "OracleReader.h"
 #include "KafkaWriter.h"
-#include "RedisWriter.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -77,7 +76,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.2.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com" << endl;
+    cout << "Open Log Replicator v. 0.3.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licesing information" << endl;
 
     ifstream config("OpenLogReplicator.json");
     string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
@@ -89,7 +88,7 @@ int main() {
         {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
     const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.2.0") != 0)
+    if (strcmp(version.GetString(), "0.3.0") != 0)
         {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
     const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
@@ -195,47 +194,6 @@ int main() {
 
             //run
             pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
-        } else
-        if (strcmp("REDIS", type.GetString()) == 0) {
-            const Value& alias = getJSONfield(target, "alias");
-            const Value& server = getJSONfield(target, "server");
-            const Value& source = getJSONfield(target, "source");
-            CommandBuffer *commandBuffer = nullptr;
-
-            uint32_t serverLength = server.GetStringLength() + 1;
-            char *host = new char[serverLength];
-            memcpy(host, server.GetString(), serverLength);
-            char *colon = strchr(host, ':');
-            if (colon == nullptr) {
-                delete host;
-                cerr << "ERROR: Incorrect format for " << server.GetString() << endl;
-                return -1;
-            }
-            *colon = 0;
-            uint32_t port = atoi(colon + 1);
-
-            for (auto reader : readers)
-                if (reader->alias.compare(source.GetString()) == 0)
-                    commandBuffer = reader->commandBuffer;
-            if (commandBuffer == nullptr)
-                {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
-
-            cout << "Adding target: " << alias.GetString() << endl;
-            RedisWriter *redisWriter = new RedisWriter(alias.GetString(), host, port, commandBuffer);
-            commandBuffer->writer = redisWriter;
-            writers.push_back(redisWriter);
-            delete host;
-
-            //initialize
-            if (!redisWriter->initialize()) {
-                delete redisWriter;
-                redisWriter = nullptr;
-                cerr << "ERROR: Redis starting writer for " << server.GetString() << endl;
-                return -1;
-            }
-
-            //run
-            pthread_create(&redisWriter->pthread, nullptr, &RedisWriter::runStatic, (void*)redisWriter);
         }
     }
 
