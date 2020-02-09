@@ -322,7 +322,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1X, RedoLogRecord *redoLogRecord2X, uint32_t type, OracleEnvironment *oracleEnvironment) {
+    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint32_t type, OracleEnvironment *oracleEnvironment) {
         if (type == TRANSACTION_INSERT)
             commandBuffer->append("{\"operation\": \"insert\", \"table\": \"");
         else if (type == TRANSACTION_DELETE)
@@ -331,11 +331,11 @@ namespace OpenLogReplicator {
             commandBuffer->append("{\"operation\": \"update\", \"table\": \"");
 
         commandBuffer
-                ->append(redoLogRecord2X->object->owner)
+                ->append(redoLogRecord2->object->owner)
                 ->append('.')
-                ->append(redoLogRecord2X->object->objectName)
+                ->append(redoLogRecord2->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1X->objn, redoLogRecord1X->objd, redoLogRecord2X->afn, redoLogRecord2X->suppLogBdba - oracleEnvironment->getBase(), redoLogRecord2X->suppLogSlot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->suppLogBdba - oracleEnvironment->getBase(), redoLogRecord2->suppLogSlot)
                 ->append("\"");
 
         uint32_t fieldPos, colNum, colShift, cc, headerSize;
@@ -343,10 +343,14 @@ namespace OpenLogReplicator {
         uint8_t *nulls, bits, *colNums;
         bool prevValue;
         RedoLogRecord *redoLogRecord;
+        uint16_t *colLenghts = nullptr;
+        if (oracleEnvironment->sortCols > 0) {
+            colLenghts = new uint16_t[redoLogRecord1->object->totalCols];
+        }
 
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
             commandBuffer->append(", \"before\": {");
-            redoLogRecord = redoLogRecord1X;
+            redoLogRecord = redoLogRecord1;
             prevValue = false;
             colNums = nullptr;
 
@@ -471,7 +475,7 @@ namespace OpenLogReplicator {
 
         if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
             commandBuffer->append(", \"after\": {");
-            redoLogRecord = redoLogRecord2X;
+            redoLogRecord = redoLogRecord2;
             prevValue = false;
 
             while (redoLogRecord != nullptr) {
@@ -589,6 +593,10 @@ namespace OpenLogReplicator {
             commandBuffer->append("}");
         }
         commandBuffer->append("}");
+        if (oracleEnvironment->sortCols > 0) {
+            delete colLenghts;
+            colLenghts = nullptr;
+        }
     }
 
     //0x18010000

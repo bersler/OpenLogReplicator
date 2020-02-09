@@ -109,6 +109,10 @@ int main() {
     if (strcmp(directRead.GetString(), "1") == 0)
         directReadBool = true;
 
+    const Value& sortCols = getJSONfield(document, "sortcols");
+    uint32_t sortColsInt = 0;
+    sortColsInt = atoi(sortCols.GetString());
+
     //iterate through sources
     const Value& sources = getJSONfield(document, "sources");
     if (!sources.IsArray())
@@ -133,7 +137,7 @@ int main() {
 
             buffers.push_back(commandBuffer);
             OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                    password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool);
+                    password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt);
             readers.push_back(oracleReader);
 
             //initialize

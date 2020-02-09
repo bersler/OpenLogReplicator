@@ -243,7 +243,8 @@ namespace OpenLogReplicator {
 
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
                         if (type == 0) {
-                            if ((redoLogRecord1->suppLogFb & FB_F) != 0 && op == 0x05010B02)
+                            if ((redoLogRecord1->suppLogFb & FB_F) != 0 && op == 0x05010B02 &&
+                                    ((redoLogRecord1->suppLogBdba == redoLogRecord2->bdba && redoLogRecord1->suppLogSlot == redoLogRecord2->slot) || redoLogRecord1->suppLogBdba == 0))
                                 type = TRANSACTION_INSERT;
                             else if ((redoLogRecord1->suppLogFb & FB_F) != 0 && op == 0x05010B03)
                                 type = TRANSACTION_DELETE;
@@ -261,13 +262,37 @@ namespace OpenLogReplicator {
                                 if (type == TRANSACTION_INSERT) {
                                     redoLogRecord1->next = first1;
                                     redoLogRecord2->next = first2;
+                                    first1->prev = redoLogRecord1;
+                                    first2->prev = redoLogRecord2;
                                     first1 = redoLogRecord1;
                                     first2 = redoLogRecord2;
                                 } else {
-                                    last1->next = redoLogRecord1;
-                                    last2->next = redoLogRecord2;
-                                    last1 = redoLogRecord1;
-                                    last2 = redoLogRecord2;
+                                    if (op == 0x05010B06 && last2->opCode == 0x0B02) {
+                                        if (last1->prev == nullptr) {
+                                            first1 = redoLogRecord1;
+                                            first2 = redoLogRecord2;
+                                            first1->next = last1;
+                                            first2->next = last2;
+                                            last1->prev = first1;
+                                            last2->prev = first2;
+                                        } else {
+                                            redoLogRecord1->prev = last1->prev;
+                                            redoLogRecord2->prev = last2->prev;
+                                            redoLogRecord1->next = last1;
+                                            redoLogRecord2->next = last2;
+                                            last1->prev->next = redoLogRecord1;
+                                            last2->prev->next = redoLogRecord2;
+                                            last1->prev = redoLogRecord1;
+                                            last2->prev = redoLogRecord2;
+                                        }
+                                    } else {
+                                        last1->next = redoLogRecord1;
+                                        last2->next = redoLogRecord2;
+                                        redoLogRecord1->prev = last1;
+                                        redoLogRecord2->prev = last2;
+                                        last1 = redoLogRecord1;
+                                        last2 = redoLogRecord2;
+                                    }
                                 }
                             } else {
                                 if (oracleEnvironment->trace >= TRACE_WARN)
@@ -277,7 +302,6 @@ namespace OpenLogReplicator {
 
                     //change row forwading address
                     case 0x05010B08:
-
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();

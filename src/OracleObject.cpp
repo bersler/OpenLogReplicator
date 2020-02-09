@@ -31,6 +31,7 @@ namespace OpenLogReplicator {
         objn(objn),
         objd(objd),
         cluCols(cluCols),
+        totalCols(0),
         totalPk(0),
         options(options),
         owner(owner),
@@ -50,7 +51,7 @@ namespace OpenLogReplicator {
 
     ostream& operator<<(ostream& os, const OracleObject& object) {
         os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << object.objn << ", " <<
-                object.objd << ", " << object.cluCols << ")" << endl;
+                object.objd << ", " << object.cluCols << ", " << object.totalCols << ")" << endl;
         for (auto it : object.columns)
             os << "     - " << *it << endl;
         return os;

@@ -37,6 +37,7 @@ namespace OpenLogReplicator {
         uint32_t cluCols;
         uint32_t totalPk;
         uint32_t options;
+        uint32_t totalCols;
         string owner;
         string objectName;
         vector<OracleColumn*> columns;

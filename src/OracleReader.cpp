@@ -42,7 +42,7 @@ using namespace oracle::occi;
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead) :
+            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         passwd(passwd),
         connectString(connectString) {
 
-        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead);
+        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead, sortCols);
         readCheckpoint();
         env = Environment::createEnvironment (Environment::DEFAULT);
     }
@@ -397,7 +397,7 @@ namespace OpenLogReplicator {
                 uint32_t cluCols = stmt.rset->getInt(3);
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                uint32_t totalPk = 0;
+                uint32_t totalPk = 0, totalCols = 0;
                 OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner.c_str(), objectName.c_str());
                 ++tabCnt;
 
@@ -416,10 +416,12 @@ namespace OpenLogReplicator {
                     uint32_t numPk = stmt2.rset->getInt(6);
                     OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
                     totalPk += numPk;
+                    ++totalCols;
 
                     object->addColumn(column);
                 }
 
+                object->totalCols = totalCols;
                 object->totalPk = totalPk;
                 oracleEnvironment->addToDict(object);
             }

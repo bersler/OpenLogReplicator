@@ -61,7 +61,8 @@ namespace OpenLogReplicator {
         bool dumpData;
         bool directRead;
         uint32_t trace;
-        uint32_t version; //11 or 12
+        uint32_t version;           //compatiblity level of redo logs
+        uint32_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
 
         OracleObject *checkDict(uint32_t objn, uint32_t objd);
         void addToDict(OracleObject *object);
@@ -69,7 +70,7 @@ namespace OpenLogReplicator {
         void transactionAppend(typexid xid);
         uint32_t getBase();
 
-        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead);
+        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols);
         virtual ~OracleEnvironment();
     };
 }

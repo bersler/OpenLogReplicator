@@ -27,7 +27,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead) :
+    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols) :
         DatabaseEnvironment(),
         redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
@@ -37,7 +37,8 @@ namespace OpenLogReplicator {
         dumpData(dumpData),
         directRead(directRead),
         trace(trace),
-        version(0) {
+        version(0),
+        sortCols(sortCols) {
         transactionHeap.initialize(MAX_CONCURRENT_TRANSACTIONS);
     }
 
