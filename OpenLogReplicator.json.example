@@ -4,6 +4,7 @@
   "dumpdata": "0",
   "trace": "2",
   "directread": "0",
+  "sortcols": "1",
   "sources": [
     {
       "type": "ORACLE",
