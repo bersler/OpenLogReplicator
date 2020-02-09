@@ -343,13 +343,24 @@ namespace OpenLogReplicator {
         uint8_t *nulls, bits, *colNums;
         bool prevValue;
         RedoLogRecord *redoLogRecord;
-        uint16_t *colLenghts = nullptr;
-        if (oracleEnvironment->sortCols > 0) {
-            colLenghts = new uint16_t[redoLogRecord1->object->totalCols];
+        uint32_t *afterPos = nullptr, *beforePos = nullptr;
+        uint16_t *afterLen = nullptr, *beforeLen = nullptr;
+        RedoLogRecord **beforeRecord, **afterRecord;
+        if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+            afterPos = new uint32_t[redoLogRecord1->object->totalCols * sizeof(uint32_t)];
+            memset(afterPos, 0, redoLogRecord1->object->totalCols * sizeof(uint32_t));
+            beforePos = new uint32_t[redoLogRecord1->object->totalCols * sizeof(uint32_t)];
+            memset(beforePos, 0, redoLogRecord1->object->totalCols * sizeof(uint32_t));
+            afterLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
+            beforeLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
+            beforeRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
+            afterRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
+
         }
 
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
-            commandBuffer->append(", \"before\": {");
+            if (type != TRANSACTION_UPDATE || oracleEnvironment->sortCols == 0)
+                commandBuffer->append(", \"before\": {");
             redoLogRecord = redoLogRecord1;
             prevValue = false;
             colNums = nullptr;
@@ -398,20 +409,28 @@ namespace OpenLogReplicator {
                         if (((*nulls & bits) != 0 || fieldLength == 0) && type == TRANSACTION_DELETE) {
                             //null
                         } else {
-                            if (prevValue) {
-                                commandBuffer->append(", ");
-                            } else
-                                prevValue = true;
+                            if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+                                if (fieldLength != 0) {
+                                    beforePos[colNum] = fieldPos;
+                                    beforeLen[colNum] = fieldLength;
+                                    beforeRecord[colNum] = redoLogRecord;
+                                }
+                            } else {
+                                if (prevValue) {
+                                    commandBuffer->append(", ");
+                                } else
+                                    prevValue = true;
 
-                            commandBuffer
-                                    ->append('"')
-                                    ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                    ->append("\": \"");
+                                commandBuffer
+                                        ->append('"')
+                                        ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                        ->append("\": \"");
 
-                            if ((*nulls & bits) == 0 && fieldLength > 0)
-                                appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                                if ((*nulls & bits) == 0 && fieldLength > 0)
+                                    appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
 
-                            commandBuffer->append('"');
+                                commandBuffer->append('"');
+                            }
                         }
 
                         bits <<= 1;
@@ -440,26 +459,36 @@ namespace OpenLogReplicator {
                                 fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 4 + i) * 2);
                                 colNum = oracleEnvironment->read16(colNums) + colShift - 1;
                                 colNums += 2;
-
-                                if (prevValue) {
-                                    commandBuffer->append(", ");
-                                } else
-                                    prevValue = true;
-
-                                commandBuffer
-                                        ->append('"')
-                                        ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                        ->append("\": \"");
-
                                 uint16_t colLength = oracleEnvironment->read16(colSizes);
-                                if (colLength == 0xFFFF) {
-                                    //null
-                                } else {
-                                    appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, colLength);
-                                }
 
-                                commandBuffer
-                                        ->append('"');
+                                if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+
+                                    beforePos[colNum] = fieldPos;
+                                    beforeRecord[colNum] = redoLogRecord;
+                                    if (colLength != 0xFFFF) {
+                                        beforeLen[colNum] = colLength;
+                                    } else
+                                        beforeLen[colNum] = 0;
+                                } else {
+                                    if (prevValue) {
+                                        commandBuffer->append(", ");
+                                    } else
+                                        prevValue = true;
+
+                                    commandBuffer
+                                            ->append('"')
+                                            ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                            ->append("\": \"");
+
+                                    if (colLength == 0xFFFF) {
+                                        //null
+                                    } else {
+                                        appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, colLength);
+                                    }
+
+                                    commandBuffer
+                                            ->append('"');
+                                }
 
                                 colSizes += 2;
                                 fieldPos += (fieldLength + 3) & 0xFFFC;
@@ -470,11 +499,13 @@ namespace OpenLogReplicator {
 
                 redoLogRecord = redoLogRecord->next;
             }
-            commandBuffer->append("}");
+            if (type != TRANSACTION_UPDATE || oracleEnvironment->sortCols == 0)
+                commandBuffer->append("}");
         }
 
         if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
-            commandBuffer->append(", \"after\": {");
+            if (type != TRANSACTION_UPDATE || oracleEnvironment->sortCols == 0)
+                commandBuffer->append(", \"after\": {");
             redoLogRecord = redoLogRecord2;
             prevValue = false;
 
@@ -508,19 +539,25 @@ namespace OpenLogReplicator {
                         if ((*nulls & bits) != 0 || fieldLength == 0) {
                             //null
                         } else {
-                            if (prevValue)
-                                commandBuffer->append(", ");
-                            else
-                                prevValue = true;
+                            if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+                                afterPos[colNum] = fieldPos;
+                                afterLen[colNum] = fieldLength;
+                                afterRecord[colNum] = redoLogRecord;
+                            } else {
+                                if (prevValue)
+                                    commandBuffer->append(", ");
+                                else
+                                    prevValue = true;
 
-                            commandBuffer
-                                    ->append('"')
-                                    ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                    ->append("\": \"");
+                                commandBuffer
+                                        ->append('"')
+                                        ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                        ->append("\": \"");
 
-                            appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                                appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
 
-                            commandBuffer->append('"');
+                                commandBuffer->append('"');
+                            }
                         }
 
                         bits <<= 1;
@@ -559,24 +596,32 @@ namespace OpenLogReplicator {
                         } else
                             colNum = i + colShift;
 
-                        if (prevValue)
-                            commandBuffer->append(", ");
-                        else
-                            prevValue = true;
-
-                        commandBuffer
-                                ->append('"')
-                                ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                ->append("\": \"");
-
-                        if ((*nulls & bits) != 0 || fieldLength == 0) {
-                            //nulls
+                        if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+                            if (fieldLength != 0) {
+                                afterPos[colNum] = fieldPos;
+                                afterLen[colNum] = fieldLength;
+                                afterRecord[colNum] = redoLogRecord;
+                            }
                         } else {
-                            appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                            if (prevValue)
+                                commandBuffer->append(", ");
+                            else
+                                prevValue = true;
 
+                            commandBuffer
+                                    ->append('"')
+                                    ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                    ->append("\": \"");
+
+                            if ((*nulls & bits) != 0 || fieldLength == 0) {
+                                //nulls
+                            } else {
+                                appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+
+                            }
+
+                            commandBuffer->append('"');
                         }
-
-                        commandBuffer->append('"');
 
                         bits <<= 1;
                         if (bits == 0) {
@@ -590,13 +635,92 @@ namespace OpenLogReplicator {
 
                 redoLogRecord = redoLogRecord->next;
             }
+            if (type != TRANSACTION_UPDATE || oracleEnvironment->sortCols == 0)
+                commandBuffer->append("}");
+        }
+
+        if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
+            if (oracleEnvironment->sortCols >= 2) {
+                for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                    if (redoLogRecord1->object->columns[i]->numPk == 0) {
+                        if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
+                            if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
+                                beforePos[i] = 0;
+                                afterPos[i] = 0;
+                                beforeLen[i] = 0;
+                                afterLen[i] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
+            commandBuffer->append(", \"before\": {");
+            for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                if (beforePos[i] > 0 || afterPos[i] > 0) {
+                    if (prevValue)
+                        commandBuffer->append(", ");
+                    else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord1->object->columns[i]->columnName)
+                            ->append("\": \"");
+
+                    if (beforePos[i] == 0 || beforeLen[i] == 0) {
+                        //nulls
+                    } else {
+                        appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                    }
+
+                    commandBuffer->append('"');
+                }
+            }
             commandBuffer->append("}");
+            prevValue = false;
+            commandBuffer->append(", \"after\": {");
+            for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                if (afterPos[i] > 0 || redoLogRecord1->object->columns[i]->numPk > 0) {
+                    if (prevValue)
+                        commandBuffer->append(", ");
+                    else
+                        prevValue = true;
+
+                    commandBuffer
+                            ->append('"')
+                            ->append(redoLogRecord1->object->columns[i]->columnName)
+                            ->append("\": \"");
+
+                    //for PK value is only present before
+                    if (afterPos[i] == 0 && redoLogRecord1->object->columns[i]->numPk > 0) {
+                        if (beforeLen[i] == 0) {
+                            //nulls
+                        } else {
+                            appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                        }
+                    } else {
+                        if (afterLen[i] == 0) {
+                            //nulls
+                        } else {
+                            appendValue(afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                        }
+                    }
+
+                    commandBuffer->append('"');
+                }
+            }
+            commandBuffer->append("}");
+
+            delete afterRecord;
+            delete beforeRecord;
+            delete afterLen;
+            delete beforeLen;
+            delete afterPos;
+            delete beforePos;
         }
+
         commandBuffer->append("}");
-        if (oracleEnvironment->sortCols > 0) {
-            delete colLenghts;
-            colLenghts = nullptr;
-        }
     }
 
     //0x18010000
