@@ -32,7 +32,6 @@ CPP_SRCS += \
 ../src/OracleReader.cpp \
 ../src/OracleReaderRedo.cpp \
 ../src/OracleStatement.cpp \
-../src/RedisWriter.cpp \
 ../src/RedoLogException.cpp \
 ../src/RedoLogRecord.cpp \
 ../src/Thread.cpp \
@@ -72,7 +71,6 @@ OBJS += \
 ./src/OracleReader.o \
 ./src/OracleReaderRedo.o \
 ./src/OracleStatement.o \
-./src/RedisWriter.o \
 ./src/RedoLogException.o \
 ./src/RedoLogRecord.o \
 ./src/Thread.o \
@@ -112,7 +110,6 @@ CPP_DEPS += \
 ./src/OracleReader.d \
 ./src/OracleReaderRedo.d \
 ./src/OracleStatement.d \
-./src/RedisWriter.d \
 ./src/RedoLogException.d \
 ./src/RedoLogRecord.d \
 ./src/Thread.d \
@@ -128,7 +125,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -std=c++1y -I/opt/oracle/instantclient_11_2/sdk/include -I/opt/rapidjson/include -I/opt/hiredis -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1y -I/opt/instantclient_11_2/sdk/include -I/opt/rapidjson/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
