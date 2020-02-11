@@ -31,9 +31,9 @@ namespace OpenLogReplicator {
         objn(objn),
         objd(objd),
         cluCols(cluCols),
-        totalCols(0),
         totalPk(0),
         options(options),
+        totalCols(0),
         owner(owner),
         objectName(objectName) {
     }
