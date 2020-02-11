@@ -65,8 +65,8 @@ void signalHandler(int s) {
 }
 
 void signalCrash(int sig) {
-    void *array[30];
-    size_t size = backtrace(array, 30);
+    void *array[32];
+    size_t size = backtrace(array, 32);
     cerr << "Error: signal " << dec << sig << endl;
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
