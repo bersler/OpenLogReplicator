@@ -65,8 +65,8 @@ void signalHandler(int s) {
 }
 
 void signalCrash(int sig) {
-    void *array[20];
-    size_t size = backtrace(array, 20);
+    void *array[30];
+    size_t size = backtrace(array, 30);
     cerr << "Error: signal " << dec << sig << endl;
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
@@ -76,7 +76,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.3.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licesing information" << endl;
+    cout << "Open Log Replicator v. 0.3.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
 
     ifstream config("OpenLogReplicator.json");
     string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
@@ -116,7 +116,7 @@ int main() {
     //iterate through sources
     const Value& sources = getJSONfield(document, "sources");
     if (!sources.IsArray())
-        {cerr << "ERROR: bad JSON, sources should be array!" << endl; return 1;}
+        {cerr << "ERROR: bad JSON, sources should be an array!" << endl; return 1;}
     for (SizeType i = 0; i < sources.Size(); ++i) {
         const Value& source = sources[i];
         const Value& type = getJSONfield(source, "type");
@@ -158,10 +158,10 @@ int main() {
         }
     }
 
-    //iterate through sources
+    //iterate through targets
     const Value& targets = getJSONfield(document, "targets");
     if (!targets.IsArray())
-        {cerr << "ERROR: bad JSON, targets should be array!" << endl; return 1;}
+        {cerr << "ERROR: bad JSON, targets should be an array!" << endl; return 1;}
     for (SizeType i = 0; i < targets.Size(); ++i) {
         const Value& target = targets[i];
         const Value& type = getJSONfield(target, "type");
@@ -206,7 +206,6 @@ int main() {
         unique_lock<mutex> lck(mainMtx);
         mainThread.wait(lck);
     }
-
 
     //stop gently all threads
     for (auto writer : writers)
