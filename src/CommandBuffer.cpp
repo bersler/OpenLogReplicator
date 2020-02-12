@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         intraThreadBuffer = new uint8_t[INTRA_THREAD_BUFFER_SIZE];
     }
 
-    void CommandBuffer::terminate(void) {
+    void CommandBuffer::stop(void) {
         this->shutdown = true;
     }
 

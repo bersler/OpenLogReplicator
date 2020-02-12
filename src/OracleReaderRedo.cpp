@@ -58,6 +58,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
+void stopMain();
+
 namespace OpenLogReplicator {
 
     OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, typescn firstScn,
@@ -872,7 +874,7 @@ namespace OpenLogReplicator {
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
             cout << "Exiting on user request" << endl;
-            kill(getpid(), SIGINT);
+            stopMain();
             return;
         }
 

@@ -58,10 +58,15 @@ const Value& getJSONfield(const Document& document, const char* field) {
 
 mutex mainMtx;
 condition_variable mainThread;
-void signalHandler(int s) {
-    cout << "Caught signal " << s << ", exiting" << endl;
+
+void stopMain() {
     unique_lock<mutex> lck(mainMtx);
     mainThread.notify_all();
+}
+
+void signalHandler(int s) {
+    cout << "Caught signal " << s << ", exiting" << endl;
+    stopMain();
 }
 
 void signalCrash(int sig) {
@@ -208,12 +213,12 @@ int main() {
     }
 
     //stop gently all threads
-    for (auto writer : writers)
-        writer->terminate();
     for (auto reader : readers)
-        reader->terminate();
+        reader->stop();
+    for (auto writer : writers)
+        writer->stop();
     for (auto commandBuffer : buffers)
-        commandBuffer->terminate();
+        commandBuffer->stop();
 
     for (auto commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
@@ -221,7 +226,7 @@ int main() {
         commandBuffer->writerCond.notify_all();
     }
 
-    cout << "Waiting for writers to terminate" << endl;
+    cout << "Waiting for writers to stop" << endl;
     for (auto writer : writers) {
         pthread_join(writer->pthread, nullptr);
         delete writer;
@@ -229,9 +234,9 @@ int main() {
     }
     writers.clear();
 
-    cout << "Waiting for readers to terminate" << endl;
+    cout << "Waiting for readers to stop" << endl;
     for (auto reader : readers) {
-        reader->terminate();
+        reader->stop();
         pthread_join(reader->pthread, nullptr);
         delete reader;
         cout << "- stopped" << endl;

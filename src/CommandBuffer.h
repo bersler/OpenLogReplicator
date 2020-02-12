@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         volatile uint64_t posEndTmp;
         volatile uint32_t posSize;
 
-        void terminate(void);
+        void stop(void);
         CommandBuffer* appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
         CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
         CommandBuffer* append(const string str);

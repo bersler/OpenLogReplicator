@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
     class Writer : public Thread {
 
     public:
-        void terminate(void);
+        void stop(void);
         virtual void *run() = 0;
         int initialize();
 

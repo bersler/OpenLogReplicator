@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    void Thread::terminate(void) {
+    void Thread::stop(void) {
         this->shutdown = true;
     }
 }

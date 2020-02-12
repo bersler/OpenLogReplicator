@@ -674,8 +674,8 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->trace >= TRACE_FULL) {
                             cerr << "BEFORE[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                     " pos: " << dec << beforePos[i] << " length: " << dec << beforeLen[i] << " value:";
-                            for (uint32_t j = 0; j < fieldLength; ++j)
-                                cerr << " " << hex << setfill('0') << setw(2) << hex << beforeRecord[i]->data[beforePos[i] + j];
+                            for (uint32_t j = 0; j < beforeLen[i]; ++j)
+                                cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)beforeRecord[i]->data[beforePos[i] + j];
                             cerr << endl;
                         }
                         appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
@@ -707,8 +707,8 @@ namespace OpenLogReplicator {
                             if (oracleEnvironment->trace >= TRACE_FULL) {
                                 cerr << "AFTER[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                         " pos: " << dec << beforePos[i] << " length: " << dec << beforeLen[i] << " value:";
-                                for (uint32_t j = 0; j < fieldLength; ++j)
-                                    cerr << " " << hex << setfill('0') << setw(2) << hex << beforeRecord[i]->data[beforePos[i] + j];
+                                for (uint32_t j = 0; j < beforeLen[i]; ++j)
+                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)beforeRecord[i]->data[beforePos[i] + j];
                                 cerr << endl;
                             }
                             appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
@@ -720,8 +720,8 @@ namespace OpenLogReplicator {
                             if (oracleEnvironment->trace >= TRACE_FULL) {
                                 cerr << "AFTER[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                         " pos: " << dec << afterPos[i] << " length: " << dec << afterLen[i] << " value:";
-                                for (uint32_t j = 0; j < fieldLength; ++j)
-                                    cerr << " " << hex << setfill('0') << setw(2) << hex << afterRecord[i]->data[afterPos[i] + j];
+                                for (uint32_t j = 0; j < afterLen[i]; ++j)
+                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)afterRecord[i]->data[afterPos[i] + j];
                                 cerr << endl;
                             }
                             appendValue(afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
