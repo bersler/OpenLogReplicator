@@ -65,7 +65,7 @@ void stopMain() {
 }
 
 void signalHandler(int s) {
-    cout << "Caught signal " << s << ", exiting" << endl;
+    cerr << "Caught signal " << s << ", exiting" << endl;
     stopMain();
 }
 
@@ -212,39 +212,36 @@ int main() {
         mainThread.wait(lck);
     }
 
-    //stop gently all threads
     for (auto reader : readers)
         reader->stop();
-    for (auto writer : writers)
-        writer->stop();
-    for (auto commandBuffer : buffers)
-        commandBuffer->stop();
-
     for (auto commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
-        commandBuffer->readersCond.notify_all();
         commandBuffer->writerCond.notify_all();
     }
-
-    cout << "Waiting for writers to stop" << endl;
-    for (auto writer : writers) {
-        pthread_join(writer->pthread, nullptr);
-        delete writer;
-        cout << "- stopped" << endl;
-    }
-    writers.clear();
-
-    cout << "Waiting for readers to stop" << endl;
     for (auto reader : readers) {
         reader->stop();
         pthread_join(reader->pthread, nullptr);
         delete reader;
-        cout << "- stopped" << endl;
     }
     readers.clear();
 
-    for (auto commandBuffer : buffers)
+    for (auto writer : writers)
+        writer->stop();
+    for (auto commandBuffer : buffers) {
+        unique_lock<mutex> lck(commandBuffer->mtx);
+        commandBuffer->readersCond.notify_all();
+    }
+    for (auto writer : writers) {
+        pthread_join(writer->pthread, nullptr);
+        delete writer;
+    }
+    writers.clear();
+
+    //deactivate command buffers
+    for (auto commandBuffer : buffers) {
+        commandBuffer->stop();
         delete commandBuffer;
+    }
     buffers.clear();
 
     return 0;

@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
                 try {
                     conn = env->createConnection(user, passwd, connectString);
                 } catch(SQLException &ex) {
-                    cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+                    cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
                 }
             }
 
@@ -121,9 +121,9 @@ namespace OpenLogReplicator {
                 redo = archiveRedoQueue.top();
 
                 if (redo->sequence != databaseSequence) {
-                    cerr << "archive log path: " << redo->path << endl;
-                    cerr << "archive log sequence: " << redo->sequence << endl;
-                    cerr << "now should read: " << databaseSequence << endl;
+                    cerr << "ERROR: archive log path: " << redo->path << endl;
+                    cerr << "ERROR: archive log sequence: " << dec << redo->sequence << endl;
+                    cerr << "ERROR: now should read: " << databaseSequence << endl;
                     throw RedoLogException("incorrect archive log sequence", nullptr, 0);
                 }
 
@@ -142,9 +142,6 @@ namespace OpenLogReplicator {
             }
 
             //switch to online log reading
-            for (auto redo: redoSet)
-                delete redo;
-            redoSet.clear();
             onlineLogGetList();
 
             while (true) {
@@ -160,9 +157,6 @@ namespace OpenLogReplicator {
 
                 //try to read the oldest sequence
                 if (redo == nullptr) {
-                    for (auto redoTmp: redoSet)
-                        delete redoTmp;
-                    redoSet.clear();
                     onlineLogGetList();
 
                     bool isHigher = false;
@@ -179,14 +173,11 @@ namespace OpenLogReplicator {
 
                         if (redo == nullptr && !isHigher) {
                             if (oracleEnvironment->trace >= TRACE_INFO)
-                                cerr << "INFO: Sleeping while waiting for new redo log sequence " << databaseSequence << endl;
+                                cerr << "INFO: Sleeping while waiting for new redo log sequence " << dec << databaseSequence << endl;
                             usleep(REDO_SLEEP_RETRY);
                         } else
                             break;
 
-                        for (auto redoTmp: redoSet)
-                            delete redoTmp;
-                        redoSet.clear();
                         onlineLogGetList();
                     }
                     if (this->shutdown)
@@ -215,7 +206,7 @@ namespace OpenLogReplicator {
             //if redo is overwritten and missing in archive logs - then it means that archive log is not accessible
             archLogGetList();
             if (archiveRedoQueue.empty()) {
-                cerr << "now should read: " << databaseSequence << endl;
+                cerr << "ERROR: now should read: " << dec << databaseSequence << endl;
                 throw RedoLogException("archive log missing", nullptr, 0);
             }
         }
@@ -241,7 +232,7 @@ namespace OpenLogReplicator {
                 firstScn = stmt.rset->getNumber(3);
                 nextScn = stmt.rset->getNumber(5);
                 if (path.length() == 0) {
-                    cerr << "ERROR: Missing archive log for SEQ " << sequence << " SCN: " << firstScn << "-" << nextScn << endl;
+                    cerr << "ERROR: Missing archive log for SEQ " << dec << sequence << " SCN: " << firstScn << "-" << nextScn << endl;
                     throw RedoLogException("archive file missing", nullptr, 0);
                 }
 
@@ -249,7 +240,7 @@ namespace OpenLogReplicator {
                 archiveRedoQueue.push(redo);
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
     }
 
@@ -258,48 +249,63 @@ namespace OpenLogReplicator {
 
         typescn firstScn = 0, nextScn = 0;
         int groupLast = -1, group = -1, groupPrev = -1, sequence = -1;
+        uint32_t retries = 5;
         struct stat fileStat;
         string status, path;
 
         try {
-            OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT L.SEQUENCE#, L.FIRST_CHANGE#, L.NEXT_CHANGE#, L.STATUS, LF.GROUP#, LF.MEMBER FROM V$LOGFILE LF JOIN V$LOG L ON LF.GROUP# = L.GROUP# WHERE LF.TYPE = 'ONLINE' ORDER BY L.SEQUENCE#, LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-            stmt.executeQuery();
+            while (retries > 0) {
+                for (auto redoTmp: redoSet)
+                    delete redoTmp;
+                redoSet.clear();
 
-            while (stmt.rset->next()) {
-                groupPrev = group;
-                sequence = stmt.rset->getInt(1);
-                firstScn = stmt.rset->getNumber(2);
-                status = stmt.rset->getString(4);
-                group = stmt.rset->getInt(5);
-                path = stmt.rset->getString(6);
+                OracleStatement stmt(&conn, env);
+                stmt.createStatement("SELECT L.SEQUENCE#, L.FIRST_CHANGE#, L.NEXT_CHANGE#, L.STATUS, LF.GROUP#, LF.MEMBER FROM V$LOGFILE LF JOIN V$LOG L ON LF.GROUP# = L.GROUP# WHERE LF.TYPE = 'ONLINE' ORDER BY L.SEQUENCE#, LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
+                stmt.executeQuery();
 
-                if (oracleEnvironment->trace >= TRACE_DETAIL) {
-                    cerr << "Found log: SEQ: " << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
-                            ", GROUP: " << group << ", PATH: " << path << endl;
+                while (stmt.rset->next()) {
+                    groupPrev = group;
+                    sequence = stmt.rset->getInt(1);
+                    firstScn = stmt.rset->getNumber(2);
+                    status = stmt.rset->getString(4);
+                    group = stmt.rset->getInt(5);
+                    path = stmt.rset->getString(6);
+
+                    if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                        cerr << "Found log: SEQ: " << dec << sequence << ", FIRSTSCN: " << firstScn << ", STATUS: " << status <<
+                                ", GROUP: " << group << ", PATH: " << path << endl;
+                    }
+
+                    if (status.compare("CURRENT") != 0)
+                        nextScn = stmt.rset->getNumber(3);
+                    else
+                        nextScn = ZERO_SCN;
+                    if (groupPrev != groupLast && group != groupPrev) {
+                        if (retries > 0) {
+                            --retries;
+                            continue;
+                        } else {
+                            cerr << "ERROR: can't read any member from group " << dec << groupPrev << endl;
+                            throw RedoLogException("can not read any member from group", nullptr, 0);
+                        }
+                    }
+
+                    if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
+                        OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, firstScn, nextScn, sequence, path.c_str());
+                        redoSet.insert(redo);
+                        groupLast = group;
+                    }
                 }
-
-                if (status.compare("CURRENT") != 0)
-                    nextScn = stmt.rset->getNumber(3);
-                else
-                    nextScn = ZERO_SCN;
-                if (groupPrev != groupLast && group != groupPrev) {
-                    cerr << "can not read any member from group " << groupPrev << endl;
-                    throw RedoLogException("can not read any member from group", nullptr, 0);
-                }
-
-                if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
-                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, firstScn, nextScn, sequence, path.c_str());
-                    redoSet.insert(redo);
-                    groupLast = group;
-                }
+                if (group == groupLast)
+                    break;
+                --retries;
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
 
         if (group != groupLast) {
-            cerr << "ERROR: can not read any member from group " << groupPrev << endl;
+            cerr << "ERROR: can not read any member from group " << dec << groupPrev << endl;
         }
     }
 
@@ -342,11 +348,11 @@ namespace OpenLogReplicator {
 
                 currentDatabaseScn = stmt.rset->getInt(4);
             } else {
-                cerr << "ERROR: reading V$DATABASE table" << endl;
+                cerr << "ERROR: reading V$DATABASE" << endl;
                 return 0;
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
             return 0;
         }
 
@@ -361,11 +367,11 @@ namespace OpenLogReplicator {
                     databaseScn = currentDatabaseScn;
                 }
             } catch(SQLException &ex) {
-                cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+                cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
             }
         }
 
-        cout << "- sequence: " << databaseSequence << endl;
+        cout << "- sequence: " << dec << databaseSequence << endl;
         cout << "- scn: " << databaseScn << endl;
 
         if (databaseSequence == 0 || databaseScn == 0)
@@ -426,9 +432,9 @@ namespace OpenLogReplicator {
                 oracleEnvironment->addToDict(object);
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
-        cout << " (total: " << tabCnt << ")" << endl;
+        cout << " (total: " << dec << tabCnt << ")" << endl;
     }
 
     void OracleReader::readCheckpoint() {
@@ -447,7 +453,7 @@ namespace OpenLogReplicator {
                     ((typescn)buffer[7] << 24) | ((typescn)buffer[6] << 16) |
                     ((typescn)buffer[5] << 8) | buffer[4];
             if (oracleEnvironment->trace >= TRACE_INFO) {
-                cerr << "Read checkpoint sequence: " << databaseSequence << endl;
+                cerr << "Read checkpoint sequence: " << dec << databaseSequence << endl;
                 cerr << "Read checkpoint scn: " << databaseScn << endl;
             }
         }
@@ -466,7 +472,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleEnvironment->trace >= TRACE_INFO) {
-            cerr << "write: databaseSequence: " << databaseSequence << endl;
+            cerr << "write: databaseSequence: " << dec << databaseSequence << endl;
             cerr << "write: databaseScn: " << databaseScn << endl;
         }
         uint8_t *buffer = new uint8_t[CHECKPOINT_SIZE];

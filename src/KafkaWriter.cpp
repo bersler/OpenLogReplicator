@@ -71,54 +71,63 @@ namespace OpenLogReplicator {
 
     void *KafkaWriter::run() {
         cout << "- Kafka Writer for: " << brokers << " topic: " << topic << endl;
+        uint32_t length = 0;
 
-        while (!this->shutdown) {
-            uint32_t length;
-            {
+        length = 0;
+        while (true) {
+            if (length == 0) {
                 unique_lock<mutex> lck(commandBuffer->mtx);
                 while (commandBuffer->posStart == commandBuffer->posEnd) {
-                    commandBuffer->readersCond.wait(lck);
-
                     if (this->shutdown)
                         break;
+                    commandBuffer->readersCond.wait(lck);
                 }
-                if (this->shutdown)
+
+                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                    commandBuffer->posStart = 0;
+                    commandBuffer->posSize = 0;
+                }
+                if (commandBuffer->posStart == commandBuffer->posEnd)
+                    length = 0;
+                else
+                    length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
+            }
+            if (trace >= 2)
+                cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
+
+            if (length > 0) {
+                if (trace <= 0) {
+                    if (producer->produce(
+                            ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
+                            length - 4, nullptr, nullptr)) {
+                        cerr << "ERROR: writing to topic " << endl;
+                    }
+                } else {
+                    cout << "KAFKA: ";
+                    for (uint32_t i = 0; i < length - 4; ++i)
+                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 4 + i];
+                    cout << endl;
+                }
+
+                {
+                    unique_lock<mutex> lck(commandBuffer->mtx);
+                    commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
+
+                    if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                        commandBuffer->posStart = 0;
+                        commandBuffer->posSize = 0;
+                    }
+
+                    commandBuffer->writerCond.notify_all();
+                }
+                length = 0;
+            } else
+                if (shutdown)
                     break;
-
-                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-                    commandBuffer->posStart = 0;
-                    commandBuffer->posSize = 0;
-                }
-                length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
-            }
-            //cout << "Buffer: " << commandBuffer->posStart << " - " << commandBuffer->posEnd << endl;
-
-            if (trace <= 0) {
-                if (producer->produce(
-                        ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
-                        length - 4, nullptr, nullptr)) {
-                    cerr << "ERROR: writing to topic " << endl;
-                }
-            } else {
-                cout << "KAFKA: ";
-                for (uint32_t i = 0; i < length - 4; ++i)
-                    cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 4 + i];
-                cout << endl;
-            }
-
-            {
-                unique_lock<mutex> lck(commandBuffer->mtx);
-                commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
-
-                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-                    commandBuffer->posStart = 0;
-                    commandBuffer->posSize = 0;
-                }
-
-                commandBuffer->writerCond.notify_all();
-            }
         }
 
+        if (trace >= 2)
+            cerr << "Kafka writer buffer at shutdown: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
         return 0;
     }
 

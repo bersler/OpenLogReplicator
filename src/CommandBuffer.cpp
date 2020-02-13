@@ -193,6 +193,7 @@ namespace OpenLogReplicator {
             return this;
         }
 
+        *((uint32_t*)(intraThreadBuffer + posEndTmp)) = 0;
         posEndTmp += 4;
 
         return this;
@@ -248,6 +249,4 @@ namespace OpenLogReplicator {
 
     CommandBuffer::~CommandBuffer() {
     }
-
 }
-

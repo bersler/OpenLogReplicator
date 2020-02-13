@@ -25,8 +25,11 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
 #include "RedoLogException.h"
+#include "MemoryException.h"
 
 using namespace std;
+
+void stopMain();
 
 namespace OpenLogReplicator {
 
@@ -45,7 +48,11 @@ namespace OpenLogReplicator {
         try {
             ret = ((Thread *) context)->run();
         } catch(RedoLogException &ex) {
-                cerr << "ERROR: " << ex.msg << endl;
+            cerr << "ERROR REDO LOG: " << ex.msg << endl;
+            stopMain();
+        } catch(MemoryException &ex) {
+            cerr << "ERROR MEMORY: " << ex.msg << endl;
+            stopMain();
         }
         return ret;
     }

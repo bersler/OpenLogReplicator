@@ -240,6 +240,8 @@ namespace OpenLogReplicator {
                     case 0x05010B05:
                     //overwrite row piece
                     case 0x05010B06:
+                    //change row forwading address
+                    case 0x05010B08:
 
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
                         if (type == 0) {
@@ -300,8 +302,6 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                    //change row forwading address
-                    case 0x05010B08:
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
                             if (hasPrev)
                                 oracleEnvironment->commandBuffer->writer->next();
@@ -345,6 +345,7 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
                             oracleEnvironment->commandBuffer->rewind();
                         oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
+                        hasPrev = false;
                     }
 
                     if (opFlush) {

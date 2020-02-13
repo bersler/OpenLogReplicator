@@ -873,7 +873,7 @@ namespace OpenLogReplicator {
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
-            cout << "Exiting on user request" << endl;
+            cerr << "Exiting on user request" << endl;
             stopMain();
             return;
         }
@@ -1207,6 +1207,8 @@ namespace OpenLogReplicator {
                 break;
             }
         }
+
+        flushTransactions(true);
 
         if (fileDes > 0) {
             close(fileDes);

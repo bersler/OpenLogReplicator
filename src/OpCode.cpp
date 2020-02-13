@@ -158,8 +158,8 @@ namespace OpenLogReplicator {
 
             opCode = 'C';
             if (oracleEnvironment->dumpLogFile >= 1) {
-                typeuba uba2 = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
-                oracleEnvironment->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(uba2) << endl;
+                redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
+                oracleEnvironment->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
             }
         } else if ((op & 0x0F) == KTBOP_Z) {
             opCode = 'Z';

@@ -37,6 +37,10 @@ namespace OpenLogReplicator {
         size(1) {
         TransactionChunk *tc, *prevTc;
         buffer = (uint8_t*) malloc(TRANSACTION_BUFFER_CHUNK_SIZE * TRANSACTION_BUFFER_CHUNK_NUM);
+        if (buffer == nullptr) {
+            cerr << "ERROR: malloc error: " << dec << (TRANSACTION_BUFFER_CHUNK_SIZE * TRANSACTION_BUFFER_CHUNK_NUM) << " bytes" << endl;
+            throw MemoryException("error allocating memory");
+        }
 
         prevTc = new TransactionChunk(nullptr, buffer);
         unused = prevTc;
@@ -49,14 +53,18 @@ namespace OpenLogReplicator {
     }
 
     TransactionChunk *TransactionBuffer::newTransactionChunk() {
-        if (unused == nullptr)
-            throw MemoryException("out of memory: out of transaction buffer size");
+        if (unused == nullptr) {
+            cerr << "ERROR: out of transaction buffer, size1: " << dec << size << endl;
+            throw MemoryException("out of memory");
+        }
 
         TransactionChunk *tc = unused;
         unused = unused->next;
 
-        if (unused == nullptr)
-            throw MemoryException("out of memory: out of transaction buffer size");
+        if (unused == nullptr) {
+            cerr << "ERROR: out of transaction buffer, size2: " << dec << size << endl;
+            throw MemoryException("out of memory");
+        }
 
         unused->prev = nullptr;
         tc->next = nullptr;
@@ -80,6 +88,11 @@ namespace OpenLogReplicator {
     TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objn, uint32_t objd,
             typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
+        if (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32 > TRANSACTION_BUFFER_CHUNK_SIZE) {
+            cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32)
+                    << ") exceeding chunk size (" << TRANSACTION_BUFFER_CHUNK_SIZE << ")" << endl;
+            throw MemoryException("too big chunk size");
+        }
         //0:objn
         //4:objd
         //8:op
