@@ -43,7 +43,7 @@ using namespace OpenLogReplicator;
 const Value& getJSONfield(const Value& value, const char* field) {
     if (!value.HasMember(field)) {
         cerr << "ERROR: Bad JSON: field " << field << " not found" << endl;
-        exit(1);
+        throw new exception;
     }
     return value[field];
 }
@@ -51,7 +51,7 @@ const Value& getJSONfield(const Value& value, const char* field) {
 const Value& getJSONfield(const Document& document, const char* field) {
     if (!document.HasMember(field)) {
         cerr << "ERROR: Bad JSON: field " << field << " not found" << endl;
-        exit(1);
+        throw new exception;
     }
     return document[field];
 }
@@ -82,135 +82,141 @@ int main() {
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
     cout << "Open Log Replicator v. 0.3.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
-
-    ifstream config("OpenLogReplicator.json");
-    string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
-    Document document;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
-    if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
-        {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
+    try {
+        ifstream config("OpenLogReplicator.json");
+        string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
+        Document document;
 
-    const Value& version = getJSONfield(document, "version");
-    if (strcmp(version.GetString(), "0.3.0") != 0)
-        {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
+        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
+            {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
-    const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
-    uint32_t dumpLogFileInt = 0;
-    dumpLogFileInt = atoi(dumpLogFile.GetString());
+        const Value& version = getJSONfield(document, "version");
+        if (strcmp(version.GetString(), "0.3.0") != 0)
+            {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
-    const Value& trace = getJSONfield(document, "trace");
-    uint32_t traceInt = 0;
-    traceInt = atoi(trace.GetString());
+        const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
+        uint32_t dumpLogFileInt = 0;
+        dumpLogFileInt = atoi(dumpLogFile.GetString());
 
-    const Value& dumpData = getJSONfield(document, "dumpdata");
-    bool dumpDataBool = false;
-    if (strcmp(dumpData.GetString(), "1") == 0)
-        dumpDataBool = true;
+        const Value& trace = getJSONfield(document, "trace");
+        uint32_t traceInt = 0;
+        traceInt = atoi(trace.GetString());
 
-    const Value& directRead = getJSONfield(document, "directread");
-    bool directReadBool = false;
-    if (strcmp(directRead.GetString(), "1") == 0)
-        directReadBool = true;
+        const Value& dumpData = getJSONfield(document, "dumpdata");
+        bool dumpDataBool = false;
+        if (strcmp(dumpData.GetString(), "1") == 0)
+            dumpDataBool = true;
 
-    const Value& sortCols = getJSONfield(document, "sortcols");
-    uint32_t sortColsInt = 0;
-    sortColsInt = atoi(sortCols.GetString());
+        const Value& directRead = getJSONfield(document, "directread");
+        bool directReadBool = false;
+        if (strcmp(directRead.GetString(), "1") == 0)
+            directReadBool = true;
 
-    //iterate through sources
-    const Value& sources = getJSONfield(document, "sources");
-    if (!sources.IsArray())
-        {cerr << "ERROR: bad JSON, sources should be an array!" << endl; return 1;}
-    for (SizeType i = 0; i < sources.Size(); ++i) {
-        const Value& source = sources[i];
-        const Value& type = getJSONfield(source, "type");
+        const Value& sortCols = getJSONfield(document, "sortcols");
+        uint32_t sortColsInt = 0;
+        sortColsInt = atoi(sortCols.GetString());
 
-        if (strcmp("ORACLE", type.GetString()) == 0) {
-            const Value& alias = getJSONfield(source, "alias");
-            const Value& name = getJSONfield(source, "name");
-            const Value& user = getJSONfield(source, "user");
-            const Value& password = getJSONfield(source, "password");
-            const Value& server = getJSONfield(source, "server");
-            const Value& eventtable = getJSONfield(source, "eventtable");
-            const Value& tables = getJSONfield(source, "tables");
-            if (!tables.IsArray())
-                {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
+        //iterate through sources
+        const Value& sources = getJSONfield(document, "sources");
+        if (!sources.IsArray())
+            {cerr << "ERROR: bad JSON, sources should be an array!" << endl; return 1;}
+        for (SizeType i = 0; i < sources.Size(); ++i) {
+            const Value& source = sources[i];
+            const Value& type = getJSONfield(source, "type");
 
-            cout << "Adding source: " << name.GetString() << endl;
-            CommandBuffer *commandBuffer = new CommandBuffer();
+            if (strcmp("ORACLE", type.GetString()) == 0) {
+                const Value& alias = getJSONfield(source, "alias");
+                const Value& name = getJSONfield(source, "name");
+                const Value& user = getJSONfield(source, "user");
+                const Value& password = getJSONfield(source, "password");
+                const Value& server = getJSONfield(source, "server");
+                const Value& eventtable = getJSONfield(source, "eventtable");
+                const Value& tables = getJSONfield(source, "tables");
+                if (!tables.IsArray())
+                    {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
 
-            buffers.push_back(commandBuffer);
-            OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                    password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt);
-            readers.push_back(oracleReader);
+                cout << "Adding source: " << name.GetString() << endl;
+                CommandBuffer *commandBuffer = new CommandBuffer();
 
-            //initialize
-            if (!oracleReader->initialize()) {
-                delete oracleReader;
-                oracleReader = nullptr;
-                return -1;
+                buffers.push_back(commandBuffer);
+                OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
+                        password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt);
+                readers.push_back(oracleReader);
+
+                //initialize
+                if (!oracleReader->initialize()) {
+                    delete oracleReader;
+                    oracleReader = nullptr;
+                    return -1;
+                }
+
+                oracleReader->addTable(eventtable.GetString(), 1);
+                for (SizeType j = 0; j < tables.Size(); ++j) {
+                    const Value& table = getJSONfield(tables[j], "table");
+                    oracleReader->addTable(table.GetString(), 0);
+                }
+
+                //run
+                pthread_create(&oracleReader->pthread, nullptr, &OracleReader::runStatic, (void*)oracleReader);
             }
-
-            oracleReader->addTable(eventtable.GetString(), 1);
-            for (SizeType j = 0; j < tables.Size(); ++j) {
-                const Value& table = getJSONfield(tables[j], "table");
-                oracleReader->addTable(table.GetString(), 0);
-            }
-
-            //run
-            pthread_create(&oracleReader->pthread, nullptr, &OracleReader::runStatic, (void*)oracleReader);
         }
-    }
 
-    //iterate through targets
-    const Value& targets = getJSONfield(document, "targets");
-    if (!targets.IsArray())
-        {cerr << "ERROR: bad JSON, targets should be an array!" << endl; return 1;}
-    for (SizeType i = 0; i < targets.Size(); ++i) {
-        const Value& target = targets[i];
-        const Value& type = getJSONfield(target, "type");
+        //iterate through targets
+        const Value& targets = getJSONfield(document, "targets");
+        if (!targets.IsArray())
+            {cerr << "ERROR: bad JSON, targets should be an array!" << endl; return 1;}
+        for (SizeType i = 0; i < targets.Size(); ++i) {
+            const Value& target = targets[i];
+            const Value& type = getJSONfield(target, "type");
 
-        if (strcmp("KAFKA", type.GetString()) == 0) {
-            const Value& alias = getJSONfield(target, "alias");
-            const Value& brokers = getJSONfield(target, "brokers");
-            const Value& topic = getJSONfield(target, "topic");
-            const Value& source = getJSONfield(target, "source");
-            const Value& traceKafka = getJSONfield(target, "trace");
-            CommandBuffer *commandBuffer = nullptr;
+            if (strcmp("KAFKA", type.GetString()) == 0) {
+                const Value& alias = getJSONfield(target, "alias");
+                const Value& brokers = getJSONfield(target, "brokers");
+                const Value& topic = getJSONfield(target, "topic");
+                const Value& source = getJSONfield(target, "source");
+                const Value& traceKafka = getJSONfield(target, "trace");
+                CommandBuffer *commandBuffer = nullptr;
 
-            for (auto reader : readers)
-                if (reader->alias.compare(source.GetString()) == 0)
-                    commandBuffer = reader->commandBuffer;
-            if (commandBuffer == nullptr)
-                {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
+                for (auto reader : readers)
+                    if (reader->alias.compare(source.GetString()) == 0)
+                        commandBuffer = reader->commandBuffer;
+                if (commandBuffer == nullptr)
+                    {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
-            int traceKafkaInt = 0;
-            traceKafkaInt = atoi(traceKafka.GetString());
+                int traceKafkaInt = 0;
+                traceKafkaInt = atoi(traceKafka.GetString());
 
-            cout << "Adding target: " << alias.GetString() << endl;
-            KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, traceKafkaInt);
-            commandBuffer->writer = kafkaWriter;
-            writers.push_back(kafkaWriter);
+                cout << "Adding target: " << alias.GetString() << endl;
+                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, traceKafkaInt);
+                commandBuffer->writer = kafkaWriter;
+                writers.push_back(kafkaWriter);
 
-            //initialize
-            if (!kafkaWriter->initialize()) {
-                delete kafkaWriter;
-                kafkaWriter = nullptr;
-                cerr << "ERROR: Kafka starting writer for " << brokers.GetString() << " topic " << topic.GetString() << endl;
-                return -1;
+                //initialize
+                if (!kafkaWriter->initialize()) {
+                    delete kafkaWriter;
+                    kafkaWriter = nullptr;
+                    cerr << "ERROR: Kafka starting writer for " << brokers.GetString() << " topic " << topic.GetString() << endl;
+                    return -1;
+                }
+
+                //run
+                pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
             }
-
-            //run
-            pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
         }
+
+        //sleep until killed
+        {
+            unique_lock<mutex> lck(mainMtx);
+            mainThread.wait(lck);
+        }
+
+    } catch (exception e) {
+        cerr << "ERROR parsing OpenLogReplicator.json" << endl;
     }
 
-    //sleep until killed
-    {
-        unique_lock<mutex> lck(mainMtx);
-        mainThread.wait(lck);
-    }
 
     for (auto reader : readers)
         reader->stop();
