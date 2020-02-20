@@ -44,6 +44,11 @@ namespace OpenLogReplicator {
             } else if (i == 2) {
                 if (redoLogRecord->flg == 0x0080)
                     kteop(fieldPos, fieldLength);
+                else
+                    pdb(fieldPos, fieldLength);
+            } else if (i == 3) {
+                if (redoLogRecord->flg != 0x0080)
+                    pdb(fieldPos, fieldLength);
             }
             fieldPos += (fieldLength + 3) & 0xFFFC;
         }
@@ -54,6 +59,8 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << "too short field kteop: " << dec << fieldLength << endl;
             return;
         }
+
+
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t highwater = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 16);
@@ -105,9 +112,27 @@ namespace OpenLogReplicator {
                     " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
                     " siz: " << dec << siz <<
                     " fbi: " << dec << (uint32_t)fbi << endl;
-            oracleEnvironment->dumpStream << "           " <<
-                    " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
-                    " pxid:  " << PRINTXID(pxid) << endl;
+            if (oracleEnvironment->version < 12100 || redoLogRecord->conId == 0)
+                oracleEnvironment->dumpStream << "           " <<
+                        " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
+                        " pxid:  " << PRINTXID(pxid) << endl;
+            else
+                oracleEnvironment->dumpStream << "           " <<
+                        " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
+                        " pxid:  " << PRINTXID(pxid);
+            if (oracleEnvironment->version < 12100 || redoLogRecord->conId == 0)
+                oracleEnvironment->dumpStream << endl;
         }
+    }
+
+    void OpCode0502::pdb(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 4) {
+            oracleEnvironment->dumpStream << "too short field pdb: " << dec << fieldLength << endl;
+            return;
+        }
+        redoLogRecord->pdbId = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 0);
+
+        oracleEnvironment->dumpStream << "       " <<
+            " pdbid:" << dec << redoLogRecord->pdbId << endl;
     }
 }

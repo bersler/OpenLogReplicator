@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM V$ARCHIVED_LOG WHERE SEQUENCE# >= :i ORDER BY SEQUENCE#, DEST_ID");
+            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i ORDER BY SEQUENCE#, DEST_ID");
             stmt.stmt->setInt(1, databaseSequence);
             stmt.executeQuery();
 
@@ -240,7 +240,7 @@ namespace OpenLogReplicator {
                 archiveRedoQueue.push(redo);
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: getting arch log list: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
     }
 
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
 
         typescn firstScn = 0, nextScn = 0;
         int groupLast = -1, group = -1, groupPrev = -1, sequence = -1;
-        uint32_t retries = 5;
+        uint32_t retries = 10;
         struct stat fileStat;
         string status, path;
 
@@ -260,7 +260,7 @@ namespace OpenLogReplicator {
                 redoSet.clear();
 
                 OracleStatement stmt(&conn, env);
-                stmt.createStatement("SELECT L.SEQUENCE#, L.FIRST_CHANGE#, L.NEXT_CHANGE#, L.STATUS, LF.GROUP#, LF.MEMBER FROM V$LOGFILE LF JOIN V$LOG L ON LF.GROUP# = L.GROUP# WHERE LF.TYPE = 'ONLINE' ORDER BY L.SEQUENCE#, LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
+                stmt.createStatement("SELECT L.SEQUENCE#, L.FIRST_CHANGE#, L.NEXT_CHANGE#, L.STATUS, LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF JOIN SYS.V_$LOG L ON LF.GROUP# = L.GROUP# WHERE LF.TYPE = 'ONLINE' ORDER BY L.SEQUENCE#, LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
                 stmt.executeQuery();
 
                 while (stmt.rset->next()) {
@@ -283,6 +283,7 @@ namespace OpenLogReplicator {
                     if (groupPrev != groupLast && group != groupPrev) {
                         if (retries > 0) {
                             --retries;
+                            usleep(10 * REDO_SLEEP_RETRY);
                             continue;
                         } else {
                             cerr << "ERROR: can't read any member from group " << dec << groupPrev << endl;
@@ -301,7 +302,7 @@ namespace OpenLogReplicator {
                 --retries;
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: getting online log list: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
 
         if (group != groupLast) {
@@ -318,8 +319,8 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            //check archivelog mode, supplemental log min
-            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN FROM V$DATABASE D JOIN V$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME");
+            //check archivelog mode, supplemental log min, endian
+            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME");
             stmt.executeQuery();
 
             if (stmt.rset->next()) {
@@ -348,7 +349,7 @@ namespace OpenLogReplicator {
 
                 currentDatabaseScn = stmt.rset->getInt(4);
             } else {
-                cerr << "ERROR: reading V$DATABASE" << endl;
+                cerr << "ERROR: reading SYS.V_$DATABASE" << endl;
                 return 0;
             }
         } catch(SQLException &ex) {
@@ -359,7 +360,7 @@ namespace OpenLogReplicator {
         if (databaseSequence == 0 || databaseScn == 0) {
             try {
                 OracleStatement stmt(&conn, env);
-                stmt.createStatement("select SEQUENCE# from v$log where status = 'CURRENT'");
+                stmt.createStatement("select SEQUENCE# from SYS.V_$LOG where status = 'CURRENT'");
                 stmt.executeQuery();
 
                 if (stmt.rset->next()) {
@@ -409,7 +410,7 @@ namespace OpenLogReplicator {
 
                 cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
 
-                stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM sys.ccol$ L JOIN sys.cdef$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+                stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                 stmt2.stmt->setInt(1, objn);
                 stmt2.executeQuery();
 
@@ -432,7 +433,7 @@ namespace OpenLogReplicator {
                 oracleEnvironment->addToDict(object);
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: getting table metadata: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
         }
         cout << " (total: " << dec << tabCnt << ")" << endl;
     }
@@ -453,8 +454,7 @@ namespace OpenLogReplicator {
                     ((typescn)buffer[7] << 24) | ((typescn)buffer[6] << 16) |
                     ((typescn)buffer[5] << 8) | buffer[4];
             if (oracleEnvironment->trace >= TRACE_INFO) {
-                cerr << "Read checkpoint sequence: " << dec << databaseSequence << endl;
-                cerr << "Read checkpoint scn: " << databaseScn << endl;
+                cerr << "INFO: Read SEQ: " << dec << databaseSequence << " SCN: " << PRINTSCN64(databaseScn) << endl;
             }
         }
 
@@ -464,17 +464,13 @@ namespace OpenLogReplicator {
 
     void OracleReader::writeCheckpoint() {
         if (oracleEnvironment->trace >= TRACE_INFO)
-            cerr << "Writing checkpoint information" << endl;
+            cerr << "INFO: Writing checkpoint information SEQ: " << dec << databaseSequence << ", SCN: " << PRINTSCN64(databaseScn) << endl;
         FILE *fp = fopen((database + ".cfg").c_str(), "wb");
         if (fp == nullptr) {
-            cerr << "ERROR: Error writing checkpoint data for " << database << endl;
+            cerr << "ERROR: writing checkpoint data for " << database << endl;
             return;
         }
 
-        if (oracleEnvironment->trace >= TRACE_INFO) {
-            cerr << "write: databaseSequence: " << dec << databaseSequence << endl;
-            cerr << "write: databaseScn: " << databaseScn << endl;
-        }
         uint8_t *buffer = new uint8_t[CHECKPOINT_SIZE];
         buffer[0] = databaseSequence & 0xFF;
         buffer[1] = (databaseSequence >> 8) & 0xFF;

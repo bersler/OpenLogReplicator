@@ -127,6 +127,7 @@ namespace OpenLogReplicator {
         OracleObject *object;
         typexid xid;              //transaction id
         typeuba uba;              //Undo Block Address
+        uint32_t pdbId;
 
         uint8_t slt;
         uint8_t rci;

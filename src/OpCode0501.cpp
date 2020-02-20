@@ -64,6 +64,8 @@ namespace OpenLogReplicator {
             } else if (i == 3) {
                 if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
                     ktbRedo(fieldPos, fieldLength);
+                } else if (redoLogRecord->opc == 0x0E08) {
+                    kteoputrn(fieldPos, fieldLength);
                 }
             } else if (i == 4) {
                 if (redoLogRecord->opc == 0x0B01) {
@@ -173,6 +175,18 @@ namespace OpenLogReplicator {
                     " rec: 0x" << setfill('0') << setw(2) << (uint32_t)rec << endl;
             oracleEnvironment->dumpStream << "           " <<
                     " xid:  " << PRINTXID(redoLogRecord->xid) << "  " << endl;
+        }
+    }
+
+    void OpCode0501::kteoputrn(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 4) {
+            oracleEnvironment->dumpStream << "ERROR: too short field kteoputrn: " << dec << fieldLength << endl;
+            return;
+        }
+        if (oracleEnvironment->dumpLogFile >= 2) {
+            uint32_t newobjd = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+            oracleEnvironment->dumpStream << "kteoputrn - undo operation for flush for truncate " << endl;
+            oracleEnvironment->dumpStream << "newobjd: 0x" << hex << newobjd << " " << endl;
         }
     }
 

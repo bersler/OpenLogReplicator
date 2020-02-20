@@ -155,6 +155,12 @@ namespace OpenLogReplicator {
         numBlocks = oracleEnvironment->read32(oracleEnvironment->headerBuffer + 24);
         uint32_t compatVsn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 20);
 
+        if (compatVsn == 0x0B200000) //11.2.0.0
+            oracleEnvironment->version = 11200;
+        else
+        if (compatVsn == 0x0B200100) //11.2.0.1
+            oracleEnvironment->version = 11201;
+        else
         if (compatVsn == 0x0B200200) //11.2.0.2
             oracleEnvironment->version = 11202;
         else
@@ -164,11 +170,20 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x0B200400) //11.2.0.4
             oracleEnvironment->version = 11204;
         else
+        if (compatVsn == 0x0C100000) //12.1.0.0
+            oracleEnvironment->version = 12100;
+        else
+        if (compatVsn == 0x0C100100) //12.1.0.1
+            oracleEnvironment->version = 12101;
+        else
         if (compatVsn == 0x0C100200) //12.1.0.2
             oracleEnvironment->version = 12102;
         else
         if (compatVsn == 0x0C200100) //12.2.0.1
             oracleEnvironment->version = 12201;
+        else
+        if (compatVsn == 0x12000000) //18.0.0.0
+            oracleEnvironment->version = 18000;
         else
         if (compatVsn == 0x12030000) //18.3.0.0
             oracleEnvironment->version = 18300;
@@ -190,6 +205,9 @@ namespace OpenLogReplicator {
         else
         if (compatVsn == 0x12090000) //18.9.0.0
             oracleEnvironment->version = 18900;
+        else
+        if (compatVsn == 0x13000000) //19.0.0.0
+            oracleEnvironment->version = 19000;
         else
         if (compatVsn == 0x13030000) //19.3.0.0
             oracleEnvironment->version = 19300;
@@ -219,13 +237,13 @@ namespace OpenLogReplicator {
         if (firstScnHeader != firstScn) {
             //archive log incorrect sequence
             if (group == 0) {
-                cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") does not match database information (" <<
+                cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") for archived redo log does not match database information (" <<
                         firstScn << "): " << path.c_str() << endl;
                 return REDO_ERROR;
             //redo log switch appeared and header is now overwritten
             } else {
                 if (oracleEnvironment->trace >= TRACE_WARN)
-                    cerr << "WARNING: first SCN (" << firstScnHeader << ") does not match database information (" <<
+                    cerr << "WARNING: first SCN (" << firstScnHeader << ") for online redo log does not match database information (" <<
                             firstScn << "): " << path.c_str() << endl;
                 return REDO_WRONG_SEQUENCE_SWITCHED;
             }
@@ -234,7 +252,7 @@ namespace OpenLogReplicator {
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
             if (oracleEnvironment->trace >= TRACE_INFO)
-                cerr << "Log switch to " << dec << nextScnHeader << endl;
+                cerr << "INFO: Log switch to " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -511,7 +529,7 @@ namespace OpenLogReplicator {
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
                         " VLD: 0x" << setfill('0') << setw(2) << hex << (uint32_t)vld << endl;
             else {
-                uint32_t conUid = 0; //FIXME
+                uint32_t conUid = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 16);
                 oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
@@ -582,12 +600,19 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].rbl = 0; //FIXME
             redoLogRecord[vectors].seq = oracleEnvironment->recordBuffer[pos + 20];
             redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
-            redoLogRecord[vectors].conId = 0; //FIXME oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 22);
-            redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 24);
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
-            uint32_t fieldOffset = 24;
-            if (oracleEnvironment->version >= 12102) fieldOffset = 32;
+            uint32_t fieldOffset;
+            if (oracleEnvironment->version >= 12100) {
+                fieldOffset = 32;
+                redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 28);
+                redoLogRecord[vectors].conId = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 24);
+            } else {
+                fieldOffset = 24;
+                redoLogRecord[vectors].flgRecord = 0;
+                redoLogRecord[vectors].conId = 0;
+            }
+
             if (pos + fieldOffset + 1 >= recordLength)
                 throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
 
@@ -1135,7 +1160,7 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
         if (oracleEnvironment->trace >= TRACE_INFO)
-            cerr << "Processing log: " << *this << endl;
+            cerr << "INFO: Processing log: " << *this << endl;
         if (oracleEnvironment->dumpLogFile >= 1) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
@@ -1220,7 +1245,7 @@ namespace OpenLogReplicator {
             double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
             if (myTime > 0)
                 mySpeed = blockNumber * blockSize / 1024 / 1024 / myTime * 1000;
-            cerr << "processLog: " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
+            cerr << "INFO: Time is " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
         }
 
         oracleEnvironment->dumpStream.close();

@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
                 else
                     length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
             }
-            if (trace >= 2)
+            if (trace >= 3)
                 cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
 
             if (length > 0) {
@@ -126,7 +126,7 @@ namespace OpenLogReplicator {
                     break;
         }
 
-        if (trace >= 2)
+        if (trace >= 3)
             cerr << "Kafka writer buffer at shutdown: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
         return 0;
     }
@@ -742,12 +742,12 @@ namespace OpenLogReplicator {
             }
             commandBuffer->append("}");
 
-            delete afterRecord;
-            delete beforeRecord;
-            delete afterLen;
-            delete beforeLen;
-            delete afterPos;
-            delete beforePos;
+            delete[] afterRecord;
+            delete[] beforeRecord;
+            delete[] afterLen;
+            delete[] beforeLen;
+            delete[] afterPos;
+            delete[] beforePos;
         }
 
         commandBuffer->append("}");

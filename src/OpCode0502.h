@@ -35,6 +35,7 @@ namespace OpenLogReplicator {
 
         void kteop(uint32_t fieldPos, uint32_t fieldLength);
         void ktudh(uint32_t fieldPos, uint32_t fieldLength);
+        void pdb(uint32_t fieldPos, uint32_t fieldLength);
     };
 }
 
