@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
         volatile uint64_t posEnd;
         volatile uint64_t posEndTmp;
         volatile uint32_t posSize;
+        uint32_t outputBufferSize;
 
         void stop(void);
         CommandBuffer* appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
@@ -58,7 +59,7 @@ namespace OpenLogReplicator {
         CommandBuffer* rewind();
         uint32_t currentTranSize();
 
-        CommandBuffer();
+        CommandBuffer(uint32_t outputBufferSize);
         virtual ~CommandBuffer();
     };
 }

@@ -27,9 +27,12 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols) :
+    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead,
+            uint32_t sortCols, uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions) :
         DatabaseEnvironment(),
-        redoBuffer(new uint8_t[REDO_LOG_BUFFER_SIZE * 2]),
+        lastOpTransactionMap(maxConcurrentTransactions),
+        transactionBuffer(new TransactionBuffer(redoBuffers, redoBufferSize)),
+        redoBuffer(new uint8_t[DISK_BUFFER_SIZE * 2]),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
         commandBuffer(commandBuffer),
@@ -39,10 +42,11 @@ namespace OpenLogReplicator {
         trace(trace),
         version(0),
         sortCols(sortCols) {
-        transactionHeap.initialize(MAX_CONCURRENT_TRANSACTIONS);
+        transactionHeap.initialize(maxConcurrentTransactions);
     }
 
     OracleEnvironment::~OracleEnvironment() {
+        delete transactionBuffer;
 
         for (auto it : objectMap) {
             OracleObject *object = it.second;

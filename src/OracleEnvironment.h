@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         unordered_map<typexid, Transaction*> xidTransactionMap;
         TransactionMap lastOpTransactionMap;
         TransactionHeap transactionHeap;
-        TransactionBuffer transactionBuffer;
+        TransactionBuffer *transactionBuffer;
         uint8_t *redoBuffer;
         uint8_t *headerBuffer;
         uint8_t *recordBuffer;
@@ -70,7 +70,8 @@ namespace OpenLogReplicator {
         void transactionAppend(typexid xid);
         uint32_t getBase();
 
-        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols);
+        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
+                uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions);
         virtual ~OracleEnvironment();
     };
 }

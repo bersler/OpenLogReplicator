@@ -76,7 +76,8 @@ namespace OpenLogReplicator {
         int initialize();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols);
+                const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
+                uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

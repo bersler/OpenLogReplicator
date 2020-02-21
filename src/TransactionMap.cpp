@@ -20,6 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include <string.h>
+#include "MemoryException.h"
 #include "TransactionMap.h"
 #include "Transaction.h"
 
@@ -135,10 +136,15 @@ namespace OpenLogReplicator {
         return nullptr;
     }
 
-    TransactionMap::TransactionMap() :
-        elements(0) {
-        hashMap = new Transaction*[MAX_CONCURRENT_TRANSACTIONS * 2];
-        memset(hashMap, 0, (sizeof(Transaction*)) * (MAX_CONCURRENT_TRANSACTIONS * 2));
+    TransactionMap::TransactionMap(uint32_t maxConcurrentTransactions) :
+        elements(0),
+        maxConcurrentTransactions(maxConcurrentTransactions) {
+        hashMap = new Transaction*[maxConcurrentTransactions * 2];
+        if (hashMap == nullptr) {
+            cerr << "ERROR: unable allocate memory for Transaction map(" << dec << maxConcurrentTransactions << ")" << endl;
+            throw MemoryException("out of memory");
+        }
+        memset(hashMap, 0, (sizeof(Transaction*)) * (maxConcurrentTransactions * 2));
     }
 
     TransactionMap::~TransactionMap() {

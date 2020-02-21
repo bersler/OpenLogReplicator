@@ -5,6 +5,10 @@
   "trace": "2",
   "directread": "0",
   "sortcols": "1",
+  "redo-buffers": "65536",
+  "redo-buffer-size": "65536",
+  "output-buffer-size": "1073741824",
+  "max-concurrent-transactions": "2048",
   "sources": [
     {
       "type": "ORACLE",

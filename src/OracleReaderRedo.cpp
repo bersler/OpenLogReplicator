@@ -446,17 +446,17 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::readFileMore() {
         uint32_t curRead;
-        if (redoBufferPos == REDO_LOG_BUFFER_SIZE)
+        if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
 
-        if (lastReadSuccessfull && lastRead * 2 < REDO_LOG_BUFFER_SIZE)
+        if (lastReadSuccessfull && lastRead * 2 < DISK_BUFFER_SIZE)
             lastRead *= 2;
         curRead = lastRead;
-        if (redoBufferPos == REDO_LOG_BUFFER_SIZE)
+        if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
 
-        if (redoBufferPos + curRead > REDO_LOG_BUFFER_SIZE)
-            curRead = REDO_LOG_BUFFER_SIZE - redoBufferPos;
+        if (redoBufferPos + curRead > DISK_BUFFER_SIZE)
+            curRead = DISK_BUFFER_SIZE - redoBufferPos;
 
         uint32_t bytes = pread(fileDes, oracleEnvironment->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
 
@@ -811,9 +811,9 @@ namespace OpenLogReplicator {
                 if (oracleEnvironment->trace >= TRACE_DETAIL)
                     cerr << "ERROR: transaction missing" << endl;
 
-                transaction = new Transaction(redoLogRecord->xid, &oracleEnvironment->transactionBuffer);
+                transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
                 transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer);
                 oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
                 oracleEnvironment->transactionHeap.add(transaction);
             } else {
@@ -821,7 +821,7 @@ namespace OpenLogReplicator {
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
                 transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, &oracleEnvironment->transactionBuffer);
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer);
                 oracleEnvironment->transactionHeap.update(transaction->pos);
             }
             transaction->lastUba = redoLogRecord->uba;
@@ -845,7 +845,7 @@ namespace OpenLogReplicator {
 
         Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
-            transaction = new Transaction(redoLogRecord->xid, &oracleEnvironment->transactionBuffer);
+            transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
             transaction->touch(curScn);
             oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
             oracleEnvironment->transactionHeap.add(transaction);
@@ -921,9 +921,9 @@ namespace OpenLogReplicator {
             {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
-                    transaction = new Transaction(redoLogRecord1->xid, &oracleEnvironment->transactionBuffer);
+                    transaction = new Transaction(redoLogRecord1->xid, oracleEnvironment->transactionBuffer);
                     transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
+                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer);
                     oracleEnvironment->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleEnvironment->transactionHeap.add(transaction);
                 } else {
@@ -932,7 +932,7 @@ namespace OpenLogReplicator {
                                 transaction->lastSlt, transaction->lastRci);
 
                     transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, &oracleEnvironment->transactionBuffer);
+                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                 }
                 transaction->lastUba = redoLogRecord1->uba;
@@ -977,7 +977,7 @@ namespace OpenLogReplicator {
                 if (transaction != nullptr) {
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                    transaction->rollbackLastOp(oracleEnvironment, curScn, &oracleEnvironment->transactionBuffer);
+                    transaction->rollbackLastOp(oracleEnvironment, curScn, oracleEnvironment->transactionBuffer);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                     oracleEnvironment->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci, transaction);
@@ -991,7 +991,7 @@ namespace OpenLogReplicator {
 
                         if (transaction != nullptr &&
                                 transaction->opCodes > 0 &&
-                                transaction->rollbackPreviousOp(oracleEnvironment, curScn, &oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
+                                transaction->rollbackPreviousOp(oracleEnvironment, curScn, oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
                                 redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
                             oracleEnvironment->transactionHeap.update(transaction->pos);
                             foundPrevious = true;
@@ -1085,7 +1085,7 @@ namespace OpenLogReplicator {
                             transaction->lastSlt, transaction->lastRci);
                 oracleEnvironment->xidTransactionMap.erase(transaction->xid);
 
-                //oracleEnvironment->xidTransactionMap[transaction->xid]->free(&oracleEnvironment->transactionBuffer);
+                //oracleEnvironment->xidTransactionMap[transaction->xid]->free(oracleEnvironment->transactionBuffer);
                 delete oracleEnvironment->xidTransactionMap[transaction->xid];
                 transaction = oracleEnvironment->transactionHeap.top();
             } else

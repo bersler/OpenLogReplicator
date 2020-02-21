@@ -23,17 +23,25 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "types.h"
 #include "CommandBuffer.h"
 #include "RedoLogRecord.h"
+#include "MemoryException.h"
 
 namespace OpenLogReplicator {
 
-    CommandBuffer::CommandBuffer() :
+    CommandBuffer::CommandBuffer(uint32_t outputBufferSize) :
             shutdown(false),
             writer(nullptr),
             posStart(0),
             posEnd(0),
             posEndTmp(0),
-            posSize(0) {
-        intraThreadBuffer = new uint8_t[INTRA_THREAD_BUFFER_SIZE];
+            posSize(0),
+            outputBufferSize(outputBufferSize) {
+        intraThreadBuffer = new uint8_t[outputBufferSize];
+
+        if (intraThreadBuffer == nullptr) {
+            cerr << "ERROR: could not allocate memory for output buffer (" << dec << outputBufferSize << " bytes)" << endl;
+            throw MemoryException("out of memory");
+        }
+
     }
 
     void CommandBuffer::stop(void) {
@@ -56,7 +64,7 @@ namespace OpenLogReplicator {
                 return this;
         }
 
-        if (posEndTmp + length * 2 >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + length * 2 >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (1)" << endl;
             return this;
         }
@@ -86,7 +94,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (posEndTmp + length >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + length >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (5)" << endl;
             return this;
         }
@@ -113,7 +121,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (posEndTmp + length >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + length >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (2)" << endl;
             return this;
         }
@@ -164,7 +172,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (posEndTmp + 1 >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + 1 >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (3)" << endl;
             return this;
         }
@@ -188,7 +196,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (posEndTmp + 4 >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + 4 >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (4)" << endl;
             return this;
         }
@@ -214,7 +222,7 @@ namespace OpenLogReplicator {
             readersCond.notify_all();
         }
 
-        if (posEndTmp + 1 >= INTRA_THREAD_BUFFER_SIZE) {
+        if (posEndTmp + 1 >= outputBufferSize) {
             cerr << "ERROR: JSON buffer overflow (4)" << endl;
             return this;
         }
@@ -248,5 +256,9 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer::~CommandBuffer() {
+        if (intraThreadBuffer != nullptr) {
+            delete[] intraThreadBuffer;
+            intraThreadBuffer = nullptr;
+        }
     }
 }

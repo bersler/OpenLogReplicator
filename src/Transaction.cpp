@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
                         " opCodes: " << dec << opCodes << endl;
             }
 
-            if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
+            if (oracleEnvironment->commandBuffer->posEnd >= oracleEnvironment->commandBuffer->outputBufferSize - (oracleEnvironment->commandBuffer->outputBufferSize/4))
                 oracleEnvironment->commandBuffer->rewind();
 
             oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
@@ -339,10 +339,10 @@ namespace OpenLogReplicator {
                     }
 
                     //split very big transactions
-                    if (oracleEnvironment->commandBuffer->currentTranSize() >= MAX_TRANSACTION_SIZE) {
+                    if (oracleEnvironment->commandBuffer->currentTranSize() >= oracleEnvironment->commandBuffer->outputBufferSize/4) {
                         cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;
                         oracleEnvironment->commandBuffer->writer->commitTran();
-                        if (oracleEnvironment->commandBuffer->posEnd >= INTRA_THREAD_BUFFER_SIZE - MAX_TRANSACTION_SIZE)
+                        if (oracleEnvironment->commandBuffer->posEnd >= oracleEnvironment->commandBuffer->outputBufferSize - (oracleEnvironment->commandBuffer->outputBufferSize/4))
                             oracleEnvironment->commandBuffer->rewind();
                         oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
                         hasPrev = false;
@@ -364,7 +364,7 @@ namespace OpenLogReplicator {
             oracleEnvironment->commandBuffer->writer->commitTran();
         }
 
-        oracleEnvironment->transactionBuffer.deleteTransactionChunks(tc, tcLast);
+        oracleEnvironment->transactionBuffer->deleteTransactionChunks(tc, tcLast);
     }
 
     Transaction::Transaction(typexid xid, TransactionBuffer *transactionBuffer) :

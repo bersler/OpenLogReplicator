@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         TransactionChunk *prev;
         TransactionChunk *next;
 
-        TransactionChunk(TransactionChunk *prev, uint8_t *buffer);
+        TransactionChunk(TransactionChunk *prev, uint32_t redoBufferSize);
         virtual ~TransactionChunk();
     };
 }

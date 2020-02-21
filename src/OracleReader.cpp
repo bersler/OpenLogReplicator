@@ -42,7 +42,8 @@ using namespace oracle::occi;
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols) :
+            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
+            uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
@@ -55,7 +56,8 @@ namespace OpenLogReplicator {
         passwd(passwd),
         connectString(connectString) {
 
-        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead, sortCols);
+        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead, sortCols, redoBuffers, redoBufferSize,
+                maxConcurrentTransactions);
         readCheckpoint();
         env = Environment::createEnvironment (Environment::DEFAULT);
     }

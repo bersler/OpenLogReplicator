@@ -119,6 +119,22 @@ int main() {
         uint32_t sortColsInt = 0;
         sortColsInt = atoi(sortCols.GetString());
 
+        const Value& redoBuffers = getJSONfield(document, "redo-buffers");
+        uint32_t redoBuffersInt = 0;
+        redoBuffersInt = atoi(redoBuffers.GetString());
+
+        const Value& redoBufferSize = getJSONfield(document, "redo-buffer-size");
+        uint32_t redoBufferSizeInt = 0;
+        redoBufferSizeInt = atoi(redoBufferSize.GetString());
+
+        const Value& outputBufferSize = getJSONfield(document, "output-buffer-size");
+        uint32_t outputBufferSizeInt = 0;
+        outputBufferSizeInt = atoi(outputBufferSize.GetString());
+
+        const Value& maxConcurrentTransactions = getJSONfield(document, "max-concurrent-transactions");
+        uint32_t maxConcurrentTransactionsInt = 0;
+        maxConcurrentTransactionsInt = atoi(maxConcurrentTransactions.GetString());
+
         //iterate through sources
         const Value& sources = getJSONfield(document, "sources");
         if (!sources.IsArray())
@@ -139,11 +155,12 @@ int main() {
                     {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
 
                 cout << "Adding source: " << name.GetString() << endl;
-                CommandBuffer *commandBuffer = new CommandBuffer();
+                CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSizeInt);
 
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt);
+                        password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt,
+                        redoBuffersInt, redoBufferSizeInt, maxConcurrentTransactionsInt);
                 readers.push_back(oracleReader);
 
                 //initialize

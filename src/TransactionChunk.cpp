@@ -17,21 +17,28 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <stdlib.h>
+#include "MemoryException.h"
 #include "TransactionChunk.h"
 
 namespace OpenLogReplicator {
 
-    TransactionChunk::TransactionChunk(TransactionChunk *prev, uint8_t *buffer) :
+    TransactionChunk::TransactionChunk(TransactionChunk *prev, uint32_t redoBufferSize) :
             elements(0),
             size(0),
-            buffer(buffer),
             prev(prev),
             next(nullptr) {
         if (prev != nullptr)
             prev->next = this;
+        buffer = (uint8_t*)malloc(redoBufferSize);
+        if (buffer == nullptr) {
+            cerr << "ERROR: malloc buffer alloc error: " << dec << redoBufferSize << " bytes" << endl;
+            throw MemoryException("error allocating memory");
+        }
     }
 
     TransactionChunk::~TransactionChunk() {
+        free(buffer);
         if (prev != nullptr)
             prev->next = next;
         if (next != nullptr)

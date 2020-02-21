@@ -30,8 +30,9 @@ namespace OpenLogReplicator {
     class TransactionBuffer {
     protected:
         TransactionChunk *unused;
-        uint8_t *buffer;
-        uint32_t size;
+        uint32_t usedBuffers;
+        uint32_t redoBuffers;
+        uint32_t redoBufferSize;
 
         void appendTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
@@ -46,7 +47,7 @@ namespace OpenLogReplicator {
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc, TransactionChunk* lastTc);
 
-        TransactionBuffer();
+        TransactionBuffer(uint32_t redoBuffers, uint32_t redoBufferSize);
         virtual ~TransactionBuffer();
     };
 }

@@ -33,28 +33,25 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    TransactionBuffer::TransactionBuffer() :
-        size(1) {
+    TransactionBuffer::TransactionBuffer(uint32_t redoBuffers, uint32_t redoBufferSize) :
+        usedBuffers(1),
+        redoBuffers(redoBuffers),
+        redoBufferSize(redoBufferSize) {
         TransactionChunk *tc, *prevTc;
-        buffer = (uint8_t*) malloc(TRANSACTION_BUFFER_CHUNK_SIZE * TRANSACTION_BUFFER_CHUNK_NUM);
-        if (buffer == nullptr) {
-            cerr << "ERROR: malloc error: " << dec << (TRANSACTION_BUFFER_CHUNK_SIZE * TRANSACTION_BUFFER_CHUNK_NUM) << " bytes" << endl;
-            throw MemoryException("error allocating memory");
-        }
 
-        prevTc = new TransactionChunk(nullptr, buffer);
+        prevTc = new TransactionChunk(nullptr, redoBufferSize);
         unused = prevTc;
 
-        for (uint32_t a = 1; a < TRANSACTION_BUFFER_CHUNK_NUM; ++a) {
-            tc = new TransactionChunk(prevTc, buffer + TRANSACTION_BUFFER_CHUNK_SIZE * a);
+        for (uint32_t a = 1; a < this->redoBuffers; ++a) {
+            tc = new TransactionChunk(prevTc, redoBufferSize);
             prevTc = tc;
-            ++size;
+            ++usedBuffers;
         }
     }
 
     TransactionChunk *TransactionBuffer::newTransactionChunk() {
         if (unused == nullptr) {
-            cerr << "ERROR: out of transaction buffer, size1: " << dec << size << endl;
+            cerr << "ERROR: out of transaction buffer, size1: " << dec << usedBuffers << endl;
             throw MemoryException("out of memory");
         }
 
@@ -62,7 +59,7 @@ namespace OpenLogReplicator {
         unused = unused->next;
 
         if (unused == nullptr) {
-            cerr << "ERROR: out of transaction buffer, size2: " << dec << size << endl;
+            cerr << "ERROR: out of transaction buffer, size2: " << dec << usedBuffers << endl;
             throw MemoryException("out of memory");
         }
 
@@ -71,13 +68,13 @@ namespace OpenLogReplicator {
         tc->size = 0;
         tc->elements = 0;
 
-        --size;
+        --usedBuffers;
 
         return tc;
     }
 
     void TransactionBuffer::deleteTransactionChunk(TransactionChunk* tc) {
-        ++size;
+        ++usedBuffers;
 
         tc->next = unused;
         if (unused != nullptr)
@@ -88,9 +85,9 @@ namespace OpenLogReplicator {
     TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objn, uint32_t objd,
             typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
-        if (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32 > TRANSACTION_BUFFER_CHUNK_SIZE) {
+        if (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
             cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32)
-                    << ") exceeding chunk size (" << TRANSACTION_BUFFER_CHUNK_SIZE << ")" << endl;
+                    << ") exceeding redo buffer size (" << redoBufferSize << ")" << endl;
             throw MemoryException("too big chunk size");
         }
         //0:objn
@@ -156,7 +153,7 @@ namespace OpenLogReplicator {
 
             //new block needed
             if (tcTemp->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
-                    sizeof(struct RedoLogRecord) + 32 > TRANSACTION_BUFFER_CHUNK_SIZE) {
+                    sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
                 TransactionChunk *tcNew = newTransactionChunk();
                 tcNew->prev = tcTemp;
                 tcNew->next = tcTemp->next;
@@ -168,7 +165,7 @@ namespace OpenLogReplicator {
         } else {
             //new block needed
             if (tcLast->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
-                    sizeof(struct RedoLogRecord) + 32 > TRANSACTION_BUFFER_CHUNK_SIZE) {
+                    sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
                 TransactionChunk *tcNew = newTransactionChunk();
                 tcNew->prev = tcLast;
                 tcNew->elements = 0;
@@ -292,7 +289,7 @@ namespace OpenLogReplicator {
             ++num;
             tcTemp = tcTemp->next;
         }
-        size += num;
+        usedBuffers += num;
 
         tcLast->next = unused;
         if (unused != nullptr)
@@ -305,11 +302,6 @@ namespace OpenLogReplicator {
             TransactionChunk *nextTc = unused->next;
             delete unused;
             unused = nextTc;
-        }
-
-        if (buffer != nullptr) {
-            free(buffer);
-            buffer = nullptr;
         }
     }
 }
