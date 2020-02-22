@@ -157,8 +157,8 @@ namespace OpenLogReplicator {
             }
 
             opCode = 'C';
+            redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
             if (oracleEnvironment->dumpLogFile >= 1) {
-                redoLogRecord->uba = oracleEnvironment->read56(redoLogRecord->data + fieldPos + 8);
                 oracleEnvironment->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
             }
         } else if ((op & 0x0F) == KTBOP_Z) {
@@ -1043,8 +1043,7 @@ namespace OpenLogReplicator {
     void OpCode::dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength) {
         uint32_t pos = 0;
 
-        if (oracleEnvironment->dumpLogFile >= 1)
-            oracleEnvironment->dumpStream << "Vector content: " << endl;
+        oracleEnvironment->dumpStream << "Vector content: " << endl;
 
         for (uint32_t k = 0; k < redoLogRecord->cc; ++k) {
             uint16_t fieldLength = data[pos];

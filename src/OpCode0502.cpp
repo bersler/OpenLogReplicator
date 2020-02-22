@@ -60,8 +60,6 @@ namespace OpenLogReplicator {
             return;
         }
 
-
-
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t highwater = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 16);
             uint16_t ext = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);

@@ -182,13 +182,12 @@ namespace OpenLogReplicator {
                 oracleEnvironment->commandBuffer->rewind();
 
             oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
+            uint32_t pos, type = 0;
+            RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
+            typescn prevScn = 0;
 
             while (tcTemp != nullptr) {
-                uint32_t pos = 0, type = 0;
-                RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
-                typescn prevScn = 0;
-
-
+                pos = 0;
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
                     uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 8));
 

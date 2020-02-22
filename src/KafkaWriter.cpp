@@ -375,8 +375,10 @@ namespace OpenLogReplicator {
             colNums = nullptr;
 
             while (redoLogRecord != nullptr) {
-                if (oracleEnvironment->trace >= TRACE_FULL)
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "BEFORE OP:" << setw(4) << setfill('0') << hex << redoLogRecord->opCode << endl;
                     redoLogRecord->dumpHex(cerr, oracleEnvironment);
+                }
 
                 if (redoLogRecord->opCode == 0x0501) {
                     fieldPos = redoLogRecord->fieldPos;
@@ -519,8 +521,10 @@ namespace OpenLogReplicator {
             prevValue = false;
 
             while (redoLogRecord != nullptr) {
-                if (oracleEnvironment->trace >= TRACE_FULL)
+                if (oracleEnvironment->trace >= TRACE_FULL) {
+                    cerr << "AFTER OP:" << setw(4) << setfill('0') << hex << redoLogRecord->opCode << endl;
                     redoLogRecord->dumpHex(cerr, oracleEnvironment);
+                }
 
                 if (redoLogRecord->opCode == 0x0B02) {
                     fieldPos = redoLogRecord->fieldPos;

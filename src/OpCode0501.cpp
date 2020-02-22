@@ -95,12 +95,12 @@ namespace OpenLogReplicator {
                     if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
                         if (oracleEnvironment->dumpLogFile >= 1) {
                             dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
-                            colNums += 2;
-                            bits <<= 1;
-                            if (bits == 0) {
-                                bits = 1;
-                                ++nulls;
-                            }
+                        }
+                        colNums += 2;
+                        bits <<= 1;
+                        if (bits == 0) {
+                            bits = 1;
+                            ++nulls;
                         }
                     } else if (i == 6 + (uint32_t)redoLogRecord->cc) {
                         suppLog(fieldPos, fieldLength);
@@ -117,11 +117,11 @@ namespace OpenLogReplicator {
                     }
                     if (oracleEnvironment->dumpLogFile >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, i - 5, fieldLength, *nulls & bits);
-                        bits <<= 1;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
-                        }
+                    }
+                    bits <<= 1;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
                     }
                 } else if (i == 5 + (uint32_t)redoLogRecord->cc) {
                     suppLog(fieldPos, fieldLength);

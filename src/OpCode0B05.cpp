@@ -60,12 +60,12 @@ namespace OpenLogReplicator {
                 if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc) {
                     if (oracleEnvironment->dumpLogFile >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
-                        bits <<= 1;
-                        colNums += 2;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
-                        }
+                    }
+                    bits <<= 1;
+                    colNums += 2;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
                     }
                 }
             }

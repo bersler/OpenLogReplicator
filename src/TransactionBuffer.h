@@ -22,6 +22,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTIONBUFFER_H_
 #define TRANSACTIONBUFFER_H_
 
+#define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
+
 namespace OpenLogReplicator {
 
     class TransactionChunk;

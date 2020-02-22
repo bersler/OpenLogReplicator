@@ -157,9 +157,6 @@ namespace OpenLogReplicator {
         void dumpHex(ostream &str, OracleEnvironment *oracleEnvironment);
         void dump();
     };
-
-#define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
-
 }
 
 #endif

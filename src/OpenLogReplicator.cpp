@@ -230,7 +230,7 @@ int main() {
             mainThread.wait(lck);
         }
 
-    } catch (exception e) {
+    } catch (exception &e) {
         cerr << "ERROR parsing OpenLogReplicator.json" << endl;
     }
 

@@ -85,8 +85,8 @@ namespace OpenLogReplicator {
     TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objn, uint32_t objd,
             typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
-        if (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
-            cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) + sizeof(struct RedoLogRecord) + 32)
+        if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY > redoBufferSize) {
+            cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY)
                     << ") exceeding redo buffer size (" << redoBufferSize << ")" << endl;
             throw MemoryException("too big chunk size");
         }
@@ -152,8 +152,7 @@ namespace OpenLogReplicator {
             }
 
             //new block needed
-            if (tcTemp->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
-                    sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
+            if (tcTemp->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY > redoBufferSize) {
                 TransactionChunk *tcNew = newTransactionChunk();
                 tcNew->prev = tcTemp;
                 tcNew->next = tcTemp->next;
@@ -164,8 +163,7 @@ namespace OpenLogReplicator {
             appendTransactionChunk(tcTemp, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         } else {
             //new block needed
-            if (tcLast->size + redoLogRecord1->length + redoLogRecord2->length + sizeof(RedoLogRecord) +
-                    sizeof(struct RedoLogRecord) + 32 > redoBufferSize) {
+            if (tcLast->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY > redoBufferSize) {
                 TransactionChunk *tcNew = newTransactionChunk();
                 tcNew->prev = tcLast;
                 tcNew->elements = 0;

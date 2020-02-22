@@ -324,7 +324,6 @@ namespace OpenLogReplicator {
             uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
 
             if (oracleEnvironment->version < 12200) {
-
                 oracleEnvironment->dumpStream <<
                         " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
@@ -507,6 +506,7 @@ namespace OpenLogReplicator {
         if ((vld & 0x04) != 0) {
             checkpoint = true;
             headerLength = 68;
+            recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
             if (oracleEnvironment->trace >= TRACE_FULL) {
                 if (oracleEnvironment->version < 12200)
                     cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
@@ -552,7 +552,6 @@ namespace OpenLogReplicator {
             }
 
             if (headerLength == 68) {
-                recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
                 if (oracleEnvironment->version < 12200)
                     oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
                 else
@@ -1176,7 +1175,8 @@ namespace OpenLogReplicator {
         bool reachedEndOfOnlineRedo = false;
         ret = checkRedoHeader(true);
         if (ret != REDO_OK) {
-            oracleEnvironment->dumpStream.close();
+            if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
+                oracleEnvironment->dumpStream.close();
             return ret;
         }
 
@@ -1198,19 +1198,22 @@ namespace OpenLogReplicator {
 
                 //for archive redo log break on all errors
                 if (group == 0) {
-                    oracleEnvironment->dumpStream.close();
+                    if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
+                        oracleEnvironment->dumpStream.close();
                     return ret;
                 //for online redo log
                 } else {
                     if (ret == REDO_ERROR || ret == REDO_WRONG_SEQUENCE_SWITCHED) {
-                        oracleEnvironment->dumpStream.close();
+                        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
+                            oracleEnvironment->dumpStream.close();
                         return ret;
                     }
 
                     //check if sequence has changed
                     int ret = checkRedoHeader(false);
                     if (ret != REDO_OK) {
-                        oracleEnvironment->dumpStream.close();
+                        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
+                            oracleEnvironment->dumpStream.close();
                         return ret;
                     }
 
@@ -1248,7 +1251,8 @@ namespace OpenLogReplicator {
             cerr << "INFO: Time is " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
         }
 
-        oracleEnvironment->dumpStream.close();
+        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
+            oracleEnvironment->dumpStream.close();
         return REDO_OK;
     }
 
