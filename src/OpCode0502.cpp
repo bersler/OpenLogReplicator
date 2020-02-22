@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
             if (oracleEnvironment->version < 12100 || redoLogRecord->conId == 0)
                 oracleEnvironment->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
-                        " pxid:  " << PRINTXID(pxid) << endl;
+                        " pxid:  " << PRINTXID(pxid);
             else
                 oracleEnvironment->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<

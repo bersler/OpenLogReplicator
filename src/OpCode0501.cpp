@@ -86,8 +86,9 @@ namespace OpenLogReplicator {
                     colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
                 } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                     if (i == 6) {
-                        if (oracleEnvironment->dumpLogFile >= 1)
+                        if (oracleEnvironment->dumpLogFile >= 1) {
                             dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
+                        }
                     } else if (i == 7) {
                         suppLog(fieldPos, fieldLength);
                     }
