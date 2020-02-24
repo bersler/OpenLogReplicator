@@ -417,12 +417,12 @@ namespace OpenLogReplicator {
 
             stmt.executeQuery();
             while (stmt.rset->next()) {
-                //skip partitioned tables
+                //skip partitioned/IOT tables
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
                 uint32_t objn = stmt.rset->getInt(2);
                 if (stmt.rset->isNull(1)) {
-                    cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned";
+                    cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT";
                 } else {
                     uint32_t objd = stmt.rset->getInt(1);
                     uint32_t cluCols = stmt.rset->getInt(3);
