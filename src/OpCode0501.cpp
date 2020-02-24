@@ -89,9 +89,12 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->dumpLogFile >= 1) {
                             dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
                         }
-                    } else if (i == 7) {
-                        suppLog(fieldPos, fieldLength);
+                    } else {
+                        if (i == 7) {
+                            suppLog(fieldPos, fieldLength);
+                        }
                     }
+
                 } else {
                     if (i > 5 && i <= 5 + (uint32_t)redoLogRecord->cc) {
                         if (oracleEnvironment->dumpLogFile >= 1) {
@@ -103,13 +106,30 @@ namespace OpenLogReplicator {
                             bits = 1;
                             ++nulls;
                         }
-                    } else if (i == 6 + (uint32_t)redoLogRecord->cc) {
-                        suppLog(fieldPos, fieldLength);
+                    } else {
+                        if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                            if (i == 6  + (uint32_t)redoLogRecord->cc) {
+                                rowDeps(fieldPos, fieldLength);
+                            } else {
+                                suppLog(fieldPos, fieldLength);
+                            }
+                        } else {
+                            if (i == 6  + (uint32_t)redoLogRecord->cc) {
+                                suppLog(fieldPos, fieldLength);
+                            }
+                        }
                     }
                 }
             } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
-                if (i == 5)
-                    suppLog(fieldPos, fieldLength);
+                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                    if (i == 5)
+                        rowDeps(fieldPos, fieldLength);
+                    else if (i == 6)
+                        suppLog(fieldPos, fieldLength);
+                } else {
+                    if (i == 5)
+                        suppLog(fieldPos, fieldLength);
+                }
             } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (i > 4 && i <= 4 + (uint32_t)redoLogRecord->cc) {
                     if (nulls == nullptr) {
@@ -124,8 +144,16 @@ namespace OpenLogReplicator {
                         bits = 1;
                         ++nulls;
                     }
-                } else if (i == 5 + (uint32_t)redoLogRecord->cc) {
-                    suppLog(fieldPos, fieldLength);
+                } else {
+                    if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                        if (i == 5 + (uint32_t)redoLogRecord->cc)
+                            rowDeps(fieldPos, fieldLength);
+                        else if (i == 6 + (uint32_t)redoLogRecord->cc)
+                            suppLog(fieldPos, fieldLength);
+                    } else {
+                        if (i == 5 + (uint32_t)redoLogRecord->cc)
+                            suppLog(fieldPos, fieldLength);
+                    }
                 }
 
             } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
@@ -138,8 +166,14 @@ namespace OpenLogReplicator {
                 }
 
             } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
-                if (i == 5) {
-                    suppLog(fieldPos, fieldLength);
+                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                    if (i == 5)
+                        rowDeps(fieldPos, fieldLength);
+                    else if (i == 6)
+                        suppLog(fieldPos, fieldLength);
+                } else {
+                    if (i == 5)
+                        suppLog(fieldPos, fieldLength);
                 }
             }
 
@@ -188,6 +222,21 @@ namespace OpenLogReplicator {
             uint32_t newobjd = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             oracleEnvironment->dumpStream << "kteoputrn - undo operation for flush for truncate " << endl;
             oracleEnvironment->dumpStream << "newobjd: 0x" << hex << newobjd << " " << endl;
+        }
+    }
+
+    void OpCode0501::rowDeps(uint32_t fieldPos, uint32_t fieldLength) {
+        if (fieldLength < 8) {
+            oracleEnvironment->dumpStream << "ERROR: too short row dependencies: " << dec << fieldLength << endl;
+            return;
+        }
+
+        if (oracleEnvironment->dumpLogFile >= 1) {
+            typescn dscn = oracleEnvironment->readSCN(redoLogRecord->data + fieldPos + 0);
+            if (oracleEnvironment->version < 12200)
+                oracleEnvironment->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
+            else
+                oracleEnvironment->dumpStream << "dscn: " << PRINTSCN64(dscn) << endl;
         }
     }
 

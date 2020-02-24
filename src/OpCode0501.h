@@ -31,6 +31,7 @@ namespace OpenLogReplicator {
         void ktudb(uint32_t fieldPos, uint32_t fieldLength);
         void kteoputrn(uint32_t fieldPos, uint32_t fieldLength);
         void suppLog(uint32_t fieldPos, uint32_t fieldLength);
+        void rowDeps(uint32_t fieldPos, uint32_t fieldLength);
         virtual const char* getUndoType();
     public:
         OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

@@ -322,7 +322,7 @@ namespace OpenLogReplicator {
         try {
             OracleStatement stmt(&conn, env);
             //check archivelog mode, supplemental log min, endian
-            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME");
+            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, VER.BANNER FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%'");
             stmt.executeQuery();
 
             if (stmt.rset->next()) {
@@ -350,6 +350,22 @@ namespace OpenLogReplicator {
                 oracleEnvironment->initialize(bigEndian);
 
                 currentDatabaseScn = stmt.rset->getInt(4);
+
+                //12+
+                string VERSION = stmt.rset->getString(5);
+
+                oracleEnvironment->conId = 0;
+                if (VERSION.find("Oracle Database 11g") == string::npos) {
+                    OracleStatement stmt(&conn, env);
+                    stmt.createStatement("select sys_context('USERENV','CON_ID') CON_ID from DUAL");
+                    stmt.executeQuery();
+
+                    if (stmt.rset->next()) {
+                        oracleEnvironment->conId = stmt.rset->getNumber(1);
+                        cout << "- conId: " << dec << oracleEnvironment->conId << endl;
+                    }
+                }
+
             } else {
                 cerr << "ERROR: reading SYS.V_$DATABASE" << endl;
                 return 0;
@@ -392,47 +408,53 @@ namespace OpenLogReplicator {
             OracleStatement stmt(&conn, env);
             OracleStatement stmt2(&conn, env);
             stmt.createStatement(
-                    "SELECT tab.DATAOBJ# as objd, tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName "
+                    "SELECT tab.DATAOBJ# as objd, tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName, decode(bitand(tab.FLAGS, 8388608), 8388608, 1, 0) as dependencies "
                     "FROM SYS.TAB$ tab, SYS.OBJ$ obj, ALL_USERS usr "
                     "WHERE tab.OBJ# = obj.OBJ# "
                     "AND obj.OWNER# = usr.USER_ID "
                     "AND usr.USERNAME || '.' || obj.NAME LIKE :i");
             stmt.stmt->setString(1, mask);
-            stmt.executeQuery();
 
+            stmt.executeQuery();
             while (stmt.rset->next()) {
-                uint32_t objd = stmt.rset->getInt(1);
-                uint32_t objn = stmt.rset->getInt(2);
-                uint32_t cluCols = stmt.rset->getInt(3);
+                //skip partitioned tables
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                uint32_t totalPk = 0, totalCols = 0;
-                OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner.c_str(), objectName.c_str());
-                ++tabCnt;
+                uint32_t objn = stmt.rset->getInt(2);
+                if (stmt.rset->isNull(1)) {
+                    cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned";
+                } else {
+                    uint32_t objd = stmt.rset->getInt(1);
+                    uint32_t cluCols = stmt.rset->getInt(3);
+                    uint32_t depdendencies = stmt.rset->getInt(6);
+                    uint32_t totalPk = 0, totalCols = 0;
+                    OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner.c_str(), objectName.c_str());
+                    ++tabCnt;
 
-                cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+                    cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
 
-                stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
-                stmt2.stmt->setInt(1, objn);
-                stmt2.executeQuery();
+                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+                    stmt2.stmt->setInt(1, objn);
+                    stmt2.executeQuery();
 
-                while (stmt2.rset->next()) {
-                    uint32_t colNo = stmt2.rset->getInt(1);
-                    uint32_t segColNo = stmt2.rset->getInt(2);
-                    string columnName = stmt2.rset->getString(3);
-                    uint32_t typeNo = stmt2.rset->getInt(4);
-                    uint32_t length = stmt2.rset->getInt(5);
-                    uint32_t numPk = stmt2.rset->getInt(6);
-                    OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
-                    totalPk += numPk;
-                    ++totalCols;
+                    while (stmt2.rset->next()) {
+                        uint32_t colNo = stmt2.rset->getInt(1);
+                        uint32_t segColNo = stmt2.rset->getInt(2);
+                        string columnName = stmt2.rset->getString(3);
+                        uint32_t typeNo = stmt2.rset->getInt(4);
+                        uint32_t length = stmt2.rset->getInt(5);
+                        uint32_t numPk = stmt2.rset->getInt(6);
+                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
+                        totalPk += numPk;
+                        ++totalCols;
 
-                    object->addColumn(column);
+                        object->addColumn(column);
+                    }
+
+                    object->totalCols = totalCols;
+                    object->totalPk = totalPk;
+                    oracleEnvironment->addToDict(object);
                 }
-
-                object->totalCols = totalCols;
-                object->totalPk = totalPk;
-                oracleEnvironment->addToDict(object);
             }
         } catch(SQLException &ex) {
             cerr << "ERROR: getting table metadata: " << dec << ex.getErrorCode() << ": " << ex.getMessage();

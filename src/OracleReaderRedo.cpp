@@ -788,6 +788,10 @@ namespace OpenLogReplicator {
             redoLogRecord->dump();
         }
 
+        //skip other PDB vectors
+        if (redoLogRecord->conId > 1 && redoLogRecord->conId != oracleEnvironment->conId)
+            return;
+
         //DDL or part of multi-block UNDO
         if (redoLogRecord->opCode == 0x1801 || redoLogRecord->opCode == 0x0501) {
             if (redoLogRecord->opCode == 0x0501) {
@@ -872,6 +876,12 @@ namespace OpenLogReplicator {
             redoLogRecord1->dump();
             redoLogRecord2->dump();
         }
+
+        //skip other PDB vectors
+        if (redoLogRecord1->conId > 1 && redoLogRecord1->conId != oracleEnvironment->conId)
+            return;
+        if (redoLogRecord2->conId > 1 && redoLogRecord2->conId != oracleEnvironment->conId)
+            return;
 
         uint32_t objn, objd;
         if (redoLogRecord1->objd != 0) {

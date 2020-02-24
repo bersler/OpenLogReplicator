@@ -1094,12 +1094,20 @@ namespace OpenLogReplicator {
                 processFbFlags(data[pos + 0], fbStr);
                 uint8_t lb = data[pos + 1];
                 uint8_t jcc = data[pos + 2];
+                uint16_t tl = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->rowLenghsDelta + r * 2);
 
-                oracleEnvironment->dumpStream << "tl: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->rowLenghsDelta + r * 2) <<
+                oracleEnvironment->dumpStream << "tl: " << dec << tl <<
                         " fb: " << fbStr <<
                         " lb: 0x" << hex << (uint32_t)lb << " " <<
                         " cc: " << dec << (uint32_t)jcc << endl;
                 pos += 3;
+
+                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                    if (oracleEnvironment->version < 12200)
+                        pos += 6;
+                    else
+                        pos += 8;
+                }
 
                 for (uint32_t k = 0; k < jcc; ++k) {
                     uint16_t fieldLength = data[pos];

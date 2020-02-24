@@ -201,6 +201,13 @@ namespace OpenLogReplicator {
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
             pos = 3;
 
+            if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
+                if (oracleEnvironment->version < 12200)
+                    pos += 6;
+                else
+                    pos += 8;
+            }
+
             commandBuffer
                     ->append("{\"operation\": \"insert\", \"table\": \"")
                     ->append(redoLogRecord2->object->owner)
@@ -278,6 +285,13 @@ namespace OpenLogReplicator {
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
             pos = 3;
+
+            if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
+                if (oracleEnvironment->version < 12200)
+                    pos += 6;
+                else
+                    pos += 8;
+            }
 
             commandBuffer
                     ->append("{\"operation\": \"delete\", \"table\": \"")
@@ -450,6 +464,12 @@ namespace OpenLogReplicator {
                             ++nulls;
                         }
                         fieldPos += (fieldLength + 3) & 0xFFFC;
+                    }
+
+                    if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                        fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 1) * 2);
+                        fieldPos += (fieldLength + 3) & 0xFFFC;
+                        ++headerSize;
                     }
 
                     //supplemental columns
