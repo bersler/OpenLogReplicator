@@ -995,11 +995,10 @@ namespace OpenLogReplicator {
                     //check all previous transactions - not yet implemented
                     bool foundPrevious = false;
 
-                    for (uint32_t i = 0; i < oracleEnvironment->transactionHeap.heapSize; ++i) {
+                    for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
                         transaction = oracleEnvironment->transactionHeap.heap[i];
 
-                        if (transaction != nullptr &&
-                                transaction->opCodes > 0 &&
+                        if (transaction->opCodes > 0 &&
                                 transaction->rollbackPreviousOp(oracleEnvironment, curScn, oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
                                 redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
                             oracleEnvironment->transactionHeap.update(transaction->pos);
@@ -1067,7 +1066,7 @@ namespace OpenLogReplicator {
             }
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
-                if (transaction->isBegin)
+                if (transaction->isBegin || checkpoint)
                     //FIXME: it should be checked if transaction begin SCN is within captured range of SCNs
                     transaction->flush(oracleEnvironment);
                 else {
@@ -1104,14 +1103,12 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->trace >= TRACE_FULL) {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
-                if (transaction != nullptr) {
-                    cerr << "Queue: " << PRINTSCN64(transaction->firstScn) <<
-                            " lastScn: " << PRINTSCN64(transaction->lastScn) <<
-                            " xid: " << PRINTXID(transaction->xid) <<
-                            " pos: " << dec << transaction->pos <<
-                            " opCodes: " << transaction->opCodes <<
-                            " commit: " << transaction->isCommit << endl;
-                }
+                cerr << "Queue: " << PRINTSCN64(transaction->firstScn) <<
+                        " lastScn: " << PRINTSCN64(transaction->lastScn) <<
+                        " xid: " << PRINTXID(transaction->xid) <<
+                        " pos: " << dec << transaction->pos <<
+                        " opCodes: " << transaction->opCodes <<
+                        " commit: " << transaction->isCommit << endl;
             }
         }
     }

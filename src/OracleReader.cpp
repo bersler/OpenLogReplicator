@@ -21,23 +21,28 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cstdio>
 #include <unistd.h>
+#include <string.h>
 #include <rapidjson/document.h>
 #include "types.h"
+
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OracleReader.h"
-
 #include "CommandBuffer.h"
 #include "OracleReaderRedo.h"
 #include "OracleEnvironment.h"
 #include "RedoLogException.h"
 #include "OracleStatement.h"
+#include "Transaction.h"
 
 using namespace std;
 using namespace rapidjson;
 using namespace oracle::occi;
+
+const Value& getJSONfield(const Document& document, const char* field);
 
 namespace OpenLogReplicator {
 
@@ -463,58 +468,62 @@ namespace OpenLogReplicator {
     }
 
     void OracleReader::readCheckpoint() {
-        FILE *fp = fopen((database + ".cfg").c_str(), "rb");
-        if (fp == nullptr)
+        ifstream infile;
+        infile.open((database + ".json").c_str(), ios::in);
+        if (!infile.is_open())
             return;
 
-        uint8_t *buffer = new uint8_t[CHECKPOINT_SIZE];
-        int bytes = fread(buffer, 1, CHECKPOINT_SIZE, fp);
-        if (bytes == CHECKPOINT_SIZE) {
-            databaseSequence = ((uint32_t)buffer[3] << 24) | ((uint32_t)buffer[2] << 16) |
-                    ((uint32_t)buffer[1] << 8) | (uint32_t)buffer[0];
-            databaseScn =
-                    ((typescn)buffer[11] << 56) | ((typescn)buffer[10] << 48) |
-                    ((typescn)buffer[9] << 40) | ((typescn)buffer[8] << 32) |
-                    ((typescn)buffer[7] << 24) | ((typescn)buffer[6] << 16) |
-                    ((typescn)buffer[5] << 8) | buffer[4];
-            if (oracleEnvironment->trace >= TRACE_INFO) {
-                cerr << "INFO: Read SEQ: " << dec << databaseSequence << " SCN: " << PRINTSCN64(databaseScn) << endl;
-            }
-        }
+        string configJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
+        Document document;
 
-        delete[] buffer;
-        fclose(fp);
+        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
+            {cerr << "ERROR: parsing " << database << ".json at byte " << dec << document.GetErrorOffset() << endl; infile.close(); return; }
+
+        const Value& databaseVal = getJSONfield(document, "database");
+        if (database.compare(databaseVal.GetString()) != 0)
+            {cerr << "ERROR: bad JSON, invalid database name (" << databaseVal.GetString() << ")!" << endl; infile.close(); return; }
+
+        const Value& databaseSequenceVal = getJSONfield(document, "sequence");
+        databaseSequence = atoi(databaseSequenceVal.GetString());
+
+        const Value& scnVal = getJSONfield(document, "scn");
+        databaseScn = atoi(scnVal.GetString());
+
+        infile.close();
     }
 
     void OracleReader::writeCheckpoint() {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "INFO: Writing checkpoint information SEQ: " << dec << databaseSequence << ", SCN: " << PRINTSCN64(databaseScn) << endl;
-        FILE *fp = fopen((database + ".cfg").c_str(), "wb");
-        if (fp == nullptr) {
+
+        typescn minScn = ZERO_SCN;
+        Transaction *transaction;
+        for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+            transaction = oracleEnvironment->transactionHeap.heap[i];
+            if (minScn > transaction->firstScn)
+                minScn = transaction->firstScn;
+        }
+        if (minScn == ZERO_SCN)
+            minScn = 0;
+
+        ofstream outfile;
+        outfile.open((database + ".json").c_str(), ios::out | ios::trunc);
+
+        if (!outfile.is_open()) {
             cerr << "ERROR: writing checkpoint data for " << database << endl;
             return;
         }
 
-        uint8_t *buffer = new uint8_t[CHECKPOINT_SIZE];
-        buffer[0] = databaseSequence & 0xFF;
-        buffer[1] = (databaseSequence >> 8) & 0xFF;
-        buffer[2] = (databaseSequence >> 16) & 0xFF;
-        buffer[3] = (databaseSequence >> 24) & 0xFF;
+        stringstream ss;
+        ss << "{" << endl
+           << "  \"database\": \"" << database << "\"," << endl
+           << "  \"sequence\": \"" << dec << databaseSequence << "\"," << endl
+           << "  \"min-scn\": \"" << dec << minScn << "\"," << endl
+           << "  \"scn\": \"" << dec << databaseScn << "\"" << endl
+           << "}";
 
-        buffer[4] = databaseScn & 0xFF;
-        buffer[5] = (databaseScn >> 8) & 0xFF;
-        buffer[6] = (databaseScn >> 16) & 0xFF;
-        buffer[7] = (databaseScn >> 24) & 0xFF;
-        buffer[8] = (databaseScn >> 32) & 0xFF;
-        buffer[9] = (databaseScn >> 40) & 0xFF;
-        buffer[10] = (databaseScn >> 48) & 0xFF;
-        buffer[11] = (databaseScn >> 56) & 0xFF;
-        int bytes = fwrite(buffer, 1, CHECKPOINT_SIZE, fp);
-        if (bytes != CHECKPOINT_SIZE)
-            cerr << "ERROR: writing checkpoint data for " << database << endl;
-
-        delete[] buffer;
-        fclose(fp);
+        outfile << ss.rdbuf();
+        outfile.close();
     }
 
 
