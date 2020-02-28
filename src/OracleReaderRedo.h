@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
     private:
         OracleEnvironment *oracleEnvironment;
         int group;
+        uint32_t resetlogsId;
         typescn lastCheckpointScn;
         typescn curScn;
         uint32_t recordBeginPos;
@@ -86,7 +87,7 @@ namespace OpenLogReplicator {
 
         void reload();
         int processLog(OracleReader *oracleReader);
-        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path);
+        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, uint32_t resetlogsId, const char* path);
         virtual ~OracleReaderRedo();
 
         friend ostream& operator<<(ostream& os, const OracleReaderRedo& ors);

@@ -62,9 +62,10 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path) :
+    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, uint32_t resetlogsId, const char* path) :
             oracleEnvironment(oracleEnvironment),
             group(group),
+            resetlogsId(resetlogsId),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
             recordBeginPos(0),
@@ -228,6 +229,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
+        uint32_t resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
         typescn firstScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 180);
         typescn nextScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 192);
 
@@ -235,6 +237,12 @@ namespace OpenLogReplicator {
         if (ret == REDO_ERROR) {
             cerr << "ERROR: bad header" << endl;
             return ret;
+        }
+
+        if (resetlogsCnt != resetlogsId) {
+            cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
+                    resetlogsId << "): " << path.c_str() << endl;
+            return REDO_ERROR;
         }
 
         if (firstScn == ZERO_SCN) {
@@ -315,7 +323,6 @@ namespace OpenLogReplicator {
                     " eot: " << dec << (uint32_t)eot <<
                     " dis: " << dec << (uint32_t)dis << endl;
 
-            uint32_t resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
             typescn resetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 164);
             uint32_t prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
             typescn prevResetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 284);
@@ -1299,7 +1306,7 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleReaderRedo& ors) {
-        os << "(" << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.path << "\")";
+        os << "(" << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.resetlogsId << ", \"" << ors.path << "\")";
         return os;
     }
 

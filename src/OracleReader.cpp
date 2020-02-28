@@ -55,6 +55,7 @@ namespace OpenLogReplicator {
         databaseSequence(0),
         databaseSequenceArchMax(0),
         databaseScn(0),
+        resetlogsId(0),
         env(nullptr),
         conn(nullptr),
         user(user),
@@ -233,8 +234,9 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i ORDER BY SEQUENCE#, DEST_ID");
+            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i ORDER BY SEQUENCE#, DEST_ID");
             stmt.stmt->setInt(1, databaseSequence);
+            stmt.stmt->setInt(2, resetlogsId);
             stmt.executeQuery();
 
             string path;
@@ -242,7 +244,7 @@ namespace OpenLogReplicator {
 
             while (stmt.rset->next()) {
                 path = stmt.rset->getString(1);
-                sequence = stmt.rset->getInt(2);
+                sequence = stmt.rset->getNumber(2);
                 firstScn = stmt.rset->getNumber(3);
                 nextScn = stmt.rset->getNumber(5);
                 if (path.length() == 0) {
@@ -250,7 +252,7 @@ namespace OpenLogReplicator {
                     throw RedoLogException("archive file missing", nullptr, 0);
                 }
 
-                OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, path.c_str());
+                OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, resetlogsId, path.c_str());
                 redo->firstScn = firstScn;
                 redo->nextScn = nextScn;
                 redo->sequence = sequence;
@@ -275,7 +277,7 @@ namespace OpenLogReplicator {
 
             while (stmt.rset->next()) {
                 groupPrev = group;
-                group = stmt.rset->getInt(1);
+                group = stmt.rset->getNumber(1);
                 path = stmt.rset->getString(2);
 
                 if (groupPrev != groupLast && group != groupPrev) {
@@ -284,7 +286,7 @@ namespace OpenLogReplicator {
 
                 if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
                     cerr << "Found log: GROUP: " << group << ", PATH: " << path << endl;
-                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, path.c_str());
+                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, resetlogsId, path.c_str());
                     onlineRedoSet.insert(redo);
                     groupLast = group;
                 }
@@ -310,11 +312,12 @@ namespace OpenLogReplicator {
             return 0;
 
         typescn currentDatabaseScn;
+        uint32_t currentResetlogsId;
 
         try {
             OracleStatement stmt(&conn, env);
             //check archivelog mode, supplemental log min, endian
-            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, VER.BANNER FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%'");
+            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
             stmt.executeQuery();
 
             if (stmt.rset->next()) {
@@ -341,10 +344,16 @@ namespace OpenLogReplicator {
                     bigEndian = true;
                 oracleEnvironment->initialize(bigEndian);
 
-                currentDatabaseScn = stmt.rset->getInt(4);
+                currentDatabaseScn = stmt.rset->getNumber(4);
+                currentResetlogsId = stmt.rset->getNumber(5);
+                if (resetlogsId != 0 && currentResetlogsId != resetlogsId) {
+                    cerr << "Error: Incorrect database incarnation. Previous resetlogs id:" << dec << resetlogsId << ", current: " << currentResetlogsId << endl;
+                    return 0;
+                } else
+                    resetlogsId = currentResetlogsId;
 
                 //12+
-                string VERSION = stmt.rset->getString(5);
+                string VERSION = stmt.rset->getString(6);
 
                 oracleEnvironment->conId = 0;
                 if (VERSION.find("Oracle Database 11g") == string::npos) {
@@ -383,7 +392,8 @@ namespace OpenLogReplicator {
         }
 
         cout << "- sequence: " << dec << databaseSequence << endl;
-        cout << "- scn: " << databaseScn << endl;
+        cout << "- scn: " << dec << databaseScn << endl;
+        cout << "- resetlogs id: " << dec << resetlogsId << endl;
 
         if (databaseSequence == 0 || databaseScn == 0)
             return 0;
@@ -412,13 +422,15 @@ namespace OpenLogReplicator {
                 //skip partitioned/IOT tables
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                uint32_t objn = stmt.rset->getInt(2);
+                uint32_t objn = stmt.rset->getNumber(2);
                 if (stmt.rset->isNull(1)) {
                     cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT";
                 } else {
-                    uint32_t objd = stmt.rset->getInt(1);
-                    uint32_t cluCols = stmt.rset->getInt(3);
-                    uint32_t depdendencies = stmt.rset->getInt(6);
+                    uint32_t objd = stmt.rset->getNumber(1);
+                    uint32_t cluCols = 0;
+                    if (!stmt.rset->isNull(3))
+                        stmt.rset->getNumber(3);
+                    uint32_t depdendencies = stmt.rset->getNumber(6);
                     uint32_t totalPk = 0, totalCols = 0;
                     OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner.c_str(), objectName.c_str());
                     ++tabCnt;
@@ -430,12 +442,12 @@ namespace OpenLogReplicator {
                     stmt2.executeQuery();
 
                     while (stmt2.rset->next()) {
-                        uint32_t colNo = stmt2.rset->getInt(1);
-                        uint32_t segColNo = stmt2.rset->getInt(2);
+                        uint32_t colNo = stmt2.rset->getNumber(1);
+                        uint32_t segColNo = stmt2.rset->getNumber(2);
                         string columnName = stmt2.rset->getString(3);
-                        uint32_t typeNo = stmt2.rset->getInt(4);
-                        uint32_t length = stmt2.rset->getInt(5);
-                        uint32_t numPk = stmt2.rset->getInt(6);
+                        uint32_t typeNo = stmt2.rset->getNumber(4);
+                        uint32_t length = stmt2.rset->getNumber(5);
+                        uint32_t numPk = stmt2.rset->getNumber(6);
                         OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
                         totalPk += numPk;
                         ++totalCols;
@@ -473,6 +485,9 @@ namespace OpenLogReplicator {
         const Value& databaseSequenceVal = getJSONfield(document, "sequence");
         databaseSequence = atoi(databaseSequenceVal.GetString());
 
+        const Value& resetlogsIdVal = getJSONfield(document, "resetlogs-id");
+        resetlogsId = atoi(resetlogsIdVal.GetString());
+
         const Value& scnVal = getJSONfield(document, "scn");
         databaseScn = atoi(scnVal.GetString());
 
@@ -506,7 +521,8 @@ namespace OpenLogReplicator {
            << "  \"database\": \"" << database << "\"," << endl
            << "  \"sequence\": \"" << dec << databaseSequence << "\"," << endl
            << "  \"min-scn\": \"" << dec << minScn << "\"," << endl
-           << "  \"scn\": \"" << dec << databaseScn << "\"" << endl
+           << "  \"scn\": \"" << dec << databaseScn << "\"," << endl
+           << "  \"resetlogs-id\": \"" << dec << resetlogsId << "\"" << endl
            << "}";
 
         outfile << ss.rdbuf();

@@ -54,6 +54,7 @@ namespace OpenLogReplicator {
         typeseq databaseSequence;
         typeseq databaseSequenceArchMax;
         typescn databaseScn;
+        uint32_t resetlogsId;
         Environment *env;
         Connection *conn;
         string user;
