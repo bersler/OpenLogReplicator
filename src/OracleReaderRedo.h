@@ -45,8 +45,6 @@ namespace OpenLogReplicator {
         int group;
         typescn lastCheckpointScn;
         typescn curScn;
-        typescn firstScn;
-        typescn nextScn;
         uint32_t recordBeginPos;
         uint32_t recordBeginBlock;
         typetime recordTimestmap;
@@ -69,7 +67,7 @@ namespace OpenLogReplicator {
         char SID[9];
         int fileDes;
 
-        int initFile();
+        void initFile();
         int readFileMore();
         int checkBlockHeader(uint8_t *buffer, uint32_t blockNumberExpected);
         int checkRedoHeader(bool first);
@@ -82,12 +80,13 @@ namespace OpenLogReplicator {
 
     public:
         string path;
+        typescn firstScn;
+        typescn nextScn;
         typeseq sequence;
 
+        void reload();
         int processLog(OracleReader *oracleReader);
-
-        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, typescn firstScn,
-                typescn nextScn, typeseq sequence, const char* path);
+        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path);
         virtual ~OracleReaderRedo();
 
         friend ostream& operator<<(ostream& os, const OracleReaderRedo& ors);

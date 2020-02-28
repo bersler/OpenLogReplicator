@@ -62,14 +62,11 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, typescn firstScn,
-                typescn nextScn, typeseq sequence, const char* path) :
+    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path) :
             oracleEnvironment(oracleEnvironment),
             group(group),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
-            firstScn(firstScn),
-            nextScn(nextScn),
             recordBeginPos(0),
             recordBeginBlock(0),
             recordTimestmap(0),
@@ -90,7 +87,9 @@ namespace OpenLogReplicator {
             lastCheckpointInfo(false),
             fileDes(-1),
             path(path),
-            sequence(sequence) {
+            firstScn(ZERO_SCN),
+            nextScn(ZERO_SCN),
+            sequence(0) {
     }
 
     int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, uint32_t blockNumberExpected) {
@@ -102,10 +101,14 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        uint32_t sequenceCheck = oracleEnvironment->read32(buffer + 8);
+        uint32_t sequenceHeader = oracleEnvironment->read32(buffer + 8);
 
-        if (sequence != sequenceCheck)
-            return REDO_WRONG_SEQUENCE;
+        if (sequence == 0) {
+            sequence = sequenceHeader;
+        } else {
+            if (sequence != sequenceHeader)
+                return REDO_WRONG_SEQUENCE;
+        }
 
         uint32_t blockNumberCheck = oracleEnvironment->read32(buffer + 4);
         if (blockNumberCheck != blockNumberExpected) {
@@ -234,24 +237,29 @@ namespace OpenLogReplicator {
             return ret;
         }
 
-        if (firstScnHeader != firstScn) {
-            //archive log incorrect sequence
-            if (group == 0) {
-                cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") for archived redo log does not match database information (" <<
-                        firstScn << "): " << path.c_str() << endl;
-                return REDO_ERROR;
-            //redo log switch appeared and header is now overwritten
-            } else {
-                if (oracleEnvironment->trace >= TRACE_WARN)
-                    cerr << "WARNING: first SCN (" << firstScnHeader << ") for online redo log does not match database information (" <<
+        if (firstScn == ZERO_SCN) {
+            firstScn = firstScnHeader;
+            nextScn = nextScnHeader;
+        } else {
+            if (firstScnHeader != firstScn) {
+                //archive log incorrect sequence
+                if (group == 0) {
+                    cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") for archived redo log does not match database information (" <<
                             firstScn << "): " << path.c_str() << endl;
-                return REDO_WRONG_SEQUENCE_SWITCHED;
+                    return REDO_ERROR;
+                //redo log switch appeared and header is now overwritten
+                } else {
+                    if (oracleEnvironment->trace >= TRACE_WARN)
+                        cerr << "WARNING: first SCN (" << dec << firstScnHeader << ") for online redo log does not match database information (" <<
+                                firstScn << "): " << path.c_str() << endl;
+                    return REDO_WRONG_SEQUENCE_SWITCHED;
+                }
             }
         }
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (oracleEnvironment->trace >= TRACE_INFO)
+            if (oracleEnvironment->trace >= TRACE_DETAIL)
                 cerr << "INFO: Log switch to " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
@@ -431,16 +439,15 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    int OracleReaderRedo::initFile() {
+    void OracleReaderRedo::initFile() {
         if (fileDes != -1)
-            return REDO_OK;
+            return;
 
         fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | (oracleEnvironment->directRead ? O_DIRECT : 0));
         if (fileDes <= 0) {
             cerr << "ERROR: can not open: " << path.c_str() << endl;
-            return REDO_ERROR;
+            throw RedoLogException("eror reading file", nullptr, 0);
         }
-        return REDO_OK;
     }
 
     int OracleReaderRedo::readFileMore() {
@@ -1164,6 +1171,20 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
+    void OracleReaderRedo::reload() {
+        firstScn = ZERO_SCN;
+        nextScn = ZERO_SCN;
+        sequence = 0;
+
+        if (fileDes > 0) {
+            close(fileDes);
+            fileDes = -1;
+        }
+
+        initFile();
+        checkRedoHeader(true);
+    }
+
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "INFO: Processing log: " << *this << endl;
@@ -1175,12 +1196,9 @@ namespace OpenLogReplicator {
         }
         clock_t cStart = clock();
 
-        int ret = initFile();
-        if (ret != REDO_OK)
-            return ret;
-
+        initFile();
         bool reachedEndOfOnlineRedo = false;
-        ret = checkRedoHeader(true);
+        int ret = checkRedoHeader(true);
         if (ret != REDO_OK) {
             if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
                 oracleEnvironment->dumpStream.close();
@@ -1247,7 +1265,7 @@ namespace OpenLogReplicator {
 
         if (fileDes > 0) {
             close(fileDes);
-            fileDes = 0;
+            fileDes = -1;
         }
 
         if (oracleEnvironment->trace >= TRACE_INFO) {

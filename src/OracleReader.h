@@ -61,11 +61,13 @@ namespace OpenLogReplicator {
         string connectString;
 
         priority_queue<OracleReaderRedo*, vector<OracleReaderRedo*>, OracleReaderRedoCompare> archiveRedoQueue;
-        set<OracleReaderRedo*> redoSet;
+        set<OracleReaderRedo*> onlineRedoSet;
+        set<OracleReaderRedo*> archiveRedoSet;
 
         void checkConnection(bool reconnect);
         void archLogGetList();
         void onlineLogGetList();
+        void refreshOnlineLogs();
 
     public:
         virtual void *run();
