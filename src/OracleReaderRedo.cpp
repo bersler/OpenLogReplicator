@@ -820,7 +820,7 @@ namespace OpenLogReplicator {
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
             redoLogRecord->object = oracleEnvironment->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0 || (redoLogRecord->object->altered && redoLogRecord->opCode != 0x01801))
                 return;
 
             Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
@@ -914,7 +914,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord1->object = oracleEnvironment->checkDict(objn, objd);
-        if (redoLogRecord1->object == nullptr)
+        if (redoLogRecord1->object == nullptr || redoLogRecord1->object->altered)
             return;
 
         redoLogRecord2->object = redoLogRecord1->object;
@@ -1306,7 +1306,7 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleReaderRedo& ors) {
-        os << "(" << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.resetlogsId << ", \"" << ors.path << "\")";
+        os << "(" << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", " << ors.resetlogsId << ", \"" << ors.path << "\")";
         return os;
     }
 

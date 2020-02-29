@@ -53,9 +53,9 @@ namespace OpenLogReplicator {
                 //uint16_t cnt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
                 if (type == 85 // truncate table
                         //|| type == 1 //create table
-                        //|| type == 12 // drop table
-                        //|| type == 15 // alter table
-                        //|| type == 86 // truncate partition
+                        || type == 12 // drop table
+                        || type == 15 // alter table
+                        || type == 86 // truncate partition
                 )
                     validDDL = true;
 
@@ -64,8 +64,14 @@ namespace OpenLogReplicator {
                     validDDL = false;
                 }
             } else if (i == 12) {
-                if (validDDL)
+                if (validDDL) {
                     redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
+                    if (type == 12 || type == 15) {
+                        OracleObject *obj = oracleEnvironment->checkDict(redoLogRecord->objn, 0);
+                        if (obj != nullptr)
+                            obj->altered = true;
+                    }
+                }
             }
 
             fieldPos += (oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2) + 3) & 0xFFFC;

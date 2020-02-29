@@ -836,6 +836,20 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\"}");
+        } else if (type == 12) {
+           commandBuffer
+                   ->append("{\"operation\": \"drop\", \"table\": \"")
+                   ->append(redoLogRecord1->object->owner)
+                   ->append('.')
+                   ->append(redoLogRecord1->object->objectName)
+                   ->append("\"}");
+        } else if (type == 15) {
+          commandBuffer
+                  ->append("{\"operation\": \"alter\", \"table\": \"")
+                  ->append(redoLogRecord1->object->owner)
+                  ->append('.')
+                  ->append(redoLogRecord1->object->objectName)
+                  ->append("\"}");
        }
     }
 }
