@@ -791,19 +791,20 @@ namespace OpenLogReplicator {
                 cnt = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 20);
                 if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "SEQ: " << dec << seq << "/" << dec << cnt << endl;
+                    cerr << "TYPE: " << dec << type << endl;
                 }
             } else if (i == 8) {
                 //DDL text
-                if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "DDL[" << dec << fieldLength << "]: ";
-                    for (uint32_t j = 0; j < fieldLength; ++j) {
+                    for (uint32_t j = 0; j < (uint32_t)(fieldLength - 1); ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
                     cerr << endl;
                 }
             } else if (i == 9) {
                 //owner
-                if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "OWNER[" << dec << fieldLength << "]: ";
                     for (uint32_t j = 0; j < fieldLength; ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
@@ -812,7 +813,7 @@ namespace OpenLogReplicator {
                 }
             } else if (i == 10) {
                 //table
-                if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "TABLE[" << fieldLength << "]: ";
                     for (uint32_t j = 0; j < fieldLength; ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
@@ -821,7 +822,7 @@ namespace OpenLogReplicator {
                 }
             } else if (i == 12) {
                 redoLogRecord1->objn = oracleEnvironment->read32(redoLogRecord1->data + fieldPos + 0);
-                if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "OBJN: " << dec << redoLogRecord1->objn << endl;
                 }
             }
