@@ -118,7 +118,7 @@ namespace OpenLogReplicator {
         OracleReaderRedo *redo = nullptr;
 
         while (!this->shutdown) {
-            if (oracleEnvironment->trace >= TRACE_DETAIL)
+            if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: checking archive redo logs" << endl;
 
             //try to read all archive logs
@@ -161,7 +161,7 @@ namespace OpenLogReplicator {
                 redo = nullptr;
             }
 
-            if (oracleEnvironment->trace >= TRACE_DETAIL)
+            if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: checking online redo logs" << endl;
             //switch to online log reading
             refreshOnlineLogs();

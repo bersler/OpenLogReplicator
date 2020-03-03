@@ -267,7 +267,7 @@ namespace OpenLogReplicator {
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (oracleEnvironment->trace >= TRACE_DETAIL)
+            if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: updating next SCN to: " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
@@ -1133,10 +1133,6 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::processBuffer(void) {
         while (redoBufferFileStart < redoBufferFileEnd) {
-            //int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos, blockNumber);
-            //if (ret != REDO_OK)
-            //    return ret;
-
             uint32_t curBlockPos = 16;
             while (curBlockPos < blockSize) {
                 //next record
@@ -1188,15 +1184,29 @@ namespace OpenLogReplicator {
         firstScn = ZERO_SCN;
         nextScn = ZERO_SCN;
         sequence = 0;
+        blockNumber = 0;
+        lastCheckpointScn = 0;
+        curScn = ZERO_SCN;
+        recordTimestmap = 0;
+        recordBeginPos = 0;
+        recordBeginBlock = 0;
+        recordPos = 0;
+        recordLeftToCopy = 0;
+        redoBufferPos = 0;
+        redoBufferFileStart = 0;
+        redoBufferFileEnd = 0;
+        lastReadSuccessfull = false;
+        lastCheckpointInfo = false;
+        lastRead = READ_CHUNK_MIN_SIZE;
 
         initFile();
         checkRedoHeader(true);
     }
 
     void OracleReaderRedo::clone(OracleReaderRedo *redo) {
+        blockNumber = redo->blockNumber;
         lastCheckpointScn = redo->lastCheckpointScn;
         curScn = redo->curScn;
-        recordTimestmap = redo->recordTimestmap;
         recordBeginPos = redo->recordBeginPos;
         recordBeginBlock = redo->recordBeginBlock;
         recordTimestmap = redo->recordTimestmap;
@@ -1211,6 +1221,7 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "INFO: Processing log: " << *this << endl;
 
+        cerr << "processLog: redoBufferFileStart = " << dec << redoBufferFileStart << endl;
         if (oracleEnvironment->dumpLogFile >= 1 && redoBufferFileStart == 0) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
