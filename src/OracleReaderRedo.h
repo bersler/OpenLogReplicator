@@ -43,30 +43,23 @@ namespace OpenLogReplicator {
     private:
         OracleEnvironment *oracleEnvironment;
         int group;
-        uint32_t resetlogsId;
+        uint32_t blockSize;
+        uint32_t blockNumber;
+        uint32_t numBlocks;
+        uint32_t lastRead;
+        bool lastReadSuccessfull;
+        bool lastCheckpointInfo;
+        int fileDes;
         typescn lastCheckpointScn;
         typescn curScn;
         uint32_t recordBeginPos;
         uint32_t recordBeginBlock;
         typetime recordTimestmap;
-        uint32_t recordObjn;
-        uint32_t recordObjd;
-
-        uint32_t blockSize;
-        uint32_t blockNumber;
-        uint32_t numBlocks;
+        uint32_t recordPos;
+        uint32_t recordLeftToCopy;
         uint32_t redoBufferPos;
         uint64_t redoBufferFileStart;
         uint64_t redoBufferFileEnd;
-        uint32_t recordPos;
-        uint32_t recordLeftToCopy;
-        uint32_t lastRead;
-        uint32_t headerBufferFileEnd;
-        bool lastReadSuccessfull;
-        bool redoOverwritten;
-        bool lastCheckpointInfo;
-        char SID[9];
-        int fileDes;
 
         void initFile();
         int readFileMore();
@@ -86,8 +79,9 @@ namespace OpenLogReplicator {
         typeseq sequence;
 
         void reload();
+        void clone(OracleReaderRedo *redo);
         int processLog(OracleReader *oracleReader);
-        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, uint32_t resetlogsId, const char* path);
+        OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path);
         virtual ~OracleReaderRedo();
 
         friend ostream& operator<<(ostream& os, const OracleReaderRedo& ors);

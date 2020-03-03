@@ -62,31 +62,26 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, uint32_t resetlogsId, const char* path) :
+    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path) :
             oracleEnvironment(oracleEnvironment),
             group(group),
-            resetlogsId(resetlogsId),
+            blockSize(0),
+            blockNumber(0),
+            numBlocks(0),
+            lastRead(READ_CHUNK_MIN_SIZE),
+            lastReadSuccessfull(false),
+            lastCheckpointInfo(false),
+            fileDes(-1),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
             recordBeginPos(0),
             recordBeginBlock(0),
             recordTimestmap(0),
-            recordObjn(0),
-            recordObjd(0),
-            blockSize(0),
-            blockNumber(0),
-            numBlocks(0),
+            recordPos(0),
+            recordLeftToCopy(0),
             redoBufferPos(0),
             redoBufferFileStart(0),
             redoBufferFileEnd(0),
-            recordPos(0),
-            recordLeftToCopy(0),
-            lastRead(READ_CHUNK_MIN_SIZE),
-            headerBufferFileEnd(0),
-            lastReadSuccessfull(false),
-            redoOverwritten(false),
-            lastCheckpointInfo(false),
-            fileDes(-1),
             path(path),
             firstScn(ZERO_SCN),
             nextScn(ZERO_SCN),
@@ -107,8 +102,15 @@ namespace OpenLogReplicator {
         if (sequence == 0) {
             sequence = sequenceHeader;
         } else {
-            if (sequence != sequenceHeader)
-                return REDO_WRONG_SEQUENCE;
+            if (group == 0) {
+                if (sequence != sequenceHeader)
+                    return REDO_WRONG_SEQUENCE;
+            } else {
+                if (sequence > sequenceHeader)
+                    return REDO_EMPTY;
+                if (sequence < sequenceHeader)
+                    return REDO_WRONG_SEQUENCE_SWITCHED;
+            }
         }
 
         uint32_t blockNumberCheck = oracleEnvironment->read32(buffer + 4);
@@ -121,7 +123,7 @@ namespace OpenLogReplicator {
     }
 
     int OracleReaderRedo::checkRedoHeader(bool first) {
-        headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
+        uint32_t headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
         if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
             cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
             return REDO_ERROR;
@@ -234,14 +236,12 @@ namespace OpenLogReplicator {
         typescn nextScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 192);
 
         int ret = checkBlockHeader(oracleEnvironment->headerBuffer + blockSize, 1);
-        if (ret == REDO_ERROR) {
-            cerr << "ERROR: bad header" << endl;
+        if (ret != REDO_OK)
             return ret;
-        }
 
-        if (resetlogsCnt != resetlogsId) {
+        if (resetlogsCnt != oracleEnvironment->resetlogsId) {
             cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
-                    resetlogsId << "): " << path.c_str() << endl;
+                    oracleEnvironment->resetlogsId << "): " << path.c_str() << endl;
             return REDO_ERROR;
         }
 
@@ -268,7 +268,7 @@ namespace OpenLogReplicator {
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
             if (oracleEnvironment->trace >= TRACE_DETAIL)
-                cerr << "INFO: Log switch to " << dec << nextScnHeader << endl;
+                cerr << "INFO: updating next SCN to: " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -277,6 +277,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
+        char SID[9];
         memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
         if (oracleEnvironment->dumpLogFile >= 1 && first) {
@@ -484,13 +485,16 @@ namespace OpenLogReplicator {
 
             for (uint32_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                 int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos + numBlock * blockSize, blockNumber + numBlock);
+
+                if (redoBufferFileStart < redoBufferFileEnd && (ret == REDO_WRONG_SEQUENCE_SWITCHED || ret == REDO_EMPTY)) {
+                    lastReadSuccessfull = false;
+                    lastRead = READ_CHUNK_MIN_SIZE;
+                    return REDO_OK;
+                }
+
                 if (ret != REDO_OK) {
                     lastReadSuccessfull = false;
                     lastRead = READ_CHUNK_MIN_SIZE;
-
-                    if (redoBufferFileStart < redoBufferFileEnd)
-                        return REDO_OK;
-
                     return ret;
                 }
 
@@ -1129,9 +1133,9 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::processBuffer(void) {
         while (redoBufferFileStart < redoBufferFileEnd) {
-            int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos, blockNumber);
-            if (ret != 0)
-                return ret;
+            //int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos, blockNumber);
+            //if (ret != REDO_OK)
+            //    return ret;
 
             uint32_t curBlockPos = 16;
             while (curBlockPos < blockSize) {
@@ -1141,8 +1145,10 @@ namespace OpenLogReplicator {
                         break;
 
                     recordLeftToCopy = (oracleEnvironment->read32(oracleEnvironment->redoBuffer + redoBufferPos + curBlockPos) + 3) & 0xFFFFFFFC;
-                    if (recordLeftToCopy > REDO_RECORD_MAX_SIZE)
+                    if (recordLeftToCopy > REDO_RECORD_MAX_SIZE) {
+                        cerr << "WARNING: too big log record: " << dec << recordLeftToCopy << " bytes" << endl;
                         throw RedoLogException("too big log record: ", path.c_str(), recordLeftToCopy);
+                    }
 
                     recordPos = 0;
                     recordBeginPos = curBlockPos;
@@ -1183,23 +1189,36 @@ namespace OpenLogReplicator {
         nextScn = ZERO_SCN;
         sequence = 0;
 
-        if (fileDes > 0) {
-            close(fileDes);
-            fileDes = -1;
-        }
-
         initFile();
         checkRedoHeader(true);
+    }
+
+    void OracleReaderRedo::clone(OracleReaderRedo *redo) {
+        lastCheckpointScn = redo->lastCheckpointScn;
+        curScn = redo->curScn;
+        recordTimestmap = redo->recordTimestmap;
+        recordBeginPos = redo->recordBeginPos;
+        recordBeginBlock = redo->recordBeginBlock;
+        recordTimestmap = redo->recordTimestmap;
+        recordPos = redo->recordPos;
+        recordLeftToCopy = redo->recordLeftToCopy;
+        redoBufferPos = redo->redoBufferPos;
+        redoBufferFileStart = redo->redoBufferFileStart;
+        redoBufferFileEnd = redo->redoBufferFileEnd;
     }
 
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "INFO: Processing log: " << *this << endl;
-        if (oracleEnvironment->dumpLogFile >= 1) {
+
+        if (oracleEnvironment->dumpLogFile >= 1 && redoBufferFileStart == 0) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
             oracleEnvironment->dumpStream.open(name.str());
-            //TODO: add file creation error handling
+            if (!oracleEnvironment->dumpStream.is_open()) {
+                cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;
+                oracleEnvironment->dumpLogFile = 0;
+            }
         }
         clock_t cStart = clock();
 
@@ -1212,11 +1231,11 @@ namespace OpenLogReplicator {
             return ret;
         }
 
-        redoBufferFileStart = blockSize * 2;
-        redoBufferFileEnd = blockSize * 2;
-        blockNumber = 2;
-        recordObjn = 0xFFFFFFFF;
-        recordObjd = 0xFFFFFFFF;
+        if (redoBufferFileStart == 0) {
+            redoBufferFileStart = blockSize * 2;
+            redoBufferFileEnd = blockSize * 2;
+            blockNumber = 2;
+        }
 
         while (blockNumber <= numBlocks && !reachedEndOfOnlineRedo && !oracleReader->shutdown) {
             processBuffer();
@@ -1225,17 +1244,21 @@ namespace OpenLogReplicator {
                     && !oracleReader->shutdown) {
                 int ret = readFileMore();
 
-                if (redoBufferFileStart < redoBufferFileEnd)
+                if (ret == REDO_OK && redoBufferFileStart < redoBufferFileEnd)
                     break;
 
                 //for archive redo log break on all errors
                 if (group == 0) {
                     if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
                         oracleEnvironment->dumpStream.close();
+
                     return ret;
                 //for online redo log
                 } else {
-                    if (ret == REDO_ERROR || ret == REDO_WRONG_SEQUENCE_SWITCHED) {
+                    if (ret == REDO_WRONG_SEQUENCE_SWITCHED)
+                        return ret;
+
+                    if (ret != REDO_OK && ret != REDO_EMPTY) {
                         if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
                             oracleEnvironment->dumpStream.close();
                         return ret;
@@ -1255,7 +1278,6 @@ namespace OpenLogReplicator {
                     }
 
                     flushTransactions(true);
-                    //online redo log problem
                     if (oracleReader->shutdown)
                         break;
 
@@ -1306,7 +1328,7 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleReaderRedo& ors) {
-        os << "(" << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", " << ors.resetlogsId << ", \"" << ors.path << "\")";
+        os << "(" << dec << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.path << "\")";
         return os;
     }
 

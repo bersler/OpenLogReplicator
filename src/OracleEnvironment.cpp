@@ -41,7 +41,8 @@ namespace OpenLogReplicator {
         directRead(directRead),
         trace(trace),
         version(0),
-        sortCols(sortCols) {
+        sortCols(sortCols),
+        resetlogsId(0) {
         transactionHeap.initialize(maxConcurrentTransactions);
     }
 

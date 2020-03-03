@@ -55,7 +55,6 @@ namespace OpenLogReplicator {
         databaseSequence(0),
         databaseSequenceArchMax(0),
         databaseScn(0),
-        resetlogsId(0),
         env(nullptr),
         conn(nullptr),
         user(user),
@@ -72,9 +71,9 @@ namespace OpenLogReplicator {
         writeCheckpoint();
 
         while (!archiveRedoQueue.empty()) {
-            OracleReaderRedo *redo = archiveRedoQueue.top();
+            OracleReaderRedo *redoTmp = archiveRedoQueue.top();
             archiveRedoQueue.pop();
-            delete redo;
+            delete redoTmp;
         }
 
         if (conn != nullptr) {
@@ -115,6 +114,8 @@ namespace OpenLogReplicator {
         checkConnection(true);
         cout << "- Oracle Reader for: " << database << endl;
         onlineLogGetList();
+        int ret = REDO_OK;
+        OracleReaderRedo *redo = nullptr;
 
         while (!this->shutdown) {
             if (oracleEnvironment->trace >= TRACE_DETAIL)
@@ -129,8 +130,14 @@ namespace OpenLogReplicator {
                 if (this->shutdown)
                     return 0;
 
-                OracleReaderRedo *redo = nullptr;
+                OracleReaderRedo *redoPrev = redo;
                 redo = archiveRedoQueue.top();
+
+                if (ret == REDO_WRONG_SEQUENCE_SWITCHED && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
+                    if (oracleEnvironment->trace >= TRACE_WARN)
+                        cerr << "INFO: continuing broken online redo log read process with archive logs" << endl;
+                    redo->clone(redoPrev);
+                }
 
                 if (redo->sequence != databaseSequence) {
                     cerr << "ERROR: archive log path: " << redo->path << endl;
@@ -139,12 +146,13 @@ namespace OpenLogReplicator {
                     throw RedoLogException("incorrect archive log sequence", nullptr, 0);
                 }
 
-                int ret = redo->processLog(this);
+                ret = redo->processLog(this);
                 if (this->shutdown)
                     return 0;
 
-                if (ret != REDO_OK)
+                if (ret != REDO_OK) {
                     throw RedoLogException("read archive log", nullptr, 0);
+                }
 
                 databaseSequence = redo->sequence + 1;
                 writeCheckpoint();
@@ -162,7 +170,7 @@ namespace OpenLogReplicator {
                 if (this->shutdown)
                     return 0;
 
-                OracleReaderRedo *redo = nullptr;
+                redo = nullptr;
 
                 if (oracleEnvironment->trace >= TRACE_FULL)
                     cerr << "searching for sequence: " << dec << databaseSequence << endl;
@@ -203,13 +211,16 @@ namespace OpenLogReplicator {
                     break;
 
                 //if online redo log is overwritten - then switch to reading archive logs
-                int ret = redo->processLog(this);
+                ret = redo->processLog(this);
                 if (this->shutdown)
                     return 0;
 
                 if (ret != REDO_OK) {
-                    if (ret == REDO_WRONG_SEQUENCE_SWITCHED)
+                    if (ret == REDO_WRONG_SEQUENCE_SWITCHED) {
+                        if (oracleEnvironment->trace >= TRACE_DETAIL)
+                            cerr << "INFO: online redo log overwritten by new data" << endl;
                         break;
+                    }
                     throw RedoLogException("read archive log", nullptr, 0);
                 }
                 databaseSequence = redo->sequence + 1;
@@ -234,9 +245,9 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i ORDER BY SEQUENCE#, DEST_ID");
+            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
             stmt.stmt->setInt(1, databaseSequence);
-            stmt.stmt->setInt(2, resetlogsId);
+            stmt.stmt->setInt(2, oracleEnvironment->resetlogsId);
             stmt.executeQuery();
 
             string path;
@@ -247,12 +258,8 @@ namespace OpenLogReplicator {
                 sequence = stmt.rset->getNumber(2);
                 firstScn = stmt.rset->getNumber(3);
                 nextScn = stmt.rset->getNumber(5);
-                if (path.length() == 0) {
-                    cerr << "ERROR: Missing archive log for SEQ " << dec << sequence << " SCN: " << firstScn << "-" << nextScn << endl;
-                    throw RedoLogException("archive file missing", nullptr, 0);
-                }
 
-                OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, resetlogsId, path.c_str());
+                OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, path.c_str());
                 redo->firstScn = firstScn;
                 redo->nextScn = nextScn;
                 redo->sequence = sequence;
@@ -286,7 +293,7 @@ namespace OpenLogReplicator {
 
                 if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
                     cerr << "Found log: GROUP: " << group << ", PATH: " << path << endl;
-                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, resetlogsId, path.c_str());
+                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, path.c_str());
                     onlineRedoSet.insert(redo);
                     groupLast = group;
                 }
@@ -346,11 +353,12 @@ namespace OpenLogReplicator {
 
                 currentDatabaseScn = stmt.rset->getNumber(4);
                 currentResetlogsId = stmt.rset->getNumber(5);
-                if (resetlogsId != 0 && currentResetlogsId != resetlogsId) {
-                    cerr << "Error: Incorrect database incarnation. Previous resetlogs id:" << dec << resetlogsId << ", current: " << currentResetlogsId << endl;
+                if (oracleEnvironment->resetlogsId != 0 && currentResetlogsId != oracleEnvironment->resetlogsId) {
+                    cerr << "Error: Incorrect database incarnation. Previous resetlogs id:" << dec << oracleEnvironment->resetlogsId << ", current: " << currentResetlogsId << endl;
                     return 0;
-                } else
-                    resetlogsId = currentResetlogsId;
+                } else {
+                    oracleEnvironment->resetlogsId = currentResetlogsId;
+                }
 
                 //12+
                 string VERSION = stmt.rset->getString(6);
@@ -393,7 +401,7 @@ namespace OpenLogReplicator {
 
         cout << "- sequence: " << dec << databaseSequence << endl;
         cout << "- scn: " << dec << databaseScn << endl;
-        cout << "- resetlogs id: " << dec << resetlogsId << endl;
+        cout << "- resetlogs id: " << dec << oracleEnvironment->resetlogsId << endl;
 
         if (databaseSequence == 0 || databaseScn == 0)
             return 0;
@@ -486,7 +494,7 @@ namespace OpenLogReplicator {
         databaseSequence = atoi(databaseSequenceVal.GetString());
 
         const Value& resetlogsIdVal = getJSONfield(document, "resetlogs-id");
-        resetlogsId = atoi(resetlogsIdVal.GetString());
+        oracleEnvironment->resetlogsId = atoi(resetlogsIdVal.GetString());
 
         const Value& scnVal = getJSONfield(document, "scn");
         databaseScn = atoi(scnVal.GetString());
@@ -522,7 +530,7 @@ namespace OpenLogReplicator {
            << "  \"sequence\": \"" << dec << databaseSequence << "\"," << endl
            << "  \"min-scn\": \"" << dec << minScn << "\"," << endl
            << "  \"scn\": \"" << dec << databaseScn << "\"," << endl
-           << "  \"resetlogs-id\": \"" << dec << resetlogsId << "\"" << endl
+           << "  \"resetlogs-id\": \"" << dec << oracleEnvironment->resetlogsId << "\"" << endl
            << "}";
 
         outfile << ss.rdbuf();

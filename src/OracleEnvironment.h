@@ -64,6 +64,7 @@ namespace OpenLogReplicator {
         uint32_t version;           //compatiblity level of redo logs
         uint32_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         uint32_t conId;
+        uint32_t resetlogsId;
 
         OracleObject *checkDict(uint32_t objn, uint32_t objd);
         void addToDict(OracleObject *object);
