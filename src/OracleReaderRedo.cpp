@@ -1221,7 +1221,6 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->trace >= TRACE_INFO)
             cerr << "INFO: Processing log: " << *this << endl;
 
-        cerr << "processLog: redoBufferFileStart = " << dec << redoBufferFileStart << endl;
         if (oracleEnvironment->dumpLogFile >= 1 && redoBufferFileStart == 0) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
