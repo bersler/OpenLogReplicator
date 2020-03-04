@@ -71,6 +71,7 @@ namespace OpenLogReplicator {
             lastRead(READ_CHUNK_MIN_SIZE),
             lastReadSuccessfull(false),
             lastCheckpointInfo(false),
+            headerInfoPrinted(false),
             fileDes(-1),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
@@ -88,15 +89,16 @@ namespace OpenLogReplicator {
             sequence(0) {
     }
 
-    int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, uint32_t blockNumberExpected) {
+    int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, uint32_t blockNumber) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
         if (buffer[0] != 1 || buffer[1] != 0x22) {
-            cerr << "ERROR: header bad magic number for block " << blockNumberExpected << endl;
+            cerr << "ERROR: header bad magic number for block " << blockNumber << endl;
             return REDO_ERROR;
         }
 
+        uint32_t blockNumberHeader = oracleEnvironment->read32(buffer + 4);
         uint32_t sequenceHeader = oracleEnvironment->read32(buffer + 8);
 
         if (sequence == 0) {
@@ -113,16 +115,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint32_t blockNumberCheck = oracleEnvironment->read32(buffer + 4);
-        if (blockNumberCheck != blockNumberExpected) {
-            cerr << "ERROR: header bad block number for " << blockNumberExpected << ", found: " << blockNumberCheck << endl;
+        if (blockNumberHeader != blockNumber) {
+            cerr << "ERROR: header bad block number for " << dec << blockNumber << ", found: " << blockNumberHeader << endl;
             return REDO_ERROR;
         }
 
         return REDO_OK;
     }
 
-    int OracleReaderRedo::checkRedoHeader(bool first) {
+    int OracleReaderRedo::checkRedoHeader() {
         uint32_t headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
         if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
             cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
@@ -280,7 +281,7 @@ namespace OpenLogReplicator {
         char SID[9];
         memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
-        if (oracleEnvironment->dumpLogFile >= 1 && first) {
+        if (oracleEnvironment->dumpLogFile >= 1 && !headerInfoPrinted) {
             oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
             if (oracleEnvironment->version >= 12200)
                 oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
@@ -442,6 +443,8 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl;
             uint16_t enabledRedoThreads = 1; //FIXME
             oracleEnvironment->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
+
+            headerInfoPrinted = true;
         }
 
         return ret;
@@ -458,7 +461,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    int OracleReaderRedo::readFileMore() {
+    int OracleReaderRedo::readFile() {
         uint32_t curRead;
         if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
@@ -479,6 +482,9 @@ namespace OpenLogReplicator {
             lastRead = READ_CHUNK_MIN_SIZE;
         } else
             lastReadSuccessfull = true;
+
+        if (oracleEnvironment->trace >= TRACE_DETAIL)
+            cerr << "INFO: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
             uint32_t maxNumBlock = bytes / blockSize;
@@ -834,7 +840,7 @@ namespace OpenLogReplicator {
 
                 transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
                 transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer);
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer, sequence);
                 oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
                 oracleEnvironment->transactionHeap.add(transaction);
             } else {
@@ -842,7 +848,7 @@ namespace OpenLogReplicator {
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
                 transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer);
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer, sequence);
                 oracleEnvironment->transactionHeap.update(transaction->pos);
             }
             transaction->lastUba = redoLogRecord->uba;
@@ -867,11 +873,11 @@ namespace OpenLogReplicator {
         Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
             transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
-            transaction->touch(curScn);
+            transaction->touch(curScn, sequence);
             oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
             oracleEnvironment->transactionHeap.add(transaction);
         } else
-            transaction->touch(curScn);
+            transaction->touch(curScn, sequence);
 
         if (redoLogRecord->opCode == 0x0502) {
             transaction->isBegin = true;
@@ -950,7 +956,7 @@ namespace OpenLogReplicator {
                 if (transaction == nullptr) {
                     transaction = new Transaction(redoLogRecord1->xid, oracleEnvironment->transactionBuffer);
                     transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer);
+                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer, sequence);
                     oracleEnvironment->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleEnvironment->transactionHeap.add(transaction);
                 } else {
@@ -959,7 +965,7 @@ namespace OpenLogReplicator {
                                 transaction->lastSlt, transaction->lastRci);
 
                     transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer);
+                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer, sequence);
                     oracleEnvironment->transactionHeap.update(transaction->pos);
                 }
                 transaction->lastUba = redoLogRecord1->uba;
@@ -1109,10 +1115,10 @@ namespace OpenLogReplicator {
                 if (transaction->opCodes > 0)
                     oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                oracleEnvironment->xidTransactionMap.erase(transaction->xid);
 
-                //oracleEnvironment->xidTransactionMap[transaction->xid]->free(oracleEnvironment->transactionBuffer);
-                delete oracleEnvironment->xidTransactionMap[transaction->xid];
+                oracleEnvironment->xidTransactionMap.erase(transaction->xid);
+                delete transaction;
+
                 transaction = oracleEnvironment->transactionHeap.top();
             } else
                 break;
@@ -1121,8 +1127,9 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->trace >= TRACE_FULL) {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
-                cerr << "Queue: " << PRINTSCN64(transaction->firstScn) <<
-                        " lastScn: " << PRINTSCN64(transaction->lastScn) <<
+                cerr << "XID[" << PRINTXID(xid.first) << "]: ";
+                cerr << "SCN: " << PRINTSCN64(transaction->firstScn) <<
+                        "-" << PRINTSCN64(transaction->lastScn) <<
                         " xid: " << PRINTXID(transaction->xid) <<
                         " pos: " << dec << transaction->pos <<
                         " opCodes: " << transaction->opCodes <<
@@ -1200,7 +1207,7 @@ namespace OpenLogReplicator {
         lastRead = READ_CHUNK_MIN_SIZE;
 
         initFile();
-        checkRedoHeader(true);
+        checkRedoHeader();
     }
 
     void OracleReaderRedo::clone(OracleReaderRedo *redo) {
@@ -1215,6 +1222,7 @@ namespace OpenLogReplicator {
         redoBufferPos = redo->redoBufferPos;
         redoBufferFileStart = redo->redoBufferFileStart;
         redoBufferFileEnd = redo->redoBufferFileEnd;
+        headerInfoPrinted = true;
     }
 
     int OracleReaderRedo::processLog(OracleReader *oracleReader) {
@@ -1234,7 +1242,7 @@ namespace OpenLogReplicator {
 
         initFile();
         bool reachedEndOfOnlineRedo = false;
-        int ret = checkRedoHeader(true);
+        int ret = checkRedoHeader();
         if (ret != REDO_OK) {
             if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
                 oracleEnvironment->dumpStream.close();
@@ -1252,7 +1260,7 @@ namespace OpenLogReplicator {
 
             while (redoBufferFileStart == redoBufferFileEnd && blockNumber <= numBlocks && !reachedEndOfOnlineRedo
                     && !oracleReader->shutdown) {
-                int ret = readFileMore();
+                int ret = readFile();
 
                 if (ret == REDO_OK && redoBufferFileStart < redoBufferFileEnd)
                     break;
@@ -1275,7 +1283,7 @@ namespace OpenLogReplicator {
                     }
 
                     //check if sequence has changed
-                    int ret = checkRedoHeader(false);
+                    int ret = checkRedoHeader();
                     if (ret != REDO_OK) {
                         if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
                             oracleEnvironment->dumpStream.close();

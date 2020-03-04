@@ -49,6 +49,7 @@ namespace OpenLogReplicator {
         uint32_t lastRead;
         bool lastReadSuccessfull;
         bool lastCheckpointInfo;
+        bool headerInfoPrinted;
         int fileDes;
         typescn lastCheckpointScn;
         typescn curScn;
@@ -62,9 +63,9 @@ namespace OpenLogReplicator {
         uint64_t redoBufferFileEnd;
 
         void initFile();
-        int readFileMore();
-        int checkBlockHeader(uint8_t *buffer, uint32_t blockNumberExpected);
-        int checkRedoHeader(bool first);
+        int readFile();
+        int checkBlockHeader(uint8_t *buffer, uint32_t blockNumber);
+        int checkRedoHeader();
         int processBuffer();
         void analyzeRecord();
         void flushTransactions(bool checkpoint);

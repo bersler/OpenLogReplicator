@@ -35,6 +35,7 @@ namespace OpenLogReplicator {
     class Transaction {
     public:
         typexid xid;
+        uint32_t firstSequence;
         typescn firstScn;
         typescn lastScn;
         TransactionChunk *tc;
@@ -51,14 +52,13 @@ namespace OpenLogReplicator {
         Transaction *next;
 
         bool operator< (Transaction &p);
-        void touch(typescn scn);
+        void touch(typescn scn, uint32_t sequence);
         void add(OracleEnvironment *oracleEnvironment, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci,
-                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer);
+                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, uint32_t sequence);
         void rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer);
         bool rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
 
         void flush(OracleEnvironment *oracleEnvironment);
-        //void free(TransactionBuffer *transactionBuffer);
 
         Transaction(typexid xid, TransactionBuffer *transactionBuffer);
         virtual ~Transaction();

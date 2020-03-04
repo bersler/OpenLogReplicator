@@ -68,8 +68,6 @@ namespace OpenLogReplicator {
     }
 
     OracleReader::~OracleReader() {
-        writeCheckpoint();
-
         while (!archiveRedoQueue.empty()) {
             OracleReaderRedo *redoTmp = archiveRedoQueue.top();
             archiveRedoQueue.pop();
@@ -116,64 +114,23 @@ namespace OpenLogReplicator {
         onlineLogGetList();
         int ret = REDO_OK;
         OracleReaderRedo *redo = nullptr;
+        bool logsProcessed;
 
-        while (!this->shutdown) {
-            if (oracleEnvironment->trace >= TRACE_FULL)
-                cerr << "INFO: checking archive redo logs" << endl;
+        while (true) {
+            logsProcessed = false;
 
-            //try to read all archive logs
-            if (archiveRedoQueue.empty()) {
-                archLogGetList();
-            }
-
-            while (!archiveRedoQueue.empty()) {
-                if (this->shutdown)
-                    return 0;
-
-                OracleReaderRedo *redoPrev = redo;
-                redo = archiveRedoQueue.top();
-
-                if (ret == REDO_WRONG_SEQUENCE_SWITCHED && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
-                    if (oracleEnvironment->trace >= TRACE_WARN)
-                        cerr << "INFO: continuing broken online redo log read process with archive logs" << endl;
-                    redo->clone(redoPrev);
-                }
-
-                if (redo->sequence != databaseSequence) {
-                    cerr << "ERROR: archive log path: " << redo->path << endl;
-                    cerr << "ERROR: archive log sequence: " << dec << redo->sequence << endl;
-                    cerr << "ERROR: now should read: " << databaseSequence << endl;
-                    throw RedoLogException("incorrect archive log sequence", nullptr, 0);
-                }
-
-                ret = redo->processLog(this);
-                if (this->shutdown)
-                    return 0;
-
-                if (ret != REDO_OK) {
-                    throw RedoLogException("read archive log", nullptr, 0);
-                }
-
-                databaseSequence = redo->sequence + 1;
-                writeCheckpoint();
-                archiveRedoQueue.pop();
-                delete redo;
-                redo = nullptr;
-            }
-
+            //try to read online redo logs
+            if (this->shutdown)
+                return 0;
             if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: checking online redo logs" << endl;
-            //switch to online log reading
             refreshOnlineLogs();
 
             while (true) {
-                if (this->shutdown)
-                    return 0;
-
                 redo = nullptr;
-
                 if (oracleEnvironment->trace >= TRACE_FULL)
-                    cerr << "searching for sequence: " << dec << databaseSequence << endl;
+                    cerr << "INFO: searching online redo log for sequence: " << dec << databaseSequence << endl;
+
                 //find the candidate to read
                 for (auto redoTmp: onlineRedoSet) {
                     if (redoTmp->sequence == databaseSequence)
@@ -182,7 +139,7 @@ namespace OpenLogReplicator {
                         cerr << "Log: " << redoTmp->path << " is " << dec << redoTmp->sequence << endl;
                 }
 
-                //try to read the oldest sequence
+                //keep reading online redo logs while it is possible
                 if (redo == nullptr) {
                     bool isHigher = false;
                     while (true) {
@@ -193,27 +150,25 @@ namespace OpenLogReplicator {
                                 redo = redoTmp;
                         }
 
-                        if (this->shutdown)
-                            return 0;
-
                         if (redo == nullptr && !isHigher) {
                             usleep(REDO_SLEEP_RETRY);
                         } else
                             break;
 
+                        if (this->shutdown)
+                            return 0;
                         refreshOnlineLogs();
                     }
-                    if (this->shutdown)
-                        return 0;
                 }
 
                 if (redo == nullptr)
                     break;
 
                 //if online redo log is overwritten - then switch to reading archive logs
-                ret = redo->processLog(this);
                 if (this->shutdown)
                     return 0;
+                logsProcessed = true;
+                ret = redo->processLog(this);
 
                 if (ret != REDO_OK) {
                     if (ret == REDO_WRONG_SEQUENCE_SWITCHED) {
@@ -226,15 +181,52 @@ namespace OpenLogReplicator {
                 databaseSequence = redo->sequence + 1;
                 writeCheckpoint();
             }
+
+            //try to read all archived redo logs
             if (this->shutdown)
                 return 0;
-
-            //if redo is overwritten and missing in archive logs - then it means that archive log is not accessible
+            if (oracleEnvironment->trace >= TRACE_FULL)
+                cerr << "INFO: checking archive redo logs" << endl;
             archLogGetList();
-            if (archiveRedoQueue.empty()) {
-                cerr << "ERROR: now should read: " << dec << databaseSequence << endl;
-                throw RedoLogException("archive log missing", nullptr, 0);
+
+            while (!archiveRedoQueue.empty()) {
+                OracleReaderRedo *redoPrev = redo;
+                redo = archiveRedoQueue.top();
+                if (oracleEnvironment->trace >= TRACE_FULL)
+                    cerr << "INFO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
+
+                if (ret == REDO_WRONG_SEQUENCE_SWITCHED && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
+                    if (oracleEnvironment->trace >= TRACE_WARN)
+                        cerr << "INFO: continuing broken online redo log read process with archive logs" << endl;
+                    redo->clone(redoPrev);
+                }
+
+                if (redo->sequence < databaseSequence)
+                    continue;
+                if (redo->sequence > databaseSequence) {
+                    cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead" << endl;
+                    throw RedoLogException("read archive log", nullptr, 0);
+                }
+
+                if (this->shutdown)
+                    return 0;
+                logsProcessed = true;
+                ret = redo->processLog(this);
+
+                if (ret != REDO_OK) {
+                    cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
+                    throw RedoLogException("read archive log", nullptr, 0);
+                }
+
+                ++databaseSequence;
+                writeCheckpoint();
+                archiveRedoQueue.pop();
+                delete redo;
+                redo = nullptr;
             }
+
+            if (!logsProcessed)
+                usleep(REDO_SLEEP_RETRY);
         }
 
         return 0;
@@ -503,18 +495,24 @@ namespace OpenLogReplicator {
     }
 
     void OracleReader::writeCheckpoint() {
-        if (oracleEnvironment->trace >= TRACE_DETAIL)
-            cerr << "INFO: Writing checkpoint information SEQ: " << dec << databaseSequence << ", SCN: " << PRINTSCN64(databaseScn) << endl;
-
+        uint32_t minSequence = 0xFFFFFFFF;
         typescn minScn = ZERO_SCN;
         Transaction *transaction;
         for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
             transaction = oracleEnvironment->transactionHeap.heap[i];
             if (minScn > transaction->firstScn)
                 minScn = transaction->firstScn;
+            if (minSequence > transaction->firstSequence)
+                minSequence = transaction->firstSequence;
         }
         if (minScn == ZERO_SCN)
             minScn = 0;
+        if (minSequence == 0xFFFFFFFF)
+            minSequence = 0;
+
+        if (oracleEnvironment->trace >= TRACE_DETAIL)
+            cerr << "INFO: Writing checkpoint information SEQ: " << dec << minSequence << "/" << databaseSequence <<
+            ", SCN: " << PRINTSCN64(minScn) << "/" << PRINTSCN64(databaseScn) << endl;
 
         ofstream outfile;
         outfile.open((database + ".json").c_str(), ios::out | ios::trunc);
@@ -527,6 +525,7 @@ namespace OpenLogReplicator {
         stringstream ss;
         ss << "{" << endl
            << "  \"database\": \"" << database << "\"," << endl
+           << "  \"min-sequence\": \"" << dec << minSequence << "\"," << endl
            << "  \"sequence\": \"" << dec << databaseSequence << "\"," << endl
            << "  \"min-scn\": \"" << dec << minScn << "\"," << endl
            << "  \"scn\": \"" << dec << databaseScn << "\"," << endl

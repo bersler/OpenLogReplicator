@@ -58,7 +58,9 @@ namespace OpenLogReplicator {
         return lastScn == p.lastScn && xid < p.xid;
     }
 
-    void Transaction::touch(typescn scn) {
+    void Transaction::touch(typescn scn, uint32_t sequence) {
+        if (firstSequence == 0 || firstSequence > sequence)
+            firstSequence = sequence;
         if (firstScn == ZERO_SCN || firstScn > scn)
             firstScn = scn;
         if (lastScn == ZERO_SCN || lastScn < scn)
@@ -66,7 +68,7 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::add(OracleEnvironment *oracleEnvironment, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci,
-            RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer) {
+            RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, uint32_t sequence) {
 
         uint8_t buffer[REDO_RECORD_MAX_SIZE];
         if (oracleEnvironment->trace >= TRACE_FULL)
@@ -138,7 +140,7 @@ namespace OpenLogReplicator {
 
         tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
-        touch(redoLogRecord1->scn);
+        touch(redoLogRecord1->scn, sequence);
     }
 
     bool Transaction::rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
@@ -368,6 +370,7 @@ namespace OpenLogReplicator {
 
     Transaction::Transaction(typexid xid, TransactionBuffer *transactionBuffer) :
             xid(xid),
+            firstSequence(0),
             firstScn(ZERO_SCN),
             lastScn(ZERO_SCN),
             opCodes(0),
@@ -386,11 +389,6 @@ namespace OpenLogReplicator {
 
     Transaction::~Transaction() {
     }
-
-    //void Transaction::free(TransactionBuffer *transactionBuffer) {
-    //    transactionBuffer->deleteTransactionChunks(tc, tcLast);
-    //}
-
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
         os << "xid: " << PRINTXID(tran.xid) <<
