@@ -105,6 +105,7 @@ namespace OpenLogReplicator {
         uint32_t recordObjd;
 
         typescn scn;              //scn
+        uint16_t subScn;          //subscn
         uint8_t *data;            //data
         uint16_t fieldCnt;
         uint32_t fieldPos;

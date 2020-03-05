@@ -22,7 +22,20 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTIONBUFFER_H_
 #define TRANSACTIONBUFFER_H_
 
-#define ROW_HEADER_MEMORY (sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeuba)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typescn))
+#define ROW_HEADER_OP       (0)
+#define ROW_HEADER_REDO1    (sizeof(uint32_t))
+#define ROW_HEADER_REDO2    (sizeof(uint32_t)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_DATA     (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_OBJN     (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_OBJD     (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t))
+#define ROW_HEADER_SIZE     (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t))
+#define ROW_HEADER_SLT      (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t))
+#define ROW_HEADER_RCI      (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+1)
+#define ROW_HEADER_SUBSCN   (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+2)
+#define ROW_HEADER_DBA      (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t))
+#define ROW_HEADER_UBA      (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t))
+#define ROW_HEADER_SCN      (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typeuba))
+#define ROW_HEADER_TOTAL    (sizeof(uint32_t)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(uint32_t)+sizeof(typeuba)+sizeof(typescn))
 
 namespace OpenLogReplicator {
 

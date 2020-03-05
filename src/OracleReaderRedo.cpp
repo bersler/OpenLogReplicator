@@ -483,7 +483,7 @@ namespace OpenLogReplicator {
         } else
             lastReadSuccessfull = true;
 
-        if (oracleEnvironment->trace >= TRACE_DETAIL)
+        if (oracleEnvironment->trace >= TRACE_FULL)
             cerr << "INFO: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
@@ -525,6 +525,7 @@ namespace OpenLogReplicator {
         uint8_t vld = oracleEnvironment->recordBuffer[4];
         curScn = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 8) |
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
+        curSubScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
         uint32_t headerLength;
 
         if ((vld & 0x04) != 0) {
@@ -533,15 +534,14 @@ namespace OpenLogReplicator {
             recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
             if (oracleEnvironment->trace >= TRACE_FULL) {
                 if (oracleEnvironment->version < 12200)
-                    cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << endl;
+                    cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
                 else
-                    cerr << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << endl;
+                    cerr << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
             }
         } else
             headerLength = 24;
 
         if (oracleEnvironment->dumpLogFile >= 1) {
-            uint16_t subScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
             uint16_t thread = 1; //FIXME
             oracleEnvironment->dumpStream << " " << endl;
 
@@ -577,9 +577,9 @@ namespace OpenLogReplicator {
 
             if (headerLength == 68) {
                 if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
                 uint32_t lwnLen = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 28); //28 or 32
 
@@ -600,9 +600,9 @@ namespace OpenLogReplicator {
                         " SCN: " << PRINTSCN64(extScn) << ")" << endl;
             } else {
                 if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << subScn << " " << recordTimestmap << endl;
+                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
             }
         }
 
@@ -645,6 +645,7 @@ namespace OpenLogReplicator {
                     oracleEnvironment->recordBuffer[pos + 1];
             redoLogRecord[vectors].length = fieldOffset + ((oracleEnvironment->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectors].scn = curScn;
+            redoLogRecord[vectors].subScn = curSubScn;
             redoLogRecord[vectors].usn = usn;
             redoLogRecord[vectors].data = oracleEnvironment->recordBuffer + pos;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;

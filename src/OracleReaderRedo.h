@@ -53,6 +53,7 @@ namespace OpenLogReplicator {
         int fileDes;
         typescn lastCheckpointScn;
         typescn curScn;
+        uint16_t curSubScn;
         uint32_t recordBeginPos;
         uint32_t recordBeginBlock;
         typetime recordTimestmap;

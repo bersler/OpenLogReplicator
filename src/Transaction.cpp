@@ -191,21 +191,20 @@ namespace OpenLogReplicator {
             while (tcTemp != nullptr) {
                 pos = 0;
                 for (uint32_t i = 0; i < tcTemp->elements; ++i) {
-                    uint32_t op = *((uint32_t*)(tcTemp->buffer + pos + 8));
+                    uint32_t op = *((uint32_t*)(tcTemp->buffer + pos));
 
-                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12)),
-                                  *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord)));
-                    typescn scn = *((typescn *)(tcTemp->buffer + pos + 32 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) +
-                            redoLogRecord1->length + redoLogRecord2->length));
-                    redoLogRecord1->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord);
-                    redoLogRecord2->data = tcTemp->buffer + pos + 12 + sizeof(struct RedoLogRecord) + sizeof(struct RedoLogRecord) + redoLogRecord1->length;
+                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO1)),
+                                  *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO2));
+                    redoLogRecord1->data = tcTemp->buffer + pos + ROW_HEADER_DATA;
+                    redoLogRecord2->data = tcTemp->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
+                    typescn scn = *((typescn *)(tcTemp->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
 
                     if (oracleEnvironment->trace >= TRACE_WARN) {
                         if (oracleEnvironment->trace >= TRACE_DETAIL) {
-                            uint32_t objn = *((uint32_t*)(tcTemp->buffer + pos));
-                            uint32_t objd = *((uint32_t*)(tcTemp->buffer + pos + 4));
+                            uint32_t objn = *((tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
+                            uint32_t objd = *((tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
                             cerr << "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
-                                        ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<\
+                                        ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
                                     " op: " << setfill('0') << setw(8) << hex << op <<
@@ -229,7 +228,7 @@ namespace OpenLogReplicator {
                         if (prevScn != 0 && prevScn > scn)
                             cerr << "ERROR: SCN swap" << endl;
                     }
-                    pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_MEMORY;
+                    pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
                     opFlush = false;
                     switch (op) {
