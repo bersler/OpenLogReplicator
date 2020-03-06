@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord2->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0x003fffff,
                             oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                     ->append("\", \"after\": {");
 
@@ -299,7 +299,7 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0x003fffff,
                             oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                     ->append("\", \"before\": {");
 
@@ -358,7 +358,7 @@ namespace OpenLogReplicator {
                 ->append('.')
                 ->append(redoLogRecord2->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->suppLogBdba - oracleEnvironment->getBase(), redoLogRecord2->suppLogSlot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba & 0x003fffff, redoLogRecord2->slot)
                 ->append("\"");
 
         uint32_t fieldPos, colNum, colShift, cc, headerSize;
