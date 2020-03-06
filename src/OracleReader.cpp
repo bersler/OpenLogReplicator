@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
         oracleEnvironment->resetlogsId = atoi(resetlogsIdVal.GetString());
 
         const Value& scnVal = getJSONfield(document, "scn");
-        databaseScn = atoi(scnVal.GetString());
+        databaseScn = atoll(scnVal.GetString());
 
         infile.close();
     }
