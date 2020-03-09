@@ -28,10 +28,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void TransactionMap::set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction* transaction) {
+    void TransactionMap::set(typeuba uba, typedba dba, typeslt slt, typerci rci, Transaction* transaction) {
         if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
             return;
-        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         if (hashMap[hashKey] == nullptr) {
             hashMap[hashKey] = transaction;
@@ -44,16 +44,16 @@ namespace OpenLogReplicator {
         ++elements;
     }
 
-    void TransactionMap::erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+    void TransactionMap::erase(typeuba uba, typedba dba, typeslt slt, typerci rci) {
         if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
             return;
-        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         if (hashMap[hashKey] == nullptr) {
             cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
                     " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
-                    " SLT: " << dec << (uint32_t) slt <<
-                    " RCI: " << dec << (uint32_t) rci << endl;
+                    " SLT: " << dec << (uint64_t) slt <<
+                    " RCI: " << dec << (uint64_t) rci << endl;
             return;
         }
 
@@ -80,16 +80,16 @@ namespace OpenLogReplicator {
 
         cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(uba) <<
                 " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
-                " SLT: " << dec << (uint32_t) slt <<
-                " RCI: " << dec << (uint32_t) rci << endl;
+                " SLT: " << dec << (uint64_t) slt <<
+                " RCI: " << dec << (uint64_t) rci << endl;
         return;
     }
 
-    Transaction* TransactionMap::getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci) {
+        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
-        uint32_t partialMatches1 = 0, partialMatches2 = 0;
+        uint64_t partialMatches1 = 0, partialMatches2 = 0;
 
         while (transactionTemp != nullptr) {
             if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
@@ -119,11 +119,10 @@ namespace OpenLogReplicator {
         return nullptr;
     }
 
-    Transaction* TransactionMap::get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
-        uint32_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    Transaction* TransactionMap::get(typeuba uba, typedba dba, typeslt slt, typerci rci) {
+        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-        Transaction *transactionTemp = hashMap[hashKey]; //, *transactionTempPartial1, *transactionTempPartial2;
-        //uint32_t partialMatches1 = 0, partialMatches2 = 0;
+        Transaction *transactionTemp = hashMap[hashKey];
 
         while (transactionTemp != nullptr) {
             if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
@@ -136,7 +135,7 @@ namespace OpenLogReplicator {
         return nullptr;
     }
 
-    TransactionMap::TransactionMap(uint32_t maxConcurrentTransactions) :
+    TransactionMap::TransactionMap(uint64_t maxConcurrentTransactions) :
         elements(0),
         maxConcurrentTransactions(maxConcurrentTransactions) {
         hashMap = new Transaction*[maxConcurrentTransactions * 2];

@@ -29,25 +29,25 @@ namespace OpenLogReplicator {
 
     void RedoLogRecord::dumpHex(ostream &stream, OracleEnvironment *oracleEnvironment) {
         stream << "##: " << dec << fieldLengthsDelta;
-        for (uint32_t j = 0; j < fieldLengthsDelta; ++j) {
+        for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
                 stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
             if ((j & 0x07) == 0)
                 stream << " ";
-            stream << setfill('0') << setw(2) << hex << (uint32_t)data[j] << " ";
+            stream << setfill('0') << setw(2) << hex << (uint64_t)data[j] << " ";
         }
         stream << endl;
 
-        uint32_t fieldPosLocal = fieldPos;
-        for (uint32_t i = 1; i <= fieldCnt; ++i) {
+        uint64_t fieldPosLocal = fieldPos;
+        for (uint64_t i = 1; i <= fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(data + fieldLengthsDelta + i * 2);
             stream << "##: " << dec << fieldLength << " (" << i << ")";
-            for (uint32_t j = 0; j < fieldLength; ++j) {
+            for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)
                     stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
                 if ((j & 0x07) == 0)
                     stream << " ";
-                stream << setfill('0') << setw(2) << hex << (uint32_t)data[fieldPosLocal + j] << " ";
+                stream << setfill('0') << setw(2) << hex << (uint64_t)data[fieldPosLocal + j] << " ";
             }
             stream << endl;
 
@@ -61,8 +61,8 @@ namespace OpenLogReplicator {
                 " cls: " << dec << cls <<
                 " scnRecord: " << PRINTSCN64(scnRecord) <<
                 " rbl: " << dec << rbl <<
-                " seq: " << dec << (uint32_t)seq <<
-                " typ: " << dec << (uint32_t)typ <<
+                " seq: " << dec << (uint64_t)seq <<
+                " typ: " << dec << (uint64_t)typ <<
                 " conId: " << dec << conId <<
                 " flgRecord: " << dec << flgRecord <<
                 " vectorNo: " << dec << vectorNo <<
@@ -81,16 +81,16 @@ namespace OpenLogReplicator {
                 " usn: " << dec << usn <<
                 " xid: " << PRINTXID(xid) <<
                 " uba: " << PRINTUBA(uba) <<
-                " slt: " << dec << (uint32_t)slt <<
-                " rci: " << dec << (uint32_t)rci <<
-                " flg: " << dec << (uint32_t)flg <<
+                " slt: " << dec << (uint64_t)slt <<
+                " rci: " << dec << (uint64_t)rci <<
+                " flg: " << dec << (uint64_t)flg <<
                 " opc: 0x" << hex << opc <<
-                " op: " << dec << (uint32_t)op <<
-                " cc: " << dec << (uint32_t)cc <<
-                " itli: " << dec << (uint32_t)itli <<
+                " op: " << dec << (uint64_t)op <<
+                " cc: " << dec << (uint64_t)cc <<
+                " itli: " << dec << (uint64_t)itli <<
                 " slot: " << dec << slot <<
-                " flags: 0x" << hex << (uint32_t)flags <<
-                " fb: 0x" << hex << (uint32_t)fb <<
+                " flags: 0x" << hex << (uint64_t)flags <<
+                " fb: 0x" << hex << (uint64_t)fb <<
                 " nrid: 0x" << hex << nridBdba << "." << dec << nridSlot << endl;
     }
 }

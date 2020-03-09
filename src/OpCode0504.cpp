@@ -37,8 +37,8 @@ namespace OpenLogReplicator {
 
     void OpCode0504::process() {
         OpCode::process();
-        uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
+        uint64_t fieldPos = redoLogRecord->fieldPos;
+        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktucm(fieldPos, fieldLength);
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucm(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0504::ktucm(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             oracleEnvironment->dumpStream << "too short field ktucm: " << dec << fieldLength << endl;
             return;
@@ -79,7 +79,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucf(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0504::ktucf(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
             oracleEnvironment->dumpStream << "too short field ktucf: " << dec << fieldLength << endl;
             return;
@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
                     " uba: " << PRINTUBA(redoLogRecord->uba) <<
                     " ext: " << dec << ext <<
                     " spc: " << dec << spc <<
-                    " fbi: " << dec << (uint32_t)fbi <<
+                    " fbi: " << dec << (uint64_t)fbi <<
                     " ";
         }
     }

@@ -22,7 +22,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTIONMAP_H_
 #define TRANSACTIONMAP_H_
 
-#define HASHINGFUNCTION(uba,slt,rci) ((uba>>32)^(uba&0xFFFFFFFF)^(slt<<9)^(rci<<17))%(maxConcurrentTransactions*2-1)
+#define HASHINGFUNCTION(uba,slt,rci) (uba^((uint64_t)slt<<9)^((uint64_t)rci<<37))%(maxConcurrentTransactions*2-1)
 
 namespace OpenLogReplicator {
 
@@ -30,17 +30,17 @@ namespace OpenLogReplicator {
 
     class TransactionMap {
     protected:
-        uint32_t elements;
+        uint64_t elements;
         Transaction** hashMap;
-        uint32_t maxConcurrentTransactions;
+        uint64_t maxConcurrentTransactions;
 
     public:
-        TransactionMap(uint32_t maxConcurrentTransactions);
+        TransactionMap(uint64_t maxConcurrentTransactions);
         virtual ~TransactionMap();
-        void erase(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
-        void set(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, Transaction * transaction);
-        Transaction* get(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
-        Transaction* getMatch(typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        void erase(typeuba uba, typedba dba, typeslt slt, typerci rci);
+        void set(typeuba uba, typedba dba, typeslt slt, typerci rci, Transaction * transaction);
+        Transaction* get(typeuba uba, typedba dba, typeslt slt, typerci rci);
+        Transaction* getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci);
     };
 }
 

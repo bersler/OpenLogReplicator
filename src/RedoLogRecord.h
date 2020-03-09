@@ -101,27 +101,27 @@ namespace OpenLogReplicator {
         uint32_t conId;
         uint32_t flgRecord;
         uint32_t vectorNo;
-        uint32_t recordObjn;
-        uint32_t recordObjd;
+        typeobj recordObjn;
+        typeobj recordObjd;
 
         typescn scn;              //scn
-        uint16_t subScn;          //subscn
+        typesubscn subScn;        //subscn
         uint8_t *data;            //data
         uint16_t fieldCnt;
-        uint32_t fieldPos;
+        uint64_t fieldPos;
         uint16_t nrow;
-        uint32_t slotsDelta;
-        uint32_t rowLenghsDelta;
-        uint32_t fieldLengthsDelta;
-        uint32_t nullsDelta;
-        uint32_t colNumsDelta;
+        uint64_t slotsDelta;
+        uint64_t rowLenghsDelta;
+        uint64_t fieldLengthsDelta;
+        uint64_t nullsDelta;
+        uint64_t colNumsDelta;
 
         uint32_t afn;             //absolute file number
-        uint32_t length;          //length
-        uint32_t dba;
-        uint32_t bdba;            //block DBA
-        uint32_t objn;            //object ID
-        uint32_t objd;            //data object ID
+        uint64_t length;          //length
+        typedba dba;
+        typedba bdba;             //block DBA
+        typeobj objn;             //object ID
+        typeobj objd;             //data object ID
         uint32_t tsn;
         uint32_t undo;
         int16_t usn;
@@ -130,8 +130,8 @@ namespace OpenLogReplicator {
         typeuba uba;              //Undo Block Address
         uint32_t pdbId;
 
-        uint8_t slt;
-        uint8_t rci;
+        typeslt slt;
+        typerci rci;
         uint16_t flg;             //flag
         uint16_t opCode;          //operation code
         uint16_t opc;             //operation code for UNDO
@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
         uint8_t fb;               //row flags like F,L
         uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
 
-        uint32_t nridBdba;        //next row id bdba
+        typedba nridBdba;         //next row id bdba
         uint16_t nridSlot;        //next row id slot
 
         uint8_t suppLogType;
@@ -152,7 +152,7 @@ namespace OpenLogReplicator {
         uint16_t suppLogCC;
         uint16_t suppLogBefore;
         uint16_t suppLogAfter;
-        uint32_t suppLogBdba;
+        typedba suppLogBdba;
         uint16_t suppLogSlot;
 
         void dumpHex(ostream &str, OracleEnvironment *oracleEnvironment);

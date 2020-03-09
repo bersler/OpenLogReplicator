@@ -28,10 +28,10 @@ namespace OpenLogReplicator {
 
     class OpCode0513: public OpCode {
     protected:
-        void dumpMsgSessionSerial(uint32_t fieldPos, uint32_t fieldLength);
-        void dumpMsgFlags(uint32_t fieldPos, uint32_t fieldLength);
-        void dumpMsgVersion(uint32_t fieldPos, uint32_t fieldLength);
-        void dumpMsgAuditSessionid(uint32_t fieldPos, uint32_t fieldLength);
+        void dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength);
+        void dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength);
+        void dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength);
+        void dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
         OpCode0513(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

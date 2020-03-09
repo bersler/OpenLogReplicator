@@ -43,36 +43,36 @@ namespace OpenLogReplicator {
     private:
         OracleEnvironment *oracleEnvironment;
         int group;
-        uint32_t blockSize;
-        uint32_t blockNumber;
-        uint32_t numBlocks;
-        uint32_t lastRead;
+        uint64_t blockSize;
+        typeblk blockNumber;
+        typeblk numBlocks;
+        uint64_t lastRead;
         bool lastReadSuccessfull;
         bool lastCheckpointInfo;
         bool headerInfoPrinted;
         int fileDes;
         typescn lastCheckpointScn;
         typescn curScn;
-        uint16_t curSubScn;
-        uint32_t recordBeginPos;
-        uint32_t recordBeginBlock;
+        typesubscn curSubScn;
+        uint64_t recordBeginPos;
+        typeblk recordBeginBlock;
         typetime recordTimestmap;
-        uint32_t recordPos;
-        uint32_t recordLeftToCopy;
-        uint32_t redoBufferPos;
+        uint64_t recordPos;
+        uint64_t recordLeftToCopy;
+        uint64_t redoBufferPos;
         uint64_t redoBufferFileStart;
         uint64_t redoBufferFileEnd;
 
         void initFile();
         int readFile();
-        int checkBlockHeader(uint8_t *buffer, uint32_t blockNumber);
+        int checkBlockHeader(uint8_t *buffer, typeblk blockNumber);
         int checkRedoHeader();
         int processBuffer();
         void analyzeRecord();
         void flushTransactions(bool checkpoint);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        uint16_t calcChSum(uint8_t *buffer, uint32_t size);
+        uint16_t calcChSum(uint8_t *buffer, uint64_t size);
 
     public:
         string path;

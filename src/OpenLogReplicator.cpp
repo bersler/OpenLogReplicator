@@ -97,43 +97,43 @@ int main() {
         if (strcmp(version.GetString(), "0.4.1") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
-        const Value& dumpLogFile = getJSONfield(document, "dumplogfile");
-        uint32_t dumpLogFileInt = 0;
-        dumpLogFileInt = atoi(dumpLogFile.GetString());
+        const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
+        uint64_t dumpLogFile = 0;
+        dumpLogFile = strtoul(dumpLogFileJSON.GetString(), nullptr, 10);
 
-        const Value& trace = getJSONfield(document, "trace");
-        uint32_t traceInt = 0;
-        traceInt = atoi(trace.GetString());
+        const Value& traceJSON = getJSONfield(document, "trace");
+        uint64_t trace = 0;
+        trace = strtoul(traceJSON.GetString(), nullptr, 10);
 
-        const Value& dumpData = getJSONfield(document, "dumpdata");
-        bool dumpDataBool = false;
-        if (strcmp(dumpData.GetString(), "1") == 0)
-            dumpDataBool = true;
+        const Value& dumpDataJSON = getJSONfield(document, "dumpdata");
+        bool dumpData = false;
+        if (strcmp(dumpDataJSON.GetString(), "1") == 0)
+            dumpData = true;
 
-        const Value& directRead = getJSONfield(document, "directread");
-        bool directReadBool = false;
-        if (strcmp(directRead.GetString(), "1") == 0)
-            directReadBool = true;
+        const Value& directReadJSON = getJSONfield(document, "directread");
+        bool directRead = false;
+        if (strcmp(directReadJSON.GetString(), "1") == 0)
+            directRead = true;
 
-        const Value& sortCols = getJSONfield(document, "sortcols");
-        uint32_t sortColsInt = 0;
-        sortColsInt = atoi(sortCols.GetString());
+        const Value& sortColsJSON = getJSONfield(document, "sortcols");
+        uint64_t sortCols = 0;
+        sortCols = strtoul(sortColsJSON.GetString(), nullptr, 10);
 
-        const Value& redoBuffers = getJSONfield(document, "redo-buffers");
-        uint32_t redoBuffersInt = 0;
-        redoBuffersInt = atoi(redoBuffers.GetString());
+        const Value& redoBuffersJSON = getJSONfield(document, "redo-buffers");
+        uint64_t redoBuffers = 0;
+        redoBuffers = strtoul(redoBuffersJSON.GetString(), nullptr, 10);
 
-        const Value& redoBufferSize = getJSONfield(document, "redo-buffer-size");
-        uint32_t redoBufferSizeInt = 0;
-        redoBufferSizeInt = atoi(redoBufferSize.GetString());
+        const Value& redoBufferSizeJSON = getJSONfield(document, "redo-buffer-size");
+        uint64_t redoBufferSize = 0;
+        redoBufferSize = strtoul(redoBufferSizeJSON.GetString(), nullptr, 10);
 
-        const Value& outputBufferSize = getJSONfield(document, "output-buffer-size");
-        uint32_t outputBufferSizeInt = 0;
-        outputBufferSizeInt = atoi(outputBufferSize.GetString());
+        const Value& outputBufferSizeJSON = getJSONfield(document, "output-buffer-size");
+        uint64_t outputBufferSize = 0;
+        outputBufferSize = strtoul(outputBufferSizeJSON.GetString(), nullptr, 10);
 
-        const Value& maxConcurrentTransactions = getJSONfield(document, "max-concurrent-transactions");
-        uint32_t maxConcurrentTransactionsInt = 0;
-        maxConcurrentTransactionsInt = atoi(maxConcurrentTransactions.GetString());
+        const Value& maxConcurrentTransactionsJSON = getJSONfield(document, "max-concurrent-transactions");
+        uint64_t maxConcurrentTransactions = 0;
+        maxConcurrentTransactions = strtoul(maxConcurrentTransactionsJSON.GetString(), nullptr, 10);
 
         //iterate through sources
         const Value& sources = getJSONfield(document, "sources");
@@ -155,12 +155,12 @@ int main() {
                     {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
 
                 cout << "Adding source: " << name.GetString() << endl;
-                CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSizeInt);
+                CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSize);
 
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), traceInt, dumpLogFileInt, dumpDataBool, directReadBool, sortColsInt,
-                        redoBuffersInt, redoBufferSizeInt, maxConcurrentTransactionsInt);
+                        password.GetString(), server.GetString(), trace, dumpLogFile, dumpData, directRead, sortCols,
+                        redoBuffers, redoBufferSize, maxConcurrentTransactions);
                 readers.push_back(oracleReader);
 
                 //initialize
@@ -203,8 +203,8 @@ int main() {
                 if (commandBuffer == nullptr)
                     {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
-                int traceKafkaInt = 0;
-                traceKafkaInt = atoi(traceKafka.GetString());
+                int64_t traceKafkaInt = 0;
+                traceKafkaInt = strtol(traceKafka.GetString(), nullptr, 10);
 
                 cout << "Adding target: " << alias.GetString() << endl;
                 KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, traceKafkaInt);

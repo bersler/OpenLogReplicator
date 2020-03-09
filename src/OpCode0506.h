@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     class OpCode0506: public OpCode {
     protected:
         virtual const char* getUndoType();
-        void ktuxvoff(uint32_t fieldPos, uint32_t fieldLength);
+        void ktuxvoff(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
         OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

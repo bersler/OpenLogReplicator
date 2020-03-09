@@ -27,8 +27,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead,
-            uint32_t sortCols, uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions) :
+    OracleEnvironment::OracleEnvironment(CommandBuffer *commandBuffer, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead,
+            uint64_t sortCols, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         DatabaseEnvironment(),
         lastOpTransactionMap(maxConcurrentTransactions),
         transactionBuffer(new TransactionBuffer(redoBuffers, redoBufferSize)),
@@ -42,6 +42,7 @@ namespace OpenLogReplicator {
         trace(trace),
         version(0),
         sortCols(sortCols),
+        conId(0),
         resetlogsId(0) {
         transactionHeap.initialize(maxConcurrentTransactions);
     }
@@ -77,7 +78,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    OracleObject *OracleEnvironment::checkDict(uint32_t objn, uint32_t objd) {
+    OracleObject *OracleEnvironment::checkDict(typeobj objn, typeobj objd) {
         OracleObject *object = objectMap[objn];
         return object;
     }
@@ -86,12 +87,5 @@ namespace OpenLogReplicator {
         if (objectMap[object->objn] == nullptr) {
             objectMap[object->objn] = object;
         }
-    }
-
-    uint32_t OracleEnvironment::getBase() {
-        if (version >= 12000)
-            return 0x00800000;
-        else
-            return 0x00400000;
     }
 }

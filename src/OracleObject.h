@@ -32,13 +32,13 @@ namespace OpenLogReplicator {
 
     class OracleObject {
     public:
-        uint32_t objn;
-        uint32_t objd;
-        uint32_t depdendencies;
-        uint32_t cluCols;
-        uint32_t totalPk;
-        uint32_t options;
-        uint32_t totalCols;
+        typeobj objn;
+        typeobj objd;
+        uint64_t depdendencies;
+        uint64_t cluCols;
+        uint64_t totalPk;
+        uint64_t options;
+        uint64_t totalCols;
         string owner;
         string objectName;
         vector<OracleColumn*> columns;
@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
 
         void addColumn(OracleColumn *column);
 
-        OracleObject(uint32_t objn, uint32_t objd, uint32_t depdendencies, uint32_t cluCols, uint32_t options, string owner, string objectName);
+        OracleObject(typeobj objn, typeobj objd, uint64_t depdendencies, uint64_t cluCols, uint64_t options, string owner, string objectName);
         virtual ~OracleObject();
 
         friend ostream& operator<<(ostream& os, const OracleObject& ors);

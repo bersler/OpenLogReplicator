@@ -72,14 +72,14 @@ namespace OpenLogReplicator {
     public:
         virtual void *run();
 
-        void addTable(string mask, uint32_t options);
+        void addTable(string mask, uint64_t options);
         void readCheckpoint();
         void writeCheckpoint();
         int initialize();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
-                uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions);
+                const string connectString, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+                uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

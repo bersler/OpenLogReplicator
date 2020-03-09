@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
             fileDes(-1),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
+            curSubScn(0),
             recordBeginPos(0),
             recordBeginBlock(0),
             recordTimestmap(0),
@@ -89,17 +90,17 @@ namespace OpenLogReplicator {
             sequence(0) {
     }
 
-    int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, uint32_t blockNumber) {
+    int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
         if (buffer[0] != 1 || buffer[1] != 0x22) {
-            cerr << "ERROR: header bad magic number for block " << blockNumber << endl;
+            cerr << "ERROR: header bad magic number for block " << dec << blockNumber << endl;
             return REDO_ERROR;
         }
 
-        uint32_t blockNumberHeader = oracleEnvironment->read32(buffer + 4);
-        uint32_t sequenceHeader = oracleEnvironment->read32(buffer + 8);
+        typeblk blockNumberHeader = oracleEnvironment->read32(buffer + 4);
+        typeseq sequenceHeader = oracleEnvironment->read32(buffer + 8);
 
         if (sequence == 0) {
             sequence = sequenceHeader;
@@ -124,7 +125,7 @@ namespace OpenLogReplicator {
     }
 
     int OracleReaderRedo::checkRedoHeader() {
-        uint32_t headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
+        uint64_t headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
         if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
             cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
             return REDO_ERROR;
@@ -137,12 +138,12 @@ namespace OpenLogReplicator {
                 oracleEnvironment->headerBuffer[29] != 0x7C ||
                 oracleEnvironment->headerBuffer[30] != 0x7B ||
                 oracleEnvironment->headerBuffer[31] != 0x7A) {
-            cerr << "[0]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[0] << endl;
-            cerr << "[1]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[1] << endl;
-            cerr << "[28]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[28] << endl;
-            cerr << "[29]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[29] << endl;
-            cerr << "[30]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[30] << endl;
-            cerr << "[31]: " << hex << (uint32_t)oracleEnvironment->headerBuffer[31] << endl;
+            cerr << "[0]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[0] << endl;
+            cerr << "[1]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[1] << endl;
+            cerr << "[28]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[28] << endl;
+            cerr << "[29]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[29] << endl;
+            cerr << "[30]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[30] << endl;
+            cerr << "[31]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[31] << endl;
             cerr << "ERROR: block header bad magic fields" << endl;
             return REDO_ERROR;
         }
@@ -308,7 +309,7 @@ namespace OpenLogReplicator {
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << blockSize << ", File Type=2 LOG" << endl;
 
-            uint32_t seq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 8);
+            typeseq seq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 8);
             uint8_t descrip[65];
             memcpy (descrip, oracleEnvironment->headerBuffer + blockSize + 92, 64); descrip[64] = 0;
             uint16_t thread = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 176);
@@ -320,10 +321,10 @@ namespace OpenLogReplicator {
             oracleEnvironment->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
                     " thread: " << dec << thread <<
                     " nab: 0x" << hex << nab <<
-                    " seq: 0x" << setfill('0') << setw(8) << hex << (uint32_t)seq <<
-                    " hws: 0x" << hex << (uint32_t)hws <<
-                    " eot: " << dec << (uint32_t)eot <<
-                    " dis: " << dec << (uint32_t)dis << endl;
+                    " seq: 0x" << setfill('0') << setw(8) << hex << (typeseq)seq <<
+                    " hws: 0x" << hex << hws <<
+                    " eot: " << dec << (uint64_t)eot <<
+                    " dis: " << dec << (uint64_t)dis << endl;
 
             typescn resetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 164);
             uint32_t prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
@@ -417,14 +418,14 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                         " seq: " << dec << seq2 <<
                         " scn: " << PRINTSCN48(scn2) << endl <<
-                        " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
-                        " Format ID is " << dec << (uint32_t)formatId << endl;
+                        " Zero blocks: " << dec << (uint64_t)zeroBlocks << endl <<
+                        " Format ID is " << dec << (uint64_t)formatId << endl;
             else
                 oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                         " seq: " << dec << seq2 <<
                         " scn: " << PRINTSCN64(scn2) << endl <<
-                        " Zero blocks: " << dec << (uint32_t)zeroBlocks << endl <<
-                        " Format ID is " << dec << (uint32_t)formatId << endl;
+                        " Zero blocks: " << dec << (uint64_t)zeroBlocks << endl <<
+                        " Format ID is " << dec << (uint64_t)formatId << endl;
 
             uint32_t standbyApplyDelay = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 280);
             if (standbyApplyDelay > 0)
@@ -435,8 +436,8 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
 
             oracleEnvironment->dumpStream << " redo log key is ";
-            for (uint32_t i = 448; i < 448 + 16; ++i)
-                oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)oracleEnvironment->headerBuffer[blockSize + i];
+            for (uint64_t i = 448; i < 448 + 16; ++i)
+                oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleEnvironment->headerBuffer[blockSize + i];
             oracleEnvironment->dumpStream << endl;
 
             uint16_t redoKeyFlag = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 480);
@@ -462,7 +463,7 @@ namespace OpenLogReplicator {
     }
 
     int OracleReaderRedo::readFile() {
-        uint32_t curRead;
+        uint64_t curRead;
         if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
 
@@ -475,7 +476,7 @@ namespace OpenLogReplicator {
         if (redoBufferPos + curRead > DISK_BUFFER_SIZE)
             curRead = DISK_BUFFER_SIZE - redoBufferPos;
 
-        uint32_t bytes = pread(fileDes, oracleEnvironment->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
+        uint64_t bytes = pread(fileDes, oracleEnvironment->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
 
         if (bytes < curRead) {
             lastReadSuccessfull = false;
@@ -487,9 +488,9 @@ namespace OpenLogReplicator {
             cerr << "INFO: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
-            uint32_t maxNumBlock = bytes / blockSize;
+            typeblk maxNumBlock = bytes / blockSize;
 
-            for (uint32_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+            for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                 int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos + numBlock * blockSize, blockNumber + numBlock);
 
                 if (redoBufferFileStart < redoBufferFileEnd && (ret == REDO_WRONG_SEQUENCE_SWITCHED || ret == REDO_EMPTY)) {
@@ -514,19 +515,19 @@ namespace OpenLogReplicator {
         bool checkpoint = false;
         RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
         OpCode *opCodes[VECTOR_MAX_LENGTH];
-        uint32_t isUndoRedo[VECTOR_MAX_LENGTH];
-        uint32_t vectors = 0;
-        uint32_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
-        uint32_t vectorsUndo = 0;
-        uint32_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
-        uint32_t vectorsRedo = 0;
+        uint64_t isUndoRedo[VECTOR_MAX_LENGTH];
+        uint64_t vectors = 0;
+        uint64_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
+        uint64_t vectorsUndo = 0;
+        uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
+        uint64_t vectorsRedo = 0;
 
-        uint32_t recordLength = oracleEnvironment->read32(oracleEnvironment->recordBuffer);
+        uint64_t recordLength = oracleEnvironment->read32(oracleEnvironment->recordBuffer);
         uint8_t vld = oracleEnvironment->recordBuffer[4];
         curScn = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 8) |
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
         curSubScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
-        uint32_t headerLength;
+        uint64_t headerLength;
 
         if ((vld & 0x04) != 0) {
             checkpoint = true;
@@ -551,7 +552,7 @@ namespace OpenLogReplicator {
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
-                        " VLD: 0x" << setfill('0') << setw(2) << hex << (uint32_t)vld << endl;
+                        " VLD: 0x" << setfill('0') << setw(2) << hex << (uint64_t)vld << endl;
             else {
                 uint32_t conUid = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 16);
                 oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
@@ -559,18 +560,18 @@ namespace OpenLogReplicator {
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
-                        " VLD: 0x" << setfill('0') << setw(2) << hex << (uint32_t)vld <<
+                        " VLD: 0x" << setfill('0') << setw(2) << hex << (uint64_t)vld <<
                         " CON_UID: " << dec << conUid << endl;
             }
 
             if (oracleEnvironment->dumpData) {
                 oracleEnvironment->dumpStream << "##: " << dec << recordLength;
-                for (uint32_t j = 0; j < headerLength; ++j) {
+                for (uint64_t j = 0; j < headerLength; ++j) {
                     if ((j & 0x0F) == 0)
                         oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
                     if ((j & 0x07) == 0)
                         oracleEnvironment->dumpStream << " ";
-                    oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint32_t)oracleEnvironment->recordBuffer[j] << " ";
+                    oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleEnvironment->recordBuffer[j] << " ";
                 }
                 oracleEnvironment->dumpStream << endl;
             }
@@ -609,12 +610,12 @@ namespace OpenLogReplicator {
         if (headerLength > recordLength)
             throw RedoLogException("too small log record: ", path.c_str(), recordLength);
 
-        uint32_t pos = headerLength;
+        uint64_t pos = headerLength;
         while (pos < recordLength) {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
             //uint16_t opc = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos);
-            //uint32_t recordObjd = (oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 6) << 16) |
+            //typeobj recordObjd = (oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 6) << 16) |
             //                 oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 20);
             redoLogRecord[vectors].cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
             redoLogRecord[vectors].afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
@@ -625,7 +626,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
-            uint32_t fieldOffset;
+            uint64_t fieldOffset;
             if (oracleEnvironment->version >= 12100) {
                 fieldOffset = 32;
                 redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 28);
@@ -652,8 +653,8 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].fieldCnt = (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
             redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
 
-            uint32_t fieldPos = redoLogRecord[vectors].fieldPos;
-            for (uint32_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
+            uint64_t fieldPos = redoLogRecord[vectors].fieldPos;
+            for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
                 redoLogRecord[vectors].length += (oracleEnvironment->read16(fieldList + i * 2) + 3) & 0xFFFC;
                 fieldPos += (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
                 if (pos + redoLogRecord[vectors].length > recordLength)
@@ -747,20 +748,20 @@ namespace OpenLogReplicator {
             ++vectors;
         }
 
-        for (uint32_t i = 0; i < vectors; ++i) {
+        for (uint64_t i = 0; i < vectors; ++i) {
             opCodes[i]->process();
             delete opCodes[i];
             opCodes[i] = nullptr;
         }
 
-        for (uint32_t i = 0; i < vectors; ++i) {
+        for (uint64_t i = 0; i < vectors; ++i) {
             //begin transaction
             if (redoLogRecord[i].opCode == 0x0502) {
             }
         }
 
-        uint32_t iPair = 0;
-        for (uint32_t i = 0; i < vectors; ++i) {
+        uint64_t iPair = 0;
+        for (uint64_t i = 0; i < vectors; ++i) {
             if (oracleEnvironment->trace >= TRACE_FULL) {
                 cerr << "** " << setfill('0') << setw(4) << hex << redoLogRecord[i].opCode <<
                         " OBJD: " << dec << redoLogRecord[i].recordObjd <<
@@ -797,7 +798,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        for (uint32_t i = 0; i < vectors; ++i) {
+        for (uint64_t i = 0; i < vectors; ++i) {
             //commit transaction
             if (redoLogRecord[i].opCode == 0x0504) {
             }
@@ -908,7 +909,7 @@ namespace OpenLogReplicator {
         if (redoLogRecord2->conId > 1 && redoLogRecord2->conId != oracleEnvironment->conId)
             return;
 
-        uint32_t objn, objd;
+        typeobj objn, objd;
         if (redoLogRecord1->objd != 0) {
             objn = redoLogRecord1->objn;
             objd = redoLogRecord1->objd;
@@ -1020,7 +1021,7 @@ namespace OpenLogReplicator {
                     //check all previous transactions - not yet implemented
                     bool foundPrevious = false;
 
-                    for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+                    for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
                         transaction = oracleEnvironment->transactionHeap.heap[i];
 
                         if (transaction->opCodes > 0 &&
@@ -1035,14 +1036,14 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->trace >= TRACE_WARN)
                             cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
-                                    " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
-                                    " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+                                    " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
+                                    " RCI: " << dec << (uint64_t)redoLogRecord2->rci << endl;
                     } else {
                         if (oracleEnvironment->trace >= TRACE_WARN)
                             cerr << "WARNING: would like to rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
-                                    " SLT: " << dec << (uint32_t)redoLogRecord2->slt <<
-                                    " RCI: " << dec << (uint32_t)redoLogRecord2->rci << endl;
+                                    " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
+                                    " RCI: " << dec << (uint64_t)redoLogRecord2->rci << endl;
                     }
                 }
             }
@@ -1055,22 +1056,28 @@ namespace OpenLogReplicator {
     void OracleReaderRedo::flushTransactions(bool checkpoint) {
         Transaction *transaction = oracleEnvironment->transactionHeap.top();
         typescn checkpointScn;
+
         if (checkpoint) {
             checkpointScn = curScn;
             lastCheckpointScn = curScn;
             lastCheckpointInfo = false;
+
+            if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->version >= 12200)
+                    cerr << "INFO: checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
+                else
+                    cerr << "INFO: checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
+            }
         } else if (curScn > 200) { //TODO: parametrize
             checkpointScn = curScn - 200;
             if (checkpointScn < lastCheckpointScn)
                 return;
 
-            if (!lastCheckpointInfo) {
-                if (oracleEnvironment->trace >= TRACE_INFO) {
-                    if (oracleEnvironment->version >= 12200)
-                        cerr << "INFO: current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
-                    else
-                        cerr << "INFO: current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
-                }
+            if ((!lastCheckpointInfo && oracleEnvironment->trace >= TRACE_INFO) || oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->version >= 12200)
+                    cerr << "INFO: current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
+                else
+                    cerr << "INFO: current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
                 lastCheckpointInfo = true;
             }
         } else
@@ -1086,7 +1093,7 @@ namespace OpenLogReplicator {
                         " commit: " << transaction->isCommit <<
                         " uba: " << PRINTUBA(transaction->lastUba) <<
                         " dba: " << transaction->lastDba <<
-                        " slt: " << hex << (uint32_t)transaction->lastSlt <<
+                        " slt: " << hex << (uint64_t)transaction->lastSlt <<
                         endl;
             }
 
@@ -1101,7 +1108,7 @@ namespace OpenLogReplicator {
                     if (oracleEnvironment->trace >= TRACE_WARN) {
                         cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
 
-                        for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+                        for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
                             Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
                             cerr << "WARNING: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
                                     ", begin: " << transactionI->isBegin <<
@@ -1141,7 +1148,7 @@ namespace OpenLogReplicator {
 
     int OracleReaderRedo::processBuffer(void) {
         while (redoBufferFileStart < redoBufferFileEnd) {
-            uint32_t curBlockPos = 16;
+            uint64_t curBlockPos = 16;
             while (curBlockPos < blockSize) {
                 //next record
                 if (recordLeftToCopy == 0) {
@@ -1163,7 +1170,7 @@ namespace OpenLogReplicator {
                 if (recordLeftToCopy == 0)
                     break;
 
-                uint32_t toCopy;
+                uint64_t toCopy;
                 if (curBlockPos + recordLeftToCopy > blockSize)
                     toCopy = blockSize - curBlockPos;
                 else
@@ -1320,7 +1327,7 @@ namespace OpenLogReplicator {
             clock_t cEnd = clock();
             double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
             if (myTime > 0)
-                mySpeed = blockNumber * blockSize / 1024 / 1024 / myTime * 1000;
+                mySpeed = (uint64_t)blockNumber * blockSize / 1024 / 1024 / myTime * 1000;
             cerr << "INFO: Time is " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
         }
 
@@ -1329,11 +1336,11 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    uint16_t OracleReaderRedo::calcChSum(uint8_t *buffer, uint32_t size) {
+    uint16_t OracleReaderRedo::calcChSum(uint8_t *buffer, uint64_t size) {
         uint16_t oldChSum = oracleEnvironment->read16(buffer + 14);
         uint64_t sum = 0;
 
-        for (uint32_t i = 0; i < size / 8; ++i, buffer += 8)
+        for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)
             sum ^= *((uint64_t*)buffer);
         sum ^= (sum >> 32);
         sum ^= (sum >> 16);

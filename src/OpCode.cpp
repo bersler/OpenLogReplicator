@@ -48,70 +48,70 @@ namespace OpenLogReplicator {
 
             if (oracleEnvironment->version < 12000) {
                 if (redoLogRecord->typ == 6)
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted << endl;
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted << endl;
                 else
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
-                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
+                        " TYP:" << (uint64_t)redoLogRecord->typ <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
                         " OBJ:" << dec << redoLogRecord->recordObjd <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl << endl;
             } else if (oracleEnvironment->version < 12200) {
                 if (redoLogRecord->typ == 6)
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
                         " CON_ID:" << redoLogRecord->conId <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted <<
                         " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
                 else
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " CON_ID:" << redoLogRecord->conId <<
-                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                        " TYP:" << (uint64_t)redoLogRecord->typ <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
                         " OBJ:" << dec << redoLogRecord->recordObjd <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl <<
                         " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
             } else {
                 if (redoLogRecord->typ == 6)
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
                         " CON_ID:" << redoLogRecord->conId <<
                         " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted <<
                         " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
                 else
-                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint32_t)redoLogRecord->vectorNo <<
+                    oracleEnvironment->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " CON_ID:" << redoLogRecord->conId <<
-                        " TYP:" << (uint32_t)redoLogRecord->typ <<
+                        " TYP:" << (uint64_t)redoLogRecord->typ <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << setfill('0') << setw(8) << hex << redoLogRecord->dba <<
                         " OBJ:" << dec << redoLogRecord->recordObjd <<
                         " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
-                        " SEQ:" << dec << (uint32_t)redoLogRecord->seq <<
-                        " OP:" << (uint32_t)(redoLogRecord->opCode >> 8) << "." << (uint32_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << dec << (uint32_t)encrypted <<
+                        " SEQ:" << dec << (uint64_t)redoLogRecord->seq <<
+                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << dec << (uint64_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl <<
                         " FLG:0x" << setw(4) << hex << redoLogRecord->flgRecord << endl;
             }
@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
             redoLogRecord->dumpHex(oracleEnvironment->dumpStream, oracleEnvironment);
     }
 
-    void OpCode::ktbRedo(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::ktbRedo(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo: " << dec << fieldLength << endl;
             return;
@@ -136,12 +136,12 @@ namespace OpenLogReplicator {
         uint8_t flg = redoLogRecord->data[fieldPos + 1];
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint8_t ver = flg & 0x03;
-            uint32_t padding = 1;
+            uint64_t padding = 1;
 
             oracleEnvironment->dumpStream << "KTB Redo " << endl;
             oracleEnvironment->dumpStream << "op: 0x" << setfill('0') << setw(2) << hex << (int32_t)op << " " <<
-                    " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver << "  " << endl;
-            oracleEnvironment->dumpStream << "compat bit: " << dec << (uint32_t)(flg & 0x04) << " ";
+                    " ver: 0x" << setfill('0') << setw(2) << hex << (uint64_t)ver << "  " << endl;
+            oracleEnvironment->dumpStream << "compat bit: " << dec << (uint64_t)(flg & 0x04) << " ";
             if ((flg & 0x04) != 0)
                 oracleEnvironment->dumpStream << "(post-11)";
             else
@@ -197,12 +197,12 @@ namespace OpenLogReplicator {
                     if (oracleEnvironment->version < 12200)
                         oracleEnvironment->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " lkc:  " << (uint64_t)lkc << "    " <<
                                 " fac: " << PRINTSCN48(scnx) << endl;
                     else
                         oracleEnvironment->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " lkc:  " << (uint64_t)lkc << "    " <<
                                 " fac:  " << PRINTSCN64(scnx) << endl;
                 }
 
@@ -235,12 +235,12 @@ namespace OpenLogReplicator {
                     if (oracleEnvironment->version < 12200)
                         oracleEnvironment->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " lkc:  " << (uint64_t)lkc << "    " <<
                                 " scn: " << PRINTSCN48(scnx) << endl;
                     else
                         oracleEnvironment->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint32_t)lkc << "    " <<
+                                " lkc:  " << (uint64_t)lkc << "    " <<
                                 " scn:  " << PRINTSCN64(scnx) << endl;
                 }
             }
@@ -282,8 +282,8 @@ namespace OpenLogReplicator {
                 if (oracleEnvironment->version < 12200)
                     oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN48(scn) <<
-                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
-                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
+                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint64_t)ver <<
+                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint64_t)opt <<
                             ", entries follow..." << endl;
                 else {
                     char bigscn = 'N', compat = 'N';
@@ -295,36 +295,36 @@ namespace OpenLogReplicator {
                     ver &= 0x03;
                     oracleEnvironment->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN64(scn) <<
-                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint32_t)ver <<
-                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint32_t)opt <<
+                            " ver: 0x" << setfill('0') << setw(2) << hex << (uint64_t)ver <<
+                            " opt: 0x" << setfill('0') << setw(2) << hex << (uint64_t)opt <<
                             " bigscn: " << bigscn <<
                             " compact: " << compat <<
                             " spare: " << setfill('0') << setw(8) << hex << spare <<
                             ", entries follow..." << endl;
                 }
 
-                if (fieldLength < 56 + entries * (uint32_t)8) {
+                if (fieldLength < 56 + entries * (uint64_t)8) {
                     oracleEnvironment->dumpStream << "ERROR: too short field KTB Redo F 0x11: " << dec << fieldLength << endl;
                     return;
                 }
 
-                for (uint32_t j = 0; j < entries; ++j) {
+                for (uint64_t j = 0; j < entries; ++j) {
                     uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typescn scn = oracleEnvironment->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
                     if (oracleEnvironment->version < 12100)
-                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
-                                " flg: " << (uint32_t)flg << " " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
+                                " flg: " << (uint64_t)flg << " " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
                     else if (oracleEnvironment->version < 12200)
-                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
-                                " flg: (opt=" << (uint32_t)(flg & 0x03) << " whr=" << (uint32_t)(flg >>2) << ") " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
+                                " flg: (opt=" << (uint64_t)(flg & 0x03) << " whr=" << (uint64_t)(flg >>2) << ") " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
                     else {
                         uint8_t opt = flg & 0x03;
                         uint8_t whr = flg >> 2;
-                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint32_t)itli << " " <<
-                                " flg: (opt=" << (uint32_t)opt << " whr=" << (uint32_t)whr << ") " <<
+                        oracleEnvironment->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
+                                " flg: (opt=" << (uint64_t)opt << " whr=" << (uint64_t)whr << ") " <<
                                 " scn:  " << PRINTSCN64(scn) << endl;
                     }
                 }
@@ -332,7 +332,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdoOpCodeIRP(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeIRP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 48) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP: " << dec << fieldLength << endl;
             return;
@@ -348,7 +348,7 @@ namespace OpenLogReplicator {
             redoLogRecord->nridSlot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 32);
         }
 
-        if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
                     " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
@@ -357,8 +357,8 @@ namespace OpenLogReplicator {
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
-            oracleEnvironment->dumpStream << "tabn: " << (uint32_t)redoLogRecord->tabn <<
-                    " slot: " << dec << (uint32_t)redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
+            oracleEnvironment->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
+                    " slot: " << dec << (uint64_t)redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
                     " size/delt: " << dec << sizeDelt << endl;
 
             char fbStr[9] = "--------";
@@ -366,11 +366,11 @@ namespace OpenLogReplicator {
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
 
             oracleEnvironment->dumpStream << "fb: " << fbStr <<
-                    " lb: 0x" << hex << (uint32_t)lb << " " <<
-                    " cc: " << dec << (uint32_t)redoLogRecord->cc;
+                    " lb: 0x" << hex << (uint64_t)lb << " " <<
+                    " cc: " << dec << (uint64_t)redoLogRecord->cc;
             if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
-                oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
+                oracleEnvironment->dumpStream << " cki: " << dec << (uint64_t)cki << endl;
             } else
                 oracleEnvironment->dumpStream << endl;
 
@@ -393,10 +393,10 @@ namespace OpenLogReplicator {
                 uint32_t nk = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 28);
                 uint8_t nk1 = redoLogRecord->data[fieldPos + 32];
 
-                oracleEnvironment->dumpStream << "curc: " << dec << (uint32_t)curc <<
-                        " comc: " << dec << (uint32_t)comc <<
-                        " pk: 0x" << setfill('0') << setw(8) << hex << pk << "." << hex << (uint32_t)pk1 <<
-                        " nk: 0x" << setfill('0') << setw(8) << hex << nk << "." << hex << (uint32_t)nk1 << endl;
+                oracleEnvironment->dumpStream << "curc: " << dec << (uint64_t)curc <<
+                        " comc: " << dec << (uint64_t)comc <<
+                        " pk: 0x" << setfill('0') << setw(8) << hex << pk << "." << hex << (uint64_t)pk1 <<
+                        " nk: 0x" << setfill('0') << setw(8) << hex << nk << "." << hex << (uint64_t)nk1 << endl;
             }
 
             oracleEnvironment->dumpStream << "null:";
@@ -406,7 +406,7 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << " ";
 
             uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
-            for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
+            for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)
                     oracleEnvironment->dumpStream << "N";
@@ -425,7 +425,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdoOpCodeDRP(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeDRP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode DRP: " << dec << fieldLength << endl;
             return;
@@ -435,12 +435,12 @@ namespace OpenLogReplicator {
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 18];
 
         if (oracleEnvironment->dumpLogFile >= 1) {
-            oracleEnvironment->dumpStream << "tabn: " << (uint32_t)redoLogRecord->tabn <<
-                    " slot: " << dec << (uint32_t)redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" << endl;
+            oracleEnvironment->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
+                    " slot: " << dec << (uint64_t)redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" << endl;
         }
     }
 
-    void OpCode::kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeLKR(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode LKR: " << dec << fieldLength << endl;
             return;
@@ -451,13 +451,13 @@ namespace OpenLogReplicator {
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint8_t to = redoLogRecord->data[fieldPos + 19];
-            oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)redoLogRecord->tabn <<
+            oracleEnvironment->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
                 " slot: " << dec << redoLogRecord->slot <<
-                " to: " << dec << (uint32_t)to << endl;
+                " to: " << dec << (uint64_t)to << endl;
         }
     }
 
-    void OpCode::kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeURP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 28) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode URP: " << dec << fieldLength << endl;
             return;
@@ -467,7 +467,7 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
         redoLogRecord->nullsDelta = fieldPos + 26;
 
-        if (fieldLength < 26 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 26 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec <<
                     fieldLength << " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
@@ -482,18 +482,18 @@ namespace OpenLogReplicator {
             uint8_t ncol = redoLogRecord->data[fieldPos + 22];
             int16_t size = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 24); //signed
 
-            oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)redoLogRecord->tabn <<
+            oracleEnvironment->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
                     " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
-                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord->fb <<
-                    " lock: " << dec << (uint32_t)lock <<
-                    " ckix: " << dec << (uint32_t)ckix << endl;
-            oracleEnvironment->dumpStream << "ncol: " << dec << (uint32_t)ncol <<
-                    " nnew: " << dec << (uint32_t)redoLogRecord->cc <<
+                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord->fb <<
+                    " lock: " << dec << (uint64_t)lock <<
+                    " ckix: " << dec << (uint64_t)ckix << endl;
+            oracleEnvironment->dumpStream << "ncol: " << dec << (uint64_t)ncol <<
+                    " nnew: " << dec << (uint64_t)redoLogRecord->cc <<
                     " size: " << size << endl;
         }
     }
 
-    void OpCode::kdoOpCodeCFA(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeCFA(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP: " << dec << fieldLength << endl;
             return;
@@ -508,15 +508,15 @@ namespace OpenLogReplicator {
             uint8_t flag = redoLogRecord->data[fieldPos + 26];
             uint8_t lock = redoLogRecord->data[fieldPos + 28];
             oracleEnvironment->dumpStream <<
-                    "tabn: " << dec << (uint32_t)redoLogRecord->tabn <<
+                    "tabn: " << dec << (uint64_t)redoLogRecord->tabn <<
                     " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" <<
-                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint32_t)flag << endl <<
-                    "lock: " << dec << (uint32_t)lock <<
+                    " flag: 0x" << setfill('0') << setw(2) << hex << (uint64_t)flag << endl <<
+                    "lock: " << dec << (uint64_t)lock <<
                     " nrid: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->nridBdba << "." << hex << redoLogRecord->nridSlot << endl;
         }
     }
 
-    void OpCode::kdoOpCodeSKL(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeSKL(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode SKL: " << dec << fieldLength << endl;
             return;
@@ -532,7 +532,7 @@ namespace OpenLogReplicator {
             if ((flag & 0x02) != 0) flagStr[1] = 'B';
 
             oracleEnvironment->dumpStream << "flag: " << flagStr <<
-                    " lock: " << dec << (uint32_t)lock <<
+                    " lock: " << dec << (uint64_t)lock <<
                     " slot: " << dec << redoLogRecord->slot << "(0x" << hex << redoLogRecord->slot << ")" << endl;
 
             if ((flag & 0x01) != 0) {
@@ -540,10 +540,10 @@ namespace OpenLogReplicator {
                 uint16_t fwd2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 20);
                 memcpy(fwd, redoLogRecord->data + fieldPos + 16, 4);
                 oracleEnvironment->dumpStream << "fwd: 0x" <<
-                        setfill('0') << setw(2) << hex << (uint32_t)fwd[0] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)fwd[1] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)fwd[2] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)fwd[3] << "." <<
+                        setfill('0') << setw(2) << hex << (uint64_t)fwd[0] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)fwd[1] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)fwd[2] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)fwd[3] << "." <<
                         dec << fwd2 << " " << endl;
             }
 
@@ -552,16 +552,16 @@ namespace OpenLogReplicator {
                 uint16_t bkw2 = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 26);
                 memcpy(bkw, redoLogRecord->data + fieldPos + 22, 4);
                 oracleEnvironment->dumpStream << "bkw: 0x" <<
-                        setfill('0') << setw(2) << hex << (uint32_t)bkw[0] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)bkw[1] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)bkw[2] <<
-                        setfill('0') << setw(2) << hex << (uint32_t)bkw[3] << "." <<
+                        setfill('0') << setw(2) << hex << (uint64_t)bkw[0] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)bkw[1] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)bkw[2] <<
+                        setfill('0') << setw(2) << hex << (uint64_t)bkw[3] << "." <<
                         dec << bkw2 << endl;
             }
         }
     }
 
-    void OpCode::kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeORP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 48) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP: " << dec << fieldLength << endl;
             return;
@@ -573,7 +573,7 @@ namespace OpenLogReplicator {
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 44];
         redoLogRecord->nullsDelta = fieldPos + 45;
 
-        if (fieldLength < 45 + ((uint32_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
                     " (cc: " << redoLogRecord->cc << ")" << endl;
             return;
@@ -586,8 +586,8 @@ namespace OpenLogReplicator {
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t sizeDelt = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 40);
-            oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)redoLogRecord->tabn <<
-                " slot: " << dec << (uint32_t)redoLogRecord->slot << "(0x" << hex << (uint32_t)redoLogRecord->slot << ")" <<
+            oracleEnvironment->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
+                " slot: " << dec << (uint64_t)redoLogRecord->slot << "(0x" << hex << (uint64_t)redoLogRecord->slot << ")" <<
                 " size/delt: " << dec << sizeDelt << endl;
 
             char fbStr[9] = "--------";
@@ -595,11 +595,11 @@ namespace OpenLogReplicator {
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
 
             oracleEnvironment->dumpStream << "fb: " << fbStr <<
-                    " lb: 0x" << hex << (uint32_t)lb << " " <<
-                    " cc: " << dec << (uint32_t)redoLogRecord->cc;
+                    " lb: 0x" << hex << (uint64_t)lb << " " <<
+                    " cc: " << dec << (uint64_t)redoLogRecord->cc;
             if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
-                oracleEnvironment->dumpStream << " cki: " << dec << (uint32_t)cki << endl;
+                oracleEnvironment->dumpStream << " cki: " << dec << (uint64_t)cki << endl;
             } else
                 oracleEnvironment->dumpStream << endl;
 
@@ -614,7 +614,7 @@ namespace OpenLogReplicator {
                 oracleEnvironment->dumpStream << " ";
 
             uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
-            for (uint32_t i = 0; i < redoLogRecord->cc; ++i) {
+            for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)
                     oracleEnvironment->dumpStream << "N";
@@ -633,7 +633,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 24) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI (1): " << dec << fieldLength << endl;
             return;
@@ -646,11 +646,11 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
 
-            oracleEnvironment->dumpStream << "tabn: "<< (uint32_t)redoLogRecord->tabn <<
-                " lock: " << dec << (uint32_t)lock <<
+            oracleEnvironment->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
+                " lock: " << dec << (uint64_t)lock <<
                 " nrow: " << dec << redoLogRecord->nrow << endl;
 
-            if (fieldLength < 22 + (uint32_t)redoLogRecord->nrow * 2) {
+            if (fieldLength < 22 + (uint64_t)redoLogRecord->nrow * 2) {
                 oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode QMI (2): " << dec << fieldLength << ", " <<
                         redoLogRecord->nrow << endl;
                 return;
@@ -658,7 +658,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdoOpCode(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::kdoOpCode(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
             oracleEnvironment->dumpStream << "ERROR: too short field KDO OpCode: " << dec << fieldLength << endl;
             return;
@@ -698,7 +698,7 @@ namespace OpenLogReplicator {
                 default:
                     opCode = "XXX";
                     if (oracleEnvironment->dumpLogFile >= 1)
-                        oracleEnvironment->dumpStream << "DEBUG op: " << dec << (uint32_t)(redoLogRecord->op & 0x1F) << endl;
+                        oracleEnvironment->dumpStream << "DEBUG op: " << dec << (uint64_t)(redoLogRecord->op & 0x1F) << endl;
             }
 
             string xtype = "0";
@@ -725,12 +725,12 @@ namespace OpenLogReplicator {
 
             oracleEnvironment->dumpStream << "KDO Op code: " << opCode << " row dependencies " << rowDependencies << endl;
             oracleEnvironment->dumpStream << "  xtype: " << xtype << rtype <<
-                    " flags: 0x" << setfill('0') << setw(8) << hex << (uint32_t)redoLogRecord->flags << " " <<
+                    " flags: 0x" << setfill('0') << setw(8) << hex << (uint64_t)redoLogRecord->flags << " " <<
                     " bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->bdba << " " <<
                     " hdba: 0x" << setfill('0') << setw(8) << hex << hdba << endl;
-            oracleEnvironment->dumpStream << "itli: " << dec << (uint32_t)redoLogRecord->itli << " " <<
-                    " ispac: " << dec << (uint32_t)ispac << " " <<
-                    " maxfr: " << dec << (uint32_t)maxFr << endl;
+            oracleEnvironment->dumpStream << "itli: " << dec << (uint64_t)redoLogRecord->itli << " " <<
+                    " ispac: " << dec << (uint64_t)ispac << " " <<
+                    " maxfr: " << dec << (uint64_t)maxFr << endl;
         }
 
         switch (redoLogRecord->op & 0x1F) {
@@ -754,7 +754,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::ktub(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode::ktub(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 24) {
             oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
             return;
@@ -783,9 +783,9 @@ namespace OpenLogReplicator {
         if (oracleEnvironment->version < 19000) {
             oracleEnvironment->dumpStream <<
                     ktuType << " redo:" <<
-                    " slt: " << dec << (uint32_t)redoLogRecord->slt <<
-                    " rci: " << dec << (uint32_t)redoLogRecord->rci <<
-                    " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                    " slt: " << dec << (uint64_t)redoLogRecord->slt <<
+                    " rci: " << dec << (uint64_t)redoLogRecord->rci <<
+                    " opc: " << dec << (uint64_t)(redoLogRecord->opc >> 8) << "." << (uint64_t)(redoLogRecord->opc & 0xFF) <<
                     " " << prevObj << "objn: " << dec << redoLogRecord->objn <<
                     " objd: " << dec << redoLogRecord->objd <<
                     " tsn: " << dec << redoLogRecord->tsn << postObj << endl;
@@ -795,12 +795,12 @@ namespace OpenLogReplicator {
 
             oracleEnvironment->dumpStream <<
                     ktuType << " redo:" <<
-                    " slt: "  << dec << (uint32_t)redoLogRecord->slt <<
+                    " slt: "  << dec << (uint64_t)redoLogRecord->slt <<
                     " wrp: " << dec << wrp <<
                     " flg: 0x" << setfill('0') << setw(4) << hex << redoLogRecord->flg <<
                     " prev dba:  0x" << setfill('0') << setw(8) << hex << prevDba <<
-                    " rci: " << dec << (uint32_t)redoLogRecord->rci <<
-                    " opc: " << dec << (uint32_t)(redoLogRecord->opc >> 8) << "." << (uint32_t)(redoLogRecord->opc & 0xFF) <<
+                    " rci: " << dec << (uint64_t)redoLogRecord->rci <<
+                    " opc: " << dec << (uint64_t)(redoLogRecord->opc >> 8) << "." << (uint64_t)(redoLogRecord->opc & 0xFF) <<
                     " [objn: " << dec << redoLogRecord->objn <<
                     " objd: " << dec << redoLogRecord->objd <<
                     " tsn: " << dec << redoLogRecord->tsn << "]" << endl;
@@ -1041,11 +1041,11 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength) {
-        uint32_t pos = 0;
+        uint64_t pos = 0;
 
         oracleEnvironment->dumpStream << "Vector content: " << endl;
 
-        for (uint32_t k = 0; k < redoLogRecord->cc; ++k) {
+        for (uint64_t k = 0; k < redoLogRecord->cc; ++k) {
             uint16_t fieldLength = data[pos];
             ++pos;
             uint8_t isNull = (fieldLength == 0xFF);
@@ -1074,9 +1074,9 @@ namespace OpenLogReplicator {
             else
                 oracleEnvironment->dumpStream << endl;
 
-            for (uint32_t j = 0; j < fieldLength; ++j) {
-                oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint32_t)data[j];
-                if ((j % 25) == 24 && j != (uint32_t)fieldLength - 1)
+            for (uint64_t j = 0; j < fieldLength; ++j) {
+                oracleEnvironment->dumpStream << " " << setfill('0') << setw(2) << hex << (uint64_t)data[j];
+                if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
                     oracleEnvironment->dumpStream << endl;
             }
 
@@ -1086,10 +1086,10 @@ namespace OpenLogReplicator {
 
     void OpCode::dumpRows(uint8_t *data) {
         if (oracleEnvironment->dumpLogFile >= 1) {
-            uint32_t pos = 0;
+            uint64_t pos = 0;
             char fbStr[9] = "--------";
 
-            for (uint32_t r = 0; r < redoLogRecord->nrow; ++r) {
+            for (uint64_t r = 0; r < redoLogRecord->nrow; ++r) {
                 oracleEnvironment->dumpStream << "slot[" << dec << r << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->slotsDelta + r * 2) << endl;
                 processFbFlags(data[pos + 0], fbStr);
                 uint8_t lb = data[pos + 1];
@@ -1098,8 +1098,8 @@ namespace OpenLogReplicator {
 
                 oracleEnvironment->dumpStream << "tl: " << dec << tl <<
                         " fb: " << fbStr <<
-                        " lb: 0x" << hex << (uint32_t)lb << " " <<
-                        " cc: " << dec << (uint32_t)jcc << endl;
+                        " lb: 0x" << hex << (uint64_t)lb << " " <<
+                        " cc: " << dec << (uint64_t)jcc << endl;
                 pos += 3;
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
@@ -1109,7 +1109,7 @@ namespace OpenLogReplicator {
                         pos += 8;
                 }
 
-                for (uint32_t k = 0; k < jcc; ++k) {
+                for (uint64_t k = 0; k < jcc; ++k) {
                     uint16_t fieldLength = data[pos];
                     ++pos;
                     uint8_t isNull = (fieldLength == 0xFF);
@@ -1128,10 +1128,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpVal(uint32_t fieldPos, uint32_t fieldLength, string msg) {
+    void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg) {
         if (oracleEnvironment->dumpLogFile >= 1) {
             oracleEnvironment->dumpStream << msg;
-            for (uint32_t j = 0; j < fieldLength; ++j)
+            for (uint64_t j = 0; j < fieldLength; ++j)
                 oracleEnvironment->dumpStream << redoLogRecord->data[fieldPos + j];
             oracleEnvironment->dumpStream << endl;
         }

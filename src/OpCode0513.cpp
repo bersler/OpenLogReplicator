@@ -38,9 +38,9 @@ namespace OpenLogReplicator {
 
     void OpCode0513::process() {
         OpCode::process();
-        uint32_t fieldPos = redoLogRecord->fieldPos;
+        uint64_t fieldPos = redoLogRecord->fieldPos;
 
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
+        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
 
             if (i == 1) dumpMsgSessionSerial(fieldPos, fieldLength);
@@ -75,8 +75,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::dumpMsgFlags(uint32_t fieldPos, uint32_t fieldLength) {
-        uint32_t flags = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
+    void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) {
+        uint16_t flags = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
         if ((flags & 0x0001) != 0) oracleEnvironment->dumpStream << "DDL transaction" << endl;
         if ((flags & 0x0002) != 0) oracleEnvironment->dumpStream << "Space Management transaction" << endl;
         if ((flags & 0x0004) != 0) oracleEnvironment->dumpStream << "Recursive transaction" << endl;
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         if ((flags & 0x0800) != 0) oracleEnvironment->dumpStream << "Tx audit CV flags undefined" << endl;
     }
 
-    void OpCode0513::dumpMsgSessionSerial(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t serialNumber = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t sessionNumber;
@@ -106,14 +106,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::dumpMsgVersion(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t version = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             oracleEnvironment->dumpStream << "version " << dec << version << endl;
         }
     }
 
-    void OpCode0513::dumpMsgAuditSessionid(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint32_t auditSessionid = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
             oracleEnvironment->dumpStream << "audit sessionid " << auditSessionid << endl;

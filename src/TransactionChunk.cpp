@@ -23,7 +23,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicator {
 
-    TransactionChunk::TransactionChunk(TransactionChunk *prev, uint32_t redoBufferSize) :
+    TransactionChunk::TransactionChunk(TransactionChunk *prev, uint64_t redoBufferSize) :
             elements(0),
             size(0),
             prev(prev),

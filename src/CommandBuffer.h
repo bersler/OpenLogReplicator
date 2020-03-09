@@ -45,21 +45,21 @@ namespace OpenLogReplicator {
         volatile uint64_t posStart;
         volatile uint64_t posEnd;
         volatile uint64_t posEndTmp;
-        volatile uint32_t posSize;
-        uint32_t outputBufferSize;
+        volatile uint64_t posSize;
+        uint64_t outputBufferSize;
 
         void stop(void);
-        CommandBuffer* appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot);
-        CommandBuffer* appendEscape(const uint8_t *str, uint32_t length);
+        CommandBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, uint16_t slot);
+        CommandBuffer* appendEscape(const uint8_t *str, uint64_t length);
         CommandBuffer* append(const string str);
         CommandBuffer* append(char chr);
-        CommandBuffer* appendHex(uint64_t val, uint32_t length);
+        CommandBuffer* appendHex(uint64_t val, uint64_t length);
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();
-        uint32_t currentTranSize();
+        uint64_t currentTranSize();
 
-        CommandBuffer(uint32_t outputBufferSize);
+        CommandBuffer(uint64_t outputBufferSize);
         virtual ~CommandBuffer();
     };
 }

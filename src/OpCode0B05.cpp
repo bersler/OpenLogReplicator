@@ -40,8 +40,8 @@ namespace OpenLogReplicator {
     void OpCode0B05::process() {
         OpCode::process();
         uint8_t *colNums, *nulls, bits = 1;
-        uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
+        uint64_t fieldPos = redoLogRecord->fieldPos;
+        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktbRedo(fieldPos, fieldLength);
@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
                     if (oracleEnvironment->dumpLogFile >= 1)
                         dumpColsVector(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength);
             } else {
-                if (i > 3 && i <= 3 + (uint32_t)redoLogRecord->cc) {
+                if (i > 3 && i <= 3 + (uint64_t)redoLogRecord->cc) {
                     if (oracleEnvironment->dumpLogFile >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, oracleEnvironment->read16(colNums), fieldLength, *nulls & bits);
                     }

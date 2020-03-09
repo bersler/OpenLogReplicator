@@ -28,10 +28,10 @@ namespace OpenLogReplicator {
 
     class OpCode0501: public OpCode {
     protected:
-        void ktudb(uint32_t fieldPos, uint32_t fieldLength);
-        void kteoputrn(uint32_t fieldPos, uint32_t fieldLength);
-        void suppLog(uint32_t fieldPos, uint32_t fieldLength);
-        void rowDeps(uint32_t fieldPos, uint32_t fieldLength);
+        void ktudb(uint64_t fieldPos, uint64_t fieldLength);
+        void kteoputrn(uint64_t fieldPos, uint64_t fieldLength);
+        void suppLog(uint64_t fieldPos, uint64_t fieldLength);
+        void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
         virtual const char* getUndoType();
     public:
         OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);

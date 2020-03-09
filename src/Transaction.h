@@ -35,28 +35,29 @@ namespace OpenLogReplicator {
     class Transaction {
     public:
         typexid xid;
-        uint32_t firstSequence;
+        typeseq firstSequence;
         typescn firstScn;
         typescn lastScn;
         TransactionChunk *tc;
         TransactionChunk *tcLast;
-        uint32_t opCodes;
-        uint32_t pos;
+        uint64_t opCodes;
+        uint64_t pos;
         typeuba lastUba;
-        uint32_t lastDba;
-        uint8_t lastSlt;
-        uint8_t lastRci;
+        typedba lastDba;
+        typeslt lastSlt;
+        typerci lastRci;
         bool isBegin;
         bool isCommit;
         bool isRollback;
         Transaction *next;
 
         bool operator< (Transaction &p);
-        void touch(typescn scn, uint32_t sequence);
-        void add(OracleEnvironment *oracleEnvironment, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci,
-                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, uint32_t sequence);
+        void touch(typescn scn, typeseq sequence);
+        void add(OracleEnvironment *oracleEnvironment, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
+                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
         void rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci);
+        bool rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
+                typedba dba, typeslt slt, typerci rci);
 
         void flush(OracleEnvironment *oracleEnvironment);
 

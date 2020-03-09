@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     class OracleEnvironment : public DatabaseEnvironment {
     public:
-        unordered_map<uint32_t, OracleObject*> objectMap;
+        unordered_map<typeobj, OracleObject*> objectMap;
         unordered_map<typexid, Transaction*> xidTransactionMap;
         TransactionMap lastOpTransactionMap;
         TransactionHeap transactionHeap;
@@ -57,23 +57,22 @@ namespace OpenLogReplicator {
         uint8_t *recordBuffer;
         CommandBuffer *commandBuffer;
         ofstream dumpStream;
-        uint32_t dumpLogFile;
+        uint64_t dumpLogFile;
         bool dumpData;
         bool directRead;
-        uint32_t trace;
+        uint64_t trace;
         uint32_t version;           //compatiblity level of redo logs
-        uint32_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
+        uint64_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         uint32_t conId;
         uint32_t resetlogsId;
 
-        OracleObject *checkDict(uint32_t objn, uint32_t objd);
+        OracleObject *checkDict(typeobj objn, typeobj objd);
         void addToDict(OracleObject *object);
         void transactionNew(typexid xid);
         void transactionAppend(typexid xid);
-        uint32_t getBase();
 
-        OracleEnvironment(CommandBuffer *commandBuffer, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
-                uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions);
+        OracleEnvironment(CommandBuffer *commandBuffer, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+                uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleEnvironment();
     };
 }

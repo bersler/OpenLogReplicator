@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         return lastScn == p.lastScn && xid < p.xid;
     }
 
-    void Transaction::touch(typescn scn, uint32_t sequence) {
+    void Transaction::touch(typescn scn, typeseq sequence) {
         if (firstSequence == 0 || firstSequence > sequence)
             firstSequence = sequence;
         if (firstScn == ZERO_SCN || firstScn > scn)
@@ -67,13 +67,13 @@ namespace OpenLogReplicator {
             lastScn = scn;
     }
 
-    void Transaction::add(OracleEnvironment *oracleEnvironment, uint32_t objn, uint32_t objd, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci,
-            RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, uint32_t sequence) {
+    void Transaction::add(OracleEnvironment *oracleEnvironment, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
+            RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence) {
 
         uint8_t buffer[REDO_RECORD_MAX_SIZE];
         if (oracleEnvironment->trace >= TRACE_FULL)
             cerr << "Transaction add: " << setfill('0') << setw(4) << hex << redoLogRecord1->opCode << ":" <<
-                    setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
+                    setfill('0') << setw(4) << hex << redoLogRecord2->opCode << " XID: " << PRINTXID(redoLogRecord1->xid) << endl;
 
         //check if previous op was a partial operation
         if (redoLogRecord1->opCode == 0x0501 && (redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID)) != 0) {
@@ -81,7 +81,7 @@ namespace OpenLogReplicator {
             RedoLogRecord *lastRedoLogRecord1, *lastRedoLogRecord2;
 
             if (transactionBuffer->getLastRecord(tcLast, opCode, lastRedoLogRecord1, lastRedoLogRecord2) && opCode == 0x05010000 && (lastRedoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                uint32_t pos = 0, newFieldCnt;
+                uint64_t pos = 0, newFieldCnt;
                 uint16_t fieldPos, fieldPos2;
                 memcpy(buffer, redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
                 pos = redoLogRecord1->fieldLengthsDelta;
@@ -136,16 +136,16 @@ namespace OpenLogReplicator {
         }
 
         if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "add uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint32_t)slt << ", rci: " << dec << (uint32_t)rci << endl;
+            cerr << "add uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
         touch(redoLogRecord1->scn, sequence);
     }
 
-    bool Transaction::rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci) {
+    bool Transaction::rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
         if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "rollback previous uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint32_t)slt << ", rci: " << dec << (uint32_t)rci << endl;
+            cerr << "rollback previous uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         if (transactionBuffer->deleteTransactionPart(tcLast, uba, dba, slt, rci)) {
             --opCodes;
@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
 
     void Transaction::rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer) {
         if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "rollback last uba: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint32_t)lastSlt << ", rci: " << dec << (uint32_t)lastRci << endl;
+            cerr << "rollback last uba: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
         tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
 
         --opCodes;
@@ -184,13 +184,13 @@ namespace OpenLogReplicator {
                 oracleEnvironment->commandBuffer->rewind();
 
             oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
-            uint32_t pos, type = 0;
+            uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
 
             while (tcTemp != nullptr) {
                 pos = 0;
-                for (uint32_t i = 0; i < tcTemp->elements; ++i) {
+                for (uint64_t i = 0; i < tcTemp->elements; ++i) {
                     uint32_t op = *((uint32_t*)(tcTemp->buffer + pos));
 
                     RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO1)),
@@ -201,12 +201,12 @@ namespace OpenLogReplicator {
 
                     if (oracleEnvironment->trace >= TRACE_WARN) {
                         if (oracleEnvironment->trace >= TRACE_DETAIL) {
-                            uint32_t objn = *((tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
-                            uint32_t objd = *((tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
+                            typeobj objn = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
+                            typeobj objd = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
                             cerr << "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
-                                    " fb: " << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->fb <<
-                                        ":" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord2->fb << " " <<
+                                    " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
+                                        ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
                                     " op: " << setfill('0') << setw(8) << hex << op <<
                                     " objn: " << dec << objn <<
                                     " objd: " << dec << objd <<
@@ -214,11 +214,11 @@ namespace OpenLogReplicator {
                                     " flg2: 0x" << setfill('0') << setw(4) << hex << redoLogRecord2->flg <<
                                     " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
-                                    " bdba1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->bdba << "." << hex << (uint32_t)redoLogRecord1->slot <<
+                                    " bdba1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->bdba << "." << hex << (uint64_t)redoLogRecord1->slot <<
                                     " nrid1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->nridBdba << "." << hex << redoLogRecord1->nridSlot <<
-                                    " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint32_t)redoLogRecord2->slot <<
+                                    " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint64_t)redoLogRecord2->slot <<
                                     " nrid2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->nridBdba << "." << hex << redoLogRecord2->nridSlot <<
-                                    " supp: (0x" << setfill('0') << setw(2) << hex << (uint32_t)redoLogRecord1->suppLogFb <<
+                                    " supp: (0x" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->suppLogFb <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogCC <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<

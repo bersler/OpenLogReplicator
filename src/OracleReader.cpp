@@ -47,8 +47,8 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint32_t trace, uint32_t dumpLogFile, bool dumpData, bool directRead, uint32_t sortCols,
-            uint32_t redoBuffers, uint32_t redoBufferSize, uint32_t maxConcurrentTransactions) :
+            const string connectString, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+            uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
 
             //try to read online redo logs
             if (this->shutdown)
-                return 0;
+                break;
             if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: checking online redo logs" << endl;
             refreshOnlineLogs();
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
                             break;
 
                         if (this->shutdown)
-                            return 0;
+                            break;
                         refreshOnlineLogs();
                     }
                 }
@@ -166,7 +166,7 @@ namespace OpenLogReplicator {
 
                 //if online redo log is overwritten - then switch to reading archive logs
                 if (this->shutdown)
-                    return 0;
+                    break;
                 logsProcessed = true;
                 ret = redo->processLog(this);
 
@@ -184,7 +184,7 @@ namespace OpenLogReplicator {
 
             //try to read all archived redo logs
             if (this->shutdown)
-                return 0;
+                break;
             if (oracleEnvironment->trace >= TRACE_FULL)
                 cerr << "INFO: checking archive redo logs" << endl;
             archLogGetList();
@@ -209,7 +209,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (this->shutdown)
-                    return 0;
+                    break;
                 logsProcessed = true;
                 ret = redo->processLog(this);
 
@@ -225,8 +225,21 @@ namespace OpenLogReplicator {
                 redo = nullptr;
             }
 
+            if (this->shutdown)
+                break;
             if (!logsProcessed)
                 usleep(REDO_SLEEP_RETRY);
+        }
+
+        if (oracleEnvironment->trace >= TRACE_WARN) {
+            cerr << "Transactions open ad shutdown: " << dec << oracleEnvironment->transactionHeap.heapSize << endl;
+            for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+                Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
+                cerr << "WARNING: transaction[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
+                        ", begin: " << transactionI->isBegin <<
+                        ", commit: " << transactionI->isCommit <<
+                        ", rollback: " << transactionI->isRollback << endl;
+            }
         }
 
         return 0;
@@ -243,7 +256,8 @@ namespace OpenLogReplicator {
             stmt.executeQuery();
 
             string path;
-            typescn sequence, firstScn, nextScn;
+            typeseq sequence;
+            typescn firstScn, nextScn;
 
             while (stmt.rset->next()) {
                 path = stmt.rset->getString(1);
@@ -401,10 +415,10 @@ namespace OpenLogReplicator {
             return 1;
     }
 
-    void OracleReader::addTable(string mask, uint32_t options) {
+    void OracleReader::addTable(string mask, uint64_t options) {
         checkConnection(false);
         cout << "- reading table schema for: " << mask;
-        uint32_t tabCnt = 0;
+        uint64_t tabCnt = 0;
 
         try {
             OracleStatement stmt(&conn, env);
@@ -422,16 +436,16 @@ namespace OpenLogReplicator {
                 //skip partitioned/IOT tables
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                uint32_t objn = stmt.rset->getNumber(2);
+                typeobj objn = stmt.rset->getNumber(2);
                 if (stmt.rset->isNull(1)) {
                     cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT";
                 } else {
-                    uint32_t objd = stmt.rset->getNumber(1);
-                    uint32_t cluCols = 0;
+                    typeobj objd = stmt.rset->getNumber(1);
+                    uint64_t cluCols = 0;
                     if (!stmt.rset->isNull(3))
                         stmt.rset->getNumber(3);
-                    uint32_t depdendencies = stmt.rset->getNumber(6);
-                    uint32_t totalPk = 0, totalCols = 0;
+                    uint64_t depdendencies = stmt.rset->getNumber(6);
+                    uint64_t totalPk = 0, totalCols = 0;
                     OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner.c_str(), objectName.c_str());
                     ++tabCnt;
 
@@ -478,27 +492,27 @@ namespace OpenLogReplicator {
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
             {cerr << "ERROR: parsing " << database << ".json at byte " << dec << document.GetErrorOffset() << endl; infile.close(); return; }
 
-        const Value& databaseVal = getJSONfield(document, "database");
-        if (database.compare(databaseVal.GetString()) != 0)
-            {cerr << "ERROR: bad JSON, invalid database name (" << databaseVal.GetString() << ")!" << endl; infile.close(); return; }
+        const Value& databaseJSON = getJSONfield(document, "database");
+        if (database.compare(databaseJSON.GetString()) != 0)
+            {cerr << "ERROR: bad JSON, invalid database name (" << databaseJSON.GetString() << ")!" << endl; infile.close(); return; }
 
-        const Value& databaseSequenceVal = getJSONfield(document, "sequence");
-        databaseSequence = atoi(databaseSequenceVal.GetString());
+        const Value& databaseSequenceJSON = getJSONfield(document, "sequence");
+        databaseSequence = strtoul(databaseSequenceJSON.GetString(), nullptr, 10);
 
-        const Value& resetlogsIdVal = getJSONfield(document, "resetlogs-id");
-        oracleEnvironment->resetlogsId = atoi(resetlogsIdVal.GetString());
+        const Value& resetlogsIdJSON = getJSONfield(document, "resetlogs-id");
+        oracleEnvironment->resetlogsId = strtoul(resetlogsIdJSON.GetString(), nullptr, 10);
 
-        const Value& scnVal = getJSONfield(document, "scn");
-        databaseScn = atoi(scnVal.GetString());
+        const Value& scnJSON = getJSONfield(document, "scn");
+        databaseScn = strtoul(scnJSON.GetString(), nullptr, 10);
 
         infile.close();
     }
 
     void OracleReader::writeCheckpoint() {
-        uint32_t minSequence = 0xFFFFFFFF;
+        typeseq minSequence = 0xFFFFFFFF;
         typescn minScn = ZERO_SCN;
         Transaction *transaction;
-        for (uint32_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
+        for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
             transaction = oracleEnvironment->transactionHeap.heap[i];
             if (minScn > transaction->firstScn)
                 minScn = transaction->firstScn;

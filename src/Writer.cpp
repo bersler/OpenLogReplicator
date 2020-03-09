@@ -37,8 +37,9 @@ namespace OpenLogReplicator {
     Writer::~Writer() {
     }
 
-    void Writer::appendValue(RedoLogRecord *redoLogRecord, uint32_t typeNo, uint32_t fieldPos, uint32_t fieldLength) {
-        uint32_t j, jMax; uint8_t digits;
+    void Writer::appendValue(RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
+        uint64_t j, jMax;
+        uint8_t digits;
 
         switch(typeNo) {
         case 1: //varchar(2)
@@ -59,7 +60,7 @@ namespace OpenLogReplicator {
 
             //positive number
             if (digits >= 0xC0 && jMax >= 1) {
-                uint32_t val;
+                uint64_t val;
                 //part of the total
                 if (digits == 0xC0)
                     commandBuffer->append('0');
@@ -111,7 +112,7 @@ namespace OpenLogReplicator {
                 }
             //negative number
             } else if (digits <= 0x3F && fieldLength >= 2) {
-                uint32_t val;
+                uint64_t val;
                 commandBuffer->append('-');
 
                 if (redoLogRecord->data[fieldPos + jMax] == 0x66)
@@ -165,8 +166,8 @@ namespace OpenLogReplicator {
                 }
             } else {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint32_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPos + j];
+                for (uint64_t j = 0; j < fieldLength; ++j)
+                    cout << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
                 cout << endl;
             }
             break;
@@ -177,11 +178,11 @@ namespace OpenLogReplicator {
 
             if (jMax != 7) {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): ";
-                for (uint32_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint32_t) redoLogRecord->data[fieldPos + j];
+                for (uint64_t j = 0; j < fieldLength; ++j)
+                    cout << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
                 cout << endl;
             } else {
-                uint32_t val1 = redoLogRecord->data[fieldPos + 0],
+                uint64_t val1 = redoLogRecord->data[fieldPos + 0],
                          val2 = redoLogRecord->data[fieldPos + 1];
                 bool bc = false;
 

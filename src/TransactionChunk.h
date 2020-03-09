@@ -26,13 +26,13 @@ namespace OpenLogReplicator {
 
     class TransactionChunk {
     public:
-        uint32_t elements;
-        uint32_t size;
+        uint64_t elements;
+        uint64_t size;
         uint8_t *buffer;
         TransactionChunk *prev;
         TransactionChunk *next;
 
-        TransactionChunk(TransactionChunk *prev, uint32_t redoBufferSize);
+        TransactionChunk(TransactionChunk *prev, uint64_t redoBufferSize);
         virtual ~TransactionChunk();
     };
 }

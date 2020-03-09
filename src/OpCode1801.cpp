@@ -40,9 +40,9 @@ namespace OpenLogReplicator {
 
     void OpCode1801::process() {
         OpCode::process();
-        uint32_t fieldPos = redoLogRecord->fieldPos;
+        uint64_t fieldPos = redoLogRecord->fieldPos;
 
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
+        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             if (i == 1) {
                 redoLogRecord->xid = XID(oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4),
                         oracleEnvironment->read16(redoLogRecord->data + fieldPos + 6),

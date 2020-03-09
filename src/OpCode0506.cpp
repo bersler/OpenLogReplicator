@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
     OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
             OpCode(oracleEnvironment, redoLogRecord) {
 
-        uint32_t fieldPos = redoLogRecord->fieldPos;
+        uint64_t fieldPos = redoLogRecord->fieldPos;
         uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
             oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
@@ -47,8 +47,8 @@ namespace OpenLogReplicator {
 
     void OpCode0506::process() {
         OpCode::process();
-        uint32_t fieldPos = redoLogRecord->fieldPos;
-        for (uint32_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
+        uint64_t fieldPos = redoLogRecord->fieldPos;
+        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktub(fieldPos, fieldLength);
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         return "User undo done   ";
     }
 
-    void OpCode0506::ktuxvoff(uint32_t fieldPos, uint32_t fieldLength) {
+    void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
             oracleEnvironment->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
             return;

@@ -27,7 +27,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicator {
 
-    CommandBuffer::CommandBuffer(uint32_t outputBufferSize) :
+    CommandBuffer::CommandBuffer(uint64_t outputBufferSize) :
             shutdown(false),
             writer(nullptr),
             posStart(0),
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
         this->shutdown = true;
     }
 
-    CommandBuffer* CommandBuffer::appendEscape(const uint8_t *str, uint32_t length) {
+    CommandBuffer* CommandBuffer::appendEscape(const uint8_t *str, uint64_t length) {
         if (this->shutdown)
             return this;
 
@@ -79,7 +79,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendHex(uint64_t val, uint32_t length) {
+    CommandBuffer* CommandBuffer::appendHex(uint64_t val, uint64_t length) {
         static const char* digits = "0123456789abcdef";
         if (this->shutdown)
             return this;
@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
             return this;
         }
 
-        for (uint32_t i = 0, j = (length - 1) * 4; i < length; ++i, j -= 4)
+        for (uint64_t i = 0, j = (length - 1) * 4; i < length; ++i, j -= 4)
             intraThreadBuffer[posEndTmp + i] = digits[(val >> j) & 0xF];
         posEndTmp += length;
 
@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
         if (this->shutdown)
             return this;
 
-        uint32_t length = str.length();
+        uint64_t length = str.length();
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length >= posStart) {
@@ -134,7 +134,9 @@ namespace OpenLogReplicator {
 
     char CommandBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    CommandBuffer* CommandBuffer::appendRowid(uint32_t objn, uint32_t objd, uint16_t afn, uint32_t bdba, uint16_t slot) {
+    CommandBuffer* CommandBuffer::appendRowid(typeobj objn, typeobj objd, typedba bdba, uint16_t slot) {
+        uint32_t afn =  bdba >> 22;
+        bdba &= 0x003FFFFF;
         append(translationMap[(objd >> 30) & 0x3F]);
         append(translationMap[(objd >> 24) & 0x3F]);
         append(translationMap[(objd >> 18) & 0x3F]);
@@ -155,8 +157,6 @@ namespace OpenLogReplicator {
         append(translationMap[slot & 0x3F]);
         return this;
     }
-
-
 
     CommandBuffer* CommandBuffer::append(char chr) {
         if (this->shutdown)
@@ -188,21 +188,21 @@ namespace OpenLogReplicator {
 
         {
             unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + 4 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (4)" << endl;
+            while (posSize > 0 && posEndTmp + 8 >= posStart) {
+                cerr << "WARNING, JSON buffer full, log reader suspended (8)" << endl;
                 writerCond.wait(lck);
                 if (this->shutdown)
                     return this;
             }
         }
 
-        if (posEndTmp + 4 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (4)" << endl;
+        if (posEndTmp + 8 >= outputBufferSize) {
+            cerr << "ERROR: JSON buffer overflow (8)" << endl;
             return this;
         }
 
-        *((uint32_t*)(intraThreadBuffer + posEndTmp)) = 0;
-        posEndTmp += 4;
+        *((uint64_t*)(intraThreadBuffer + posEndTmp)) = 0;
+        posEndTmp += 8;
 
         return this;
     }
@@ -215,15 +215,15 @@ namespace OpenLogReplicator {
 
         {
             unique_lock<mutex> lck(mtx);
-            *((uint32_t*)(intraThreadBuffer + posEnd)) = posEndTmp - posEnd;
-            posEndTmp = (posEndTmp + 3) & 0xFFFFFFFC;
+            *((uint64_t*)(intraThreadBuffer + posEnd)) = posEndTmp - posEnd;
+            posEndTmp = (posEndTmp + 7) & 0xFFFFFFFFFFFFFFF8;
             posEnd = posEndTmp;
 
             readersCond.notify_all();
         }
 
         if (posEndTmp + 1 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (4)" << endl;
+            cerr << "ERROR: JSON buffer overflow (8)" << endl;
             return this;
         }
 
@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    uint32_t CommandBuffer::currentTranSize() {
+    uint64_t CommandBuffer::currentTranSize() {
         return posEndTmp - posEnd;
     }
 

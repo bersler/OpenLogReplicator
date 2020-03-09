@@ -35,23 +35,23 @@ namespace OpenLogReplicator {
         OracleEnvironment *oracleEnvironment;
         RedoLogRecord *redoLogRecord;
 
-        void ktbRedo(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCode(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeIRP(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeDRP(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeLKR(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeURP(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeORP(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeCFA(uint32_t fieldPos, uint32_t fieldLength);
-        void kdoOpCodeSKL(uint32_t fieldPos, uint32_t fieldLength);
-        virtual void kdoOpCodeQM(uint32_t fieldPos, uint32_t fieldLength);
+        void ktbRedo(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCode(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeIRP(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeDRP(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeLKR(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeURP(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeORP(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeCFA(uint64_t fieldPos, uint64_t fieldLength);
+        void kdoOpCodeSKL(uint64_t fieldPos, uint64_t fieldLength);
+        virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
 
-        void ktub(uint32_t fieldPos, uint32_t fieldLength);
+        void ktub(uint64_t fieldPos, uint64_t fieldLength);
         virtual const char* getUndoType();
         void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
         void dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength);
         void dumpRows(uint8_t *data);
-        void dumpVal(uint32_t fieldPos, uint32_t fieldLength, string msg);
+        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg);
         void processFbFlags(uint8_t fb, char *fbStr);
 
     public:

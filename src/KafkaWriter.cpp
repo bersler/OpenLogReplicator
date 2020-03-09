@@ -39,7 +39,7 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint32_t trace) :
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace) :
         Writer(alias, commandBuffer),
         conf(nullptr),
         tconf(nullptr),
@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
 
     void *KafkaWriter::run() {
         cout << "- Kafka Writer for: " << brokers << " topic: " << topic << endl;
-        uint32_t length = 0;
+        uint64_t length = 0;
 
         length = 0;
         while (true) {
@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
                 if (commandBuffer->posStart == commandBuffer->posEnd)
                     length = 0;
                 else
-                    length = *((uint32_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
+                    length = *((uint64_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
             }
             if (trace >= 3)
                 cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
@@ -98,20 +98,20 @@ namespace OpenLogReplicator {
             if (length > 0) {
                 if (trace <= 0) {
                     if (producer->produce(
-                            ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 4,
-                            length - 4, nullptr, nullptr)) {
+                            ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 8,
+                            length - 8, nullptr, nullptr)) {
                         cerr << "ERROR: writing to topic " << endl;
                     }
                 } else {
                     cout << "KAFKA: ";
-                    for (uint32_t i = 0; i < length - 4; ++i)
-                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 4 + i];
+                    for (uint64_t i = 0; i < length - 8; ++i)
+                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
                     cout << endl;
                 }
 
                 {
                     unique_lock<mutex> lck(commandBuffer->mtx);
-                    commandBuffer->posStart += (length + 3) & 0xFFFFFFFC;
+                    commandBuffer->posStart += (length + 7) & 0xFFFFFFFFFFFFFFF8;
 
                     if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
                         commandBuffer->posStart = 0;
@@ -180,18 +180,17 @@ namespace OpenLogReplicator {
 
     //0x05010B0B
     void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
-        uint32_t pos = 0;
-        uint32_t fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
+        uint64_t pos = 0,  fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
 
-        for (uint32_t i = 1; i < 4; ++i) {
+        for (uint64_t i = 1; i < 4; ++i) {
             fieldLength = oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
             fieldPos += (fieldLength + 3) & 0xFFFC;
         }
         fieldPosStart = fieldPos;
 
-        for (uint32_t r = 0; r < redoLogRecord2->nrow; ++r) {
+        for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
             if (r > 0)
                 commandBuffer->append(", ");
 
@@ -214,11 +213,11 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord2->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
                             oracleEnvironment->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                     ->append("\", \"after\": {");
 
-            for (uint32_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            for (uint64_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
                 bool isNull = false;
 
                 if (i >= jcc)
@@ -262,13 +261,12 @@ namespace OpenLogReplicator {
 
     //0x05010B0C
     void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) {
-        uint32_t pos = 0;
-        uint32_t fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
+        uint64_t pos = 0, fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
         //uint16_t rowLengths;
 
-        for (uint32_t i = 1; i < 6; ++i) {
+        for (uint64_t i = 1; i < 6; ++i) {
             fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
             fieldPos += (fieldLength + 3) & 0xFFFC;
             //if (i == 5)
@@ -276,7 +274,7 @@ namespace OpenLogReplicator {
         }
         fieldPosStart = fieldPos;
 
-        for (uint32_t r = 0; r < redoLogRecord1->nrow; ++r) {
+        for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
             if (r > 0)
                 commandBuffer->append(", ");
 
@@ -299,11 +297,11 @@ namespace OpenLogReplicator {
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\", \"rowid\": \"")
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->bdba - oracleEnvironment->getBase(),
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
                             oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                     ->append("\", \"before\": {");
 
-            for (uint32_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            for (uint64_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
                 bool isNull = false;
 
                 if (i >= jcc)
@@ -345,35 +343,71 @@ namespace OpenLogReplicator {
         }
     }
 
-    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint32_t type, OracleEnvironment *oracleEnvironment) {
-        if (type == TRANSACTION_INSERT)
+    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleEnvironment *oracleEnvironment) {
+        typedba bdba;
+        uint16_t slot;
+        RedoLogRecord *redoLogRecord;
+
+        if (type == TRANSACTION_INSERT) {
             commandBuffer->append("{\"operation\": \"insert\", \"table\": \"");
-        else if (type == TRANSACTION_DELETE)
+
+            redoLogRecord = redoLogRecord2;
+            while (redoLogRecord != nullptr) {
+                if ((redoLogRecord->fb & FB_F) != 0)
+                    break;
+                redoLogRecord = redoLogRecord->next;
+            }
+
+            if (redoLogRecord == nullptr) {
+                if (oracleEnvironment->trace >= TRACE_WARN)
+                    cerr << "WARNING: could not find correct rowid for INSERT" << endl;
+                bdba = 0;
+                slot = 0;
+            } else {
+                bdba = redoLogRecord->bdba;
+                slot = redoLogRecord->slot;
+            }
+
+        } else if (type == TRANSACTION_DELETE) {
             commandBuffer->append("{\"operation\": \"delete\", \"table\": \"");
-        else
+            if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
+                bdba = redoLogRecord1->suppLogBdba;
+                slot = redoLogRecord1->suppLogSlot;
+            } else {
+                bdba = redoLogRecord2->bdba;
+                slot = redoLogRecord2->slot;
+            }
+        } else {
             commandBuffer->append("{\"operation\": \"update\", \"table\": \"");
+            if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
+                bdba = redoLogRecord1->suppLogBdba;
+                slot = redoLogRecord1->suppLogSlot;
+            } else {
+                bdba = redoLogRecord2->bdba;
+                slot = redoLogRecord2->slot;
+            }
+        }
 
         commandBuffer
                 ->append(redoLogRecord2->object->owner)
                 ->append('.')
                 ->append(redoLogRecord2->object->objectName)
                 ->append("\", \"rowid\": \"")
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->afn, redoLogRecord2->suppLogBdba - oracleEnvironment->getBase(), redoLogRecord2->suppLogSlot)
+                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, bdba, slot)
                 ->append("\"");
 
-        uint32_t fieldPos, colNum, colShift, cc, headerSize;
+        uint64_t fieldPos, colNum, colShift, cc, headerSize;
         uint16_t fieldLength;
         uint8_t *nulls, bits, *colNums;
         bool prevValue;
-        RedoLogRecord *redoLogRecord;
-        uint32_t *afterPos = nullptr, *beforePos = nullptr;
+        uint64_t *afterPos = nullptr, *beforePos = nullptr;
         uint16_t *afterLen = nullptr, *beforeLen = nullptr;
         RedoLogRecord **beforeRecord, **afterRecord;
         if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
-            afterPos = new uint32_t[redoLogRecord1->object->totalCols * sizeof(uint32_t)];
-            memset(afterPos, 0, redoLogRecord1->object->totalCols * sizeof(uint32_t));
-            beforePos = new uint32_t[redoLogRecord1->object->totalCols * sizeof(uint32_t)];
-            memset(beforePos, 0, redoLogRecord1->object->totalCols * sizeof(uint32_t));
+            afterPos = new uint64_t[redoLogRecord1->object->totalCols * sizeof(uint64_t)];
+            memset(afterPos, 0, redoLogRecord1->object->totalCols * sizeof(uint64_t));
+            beforePos = new uint64_t[redoLogRecord1->object->totalCols * sizeof(uint64_t)];
+            memset(beforePos, 0, redoLogRecord1->object->totalCols * sizeof(uint64_t));
             afterLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
             beforeLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
             beforeRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
@@ -389,11 +423,6 @@ namespace OpenLogReplicator {
             colNums = nullptr;
 
             while (redoLogRecord != nullptr) {
-                if (oracleEnvironment->trace >= TRACE_FULL) {
-                    cerr << "BEFORE OP:" << setw(4) << setfill('0') << hex << redoLogRecord->opCode << endl;
-                    redoLogRecord->dumpHex(cerr, oracleEnvironment);
-                }
-
                 if (redoLogRecord->opCode == 0x0501) {
                     fieldPos = redoLogRecord->fieldPos;
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
@@ -409,12 +438,12 @@ namespace OpenLogReplicator {
                         colShift = redoLogRecord->suppLogBefore - 1;
                     }
 
-                    for (uint32_t i = 1; i <= headerSize; ++i) {
+                    for (uint64_t i = 1; i <= headerSize; ++i) {
                         fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
                         fieldPos += (fieldLength + 3) & 0xFFFC;
                     }
 
-                    for (uint32_t i = 0; i < cc; ++i) {
+                    for (uint64_t i = 0; i < cc; ++i) {
                         if (i + headerSize + 1 > redoLogRecord->fieldCnt) {
                             cerr << "ERROR: reached out of columns" << endl;
                             break;
@@ -486,7 +515,7 @@ namespace OpenLogReplicator {
                             uint8_t* colSizes = redoLogRecord->data + fieldPos;
                             fieldPos += (fieldLength + 3) & 0xFFFC;
 
-                            for (uint32_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
+                            for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
                                 fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 4 + i) * 2);
                                 colNum = oracleEnvironment->read16(colNums) + colShift - 1;
                                 colNums += 2;
@@ -553,12 +582,12 @@ namespace OpenLogReplicator {
                     cc = redoLogRecord->cc;
                     colNum = redoLogRecord->suppLogAfter - 1;
 
-                    for (uint32_t i = 1; i <= 2; ++i) {
+                    for (uint64_t i = 1; i <= 2; ++i) {
                         fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
                         fieldPos += (fieldLength + 3) & 0xFFFC;
                     }
 
-                    for (uint32_t i = 0; i < cc; ++i) {
+                    for (uint64_t i = 0; i < cc; ++i) {
                         if (i + 3 > redoLogRecord->fieldCnt) {
                             cerr << "ERROR: reached out of columns" << endl;
                             break;
@@ -616,12 +645,12 @@ namespace OpenLogReplicator {
                     }
                     bits = 1;
 
-                    for (uint32_t i = 1; i <= headerSize; ++i) {
+                    for (uint64_t i = 1; i <= headerSize; ++i) {
                         fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
                         fieldPos += (fieldLength + 3) & 0xFFFC;
                     }
 
-                    for (uint32_t i = 0; i < redoLogRecord->cc && i + headerSize + 1 <= redoLogRecord->fieldCnt; ++i) {
+                    for (uint64_t i = 0; i < redoLogRecord->cc && i + headerSize + 1 <= redoLogRecord->fieldCnt; ++i) {
                         fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (i + headerSize + 1) * 2);
                         if (colNums != nullptr) {
                             colNum = oracleEnvironment->read16(colNums) + colShift;
@@ -674,7 +703,7 @@ namespace OpenLogReplicator {
 
         if (type == TRANSACTION_UPDATE && oracleEnvironment->sortCols > 0) {
             if (oracleEnvironment->sortCols >= 2) {
-                for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
                     if (redoLogRecord1->object->columns[i]->numPk == 0) {
                         if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
                             if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
@@ -689,7 +718,7 @@ namespace OpenLogReplicator {
             }
 
             commandBuffer->append(", \"before\": {");
-            for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+            for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
                 if (beforePos[i] > 0 || afterPos[i] > 0) {
                     if (prevValue)
                         commandBuffer->append(", ");
@@ -707,8 +736,8 @@ namespace OpenLogReplicator {
                         if (oracleEnvironment->trace >= TRACE_FULL) {
                             cerr << "BEFORE[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                     " pos: " << dec << beforePos[i] << " length: " << dec << beforeLen[i] << " value:";
-                            for (uint32_t j = 0; j < beforeLen[i]; ++j)
-                                cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)beforeRecord[i]->data[beforePos[i] + j];
+                            for (uint64_t j = 0; j < beforeLen[i]; ++j)
+                                cerr << " " << hex << setfill('0') << setw(2) << hex << (uint64_t)beforeRecord[i]->data[beforePos[i] + j];
                             cerr << endl;
                         }
                         appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
@@ -720,7 +749,7 @@ namespace OpenLogReplicator {
             commandBuffer->append("}");
             prevValue = false;
             commandBuffer->append(", \"after\": {");
-            for (uint32_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+            for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
                 if (afterPos[i] > 0 || (redoLogRecord1->object->columns[i]->numPk > 0 && beforePos[i] > 0)) {
                     if (prevValue)
                         commandBuffer->append(", ");
@@ -740,8 +769,8 @@ namespace OpenLogReplicator {
                             if (oracleEnvironment->trace >= TRACE_FULL) {
                                 cerr << "AFTER[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                         " pos: " << dec << beforePos[i] << " length: " << dec << beforeLen[i] << " value:";
-                                for (uint32_t j = 0; j < beforeLen[i]; ++j)
-                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)beforeRecord[i]->data[beforePos[i] + j];
+                                for (uint64_t j = 0; j < beforeLen[i]; ++j)
+                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint64_t)beforeRecord[i]->data[beforePos[i] + j];
                                 cerr << endl;
                             }
                             appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
@@ -753,8 +782,8 @@ namespace OpenLogReplicator {
                             if (oracleEnvironment->trace >= TRACE_FULL) {
                                 cerr << "AFTER[" << dec << i << "] type: " << dec << redoLogRecord1->object->columns[i]->typeNo <<
                                         " pos: " << dec << afterPos[i] << " length: " << dec << afterLen[i] << " value:";
-                                for (uint32_t j = 0; j < afterLen[i]; ++j)
-                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint32_t)afterRecord[i]->data[afterPos[i] + j];
+                                for (uint64_t j = 0; j < afterLen[i]; ++j)
+                                    cerr << " " << hex << setfill('0') << setw(2) << hex << (uint64_t)afterRecord[i]->data[afterPos[i] + j];
                                 cerr << endl;
                             }
                             appendValue(afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
@@ -779,11 +808,11 @@ namespace OpenLogReplicator {
 
     //0x18010000
     void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) {
-        uint32_t fieldPos = redoLogRecord1->fieldPos;
+        uint64_t fieldPos = redoLogRecord1->fieldPos;
         uint16_t seq = 0, cnt = 0, type;
 
         uint16_t fieldLength;
-        for (uint32_t i = 1; i <= redoLogRecord1->fieldCnt; ++i) {
+        for (uint64_t i = 1; i <= redoLogRecord1->fieldCnt; ++i) {
             fieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 type = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 12);
@@ -797,7 +826,7 @@ namespace OpenLogReplicator {
                 //DDL text
                 if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "DDL[" << dec << fieldLength << "]: ";
-                    for (uint32_t j = 0; j < (uint32_t)(fieldLength - 1); ++j) {
+                    for (uint64_t j = 0; j < (uint64_t)(fieldLength - 1); ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
                     cerr << endl;
@@ -806,7 +835,7 @@ namespace OpenLogReplicator {
                 //owner
                 if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "OWNER[" << dec << fieldLength << "]: ";
-                    for (uint32_t j = 0; j < fieldLength; ++j) {
+                    for (uint64_t j = 0; j < fieldLength; ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
                     cerr << endl;
@@ -815,7 +844,7 @@ namespace OpenLogReplicator {
                 //table
                 if (oracleEnvironment->trace >= TRACE_DETAIL) {
                     cerr << "TABLE[" << fieldLength << "]: ";
-                    for (uint32_t j = 0; j < fieldLength; ++j) {
+                    for (uint64_t j = 0; j < fieldLength; ++j) {
                         cerr << *(redoLogRecord1->data + fieldPos + j);
                     }
                     cerr << endl;

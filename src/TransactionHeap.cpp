@@ -27,7 +27,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void TransactionHeap::initialize(uint32_t heapMaxSize) {
+    void TransactionHeap::initialize(uint64_t heapMaxSize) {
         this->heapMaxSize = heapMaxSize;
         this->heapSize = 0;
         heap = new Transaction*[heapMaxSize];
@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         pop(1);
     }
 
-    void TransactionHeap::pop(uint32_t pos) {
+    void TransactionHeap::pop(uint64_t pos) {
         if (pos > heapSize) {
             cerr << "ERROR: pop of non existent transaction from heap pos: " << dec << pos << ", heapSize: " << heapSize << endl;
             throw MemoryException("heap inconsistency");
@@ -78,13 +78,13 @@ namespace OpenLogReplicator {
     int TransactionHeap::add(Transaction *transaction) {
         if (heapSize == heapMaxSize) {
             cerr << "ERROR: max heap size reached heapSize: " << heapSize << endl;
-            for (uint32_t i = 1; i <= heapSize; ++i) {
+            for (uint64_t i = 1; i <= heapSize; ++i) {
                 cout << "[" << dec << i << "]: " << *heap[i] << endl;
             }
             throw MemoryException("out of memory");
         }
 
-        uint32_t pos = heapSize + 1;
+        uint64_t pos = heapSize + 1;
         ++heapSize;
 
         while (pos > 1 && *transaction < *heap[pos >> 1]) {
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
         return pos;
     }
 
-    void TransactionHeap::update(uint32_t pos) {
+    void TransactionHeap::update(uint64_t pos) {
         if (pos > heapSize) {
             cerr << "ERROR: update of non existent transaction pos: " << dec << pos << ", heapSize: " << heapSize << endl;
             throw MemoryException("heap inconsistency");

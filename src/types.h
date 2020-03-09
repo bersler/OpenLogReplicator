@@ -26,9 +26,16 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
+typedef uint32_t typeblk;
+typedef uint32_t typedba;
+typedef uint8_t typeslt;
+typedef uint8_t typerci;
+typedef uint32_t typeobj;
+typedef uint32_t typeseq;
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
 typedef uint64_t typescn;
+typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 #define ZERO_SCN ((typescn)0xFFFFFFFFFFFFFFFF)
 

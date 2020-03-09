@@ -33,7 +33,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    TransactionBuffer::TransactionBuffer(uint32_t redoBuffers, uint32_t redoBufferSize) :
+    TransactionBuffer::TransactionBuffer(uint64_t redoBuffers, uint64_t redoBufferSize) :
         usedBuffers(1),
         redoBuffers(redoBuffers),
         redoBufferSize(redoBufferSize) {
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         prevTc = new TransactionChunk(nullptr, redoBufferSize);
         unused = prevTc;
 
-        for (uint32_t a = 1; a < this->redoBuffers; ++a) {
+        for (uint64_t a = 1; a < this->redoBuffers; ++a) {
             tc = new TransactionChunk(prevTc, redoBufferSize);
             prevTc = tc;
             ++usedBuffers;
@@ -82,8 +82,8 @@ namespace OpenLogReplicator {
         unused = tc;
     }
 
-    TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, uint32_t objn, uint32_t objd,
-            typeuba uba, uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    TransactionChunk* TransactionBuffer::addTransactionChunk(TransactionChunk* tcLast, typeobj objn, typeobj objd,
+            typeuba uba, typedba dba, typeslt slt, typerci rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
         if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
             cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL)
@@ -93,15 +93,15 @@ namespace OpenLogReplicator {
 
         if (tcLast->size >= ROW_HEADER_TOTAL) {
             //last scn/subScn is higher
-            uint32_t prevSize;
+            uint64_t prevSize;
             typescn prevScn = *((typescn *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_SCN));
-            uint16_t prevSubScn = *((typescn *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
+            typesubscn prevSubScn = *((typescn *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
 
             if ((prevScn > redoLogRecord1->scn || ((prevScn == redoLogRecord1->scn && prevSubScn > redoLogRecord1->subScn)))) {
                 //locate correct position
                 TransactionChunk* tcTemp = tcLast;
-                uint32_t elementsSkipped = 0;
-                uint32_t pos = tcTemp->size;
+                uint64_t elementsSkipped = 0;
+                uint64_t pos = tcTemp->size;
 
                 while (true) {
                     if (pos == 0) {
@@ -116,8 +116,8 @@ namespace OpenLogReplicator {
                         return tcLast;
                     }
                     prevScn = *((typescn *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SCN));
-                    prevSubScn = *((typescn *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
-                    prevSize = *((uint32_t *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+                    prevSubScn = *((typesubscn *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
+                    prevSize = *((uint64_t *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
 
                     if ((prevScn < redoLogRecord1->scn || ((prevScn == redoLogRecord1->scn && prevSubScn <= redoLogRecord1->subScn))))
                         break;
@@ -179,7 +179,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba,
-            uint32_t dba, uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+            typedba dba, typeslt slt, typerci rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         //append to the chunk at the end
         *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         memcpy(tc->buffer + tc->size + ROW_HEADER_REDO1, redoLogRecord1, sizeof(struct RedoLogRecord));
@@ -189,11 +189,11 @@ namespace OpenLogReplicator {
 
         *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length)) = objn;
         *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length)) = objd;
-        *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_SIZE + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
+        *((uint64_t *)(tc->buffer + tc->size + ROW_HEADER_SIZE + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
         *((uint8_t *)(tc->buffer + tc->size + ROW_HEADER_SLT + redoLogRecord1->length + redoLogRecord2->length)) = slt;
         *((uint8_t *)(tc->buffer + tc->size + ROW_HEADER_RCI + redoLogRecord1->length + redoLogRecord2->length)) = rci;
-        *((uint16_t *)(tc->buffer + tc->size + ROW_HEADER_SUBSCN + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->subScn;
-        *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_DBA + redoLogRecord1->length + redoLogRecord2->length)) = dba;
+        *((typesubscn *)(tc->buffer + tc->size + ROW_HEADER_SUBSCN + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->subScn;
+        *((typedba *)(tc->buffer + tc->size + ROW_HEADER_DBA + redoLogRecord1->length + redoLogRecord2->length)) = dba;
         *((typeuba *)(tc->buffer + tc->size + ROW_HEADER_UBA + redoLogRecord1->length + redoLogRecord2->length)) = uba;
         *((typescn *)(tc->buffer + tc->size + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->scn;
 
@@ -201,7 +201,7 @@ namespace OpenLogReplicator {
         ++tc->elements;
     }
 
-    bool TransactionBuffer::deleteTransactionPart(TransactionChunk* tc, typeuba &uba, uint32_t &dba, uint8_t &slt, uint8_t &rci) {
+    bool TransactionBuffer::deleteTransactionPart(TransactionChunk* tc, typeuba &uba, typedba &dba, typeslt &slt, typerci &rci) {
         cerr << "ERROR: part transaction delete: not yet implemented" << endl;
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
@@ -221,10 +221,10 @@ namespace OpenLogReplicator {
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             return false;
         }
-        uint32_t lastSize = *((uint32_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        uint64_t lastSize = *((uint64_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
         uint8_t *buffer = tc->buffer + tc->size - lastSize;
 
-        opCode = *((uint32_t *)(buffer));
+        opCode = *((uint32_t *)(buffer + ROW_HEADER_OP));
         redoLogRecord1 = (RedoLogRecord*)(buffer + ROW_HEADER_REDO1);
         redoLogRecord1->data = buffer + ROW_HEADER_DATA;
         redoLogRecord2 = (RedoLogRecord*)(buffer + ROW_HEADER_REDO2);
@@ -233,13 +233,13 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, uint32_t &lastDba,
-            uint8_t &lastSlt, uint8_t &lastRci) {
+    TransactionChunk* TransactionBuffer::rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, typedba &lastDba,
+            typeslt &lastSlt, typerci &lastRci) {
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
             return tc;
         }
-        uint32_t lastSize = *((uint32_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        uint64_t lastSize = *((uint64_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
         tc->size -= lastSize;
         --tc->elements;
 
@@ -263,15 +263,15 @@ namespace OpenLogReplicator {
             return tc;
         }
         lastUba = *((typeuba *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_UBA));
-        lastDba = *((uint32_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_DBA));
-        lastSlt = *((uint8_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SLT));
-        lastRci = *((uint8_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_RCI));
+        lastDba = *((typedba *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_DBA));
+        lastSlt = *((typeslt *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SLT));
+        lastRci = *((typerci *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_RCI));
 
         return tc;
     }
 
     void TransactionBuffer::deleteTransactionChunks(TransactionChunk* tc, TransactionChunk* tcLast) {
-        uint32_t num = 1;
+        uint64_t num = 1;
         TransactionChunk* tcTemp = tc;
         while (tcTemp->next != nullptr) {
             ++num;

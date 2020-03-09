@@ -28,8 +28,8 @@ namespace OpenLogReplicator {
 
     class OpCode0504: public OpCode {
     protected:
-        void ktucm(uint32_t fieldPos, uint32_t fieldLength);
-        void ktucf(uint32_t fieldPos, uint32_t fieldLength);
+        void ktucm(uint64_t fieldPos, uint64_t fieldLength);
+        void ktucf(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
         OpCode0504(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
