@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
         uint32_t rbl;
         uint8_t seq;
         uint8_t typ;
-        uint32_t conId;
+        typecon conId;
         uint32_t flgRecord;
         uint32_t vectorNo;
         typeobj recordObjn;
@@ -133,8 +133,8 @@ namespace OpenLogReplicator {
         typeslt slt;
         typerci rci;
         uint16_t flg;             //flag
-        uint16_t opCode;          //operation code
-        uint16_t opc;             //operation code for UNDO
+        typeop1 opCode;          //operation code
+        typeop1 opc;             //operation code for UNDO
 
         uint8_t op;
         uint8_t cc;

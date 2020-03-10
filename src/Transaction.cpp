@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
 
         //check if previous op was a partial operation
         if (redoLogRecord1->opCode == 0x0501 && (redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID)) != 0) {
-            uint32_t opCode;
+            typeop2 opCode;
             RedoLogRecord *lastRedoLogRecord1, *lastRedoLogRecord2;
 
             if (transactionBuffer->getLastRecord(tcLast, opCode, lastRedoLogRecord1, lastRedoLogRecord2) && opCode == 0x05010000 && (lastRedoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
@@ -188,7 +188,7 @@ namespace OpenLogReplicator {
             while (tcTemp != nullptr) {
                 pos = 0;
                 for (uint64_t i = 0; i < tcTemp->elements; ++i) {
-                    uint32_t op = *((uint32_t*)(tcTemp->buffer + pos));
+                    typeop2 op = *((typeop2*)(tcTemp->buffer + pos));
 
                     RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO1)),
                                   *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO2));

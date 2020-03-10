@@ -232,7 +232,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        uint32_t resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
+        typeresetlogs resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
         typescn firstScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 180);
         typescn nextScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 192);
 
@@ -326,7 +326,7 @@ namespace OpenLogReplicator {
                     " dis: " << dec << (uint64_t)dis << endl;
 
             typescn resetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 164);
-            uint32_t prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
+            typeresetlogs prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
             typescn prevResetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 284);
             typetime firstTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 188));
             typetime nextTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 200));
@@ -337,8 +337,8 @@ namespace OpenLogReplicator {
             typescn termialRecScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 240);
             typetime termialRecTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 248));
             typescn mostRecentScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 260);
-            uint16_t chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
-            uint16_t chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
+            typesum chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
+            typesum chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
 
             if (oracleEnvironment->version < 12200) {
                 oracleEnvironment->dumpStream <<
@@ -621,9 +621,6 @@ namespace OpenLogReplicator {
         while (pos < recordLength) {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
-            //uint16_t opc = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos);
-            //typeobj recordObjd = (oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 6) << 16) |
-            //                 oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 20);
             redoLogRecord[vectors].cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
             redoLogRecord[vectors].afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
             redoLogRecord[vectors].dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
@@ -649,7 +646,7 @@ namespace OpenLogReplicator {
 
             uint8_t *fieldList = oracleEnvironment->recordBuffer + pos + fieldOffset;
 
-            redoLogRecord[vectors].opCode = (((uint16_t)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
+            redoLogRecord[vectors].opCode = (((typeop1)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
                     oracleEnvironment->recordBuffer[pos + 1];
             redoLogRecord[vectors].length = fieldOffset + ((oracleEnvironment->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectors].scn = curScn;
@@ -808,11 +805,11 @@ namespace OpenLogReplicator {
             flushTransactions(extScn);
         } else {
             if (curScn > lastCheckpointScn + oracleEnvironment->forceCheckpointScn * 2) {
-                if (oracleEnvironment->trace >= TRACE_WARN) {
+                if (oracleEnvironment->trace >= TRACE_INFO) {
                     if (oracleEnvironment->version >= 12200)
-                        cerr << "WARNING: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleEnvironment->forceCheckpointScn) << endl;
                     else
-                        cerr << "WARNING: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleEnvironment->forceCheckpointScn) << endl;
                 }
 
                 flushTransactions(curScn - oracleEnvironment->forceCheckpointScn);
@@ -1074,9 +1071,6 @@ namespace OpenLogReplicator {
                     //FIXME: it should be checked if transaction begin SCN is within captured range of SCNs
                     transaction->flush(oracleEnvironment);
                 else {
-                    if (curScn + 100 > transaction->lastScn) //TODO: parametrize
-                        return;
-
                     if (oracleEnvironment->trace >= TRACE_WARN) {
                         cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
 
@@ -1307,8 +1301,8 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    uint16_t OracleReaderRedo::calcChSum(uint8_t *buffer, uint64_t size) {
-        uint16_t oldChSum = oracleEnvironment->read16(buffer + 14);
+    typesum OracleReaderRedo::calcChSum(uint8_t *buffer, uint64_t size) {
+        typesum oldChSum = oracleEnvironment->read16(buffer + 14);
         uint64_t sum = 0;
 
         for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)

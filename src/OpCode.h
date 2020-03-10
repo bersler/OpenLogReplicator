@@ -48,8 +48,8 @@ namespace OpenLogReplicator {
 
         void ktub(uint64_t fieldPos, uint64_t fieldLength);
         virtual const char* getUndoType();
-        void dumpCols(uint8_t *data, uint16_t colnum, uint16_t fieldLength, uint8_t isNull);
-        void dumpColsVector(uint8_t *data, uint16_t colnum, uint16_t fieldLength);
+        void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
+        void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength);
         void dumpRows(uint8_t *data);
         void dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg);
         void processFbFlags(uint8_t fb, char *fbStr);
@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
         virtual ~OpCode();
 
-        uint16_t getOpCode(void);
+        typeop1 getOpCode(void);
         virtual void process();
     };
 }

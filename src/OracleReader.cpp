@@ -325,7 +325,7 @@ namespace OpenLogReplicator {
             return 0;
 
         typescn currentDatabaseScn;
-        uint32_t currentResetlogsId;
+        typeresetlogs currentResetlogsId;
 
         try {
             OracleStatement stmt(&conn, env);

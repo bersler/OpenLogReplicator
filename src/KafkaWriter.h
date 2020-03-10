@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         string topic;
         Producer *producer;
         Topic *ktopic;
-        uint32_t trace;
+        uint64_t trace;
 
     public:
         virtual void *run();

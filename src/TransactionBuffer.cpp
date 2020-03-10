@@ -178,20 +178,20 @@ namespace OpenLogReplicator {
         return tcLast;
     }
 
-    void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, uint32_t objn, uint32_t objd, typeuba uba,
+    void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba,
             typedba dba, typeslt slt, typerci rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         //append to the chunk at the end
-        *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
+        *((typeop2 *)(tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         memcpy(tc->buffer + tc->size + ROW_HEADER_REDO1, redoLogRecord1, sizeof(struct RedoLogRecord));
         memcpy(tc->buffer + tc->size + ROW_HEADER_REDO2, redoLogRecord2, sizeof(struct RedoLogRecord));
         memcpy(tc->buffer + tc->size + ROW_HEADER_DATA, redoLogRecord1->data, redoLogRecord1->length);
         memcpy(tc->buffer + tc->size + ROW_HEADER_DATA + redoLogRecord1->length, redoLogRecord2->data, redoLogRecord2->length);
 
-        *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length)) = objn;
-        *((uint32_t *)(tc->buffer + tc->size + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length)) = objd;
+        *((typeobj *)(tc->buffer + tc->size + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length)) = objn;
+        *((typeobj *)(tc->buffer + tc->size + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length)) = objd;
         *((uint64_t *)(tc->buffer + tc->size + ROW_HEADER_SIZE + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
-        *((uint8_t *)(tc->buffer + tc->size + ROW_HEADER_SLT + redoLogRecord1->length + redoLogRecord2->length)) = slt;
-        *((uint8_t *)(tc->buffer + tc->size + ROW_HEADER_RCI + redoLogRecord1->length + redoLogRecord2->length)) = rci;
+        *((typeslt *)(tc->buffer + tc->size + ROW_HEADER_SLT + redoLogRecord1->length + redoLogRecord2->length)) = slt;
+        *((typerci *)(tc->buffer + tc->size + ROW_HEADER_RCI + redoLogRecord1->length + redoLogRecord2->length)) = rci;
         *((typesubscn *)(tc->buffer + tc->size + ROW_HEADER_SUBSCN + redoLogRecord1->length + redoLogRecord2->length)) = redoLogRecord1->subScn;
         *((typedba *)(tc->buffer + tc->size + ROW_HEADER_DBA + redoLogRecord1->length + redoLogRecord2->length)) = dba;
         *((typeuba *)(tc->buffer + tc->size + ROW_HEADER_UBA + redoLogRecord1->length + redoLogRecord2->length)) = uba;
@@ -208,23 +208,17 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        //while (tc != nullptr) {
-        //    uint32_t lastSize = *((uint32_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            //...
-        //    tc = tc->prev;
-        //}
-
         return false;
     }
 
-    bool TransactionBuffer::getLastRecord(TransactionChunk* tc, uint32_t &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2) {
+    bool TransactionBuffer::getLastRecord(TransactionChunk* tc, typeop2 &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2) {
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             return false;
         }
         uint64_t lastSize = *((uint64_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
         uint8_t *buffer = tc->buffer + tc->size - lastSize;
 
-        opCode = *((uint32_t *)(buffer + ROW_HEADER_OP));
+        opCode = *((typeop2 *)(buffer + ROW_HEADER_OP));
         redoLogRecord1 = (RedoLogRecord*)(buffer + ROW_HEADER_REDO1);
         redoLogRecord1->data = buffer + ROW_HEADER_DATA;
         redoLogRecord2 = (RedoLogRecord*)(buffer + ROW_HEADER_REDO2);

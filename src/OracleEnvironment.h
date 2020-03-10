@@ -70,8 +70,8 @@ namespace OpenLogReplicator {
         uint64_t trace2;
         uint32_t version;           //compatiblity level of redo logs
         uint64_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
-        uint32_t conId;
-        uint32_t resetlogsId;
+        typecon conId;
+        typeresetlogs resetlogsId;
         uint64_t forceCheckpointScn;
 
         OracleObject *checkDict(typeobj objn, typeobj objd);

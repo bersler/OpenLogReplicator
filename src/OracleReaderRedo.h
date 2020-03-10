@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
         void flushTransactions(typescn checkpointScn);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        uint16_t calcChSum(uint8_t *buffer, uint64_t size);
+        typesum calcChSum(uint8_t *buffer, uint64_t size);
 
     public:
         string path;

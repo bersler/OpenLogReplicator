@@ -26,6 +26,11 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 using namespace std;
 
+typedef uint16_t typesum;
+typedef uint32_t typeresetlogs;
+typedef uint16_t typeop1;
+typedef uint32_t typeop2;
+typedef uint32_t typecon;
 typedef uint32_t typeblk;
 typedef uint32_t typedba;
 typedef uint16_t typeslot;
