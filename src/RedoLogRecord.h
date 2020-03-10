@@ -139,13 +139,13 @@ namespace OpenLogReplicator {
         uint8_t op;
         uint8_t cc;
         uint8_t itli;
-        uint16_t slot;
+        typeslot slot;
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
         uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
 
         typedba nridBdba;         //next row id bdba
-        uint16_t nridSlot;        //next row id slot
+        typeslot nridSlot;        //next row id slot
 
         uint8_t suppLogType;
         uint8_t suppLogFb;
@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
         uint16_t suppLogBefore;
         uint16_t suppLogAfter;
         typedba suppLogBdba;
-        uint16_t suppLogSlot;
+        typeslot suppLogSlot;
 
         void dumpHex(ostream &str, OracleEnvironment *oracleEnvironment);
         void dump();

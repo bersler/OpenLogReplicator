@@ -45,7 +45,6 @@ namespace OpenLogReplicator {
         bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
     };
 
-
     class OracleReader : public Thread {
     protected:
         OracleEnvironment *oracleEnvironment;
@@ -78,8 +77,8 @@ namespace OpenLogReplicator {
         int initialize();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
-                uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+                uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

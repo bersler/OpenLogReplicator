@@ -28,6 +28,7 @@ using namespace std;
 
 typedef uint32_t typeblk;
 typedef uint32_t typedba;
+typedef uint16_t typeslot;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
 typedef uint32_t typeobj;

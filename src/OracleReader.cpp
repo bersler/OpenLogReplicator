@@ -47,8 +47,8 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
-            uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+            uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
@@ -61,8 +61,8 @@ namespace OpenLogReplicator {
         passwd(passwd),
         connectString(connectString) {
 
-        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, dumpLogFile, dumpData, directRead, sortCols, redoBuffers, redoBufferSize,
-                maxConcurrentTransactions);
+        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, trace2, dumpLogFile, dumpData, directRead, sortCols, forceCheckpointScn,
+                redoBuffers, redoBufferSize, maxConcurrentTransactions);
         readCheckpoint();
         env = Environment::createEnvironment (Environment::DEFAULT);
     }
@@ -122,21 +122,21 @@ namespace OpenLogReplicator {
             //try to read online redo logs
             if (this->shutdown)
                 break;
-            if (oracleEnvironment->trace >= TRACE_FULL)
-                cerr << "INFO: checking online redo logs" << endl;
+            if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                cerr << "REDO: checking online redo logs" << endl;
             refreshOnlineLogs();
 
             while (true) {
                 redo = nullptr;
-                if (oracleEnvironment->trace >= TRACE_FULL)
-                    cerr << "INFO: searching online redo log for sequence: " << dec << databaseSequence << endl;
+                if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                    cerr << "REDO: searching online redo log for sequence: " << dec << databaseSequence << endl;
 
                 //find the candidate to read
                 for (auto redoTmp: onlineRedoSet) {
                     if (redoTmp->sequence == databaseSequence)
                         redo = redoTmp;
-                    if (oracleEnvironment->trace >= TRACE_FULL)
-                        cerr << "Log: " << redoTmp->path << " is " << dec << redoTmp->sequence << endl;
+                    if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                        cerr << "REDO: " << redoTmp->path << " is " << dec << redoTmp->sequence << endl;
                 }
 
                 //keep reading online redo logs while it is possible
@@ -185,15 +185,15 @@ namespace OpenLogReplicator {
             //try to read all archived redo logs
             if (this->shutdown)
                 break;
-            if (oracleEnvironment->trace >= TRACE_FULL)
-                cerr << "INFO: checking archive redo logs" << endl;
+            if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                cerr << "REDO: checking archive redo logs" << endl;
             archLogGetList();
 
             while (!archiveRedoQueue.empty()) {
                 OracleReaderRedo *redoPrev = redo;
                 redo = archiveRedoQueue.top();
-                if (oracleEnvironment->trace >= TRACE_FULL)
-                    cerr << "INFO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
+                if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                    cerr << "REDO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
 
                 if (ret == REDO_WRONG_SEQUENCE_SWITCHED && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
                     if (oracleEnvironment->trace >= TRACE_WARN)
@@ -231,8 +231,8 @@ namespace OpenLogReplicator {
                 usleep(REDO_SLEEP_RETRY);
         }
 
-        if (oracleEnvironment->trace >= TRACE_WARN) {
-            cerr << "Transactions open ad shutdown: " << dec << oracleEnvironment->transactionHeap.heapSize << endl;
+        if (oracleEnvironment->trace >= TRACE_WARN && oracleEnvironment->transactionHeap.heapSize > 0) {
+            cerr << "WARNING: Transactions open at shutdown: " << dec << oracleEnvironment->transactionHeap.heapSize << endl;
             for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
                 Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
                 cerr << "WARNING: transaction[" << i << "] XID: " << PRINTXID(transactionI->xid) <<

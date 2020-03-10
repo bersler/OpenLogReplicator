@@ -38,6 +38,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #define TRACE_DETAIL 3
 #define TRACE_FULL 4
 
+#define TRACE2_DISK        0x0000001
+#define TRACE2_TRANSACTION 0x0000002
+#define TRACE2_DUMP        0x0000004
+#define TRACE2_UBA         0x0000008
+#define TRACE2_REDO        0x0000010
+
 using namespace std;
 
 namespace OpenLogReplicator {
@@ -61,18 +67,20 @@ namespace OpenLogReplicator {
         bool dumpData;
         bool directRead;
         uint64_t trace;
+        uint64_t trace2;
         uint32_t version;           //compatiblity level of redo logs
         uint64_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         uint32_t conId;
         uint32_t resetlogsId;
+        uint64_t forceCheckpointScn;
 
         OracleObject *checkDict(typeobj objn, typeobj objd);
         void addToDict(OracleObject *object);
         void transactionNew(typexid xid);
         void transactionAppend(typexid xid);
 
-        OracleEnvironment(CommandBuffer *commandBuffer, uint64_t trace, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
-                uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+        OracleEnvironment(CommandBuffer *commandBuffer, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead,
+                uint64_t sortCols, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleEnvironment();
     };
 }

@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         uint64_t outputBufferSize;
 
         void stop(void);
-        CommandBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, uint16_t slot);
+        CommandBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
         CommandBuffer* appendEscape(const uint8_t *str, uint64_t length);
         CommandBuffer* append(const string str);
         CommandBuffer* append(char chr);

@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
 
 
     void RedoLogRecord::dump() {
-        cerr << "DUMP: opCode: " << hex << opCode <<
+        cerr << "op: " << setfill('0') << setw(4) << hex << opCode <<
                 " cls: " << dec << cls <<
                 " scnRecord: " << PRINTSCN64(scnRecord) <<
                 " rbl: " << dec << rbl <<
@@ -65,10 +65,10 @@ namespace OpenLogReplicator {
                 " typ: " << dec << (uint64_t)typ <<
                 " conId: " << dec << conId <<
                 " flgRecord: " << dec << flgRecord <<
-                " vectorNo: " << dec << vectorNo <<
-                " recordObjn: " << dec << recordObjn <<
-                " recordObjd: " << dec << recordObjd <<
-                " scn: " << PRINTSCN64(scn) <<
+//                " vectorNo: " << dec << vectorNo <<
+                " robjn: " << dec << recordObjn <<
+                " robjd: " << dec << recordObjd <<
+//                " scn: " << PRINTSCN64(scn) <<
                 " nrow: " << dec << nrow <<
                 " afn: " << dec << afn <<
                 " length: " << dec << length <<
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
                 " opc: 0x" << hex << opc <<
                 " op: " << dec << (uint64_t)op <<
                 " cc: " << dec << (uint64_t)cc <<
-                " itli: " << dec << (uint64_t)itli <<
+//                " itli: " << dec << (uint64_t)itli <<
                 " slot: " << dec << slot <<
                 " flags: 0x" << hex << (uint64_t)flags <<
                 " fb: 0x" << hex << (uint64_t)fb <<

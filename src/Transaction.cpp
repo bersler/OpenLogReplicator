@@ -71,8 +71,8 @@ namespace OpenLogReplicator {
             RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence) {
 
         uint8_t buffer[REDO_RECORD_MAX_SIZE];
-        if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "Transaction add: " << setfill('0') << setw(4) << hex << redoLogRecord1->opCode << ":" <<
+        if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0)
+            cerr << "DUMP: add: " << setfill('0') << setw(4) << hex << redoLogRecord1->opCode << ":" <<
                     setfill('0') << setw(4) << hex << redoLogRecord2->opCode << " XID: " << PRINTXID(redoLogRecord1->xid) << endl;
 
         //check if previous op was a partial operation
@@ -135,8 +135,8 @@ namespace OpenLogReplicator {
                 cerr << "ERROR: next multi buffer without previous" << endl;
         }
 
-        if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "add uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
+        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+            cerr << "UBA: add: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
@@ -144,8 +144,8 @@ namespace OpenLogReplicator {
     }
 
     bool Transaction::rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
-        if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "rollback previous uba: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
+        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+            cerr << "UBA: rollback previous: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         if (transactionBuffer->deleteTransactionPart(tcLast, uba, dba, slt, rci)) {
             --opCodes;
@@ -157,8 +157,8 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer) {
-        if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "rollback last uba: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
+        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+            cerr << "UBA: rollback last: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
         tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
 
         --opCodes;
@@ -173,11 +173,8 @@ namespace OpenLogReplicator {
         //transaction that has some DML's
 
         if (opCodes > 0 && !isRollback) {
-            if (oracleEnvironment->trace >= TRACE_DETAIL) {
-                cerr << endl << "Transaction xid:  " << PRINTXID(xid) <<
-                        " SCN: " << PRINTSCN64(firstScn) <<
-                        " - " << PRINTSCN64(lastScn) <<
-                        " opCodes: " << dec << opCodes << endl;
+            if ((oracleEnvironment->trace2 & TRACE2_TRANSACTION) != 0) {
+                cerr << endl << "TRANSACTION: " << *this << endl;
             }
 
             if (oracleEnvironment->commandBuffer->posEnd >= oracleEnvironment->commandBuffer->outputBufferSize - (oracleEnvironment->commandBuffer->outputBufferSize/4))
@@ -200,10 +197,10 @@ namespace OpenLogReplicator {
                     typescn scn = *((typescn *)(tcTemp->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
 
                     if (oracleEnvironment->trace >= TRACE_WARN) {
-                        if (oracleEnvironment->trace >= TRACE_DETAIL) {
+                        if ((oracleEnvironment->trace2 & TRACE2_TRANSACTION) != 0) {
                             typeobj objn = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
                             typeobj objd = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
-                            cerr << "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
+                            cerr << "TRANSACTION Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
@@ -391,10 +388,11 @@ namespace OpenLogReplicator {
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
         os << "xid: " << PRINTXID(tran.xid) <<
-                " scn: " << PRINTSCN64(tran.firstScn) << " - " << PRINTSCN64(tran.lastScn) <<
-                " begin: " << tran.isBegin <<
-                " commit: " << tran.isCommit <<
-                " rollback: " << tran.isRollback;
+                " scn: " << PRINTSCN64(tran.firstScn) << "-" << PRINTSCN64(tran.lastScn) <<
+                " begin: " << dec << tran.isBegin <<
+                " commit: " << dec << tran.isCommit <<
+                " rollback: " << dec << tran.isRollback <<
+                " opCodes: " << dec << tran.opCodes;
         return os;
     }
 }

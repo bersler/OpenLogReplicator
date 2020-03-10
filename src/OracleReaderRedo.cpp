@@ -70,7 +70,6 @@ namespace OpenLogReplicator {
             numBlocks(0),
             lastRead(READ_CHUNK_MIN_SIZE),
             lastReadSuccessfull(false),
-            lastCheckpointInfo(false),
             headerInfoPrinted(false),
             fileDes(-1),
             lastCheckpointScn(0),
@@ -270,7 +269,7 @@ namespace OpenLogReplicator {
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
             if (oracleEnvironment->trace >= TRACE_FULL)
-                cerr << "INFO: updating next SCN to: " << dec << nextScnHeader << endl;
+                cerr << "FULL: updating next SCN to: " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -484,8 +483,8 @@ namespace OpenLogReplicator {
         } else
             lastReadSuccessfull = true;
 
-        if (oracleEnvironment->trace >= TRACE_FULL)
-            cerr << "INFO: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
+        if ((oracleEnvironment->trace2 & TRACE2_DISK) != 0)
+            cerr << "DISK: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
             typeblk maxNumBlock = bytes / blockSize;
@@ -527,20 +526,29 @@ namespace OpenLogReplicator {
         curScn = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 8) |
                 ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
         curSubScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
+        typescn extScn = 0;
         uint64_t headerLength;
 
         if ((vld & 0x04) != 0) {
             checkpoint = true;
             headerLength = 68;
             recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
+            extScn = oracleEnvironment->readSCN(oracleEnvironment->recordBuffer + 40);
             if (oracleEnvironment->trace >= TRACE_FULL) {
                 if (oracleEnvironment->version < 12200)
-                    cerr << endl << "Checkpoint SCN: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+                    cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
                 else
-                    cerr << endl << "Checkpoint SCN: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+                    cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
             }
-        } else
+        } else {
             headerLength = 24;
+            if (oracleEnvironment->trace >= TRACE_FULL) {
+                if (oracleEnvironment->version < 12200)
+                    cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+                else
+                    cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+            }
+        }
 
         if (oracleEnvironment->dumpLogFile >= 1) {
             uint16_t thread = 1; //FIXME
@@ -584,7 +592,6 @@ namespace OpenLogReplicator {
                 uint32_t nst = 1; //FIXME
                 uint32_t lwnLen = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 28); //28 or 32
 
-                typescn extScn = oracleEnvironment->readSCN(oracleEnvironment->recordBuffer + 40);
                 if (oracleEnvironment->version < 12200)
                     oracleEnvironment->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
@@ -762,13 +769,6 @@ namespace OpenLogReplicator {
 
         uint64_t iPair = 0;
         for (uint64_t i = 0; i < vectors; ++i) {
-            if (oracleEnvironment->trace >= TRACE_FULL) {
-                cerr << "** " << setfill('0') << setw(4) << hex << redoLogRecord[i].opCode <<
-                        " OBJD: " << dec << redoLogRecord[i].recordObjd <<
-                        " OBJN: " << redoLogRecord[i].recordObjn <<
-                        " XID: " << PRINTXID(redoLogRecord[i].xid) << endl;
-            }
-
             //begin transaction
             if (redoLogRecord[i].opCode == 0x0502) {
                 if (SQN(redoLogRecord[i].xid) > 0)
@@ -804,13 +804,25 @@ namespace OpenLogReplicator {
             }
         }
 
-        flushTransactions(checkpoint);
+        if (checkpoint) {
+            flushTransactions(extScn);
+        } else {
+            if (curScn > lastCheckpointScn + oracleEnvironment->forceCheckpointScn * 2) {
+                if (oracleEnvironment->trace >= TRACE_WARN) {
+                    if (oracleEnvironment->version >= 12200)
+                        cerr << "WARNING: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+                    else
+                        cerr << "WARNING: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+                }
+
+                flushTransactions(curScn - oracleEnvironment->forceCheckpointScn);
+            }
+        }
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
         if (oracleEnvironment->trace >= TRACE_FULL) {
-            cerr << "** Append: " <<
-                    setfill('0') << setw(4) << hex << redoLogRecord->opCode << endl;
+            cerr << "FULL: ";
             redoLogRecord->dump();
         }
 
@@ -824,8 +836,8 @@ namespace OpenLogReplicator {
                 if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0) {
                     return;
                 }
-                if (oracleEnvironment->trace >= TRACE_FULL)
-                    cerr << "merging Multi-block" << endl;
+                if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0)
+                    cerr << "DUMP: merging Multi-block" << endl;
             }
 
             RedoLogRecord zero;
@@ -895,11 +907,9 @@ namespace OpenLogReplicator {
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         if (oracleEnvironment->trace >= TRACE_FULL) {
-            cerr << "** Append: " <<
-                    setfill('0') << setw(4) << hex << redoLogRecord1->opCode << " + " <<
-                    setfill('0') << setw(4) << hex << redoLogRecord2->opCode << endl;
-            cerr << "SCN: " << PRINTSCN64(redoLogRecord1->scn) << endl;
+            cerr << "FULL: ";
             redoLogRecord1->dump();
+            cerr << "FULL: ";
             redoLogRecord2->dump();
         }
 
@@ -1052,53 +1062,15 @@ namespace OpenLogReplicator {
         }
     }
 
-
-    void OracleReaderRedo::flushTransactions(bool checkpoint) {
+    void OracleReaderRedo::flushTransactions(typescn checkpointScn) {
         Transaction *transaction = oracleEnvironment->transactionHeap.top();
-        typescn checkpointScn;
-
-        if (checkpoint) {
-            checkpointScn = curScn;
-            lastCheckpointScn = curScn;
-            lastCheckpointInfo = false;
-
-            if (oracleEnvironment->trace >= TRACE_FULL) {
-                if (oracleEnvironment->version >= 12200)
-                    cerr << "INFO: checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
-                else
-                    cerr << "INFO: checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
-            }
-        } else if (curScn > 200) { //TODO: parametrize
-            checkpointScn = curScn - 200;
-            if (checkpointScn < lastCheckpointScn)
-                return;
-
-            if ((!lastCheckpointInfo && oracleEnvironment->trace >= TRACE_INFO) || oracleEnvironment->trace >= TRACE_FULL) {
-                if (oracleEnvironment->version >= 12200)
-                    cerr << "INFO: current SCN: " << PRINTSCN64(curScn) << ", checkpoint at SCN: " << PRINTSCN64(checkpointScn) << endl;
-                else
-                    cerr << "INFO: current SCN: " << PRINTSCN48(curScn) << ", checkpoint at SCN: " << PRINTSCN48(checkpointScn) << endl;
-                lastCheckpointInfo = true;
-            }
-        } else
-            return;
 
         while (transaction != nullptr) {
-            if (oracleEnvironment->trace >= TRACE_FULL) {
-                cerr << "FirstScn: " << PRINTSCN64(transaction->firstScn) <<
-                        " lastScn: " << PRINTSCN64(transaction->lastScn) <<
-                        " xid: " << PRINTXID(transaction->xid) <<
-                        " pos: " << dec << transaction->pos <<
-                        " opCodes: " << transaction->opCodes <<
-                        " commit: " << transaction->isCommit <<
-                        " uba: " << PRINTUBA(transaction->lastUba) <<
-                        " dba: " << transaction->lastDba <<
-                        " slt: " << hex << (uint64_t)transaction->lastSlt <<
-                        endl;
-            }
+            if (oracleEnvironment->trace >= TRACE_FULL)
+                cerr << "FULL: queue: " << *transaction << endl;
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
-                if (transaction->isBegin || checkpoint)
+                if (transaction->isBegin)
                     //FIXME: it should be checked if transaction begin SCN is within captured range of SCNs
                     transaction->flush(oracleEnvironment);
                 else {
@@ -1114,7 +1086,6 @@ namespace OpenLogReplicator {
                                     ", begin: " << transactionI->isBegin <<
                                     ", commit: " << transactionI->isCommit <<
                                     ", rollback: " << transactionI->isRollback << endl;
-
                         }
                     }
                 }
@@ -1125,6 +1096,8 @@ namespace OpenLogReplicator {
                             transaction->lastSlt, transaction->lastRci);
 
                 oracleEnvironment->xidTransactionMap.erase(transaction->xid);
+                if (oracleEnvironment->trace >= TRACE_FULL)
+                    cerr << "FULL: dropping" << endl;
                 delete transaction;
 
                 transaction = oracleEnvironment->transactionHeap.top();
@@ -1132,18 +1105,14 @@ namespace OpenLogReplicator {
                 break;
         }
 
-        if (oracleEnvironment->trace >= TRACE_FULL) {
+        if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0) {
             for (auto const& xid : oracleEnvironment->xidTransactionMap) {
                 Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
-                cerr << "XID[" << PRINTXID(xid.first) << "]: ";
-                cerr << "SCN: " << PRINTSCN64(transaction->firstScn) <<
-                        "-" << PRINTSCN64(transaction->lastScn) <<
-                        " xid: " << PRINTXID(transaction->xid) <<
-                        " pos: " << dec << transaction->pos <<
-                        " opCodes: " << transaction->opCodes <<
-                        " commit: " << transaction->isCommit << endl;
+                cerr << "DUMP: " << *transaction << endl;
             }
         }
+
+        lastCheckpointScn = checkpointScn;
     }
 
     int OracleReaderRedo::processBuffer(void) {
@@ -1181,8 +1150,8 @@ namespace OpenLogReplicator {
                 curBlockPos += toCopy;
                 recordPos += toCopy;
 
-                if (oracleEnvironment->trace >= TRACE_FULL)
-                    cerr << "Block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
+                if ((oracleEnvironment->trace2 & TRACE2_DISK) != 0)
+                    cerr << "DISK: block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
 
                 if (recordLeftToCopy == 0)
                     analyzeRecord();
@@ -1211,7 +1180,6 @@ namespace OpenLogReplicator {
         redoBufferFileStart = 0;
         redoBufferFileEnd = 0;
         lastReadSuccessfull = false;
-        lastCheckpointInfo = false;
         lastRead = READ_CHUNK_MIN_SIZE;
 
         initFile();
@@ -1303,7 +1271,8 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    flushTransactions(true);
+                    flushTransactions(curScn);
+
                     if (oracleReader->shutdown)
                         break;
 
@@ -1316,7 +1285,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        flushTransactions(true);
+        if (reachedEndOfOnlineRedo) {
+            flushTransactions(curScn);
+        }
 
         if (fileDes > 0) {
             close(fileDes);

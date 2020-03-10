@@ -81,7 +81,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.1 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.4.2 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -94,7 +94,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.1") != 0)
+        if (strcmp(version.GetString(), "0.4.2") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
@@ -104,6 +104,10 @@ int main() {
         const Value& traceJSON = getJSONfield(document, "trace");
         uint64_t trace = 0;
         trace = strtoul(traceJSON.GetString(), nullptr, 10);
+
+        const Value& trace2JSON = getJSONfield(document, "trace2");
+        uint64_t trace2 = 0;
+        trace2 = strtoul(trace2JSON.GetString(), nullptr, 10);
 
         const Value& dumpDataJSON = getJSONfield(document, "dumpdata");
         bool dumpData = false;
@@ -118,6 +122,10 @@ int main() {
         const Value& sortColsJSON = getJSONfield(document, "sortcols");
         uint64_t sortCols = 0;
         sortCols = strtoul(sortColsJSON.GetString(), nullptr, 10);
+
+        const Value& forceCheckpointScnJSON = getJSONfield(document, "force-checkpoint-scn");
+        uint64_t forceCheckpointScn = 0;
+        forceCheckpointScn = strtoul(forceCheckpointScnJSON.GetString(), nullptr, 10);
 
         const Value& redoBuffersJSON = getJSONfield(document, "redo-buffers");
         uint64_t redoBuffers = 0;
@@ -159,8 +167,8 @@ int main() {
 
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), trace, dumpLogFile, dumpData, directRead, sortCols,
-                        redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                        password.GetString(), server.GetString(), trace, trace2, dumpLogFile, dumpData, directRead, sortCols,
+                        forceCheckpointScn, redoBuffers, redoBufferSize, maxConcurrentTransactions);
                 readers.push_back(oracleReader);
 
                 //initialize

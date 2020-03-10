@@ -1,14 +1,16 @@
 {
-  "version": "0.4.1",
+  "version": "0.4.2",
   "dumplogfile": "0",
   "dumpdata": "0",
   "trace": "0",
+  "trace2": "0",
   "directread": "0",
   "sortcols": "2",
+  "force-checkpoint-scn": "200",
   "redo-buffers": "65536",
   "redo-buffer-size": "65536",
   "output-buffer-size": "1073741824",
-  "max-concurrent-transactions": "2048",
+  "max-concurrent-transactions": "4096",
   "sources": [
     {
       "type": "ORACLE",

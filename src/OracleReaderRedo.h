@@ -48,7 +48,6 @@ namespace OpenLogReplicator {
         typeblk numBlocks;
         uint64_t lastRead;
         bool lastReadSuccessfull;
-        bool lastCheckpointInfo;
         bool headerInfoPrinted;
         int fileDes;
         typescn lastCheckpointScn;
@@ -69,7 +68,7 @@ namespace OpenLogReplicator {
         int checkRedoHeader();
         int processBuffer();
         void analyzeRecord();
-        void flushTransactions(bool checkpoint);
+        void flushTransactions(typescn checkpointScn);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         uint16_t calcChSum(uint8_t *buffer, uint64_t size);

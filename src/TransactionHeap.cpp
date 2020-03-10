@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
     }
 
     int TransactionHeap::add(Transaction *transaction) {
-        if (heapSize == heapMaxSize) {
+        if (heapSize + 1 == heapMaxSize) {
             cerr << "ERROR: max heap size reached heapSize: " << heapSize << endl;
             for (uint64_t i = 1; i <= heapSize; ++i) {
                 cout << "[" << dec << i << "]: " << *heap[i] << endl;
