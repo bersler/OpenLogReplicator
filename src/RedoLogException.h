@@ -31,9 +31,9 @@ namespace OpenLogReplicator {
     public:
         const char *msg;
         const char *parameter;
-        int code;
+        uint64_t code;
 
-        RedoLogException(const char* msg, const char *parameter, int code);
+        RedoLogException(const char* msg, const char *parameter, uint64_t code);
         virtual ~RedoLogException();
 
         friend ostream& operator<<(ostream& os, const RedoLogException& ors);

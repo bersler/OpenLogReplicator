@@ -32,7 +32,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <rapidjson/document.h>
 
 #include "CommandBuffer.h"
-#include "OracleEnvironment.h"
 #include "OracleReader.h"
 #include "KafkaWriter.h"
 
@@ -65,7 +64,7 @@ void stopMain() {
 }
 
 void signalHandler(int s) {
-    cerr << "Caught signal " << s << ", exiting" << endl;
+    cout << "Caught signal " << s << ", exiting" << endl;
     stopMain();
 }
 
@@ -81,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.2 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.4.3 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -94,7 +93,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.2") != 0)
+        if (strcmp(version.GetString(), "0.4.3") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
@@ -122,6 +121,10 @@ int main() {
         const Value& sortColsJSON = getJSONfield(document, "sortcols");
         uint64_t sortCols = 0;
         sortCols = strtoul(sortColsJSON.GetString(), nullptr, 10);
+
+        const Value& checkpointIntervalJSON = getJSONfield(document, "checkpoint-interval");
+        uint64_t checkpointInterval = 0;
+        checkpointInterval = strtoul(checkpointIntervalJSON.GetString(), nullptr, 10);
 
         const Value& forceCheckpointScnJSON = getJSONfield(document, "force-checkpoint-scn");
         uint64_t forceCheckpointScn = 0;
@@ -168,7 +171,7 @@ int main() {
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
                         password.GetString(), server.GetString(), trace, trace2, dumpLogFile, dumpData, directRead, sortCols,
-                        forceCheckpointScn, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                        checkpointInterval, forceCheckpointScn, redoBuffers, redoBufferSize, maxConcurrentTransactions);
                 readers.push_back(oracleReader);
 
                 //initialize

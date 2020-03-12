@@ -21,25 +21,25 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "OpCode0506.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0506::OpCode0506(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleEnvironment, redoLogRecord) {
+    OpCode0506::OpCode0506(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleReader, redoLogRecord) {
 
         uint64_t fieldPos = redoLogRecord->fieldPos;
-        uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
+        uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
-            oracleEnvironment->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+            oracleReader->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
             return;
         }
 
-        redoLogRecord->objn = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->objd = oracleEnvironment->read32(redoLogRecord->data + fieldPos + 4);
+        redoLogRecord->objn = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->objd = oracleReader->read32(redoLogRecord->data + fieldPos + 4);
     }
 
     OpCode0506::~OpCode0506() {
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktub(fieldPos, fieldLength);
             } else if (i == 2) {
@@ -65,15 +65,15 @@ namespace OpenLogReplicator {
 
     void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            oracleEnvironment->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
+            oracleReader->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
             return;
         }
 
-        if (oracleEnvironment->dumpLogFile >= 1) {
-            uint16_t off = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 0);
-            uint16_t flg = oracleEnvironment->read16(redoLogRecord->data + fieldPos + 4);
+        if (oracleReader->dumpLogFile >= 1) {
+            uint16_t off = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
+            uint16_t flg = oracleReader->read16(redoLogRecord->data + fieldPos + 4);
 
-            oracleEnvironment->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
+            oracleReader->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
                     " ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
         }
     }

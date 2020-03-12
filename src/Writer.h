@@ -35,23 +35,23 @@ namespace OpenLogReplicator {
 
     class CommandBuffer;
     class RedoLogRecord;
-    class OracleEnvironment;
+    class OracleReader;
 
     class Writer : public Thread {
 
     public:
         void stop(void);
         virtual void *run() = 0;
-        int initialize();
+        uint64_t initialize();
 
         void appendValue(RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         virtual void beginTran(typescn scn, typexid xid) = 0;
         virtual void next() = 0;
         virtual void commitTran() = 0;
-        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
-        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment) = 0;
-        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleEnvironment *oracleEnvironment) = 0;
-        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment) = 0;
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) = 0;
+        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) = 0;
+        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader) = 0;
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader) = 0;
 
         Writer(const string alias, CommandBuffer *commandBuffer);
         virtual ~Writer();

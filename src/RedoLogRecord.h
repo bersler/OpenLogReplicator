@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
 #define SUPPLOG_DELETE          0x04
 
     class OracleObject;
-    class OracleEnvironment;
+    class OracleReader;
 
     class RedoLogRecord {
     public:
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
         typedba suppLogBdba;
         typeslot suppLogSlot;
 
-        void dumpHex(ostream &str, OracleEnvironment *oracleEnvironment);
+        void dumpHex(ostream &str, OracleReader *oracleReader);
         void dump();
     };
 }

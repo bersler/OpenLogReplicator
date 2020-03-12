@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         void dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
-        OpCode0513(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        OpCode0513(OracleReader *oracleReader, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0513();
 
         virtual void process();

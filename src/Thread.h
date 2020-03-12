@@ -29,8 +29,6 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class CommandBuffer;
-    class RedoLogRecord;
-    class OracleEnvironment;
 
     class Thread {
 
@@ -44,7 +42,7 @@ namespace OpenLogReplicator {
 
         void stop(void);
         virtual void *run() = 0;
-        int initialize();
+        uint64_t initialize();
 
         Thread(const string alias, CommandBuffer *commandBuffer);
         virtual ~Thread();

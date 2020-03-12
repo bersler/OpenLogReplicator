@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
         virtual const char* getUndoType();
     public:
-        OpCode0501(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        OpCode0501(OracleReader *oracleReader, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0501();
 
         virtual void process();

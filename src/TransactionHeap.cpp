@@ -27,14 +27,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void TransactionHeap::initialize(uint64_t heapMaxSize) {
-        this->heapMaxSize = heapMaxSize;
-        this->heapSize = 0;
-        heap = new Transaction*[heapMaxSize];
-    }
-
     void TransactionHeap::pop() {
-        pop(1);
+        pop((uint64_t)1);
     }
 
     void TransactionHeap::pop(uint64_t pos) {
@@ -75,7 +69,7 @@ namespace OpenLogReplicator {
             return nullptr;
     }
 
-    int TransactionHeap::add(Transaction *transaction) {
+    uint64_t TransactionHeap::add(Transaction *transaction) {
         if (heapSize + 1 == heapMaxSize) {
             cerr << "ERROR: max heap size reached heapSize: " << heapSize << endl;
             for (uint64_t i = 1; i <= heapSize; ++i) {
@@ -133,10 +127,10 @@ namespace OpenLogReplicator {
         heap[pos]->pos = pos;
     }
 
-    TransactionHeap::TransactionHeap() :
-        heapMaxSize(0),
+    TransactionHeap::TransactionHeap(uint64_t heapMaxSize) :
+        heapMaxSize(heapMaxSize),
         heapSize(0),
-        heap(nullptr) {
+        heap(new Transaction*[heapMaxSize]) {
     }
 
     TransactionHeap::~TransactionHeap() {

@@ -23,15 +23,15 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "CommandBuffer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B02::OpCode0B02(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleEnvironment, redoLogRecord) {
+    OpCode0B02::OpCode0B02(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleReader, redoLogRecord) {
     }
 
     OpCode0B02::~OpCode0B02() {
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         uint8_t *nulls, bits = 1;
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktbRedo(fieldPos, fieldLength);
             } else if (i == 2) {
@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
                 redoLogRecord->nullsDelta = fieldPos + 45;
                 nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
             } else if (i > 2 && i <= 2 + (uint64_t)redoLogRecord->cc) {
-                if (oracleEnvironment->dumpLogFile >= 1) {
+                if (oracleReader->dumpLogFile >= 1) {
                     dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, *nulls & bits);
                 }
                 bits <<= 1;

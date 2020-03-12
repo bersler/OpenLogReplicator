@@ -5,7 +5,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/CommandBuffer.cpp \
-../src/DatabaseEnvironment.cpp \
 ../src/KafkaWriter.cpp \
 ../src/MemoryException.cpp \
 ../src/OpCode.cpp \
@@ -27,7 +26,6 @@ CPP_SRCS += \
 ../src/OpCode1801.cpp \
 ../src/OpenLogReplicator.cpp \
 ../src/OracleColumn.cpp \
-../src/OracleEnvironment.cpp \
 ../src/OracleObject.cpp \
 ../src/OracleReader.cpp \
 ../src/OracleReaderRedo.cpp \
@@ -44,7 +42,6 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/CommandBuffer.o \
-./src/DatabaseEnvironment.o \
 ./src/KafkaWriter.o \
 ./src/MemoryException.o \
 ./src/OpCode.o \
@@ -66,7 +63,6 @@ OBJS += \
 ./src/OpCode1801.o \
 ./src/OpenLogReplicator.o \
 ./src/OracleColumn.o \
-./src/OracleEnvironment.o \
 ./src/OracleObject.o \
 ./src/OracleReader.o \
 ./src/OracleReaderRedo.o \
@@ -83,7 +79,6 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/CommandBuffer.d \
-./src/DatabaseEnvironment.d \
 ./src/KafkaWriter.d \
 ./src/MemoryException.d \
 ./src/OpCode.d \
@@ -105,7 +100,6 @@ CPP_DEPS += \
 ./src/OpCode1801.d \
 ./src/OpenLogReplicator.d \
 ./src/OracleColumn.d \
-./src/OracleEnvironment.d \
 ./src/OracleObject.d \
 ./src/OracleReader.d \
 ./src/OracleReaderRedo.d \
@@ -125,7 +119,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -std=c++1y -I/opt/instantclient_11_2/sdk/include -I/opt/rapidjson/include -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++1y -I/opt/instantclient_11_2/sdk/include -I/opt/rapidjson/include -O0 -g3 -Wall -c -fmessage-length=0 -fsanitize=address -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

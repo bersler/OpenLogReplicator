@@ -32,14 +32,13 @@ namespace OpenLogReplicator {
         uint64_t heapSize;
         Transaction **heap;
 
-        void initialize(uint64_t heapMaxSize);
         void pop();
         void pop(uint64_t pos);
         Transaction *top();
-        int add(Transaction *element);
+        uint64_t add(Transaction *element);
         void update(uint64_t pos);
 
-        TransactionHeap();
+        TransactionHeap(uint64_t heapMaxSize);
         virtual ~TransactionHeap();
     };
 }

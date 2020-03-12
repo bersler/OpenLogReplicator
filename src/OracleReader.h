@@ -19,14 +19,35 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <set>
 #include <queue>
+#include <unordered_map>
+#include <string>
+#include <iostream>
+#include <fstream>
 #include <stdint.h>
 #include <occi.h>
 
+#include "CommandBuffer.h"
 #include "types.h"
+#include "TransactionMap.h"
+#include "TransactionHeap.h"
+#include "TransactionBuffer.h"
 #include "Thread.h"
 
 #ifndef ORACLEREADER_H_
 #define ORACLEREADER_H_
+
+#define TRACE_NO            0
+#define TRACE_WARN          1
+#define TRACE_INFO          2
+#define TRACE_DETAIL        3
+#define TRACE_FULL          4
+
+#define TRACE2_PERFORMANCE  0x0000001
+#define TRACE2_DISK         0x0000002
+#define TRACE2_TRANSACTION  0x0000004
+#define TRACE2_DUMP         0x0000008
+#define TRACE2_UBA          0x0000010
+#define TRACE2_REDO         0x0000020
 
 using namespace std;
 using namespace oracle::occi;
@@ -34,8 +55,9 @@ using namespace oracle::occi;
 namespace OpenLogReplicator {
 
     class CommandBuffer;
-    class OracleEnvironment;
+    class OracleObject;
     class OracleReaderRedo;
+    class Transaction;
 
     struct OracleReaderRedoCompare {
         bool operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2);
@@ -47,12 +69,10 @@ namespace OpenLogReplicator {
 
     class OracleReader : public Thread {
     protected:
-        OracleEnvironment *oracleEnvironment;
         OracleReaderRedo* currentRedo;
         string database;
         typeseq databaseSequence;
         typeseq databaseSequenceArchMax;
-        typescn databaseScn;
         Environment *env;
         Connection *conn;
         string user;
@@ -69,16 +89,81 @@ namespace OpenLogReplicator {
         void refreshOnlineLogs();
 
     public:
-        virtual void *run();
+        typescn databaseScn;
+        unordered_map<typeobj, OracleObject*> objectMap;
+        unordered_map<typexid, Transaction*> xidTransactionMap;
+        TransactionMap lastOpTransactionMap;
+        TransactionHeap transactionHeap;
+        TransactionBuffer *transactionBuffer;
+        uint8_t *redoBuffer;
+        uint8_t *headerBuffer;
+        uint8_t *recordBuffer;
+        CommandBuffer *commandBuffer;
+        ofstream dumpStream;
+        uint64_t dumpLogFile;
+        bool dumpData;
+        bool directRead;
+        uint64_t trace;
+        uint64_t trace2;
+        uint64_t version;           //compatiblity level of redo logs
+        uint64_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
+        typecon conId;
+        typeresetlogs resetlogs;
+        clock_t previousCheckpoint;
+        uint64_t checkpointInterval;
+        uint64_t forceCheckpointScn;
+        bool bigEndian;
 
+        uint16_t (*read16)(const uint8_t* buf);
+        uint32_t (*read32)(const uint8_t* buf);
+        uint64_t (*read56)(const uint8_t* buf);
+        uint64_t (*read64)(const uint8_t* buf);
+        typescn (*readSCN)(const uint8_t* buf);
+        typescn (*readSCNr)(const uint8_t* buf);
+        void (*write16)(uint8_t* buf, uint16_t val);
+        void (*write32)(uint8_t* buf, uint32_t val);
+        void (*write56)(uint8_t* buf, uint64_t val);
+        void (*write64)(uint8_t* buf, uint64_t val);
+        void (*writeSCN)(uint8_t* buf, typescn val);
+
+        static uint16_t read16Little(const uint8_t* buf);
+        static uint16_t read16Big(const uint8_t* buf);
+        static uint32_t read32Little(const uint8_t* buf);
+        static uint32_t read32Big(const uint8_t* buf);
+        static uint64_t read56Little(const uint8_t* buf);
+        static uint64_t read56Big(const uint8_t* buf);
+        static uint64_t read64Little(const uint8_t* buf);
+        static uint64_t read64Big(const uint8_t* buf);
+        static typescn readSCNLittle(const uint8_t* buf);
+        static typescn readSCNBig(const uint8_t* buf);
+        static typescn readSCNrLittle(const uint8_t* buf);
+        static typescn readSCNrBig(const uint8_t* buf);
+
+        static void write16Little(uint8_t* buf, uint16_t val);
+        static void write16Big(uint8_t* buf, uint16_t val);
+        static void write32Little(uint8_t* buf, uint32_t val);
+        static void write32Big(uint8_t* buf, uint32_t val);
+        static void write56Little(uint8_t* buf, uint64_t val);
+        static void write56Big(uint8_t* buf, uint64_t val);
+        static void write64Little(uint8_t* buf, uint64_t val);
+        static void write64Big(uint8_t* buf, uint64_t val);
+        static void writeSCNLittle(uint8_t* buf, typescn val);
+        static void writeSCNBig(uint8_t* buf, typescn val);
+
+        OracleObject *checkDict(typeobj objn, typeobj objd);
+        void addToDict(OracleObject *object);
+        void transactionNew(typexid xid);
+        void transactionAppend(typexid xid);
+        virtual void *run();
         void addTable(string mask, uint64_t options);
         void readCheckpoint();
-        void writeCheckpoint();
-        int initialize();
+        void writeCheckpoint(bool atShutdown);
+        void checkForCheckpoint();
+        uint64_t initialize();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
                 const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
-                uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+                uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

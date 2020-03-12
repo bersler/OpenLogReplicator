@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     class OpCode0502;
     class OpCode0504;
     class RedoLogRecord;
-    class OracleEnvironment;
+    class OracleReader;
 
     class Transaction {
     public:
@@ -53,13 +53,13 @@ namespace OpenLogReplicator {
 
         bool operator< (Transaction &p);
         void touch(typescn scn, typeseq sequence);
-        void add(OracleEnvironment *oracleEnvironment, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
+        void add(OracleReader *oracleReader, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
                 RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
-        void rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
+        void rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer);
+        bool rollbackPreviousOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
                 typedba dba, typeslt slt, typerci rci);
 
-        void flush(OracleEnvironment *oracleEnvironment);
+        void flush(OracleReader *oracleReader);
 
         Transaction(typexid xid, TransactionBuffer *transactionBuffer);
         virtual ~Transaction();

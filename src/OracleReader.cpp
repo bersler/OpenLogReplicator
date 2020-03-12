@@ -33,7 +33,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleReader.h"
 #include "CommandBuffer.h"
 #include "OracleReaderRedo.h"
-#include "OracleEnvironment.h"
 #include "RedoLogException.h"
 #include "OracleStatement.h"
 #include "Transaction.h"
@@ -48,21 +47,50 @@ namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
             const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
-            uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+            uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
         databaseSequence(0),
         databaseSequenceArchMax(0),
-        databaseScn(0),
         env(nullptr),
         conn(nullptr),
         user(user),
         passwd(passwd),
-        connectString(connectString) {
+        connectString(connectString),
+        databaseScn(0),
+        lastOpTransactionMap(maxConcurrentTransactions),
+        transactionHeap(maxConcurrentTransactions),
+        transactionBuffer(new TransactionBuffer(redoBuffers, redoBufferSize)),
+        redoBuffer(new uint8_t[DISK_BUFFER_SIZE * 2]),
+        headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
+        recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
+        commandBuffer(commandBuffer),
+        dumpLogFile(dumpLogFile),
+        dumpData(dumpData),
+        directRead(directRead),
+        trace(trace),
+        trace2(trace2),
+        version(0),
+        sortCols(sortCols),
+        conId(0),
+        resetlogs(0),
+        previousCheckpoint(clock()),
+        checkpointInterval(checkpointInterval),
+        forceCheckpointScn(forceCheckpointScn),
+        bigEndian(false),
+        read16(read16Little),
+        read32(read32Little),
+        read56(read56Little),
+        read64(read64Little),
+        readSCN(readSCNLittle),
+        readSCNr(readSCNrLittle),
+        write16(write16Little),
+        write32(write32Little),
+        write56(write56Little),
+        write64(write64Little),
+        writeSCN(writeSCNLittle) {
 
-        oracleEnvironment = new OracleEnvironment(commandBuffer, trace, trace2, dumpLogFile, dumpData, directRead, sortCols, forceCheckpointScn,
-                redoBuffers, redoBufferSize, maxConcurrentTransactions);
         readCheckpoint();
         env = Environment::createEnvironment (Environment::DEFAULT);
     }
@@ -83,9 +111,33 @@ namespace OpenLogReplicator {
             env = nullptr;
         }
 
-        if (oracleEnvironment != nullptr) {
-            delete oracleEnvironment;
-            oracleEnvironment = nullptr;
+        delete transactionBuffer;
+
+        for (auto it : objectMap) {
+            OracleObject *object = it.second;
+            delete object;
+        }
+        objectMap.clear();
+
+        for (auto it : xidTransactionMap) {
+            Transaction *transaction = it.second;
+            delete transaction;
+        }
+        xidTransactionMap.clear();
+
+        if (redoBuffer != nullptr) {
+            delete[] redoBuffer;
+            redoBuffer = nullptr;
+        }
+
+        if (headerBuffer != nullptr) {
+            delete[] headerBuffer;
+            headerBuffer = nullptr;
+        }
+
+        if (recordBuffer != nullptr) {
+            delete[] recordBuffer;
+            recordBuffer = nullptr;
         }
     }
 
@@ -112,7 +164,7 @@ namespace OpenLogReplicator {
         checkConnection(true);
         cout << "- Oracle Reader for: " << database << endl;
         onlineLogGetList();
-        int ret = REDO_OK;
+        uint64_t ret = REDO_OK;
         OracleReaderRedo *redo = nullptr;
         bool logsProcessed;
 
@@ -122,20 +174,20 @@ namespace OpenLogReplicator {
             //try to read online redo logs
             if (this->shutdown)
                 break;
-            if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+            if ((trace2 & TRACE2_REDO) != 0)
                 cerr << "REDO: checking online redo logs" << endl;
             refreshOnlineLogs();
 
             while (true) {
                 redo = nullptr;
-                if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                if ((trace2 & TRACE2_REDO) != 0)
                     cerr << "REDO: searching online redo log for sequence: " << dec << databaseSequence << endl;
 
                 //find the candidate to read
                 for (auto redoTmp: onlineRedoSet) {
                     if (redoTmp->sequence == databaseSequence)
                         redo = redoTmp;
-                    if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                    if ((trace2 & TRACE2_REDO) != 0)
                         cerr << "REDO: " << redoTmp->path << " is " << dec << redoTmp->sequence << endl;
                 }
 
@@ -168,35 +220,36 @@ namespace OpenLogReplicator {
                 if (this->shutdown)
                     break;
                 logsProcessed = true;
-                ret = redo->processLog(this);
+                ret = redo->processLog();
 
                 if (ret != REDO_OK) {
                     if (ret == REDO_WRONG_SEQUENCE_SWITCHED) {
-                        if (oracleEnvironment->trace >= TRACE_DETAIL)
+                        if (trace >= TRACE_DETAIL)
                             cerr << "INFO: online redo log overwritten by new data" << endl;
                         break;
                     }
                     throw RedoLogException("read archive log", nullptr, 0);
                 }
-                databaseSequence = redo->sequence + 1;
-                writeCheckpoint();
+
+                ++databaseSequence;
+                writeCheckpoint(false);
             }
 
             //try to read all archived redo logs
             if (this->shutdown)
                 break;
-            if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+            if ((trace2 & TRACE2_REDO) != 0)
                 cerr << "REDO: checking archive redo logs" << endl;
             archLogGetList();
 
             while (!archiveRedoQueue.empty()) {
                 OracleReaderRedo *redoPrev = redo;
                 redo = archiveRedoQueue.top();
-                if ((oracleEnvironment->trace2 & TRACE2_REDO) != 0)
+                if ((trace2 & TRACE2_REDO) != 0)
                     cerr << "REDO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
 
                 if (ret == REDO_WRONG_SEQUENCE_SWITCHED && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
-                    if (oracleEnvironment->trace >= TRACE_WARN)
+                    if (trace >= TRACE_DETAIL)
                         cerr << "INFO: continuing broken online redo log read process with archive logs" << endl;
                     redo->clone(redoPrev);
                 }
@@ -211,7 +264,7 @@ namespace OpenLogReplicator {
                 if (this->shutdown)
                     break;
                 logsProcessed = true;
-                ret = redo->processLog(this);
+                ret = redo->processLog();
 
                 if (ret != REDO_OK) {
                     cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
@@ -219,7 +272,7 @@ namespace OpenLogReplicator {
                 }
 
                 ++databaseSequence;
-                writeCheckpoint();
+                writeCheckpoint(false);
                 archiveRedoQueue.pop();
                 delete redo;
                 redo = nullptr;
@@ -231,11 +284,13 @@ namespace OpenLogReplicator {
                 usleep(REDO_SLEEP_RETRY);
         }
 
-        if (oracleEnvironment->trace >= TRACE_WARN && oracleEnvironment->transactionHeap.heapSize > 0) {
-            cerr << "WARNING: Transactions open at shutdown: " << dec << oracleEnvironment->transactionHeap.heapSize << endl;
-            for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
-                Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
-                cerr << "WARNING: transaction[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
+        writeCheckpoint(true);
+
+        if (trace >= TRACE_INFO && transactionHeap.heapSize > 0) {
+            cerr << "INFO: Transactions open at shutdown: " << dec << transactionHeap.heapSize << endl;
+            for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i) {
+                Transaction *transactionI = transactionHeap.heap[i];
+                cerr << "INFO: transaction[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
                         ", begin: " << transactionI->isBegin <<
                         ", commit: " << transactionI->isCommit <<
                         ", rollback: " << transactionI->isRollback << endl;
@@ -252,7 +307,7 @@ namespace OpenLogReplicator {
             OracleStatement stmt(&conn, env);
             stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
             stmt.stmt->setInt(1, databaseSequence);
-            stmt.stmt->setInt(2, oracleEnvironment->resetlogsId);
+            stmt.stmt->setInt(2, resetlogs);
             stmt.executeQuery();
 
             string path;
@@ -265,7 +320,7 @@ namespace OpenLogReplicator {
                 firstScn = stmt.rset->getNumber(3);
                 nextScn = stmt.rset->getNumber(5);
 
-                OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, 0, path.c_str());
+                OracleReaderRedo* redo = new OracleReaderRedo(this, 0, path.c_str());
                 redo->firstScn = firstScn;
                 redo->nextScn = nextScn;
                 redo->sequence = sequence;
@@ -279,7 +334,7 @@ namespace OpenLogReplicator {
     void OracleReader::onlineLogGetList() {
         checkConnection(true);
 
-        int groupLast = -1, group = -1, groupPrev = -1;
+        int64_t groupLast = -1, group = -1, groupPrev = -1;
         struct stat fileStat;
         string path;
 
@@ -298,8 +353,8 @@ namespace OpenLogReplicator {
                 }
 
                 if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
-                    cerr << "Found log: GROUP: " << group << ", PATH: " << path << endl;
-                    OracleReaderRedo* redo = new OracleReaderRedo(oracleEnvironment, group, path.c_str());
+                    cout << "Found log GROUP: " << group << " PATH: " << path << endl;
+                    OracleReaderRedo* redo = new OracleReaderRedo(this, group, path.c_str());
                     onlineRedoSet.insert(redo);
                     groupLast = group;
                 }
@@ -319,13 +374,233 @@ namespace OpenLogReplicator {
         }
     }
 
-    int OracleReader::initialize() {
+    OracleObject *OracleReader::checkDict(typeobj objn, typeobj objd) {
+        OracleObject *object = objectMap[objn];
+        return object;
+    }
+
+    void OracleReader::addToDict(OracleObject *object) {
+        if (objectMap[object->objn] == nullptr) {
+            objectMap[object->objn] = object;
+        }
+    }
+
+    uint16_t OracleReader::read16Little(const uint8_t* buf) {
+        return (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
+    }
+
+    uint16_t OracleReader::read16Big(const uint8_t* buf) {
+        return ((uint16_t)buf[0] << 8) | (uint16_t)buf[1];
+    }
+
+    uint32_t OracleReader::read32Little(const uint8_t* buf) {
+        return (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) |
+                ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
+    }
+
+    uint32_t OracleReader::read32Big(const uint8_t* buf) {
+        return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
+                ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+    }
+
+    uint64_t OracleReader::read56Little(const uint8_t* buf) {
+        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
+                ((uint64_t)buf[6] << 48);
+    }
+
+    uint64_t OracleReader::read56Big(const uint8_t* buf) {
+        return (((uint64_t)buf[0] << 48) | ((uint64_t)buf[1] << 40) |
+                ((uint64_t)buf[2] << 32) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 8) |
+                (uint64_t)buf[6]);
+    }
+
+    uint64_t OracleReader::read64Little(const uint8_t* buf) {
+        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
+                ((uint64_t)buf[6] << 48) | ((uint64_t)buf[7] << 56);
+    }
+
+    uint64_t OracleReader::read64Big(const uint8_t* buf) {
+        return ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48) |
+                ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
+                ((uint64_t)buf[4] << 24) | ((uint64_t)buf[5] << 16) |
+                ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
+    }
+
+    typescn OracleReader::readSCNLittle(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[5] & 0x80) == 0x80)
+            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
+                ((uint64_t)buf[4] << 48) | ((uint64_t)(buf[5] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+                ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+                ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40);
+    }
+
+    typescn OracleReader::readSCNBig(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[0] & 0x80) == 0x80)
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
+                ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
+    }
+
+    typescn OracleReader::readSCNrLittle(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[1] & 0x80) == 0x80)
+            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
+                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
+                //((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
+                ((uint64_t)buf[0] << 48) | ((uint64_t)(buf[1] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
+                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
+                ((uint64_t)buf[0] << 32) | ((uint64_t)buf[1] << 40);
+    }
+
+    typescn OracleReader::readSCNrBig(const uint8_t* buf) {
+        if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
+            return ZERO_SCN;
+        if ((buf[1] & 0x80) == 0x80)
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                //((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
+                ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+        else
+            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
+                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+                ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
+    }
+
+    void OracleReader::write16Little(uint8_t* buf, uint16_t val) {
+        buf[0] = val & 0xFF;
+        buf[1] = (val >> 8) & 0xFF;
+    }
+
+    void OracleReader::write16Big(uint8_t* buf, uint16_t val) {
+        buf[0] = (val >> 8) & 0xFF;
+        buf[1] = val & 0xFF;
+    }
+
+    void OracleReader::write32Little(uint8_t* buf, uint32_t val) {
+        buf[0] = val & 0xFF;
+        buf[1] = (val >> 8) & 0xFF;
+        buf[2] = (val >> 16) & 0xFF;
+        buf[3] = (val >> 24) & 0xFF;
+    }
+
+    void OracleReader::write32Big(uint8_t* buf, uint32_t val) {
+        buf[0] = (val >> 24) & 0xFF;
+        buf[1] = (val >> 16) & 0xFF;
+        buf[2] = (val >> 8) & 0xFF;
+        buf[3] = val & 0xFF;
+    }
+
+    void OracleReader::write56Little(uint8_t* buf, uint64_t val) {
+        buf[0] = val & 0xFF;
+        buf[1] = (val >> 8) & 0xFF;
+        buf[2] = (val >> 16) & 0xFF;
+        buf[3] = (val >> 24) & 0xFF;
+        buf[4] = (val >> 32) & 0xFF;
+        buf[5] = (val >> 40) & 0xFF;
+        buf[6] = (val >> 48) & 0xFF;
+    }
+
+    void OracleReader::write56Big(uint8_t* buf, uint64_t val) {
+        buf[0] = (val >> 48) & 0xFF;
+        buf[1] = (val >> 40) & 0xFF;
+        buf[2] = (val >> 32) & 0xFF;
+        buf[3] = (val >> 24) & 0xFF;
+        buf[4] = (val >> 16) & 0xFF;
+        buf[5] = (val >> 8) & 0xFF;
+        buf[6] = val & 0xFF;
+    }
+
+    void OracleReader::write64Little(uint8_t* buf, uint64_t val) {
+        buf[0] = val & 0xFF;
+        buf[1] = (val >> 8) & 0xFF;
+        buf[2] = (val >> 16) & 0xFF;
+        buf[3] = (val >> 24) & 0xFF;
+        buf[4] = (val >> 32) & 0xFF;
+        buf[5] = (val >> 40) & 0xFF;
+        buf[6] = (val >> 48) & 0xFF;
+        buf[7] = (val >> 56) & 0xFF;
+    }
+
+    void OracleReader::write64Big(uint8_t* buf, uint64_t val) {
+        buf[0] = (val >> 56) & 0xFF;
+        buf[1] = (val >> 48) & 0xFF;
+        buf[2] = (val >> 40) & 0xFF;
+        buf[3] = (val >> 32) & 0xFF;
+        buf[4] = (val >> 24) & 0xFF;
+        buf[5] = (val >> 16) & 0xFF;
+        buf[6] = (val >> 8) & 0xFF;
+        buf[7] = val & 0xFF;
+    }
+
+    void OracleReader::writeSCNLittle(uint8_t* buf, typescn val) {
+        if (val < 0x800000000000) {
+            buf[0] = val & 0xFF;
+            buf[1] = (val >> 8) & 0xFF;
+            buf[2] = (val >> 16) & 0xFF;
+            buf[3] = (val >> 24) & 0xFF;
+            buf[4] = (val >> 32) & 0xFF;
+            buf[5] = (val >> 40) & 0xFF;
+        } else {
+            buf[0] = val & 0xFF;
+            buf[1] = (val >> 8) & 0xFF;
+            buf[2] = (val >> 16) & 0xFF;
+            buf[3] = (val >> 24) & 0xFF;
+            buf[4] = (val >> 48) & 0xFF;
+            buf[5] = ((val >> 56) & 0xFF) | 0x80;
+            buf[6] = (val >> 32) & 0xFF;
+            buf[7] = (val >> 40) & 0xFF;
+        }
+    }
+
+    void OracleReader::writeSCNBig(uint8_t* buf, typescn val) {
+        if (val < 0x800000000000) {
+            buf[5] = val & 0xFF;
+            buf[4] = (val >> 8) & 0xFF;
+            buf[3] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 32) & 0xFF;
+            buf[0] = (val >> 40) & 0xFF;
+        } else {
+            buf[5] = val & 0xFF;
+            buf[4] = (val >> 8) & 0xFF;
+            buf[3] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 48) & 0xFF;
+            buf[0] = ((val >> 56) & 0xFF) | 0x80;
+            buf[7] = (val >> 32) & 0xFF;
+            buf[6] = (val >> 40) & 0xFF;
+        }
+    }
+
+
+    uint64_t OracleReader::initialize() {
         checkConnection(false);
         if (conn == nullptr)
             return 0;
 
         typescn currentDatabaseScn;
-        typeresetlogs currentResetlogsId;
+        typeresetlogs currentResetlogs;
 
         try {
             OracleStatement stmt(&conn, env);
@@ -348,36 +623,47 @@ namespace OpenLogReplicator {
                 if (SUPPLEMENTAL_LOG_MIN.compare("YES") != 0) {
                     cerr << "Error: SUPPLEMENTAL_LOG_DATA_MIN missing: RUN:" << endl;
                     cerr << " ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
+                    cerr << " ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
                     return 0;
                 }
 
-                bool bigEndian = false;
                 string ENDIANNESS = stmt.rset->getString(3);
-                if (ENDIANNESS.compare("Big") == 0)
+                if (ENDIANNESS.compare("Big") == 0) {
                     bigEndian = true;
-                oracleEnvironment->initialize(bigEndian);
+                    read16 = read16Big;
+                    read32 = read32Big;
+                    read56 = read56Big;
+                    read64 = read64Big;
+                    readSCN = readSCNBig;
+                    readSCNr = readSCNrBig;
+                    write16 = write16Big;
+                    write32 = write32Big;
+                    write56 = write56Big;
+                    write64 = write64Big;
+                    writeSCN = writeSCNBig;
+                }
 
                 currentDatabaseScn = stmt.rset->getNumber(4);
-                currentResetlogsId = stmt.rset->getNumber(5);
-                if (oracleEnvironment->resetlogsId != 0 && currentResetlogsId != oracleEnvironment->resetlogsId) {
-                    cerr << "Error: Incorrect database incarnation. Previous resetlogs id:" << dec << oracleEnvironment->resetlogsId << ", current: " << currentResetlogsId << endl;
+                currentResetlogs = stmt.rset->getNumber(5);
+                if (resetlogs != 0 && currentResetlogs != resetlogs) {
+                    cerr << "Error: Incorrect database incarnation. Previous resetlogs:" << dec << resetlogs << ", current: " << currentResetlogs << endl;
                     return 0;
                 } else {
-                    oracleEnvironment->resetlogsId = currentResetlogsId;
+                    resetlogs = currentResetlogs;
                 }
 
                 //12+
                 string VERSION = stmt.rset->getString(6);
 
-                oracleEnvironment->conId = 0;
+                conId = 0;
                 if (VERSION.find("Oracle Database 11g") == string::npos) {
                     OracleStatement stmt(&conn, env);
                     stmt.createStatement("select sys_context('USERENV','CON_ID') CON_ID from DUAL");
                     stmt.executeQuery();
 
                     if (stmt.rset->next()) {
-                        oracleEnvironment->conId = stmt.rset->getNumber(1);
-                        cout << "- conId: " << dec << oracleEnvironment->conId << endl;
+                        conId = stmt.rset->getNumber(1);
+                        cout << "- conId: " << dec << conId << endl;
                     }
                 }
 
@@ -407,7 +693,7 @@ namespace OpenLogReplicator {
 
         cout << "- sequence: " << dec << databaseSequence << endl;
         cout << "- scn: " << dec << databaseScn << endl;
-        cout << "- resetlogs id: " << dec << oracleEnvironment->resetlogsId << endl;
+        cout << "- resetlogs: " << dec << resetlogs << endl;
 
         if (databaseSequence == 0 || databaseScn == 0)
             return 0;
@@ -471,7 +757,7 @@ namespace OpenLogReplicator {
 
                     object->totalCols = totalCols;
                     object->totalPk = totalPk;
-                    oracleEnvironment->addToDict(object);
+                    addToDict(object);
                 }
             }
         } catch(SQLException &ex) {
@@ -499,8 +785,8 @@ namespace OpenLogReplicator {
         const Value& databaseSequenceJSON = getJSONfield(document, "sequence");
         databaseSequence = strtoul(databaseSequenceJSON.GetString(), nullptr, 10);
 
-        const Value& resetlogsIdJSON = getJSONfield(document, "resetlogs-id");
-        oracleEnvironment->resetlogsId = strtoul(resetlogsIdJSON.GetString(), nullptr, 10);
+        const Value& resetlogsJSON = getJSONfield(document, "resetlogs");
+        resetlogs = strtoul(resetlogsJSON.GetString(), nullptr, 10);
 
         const Value& scnJSON = getJSONfield(document, "scn");
         databaseScn = strtoul(scnJSON.GetString(), nullptr, 10);
@@ -508,25 +794,29 @@ namespace OpenLogReplicator {
         infile.close();
     }
 
-    void OracleReader::writeCheckpoint() {
+    void OracleReader::writeCheckpoint(bool atShutdown) {
+        clock_t now = clock();
         typeseq minSequence = 0xFFFFFFFF;
-        typescn minScn = ZERO_SCN;
         Transaction *transaction;
-        for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
-            transaction = oracleEnvironment->transactionHeap.heap[i];
-            if (minScn > transaction->firstScn)
-                minScn = transaction->firstScn;
+
+        for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i) {
+            transaction = transactionHeap.heap[i];
             if (minSequence > transaction->firstSequence)
                 minSequence = transaction->firstSequence;
         }
-        if (minScn == ZERO_SCN)
-            minScn = 0;
         if (minSequence == 0xFFFFFFFF)
-            minSequence = 0;
+            minSequence = databaseSequence;
 
-        if (oracleEnvironment->trace >= TRACE_DETAIL)
-            cerr << "INFO: Writing checkpoint information SEQ: " << dec << minSequence << "/" << databaseSequence <<
-            ", SCN: " << PRINTSCN64(minScn) << "/" << PRINTSCN64(databaseScn) << endl;
+        if (trace >= TRACE_FULL) {
+            uint64_t timeSinceCheckpoint = (now - previousCheckpoint) / CLOCKS_PER_SEC;
+
+            if (version >= 12200)
+                cerr << "INFO: Writing checkpoint information SEQ: " << dec << minSequence << "/" << databaseSequence <<
+                " SCN: " << PRINTSCN64(databaseScn) << " after: " << dec << timeSinceCheckpoint << "s" << endl;
+            else
+                cerr << "INFO: Writing checkpoint information SEQ: " << dec << minSequence << "/" << databaseSequence <<
+                " SCN: " << PRINTSCN48(databaseScn) << " after: " << dec << timeSinceCheckpoint << "s" << endl;
+        }
 
         ofstream outfile;
         outfile.open((database + ".json").c_str(), ios::out | ios::trunc);
@@ -539,17 +829,38 @@ namespace OpenLogReplicator {
         stringstream ss;
         ss << "{" << endl
            << "  \"database\": \"" << database << "\"," << endl
-           << "  \"min-sequence\": \"" << dec << minSequence << "\"," << endl
-           << "  \"sequence\": \"" << dec << databaseSequence << "\"," << endl
-           << "  \"min-scn\": \"" << dec << minScn << "\"," << endl
+           << "  \"sequence\": \"" << dec << minSequence << "\"," << endl
            << "  \"scn\": \"" << dec << databaseScn << "\"," << endl
-           << "  \"resetlogs-id\": \"" << dec << oracleEnvironment->resetlogsId << "\"" << endl
+           << "  \"resetlogs\": \"" << dec << resetlogs << "\"" << endl
            << "}";
 
         outfile << ss.rdbuf();
         outfile.close();
+
+        if (atShutdown) {
+            cout << "Writing checkpopint at exit for " << database << endl
+                    << "- conId: " << dec << conId << endl
+                    << "- sequence: " << dec << minSequence << endl
+                    << "- scn: " << dec << databaseScn << endl
+                    << "- resetlogs: " << dec << resetlogs << endl;
+        }
+
+        previousCheckpoint = now;
     }
 
+    void OracleReader::checkForCheckpoint() {
+        uint64_t timeSinceCheckpoint = (clock() - previousCheckpoint) / CLOCKS_PER_SEC;
+        if (timeSinceCheckpoint > checkpointInterval) {
+            if (trace >= TRACE_FULL) {
+                cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s, forcing checkpoint" << endl;
+            }
+            writeCheckpoint(true);
+        } else {
+            if (trace >= TRACE_FULL) {
+                cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s" << endl;
+            }
+        }
+    }
 
     bool OracleReaderRedoCompare::operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2) {
         return p1->sequence > p2->sequence;

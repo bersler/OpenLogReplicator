@@ -50,15 +50,15 @@ namespace OpenLogReplicator {
         virtual void *run();
 
         void addTable(string mask);
-        int initialize();
+        uint64_t initialize();
 
         virtual void beginTran(typescn scn, typexid xid);
         virtual void next();
         virtual void commitTran();
-        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
-        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleEnvironment *oracleEnvironment);
-        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleEnvironment *oracleEnvironment);
-        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleEnvironment *oracleEnvironment);
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader);
+        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader);
+        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader);
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader);
 
         KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace);
         virtual ~KafkaWriter();

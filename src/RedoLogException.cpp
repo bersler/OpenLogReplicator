@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
     RedoLogException::~RedoLogException() {
     }
 
-    RedoLogException::RedoLogException(const char* msg, const char* parameter, int code) :
+    RedoLogException::RedoLogException(const char* msg, const char* parameter, uint64_t code) :
             exception(),
             msg(msg),
             parameter(parameter),

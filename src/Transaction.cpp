@@ -23,7 +23,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string.h>
 #include "types.h"
 #include "CommandBuffer.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 #include "TransactionChunk.h"
@@ -67,11 +67,11 @@ namespace OpenLogReplicator {
             lastScn = scn;
     }
 
-    void Transaction::add(OracleEnvironment *oracleEnvironment, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
+    void Transaction::add(OracleReader *oracleReader, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
             RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence) {
 
         uint8_t buffer[REDO_RECORD_MAX_SIZE];
-        if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0)
+        if ((oracleReader->trace2 & TRACE2_DUMP) != 0)
             cerr << "DUMP: add: " << setfill('0') << setw(4) << hex << redoLogRecord1->opCode << ":" <<
                     setfill('0') << setw(4) << hex << redoLogRecord2->opCode << " XID: " << PRINTXID(redoLogRecord1->xid) << endl;
 
@@ -87,14 +87,14 @@ namespace OpenLogReplicator {
                 pos = redoLogRecord1->fieldLengthsDelta;
 
                 if ((redoLogRecord1->flg & FLG_LASTBUFFERSPLIT) != 0) {
-                    uint16_t length1 = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
-                    uint16_t length2 = oracleEnvironment->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 6);
-                    oracleEnvironment->write16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 6, length1 + length2);
+                    uint16_t length1 = oracleReader->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
+                    uint16_t length2 = oracleReader->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 6);
+                    oracleReader->write16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 6, length1 + length2);
                     --redoLogRecord1->fieldCnt;
                 }
 
                 newFieldCnt = redoLogRecord1->fieldCnt + lastRedoLogRecord1->fieldCnt - 2;
-                oracleEnvironment->write16(buffer + pos, newFieldCnt);
+                oracleReader->write16(buffer + pos, newFieldCnt);
                 memcpy(buffer + pos + 2, redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2, redoLogRecord1->fieldCnt * 2);
                 memcpy(buffer + pos + 2 + redoLogRecord1->fieldCnt * 2, lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 6, lastRedoLogRecord1->fieldCnt * 2 - 4);
                 pos += (((newFieldCnt + 1) * 2) + 2) & (0xFFFC);
@@ -103,8 +103,8 @@ namespace OpenLogReplicator {
                 memcpy(buffer + pos, redoLogRecord1->data + redoLogRecord1->fieldPos, redoLogRecord1->length - redoLogRecord1->fieldPos);
                 pos += (redoLogRecord1->length - redoLogRecord1->fieldPos + 3) & (0xFFFC);
                 fieldPos2 = lastRedoLogRecord1->fieldPos +
-                        ((oracleEnvironment->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 2) + 3) & 0xFFFC) +
-                        ((oracleEnvironment->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 4) + 3) & 0xFFFC);
+                        ((oracleReader->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 2) + 3) & 0xFFFC) +
+                        ((oracleReader->read16(lastRedoLogRecord1->data + lastRedoLogRecord1->fieldLengthsDelta + 4) + 3) & 0xFFFC);
 
                 memcpy(buffer + pos, lastRedoLogRecord1->data + fieldPos2, lastRedoLogRecord1->length - fieldPos2);
                 pos += (lastRedoLogRecord1->length - fieldPos2 + 3) & (0xFFFC);
@@ -114,28 +114,28 @@ namespace OpenLogReplicator {
                 redoLogRecord1->fieldPos = fieldPos;
                 redoLogRecord1->data = buffer;
 
-                uint16_t myFieldLength = oracleEnvironment->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
+                uint16_t myFieldLength = oracleReader->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
                 fieldPos += (myFieldLength + 3) & 0xFFFC;
-                uint16_t flg = oracleEnvironment->read16(redoLogRecord1->data + fieldPos + 20);
+                uint16_t flg = oracleReader->read16(redoLogRecord1->data + fieldPos + 20);
                 flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL | FLG_LASTBUFFERSPLIT);
 
                 if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0 && (lastRedoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                    oracleEnvironment->write16(redoLogRecord1->data + fieldPos + 20, flg);
+                    oracleReader->write16(redoLogRecord1->data + fieldPos + 20, flg);
 
-                    OpCode0501 *opCode0501 = new OpCode0501(oracleEnvironment, redoLogRecord1);
+                    OpCode0501 *opCode0501 = new OpCode0501(oracleReader, redoLogRecord1);
                     opCode0501->process();
                     delete opCode0501;
                 } else {
                     flg |= FLG_MULTIBLOCKUNDOTAIL;
-                    oracleEnvironment->write16(redoLogRecord1->data + fieldPos + 20, flg);
+                    oracleReader->write16(redoLogRecord1->data + fieldPos + 20, flg);
                 }
 
-                rollbackLastOp(oracleEnvironment, redoLogRecord1->scn, transactionBuffer);
+                rollbackLastOp(oracleReader, redoLogRecord1->scn, transactionBuffer);
             } else
                 cerr << "ERROR: next multi buffer without previous" << endl;
         }
 
-        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+        if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: add: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
@@ -143,8 +143,8 @@ namespace OpenLogReplicator {
         touch(redoLogRecord1->scn, sequence);
     }
 
-    bool Transaction::rollbackPreviousOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
-        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+    bool Transaction::rollbackPreviousOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
+        if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback previous: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
         if (transactionBuffer->deleteTransactionPart(tcLast, uba, dba, slt, rci)) {
@@ -156,8 +156,8 @@ namespace OpenLogReplicator {
             return false;
     }
 
-    void Transaction::rollbackLastOp(OracleEnvironment *oracleEnvironment, typescn scn, TransactionBuffer *transactionBuffer) {
-        if ((oracleEnvironment->trace2 & TRACE2_UBA) != 0)
+    void Transaction::rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer) {
+        if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback last: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
         tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
 
@@ -166,21 +166,21 @@ namespace OpenLogReplicator {
             lastScn = scn;
     }
 
-    void Transaction::flush(OracleEnvironment *oracleEnvironment) {
+    void Transaction::flush(OracleReader *oracleReader) {
         TransactionChunk *tcTemp = tc;
         bool hasPrev = false, opFlush = false;
 
         //transaction that has some DML's
 
         if (opCodes > 0 && !isRollback) {
-            if ((oracleEnvironment->trace2 & TRACE2_TRANSACTION) != 0) {
+            if ((oracleReader->trace2 & TRACE2_TRANSACTION) != 0) {
                 cerr << endl << "TRANSACTION: " << *this << endl;
             }
 
-            if (oracleEnvironment->commandBuffer->posEnd >= oracleEnvironment->commandBuffer->outputBufferSize - (oracleEnvironment->commandBuffer->outputBufferSize/4))
-                oracleEnvironment->commandBuffer->rewind();
+            if (oracleReader->commandBuffer->posEnd >= oracleReader->commandBuffer->outputBufferSize - (oracleReader->commandBuffer->outputBufferSize/4))
+                oracleReader->commandBuffer->rewind();
 
-            oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
+            oracleReader->commandBuffer->writer->beginTran(lastScn, xid);
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
@@ -196,8 +196,8 @@ namespace OpenLogReplicator {
                     redoLogRecord2->data = tcTemp->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
                     typescn scn = *((typescn *)(tcTemp->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
 
-                    if (oracleEnvironment->trace >= TRACE_WARN) {
-                        if ((oracleEnvironment->trace2 & TRACE2_TRANSACTION) != 0) {
+                    if (oracleReader->trace >= TRACE_WARN) {
+                        if ((oracleReader->trace2 & TRACE2_TRANSACTION) != 0) {
                             typeobj objn = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
                             typeobj objd = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
                             cerr << "TRANSACTION Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
@@ -294,15 +294,15 @@ namespace OpenLogReplicator {
                                     }
                                 }
                             } else {
-                                if (oracleEnvironment->trace >= TRACE_WARN)
+                                if (oracleReader->trace >= TRACE_WARN)
                                     cerr << "ERROR: next BDBA/SLOT does not match" << endl;
                             }
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
                             if (hasPrev)
-                                oracleEnvironment->commandBuffer->writer->next();
-                            oracleEnvironment->commandBuffer->writer->parseDML(first1, first2, type, oracleEnvironment);
+                                oracleReader->commandBuffer->writer->next();
+                            oracleReader->commandBuffer->writer->parseDML(first1, first2, type, oracleReader);
                             opFlush = true;
                         }
                         break;
@@ -310,24 +310,24 @@ namespace OpenLogReplicator {
                     //insert multiple rows
                     case 0x05010B0B:
                         if (hasPrev)
-                            oracleEnvironment->commandBuffer->writer->next();
-                        oracleEnvironment->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2, oracleEnvironment);
+                            oracleReader->commandBuffer->writer->next();
+                        oracleReader->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2, oracleReader);
                         opFlush = true;
                         break;
 
                     //delete multiple rows
                     case 0x05010B0C:
                         if (hasPrev)
-                            oracleEnvironment->commandBuffer->writer->next();
-                        oracleEnvironment->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2, oracleEnvironment);
+                            oracleReader->commandBuffer->writer->next();
+                        oracleReader->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2, oracleReader);
                         opFlush = true;
                         break;
 
                     //truncate table
                     case 0x18010000:
                         if (hasPrev)
-                            oracleEnvironment->commandBuffer->writer->next();
-                        oracleEnvironment->commandBuffer->writer->parseDDL(redoLogRecord1, oracleEnvironment);
+                            oracleReader->commandBuffer->writer->next();
+                        oracleReader->commandBuffer->writer->parseDDL(redoLogRecord1, oracleReader);
                         opFlush = true;
                         break;
 
@@ -336,12 +336,12 @@ namespace OpenLogReplicator {
                     }
 
                     //split very big transactions
-                    if (oracleEnvironment->commandBuffer->currentTranSize() >= oracleEnvironment->commandBuffer->outputBufferSize/4) {
-                        cerr << "WARNING: Big transaction divided (" << oracleEnvironment->commandBuffer->currentTranSize() << ")" << endl;
-                        oracleEnvironment->commandBuffer->writer->commitTran();
-                        if (oracleEnvironment->commandBuffer->posEnd >= oracleEnvironment->commandBuffer->outputBufferSize - (oracleEnvironment->commandBuffer->outputBufferSize/4))
-                            oracleEnvironment->commandBuffer->rewind();
-                        oracleEnvironment->commandBuffer->writer->beginTran(lastScn, xid);
+                    if (oracleReader->commandBuffer->currentTranSize() >= oracleReader->commandBuffer->outputBufferSize/4) {
+                        cerr << "WARNING: Big transaction divided (" << oracleReader->commandBuffer->currentTranSize() << ")" << endl;
+                        oracleReader->commandBuffer->writer->commitTran();
+                        if (oracleReader->commandBuffer->posEnd >= oracleReader->commandBuffer->outputBufferSize - (oracleReader->commandBuffer->outputBufferSize/4))
+                            oracleReader->commandBuffer->rewind();
+                        oracleReader->commandBuffer->writer->beginTran(lastScn, xid);
                         hasPrev = false;
                     }
 
@@ -358,10 +358,10 @@ namespace OpenLogReplicator {
                 tcTemp = tcTemp->next;
             }
 
-            oracleEnvironment->commandBuffer->writer->commitTran();
+            oracleReader->commandBuffer->writer->commitTran();
         }
 
-        oracleEnvironment->transactionBuffer->deleteTransactionChunks(tc, tcLast);
+        oracleReader->transactionBuffer->deleteTransactionChunks(tc, tcLast);
     }
 
     Transaction::Transaction(typexid xid, TransactionBuffer *transactionBuffer) :

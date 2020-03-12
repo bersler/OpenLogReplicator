@@ -35,7 +35,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleReaderRedo.h"
 #include "OracleObject.h"
 #include "RedoLogException.h"
-#include "OracleEnvironment.h"
 #include "RedoLogRecord.h"
 #include "Transaction.h"
 #include "TransactionMap.h"
@@ -62,8 +61,8 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleReaderRedo::OracleReaderRedo(OracleEnvironment *oracleEnvironment, int group, const char* path) :
-            oracleEnvironment(oracleEnvironment),
+    OracleReaderRedo::OracleReaderRedo(OracleReader *oracleReader, int64_t group, const char* path) :
+            oracleReader(oracleReader),
             group(group),
             blockSize(0),
             blockNumber(0),
@@ -71,7 +70,7 @@ namespace OpenLogReplicator {
             lastRead(READ_CHUNK_MIN_SIZE),
             lastReadSuccessfull(false),
             headerInfoPrinted(false),
-            fileDes(-1),
+            fileDes(0),
             lastCheckpointScn(0),
             curScn(ZERO_SCN),
             curSubScn(0),
@@ -89,7 +88,7 @@ namespace OpenLogReplicator {
             sequence(0) {
     }
 
-    int OracleReaderRedo::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
+    uint64_t OracleReaderRedo::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
@@ -98,8 +97,8 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        typeblk blockNumberHeader = oracleEnvironment->read32(buffer + 4);
-        typeseq sequenceHeader = oracleEnvironment->read32(buffer + 8);
+        typeblk blockNumberHeader = oracleReader->read32(buffer + 4);
+        typeseq sequenceHeader = oracleReader->read32(buffer + 8);
 
         if (sequence == 0) {
             sequence = sequenceHeader;
@@ -123,31 +122,31 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    int OracleReaderRedo::checkRedoHeader() {
-        uint64_t headerBufferFileEnd = pread(fileDes, oracleEnvironment->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
+    uint64_t OracleReaderRedo::checkRedoHeader() {
+        uint64_t headerBufferFileEnd = pread(fileDes, oracleReader->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
         if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
             cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
             return REDO_ERROR;
         }
 
         //check file header
-        if (oracleEnvironment->headerBuffer[0] != 0 ||
-                oracleEnvironment->headerBuffer[1] != 0x22 ||
-                oracleEnvironment->headerBuffer[28] != 0x7D ||
-                oracleEnvironment->headerBuffer[29] != 0x7C ||
-                oracleEnvironment->headerBuffer[30] != 0x7B ||
-                oracleEnvironment->headerBuffer[31] != 0x7A) {
-            cerr << "[0]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[0] << endl;
-            cerr << "[1]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[1] << endl;
-            cerr << "[28]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[28] << endl;
-            cerr << "[29]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[29] << endl;
-            cerr << "[30]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[30] << endl;
-            cerr << "[31]: " << hex << (uint64_t)oracleEnvironment->headerBuffer[31] << endl;
+        if (oracleReader->headerBuffer[0] != 0 ||
+                oracleReader->headerBuffer[1] != 0x22 ||
+                oracleReader->headerBuffer[28] != 0x7D ||
+                oracleReader->headerBuffer[29] != 0x7C ||
+                oracleReader->headerBuffer[30] != 0x7B ||
+                oracleReader->headerBuffer[31] != 0x7A) {
+            cerr << "[0]: " << hex << (uint64_t)oracleReader->headerBuffer[0] << endl;
+            cerr << "[1]: " << hex << (uint64_t)oracleReader->headerBuffer[1] << endl;
+            cerr << "[28]: " << hex << (uint64_t)oracleReader->headerBuffer[28] << endl;
+            cerr << "[29]: " << hex << (uint64_t)oracleReader->headerBuffer[29] << endl;
+            cerr << "[30]: " << hex << (uint64_t)oracleReader->headerBuffer[30] << endl;
+            cerr << "[31]: " << hex << (uint64_t)oracleReader->headerBuffer[31] << endl;
             cerr << "ERROR: block header bad magic fields" << endl;
             return REDO_ERROR;
         }
 
-        blockSize = oracleEnvironment->read16(oracleEnvironment->headerBuffer + 20);
+        blockSize = oracleReader->read16(oracleReader->headerBuffer + 20);
         if (blockSize != 512 && blockSize != 1024) {
             cerr << "ERROR: unsupported block size: " << blockSize << endl;
             return REDO_ERROR;
@@ -159,90 +158,90 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        numBlocks = oracleEnvironment->read32(oracleEnvironment->headerBuffer + 24);
-        uint32_t compatVsn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 20);
+        numBlocks = oracleReader->read32(oracleReader->headerBuffer + 24);
+        uint32_t compatVsn = oracleReader->read32(oracleReader->headerBuffer + blockSize + 20);
 
         if (compatVsn == 0x0B200000) //11.2.0.0
-            oracleEnvironment->version = 11200;
+            oracleReader->version = 11200;
         else
         if (compatVsn == 0x0B200100) //11.2.0.1
-            oracleEnvironment->version = 11201;
+            oracleReader->version = 11201;
         else
         if (compatVsn == 0x0B200200) //11.2.0.2
-            oracleEnvironment->version = 11202;
+            oracleReader->version = 11202;
         else
         if (compatVsn == 0x0B200300) //11.2.0.3
-            oracleEnvironment->version = 11203;
+            oracleReader->version = 11203;
         else
         if (compatVsn == 0x0B200400) //11.2.0.4
-            oracleEnvironment->version = 11204;
+            oracleReader->version = 11204;
         else
         if (compatVsn == 0x0C100000) //12.1.0.0
-            oracleEnvironment->version = 12100;
+            oracleReader->version = 12100;
         else
         if (compatVsn == 0x0C100100) //12.1.0.1
-            oracleEnvironment->version = 12101;
+            oracleReader->version = 12101;
         else
         if (compatVsn == 0x0C100200) //12.1.0.2
-            oracleEnvironment->version = 12102;
+            oracleReader->version = 12102;
         else
         if (compatVsn == 0x0C200100) //12.2.0.1
-            oracleEnvironment->version = 12201;
+            oracleReader->version = 12201;
         else
         if (compatVsn == 0x12000000) //18.0.0.0
-            oracleEnvironment->version = 18000;
+            oracleReader->version = 18000;
         else
         if (compatVsn == 0x12030000) //18.3.0.0
-            oracleEnvironment->version = 18300;
+            oracleReader->version = 18300;
         else
         if (compatVsn == 0x12040000) //18.4.0.0
-            oracleEnvironment->version = 18400;
+            oracleReader->version = 18400;
         else
         if (compatVsn == 0x12050000) //18.5.0.0
-            oracleEnvironment->version = 18500;
+            oracleReader->version = 18500;
         else
         if (compatVsn == 0x12060000) //18.6.0.0
-            oracleEnvironment->version = 18600;
+            oracleReader->version = 18600;
         else
         if (compatVsn == 0x12070000) //18.7.0.0
-            oracleEnvironment->version = 18700;
+            oracleReader->version = 18700;
         else
         if (compatVsn == 0x12080000) //18.8.0.0
-            oracleEnvironment->version = 18800;
+            oracleReader->version = 18800;
         else
         if (compatVsn == 0x12090000) //18.9.0.0
-            oracleEnvironment->version = 18900;
+            oracleReader->version = 18900;
         else
         if (compatVsn == 0x13000000) //19.0.0.0
-            oracleEnvironment->version = 19000;
+            oracleReader->version = 19000;
         else
         if (compatVsn == 0x13030000) //19.3.0.0
-            oracleEnvironment->version = 19300;
+            oracleReader->version = 19300;
         else
         if (compatVsn == 0x13040000) //19.4.0.0
-            oracleEnvironment->version = 19400;
+            oracleReader->version = 19400;
         else
         if (compatVsn == 0x13050000) //19.5.0.0
-            oracleEnvironment->version = 19500;
+            oracleReader->version = 19500;
         else
         if (compatVsn == 0x13060000) //19.6.0.0
-            oracleEnvironment->version = 19600;
+            oracleReader->version = 19600;
         else {
             cerr << "ERROR: Unsupported database version: " << hex << compatVsn << endl;
             return REDO_ERROR;
         }
 
-        typeresetlogs resetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 160);
-        typescn firstScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 180);
-        typescn nextScnHeader = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 192);
+        typeresetlogs resetlogsCnt = oracleReader->read32(oracleReader->headerBuffer + blockSize + 160);
+        typescn firstScnHeader = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 180);
+        typescn nextScnHeader = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 192);
 
-        int ret = checkBlockHeader(oracleEnvironment->headerBuffer + blockSize, 1);
+        uint64_t ret = checkBlockHeader(oracleReader->headerBuffer + blockSize, 1);
         if (ret != REDO_OK)
             return ret;
 
-        if (resetlogsCnt != oracleEnvironment->resetlogsId) {
+        if (resetlogsCnt != oracleReader->resetlogs) {
             cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
-                    oracleEnvironment->resetlogsId << "): " << path.c_str() << endl;
+                    oracleReader->resetlogs << "): " << path.c_str() << endl;
             return REDO_ERROR;
         }
 
@@ -258,7 +257,7 @@ namespace OpenLogReplicator {
                     return REDO_ERROR;
                 //redo log switch appeared and header is now overwritten
                 } else {
-                    if (oracleEnvironment->trace >= TRACE_WARN)
+                    if (oracleReader->trace >= TRACE_WARN)
                         cerr << "WARNING: first SCN (" << dec << firstScnHeader << ") for online redo log does not match database information (" <<
                                 firstScn << "): " << path.c_str() << endl;
                     return REDO_WRONG_SEQUENCE_SWITCHED;
@@ -268,7 +267,7 @@ namespace OpenLogReplicator {
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (oracleEnvironment->trace >= TRACE_FULL)
+            if (oracleReader->trace >= TRACE_FULL)
                 cerr << "FULL: updating next SCN to: " << dec << nextScnHeader << endl;
             nextScn = nextScnHeader;
         } else
@@ -279,45 +278,45 @@ namespace OpenLogReplicator {
         }
 
         char SID[9];
-        memcpy(SID, oracleEnvironment->headerBuffer + blockSize + 28, 8); SID[8] = 0;
+        memcpy(SID, oracleReader->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
-        if (oracleEnvironment->dumpLogFile >= 1 && !headerInfoPrinted) {
-            oracleEnvironment->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
-            if (oracleEnvironment->version >= 12200)
-                oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
-            oracleEnvironment->dumpStream << " Opcodes *.*" << endl;
-            if (oracleEnvironment->version >= 12200)
-                oracleEnvironment->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
-            oracleEnvironment->dumpStream << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl;
-            if (oracleEnvironment->version < 12200)
-                oracleEnvironment->dumpStream << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << endl;
+        if (oracleReader->dumpLogFile >= 1 && !headerInfoPrinted) {
+            oracleReader->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
+            if (oracleReader->version >= 12200)
+                oracleReader->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
+            oracleReader->dumpStream << " Opcodes *.*" << endl;
+            if (oracleReader->version >= 12200)
+                oracleReader->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
+            oracleReader->dumpStream << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl;
+            if (oracleReader->version < 12200)
+                oracleReader->dumpStream << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << endl;
             else
-                oracleEnvironment->dumpStream << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << endl;
-            oracleEnvironment->dumpStream << " Times: creation thru eternity" << endl;
+                oracleReader->dumpStream << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << endl;
+            oracleReader->dumpStream << " Times: creation thru eternity" << endl;
 
-            uint32_t dbid = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 24);
-            uint32_t controlSeq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 36);
-            uint32_t fileSize = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 40);
-            uint16_t fileNumber = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 48);
-            uint32_t activationId = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 52);
+            uint32_t dbid = oracleReader->read32(oracleReader->headerBuffer + blockSize + 24);
+            uint32_t controlSeq = oracleReader->read32(oracleReader->headerBuffer + blockSize + 36);
+            uint32_t fileSize = oracleReader->read32(oracleReader->headerBuffer + blockSize + 40);
+            uint16_t fileNumber = oracleReader->read16(oracleReader->headerBuffer + blockSize + 48);
+            uint32_t activationId = oracleReader->read32(oracleReader->headerBuffer + blockSize + 52);
 
-            oracleEnvironment->dumpStream << " FILE HEADER:" << endl <<
+            oracleReader->dumpStream << " FILE HEADER:" << endl <<
                     "\tCompatibility Vsn = " << dec << compatVsn << "=0x" << hex << compatVsn << endl <<
                     "\tDb ID=" << dec << dbid << "=0x" << hex << dbid << ", Db Name='" << SID << "'" << endl <<
                     "\tActivation ID=" << dec << activationId << "=0x" << hex << activationId << endl <<
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << blockSize << ", File Type=2 LOG" << endl;
 
-            typeseq seq = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 8);
+            typeseq seq = oracleReader->read32(oracleReader->headerBuffer + blockSize + 8);
             uint8_t descrip[65];
-            memcpy (descrip, oracleEnvironment->headerBuffer + blockSize + 92, 64); descrip[64] = 0;
-            uint16_t thread = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 176);
-            uint32_t nab = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 156);
-            uint32_t hws = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 172);
-            uint8_t eot = oracleEnvironment->headerBuffer[blockSize + 204];
-            uint8_t dis = oracleEnvironment->headerBuffer[blockSize + 205];
+            memcpy (descrip, oracleReader->headerBuffer + blockSize + 92, 64); descrip[64] = 0;
+            uint16_t thread = oracleReader->read16(oracleReader->headerBuffer + blockSize + 176);
+            uint32_t nab = oracleReader->read32(oracleReader->headerBuffer + blockSize + 156);
+            uint32_t hws = oracleReader->read32(oracleReader->headerBuffer + blockSize + 172);
+            uint8_t eot = oracleReader->headerBuffer[blockSize + 204];
+            uint8_t dis = oracleReader->headerBuffer[blockSize + 205];
 
-            oracleEnvironment->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
+            oracleReader->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
                     " thread: " << dec << thread <<
                     " nab: 0x" << hex << nab <<
                     " seq: 0x" << setfill('0') << setw(8) << hex << (typeseq)seq <<
@@ -325,23 +324,23 @@ namespace OpenLogReplicator {
                     " eot: " << dec << (uint64_t)eot <<
                     " dis: " << dec << (uint64_t)dis << endl;
 
-            typescn resetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 164);
-            typeresetlogs prevResetlogsCnt = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 292);
-            typescn prevResetlogsScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 284);
-            typetime firstTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 188));
-            typetime nextTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 200));
-            typescn enabledScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 208);
-            typetime enabledTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 216));
-            typescn threadClosedScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 220);
-            typetime threadClosedTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 228));
-            typescn termialRecScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 240);
-            typetime termialRecTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 248));
-            typescn mostRecentScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 260);
-            typesum chSum = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 14);
-            typesum chSum2 = calcChSum(oracleEnvironment->headerBuffer + blockSize, blockSize);
+            typescn resetlogsScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 164);
+            typeresetlogs prevResetlogsCnt = oracleReader->read32(oracleReader->headerBuffer + blockSize + 292);
+            typescn prevResetlogsScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 284);
+            typetime firstTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 188));
+            typetime nextTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 200));
+            typescn enabledScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 208);
+            typetime enabledTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 216));
+            typescn threadClosedScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 220);
+            typetime threadClosedTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 228));
+            typescn termialRecScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 240);
+            typetime termialRecTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 248));
+            typescn mostRecentScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 260);
+            typesum chSum = oracleReader->read16(oracleReader->headerBuffer + blockSize + 14);
+            typesum chSum2 = calcChSum(oracleReader->headerBuffer + blockSize, blockSize);
 
-            if (oracleEnvironment->version < 12200) {
-                oracleEnvironment->dumpStream <<
+            if (oracleReader->version < 12200) {
+                oracleReader->dumpStream <<
                         " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
                         " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << dec << firstScnHeader << ")" << " " << firstTime << endl <<
@@ -353,9 +352,9 @@ namespace OpenLogReplicator {
                         " Terminal recovery  " << termialRecTime << endl <<
                         " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << endl;
             } else {
-                typescn realNextScn = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 272);
+                typescn realNextScn = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 272);
 
-                oracleEnvironment->dumpStream <<
+                oracleReader->dumpStream <<
                         " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << endl <<
                         " Low  scn: " << PRINTSCN64(firstScnHeader) << " " << firstTime << endl <<
@@ -369,80 +368,80 @@ namespace OpenLogReplicator {
                         " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << endl;
             }
 
-            uint32_t largestLwn = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 268);
-            oracleEnvironment->dumpStream <<
+            uint32_t largestLwn = oracleReader->read32(oracleReader->headerBuffer + blockSize + 268);
+            oracleReader->dumpStream <<
                     " Largest LWN: " << dec << largestLwn << " blocks" << endl;
 
-            uint32_t miscFlags = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 236);
+            uint32_t miscFlags = oracleReader->read32(oracleReader->headerBuffer + blockSize + 236);
             string endOfRedo;
             if ((miscFlags & REDO_END) != 0)
                 endOfRedo = "Yes";
             else
                 endOfRedo = "No";
             if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-                oracleEnvironment->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << endl;
+                oracleReader->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << endl;
             else
-                oracleEnvironment->dumpStream << " End-of-redo stream : " << endOfRedo << endl;
+                oracleReader->dumpStream << " End-of-redo stream : " << endOfRedo << endl;
 
             if ((miscFlags & REDO_ASYNC) != 0)
-                oracleEnvironment->dumpStream << " Archivelog created using asynchronous network transmittal" << endl;
+                oracleReader->dumpStream << " Archivelog created using asynchronous network transmittal" << endl;
 
             if ((miscFlags & REDO_NODATALOSS) != 0)
-                oracleEnvironment->dumpStream << " No data-loss mode" << endl;
+                oracleReader->dumpStream << " No data-loss mode" << endl;
 
             if ((miscFlags & REDO_RESYNC) != 0)
-                oracleEnvironment->dumpStream << " Resynchronization mode" << endl;
+                oracleReader->dumpStream << " Resynchronization mode" << endl;
             else
-                oracleEnvironment->dumpStream << " Unprotected mode" << endl;
+                oracleReader->dumpStream << " Unprotected mode" << endl;
 
             if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-                oracleEnvironment->dumpStream << " Closed thread archival" << endl;
+                oracleReader->dumpStream << " Closed thread archival" << endl;
 
             if ((miscFlags & REDO_MAXPERFORMANCE) != 0)
-                oracleEnvironment->dumpStream << " Maximize performance mode" << endl;
+                oracleReader->dumpStream << " Maximize performance mode" << endl;
 
-            oracleEnvironment->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
+            oracleReader->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
 
-            if (oracleEnvironment->version >= 12201) {
-                uint32_t miscFlags2 = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 296);
-                oracleEnvironment->dumpStream << " Miscellaneous second flags: 0x" << hex << miscFlags2 << endl;
+            if (oracleReader->version >= 12201) {
+                uint32_t miscFlags2 = oracleReader->read32(oracleReader->headerBuffer + blockSize + 296);
+                oracleReader->dumpStream << " Miscellaneous second flags: 0x" << hex << miscFlags2 << endl;
             }
 
-            int32_t thr = (int32_t)oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 432);
-            int32_t seq2 = (int32_t)oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 436);
-            typescn scn2 = oracleEnvironment->readSCN(oracleEnvironment->headerBuffer + blockSize + 440);
-            uint8_t zeroBlocks = oracleEnvironment->headerBuffer[blockSize + 206];
-            uint8_t formatId = oracleEnvironment->headerBuffer[blockSize + 207];
-            if (oracleEnvironment->version < 12200)
-                oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
+            int32_t thr = (int32_t)oracleReader->read32(oracleReader->headerBuffer + blockSize + 432);
+            int32_t seq2 = (int32_t)oracleReader->read32(oracleReader->headerBuffer + blockSize + 436);
+            typescn scn2 = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 440);
+            uint8_t zeroBlocks = oracleReader->headerBuffer[blockSize + 206];
+            uint8_t formatId = oracleReader->headerBuffer[blockSize + 207];
+            if (oracleReader->version < 12200)
+                oracleReader->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                         " seq: " << dec << seq2 <<
                         " scn: " << PRINTSCN48(scn2) << endl <<
                         " Zero blocks: " << dec << (uint64_t)zeroBlocks << endl <<
                         " Format ID is " << dec << (uint64_t)formatId << endl;
             else
-                oracleEnvironment->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
+                oracleReader->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                         " seq: " << dec << seq2 <<
                         " scn: " << PRINTSCN64(scn2) << endl <<
                         " Zero blocks: " << dec << (uint64_t)zeroBlocks << endl <<
                         " Format ID is " << dec << (uint64_t)formatId << endl;
 
-            uint32_t standbyApplyDelay = oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 280);
+            uint32_t standbyApplyDelay = oracleReader->read32(oracleReader->headerBuffer + blockSize + 280);
             if (standbyApplyDelay > 0)
-                oracleEnvironment->dumpStream << " Standby Apply Delay: " << dec << standbyApplyDelay << " minute(s) " << endl;
+                oracleReader->dumpStream << " Standby Apply Delay: " << dec << standbyApplyDelay << " minute(s) " << endl;
 
-            typetime standbyLogCloseTime(oracleEnvironment->read32(oracleEnvironment->headerBuffer + blockSize + 304));
+            typetime standbyLogCloseTime(oracleReader->read32(oracleReader->headerBuffer + blockSize + 304));
             if (standbyLogCloseTime.getVal() > 0)
-                oracleEnvironment->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
+                oracleReader->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
 
-            oracleEnvironment->dumpStream << " redo log key is ";
+            oracleReader->dumpStream << " redo log key is ";
             for (uint64_t i = 448; i < 448 + 16; ++i)
-                oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleEnvironment->headerBuffer[blockSize + i];
-            oracleEnvironment->dumpStream << endl;
+                oracleReader->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleReader->headerBuffer[blockSize + i];
+            oracleReader->dumpStream << endl;
 
-            uint16_t redoKeyFlag = oracleEnvironment->read16(oracleEnvironment->headerBuffer + blockSize + 480);
-            oracleEnvironment->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl;
+            uint16_t redoKeyFlag = oracleReader->read16(oracleReader->headerBuffer + blockSize + 480);
+            oracleReader->dumpStream << " redo log key flag is " << dec << redoKeyFlag << endl;
             uint16_t enabledRedoThreads = 1; //FIXME
-            oracleEnvironment->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
+            oracleReader->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
 
             headerInfoPrinted = true;
         }
@@ -451,17 +450,17 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::initFile() {
-        if (fileDes != -1)
+        if (fileDes != 0)
             return;
 
-        fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | (oracleEnvironment->directRead ? O_DIRECT : 0));
+        fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | (oracleReader->directRead ? O_DIRECT : 0));
         if (fileDes <= 0) {
             cerr << "ERROR: can not open: " << path.c_str() << endl;
             throw RedoLogException("eror reading file", nullptr, 0);
         }
     }
 
-    int OracleReaderRedo::readFile() {
+    uint64_t OracleReaderRedo::readFile() {
         uint64_t curRead;
         if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
@@ -475,7 +474,7 @@ namespace OpenLogReplicator {
         if (redoBufferPos + curRead > DISK_BUFFER_SIZE)
             curRead = DISK_BUFFER_SIZE - redoBufferPos;
 
-        uint64_t bytes = pread(fileDes, oracleEnvironment->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
+        uint64_t bytes = pread(fileDes, oracleReader->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
 
         if (bytes < curRead) {
             lastReadSuccessfull = false;
@@ -483,14 +482,14 @@ namespace OpenLogReplicator {
         } else
             lastReadSuccessfull = true;
 
-        if ((oracleEnvironment->trace2 & TRACE2_DISK) != 0)
+        if ((oracleReader->trace2 & TRACE2_DISK) != 0)
             cerr << "DISK: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
             typeblk maxNumBlock = bytes / blockSize;
 
             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                int ret = checkBlockHeader(oracleEnvironment->redoBuffer + redoBufferPos + numBlock * blockSize, blockNumber + numBlock);
+                uint64_t ret = checkBlockHeader(oracleReader->redoBuffer + redoBufferPos + numBlock * blockSize, blockNumber + numBlock);
 
                 if (redoBufferFileStart < redoBufferFileEnd && (ret == REDO_WRONG_SEQUENCE_SWITCHED || ret == REDO_EMPTY)) {
                     lastReadSuccessfull = false;
@@ -521,49 +520,49 @@ namespace OpenLogReplicator {
         uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
         uint64_t vectorsRedo = 0;
 
-        uint64_t recordLength = oracleEnvironment->read32(oracleEnvironment->recordBuffer);
-        uint8_t vld = oracleEnvironment->recordBuffer[4];
-        curScn = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 8) |
-                ((uint64_t)(oracleEnvironment->read16(oracleEnvironment->recordBuffer + 6)) << 32);
-        curSubScn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + 12);
+        uint64_t recordLength = oracleReader->read32(oracleReader->recordBuffer);
+        uint8_t vld = oracleReader->recordBuffer[4];
+        curScn = oracleReader->read32(oracleReader->recordBuffer + 8) |
+                ((uint64_t)(oracleReader->read16(oracleReader->recordBuffer + 6)) << 32);
+        curSubScn = oracleReader->read16(oracleReader->recordBuffer + 12);
         typescn extScn = 0;
         uint64_t headerLength;
 
         if ((vld & 0x04) != 0) {
             checkpoint = true;
             headerLength = 68;
-            recordTimestmap = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 64);
-            extScn = oracleEnvironment->readSCN(oracleEnvironment->recordBuffer + 40);
-            if (oracleEnvironment->trace >= TRACE_FULL) {
-                if (oracleEnvironment->version < 12200)
+            recordTimestmap = oracleReader->read32(oracleReader->recordBuffer + 64);
+            extScn = oracleReader->readSCN(oracleReader->recordBuffer + 40);
+            if (oracleReader->trace >= TRACE_FULL) {
+                if (oracleReader->version < 12200)
                     cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
                 else
                     cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
             }
         } else {
             headerLength = 24;
-            if (oracleEnvironment->trace >= TRACE_FULL) {
-                if (oracleEnvironment->version < 12200)
+            if (oracleReader->trace >= TRACE_FULL) {
+                if (oracleReader->version < 12200)
                     cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
                 else
                     cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
             }
         }
 
-        if (oracleEnvironment->dumpLogFile >= 1) {
+        if (oracleReader->dumpLogFile >= 1) {
             uint16_t thread = 1; //FIXME
-            oracleEnvironment->dumpStream << " " << endl;
+            oracleReader->dumpStream << " " << endl;
 
-            if (oracleEnvironment->version < 12100)
-                oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
+            if (oracleReader->version < 12100)
+                oracleReader->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
                         " VLD: 0x" << setfill('0') << setw(2) << hex << (uint64_t)vld << endl;
             else {
-                uint32_t conUid = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 16);
-                oracleEnvironment->dumpStream << "REDO RECORD - Thread:" << thread <<
+                uint32_t conUid = oracleReader->read32(oracleReader->recordBuffer + 16);
+                oracleReader->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
@@ -572,45 +571,45 @@ namespace OpenLogReplicator {
                         " CON_UID: " << dec << conUid << endl;
             }
 
-            if (oracleEnvironment->dumpData) {
-                oracleEnvironment->dumpStream << "##: " << dec << recordLength;
+            if (oracleReader->dumpData) {
+                oracleReader->dumpStream << "##: " << dec << recordLength;
                 for (uint64_t j = 0; j < headerLength; ++j) {
                     if ((j & 0x0F) == 0)
-                        oracleEnvironment->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                        oracleReader->dumpStream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
                     if ((j & 0x07) == 0)
-                        oracleEnvironment->dumpStream << " ";
-                    oracleEnvironment->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleEnvironment->recordBuffer[j] << " ";
+                        oracleReader->dumpStream << " ";
+                    oracleReader->dumpStream << setfill('0') << setw(2) << hex << (uint64_t)oracleReader->recordBuffer[j] << " ";
                 }
-                oracleEnvironment->dumpStream << endl;
+                oracleReader->dumpStream << endl;
             }
 
             if (headerLength == 68) {
-                if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                if (oracleReader->version < 12200)
+                    oracleReader->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleReader->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
-                uint32_t lwnLen = oracleEnvironment->read32(oracleEnvironment->recordBuffer + 28); //28 or 32
+                uint32_t lwnLen = oracleReader->read32(oracleReader->recordBuffer + 28); //28 or 32
 
-                if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
+                if (oracleReader->version < 12200)
+                    oracleReader->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
                         " LEN: " << setfill('0') << setw(4) << dec << lwnLen <<
                         " NST: " << setfill('0') << setw(4) << dec << nst <<
                         " SCN: " << PRINTSCN48(extScn) << ")" << endl;
                 else
-                    oracleEnvironment->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
+                    oracleReader->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
                         " LEN: 0x" << setfill('0') << setw(8) << hex << lwnLen <<
                         " NST: 0x" << setfill('0') << setw(4) << hex << nst <<
                         " SCN: " << PRINTSCN64(extScn) << ")" << endl;
             } else {
-                if (oracleEnvironment->version < 12200)
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                if (oracleReader->version < 12200)
+                    oracleReader->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleEnvironment->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleReader->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
             }
         }
 
@@ -621,20 +620,20 @@ namespace OpenLogReplicator {
         while (pos < recordLength) {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
-            redoLogRecord[vectors].cls = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 2);
-            redoLogRecord[vectors].afn = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 4);
-            redoLogRecord[vectors].dba = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 8);
-            redoLogRecord[vectors].scnRecord = oracleEnvironment->readSCN(oracleEnvironment->recordBuffer + pos + 12);
+            redoLogRecord[vectors].cls = oracleReader->read16(oracleReader->recordBuffer + pos + 2);
+            redoLogRecord[vectors].afn = oracleReader->read16(oracleReader->recordBuffer + pos + 4);
+            redoLogRecord[vectors].dba = oracleReader->read32(oracleReader->recordBuffer + pos + 8);
+            redoLogRecord[vectors].scnRecord = oracleReader->readSCN(oracleReader->recordBuffer + pos + 12);
             redoLogRecord[vectors].rbl = 0; //FIXME
-            redoLogRecord[vectors].seq = oracleEnvironment->recordBuffer[pos + 20];
-            redoLogRecord[vectors].typ = oracleEnvironment->recordBuffer[pos + 21];
+            redoLogRecord[vectors].seq = oracleReader->recordBuffer[pos + 20];
+            redoLogRecord[vectors].typ = oracleReader->recordBuffer[pos + 21];
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
-            if (oracleEnvironment->version >= 12100) {
+            if (oracleReader->version >= 12100) {
                 fieldOffset = 32;
-                redoLogRecord[vectors].flgRecord = oracleEnvironment->read16(oracleEnvironment->recordBuffer + pos + 28);
-                redoLogRecord[vectors].conId = oracleEnvironment->read32(oracleEnvironment->recordBuffer + pos + 24);
+                redoLogRecord[vectors].flgRecord = oracleReader->read16(oracleReader->recordBuffer + pos + 28);
+                redoLogRecord[vectors].conId = oracleReader->read32(oracleReader->recordBuffer + pos + 24);
             } else {
                 fieldOffset = 24;
                 redoLogRecord[vectors].flgRecord = 0;
@@ -644,23 +643,23 @@ namespace OpenLogReplicator {
             if (pos + fieldOffset + 1 >= recordLength)
                 throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
 
-            uint8_t *fieldList = oracleEnvironment->recordBuffer + pos + fieldOffset;
+            uint8_t *fieldList = oracleReader->recordBuffer + pos + fieldOffset;
 
-            redoLogRecord[vectors].opCode = (((typeop1)oracleEnvironment->recordBuffer[pos + 0]) << 8) |
-                    oracleEnvironment->recordBuffer[pos + 1];
-            redoLogRecord[vectors].length = fieldOffset + ((oracleEnvironment->read16(fieldList) + 2) & 0xFFFC);
+            redoLogRecord[vectors].opCode = (((typeop1)oracleReader->recordBuffer[pos + 0]) << 8) |
+                    oracleReader->recordBuffer[pos + 1];
+            redoLogRecord[vectors].length = fieldOffset + ((oracleReader->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectors].scn = curScn;
             redoLogRecord[vectors].subScn = curSubScn;
             redoLogRecord[vectors].usn = usn;
-            redoLogRecord[vectors].data = oracleEnvironment->recordBuffer + pos;
+            redoLogRecord[vectors].data = oracleReader->recordBuffer + pos;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
-            redoLogRecord[vectors].fieldCnt = (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
-            redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
+            redoLogRecord[vectors].fieldCnt = (oracleReader->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
+            redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleReader->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
 
             uint64_t fieldPos = redoLogRecord[vectors].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
-                redoLogRecord[vectors].length += (oracleEnvironment->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                fieldPos += (oracleEnvironment->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+                redoLogRecord[vectors].length += (oracleReader->read16(fieldList + i * 2) + 3) & 0xFFFC;
+                fieldPos += (oracleReader->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
                 if (pos + redoLogRecord[vectors].length > recordLength)
                     throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecord[vectors].length);
             }
@@ -675,55 +674,55 @@ namespace OpenLogReplicator {
 
             switch (redoLogRecord[vectors].opCode) {
             case 0x0501: //Undo
-                opCodes[vectors] = new OpCode0501(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0501(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0502: //Begin transaction
-                opCodes[vectors] = new OpCode0502(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0502(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0504: //Commit/rollback transaction
-                opCodes[vectors] = new OpCode0504(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0504(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0506: //Partial rollback
-                opCodes[vectors] = new OpCode0506(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0506(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x050B:
-                opCodes[vectors] = new OpCode050B(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode050B(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0513: //Session information
-                opCodes[vectors] = new OpCode0513(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0513(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0514: //Session information
-                opCodes[vectors] = new OpCode0514(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0514(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B02: //REDO: Insert row piece
-                opCodes[vectors] = new OpCode0B02(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B02(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B03: //REDO: Delete row piece
-                opCodes[vectors] = new OpCode0B03(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B03(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B04: //REDO: Lock row piece
-                opCodes[vectors] = new OpCode0B04(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B04(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B05: //REDO: Update row piece
-                opCodes[vectors] = new OpCode0B05(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B05(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B06: //REDO: Overwrite row piece
-                opCodes[vectors] = new OpCode0B06(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B06(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B08: //REDO: Change forwarding address
-                opCodes[vectors] = new OpCode0B08(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B08(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B0B: //REDO: Insert multiple rows
-                opCodes[vectors] = new OpCode0B0B(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B0B(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x0B0C: //REDO: Delete multiple rows
-                opCodes[vectors] = new OpCode0B0C(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode0B0C(oracleReader, &redoLogRecord[vectors]);
                 break;
             case 0x1801: //DDL
-                opCodes[vectors] = new OpCode1801(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode1801(oracleReader, &redoLogRecord[vectors]);
                 break;
             default:
-                opCodes[vectors] = new OpCode(oracleEnvironment, &redoLogRecord[vectors]);
+                opCodes[vectors] = new OpCode(oracleReader, &redoLogRecord[vectors]);
                 break;
             }
 
@@ -804,27 +803,27 @@ namespace OpenLogReplicator {
         if (checkpoint) {
             flushTransactions(extScn);
         } else {
-            if (curScn > lastCheckpointScn + oracleEnvironment->forceCheckpointScn * 2) {
-                if (oracleEnvironment->trace >= TRACE_INFO) {
-                    if (oracleEnvironment->version >= 12200)
-                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+            if (curScn > lastCheckpointScn + oracleReader->forceCheckpointScn * 2) {
+                if (oracleReader->trace >= TRACE_INFO) {
+                    if (oracleReader->version >= 12200)
+                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleReader->forceCheckpointScn) << endl;
                     else
-                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleEnvironment->forceCheckpointScn) << endl;
+                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleReader->forceCheckpointScn) << endl;
                 }
 
-                flushTransactions(curScn - oracleEnvironment->forceCheckpointScn);
+                flushTransactions(curScn - oracleReader->forceCheckpointScn);
             }
         }
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
-        if (oracleEnvironment->trace >= TRACE_FULL) {
+        if (oracleReader->trace >= TRACE_FULL) {
             cerr << "FULL: ";
             redoLogRecord->dump();
         }
 
         //skip other PDB vectors
-        if (redoLogRecord->conId > 1 && redoLogRecord->conId != oracleEnvironment->conId)
+        if (redoLogRecord->conId > 1 && redoLogRecord->conId != oracleReader->conId)
             return;
 
         //DDL or part of multi-block UNDO
@@ -833,60 +832,60 @@ namespace OpenLogReplicator {
                 if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0) {
                     return;
                 }
-                if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0)
+                if ((oracleReader->trace2 & TRACE2_DUMP) != 0)
                     cerr << "DUMP: merging Multi-block" << endl;
             }
 
             RedoLogRecord zero;
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
-            redoLogRecord->object = oracleEnvironment->checkDict(redoLogRecord->objn, redoLogRecord->objd);
+            redoLogRecord->object = oracleReader->checkDict(redoLogRecord->objn, redoLogRecord->objd);
             if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0 || (redoLogRecord->object->altered && redoLogRecord->opCode != 0x01801))
                 return;
 
-            Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
+            Transaction *transaction = oracleReader->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
-                if (oracleEnvironment->trace >= TRACE_DETAIL)
+                if (oracleReader->trace >= TRACE_DETAIL)
                     cerr << "ERROR: transaction missing" << endl;
 
-                transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
-                transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer, sequence);
-                oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
-                oracleEnvironment->transactionHeap.add(transaction);
+                transaction = new Transaction(redoLogRecord->xid, oracleReader->transactionBuffer);
+                transaction->add(oracleReader, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleReader->transactionBuffer, sequence);
+                oracleReader->xidTransactionMap[redoLogRecord->xid] = transaction;
+                oracleReader->transactionHeap.add(transaction);
             } else {
                 if (transaction->opCodes > 0)
-                    oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
+                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                transaction->add(oracleEnvironment, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleEnvironment->transactionBuffer, sequence);
-                oracleEnvironment->transactionHeap.update(transaction->pos);
+                transaction->add(oracleReader, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
+                        redoLogRecord->rci, redoLogRecord, &zero, oracleReader->transactionBuffer, sequence);
+                oracleReader->transactionHeap.update(transaction->pos);
             }
             transaction->lastUba = redoLogRecord->uba;
             transaction->lastDba = redoLogRecord->dba;
             transaction->lastSlt = redoLogRecord->slt;
             transaction->lastRci = redoLogRecord->rci;
 
-            if (oracleEnvironment->lastOpTransactionMap.get(redoLogRecord->uba, redoLogRecord->dba,
+            if (oracleReader->lastOpTransactionMap.get(redoLogRecord->uba, redoLogRecord->dba,
                     redoLogRecord->slt, redoLogRecord->rci) != nullptr) {
                 cerr << "ERROR: last UBA already occupied!" << endl;
             } else {
-                oracleEnvironment->lastOpTransactionMap.set(redoLogRecord->uba, redoLogRecord->dba,
+                oracleReader->lastOpTransactionMap.set(redoLogRecord->uba, redoLogRecord->dba,
                         redoLogRecord->slt, redoLogRecord->rci, transaction);
             }
-            oracleEnvironment->transactionHeap.update(transaction->pos);
+            oracleReader->transactionHeap.update(transaction->pos);
 
             return;
         } else
         if (redoLogRecord->opCode != 0x0502 && redoLogRecord->opCode != 0x0504)
             return;
 
-        Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord->xid];
+        Transaction *transaction = oracleReader->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
-            transaction = new Transaction(redoLogRecord->xid, oracleEnvironment->transactionBuffer);
+            transaction = new Transaction(redoLogRecord->xid, oracleReader->transactionBuffer);
             transaction->touch(curScn, sequence);
-            oracleEnvironment->xidTransactionMap[redoLogRecord->xid] = transaction;
-            oracleEnvironment->transactionHeap.add(transaction);
+            oracleReader->xidTransactionMap[redoLogRecord->xid] = transaction;
+            oracleReader->transactionHeap.add(transaction);
         } else
             transaction->touch(curScn, sequence);
 
@@ -898,12 +897,12 @@ namespace OpenLogReplicator {
             transaction->isCommit = true;
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 transaction->isRollback = true;
-            oracleEnvironment->transactionHeap.update(transaction->pos);
+            oracleReader->transactionHeap.update(transaction->pos);
         }
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        if (oracleEnvironment->trace >= TRACE_FULL) {
+        if (oracleReader->trace >= TRACE_FULL) {
             cerr << "FULL: ";
             redoLogRecord1->dump();
             cerr << "FULL: ";
@@ -911,9 +910,9 @@ namespace OpenLogReplicator {
         }
 
         //skip other PDB vectors
-        if (redoLogRecord1->conId > 1 && redoLogRecord1->conId != oracleEnvironment->conId)
+        if (redoLogRecord1->conId > 1 && redoLogRecord1->conId != oracleReader->conId)
             return;
-        if (redoLogRecord2->conId > 1 && redoLogRecord2->conId != oracleEnvironment->conId)
+        if (redoLogRecord2->conId > 1 && redoLogRecord2->conId != oracleReader->conId)
             return;
 
         typeobj objn, objd;
@@ -927,12 +926,12 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
             cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
-            if (oracleEnvironment->dumpLogFile >= 1)
-                oracleEnvironment->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
+            if (oracleReader->dumpLogFile >= 1)
+                oracleReader->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             return;
         }
 
-        redoLogRecord1->object = oracleEnvironment->checkDict(objn, objd);
+        redoLogRecord1->object = oracleReader->checkDict(objn, objd);
         if (redoLogRecord1->object == nullptr || redoLogRecord1->object->altered)
             return;
 
@@ -961,35 +960,35 @@ namespace OpenLogReplicator {
         //delete multiple rows
         case 0x05010B0C:
             {
-                Transaction *transaction = oracleEnvironment->xidTransactionMap[redoLogRecord1->xid];
+                Transaction *transaction = oracleReader->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
-                    transaction = new Transaction(redoLogRecord1->xid, oracleEnvironment->transactionBuffer);
-                    transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer, sequence);
-                    oracleEnvironment->xidTransactionMap[redoLogRecord1->xid] = transaction;
-                    oracleEnvironment->transactionHeap.add(transaction);
+                    transaction = new Transaction(redoLogRecord1->xid, oracleReader->transactionBuffer);
+                    transaction->add(oracleReader, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                            redoLogRecord1, redoLogRecord2, oracleReader->transactionBuffer, sequence);
+                    oracleReader->xidTransactionMap[redoLogRecord1->xid] = transaction;
+                    oracleReader->transactionHeap.add(transaction);
                 } else {
                     if (transaction->opCodes > 0)
-                        oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
+                        oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                                 transaction->lastSlt, transaction->lastRci);
 
-                    transaction->add(oracleEnvironment, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleEnvironment->transactionBuffer, sequence);
-                    oracleEnvironment->transactionHeap.update(transaction->pos);
+                    transaction->add(oracleReader, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                            redoLogRecord1, redoLogRecord2, oracleReader->transactionBuffer, sequence);
+                    oracleReader->transactionHeap.update(transaction->pos);
                 }
                 transaction->lastUba = redoLogRecord1->uba;
                 transaction->lastDba = redoLogRecord1->dba;
                 transaction->lastSlt = redoLogRecord1->slt;
                 transaction->lastRci = redoLogRecord1->rci;
 
-                if (oracleEnvironment->lastOpTransactionMap.get(redoLogRecord1->uba, redoLogRecord1->dba,
+                if (oracleReader->lastOpTransactionMap.get(redoLogRecord1->uba, redoLogRecord1->dba,
                         redoLogRecord1->slt, redoLogRecord1->rci) != nullptr) {
                     cerr << "ERROR: last UBA already occupied!" << endl;
                 } else {
-                    oracleEnvironment->lastOpTransactionMap.set(redoLogRecord1->uba, redoLogRecord1->dba,
+                    oracleReader->lastOpTransactionMap.set(redoLogRecord1->uba, redoLogRecord1->dba,
                             redoLogRecord1->slt, redoLogRecord1->rci, transaction);
                 }
-                oracleEnvironment->transactionHeap.update(transaction->pos);
+                oracleReader->transactionHeap.update(transaction->pos);
             }
             break;
 
@@ -1012,41 +1011,41 @@ namespace OpenLogReplicator {
         case 0x0B060506:
         case 0x0B06050B:
             {
-                Transaction *transaction = oracleEnvironment->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
+                Transaction *transaction = oracleReader->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
 
                 //match
                 if (transaction != nullptr) {
-                    oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
+                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
-                    transaction->rollbackLastOp(oracleEnvironment, curScn, oracleEnvironment->transactionBuffer);
-                    oracleEnvironment->transactionHeap.update(transaction->pos);
-                    oracleEnvironment->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
+                    transaction->rollbackLastOp(oracleReader, curScn, oracleReader->transactionBuffer);
+                    oracleReader->transactionHeap.update(transaction->pos);
+                    oracleReader->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci, transaction);
 
                 } else {
                     //check all previous transactions - not yet implemented
                     bool foundPrevious = false;
 
-                    for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
-                        transaction = oracleEnvironment->transactionHeap.heap[i];
+                    for (uint64_t i = 1; i <= oracleReader->transactionHeap.heapSize; ++i) {
+                        transaction = oracleReader->transactionHeap.heap[i];
 
                         if (transaction->opCodes > 0 &&
-                                transaction->rollbackPreviousOp(oracleEnvironment, curScn, oracleEnvironment->transactionBuffer, redoLogRecord1->uba,
+                                transaction->rollbackPreviousOp(oracleReader, curScn, oracleReader->transactionBuffer, redoLogRecord1->uba,
                                 redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci)) {
-                            oracleEnvironment->transactionHeap.update(transaction->pos);
+                            oracleReader->transactionHeap.update(transaction->pos);
                             foundPrevious = true;
                             break;
                         }
                     }
                     if (!foundPrevious) {
-                        if (oracleEnvironment->trace >= TRACE_WARN)
+                        if (oracleReader->trace >= TRACE_WARN)
                             cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
                                     " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
                                     " RCI: " << dec << (uint64_t)redoLogRecord2->rci << endl;
                     } else {
-                        if (oracleEnvironment->trace >= TRACE_WARN)
+                        if (oracleReader->trace >= TRACE_WARN)
                             cerr << "WARNING: would like to rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
                                     " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
@@ -1060,56 +1059,68 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::flushTransactions(typescn checkpointScn) {
-        Transaction *transaction = oracleEnvironment->transactionHeap.top();
+        Transaction *transaction = oracleReader->transactionHeap.top();
 
         while (transaction != nullptr) {
-            if (oracleEnvironment->trace >= TRACE_FULL)
+            if (oracleReader->trace >= TRACE_FULL)
                 cerr << "FULL: queue: " << *transaction << endl;
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->isBegin)
-                    //FIXME: it should be checked if transaction begin SCN is within captured range of SCNs
-                    transaction->flush(oracleEnvironment);
+                    if (transaction->lastScn > oracleReader->databaseScn) {
+                        transaction->flush(oracleReader);
+                    } else {
+                        if (oracleReader->trace >= TRACE_DETAIL) {
+                            if (oracleReader->version >= 12200)
+                                cerr << "INFO: skipping transaction already committed XID: " << PRINTXID(transaction->xid) <<
+                                " SCN: " << PRINTSCN64(transaction->lastScn) << " database SCN: " << PRINTSCN64(oracleReader->databaseScn) << endl;
+                            else
+                                cerr << "INFO: skipping transaction already committed XID: " << PRINTXID(transaction->xid) <<
+                                " SCN: " << PRINTSCN48(transaction->lastScn) << " database SCN: " << PRINTSCN48(oracleReader->databaseScn) << endl;
+                        }
+                    }
                 else {
-                    if (oracleEnvironment->trace >= TRACE_WARN) {
-                        cerr << "WARNING: skipping transaction with no begin, XID: " << PRINTXID(transaction->xid) << endl;
+                    if (oracleReader->trace >= TRACE_DETAIL) {
+                        cerr << "INFO: skipping transaction with no begin XID: " << PRINTXID(transaction->xid) << endl;
 
-                        for (uint64_t i = 1; i <= oracleEnvironment->transactionHeap.heapSize; ++i) {
-                            Transaction *transactionI = oracleEnvironment->transactionHeap.heap[i];
-                            cerr << "WARNING: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
-                                    ", begin: " << transactionI->isBegin <<
-                                    ", commit: " << transactionI->isCommit <<
-                                    ", rollback: " << transactionI->isRollback << endl;
+                        for (uint64_t i = 1; i <= oracleReader->transactionHeap.heapSize; ++i) {
+                            Transaction *transactionI = oracleReader->transactionHeap.heap[i];
+                            cerr << "INFO: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
+                                    " begin: " << transactionI->isBegin <<
+                                    " commit: " << transactionI->isCommit <<
+                                    " rollback: " << transactionI->isRollback << endl;
                         }
                     }
                 }
 
-                oracleEnvironment->transactionHeap.pop();
+                oracleReader->transactionHeap.pop();
                 if (transaction->opCodes > 0)
-                    oracleEnvironment->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
+                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
                             transaction->lastSlt, transaction->lastRci);
 
-                oracleEnvironment->xidTransactionMap.erase(transaction->xid);
-                if (oracleEnvironment->trace >= TRACE_FULL)
+                oracleReader->xidTransactionMap.erase(transaction->xid);
+                if (oracleReader->trace >= TRACE_FULL)
                     cerr << "FULL: dropping" << endl;
                 delete transaction;
 
-                transaction = oracleEnvironment->transactionHeap.top();
+                transaction = oracleReader->transactionHeap.top();
             } else
                 break;
         }
 
-        if ((oracleEnvironment->trace2 & TRACE2_DUMP) != 0) {
-            for (auto const& xid : oracleEnvironment->xidTransactionMap) {
-                Transaction *transaction = oracleEnvironment->xidTransactionMap[xid.first];
+        if ((oracleReader->trace2 & TRACE2_DUMP) != 0) {
+            for (auto const& xid : oracleReader->xidTransactionMap) {
+                Transaction *transaction = oracleReader->xidTransactionMap[xid.first];
                 cerr << "DUMP: " << *transaction << endl;
             }
         }
 
+        if (checkpointScn > oracleReader->databaseScn)
+            oracleReader->databaseScn = checkpointScn;
         lastCheckpointScn = checkpointScn;
     }
 
-    int OracleReaderRedo::processBuffer(void) {
+    uint64_t OracleReaderRedo::processBuffer(void) {
         while (redoBufferFileStart < redoBufferFileEnd) {
             uint64_t curBlockPos = 16;
             while (curBlockPos < blockSize) {
@@ -1118,7 +1129,7 @@ namespace OpenLogReplicator {
                     if (curBlockPos + 20 >= blockSize)
                         break;
 
-                    recordLeftToCopy = (oracleEnvironment->read32(oracleEnvironment->redoBuffer + redoBufferPos + curBlockPos) + 3) & 0xFFFFFFFC;
+                    recordLeftToCopy = (oracleReader->read32(oracleReader->redoBuffer + redoBufferPos + curBlockPos) + 3) & 0xFFFFFFFC;
                     if (recordLeftToCopy > REDO_RECORD_MAX_SIZE) {
                         cerr << "WARNING: too big log record: " << dec << recordLeftToCopy << " bytes" << endl;
                         throw RedoLogException("too big log record: ", path.c_str(), recordLeftToCopy);
@@ -1139,12 +1150,12 @@ namespace OpenLogReplicator {
                 else
                     toCopy = recordLeftToCopy;
 
-                memcpy(oracleEnvironment->recordBuffer + recordPos, oracleEnvironment->redoBuffer + redoBufferPos + curBlockPos, toCopy);
+                memcpy(oracleReader->recordBuffer + recordPos, oracleReader->redoBuffer + redoBufferPos + curBlockPos, toCopy);
                 recordLeftToCopy -= toCopy;
                 curBlockPos += toCopy;
                 recordPos += toCopy;
 
-                if ((oracleEnvironment->trace2 & TRACE2_DISK) != 0)
+                if ((oracleReader->trace2 & TRACE2_DISK) != 0)
                     cerr << "DISK: block: " << dec << redoBufferFileStart << " pos: " << dec << recordPos << endl;
 
                 if (recordLeftToCopy == 0)
@@ -1195,27 +1206,26 @@ namespace OpenLogReplicator {
         headerInfoPrinted = true;
     }
 
-    int OracleReaderRedo::processLog(OracleReader *oracleReader) {
-        if (oracleEnvironment->trace >= TRACE_INFO)
-            cerr << "INFO: Processing log: " << *this << endl;
+    uint64_t OracleReaderRedo::processLog() {
+        cout << "Processing log: " << *this << endl;
 
-        if (oracleEnvironment->dumpLogFile >= 1 && redoBufferFileStart == 0) {
+        if (oracleReader->dumpLogFile >= 1 && redoBufferFileStart == 0) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
-            oracleEnvironment->dumpStream.open(name.str());
-            if (!oracleEnvironment->dumpStream.is_open()) {
+            oracleReader->dumpStream.open(name.str());
+            if (!oracleReader->dumpStream.is_open()) {
                 cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;
-                oracleEnvironment->dumpLogFile = 0;
+                oracleReader->dumpLogFile = 0;
             }
         }
         clock_t cStart = clock();
 
         initFile();
         bool reachedEndOfOnlineRedo = false;
-        int ret = checkRedoHeader();
+        uint64_t ret = checkRedoHeader();
         if (ret != REDO_OK) {
-            if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
-                oracleEnvironment->dumpStream.close();
+            if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                oracleReader->dumpStream.close();
             return ret;
         }
 
@@ -1227,36 +1237,37 @@ namespace OpenLogReplicator {
 
         while (blockNumber <= numBlocks && !reachedEndOfOnlineRedo && !oracleReader->shutdown) {
             processBuffer();
+            oracleReader->checkForCheckpoint();
 
             while (redoBufferFileStart == redoBufferFileEnd && blockNumber <= numBlocks && !reachedEndOfOnlineRedo
                     && !oracleReader->shutdown) {
-                int ret = readFile();
+                uint64_t ret = readFile();
 
                 if (ret == REDO_OK && redoBufferFileStart < redoBufferFileEnd)
                     break;
 
                 //for archive redo log break on all errors
                 if (group == 0) {
-                    if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
-                        oracleEnvironment->dumpStream.close();
-
+                    if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                        oracleReader->dumpStream.close();
                     return ret;
+
                 //for online redo log
                 } else {
                     if (ret == REDO_WRONG_SEQUENCE_SWITCHED)
                         return ret;
 
                     if (ret != REDO_OK && ret != REDO_EMPTY) {
-                        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
-                            oracleEnvironment->dumpStream.close();
+                        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                            oracleReader->dumpStream.close();
                         return ret;
                     }
 
                     //check if sequence has changed
-                    int ret = checkRedoHeader();
+                    uint64_t ret = checkRedoHeader();
                     if (ret != REDO_OK) {
-                        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
-                            oracleEnvironment->dumpStream.close();
+                        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                            oracleReader->dumpStream.close();
                         return ret;
                     }
 
@@ -1288,21 +1299,21 @@ namespace OpenLogReplicator {
             fileDes = -1;
         }
 
-        if (oracleEnvironment->trace >= TRACE_INFO) {
+        if ((oracleReader->trace2 & TRACE2_PERFORMANCE) != 0) {
             clock_t cEnd = clock();
             double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
             if (myTime > 0)
                 mySpeed = (uint64_t)blockNumber * blockSize / 1024 / 1024 / myTime * 1000;
-            cerr << "INFO: Time is " << myTime << "ms (" << fixed << setprecision(2) << mySpeed << "MB/s)" << endl;
+            cerr << "PERFORMANCE: Redo processing time: " << myTime << " ms Speed: " << fixed << setprecision(2) << mySpeed << " MB/s" << endl;
         }
 
-        if (oracleEnvironment->dumpLogFile >= 1 && oracleEnvironment->dumpStream.is_open())
-            oracleEnvironment->dumpStream.close();
+        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+            oracleReader->dumpStream.close();
         return REDO_OK;
     }
 
     typesum OracleReaderRedo::calcChSum(uint8_t *buffer, uint64_t size) {
-        typesum oldChSum = oracleEnvironment->read16(buffer + 14);
+        typesum oldChSum = oracleReader->read16(buffer + 14);
         uint64_t sum = 0;
 
         for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)

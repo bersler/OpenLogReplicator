@@ -20,15 +20,15 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0B06.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B06::OpCode0B06(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-            OpCode0B03(oracleEnvironment, redoLogRecord) {
+    OpCode0B06::OpCode0B06(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
+            OpCode0B03(oracleReader, redoLogRecord) {
     }
 
     OpCode0B06::~OpCode0B06() {

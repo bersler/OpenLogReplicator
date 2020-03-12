@@ -27,12 +27,12 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class OracleEnvironment;
+    class OracleReader;
     class RedoLogRecord;
 
     class OpCode {
     protected:
-        OracleEnvironment *oracleEnvironment;
+        OracleReader *oracleReader;
         RedoLogRecord *redoLogRecord;
 
         void ktbRedo(uint64_t fieldPos, uint64_t fieldLength);
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         void processFbFlags(uint8_t fb, char *fbStr);
 
     public:
-        OpCode(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord);
+        OpCode(OracleReader *oracleReader, RedoLogRecord *redoLogRecord);
         virtual ~OpCode();
 
         typeop1 getOpCode(void);

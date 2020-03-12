@@ -21,13 +21,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "RedoLogRecord.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    void RedoLogRecord::dumpHex(ostream &stream, OracleEnvironment *oracleEnvironment) {
+    void RedoLogRecord::dumpHex(ostream &stream, OracleReader *oracleReader) {
         stream << "##: " << dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
 
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
-            uint16_t fieldLength = oracleEnvironment->read16(data + fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleReader->read16(data + fieldLengthsDelta + i * 2);
             stream << "##: " << dec << fieldLength << " (" << i << ")";
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)

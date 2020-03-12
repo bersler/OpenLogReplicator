@@ -20,15 +20,15 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0B0C.h"
-#include "OracleEnvironment.h"
+#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B0C::OpCode0B0C(OracleEnvironment *oracleEnvironment, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleEnvironment, redoLogRecord) {
+    OpCode0B0C::OpCode0B0C(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleReader, redoLogRecord) {
     }
 
     OpCode0B0C::~OpCode0B0C() {
@@ -38,16 +38,16 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
-                ktbRedo(fieldPos, oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
+                ktbRedo(fieldPos, oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
             } else if (i == 2) {
-                kdoOpCode(fieldPos, oracleEnvironment->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
+                kdoOpCode(fieldPos, oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
 
-                if (oracleEnvironment->dumpLogFile >= 1) {
+                if (oracleReader->dumpLogFile >= 1) {
                     if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                         for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                            oracleEnvironment->dumpStream << "slot[" << i << "]: " << dec << oracleEnvironment->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
+                            oracleReader->dumpStream << "slot[" << i << "]: " << dec << oracleReader->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
                     }
                 }
             }
