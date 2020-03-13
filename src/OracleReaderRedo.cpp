@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
             blockSize(0),
             blockNumber(0),
             numBlocks(0),
-            lastRead(READ_CHUNK_MIN_SIZE),
+            lastBytesRead(READ_CHUNK_MIN_SIZE),
             lastReadSuccessfull(false),
             headerInfoPrinted(false),
             fileDes(0),
@@ -123,9 +123,9 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleReaderRedo::checkRedoHeader() {
-        uint64_t headerBufferFileEnd = pread(fileDes, oracleReader->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
-        if (headerBufferFileEnd < REDO_PAGE_SIZE_MIN * 2) {
-            cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
+        int64_t bytes = pread(fileDes, oracleReader->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
+        if (bytes < REDO_PAGE_SIZE_MAX * 2) {
+            cerr << "ERROR: unable to read redo header for " << path.c_str() << " bytes read: " << dec << bytes << endl;
             return REDO_ERROR;
         }
 
@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
         }
 
         //check first block
-        if (headerBufferFileEnd < blockSize * 2) {
+        if (bytes < ((int64_t)blockSize * 2)) {
             cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
             return REDO_ERROR;
         }
@@ -450,40 +450,40 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::initFile() {
-        if (fileDes != 0)
+        if (fileDes > 0)
             return;
 
         fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | (oracleReader->directRead ? O_DIRECT : 0));
-        if (fileDes <= 0) {
+        if (fileDes == -1) {
             cerr << "ERROR: can not open: " << path.c_str() << endl;
             throw RedoLogException("eror reading file", nullptr, 0);
         }
     }
 
     uint64_t OracleReaderRedo::readFile() {
-        uint64_t curRead;
+        int64_t curBytesRead;
         if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
 
-        if (lastReadSuccessfull && lastRead * 2 < DISK_BUFFER_SIZE)
-            lastRead *= 2;
-        curRead = lastRead;
+        if (lastReadSuccessfull && lastBytesRead * 2 < DISK_BUFFER_SIZE)
+            lastBytesRead *= 2;
+        curBytesRead = lastBytesRead;
         if (redoBufferPos == DISK_BUFFER_SIZE)
             redoBufferPos = 0;
 
-        if (redoBufferPos + curRead > DISK_BUFFER_SIZE)
-            curRead = DISK_BUFFER_SIZE - redoBufferPos;
+        if (redoBufferPos + curBytesRead > DISK_BUFFER_SIZE)
+            curBytesRead = DISK_BUFFER_SIZE - redoBufferPos;
 
-        uint64_t bytes = pread(fileDes, oracleReader->redoBuffer + redoBufferPos, curRead, redoBufferFileStart);
+        int64_t bytes = pread(fileDes, oracleReader->redoBuffer + redoBufferPos, curBytesRead, redoBufferFileStart);
 
-        if (bytes < curRead) {
+        if (bytes < ((int64_t)curBytesRead)) {
             lastReadSuccessfull = false;
-            lastRead = READ_CHUNK_MIN_SIZE;
+            lastBytesRead = READ_CHUNK_MIN_SIZE;
         } else
             lastReadSuccessfull = true;
 
         if ((oracleReader->trace2 & TRACE2_DISK) != 0)
-            cerr << "DISK: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", read: " << curRead << ", got:" << bytes << endl;
+            cerr << "DISK: read file: " << dec << fileDes << ", pos: " << redoBufferPos << ", seek: " << redoBufferFileStart << ", bytes: " << curBytesRead << ", got:" << bytes << endl;
 
         if (bytes > 0) {
             typeblk maxNumBlock = bytes / blockSize;
@@ -493,13 +493,13 @@ namespace OpenLogReplicator {
 
                 if (redoBufferFileStart < redoBufferFileEnd && (ret == REDO_WRONG_SEQUENCE_SWITCHED || ret == REDO_EMPTY)) {
                     lastReadSuccessfull = false;
-                    lastRead = READ_CHUNK_MIN_SIZE;
+                    lastBytesRead = READ_CHUNK_MIN_SIZE;
                     return REDO_OK;
                 }
 
                 if (ret != REDO_OK) {
                     lastReadSuccessfull = false;
-                    lastRead = READ_CHUNK_MIN_SIZE;
+                    lastBytesRead = READ_CHUNK_MIN_SIZE;
                     return ret;
                 }
 
@@ -902,6 +902,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        bool isShutdown = false;
         if (oracleReader->trace >= TRACE_FULL) {
             cerr << "FULL: ";
             redoLogRecord1->dump();
@@ -939,9 +940,9 @@ namespace OpenLogReplicator {
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
-            cerr << "Exiting on user request" << endl;
-            stopMain();
-            return;
+            if (oracleReader->trace >= TRACE_DETAIL)
+                cerr << "INFO: Exiting on user request" << endl;
+            isShutdown = true;
         }
 
         switch (opCodeLong) {
@@ -980,6 +981,7 @@ namespace OpenLogReplicator {
                 transaction->lastDba = redoLogRecord1->dba;
                 transaction->lastSlt = redoLogRecord1->slt;
                 transaction->lastRci = redoLogRecord1->rci;
+                transaction->isShutdown = isShutdown;
 
                 if (oracleReader->lastOpTransactionMap.get(redoLogRecord1->uba, redoLogRecord1->dba,
                         redoLogRecord1->slt, redoLogRecord1->rci) != nullptr) {
@@ -1059,6 +1061,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::flushTransactions(typescn checkpointScn) {
+        bool isShutdown = false;
         Transaction *transaction = oracleReader->transactionHeap.top();
 
         while (transaction != nullptr) {
@@ -1068,7 +1071,10 @@ namespace OpenLogReplicator {
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->isBegin)
                     if (transaction->lastScn > oracleReader->databaseScn) {
-                        transaction->flush(oracleReader);
+                        if (transaction->isShutdown)
+                            isShutdown = true;
+                        else
+                            transaction->flush(oracleReader);
                     } else {
                         if (oracleReader->trace >= TRACE_DETAIL) {
                             if (oracleReader->version >= 12200)
@@ -1115,9 +1121,19 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (checkpointScn > oracleReader->databaseScn)
+        if (checkpointScn > oracleReader->databaseScn) {
+            if (oracleReader->trace >= TRACE_FULL) {
+                if (oracleReader->version >= 12200)
+                    cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN64(checkpointScn) << endl;
+                else
+                    cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN48(checkpointScn) << endl;
+            }
             oracleReader->databaseScn = checkpointScn;
+        }
         lastCheckpointScn = checkpointScn;
+
+        if (isShutdown)
+            stopMain();
     }
 
     uint64_t OracleReaderRedo::processBuffer(void) {
@@ -1185,7 +1201,7 @@ namespace OpenLogReplicator {
         redoBufferFileStart = 0;
         redoBufferFileEnd = 0;
         lastReadSuccessfull = false;
-        lastRead = READ_CHUNK_MIN_SIZE;
+        lastBytesRead = READ_CHUNK_MIN_SIZE;
 
         initFile();
         checkRedoHeader();
@@ -1207,7 +1223,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleReaderRedo::processLog() {
-        cout << "Processing log: " << *this << endl;
+        cerr << "Processing log: " << *this << endl;
 
         if (oracleReader->dumpLogFile >= 1 && redoBufferFileStart == 0) {
             stringstream name;
@@ -1223,6 +1239,7 @@ namespace OpenLogReplicator {
         initFile();
         bool reachedEndOfOnlineRedo = false;
         uint64_t ret = checkRedoHeader();
+
         if (ret != REDO_OK) {
             if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
                 oracleReader->dumpStream.close();
@@ -1254,8 +1271,9 @@ namespace OpenLogReplicator {
 
                 //for online redo log
                 } else {
-                    if (ret == REDO_WRONG_SEQUENCE_SWITCHED)
+                    if (ret == REDO_WRONG_SEQUENCE_SWITCHED) {
                         return ret;
+                    }
 
                     if (ret != REDO_OK && ret != REDO_EMPTY) {
                         if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
@@ -1276,7 +1294,8 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    flushTransactions(curScn);
+                    if (curScn != ZERO_SCN)
+                        flushTransactions(curScn);
 
                     if (oracleReader->shutdown)
                         break;
@@ -1291,7 +1310,8 @@ namespace OpenLogReplicator {
         }
 
         if (reachedEndOfOnlineRedo) {
-            flushTransactions(curScn);
+            if (curScn != ZERO_SCN)
+                flushTransactions(curScn);
         }
 
         if (fileDes > 0) {

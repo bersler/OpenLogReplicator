@@ -49,6 +49,7 @@ namespace OpenLogReplicator {
         bool isBegin;
         bool isCommit;
         bool isRollback;
+        bool isShutdown;
         Transaction *next;
 
         bool operator< (Transaction &p);

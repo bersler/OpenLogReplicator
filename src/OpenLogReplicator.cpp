@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.3 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.4.4 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,7 +93,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.3") != 0)
+        if (strcmp(version.GetString(), "0.4.4") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
@@ -205,7 +205,6 @@ int main() {
                 const Value& brokers = getJSONfield(target, "brokers");
                 const Value& topic = getJSONfield(target, "topic");
                 const Value& source = getJSONfield(target, "source");
-                const Value& traceKafka = getJSONfield(target, "trace");
                 CommandBuffer *commandBuffer = nullptr;
 
                 for (auto reader : readers)
@@ -214,11 +213,8 @@ int main() {
                 if (commandBuffer == nullptr)
                     {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
-                int64_t traceKafkaInt = 0;
-                traceKafkaInt = strtol(traceKafka.GetString(), nullptr, 10);
-
                 cout << "Adding target: " << alias.GetString() << endl;
-                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, traceKafkaInt);
+                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, trace, trace2);
                 commandBuffer->writer = kafkaWriter;
                 writers.push_back(kafkaWriter);
 

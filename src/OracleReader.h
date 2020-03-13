@@ -36,19 +36,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef ORACLEREADER_H_
 #define ORACLEREADER_H_
 
-#define TRACE_NO            0
-#define TRACE_WARN          1
-#define TRACE_INFO          2
-#define TRACE_DETAIL        3
-#define TRACE_FULL          4
-
-#define TRACE2_PERFORMANCE  0x0000001
-#define TRACE2_DISK         0x0000002
-#define TRACE2_TRANSACTION  0x0000004
-#define TRACE2_DUMP         0x0000008
-#define TRACE2_UBA          0x0000010
-#define TRACE2_REDO         0x0000020
-
 using namespace std;
 using namespace oracle::occi;
 

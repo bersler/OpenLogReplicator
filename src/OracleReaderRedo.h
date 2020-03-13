@@ -45,10 +45,10 @@ namespace OpenLogReplicator {
         uint64_t blockSize;
         typeblk blockNumber;
         typeblk numBlocks;
-        uint64_t lastRead;
+        uint64_t lastBytesRead;
         bool lastReadSuccessfull;
         bool headerInfoPrinted;
-        uint64_t fileDes;
+        int64_t fileDes;
         typescn lastCheckpointScn;
         typescn curScn;
         typesubscn curSubScn;

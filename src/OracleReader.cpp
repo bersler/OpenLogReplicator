@@ -228,8 +228,12 @@ namespace OpenLogReplicator {
                             cerr << "INFO: online redo log overwritten by new data" << endl;
                         break;
                     }
+                    cerr << "ERROR: process log returned: " << dec << ret << endl;
                     throw RedoLogException("read archive log", nullptr, 0);
                 }
+
+                if (this->shutdown)
+                    break;
 
                 ++databaseSequence;
                 writeCheckpoint(false);
@@ -353,7 +357,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (group != groupLast && stat(path.c_str(), &fileStat) == 0) {
-                    cout << "Found log GROUP: " << group << " PATH: " << path << endl;
+                    cerr << "Found log GROUP: " << group << " PATH: " << path << endl;
                     OracleReaderRedo* redo = new OracleReaderRedo(this, group, path.c_str());
                     onlineRedoSet.insert(redo);
                     groupLast = group;
@@ -838,7 +842,7 @@ namespace OpenLogReplicator {
         outfile.close();
 
         if (atShutdown) {
-            cout << "Writing checkpopint at exit for " << database << endl
+            cerr << "Writing checkpopint at exit for " << database << endl
                     << "- conId: " << dec << conId << endl
                     << "- sequence: " << dec << minSequence << endl
                     << "- scn: " << dec << databaseScn << endl
@@ -854,7 +858,7 @@ namespace OpenLogReplicator {
             if (trace >= TRACE_FULL) {
                 cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s, forcing checkpoint" << endl;
             }
-            writeCheckpoint(true);
+            writeCheckpoint(false);
         } else {
             if (trace >= TRACE_FULL) {
                 cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s" << endl;

@@ -45,6 +45,8 @@ namespace OpenLogReplicator {
         Producer *producer;
         Topic *ktopic;
         uint64_t trace;
+        uint64_t trace2;
+        typescn lastScn;
 
     public:
         virtual void *run();
@@ -60,7 +62,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader);
 
-        KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace);
+        KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace, uint64_t trace2);
         virtual ~KafkaWriter();
     };
 }

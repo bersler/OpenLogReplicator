@@ -40,7 +40,7 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace) :
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace, uint64_t trace2) :
         Writer(alias, commandBuffer),
         conf(nullptr),
         tconf(nullptr),
@@ -48,7 +48,9 @@ namespace OpenLogReplicator {
         topic(topic.c_str()),
         producer(nullptr),
         ktopic(nullptr),
-        trace(trace){
+        trace(trace),
+        trace2(trace2),
+        lastScn(0) {
     }
 
     KafkaWriter::~KafkaWriter() {
@@ -93,21 +95,20 @@ namespace OpenLogReplicator {
                 else
                     length = *((uint64_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
             }
-            if (trace >= 3)
+            if ((trace2 & TRACE2_KAFKA_DIAG) != 0)
                 cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
 
             if (length > 0) {
-                if (trace <= 0) {
+                if ((trace2 & TRACE2_KAFKA_NOCONNECT) != 0) {
+                    for (uint64_t i = 0; i < length - 8; ++i)
+                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
+                    cout << endl;
+                } else {
                     if (producer->produce(
                             ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 8,
                             length - 8, nullptr, nullptr)) {
                         cerr << "ERROR: writing to topic " << endl;
                     }
-                } else {
-                    cout << "KAFKA: ";
-                    for (uint64_t i = 0; i < length - 8; ++i)
-                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
-                    cout << endl;
                 }
 
                 {
@@ -127,7 +128,7 @@ namespace OpenLogReplicator {
                     break;
         }
 
-        if (trace >= 3)
+        if ((trace2 & TRACE2_KAFKA_DIAG) != 0)
             cerr << "Kafka writer buffer at shutdown: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
         return 0;
     }
@@ -138,7 +139,7 @@ namespace OpenLogReplicator {
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
         conf->set("metadata.broker.list", brokers, errstr);
 
-        if (trace <= 0) {
+        if ((trace2 & TRACE2_KAFKA_NOCONNECT) == 0) {
             producer = Producer::create(conf, errstr);
             if (producer == nullptr) {
                 std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
@@ -158,8 +159,16 @@ namespace OpenLogReplicator {
     void KafkaWriter::beginTran(typescn scn, typexid xid) {
         commandBuffer
                 ->beginTran()
-                ->append("{\"scn\": \"")
-                ->append(to_string(scn))
+                ->append("{\"scn\": \"");
+
+        if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            commandBuffer
+                    ->appendHex(scn, 16);
+        else
+            commandBuffer
+                    ->append(to_string(scn));
+
+        commandBuffer
                 ->append("\", \"xid\": \"0x")
                 ->appendHex(USN(xid), 4)
                 ->append('.')
@@ -167,6 +176,7 @@ namespace OpenLogReplicator {
                 ->append('.')
                 ->appendHex(SQN(xid), 8)
                 ->append("\", dml: [");
+        lastScn = scn;
     }
 
     void KafkaWriter::next() {
@@ -174,9 +184,13 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::commitTran() {
-        commandBuffer
-                ->append("]}")
-                ->commitTran();
+        if ((trace2 & TRACE2_KAFKA_SPLIT) == 0)
+            commandBuffer
+                    ->append("]}")
+                    ->commitTran();
+        else
+            commandBuffer
+                    ->commitTran();
     }
 
     //0x05010B0B
@@ -192,8 +206,10 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
-            if (r > 0)
-                commandBuffer->append(", ");
+            if (r > 0) {
+                if ((trace2 & TRACE2_KAFKA_SPLIT) == 0)
+                    commandBuffer->append(", ");
+            }
 
             pos = 0;
             prevValue = false;
@@ -208,8 +224,20 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
             commandBuffer
-                    ->append("{\"operation\": \"insert\", \"table\": \"")
+                    ->append("\"operation\": \"insert\", \"table\": \"")
                     ->append(redoLogRecord2->object->owner)
                     ->append('.')
                     ->append(redoLogRecord2->object->objectName)
@@ -276,8 +304,10 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
-            if (r > 0)
-                commandBuffer->append(", ");
+            if (r > 0) {
+                if ((trace2 & TRACE2_KAFKA_SPLIT) == 0)
+                    commandBuffer->append(", ");
+            }
 
             pos = 0;
             prevValue = false;
@@ -292,8 +322,20 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
             commandBuffer
-                    ->append("{\"operation\": \"delete\", \"table\": \"")
+                    ->append("\"operation\": \"delete\", \"table\": \"")
                     ->append(redoLogRecord1->object->owner)
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
@@ -350,7 +392,19 @@ namespace OpenLogReplicator {
         RedoLogRecord *redoLogRecord;
 
         if (type == TRANSACTION_INSERT) {
-            commandBuffer->append("{\"operation\": \"insert\", \"table\": \"");
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
+            commandBuffer->append("\"operation\": \"insert\", \"table\": \"");
 
             redoLogRecord = redoLogRecord2;
             while (redoLogRecord != nullptr) {
@@ -370,7 +424,20 @@ namespace OpenLogReplicator {
             }
 
         } else if (type == TRANSACTION_DELETE) {
-            commandBuffer->append("{\"operation\": \"delete\", \"table\": \"");
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
+            commandBuffer->append("\"operation\": \"delete\", \"table\": \"");
+
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -379,7 +446,20 @@ namespace OpenLogReplicator {
                 slot = redoLogRecord2->slot;
             }
         } else {
-            commandBuffer->append("{\"operation\": \"update\", \"table\": \"");
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
+            commandBuffer->append("\"operation\": \"update\", \"table\": \"");
+
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -840,22 +920,58 @@ namespace OpenLogReplicator {
             cerr << endl;
 
         if (type == 85) {
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
             commandBuffer
-                    ->append("{\"operation\": \"truncate\", \"table\": \"")
+                    ->append("\"operation\": \"truncate\", \"table\": \"")
                     ->append(redoLogRecord1->object->owner)
                     ->append('.')
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\"}");
         } else if (type == 12) {
-           commandBuffer
-                   ->append("{\"operation\": \"drop\", \"table\": \"")
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
+            commandBuffer
+                   ->append("\"operation\": \"drop\", \"table\": \"")
                    ->append(redoLogRecord1->object->owner)
                    ->append('.')
                    ->append(redoLogRecord1->object->objectName)
                    ->append("\"}");
         } else if (type == 15) {
-          commandBuffer
-                  ->append("{\"operation\": \"alter\", \"table\": \"")
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+                commandBuffer
+                        ->append("\n{\"scn\": \"")
+                        ->appendHex(lastScn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->scn, 16)
+                        ->append('.')
+                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->append("\", ");
+            else
+                commandBuffer->append("{");
+
+            commandBuffer
+                  ->append("\"operation\": \"alter\", \"table\": \"")
                   ->append(redoLogRecord1->object->owner)
                   ->append('.')
                   ->append(redoLogRecord1->object->objectName)

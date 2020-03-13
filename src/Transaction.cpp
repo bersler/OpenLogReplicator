@@ -378,6 +378,7 @@ namespace OpenLogReplicator {
             isBegin(false),
             isCommit(false),
             isRollback(false),
+            isShutdown(false),
             next(nullptr) {
         tc = transactionBuffer->newTransactionChunk();
         tcLast = tc;
