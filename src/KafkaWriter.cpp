@@ -180,7 +180,8 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::next() {
-        commandBuffer->append(", ");
+        if ((trace2 & TRACE2_KAFKA_SPLIT) == 0)
+            commandBuffer->append(", ");
     }
 
     void KafkaWriter::commitTran() {
@@ -224,16 +225,19 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer
@@ -273,10 +277,9 @@ namespace OpenLogReplicator {
                     commandBuffer
                             ->append('"')
                             ->append(redoLogRecord2->object->columns[i]->columnName)
-                            ->append("\": \"");
+                            ->append("\": ");
 
                     appendValue(redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
-                    commandBuffer->append('"');
 
                     pos += fieldLength;
                 }
@@ -322,16 +325,19 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer
@@ -371,10 +377,9 @@ namespace OpenLogReplicator {
                     commandBuffer
                             ->append('"')
                             ->append(redoLogRecord1->object->columns[i]->columnName)
-                            ->append("\": \"");
+                            ->append("\": ");
 
                     appendValue(redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
-                    commandBuffer->append('"');
 
                     pos += fieldLength;
                 }
@@ -392,16 +397,19 @@ namespace OpenLogReplicator {
         RedoLogRecord *redoLogRecord;
 
         if (type == TRANSACTION_INSERT) {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer->append("\"operation\": \"insert\", \"table\": \"");
@@ -424,16 +432,19 @@ namespace OpenLogReplicator {
             }
 
         } else if (type == TRANSACTION_DELETE) {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer->append("\"operation\": \"delete\", \"table\": \"");
@@ -446,16 +457,19 @@ namespace OpenLogReplicator {
                 slot = redoLogRecord2->slot;
             }
         } else {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer->append("\"operation\": \"update\", \"table\": \"");
@@ -551,20 +565,19 @@ namespace OpenLogReplicator {
                                     beforeRecord[colNum] = redoLogRecord;
                                 }
                             } else {
-                                if (prevValue) {
-                                    commandBuffer->append(", ");
-                                } else
-                                    prevValue = true;
+                                if ((*nulls & bits) == 0 && fieldLength > 0) {
+                                    if (prevValue) {
+                                        commandBuffer->append(", ");
+                                    } else
+                                        prevValue = true;
 
-                                commandBuffer
-                                        ->append('"')
-                                        ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                        ->append("\": \"");
+                                    commandBuffer
+                                            ->append('"')
+                                            ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                            ->append("\": ");
 
-                                if ((*nulls & bits) == 0 && fieldLength > 0)
                                     appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
-
-                                commandBuffer->append('"');
+                                }
                             }
                         }
 
@@ -616,19 +629,16 @@ namespace OpenLogReplicator {
                                     } else
                                         prevValue = true;
 
-                                    commandBuffer
-                                            ->append('"')
-                                            ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                            ->append("\": \"");
-
                                     if (colLength == 0xFFFF) {
                                         //null
                                     } else {
+                                        commandBuffer
+                                                ->append('"')
+                                                ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                                ->append("\": ");
+
                                         appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, colLength);
                                     }
-
-                                    commandBuffer
-                                            ->append('"');
                                 }
 
                                 colSizes += 2;
@@ -690,11 +700,9 @@ namespace OpenLogReplicator {
                                 commandBuffer
                                         ->append('"')
                                         ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                        ->append("\": \"");
+                                        ->append("\": ");
 
                                 appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
-
-                                commandBuffer->append('"');
                             }
                         }
 
@@ -746,19 +754,16 @@ namespace OpenLogReplicator {
                             else
                                 prevValue = true;
 
-                            commandBuffer
-                                    ->append('"')
-                                    ->append(redoLogRecord->object->columns[colNum]->columnName)
-                                    ->append("\": \"");
-
                             if ((*nulls & bits) != 0 || fieldLength == 0) {
                                 //nulls
                             } else {
+                                commandBuffer
+                                        ->append('"')
+                                        ->append(redoLogRecord->object->columns[colNum]->columnName)
+                                        ->append("\": ");
+
                                 appendValue(redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
-
                             }
-
-                            commandBuffer->append('"');
                         }
 
                         bits <<= 1;
@@ -801,18 +806,16 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer
-                            ->append('"')
-                            ->append(redoLogRecord1->object->columns[i]->columnName)
-                            ->append("\": \"");
-
                     if (beforePos[i] == 0 || beforeLen[i] == 0) {
                         //nulls
                     } else {
+                        commandBuffer
+                                ->append('"')
+                                ->append(redoLogRecord1->object->columns[i]->columnName)
+                                ->append("\": ");
+
                         appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                     }
-
-                    commandBuffer->append('"');
                 }
             }
             commandBuffer->append("}");
@@ -825,27 +828,30 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer
-                            ->append('"')
-                            ->append(redoLogRecord1->object->columns[i]->columnName)
-                            ->append("\": \"");
-
                     //for PK value is only present before
                     if (afterPos[i] == 0 && redoLogRecord1->object->columns[i]->numPk > 0) {
                         if (beforeLen[i] == 0) {
                             //nulls
                         } else {
+                            commandBuffer
+                                    ->append('"')
+                                    ->append(redoLogRecord1->object->columns[i]->columnName)
+                                    ->append("\": ");
+
                             appendValue(beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                         }
                     } else {
                         if (afterLen[i] == 0) {
                             //nulls
                         } else {
+                            commandBuffer
+                                    ->append('"')
+                                    ->append(redoLogRecord1->object->columns[i]->columnName)
+                                    ->append("\": ");
+
                             appendValue(afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
                         }
                     }
-
-                    commandBuffer->append('"');
                 }
             }
             commandBuffer->append("}");
@@ -920,16 +926,19 @@ namespace OpenLogReplicator {
             cerr << endl;
 
         if (type == 85) {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer
@@ -939,16 +948,19 @@ namespace OpenLogReplicator {
                     ->append(redoLogRecord1->object->objectName)
                     ->append("\"}");
         } else if (type == 12) {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer
@@ -958,16 +970,19 @@ namespace OpenLogReplicator {
                    ->append(redoLogRecord1->object->objectName)
                    ->append("\"}");
         } else if (type == 15) {
-            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0)
+            if ((trace2 & TRACE2_KAFKA_SPLIT) != 0) {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
                         ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->subScn, 4)
+                        ->appendHex(redoLogRecord1->scn, 16);
+                if ((trace2 & TRACE2_KAFKA_SUBSCN) != 0)
+                    commandBuffer
+                            ->append('.')
+                            ->appendHex(redoLogRecord1->subScn, 4);
+                commandBuffer
                         ->append("\", ");
-            else
+            } else
                 commandBuffer->append("{");
 
             commandBuffer

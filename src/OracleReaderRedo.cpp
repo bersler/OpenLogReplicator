@@ -453,7 +453,7 @@ namespace OpenLogReplicator {
         if (fileDes > 0)
             return;
 
-        fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | (oracleReader->directRead ? O_DIRECT : 0));
+        fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | ((oracleReader->directRead > 0) ? O_DIRECT : 0));
         if (fileDes == -1) {
             cerr << "ERROR: can not open: " << path.c_str() << endl;
             throw RedoLogException("eror reading file", nullptr, 0);
@@ -571,7 +571,7 @@ namespace OpenLogReplicator {
                         " CON_UID: " << dec << conUid << endl;
             }
 
-            if (oracleReader->dumpData) {
+            if (oracleReader->dumpData > 0) {
                 oracleReader->dumpStream << "##: " << dec << recordLength;
                 for (uint64_t j = 0; j < headerLength; ++j) {
                     if ((j & 0x0F) == 0)

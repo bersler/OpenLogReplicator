@@ -44,7 +44,9 @@ namespace OpenLogReplicator {
         switch(typeNo) {
         case 1: //varchar(2)
         case 96: //char
+            commandBuffer->append('\"');
             commandBuffer->appendEscape(redoLogRecord->data + fieldPos, fieldLength);
+            commandBuffer->append('\"');
             break;
 
         case 2: //numeric
@@ -171,9 +173,11 @@ namespace OpenLogReplicator {
                 cout << endl;
             }
             break;
+
         case 12:
         case 180:
-            //2012-04-23T18:25:43.511Z - ISO 8601 format
+            commandBuffer->append('\"');
+    //2012-04-23T18:25:43.511Z - ISO 8601 format
             jMax = fieldLength;
 
             if (jMax != 7) {
@@ -237,9 +241,11 @@ namespace OpenLogReplicator {
                         ->append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) / 10))
                         ->append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) % 10));
             }
+            commandBuffer->append('\"');
             break;
+
         default:
-            commandBuffer->append('?');
+            commandBuffer->append("\"?\"");
         }
     }
 }

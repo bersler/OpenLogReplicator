@@ -88,8 +88,8 @@ namespace OpenLogReplicator {
         CommandBuffer *commandBuffer;
         ofstream dumpStream;
         uint64_t dumpLogFile;
-        bool dumpData;
-        bool directRead;
+        uint64_t dumpData;
+        uint64_t directRead;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;           //compatiblity level of redo logs
@@ -149,7 +149,7 @@ namespace OpenLogReplicator {
         uint64_t initialize();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, uint64_t dumpData, uint64_t directRead, uint64_t sortCols,
                 uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };

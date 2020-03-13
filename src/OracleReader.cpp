@@ -46,7 +46,7 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, bool dumpData, bool directRead, uint64_t sortCols,
+            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, uint64_t dumpData, uint64_t directRead, uint64_t sortCols,
             uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
@@ -787,13 +787,13 @@ namespace OpenLogReplicator {
             {cerr << "ERROR: bad JSON, invalid database name (" << databaseJSON.GetString() << ")!" << endl; infile.close(); return; }
 
         const Value& databaseSequenceJSON = getJSONfield(document, "sequence");
-        databaseSequence = strtoul(databaseSequenceJSON.GetString(), nullptr, 10);
+        databaseSequence = databaseSequenceJSON.GetUint64();
 
         const Value& resetlogsJSON = getJSONfield(document, "resetlogs");
-        resetlogs = strtoul(resetlogsJSON.GetString(), nullptr, 10);
+        resetlogs = resetlogsJSON.GetUint64();
 
         const Value& scnJSON = getJSONfield(document, "scn");
-        databaseScn = strtoul(scnJSON.GetString(), nullptr, 10);
+        databaseScn = scnJSON.GetUint64();
 
         infile.close();
     }
@@ -833,9 +833,9 @@ namespace OpenLogReplicator {
         stringstream ss;
         ss << "{" << endl
            << "  \"database\": \"" << database << "\"," << endl
-           << "  \"sequence\": \"" << dec << minSequence << "\"," << endl
-           << "  \"scn\": \"" << dec << databaseScn << "\"," << endl
-           << "  \"resetlogs\": \"" << dec << resetlogs << "\"" << endl
+           << "  \"sequence\": " << dec << minSequence << "," << endl
+           << "  \"scn\": " << dec << databaseScn << "," << endl
+           << "  \"resetlogs\": " << dec << resetlogs << endl
            << "}";
 
         outfile << ss.rdbuf();

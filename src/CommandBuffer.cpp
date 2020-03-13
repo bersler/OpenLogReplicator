@@ -70,9 +70,26 @@ namespace OpenLogReplicator {
         }
 
         while (length > 0) {
-            if (*str == '"' || *str == '\\')
+            if (*str == '\t') {
                 intraThreadBuffer[posEndTmp++] = '\\';
-            intraThreadBuffer[posEndTmp++] = *(str++);
+                intraThreadBuffer[posEndTmp++] = 't';
+            } else if (*str == '\r') {
+                intraThreadBuffer[posEndTmp++] = '\\';
+                intraThreadBuffer[posEndTmp++] = 'r';
+            } else if (*str == '\n') {
+                intraThreadBuffer[posEndTmp++] = '\\';
+                intraThreadBuffer[posEndTmp++] = 'n';
+            } else if (*str == '\f') {
+                intraThreadBuffer[posEndTmp++] = '\\';
+                intraThreadBuffer[posEndTmp++] = 'f';
+            } else if (*str == '\b') {
+                intraThreadBuffer[posEndTmp++] = '\\';
+                intraThreadBuffer[posEndTmp++] = 'b';
+            } else {
+                if (*str == '"' || *str == '\\' || *str == '/')
+                    intraThreadBuffer[posEndTmp++] = '\\';
+                intraThreadBuffer[posEndTmp++] = *(str++);
+            }
             --length;
         }
 

@@ -62,6 +62,7 @@ typedef uint32_t typeseq;
 #define TRACE2_KAFKA_NOCONNECT      0x0000040
 #define TRACE2_KAFKA_SPLIT          0x0000080
 #define TRACE2_KAFKA_DIAG           0x0000100
+#define TRACE2_KAFKA_SUBSCN         0x0000100
 
 #define DISK_BUFFER_SIZE            (16*1024*1024)
 #define REDO_RECORD_MAX_SIZE        1048576

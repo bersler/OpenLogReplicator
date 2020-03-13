@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.4 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.4.5 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,58 +93,44 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.4") != 0)
+        if (strcmp(version.GetString(), "0.4.5") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
-        uint64_t dumpLogFile = 0;
-        dumpLogFile = strtoul(dumpLogFileJSON.GetString(), nullptr, 10);
+        uint64_t dumpLogFile = dumpLogFileJSON.GetUint64();
 
         const Value& traceJSON = getJSONfield(document, "trace");
-        uint64_t trace = 0;
-        trace = strtoul(traceJSON.GetString(), nullptr, 10);
+        uint64_t trace = traceJSON.GetUint64();
 
         const Value& trace2JSON = getJSONfield(document, "trace2");
-        uint64_t trace2 = 0;
-        trace2 = strtoul(trace2JSON.GetString(), nullptr, 10);
+        uint64_t trace2 = trace2JSON.GetUint64();
 
         const Value& dumpDataJSON = getJSONfield(document, "dumpdata");
-        bool dumpData = false;
-        if (strcmp(dumpDataJSON.GetString(), "1") == 0)
-            dumpData = true;
+        uint64_t dumpData = dumpDataJSON.GetUint64();
 
         const Value& directReadJSON = getJSONfield(document, "directread");
-        bool directRead = false;
-        if (strcmp(directReadJSON.GetString(), "1") == 0)
-            directRead = true;
+        uint64_t directRead = directReadJSON.GetUint64();
 
         const Value& sortColsJSON = getJSONfield(document, "sortcols");
-        uint64_t sortCols = 0;
-        sortCols = strtoul(sortColsJSON.GetString(), nullptr, 10);
+        uint64_t sortCols = sortColsJSON.GetUint64();
 
         const Value& checkpointIntervalJSON = getJSONfield(document, "checkpoint-interval");
-        uint64_t checkpointInterval = 0;
-        checkpointInterval = strtoul(checkpointIntervalJSON.GetString(), nullptr, 10);
+        uint64_t checkpointInterval = checkpointIntervalJSON.GetUint64();
 
         const Value& forceCheckpointScnJSON = getJSONfield(document, "force-checkpoint-scn");
-        uint64_t forceCheckpointScn = 0;
-        forceCheckpointScn = strtoul(forceCheckpointScnJSON.GetString(), nullptr, 10);
+        uint64_t forceCheckpointScn = forceCheckpointScnJSON.GetUint64();
 
         const Value& redoBuffersJSON = getJSONfield(document, "redo-buffers");
-        uint64_t redoBuffers = 0;
-        redoBuffers = strtoul(redoBuffersJSON.GetString(), nullptr, 10);
+        uint64_t redoBuffers = redoBuffersJSON.GetUint64();
 
         const Value& redoBufferSizeJSON = getJSONfield(document, "redo-buffer-size");
-        uint64_t redoBufferSize = 0;
-        redoBufferSize = strtoul(redoBufferSizeJSON.GetString(), nullptr, 10);
+        uint64_t redoBufferSize = redoBufferSizeJSON.GetUint64();
 
         const Value& outputBufferSizeJSON = getJSONfield(document, "output-buffer-size");
-        uint64_t outputBufferSize = 0;
-        outputBufferSize = strtoul(outputBufferSizeJSON.GetString(), nullptr, 10);
+        uint64_t outputBufferSize = outputBufferSizeJSON.GetUint64();
 
         const Value& maxConcurrentTransactionsJSON = getJSONfield(document, "max-concurrent-transactions");
-        uint64_t maxConcurrentTransactions = 0;
-        maxConcurrentTransactions = strtoul(maxConcurrentTransactionsJSON.GetString(), nullptr, 10);
+        uint64_t maxConcurrentTransactions = maxConcurrentTransactionsJSON.GetUint64();
 
         //iterate through sources
         const Value& sources = getJSONfield(document, "sources");
