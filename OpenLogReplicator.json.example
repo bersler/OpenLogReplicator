@@ -7,7 +7,7 @@
   "directread": 0,
   "sortcols": 2,
   "checkpoint-interval": 10,
-  "force-checkpoint-scn": 200,
+  "force-checkpoint-scn": 1000,
   "redo-buffers": 65536,
   "redo-buffer-size": 65536,
   "output-buffer-size": 1073741824,

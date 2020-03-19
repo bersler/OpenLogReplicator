@@ -295,7 +295,7 @@ namespace OpenLogReplicator {
                                 }
                             } else {
                                 if (oracleReader->trace >= TRACE_WARN)
-                                    cerr << "ERROR: next BDBA/SLOT does not match" << endl;
+                                    cerr << "ERROR: next BDBA/SLOT does not match, probably the value of force-checkpoint-scn is set too low and part of transaction got lost" << endl;
                             }
                         }
 
