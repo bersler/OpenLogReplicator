@@ -36,6 +36,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "RedoLogException.h"
 #include "OracleStatement.h"
 #include "Transaction.h"
+#include "TransactionChunk.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -46,8 +47,8 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, uint64_t dumpData, uint64_t directRead, uint64_t sortCols,
-            uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t directRead,
+            uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         database(database.c_str()),
@@ -66,18 +67,16 @@ namespace OpenLogReplicator {
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
         commandBuffer(commandBuffer),
-        dumpLogFile(dumpLogFile),
-        dumpData(dumpData),
+        dumpRedoLog(dumpRedoLog),
+        dumpRawData(dumpRawData),
         directRead(directRead),
         trace(trace),
         trace2(trace2),
         version(0),
-        sortCols(sortCols),
         conId(0),
         resetlogs(0),
         previousCheckpoint(clock()),
         checkpointInterval(checkpointInterval),
-        forceCheckpointScn(forceCheckpointScn),
         bigEndian(false),
         read16(read16Little),
         read32(read32Little),
@@ -289,17 +288,7 @@ namespace OpenLogReplicator {
         }
 
         writeCheckpoint(true);
-
-        if (trace >= TRACE_INFO && transactionHeap.heapSize > 0) {
-            cerr << "INFO: Transactions open at shutdown: " << dec << transactionHeap.heapSize << endl;
-            for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i) {
-                Transaction *transactionI = transactionHeap.heap[i];
-                cerr << "INFO: transaction[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
-                        ", begin: " << transactionI->isBegin <<
-                        ", commit: " << transactionI->isCommit <<
-                        ", rollback: " << transactionI->isRollback << endl;
-            }
-        }
+        dumpTransactions();
 
         return 0;
     }
@@ -866,6 +855,16 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OracleReader::dumpTransactions() {
+        if (trace >= TRACE_INFO) {
+            cerr << "INFO: free buffers: " << dec << transactionBuffer->freeBuffers << "/" << transactionBuffer->redoBuffers << endl;
+            if (transactionHeap.heapSize > 0)
+                cerr << "INFO: Transactions open: " << dec << transactionHeap.heapSize << endl;
+            for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i)
+                cerr << "INFO: transaction[" << i << "]: " << *transactionHeap.heap[i] << endl;
+        }
+    }
+
     bool OracleReaderRedoCompare::operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2) {
         return p1->sequence > p2->sequence;
     }
@@ -873,4 +872,5 @@ namespace OpenLogReplicator {
     bool OracleReaderRedoCompareReverse::operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2) {
         return p1->sequence < p2->sequence;
     }
+
 }

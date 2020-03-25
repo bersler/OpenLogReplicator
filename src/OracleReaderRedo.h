@@ -50,7 +50,9 @@ namespace OpenLogReplicator {
         bool headerInfoPrinted;
         int64_t fileDes;
         typescn lastCheckpointScn;
+        typescn extScn;
         typescn curScn;
+        typescn curScnPrev;
         typesubscn curSubScn;
         uint64_t recordBeginPos;
         typeblk recordBeginBlock;

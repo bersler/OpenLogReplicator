@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint32_t highwater = oracleReader->read32(redoLogRecord->data + fieldPos + 16);
             uint16_t ext = oracleReader->read16(redoLogRecord->data + fieldPos + 4);
             typeblk blk = 0; //FIXME
@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
         redoLogRecord->uba = oracleReader->read56(redoLogRecord->data + fieldPos + 8);
         redoLogRecord->flg = oracleReader->read16(redoLogRecord->data + fieldPos + 16);
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint8_t fbi = redoLogRecord->data[fieldPos + 20];
             uint16_t siz = oracleReader->read16(redoLogRecord->data + fieldPos + 18);
 

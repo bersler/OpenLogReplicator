@@ -87,18 +87,16 @@ namespace OpenLogReplicator {
         uint8_t *recordBuffer;
         CommandBuffer *commandBuffer;
         ofstream dumpStream;
-        uint64_t dumpLogFile;
-        uint64_t dumpData;
+        uint64_t dumpRedoLog;
+        uint64_t dumpRawData;
         uint64_t directRead;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;           //compatiblity level of redo logs
-        uint64_t sortCols;          //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         typecon conId;
         typeresetlogs resetlogs;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
-        uint64_t forceCheckpointScn;
         bool bigEndian;
 
         uint16_t (*read16)(const uint8_t* buf);
@@ -147,10 +145,11 @@ namespace OpenLogReplicator {
         void writeCheckpoint(bool atShutdown);
         void checkForCheckpoint();
         uint64_t initialize();
+        void dumpTransactions();
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpLogFile, uint64_t dumpData, uint64_t directRead, uint64_t sortCols,
-                uint64_t checkpointInterval, uint64_t forceCheckpointScn, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t directRead,
+                uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

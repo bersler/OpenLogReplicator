@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
                 redoLogRecord->nullsDelta = fieldPos + 45;
                 nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
             } else if (i > 2 && i <= 2 + (uint64_t)redoLogRecord->cc) {
-                if (oracleReader->dumpLogFile >= 1) {
+                if (oracleReader->dumpRedoLog >= 1) {
                     dumpCols(redoLogRecord->data + fieldPos, i - 3, fieldLength, *nulls & bits);
                 }
                 bits <<= 1;

@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t serialNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t sessionNumber;
             if (oracleReader->version < 19000)
@@ -107,14 +107,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint32_t version = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
             oracleReader->dumpStream << "version " << dec << version << endl;
         }
     }
 
     void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint32_t auditSessionid = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
             oracleReader->dumpStream << "audit sessionid " << auditSessionid << endl;
         }

@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
             fieldPos += (fieldLength + 3) & 0xFFFC;
         }
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             oracleReader->dumpStream << endl;
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 oracleReader->dumpStream << "rolled back transaction" << endl;
@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
                 oracleReader->read32(redoLogRecord->data + fieldPos + 4));
         redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t srt = oracleReader->read16(redoLogRecord->data + fieldPos + 6);
             uint32_t sta = oracleReader->read32(redoLogRecord->data + fieldPos + 12);
 
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
 
         redoLogRecord->uba = oracleReader->read56(redoLogRecord->data + fieldPos + 0);
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t ext = oracleReader->read16(redoLogRecord->data + fieldPos + 8);
             uint16_t spc = oracleReader->read16(redoLogRecord->data + fieldPos + 10);
             uint8_t fbi = redoLogRecord->data[fieldPos + 12];

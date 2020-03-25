@@ -72,7 +72,9 @@ namespace OpenLogReplicator {
             headerInfoPrinted(false),
             fileDes(0),
             lastCheckpointScn(0),
+            extScn(0),
             curScn(ZERO_SCN),
+            curScnPrev(0),
             curSubScn(0),
             recordBeginPos(0),
             recordBeginBlock(0),
@@ -280,7 +282,7 @@ namespace OpenLogReplicator {
         char SID[9];
         memcpy(SID, oracleReader->headerBuffer + blockSize + 28, 8); SID[8] = 0;
 
-        if (oracleReader->dumpLogFile >= 1 && !headerInfoPrinted) {
+        if (oracleReader->dumpRedoLog >= 1 && !headerInfoPrinted) {
             oracleReader->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
             if (oracleReader->version >= 12200)
                 oracleReader->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
@@ -510,7 +512,6 @@ namespace OpenLogReplicator {
     }
 
     void OracleReaderRedo::analyzeRecord() {
-        bool checkpoint = false;
         RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
         OpCode *opCodes[VECTOR_MAX_LENGTH];
         uint64_t isUndoRedo[VECTOR_MAX_LENGTH];
@@ -522,34 +523,43 @@ namespace OpenLogReplicator {
 
         uint64_t recordLength = oracleReader->read32(oracleReader->recordBuffer);
         uint8_t vld = oracleReader->recordBuffer[4];
+        curScnPrev = curScn;
         curScn = oracleReader->read32(oracleReader->recordBuffer + 8) |
                 ((uint64_t)(oracleReader->read16(oracleReader->recordBuffer + 6)) << 32);
         curSubScn = oracleReader->read16(oracleReader->recordBuffer + 12);
-        typescn extScn = 0;
         uint64_t headerLength;
+        uint16_t numChk = 0, numChkMax = 0;
+
+        if (extScn > lastCheckpointScn && curScnPrev != curScn && curScnPrev != ZERO_SCN)
+            flushTransactions(extScn);
 
         if ((vld & 0x04) != 0) {
-            checkpoint = true;
             headerLength = 68;
+            numChk = oracleReader->read32(oracleReader->recordBuffer + 24);
+            numChkMax = oracleReader->read32(oracleReader->recordBuffer + 26);
             recordTimestmap = oracleReader->read32(oracleReader->recordBuffer + 64);
-            extScn = oracleReader->readSCN(oracleReader->recordBuffer + 40);
+            if (numChk + 1 == numChkMax) {
+                extScn = oracleReader->readSCN(oracleReader->recordBuffer + 40);
+            }
             if (oracleReader->trace >= TRACE_FULL) {
                 if (oracleReader->version < 12200)
-                    cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
+                    cerr << "FULL: C scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
+                    PRINTSCN48(extScn) << endl;
                 else
-                    cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT" << endl;
+                    cerr << "FULL: C scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
+                    PRINTSCN64(extScn) << endl;
             }
         } else {
             headerLength = 24;
             if (oracleReader->trace >= TRACE_FULL) {
                 if (oracleReader->version < 12200)
-                    cerr << "FULL: scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+                    cerr << "FULL:   scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
                 else
-                    cerr << "FULL: scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
+                    cerr << "FULL:   scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
             }
         }
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t thread = 1; //FIXME
             oracleReader->dumpStream << " " << endl;
 
@@ -571,7 +581,7 @@ namespace OpenLogReplicator {
                         " CON_UID: " << dec << conUid << endl;
             }
 
-            if (oracleReader->dumpData > 0) {
+            if (oracleReader->dumpRawData > 0) {
                 oracleReader->dumpStream << "##: " << dec << recordLength;
                 for (uint64_t j = 0; j < headerLength; ++j) {
                     if ((j & 0x0F) == 0)
@@ -589,7 +599,7 @@ namespace OpenLogReplicator {
                 else
                     oracleReader->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
-                uint32_t lwnLen = oracleReader->read32(oracleReader->recordBuffer + 28); //28 or 32
+                uint32_t lwnLen = oracleReader->read32(oracleReader->recordBuffer + 28);
 
                 if (oracleReader->version < 12200)
                     oracleReader->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
@@ -799,27 +809,13 @@ namespace OpenLogReplicator {
             if (redoLogRecord[i].opCode == 0x0504) {
             }
         }
-
-        if (checkpoint) {
-            flushTransactions(extScn);
-        } else {
-            if (curScn > lastCheckpointScn + oracleReader->forceCheckpointScn * 2) {
-                if (oracleReader->trace >= TRACE_INFO) {
-                    if (oracleReader->version >= 12200)
-                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN64(curScn - oracleReader->forceCheckpointScn) << endl;
-                    else
-                        cerr << "INFO: forcing checkpoint at SCN: " << PRINTSCN48(curScn - oracleReader->forceCheckpointScn) << endl;
-                }
-
-                flushTransactions(curScn - oracleReader->forceCheckpointScn);
-            }
-        }
     }
 
     void OracleReaderRedo::appendToTransaction(RedoLogRecord *redoLogRecord) {
         if (oracleReader->trace >= TRACE_FULL) {
             cerr << "FULL: ";
-            redoLogRecord->dump();
+            redoLogRecord->dump(oracleReader);
+            cerr << endl;
         }
 
         //skip other PDB vectors
@@ -848,15 +844,14 @@ namespace OpenLogReplicator {
                 if (oracleReader->trace >= TRACE_DETAIL)
                     cerr << "ERROR: transaction missing" << endl;
 
-                transaction = new Transaction(redoLogRecord->xid, oracleReader->transactionBuffer);
+                transaction = new Transaction(oracleReader, redoLogRecord->xid, oracleReader->transactionBuffer);
                 transaction->add(oracleReader, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, oracleReader->transactionBuffer, sequence);
                 oracleReader->xidTransactionMap[redoLogRecord->xid] = transaction;
                 oracleReader->transactionHeap.add(transaction);
             } else {
                 if (transaction->opCodes > 0)
-                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
-                            transaction->lastSlt, transaction->lastRci);
+                    oracleReader->lastOpTransactionMap.erase(transaction);
                 transaction->add(oracleReader, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, oracleReader->transactionBuffer, sequence);
                 oracleReader->transactionHeap.update(transaction->pos);
@@ -866,13 +861,7 @@ namespace OpenLogReplicator {
             transaction->lastSlt = redoLogRecord->slt;
             transaction->lastRci = redoLogRecord->rci;
 
-            if (oracleReader->lastOpTransactionMap.get(redoLogRecord->uba, redoLogRecord->dba,
-                    redoLogRecord->slt, redoLogRecord->rci) != nullptr) {
-                cerr << "ERROR: last UBA already occupied!" << endl;
-            } else {
-                oracleReader->lastOpTransactionMap.set(redoLogRecord->uba, redoLogRecord->dba,
-                        redoLogRecord->slt, redoLogRecord->rci, transaction);
-            }
+            oracleReader->lastOpTransactionMap.set(transaction);
             oracleReader->transactionHeap.update(transaction->pos);
 
             return;
@@ -882,7 +871,7 @@ namespace OpenLogReplicator {
 
         Transaction *transaction = oracleReader->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
-            transaction = new Transaction(redoLogRecord->xid, oracleReader->transactionBuffer);
+            transaction = new Transaction(oracleReader, redoLogRecord->xid, oracleReader->transactionBuffer);
             transaction->touch(curScn, sequence);
             oracleReader->xidTransactionMap[redoLogRecord->xid] = transaction;
             oracleReader->transactionHeap.add(transaction);
@@ -905,9 +894,11 @@ namespace OpenLogReplicator {
         bool isShutdown = false;
         if (oracleReader->trace >= TRACE_FULL) {
             cerr << "FULL: ";
-            redoLogRecord1->dump();
+            redoLogRecord1->dump(oracleReader);
+            cerr << " (1)" << endl;
             cerr << "FULL: ";
-            redoLogRecord2->dump();
+            redoLogRecord2->dump(oracleReader);
+            cerr << " (2)" << endl;
         }
 
         //skip other PDB vectors
@@ -927,7 +918,7 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
             cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
-            if (oracleReader->dumpLogFile >= 1)
+            if (oracleReader->dumpRedoLog >= 1)
                 oracleReader->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             return;
         }
@@ -963,15 +954,14 @@ namespace OpenLogReplicator {
             {
                 Transaction *transaction = oracleReader->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
-                    transaction = new Transaction(redoLogRecord1->xid, oracleReader->transactionBuffer);
+                    transaction = new Transaction(oracleReader, redoLogRecord1->xid, oracleReader->transactionBuffer);
                     transaction->add(oracleReader, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, oracleReader->transactionBuffer, sequence);
                     oracleReader->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleReader->transactionHeap.add(transaction);
                 } else {
                     if (transaction->opCodes > 0)
-                        oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
-                                transaction->lastSlt, transaction->lastRci);
+                        oracleReader->lastOpTransactionMap.erase(transaction);
 
                     transaction->add(oracleReader, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, oracleReader->transactionBuffer, sequence);
@@ -983,13 +973,7 @@ namespace OpenLogReplicator {
                 transaction->lastRci = redoLogRecord1->rci;
                 transaction->isShutdown = isShutdown;
 
-                if (oracleReader->lastOpTransactionMap.get(redoLogRecord1->uba, redoLogRecord1->dba,
-                        redoLogRecord1->slt, redoLogRecord1->rci) != nullptr) {
-                    cerr << "ERROR: last UBA already occupied!" << endl;
-                } else {
-                    oracleReader->lastOpTransactionMap.set(redoLogRecord1->uba, redoLogRecord1->dba,
-                            redoLogRecord1->slt, redoLogRecord1->rci, transaction);
-                }
+                oracleReader->lastOpTransactionMap.set(transaction);
                 oracleReader->transactionHeap.update(transaction->pos);
             }
             break;
@@ -1018,12 +1002,10 @@ namespace OpenLogReplicator {
 
                 //match
                 if (transaction != nullptr) {
-                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
-                            transaction->lastSlt, transaction->lastRci);
+                    oracleReader->lastOpTransactionMap.erase(transaction);
                     transaction->rollbackLastOp(oracleReader, curScn, oracleReader->transactionBuffer);
                     oracleReader->transactionHeap.update(transaction->pos);
-                    oracleReader->lastOpTransactionMap.set(transaction->lastUba, transaction->lastDba,
-                            transaction->lastSlt, transaction->lastRci, transaction);
+                    oracleReader->lastOpTransactionMap.set(transaction);
 
                 } else {
                     //check all previous transactions - not yet implemented
@@ -1063,50 +1045,42 @@ namespace OpenLogReplicator {
     void OracleReaderRedo::flushTransactions(typescn checkpointScn) {
         bool isShutdown = false;
         Transaction *transaction = oracleReader->transactionHeap.top();
+        if ((oracleReader->trace2 & TRACE2_CHECKPOINT_FLUSH) != 0) {
+            cerr << "FLUSH" << endl;
+            oracleReader->dumpTransactions();
+        }
 
         while (transaction != nullptr) {
             if (oracleReader->trace >= TRACE_FULL)
-                cerr << "FULL: queue: " << *transaction << endl;
+                cerr << "FULL: " << *transaction << endl;
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
-                if (transaction->isBegin)
-                    if (transaction->lastScn > oracleReader->databaseScn) {
+                if (transaction->lastScn > oracleReader->databaseScn) {
+                    if (transaction->isBegin)  {
                         if (transaction->isShutdown)
                             isShutdown = true;
                         else
                             transaction->flush(oracleReader);
                     } else {
-                        if (oracleReader->trace >= TRACE_DETAIL) {
-                            if (oracleReader->version >= 12200)
-                                cerr << "INFO: skipping transaction already committed XID: " << PRINTXID(transaction->xid) <<
-                                " SCN: " << PRINTSCN64(transaction->lastScn) << " database SCN: " << PRINTSCN64(oracleReader->databaseScn) << endl;
-                            else
-                                cerr << "INFO: skipping transaction already committed XID: " << PRINTXID(transaction->xid) <<
-                                " SCN: " << PRINTSCN48(transaction->lastScn) << " database SCN: " << PRINTSCN48(oracleReader->databaseScn) << endl;
+                        if (oracleReader->trace >= TRACE_WARN) {
+                            cerr << "WARNING: skipping transaction with no begin: " << *transaction << endl;
+                            oracleReader->dumpTransactions();
                         }
                     }
-                else {
+                } else {
                     if (oracleReader->trace >= TRACE_DETAIL) {
-                        cerr << "INFO: skipping transaction with no begin XID: " << PRINTXID(transaction->xid) << endl;
-
-                        for (uint64_t i = 1; i <= oracleReader->transactionHeap.heapSize; ++i) {
-                            Transaction *transactionI = oracleReader->transactionHeap.heap[i];
-                            cerr << "INFO: heap dump[" << i << "] XID: " << PRINTXID(transactionI->xid) <<
-                                    " begin: " << transactionI->isBegin <<
-                                    " commit: " << transactionI->isCommit <<
-                                    " rollback: " << transactionI->isRollback << endl;
-                        }
+                        cerr << "INFO: skipping transaction already committed: " << *transaction << endl;
                     }
                 }
 
                 oracleReader->transactionHeap.pop();
                 if (transaction->opCodes > 0)
-                    oracleReader->lastOpTransactionMap.erase(transaction->lastUba, transaction->lastDba,
-                            transaction->lastSlt, transaction->lastRci);
+                    oracleReader->lastOpTransactionMap.erase(transaction);
 
                 oracleReader->xidTransactionMap.erase(transaction->xid);
                 if (oracleReader->trace >= TRACE_FULL)
                     cerr << "FULL: dropping" << endl;
+                oracleReader->transactionBuffer->deleteTransactionChunks(transaction->tc, transaction->tcLast);
                 delete transaction;
 
                 transaction = oracleReader->transactionHeap.top();
@@ -1225,13 +1199,13 @@ namespace OpenLogReplicator {
     uint64_t OracleReaderRedo::processLog() {
         cerr << "Processing log: " << *this << endl;
 
-        if (oracleReader->dumpLogFile >= 1 && redoBufferFileStart == 0) {
+        if (oracleReader->dumpRedoLog >= 1 && redoBufferFileStart == 0) {
             stringstream name;
             name << "DUMP-" << sequence << ".trace";
             oracleReader->dumpStream.open(name.str());
             if (!oracleReader->dumpStream.is_open()) {
                 cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;
-                oracleReader->dumpLogFile = 0;
+                oracleReader->dumpRedoLog = 0;
             }
         }
         clock_t cStart = clock();
@@ -1241,7 +1215,7 @@ namespace OpenLogReplicator {
         uint64_t ret = checkRedoHeader();
 
         if (ret != REDO_OK) {
-            if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+            if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
                 oracleReader->dumpStream.close();
             return ret;
         }
@@ -1265,7 +1239,7 @@ namespace OpenLogReplicator {
 
                 //for archive redo log break on all errors
                 if (group == 0) {
-                    if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                    if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
                         oracleReader->dumpStream.close();
                     return ret;
 
@@ -1276,7 +1250,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (ret != REDO_OK && ret != REDO_EMPTY) {
-                        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                        if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
                             oracleReader->dumpStream.close();
                         return ret;
                     }
@@ -1284,7 +1258,7 @@ namespace OpenLogReplicator {
                     //check if sequence has changed
                     uint64_t ret = checkRedoHeader();
                     if (ret != REDO_OK) {
-                        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+                        if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
                             oracleReader->dumpStream.close();
                         return ret;
                     }
@@ -1327,7 +1301,7 @@ namespace OpenLogReplicator {
             cerr << "PERFORMANCE: Redo processing time: " << myTime << " ms Speed: " << fixed << setprecision(2) << mySpeed << " MB/s" << endl;
         }
 
-        if (oracleReader->dumpLogFile >= 1 && oracleReader->dumpStream.is_open())
+        if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
             oracleReader->dumpStream.close();
         return REDO_OK;
     }

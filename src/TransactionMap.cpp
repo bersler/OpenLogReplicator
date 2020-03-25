@@ -28,10 +28,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void TransactionMap::set(typeuba uba, typedba dba, typeslt slt, typerci rci, Transaction* transaction) {
-        if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
+    void TransactionMap::set(Transaction* transaction) {
+        if (transaction->lastUba == 0 && transaction->lastDba == 0 && transaction->lastSlt == 0 && transaction->lastRci == 0)
             return;
-        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+        uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
 
         if (hashMap[hashKey] == nullptr) {
             hashMap[hashKey] = transaction;
@@ -44,22 +44,21 @@ namespace OpenLogReplicator {
         ++elements;
     }
 
-    void TransactionMap::erase(typeuba uba, typedba dba, typeslt slt, typerci rci) {
-        if (uba == 0 && dba == 0 && slt == 0 && rci == 0)
+    void TransactionMap::erase(Transaction * transaction) {
+        if (transaction->lastUba == 0 && transaction->lastDba == 0 && transaction->lastSlt == 0 && transaction->lastRci == 0)
             return;
-        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+        uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
 
         if (hashMap[hashKey] == nullptr) {
-            cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(uba) <<
-                    " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
-                    " SLT: " << dec << (uint64_t) slt <<
-                    " RCI: " << dec << (uint64_t) rci << endl;
+            cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(transaction->lastUba) <<
+                    " DBA: 0x" << setfill('0') << setw(8) << hex << transaction->lastDba <<
+                    " SLT: " << dec << (uint64_t) transaction->lastSlt <<
+                    " RCI: " << dec << (uint64_t) transaction->lastRci << endl;
             return;
         }
 
         Transaction *transactionTemp = hashMap[hashKey];
-        if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba && transactionTemp->lastSlt == slt
-                 && transactionTemp->lastRci == rci) {
+        if (transactionTemp == transaction) {
             hashMap[hashKey] = transactionTemp->next;
             transactionTemp->next = nullptr;
             --elements;
@@ -67,8 +66,7 @@ namespace OpenLogReplicator {
         }
         Transaction *transactionTempNext = transactionTemp->next;
         while (transactionTempNext != nullptr) {
-            if (transactionTempNext->lastUba == uba && transactionTempNext->lastDba == dba
-                    && transactionTempNext->lastSlt == slt && transactionTempNext->lastRci == rci) {
+            if (transactionTempNext == transaction) {
                 transactionTemp->next = transactionTempNext->next;
                 transactionTempNext->next = nullptr;
                 --elements;
@@ -78,10 +76,10 @@ namespace OpenLogReplicator {
             transactionTempNext = transactionTemp->next;
         }
 
-        cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(uba) <<
-                " DBA: 0x" << setfill('0') << setw(8) << hex << dba <<
-                " SLT: " << dec << (uint64_t) slt <<
-                " RCI: " << dec << (uint64_t) rci << endl;
+        cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(transaction->lastUba) <<
+                " DBA: 0x" << setfill('0') << setw(8) << hex << transaction->lastDba <<
+                " SLT: " << dec << (uint64_t) transaction->lastSlt <<
+                " RCI: " << dec << (uint64_t) transaction->lastRci << endl;
         return;
     }
 
@@ -115,22 +113,6 @@ namespace OpenLogReplicator {
 
         if (partialMatches2 == 1)
             return transactionTempPartial2;
-
-        return nullptr;
-    }
-
-    Transaction* TransactionMap::get(typeuba uba, typedba dba, typeslt slt, typerci rci) {
-        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
-
-        Transaction *transactionTemp = hashMap[hashKey];
-
-        while (transactionTemp != nullptr) {
-            if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
-                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
-                return transactionTemp;
-
-            transactionTemp = transactionTemp->next;
-        }
 
         return nullptr;
     }

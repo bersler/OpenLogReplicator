@@ -138,7 +138,7 @@ namespace OpenLogReplicator {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: add: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
-        tcLast = transactionBuffer->addTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+        tcLast = transactionBuffer->addTransactionChunk(oracleReader, tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
         touch(redoLogRecord1->scn, sequence);
     }
@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback previous: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
-        if (transactionBuffer->deleteTransactionPart(tcLast, uba, dba, slt, rci)) {
+        if (transactionBuffer->deleteTransactionPart(oracleReader, tcLast, uba, dba, slt, rci)) {
             --opCodes;
             if (lastScn == ZERO_SCN || lastScn < scn)
                 lastScn = scn;
@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
     void Transaction::rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer) {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback last: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
-        tcLast = transactionBuffer->rollbackTransactionChunk(tcLast, lastUba, lastDba, lastSlt, lastRci);
+        tcLast = transactionBuffer->rollbackTransactionChunk(oracleReader, tcLast, lastUba, lastDba, lastSlt, lastRci);
 
         --opCodes;
         if (lastScn == ZERO_SCN || lastScn < scn)
@@ -360,11 +360,9 @@ namespace OpenLogReplicator {
 
             oracleReader->commandBuffer->writer->commitTran();
         }
-
-        oracleReader->transactionBuffer->deleteTransactionChunks(tc, tcLast);
     }
 
-    Transaction::Transaction(typexid xid, TransactionBuffer *transactionBuffer) :
+    Transaction::Transaction(OracleReader *oracleReader, typexid xid, TransactionBuffer *transactionBuffer) :
             xid(xid),
             firstSequence(0),
             firstScn(ZERO_SCN),
@@ -380,7 +378,7 @@ namespace OpenLogReplicator {
             isRollback(false),
             isShutdown(false),
             next(nullptr) {
-        tc = transactionBuffer->newTransactionChunk();
+        tc = transactionBuffer->newTransactionChunk(oracleReader);
         tcLast = tc;
     }
 
@@ -388,12 +386,22 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
-        os << "xid: " << PRINTXID(tran.xid) <<
-                " scn: " << PRINTSCN64(tran.firstScn) << "-" << PRINTSCN64(tran.lastScn) <<
+        uint64_t tcCount = 0, tcSumSize = 0;
+        TransactionChunk *tcTemp = tran.tc;
+        while (tcTemp != nullptr) {
+            tcSumSize += tcTemp->size;
+            ++tcCount;
+            tcTemp = tcTemp->next;
+        }
+
+        os << "T scn: " << PRINTSCN64(tran.firstScn) << "-" << PRINTSCN64(tran.lastScn) <<
+                " xid: " << PRINTXID(tran.xid) <<
                 " begin: " << dec << tran.isBegin <<
                 " commit: " << dec << tran.isCommit <<
                 " rollback: " << dec << tran.isRollback <<
-                " opCodes: " << dec << tran.opCodes;
+                " opCodes: " << dec << tran.opCodes <<
+                " chunks: " << dec << tcCount <<
+                " size: " << tcSumSize;
         return os;
     }
 }

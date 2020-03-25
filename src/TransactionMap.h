@@ -37,9 +37,8 @@ namespace OpenLogReplicator {
     public:
         TransactionMap(uint64_t maxConcurrentTransactions);
         virtual ~TransactionMap();
-        void erase(typeuba uba, typedba dba, typeslt slt, typerci rci);
-        void set(typeuba uba, typedba dba, typeslt slt, typerci rci, Transaction * transaction);
-        Transaction* get(typeuba uba, typedba dba, typeslt slt, typerci rci);
+        void erase(Transaction * transaction);
+        void set(Transaction * transaction);
         Transaction* getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci);
     };
 }

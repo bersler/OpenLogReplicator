@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
                     kdoOpCode(fieldPos, fieldLength);
                     nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
-                    if (oracleReader->dumpLogFile >= 1) {
+                    if (oracleReader->dumpRedoLog >= 1) {
                         if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                             for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
                                 oracleReader->dumpStream << "slot[" << i << "]: " << dec << oracleReader->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
                     colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
                 } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                     if (i == 6) {
-                        if (oracleReader->dumpLogFile >= 1) {
+                        if (oracleReader->dumpRedoLog >= 1) {
                             dumpColsVector(redoLogRecord->data + fieldPos, oracleReader->read16(colNums), fieldLength);
                         }
                     } else {
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
                 } else {
                     if (i > 5 && i <= 5 + (uint64_t)redoLogRecord->cc) {
-                        if (oracleReader->dumpLogFile >= 1) {
+                        if (oracleReader->dumpRedoLog >= 1) {
                             dumpCols(redoLogRecord->data + fieldPos, oracleReader->read16(colNums), fieldLength, *nulls & bits);
                         }
                         colNums += 2;
@@ -136,7 +136,7 @@ namespace OpenLogReplicator {
                         cerr << "ERROR: nulls = null" << endl;
                         return;
                     }
-                    if (oracleReader->dumpLogFile >= 1) {
+                    if (oracleReader->dumpRedoLog >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, i - 5, fieldLength, *nulls & bits);
                     }
                     bits <<= 1;
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                 if (i == 5) {
                     redoLogRecord->rowLenghsDelta = fieldPos;
                 } else if (i == 6) {
-                    if (oracleReader->dumpLogFile >= 1) {
+                    if (oracleReader->dumpRedoLog >= 1) {
                         dumpRows(redoLogRecord->data + fieldPos);
                     }
                 }
@@ -195,7 +195,7 @@ namespace OpenLogReplicator {
                 oracleReader->read16(redoLogRecord->data + fieldPos + 10),
                 oracleReader->read32(redoLogRecord->data + fieldPos + 12));
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t siz = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
             uint16_t spc = oracleReader->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t flgKtudb = oracleReader->read16(redoLogRecord->data + fieldPos + 4);
@@ -218,7 +218,7 @@ namespace OpenLogReplicator {
             oracleReader->dumpStream << "ERROR: too short field kteoputrn: " << dec << fieldLength << endl;
             return;
         }
-        if (oracleReader->dumpLogFile >= 2) {
+        if (oracleReader->dumpRedoLog >= 2) {
             typeobj newobjd = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
             oracleReader->dumpStream << "kteoputrn - undo operation for flush for truncate " << endl;
             oracleReader->dumpStream << "newobjd: 0x" << hex << newobjd << " " << endl;
@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             typescn dscn = oracleReader->readSCN(redoLogRecord->data + fieldPos + 0);
             if (oracleReader->version < 12200)
                 oracleReader->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
@@ -252,7 +252,7 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogBefore = oracleReader->read16(redoLogRecord->data + fieldPos + 6);
         redoLogRecord->suppLogAfter = oracleReader->read16(redoLogRecord->data + fieldPos + 8);
 
-        if (oracleReader->dumpLogFile >= 2) {
+        if (oracleReader->dumpRedoLog >= 2) {
             oracleReader->dumpStream <<
                     "supp log type: " << dec << (uint64_t)redoLogRecord->suppLogType <<
                     " fb: " << dec << (uint64_t)redoLogRecord->suppLogFb <<

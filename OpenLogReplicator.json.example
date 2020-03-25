@@ -1,24 +1,21 @@
 {
-  "version": "0.4.5",
-  "dumplogfile": 0,
-  "dumpdata": 0,
+  "version": "0.4.6",
+  "dump-redo-log": 0,
+  "dump-raw-data": 0,
   "trace": 0,
   "trace2": 0,
-  "directread": 0,
-  "sortcols": 2,
+  "direct-read": 0,
   "checkpoint-interval": 10,
-  "force-checkpoint-scn": 1000,
-  "redo-buffers": 65536,
-  "redo-buffer-size": 65536,
-  "output-buffer-size": 1073741824,
-  "max-concurrent-transactions": 4096,
+  "redo-buffer-mb": 4096,
+  "output-buffer-mb": 1024,
+  "max-concurrent-transactions": 65536,
   "sources": [
     {
       "type": "ORACLE",
-      "alias": "S1", 
-      "name": "O112A", 
-      "user": "system", 
-      "password": "unknPwd4%", 
+      "alias": "S1",
+      "name": "O112A",
+      "user": "system",
+      "password": "unknPwd4%",
       "server": "//server:4999/O112A.ORADOMAIN",
       "eventtable": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
@@ -30,6 +27,7 @@
   "targets": [
     {
       "type": "KAFKA",
+      "format": {"stream": "JSON", "sort-columns": 2, "metadata": 0, "single-dml": 0, "null-columns": 0, "test": 0},
       "alias": "T2",
       "brokers": "localhost:9092",
       "topic": "O112A",

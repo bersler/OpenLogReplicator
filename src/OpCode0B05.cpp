@@ -54,11 +54,11 @@ namespace OpenLogReplicator {
                 colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
             } else if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
                 if (i == 4)
-                    if (oracleReader->dumpLogFile >= 1)
+                    if (oracleReader->dumpRedoLog >= 1)
                         dumpColsVector(redoLogRecord->data + fieldPos, oracleReader->read16(colNums), fieldLength);
             } else {
                 if (i > 3 && i <= 3 + (uint64_t)redoLogRecord->cc) {
-                    if (oracleReader->dumpLogFile >= 1) {
+                    if (oracleReader->dumpRedoLog >= 1) {
                         dumpCols(redoLogRecord->data + fieldPos, oracleReader->read16(colNums), fieldLength, *nulls & bits);
                     }
                     bits <<= 1;

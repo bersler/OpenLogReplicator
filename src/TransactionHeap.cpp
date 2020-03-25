@@ -129,8 +129,12 @@ namespace OpenLogReplicator {
 
     TransactionHeap::TransactionHeap(uint64_t heapMaxSize) :
         heapMaxSize(heapMaxSize),
-        heapSize(0),
-        heap(new Transaction*[heapMaxSize]) {
+        heapSize(0) {
+        heap = new Transaction*[heapMaxSize];
+        if (heap == nullptr) {
+            cerr << "ERROR: out of memory for heap, for size: " << dec << heapMaxSize << endl;
+            throw MemoryException("out of memory");
+        }
     }
 
     TransactionHeap::~TransactionHeap() {

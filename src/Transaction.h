@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
 
         void flush(OracleReader *oracleReader);
 
-        Transaction(typexid xid, TransactionBuffer *transactionBuffer);
+        Transaction(OracleReader *oracleReader, typexid xid, TransactionBuffer *transactionBuffer);
         virtual ~Transaction();
 
         friend ostream& operator<<(ostream& os, const Transaction& tran);

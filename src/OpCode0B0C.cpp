@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
             } else if (i == 2) {
                 kdoOpCode(fieldPos, oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
 
-                if (oracleReader->dumpLogFile >= 1) {
+                if (oracleReader->dumpRedoLog >= 1) {
                     if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                         for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
                             oracleReader->dumpStream << "slot[" << i << "]: " << dec << oracleReader->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;

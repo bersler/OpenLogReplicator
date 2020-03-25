@@ -38,12 +38,18 @@ namespace OpenLogReplicator {
     class OracleReader;
 
     class Writer : public Thread {
+    protected:
+        uint64_t stream;            //1 - JSON
+        uint64_t sortColumns;       //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
+        uint64_t metadata;          //0 - no metadata in output, 1 - metadata in output
+        uint64_t singleDml;         //0 - transactions grouped, 1 - every dml is a single transaction
+        uint64_t nullColumns;       //0 - hide all null columns, only show for modified values, 1 - put all null columns present in REDO
+        uint64_t test;              //0 - normal work, 1 - don't connect to Kafka, stream output to log, 2 - like but produce simplified JSON
 
     public:
         void stop(void);
         virtual void *run() = 0;
         uint64_t initialize();
-
         void appendValue(RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         virtual void beginTran(typescn scn, typexid xid) = 0;
         virtual void next() = 0;
@@ -53,7 +59,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader) = 0;
         virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader) = 0;
 
-        Writer(const string alias, CommandBuffer *commandBuffer);
+        Writer(const string alias, CommandBuffer *commandBuffer, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test);
         virtual ~Writer();
     };
 }

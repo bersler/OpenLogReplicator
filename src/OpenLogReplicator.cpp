@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.5 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.4.6 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,11 +93,11 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.5") != 0)
+        if (strcmp(version.GetString(), "0.4.6") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
-        const Value& dumpLogFileJSON = getJSONfield(document, "dumplogfile");
-        uint64_t dumpLogFile = dumpLogFileJSON.GetUint64();
+        const Value& dumpRedoLogJSON = getJSONfield(document, "dump-redo-log");
+        uint64_t dumpRedoLog = dumpRedoLogJSON.GetUint64();
 
         const Value& traceJSON = getJSONfield(document, "trace");
         uint64_t trace = traceJSON.GetUint64();
@@ -105,29 +105,29 @@ int main() {
         const Value& trace2JSON = getJSONfield(document, "trace2");
         uint64_t trace2 = trace2JSON.GetUint64();
 
-        const Value& dumpDataJSON = getJSONfield(document, "dumpdata");
-        uint64_t dumpData = dumpDataJSON.GetUint64();
+        const Value& dumpRawDataJSON = getJSONfield(document, "dump-raw-data");
+        uint64_t dumpRawData = dumpRawDataJSON.GetUint64();
 
-        const Value& directReadJSON = getJSONfield(document, "directread");
+        const Value& directReadJSON = getJSONfield(document, "direct-read");
         uint64_t directRead = directReadJSON.GetUint64();
-
-        const Value& sortColsJSON = getJSONfield(document, "sortcols");
-        uint64_t sortCols = sortColsJSON.GetUint64();
 
         const Value& checkpointIntervalJSON = getJSONfield(document, "checkpoint-interval");
         uint64_t checkpointInterval = checkpointIntervalJSON.GetUint64();
 
-        const Value& forceCheckpointScnJSON = getJSONfield(document, "force-checkpoint-scn");
-        uint64_t forceCheckpointScn = forceCheckpointScnJSON.GetUint64();
+        //optional
+        uint64_t redoBufferSize = 65536;
+        if (document.HasMember("redo-buffer-size")) {
+            const Value& redoBufferSizeJSON = getJSONfield(document, "redo-buffer-size");
+            redoBufferSize = redoBufferSizeJSON.GetUint64();
+        }
+        if (redoBufferSize == 0 || redoBufferSize > 1048576)
+            redoBufferSize = 1048576;
 
-        const Value& redoBuffersJSON = getJSONfield(document, "redo-buffers");
-        uint64_t redoBuffers = redoBuffersJSON.GetUint64();
+        const Value& redoBuffersJSON = getJSONfield(document, "redo-buffer-mb");
+        uint64_t redoBuffers = redoBuffersJSON.GetUint64() * (1048576 / redoBufferSize);
 
-        const Value& redoBufferSizeJSON = getJSONfield(document, "redo-buffer-size");
-        uint64_t redoBufferSize = redoBufferSizeJSON.GetUint64();
-
-        const Value& outputBufferSizeJSON = getJSONfield(document, "output-buffer-size");
-        uint64_t outputBufferSize = outputBufferSizeJSON.GetUint64();
+        const Value& outputBufferSizeJSON = getJSONfield(document, "output-buffer-mb");
+        uint64_t outputBufferSize = outputBufferSizeJSON.GetUint64() * 1048576;
 
         const Value& maxConcurrentTransactionsJSON = getJSONfield(document, "max-concurrent-transactions");
         uint64_t maxConcurrentTransactions = maxConcurrentTransactionsJSON.GetUint64();
@@ -156,8 +156,8 @@ int main() {
 
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), trace, trace2, dumpLogFile, dumpData, directRead, sortCols,
-                        checkpointInterval, forceCheckpointScn, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead,
+                        checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
                 readers.push_back(oracleReader);
 
                 //initialize
@@ -191,6 +191,24 @@ int main() {
                 const Value& brokers = getJSONfield(target, "brokers");
                 const Value& topic = getJSONfield(target, "topic");
                 const Value& source = getJSONfield(target, "source");
+                const Value& format = getJSONfield(target, "format");
+                const Value& streamJSON = getJSONfield(format, "stream");
+                uint64_t stream = 0;
+                if (strcmp("JSON", streamJSON.GetString()) == 0)
+                    stream = 1;
+                else {cerr << "ERROR: bad JSON, only stream of type JSON is currently supported!" << endl; return 1;}
+
+                const Value& sortColumnsJSON = getJSONfield(format, "sort-columns");
+                uint64_t sortColumns = sortColumnsJSON.GetUint64();
+                const Value& metadataJSON = getJSONfield(format, "metadata");
+                uint64_t metadata = metadataJSON.GetUint64();
+                const Value& singleDmlJSON = getJSONfield(format, "single-dml");
+                uint64_t singleDml = singleDmlJSON.GetUint64();
+                const Value& nullColumnsJSON = getJSONfield(format, "null-columns");
+                uint64_t nullColumns = nullColumnsJSON.GetUint64();
+                const Value& testJSON = getJSONfield(format, "test");
+                uint64_t test = testJSON.GetUint64();
+
                 CommandBuffer *commandBuffer = nullptr;
 
                 for (auto reader : readers)
@@ -200,7 +218,8 @@ int main() {
                     {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
                 cout << "Adding target: " << alias.GetString() << endl;
-                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, trace, trace2);
+                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, trace, trace2,
+                        stream, sortColumns, metadata, singleDml, nullColumns, test);
                 commandBuffer->writer = kafkaWriter;
                 writers.push_back(kafkaWriter);
 

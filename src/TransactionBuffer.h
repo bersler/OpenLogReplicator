@@ -39,26 +39,28 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicator {
 
+    class OracleReader;
     class TransactionChunk;
     class RedoLogRecord;
 
     class TransactionBuffer {
     protected:
         TransactionChunk *unused;
-        uint64_t usedBuffers;
-        uint64_t redoBuffers;
         uint64_t redoBufferSize;
 
         void appendTransactionChunk(TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
     public:
-        TransactionChunk* newTransactionChunk();
-        TransactionChunk* addTransactionChunk(TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
+        uint64_t freeBuffers;
+        uint64_t redoBuffers;
+
+        TransactionChunk* newTransactionChunk(OracleReader *oracleReader);
+        TransactionChunk* addTransactionChunk(OracleReader *oracleReader, TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        TransactionChunk* rollbackTransactionChunk(TransactionChunk* tc, typeuba &lastUba, typedba &lastDba,
+        TransactionChunk* rollbackTransactionChunk(OracleReader *oracleReader, TransactionChunk* tc, typeuba &lastUba, typedba &lastDba,
                 uint8_t &lastSlt, uint8_t &lastRci);
         bool getLastRecord(TransactionChunk* tc, typeop2 &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2);
-        bool deleteTransactionPart(TransactionChunk* tc, typeuba &uba, typedba &dba, uint8_t &slt, uint8_t &rci);
+        bool deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* tc, typeuba &uba, typedba &dba, uint8_t &slt, uint8_t &rci);
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc, TransactionChunk* lastTc);
 

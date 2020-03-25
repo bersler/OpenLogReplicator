@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (oracleReader->dumpLogFile >= 1) {
+        if (oracleReader->dumpRedoLog >= 1) {
             uint16_t off = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
             uint16_t flg = oracleReader->read16(redoLogRecord->data + fieldPos + 4);
 

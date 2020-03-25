@@ -30,8 +30,14 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const string alias, CommandBuffer *commandBuffer) :
-        Thread(alias, commandBuffer) {
+    Writer::Writer(const string alias, CommandBuffer *commandBuffer, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
+        Thread(alias, commandBuffer),
+        stream(stream),
+        sortColumns(sortColumns),
+        metadata(metadata),
+        singleDml(singleDml),
+        nullColumns(nullColumns),
+        test(test) {
     }
 
     Writer::~Writer() {

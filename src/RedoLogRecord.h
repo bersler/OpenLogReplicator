@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
         typeslot suppLogSlot;
 
         void dumpHex(ostream &str, OracleReader *oracleReader);
-        void dump();
+        void dump(OracleReader *oracleReader);
     };
 }
 

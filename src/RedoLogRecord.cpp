@@ -56,10 +56,15 @@ namespace OpenLogReplicator {
     }
 
 
-    void RedoLogRecord::dump() {
-        cerr << "op: " << setfill('0') << setw(4) << hex << opCode <<
+    void RedoLogRecord::dump(OracleReader *oracleReader) {
+        if (oracleReader->version < 12200)
+            cerr << "O scn: " << PRINTSCN48(scnRecord);
+        else
+            cerr << "O scn: " << PRINTSCN64(scnRecord);
+
+        cerr << " xid: " << PRINTXID(xid) <<
+                " op: " << setfill('0') << setw(4) << hex << opCode <<
                 " cls: " << dec << cls <<
-                " scnRecord: " << PRINTSCN64(scnRecord) <<
                 " rbl: " << dec << rbl <<
                 " seq: " << dec << (uint64_t)seq <<
                 " typ: " << dec << (uint64_t)typ <<
@@ -79,7 +84,6 @@ namespace OpenLogReplicator {
                 " tsn: " << dec << tsn <<
                 " undo: " << dec << undo <<
                 " usn: " << dec << usn <<
-                " xid: " << PRINTXID(xid) <<
                 " uba: " << PRINTUBA(uba) <<
                 " slt: " << dec << (uint64_t)slt <<
                 " rci: " << dec << (uint64_t)rci <<
@@ -91,6 +95,6 @@ namespace OpenLogReplicator {
                 " slot: " << dec << slot <<
                 " flags: 0x" << hex << (uint64_t)flags <<
                 " fb: 0x" << hex << (uint64_t)fb <<
-                " nrid: 0x" << hex << nridBdba << "." << dec << nridSlot << endl;
+                " nrid: 0x" << hex << nridBdba << "." << dec << nridSlot;
     }
 }
