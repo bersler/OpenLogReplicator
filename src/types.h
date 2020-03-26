@@ -20,6 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <ostream>
 #include <iomanip>
 #include <stdint.h>
+#include <time.h>
 
 #ifndef TYPES_H_
 #define TYPES_H_
@@ -113,20 +114,31 @@ namespace OpenLogReplicator {
             return *this;
         }
 
+        time_t toTime() {
+            struct tm eopchtime;
+            uint64_t rest = val;
+            eopchtime.tm_sec = rest % 60; rest /= 60;
+            eopchtime.tm_min = rest % 60; rest /= 60;
+            eopchtime.tm_hour = rest % 24; rest /= 24;
+            eopchtime.tm_mday = (rest % 31) + 1; rest /= 31;
+            eopchtime.tm_mon = (rest % 12) + 1; rest /= 12;
+            eopchtime.tm_year = rest + 1988;
+            return mktime(&eopchtime);
+        }
+
         friend ostream& operator<<(ostream& os, const typetime& time) {
-            uint32_t rest = time.val;
-            uint32_t ss = rest % 60; rest /= 60;
-            uint32_t mi = rest % 60; rest /= 60;
-            uint32_t hh = rest % 24; rest /= 24;
-            uint32_t dd = (rest % 31) + 1; rest /= 31;
-            uint32_t mm = (rest % 12) + 1; rest /= 12;
-            uint32_t yy = rest + 1988;
+            uint64_t rest = time.val;
+            uint64_t ss = rest % 60; rest /= 60;
+            uint64_t mi = rest % 60; rest /= 60;
+            uint64_t hh = rest % 24; rest /= 24;
+            uint64_t dd = (rest % 31) + 1; rest /= 31;
+            uint64_t mm = (rest % 12) + 1; rest /= 12;
+            uint64_t yy = rest + 1988;
             os << setfill('0') << setw(2) << dec << mm << "/" << setfill('0') << setw(2) << dec << dd << "/" << yy << " " <<
                     setfill('0') << setw(2) << dec << hh << ":" << setfill('0') << setw(2) << dec << mi << ":" << setfill('0') << setw(2) << dec << ss;
             return os;
             //DDDDDDDDDD HHHHHHHH
             //10/15/2018 22:25:36
-
         }
     };
 }

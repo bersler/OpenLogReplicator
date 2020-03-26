@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
         typedba lastDba;
         typeslt lastSlt;
         typerci lastRci;
+        typetime commitTime;
         bool isBegin;
         bool isCommit;
         bool isRollback;

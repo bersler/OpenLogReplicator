@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
         return 1;
     }
 
-    void KafkaWriter::beginTran(typescn scn, typexid xid) {
+    void KafkaWriter::beginTran(typescn scn, typetime time, typexid xid) {
         commandBuffer
                 ->beginTran()
                 ->append("{\"scn\": \"");
@@ -170,6 +170,8 @@ namespace OpenLogReplicator {
                     ->append(to_string(scn));
 
         commandBuffer
+                ->append("\", \"timestamp\": \"")
+                ->appendDec(time.toTime() * 1000)
                 ->append("\", \"xid\": \"0x")
                 ->appendHex(USN(xid), 4)
                 ->append('.')
@@ -229,8 +231,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -332,8 +332,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -411,8 +409,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -441,8 +437,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -461,8 +455,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -1005,8 +997,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -1022,8 +1012,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");
@@ -1039,8 +1027,6 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append("\n{\"scn\": \"")
                         ->appendHex(lastScn, 16)
-                        ->append('.')
-                        ->appendHex(redoLogRecord1->scn, 16)
                         ->append("\", ");
             } else
                 commandBuffer->append("{");

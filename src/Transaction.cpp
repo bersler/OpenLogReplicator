@@ -180,7 +180,7 @@ namespace OpenLogReplicator {
             if (oracleReader->commandBuffer->posEnd >= oracleReader->commandBuffer->outputBufferSize - (oracleReader->commandBuffer->outputBufferSize/4))
                 oracleReader->commandBuffer->rewind();
 
-            oracleReader->commandBuffer->writer->beginTran(lastScn, xid);
+            oracleReader->commandBuffer->writer->beginTran(lastScn, commitTime, xid);
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
@@ -341,7 +341,7 @@ namespace OpenLogReplicator {
                         oracleReader->commandBuffer->writer->commitTran();
                         if (oracleReader->commandBuffer->posEnd >= oracleReader->commandBuffer->outputBufferSize - (oracleReader->commandBuffer->outputBufferSize/4))
                             oracleReader->commandBuffer->rewind();
-                        oracleReader->commandBuffer->writer->beginTran(lastScn, xid);
+                        oracleReader->commandBuffer->writer->beginTran(lastScn, commitTime, xid);
                         hasPrev = false;
                     }
 
@@ -373,6 +373,7 @@ namespace OpenLogReplicator {
             lastDba(0),
             lastSlt(0),
             lastRci(0),
+            commitTime(0),
             isBegin(false),
             isCommit(false),
             isRollback(false),

@@ -54,6 +54,7 @@ namespace OpenLogReplicator {
         CommandBuffer* append(const string str);
         CommandBuffer* append(char chr);
         CommandBuffer* appendHex(uint64_t val, uint64_t length);
+        CommandBuffer* appendDec(uint64_t val);
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();

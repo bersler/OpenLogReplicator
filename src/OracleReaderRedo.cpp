@@ -884,6 +884,7 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord->opCode == 0x0504) {
             transaction->isCommit = true;
+            transaction->commitTime = recordTimestmap;
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 transaction->isRollback = true;
             oracleReader->transactionHeap.update(transaction->pos);

@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         void addTable(string mask);
         uint64_t initialize();
 
-        virtual void beginTran(typescn scn, typexid xid);
+        virtual void beginTran(typescn scn, typetime time, typexid xid);
         virtual void next();
         virtual void commitTran();
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader);

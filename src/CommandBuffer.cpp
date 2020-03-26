@@ -123,6 +123,45 @@ namespace OpenLogReplicator {
         return this;
     }
 
+    CommandBuffer* CommandBuffer::appendDec(uint64_t val) {
+        if (this->shutdown)
+            return this;
+        char buffer[21];
+        uint64_t length = 0;
+
+        if (val == 0) {
+            buffer[0] = '0';
+            length = 1;
+        } else {
+            while (val > 0) {
+                buffer[length] = '0' + (val % 10);
+                val /= 10;
+                ++length;
+            }
+        }
+
+        {
+            unique_lock<mutex> lck(mtx);
+            while (posSize > 0 && posEndTmp + length >= posStart) {
+                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                writerCond.wait(lck);
+                if (this->shutdown)
+                    return this;
+            }
+        }
+
+        if (posEndTmp + length >= outputBufferSize) {
+            cerr << "ERROR: JSON buffer overflow (5)" << endl;
+            return this;
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            intraThreadBuffer[posEndTmp + i] = buffer[i];
+        posEndTmp += length;
+
+        return this;
+    }
+
     CommandBuffer* CommandBuffer::append(const string str) {
         if (this->shutdown)
             return this;
