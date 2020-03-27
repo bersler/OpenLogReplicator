@@ -302,7 +302,7 @@ namespace OpenLogReplicator {
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
                             if (hasPrev)
                                 oracleReader->commandBuffer->writer->next();
-                            oracleReader->commandBuffer->writer->parseDML(first1, first2, type, oracleReader);
+                            oracleReader->commandBuffer->writer->parseDML(first1, first2, type);
                             opFlush = true;
                         }
                         break;
@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
                     case 0x05010B0B:
                         if (hasPrev)
                             oracleReader->commandBuffer->writer->next();
-                        oracleReader->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2, oracleReader);
+                        oracleReader->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
@@ -319,7 +319,7 @@ namespace OpenLogReplicator {
                     case 0x05010B0C:
                         if (hasPrev)
                             oracleReader->commandBuffer->writer->next();
-                        oracleReader->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2, oracleReader);
+                        oracleReader->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
@@ -327,7 +327,7 @@ namespace OpenLogReplicator {
                     case 0x18010000:
                         if (hasPrev)
                             oracleReader->commandBuffer->writer->next();
-                        oracleReader->commandBuffer->writer->parseDDL(redoLogRecord1, oracleReader);
+                        oracleReader->commandBuffer->writer->parseDDL(redoLogRecord1);
                         opFlush = true;
                         break;
 

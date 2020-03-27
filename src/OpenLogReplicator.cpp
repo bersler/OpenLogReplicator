@@ -209,18 +209,18 @@ int main() {
                 const Value& testJSON = getJSONfield(format, "test");
                 uint64_t test = testJSON.GetUint64();
 
-                CommandBuffer *commandBuffer = nullptr;
+                OracleReader *oracleReader = nullptr;
 
                 for (auto reader : readers)
                     if (reader->alias.compare(source.GetString()) == 0)
-                        commandBuffer = reader->commandBuffer;
-                if (commandBuffer == nullptr)
+                        oracleReader = (OracleReader*)reader;
+                if (oracleReader == nullptr)
                     {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
                 cout << "Adding target: " << alias.GetString() << endl;
-                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), commandBuffer, trace, trace2,
+                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleReader, trace, trace2,
                         stream, sortColumns, metadata, singleDml, nullColumns, test);
-                commandBuffer->writer = kafkaWriter;
+                oracleReader->commandBuffer->writer = kafkaWriter;
                 writers.push_back(kafkaWriter);
 
                 //initialize

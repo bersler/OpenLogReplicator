@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         unused = unused->next;
 
         if (unused == nullptr) {
-            cerr << "ERROR: out of transaction buffer, you can increase the max-concurrent-transactions parameter" << endl;
+            cerr << "ERROR: out of transaction buffer, you can increase the redo-buffer-mb parameter" << endl;
             oracleReader->dumpTransactions();
             throw MemoryException("out of memory");
         }
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
         if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
             cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL)
-                    << ") exceeding redo buffer size (" << redoBufferSize << ")" << endl;
+                    << ") exceeding redo buffer size (" << redoBufferSize << "), try increasing the redo-buffer-size parameter" << endl;
             oracleReader->dumpTransactions();
             throw MemoryException("too big chunk size");
         }

@@ -21,6 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "Writer.h"
 
 #include "CommandBuffer.h"
+#include "OracleReader.h"
 #include "OracleObject.h"
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
@@ -30,8 +31,9 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const string alias, CommandBuffer *commandBuffer, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
-        Thread(alias, commandBuffer),
+    Writer::Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
+        Thread(alias, oracleReader->commandBuffer),
+        oracleReader(oracleReader),
         stream(stream),
         sortColumns(sortColumns),
         metadata(metadata),
@@ -184,12 +186,11 @@ namespace OpenLogReplicator {
         case 180:
             commandBuffer->append('\"');
     //2012-04-23T18:25:43.511Z - ISO 8601 format
-            jMax = fieldLength;
 
-            if (jMax != 7) {
+            if (fieldLength != 7 && fieldLength != 11) {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
+                    cout << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
                 cout << endl;
             } else {
                 uint64_t val1 = redoLogRecord->data[fieldPos + 0],
@@ -246,6 +247,27 @@ namespace OpenLogReplicator {
                         ->append(':')
                         ->append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) / 10))
                         ->append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) % 10));
+
+                if (fieldLength == 11) {
+                    uint64_t digits = 0;
+                    uint8_t buffer[10];
+                    uint64_t val = oracleReader->read32Big(redoLogRecord->data + fieldPos + 7);
+
+                    for (int64_t i = 9; i > 0; --i) {
+                        buffer[i] = val % 10;
+                        val /= 10;
+                        if (buffer[i] != 0 && digits == 0)
+                            digits = i;
+                    }
+
+                    if (digits > 0) {
+                        commandBuffer
+                                ->append('.');
+                        for (uint64_t i = 1; i <= digits; ++i)
+                            commandBuffer
+                                    ->append(buffer[i] + '0');
+                    }
+                }
             }
             commandBuffer->append('\"');
             break;

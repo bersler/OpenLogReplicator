@@ -40,9 +40,9 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, CommandBuffer *commandBuffer, uint64_t trace, uint64_t trace2,
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, OracleReader *oracleReader, uint64_t trace, uint64_t trace2,
             uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
-        Writer(alias, commandBuffer, stream, sortColumns, metadata, singleDml, nullColumns, test),
+        Writer(alias, oracleReader, stream, sortColumns, metadata, singleDml, nullColumns, test),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers.c_str()),
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0B
-    void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) {
+    void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         uint64_t pos = 0,  fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
@@ -299,7 +299,7 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0C
-    void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) {
+    void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         uint64_t pos = 0, fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
@@ -399,7 +399,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader) {
+    void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
         typedba bdba;
         typeslot slot;
         RedoLogRecord *redoLogRecord;
@@ -935,7 +935,7 @@ namespace OpenLogReplicator {
     }
 
     //0x18010000
-    void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader) {
+    void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1) {
         uint64_t fieldPos = redoLogRecord1->fieldPos;
         uint16_t seq = 0, cnt = 0, type;
 

@@ -33,12 +33,12 @@ namespace OpenLogReplicator {
 #define TRANSACTION_DELETE 2
 #define TRANSACTION_UPDATE 3
 
-    class CommandBuffer;
     class RedoLogRecord;
     class OracleReader;
 
     class Writer : public Thread {
     protected:
+        OracleReader *oracleReader;
         uint64_t stream;            //1 - JSON
         uint64_t sortColumns;       //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         uint64_t metadata;          //0 - no metadata in output, 1 - metadata in output
@@ -54,12 +54,12 @@ namespace OpenLogReplicator {
         virtual void beginTran(typescn scn, typetime time, typexid xid) = 0;
         virtual void next() = 0;
         virtual void commitTran() = 0;
-        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) = 0;
-        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, OracleReader *oracleReader) = 0;
-        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, OracleReader *oracleReader) = 0;
-        virtual void parseDDL(RedoLogRecord *redoLogRecord1, OracleReader *oracleReader) = 0;
+        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
+        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
+        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;
+        virtual void parseDDL(RedoLogRecord *redoLogRecord1) = 0;
 
-        Writer(const string alias, CommandBuffer *commandBuffer, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test);
+        Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test);
         virtual ~Writer();
     };
 }
