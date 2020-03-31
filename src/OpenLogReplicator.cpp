@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.4.6 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.5.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,7 +93,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.4.6") != 0)
+        if (strcmp(version.GetString(), "0.5.0") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpRedoLogJSON = getJSONfield(document, "dump-redo-log");

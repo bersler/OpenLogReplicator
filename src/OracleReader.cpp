@@ -647,6 +647,7 @@ namespace OpenLogReplicator {
 
                 //12+
                 string VERSION = stmt.rset->getString(6);
+                cout << "- version: " << dec << VERSION << endl;
 
                 conId = 0;
                 if (VERSION.find("Oracle Database 11g") == string::npos) {

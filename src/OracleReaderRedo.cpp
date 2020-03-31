@@ -1198,7 +1198,9 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleReaderRedo::processLog() {
-        cerr << "Processing log: " << *this << endl;
+        cerr << "Processing log: " << *this;
+        if (oracleReader->trace < TRACE_INFO)
+            cerr << endl;
 
         if (oracleReader->dumpRedoLog >= 1 && redoBufferFileStart == 0) {
             stringstream name;
@@ -1214,6 +1216,13 @@ namespace OpenLogReplicator {
         initFile();
         bool reachedEndOfOnlineRedo = false;
         uint64_t ret = checkRedoHeader();
+        if (oracleReader->trace >= TRACE_INFO)
+            cerr <<
+                " err: " << dec << ret <<
+                " block: " << dec << blockSize <<
+                " version: " << dec << oracleReader->version <<
+                " firstScn: " << PRINTSCN64(firstScn) <<
+                " nextScn: " << PRINTSCN64(nextScn) << endl;
 
         if (ret != REDO_OK) {
             if (oracleReader->dumpRedoLog >= 1 && oracleReader->dumpStream.is_open())
