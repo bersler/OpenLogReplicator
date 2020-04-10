@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
                     validDDL = false;
                 }
             } else if (i == 12) {
-                if (validDDL) {
+                if (validDDL && redoLogRecord->scn > oracleReader->databaseScn) {
                     redoLogRecord->objn = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
                     if (type == 12 || type == 15) {
                         OracleObject *obj = oracleReader->checkDict(redoLogRecord->objn, 0);
