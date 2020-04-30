@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
     Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci) {
         uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-        Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1, *transactionTempPartial2;
+        Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1 = nullptr, *transactionTempPartial2 = nullptr;
         uint64_t partialMatches1 = 0, partialMatches2 = 0;
 
         while (transactionTemp != nullptr) {

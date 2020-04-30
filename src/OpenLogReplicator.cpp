@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.5.0 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v. 0.5.1 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,7 +93,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.5.0") != 0)
+        if (strcmp(version.GetString(), "0.5.1") != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpRedoLogJSON = getJSONfield(document, "dump-redo-log");
@@ -189,15 +189,16 @@ int main() {
             if (strcmp("KAFKA", type.GetString()) == 0) {
                 const Value& alias = getJSONfield(target, "alias");
                 const Value& brokers = getJSONfield(target, "brokers");
-                const Value& topic = getJSONfield(target, "topic");
                 const Value& source = getJSONfield(target, "source");
                 const Value& format = getJSONfield(target, "format");
+
                 const Value& streamJSON = getJSONfield(format, "stream");
                 uint64_t stream = 0;
                 if (strcmp("JSON", streamJSON.GetString()) == 0)
                     stream = 1;
                 else {cerr << "ERROR: bad JSON, only stream of type JSON is currently supported!" << endl; return 1;}
 
+                const Value& topic = getJSONfield(format, "topic");
                 const Value& sortColumnsJSON = getJSONfield(format, "sort-columns");
                 uint64_t sortColumns = sortColumnsJSON.GetUint64();
                 const Value& metadataJSON = getJSONfield(format, "metadata");

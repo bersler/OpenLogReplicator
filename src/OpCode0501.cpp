@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::process() {
         OpCode::process();
-        uint8_t *colNums, *nulls = nullptr, bits = 1;
+        uint8_t *colNums = nullptr, *nulls = nullptr, bits = 1;
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);

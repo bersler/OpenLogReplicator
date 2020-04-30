@@ -31,10 +31,13 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class Writer;
+    class RedoLogRecord;
+    class OracleReader;
 
     class CommandBuffer {
     protected:
         volatile bool shutdown;
+        OracleReader *oracleReader;
     public:
         static char translationMap[65];
         Writer *writer;
@@ -49,12 +52,18 @@ namespace OpenLogReplicator {
         uint64_t outputBufferSize;
 
         void stop(void);
+        void setOracleReader(OracleReader *oracleReader);
         CommandBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
         CommandBuffer* appendEscape(const uint8_t *str, uint64_t length);
         CommandBuffer* append(const string str);
         CommandBuffer* append(char chr);
         CommandBuffer* appendHex(uint64_t val, uint64_t length);
         CommandBuffer* appendDec(uint64_t val);
+        CommandBuffer* appendScn(uint64_t test, typescn scn);
+        CommandBuffer* appendOperation(string operation);
+        CommandBuffer* appendTable(string owner, string table);
+        CommandBuffer* appendValue(string columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
+        CommandBuffer* appendNull(string columnName);
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();
