@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
                     " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
                     " siz: " << dec << siz <<
                     " fbi: " << dec << (uint64_t)fbi << endl;
-            if (oracleReader->version < 12100 || redoLogRecord->conId == 0)
+            if (oracleReader->version < 0x12100 || redoLogRecord->conId == 0)
                 oracleReader->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
@@ -118,7 +118,7 @@ namespace OpenLogReplicator {
                 oracleReader->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
-            if (oracleReader->version < 12100 || redoLogRecord->conId == 0)
+            if (oracleReader->version < 0x12100 || redoLogRecord->conId == 0)
                 oracleReader->dumpStream << endl;
         }
     }

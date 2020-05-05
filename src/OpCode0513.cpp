@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
         if (oracleReader->dumpRedoLog >= 1) {
             uint16_t serialNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t sessionNumber;
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 sessionNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
             else
                 sessionNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 4);

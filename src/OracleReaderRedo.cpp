@@ -164,73 +164,76 @@ namespace OpenLogReplicator {
         uint32_t compatVsn = oracleReader->read32(oracleReader->headerBuffer + blockSize + 20);
 
         if (compatVsn == 0x0B200000) //11.2.0.0
-            oracleReader->version = 11200;
+            oracleReader->version = 0x11200;
         else
         if (compatVsn == 0x0B200100) //11.2.0.1
-            oracleReader->version = 11201;
+            oracleReader->version = 0x11201;
         else
         if (compatVsn == 0x0B200200) //11.2.0.2
-            oracleReader->version = 11202;
+            oracleReader->version = 0x11202;
         else
         if (compatVsn == 0x0B200300) //11.2.0.3
-            oracleReader->version = 11203;
+            oracleReader->version = 0x11203;
         else
         if (compatVsn == 0x0B200400) //11.2.0.4
-            oracleReader->version = 11204;
+            oracleReader->version = 0x11204;
         else
         if (compatVsn == 0x0C100000) //12.1.0.0
-            oracleReader->version = 12100;
+            oracleReader->version = 0x12100;
         else
         if (compatVsn == 0x0C100100) //12.1.0.1
-            oracleReader->version = 12101;
+            oracleReader->version = 0x12101;
         else
         if (compatVsn == 0x0C100200) //12.1.0.2
-            oracleReader->version = 12102;
+            oracleReader->version = 0x12102;
         else
         if (compatVsn == 0x0C200100) //12.2.0.1
-            oracleReader->version = 12201;
+            oracleReader->version = 0x12201;
         else
         if (compatVsn == 0x12000000) //18.0.0.0
-            oracleReader->version = 18000;
+            oracleReader->version = 0x18000;
         else
         if (compatVsn == 0x12030000) //18.3.0.0
-            oracleReader->version = 18300;
+            oracleReader->version = 0x18300;
         else
         if (compatVsn == 0x12040000) //18.4.0.0
-            oracleReader->version = 18400;
+            oracleReader->version = 0x18400;
         else
         if (compatVsn == 0x12050000) //18.5.0.0
-            oracleReader->version = 18500;
+            oracleReader->version = 0x18500;
         else
         if (compatVsn == 0x12060000) //18.6.0.0
-            oracleReader->version = 18600;
+            oracleReader->version = 0x18600;
         else
         if (compatVsn == 0x12070000) //18.7.0.0
-            oracleReader->version = 18700;
+            oracleReader->version = 0x18700;
         else
         if (compatVsn == 0x12080000) //18.8.0.0
-            oracleReader->version = 18800;
+            oracleReader->version = 0x18800;
         else
         if (compatVsn == 0x12090000) //18.9.0.0
-            oracleReader->version = 18900;
+            oracleReader->version = 0x18900;
+        else
+        if (compatVsn == 0x120A0000) //18.10.0.0
+            oracleReader->version = 0x18A00;
         else
         if (compatVsn == 0x13000000) //19.0.0.0
-            oracleReader->version = 19000;
+            oracleReader->version = 0x19000;
         else
         if (compatVsn == 0x13030000) //19.3.0.0
-            oracleReader->version = 19300;
+            oracleReader->version = 0x19300;
         else
         if (compatVsn == 0x13040000) //19.4.0.0
-            oracleReader->version = 19400;
+            oracleReader->version = 0x19400;
         else
         if (compatVsn == 0x13050000) //19.5.0.0
-            oracleReader->version = 19500;
+            oracleReader->version = 0x19500;
         else
         if (compatVsn == 0x13060000) //19.6.0.0
-            oracleReader->version = 19600;
+            oracleReader->version = 0x19600;
         else
         if (compatVsn == 0x13070000) //19.7.0.0
-            oracleReader->version = 19700;
+            oracleReader->version = 0x19700;
         else {
             cerr << "ERROR: Unsupported database version: " << hex << compatVsn << endl;
             return REDO_ERROR;
@@ -287,13 +290,13 @@ namespace OpenLogReplicator {
 
         if (oracleReader->dumpRedoLog >= 1 && !headerInfoPrinted) {
             oracleReader->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << endl;
-            if (oracleReader->version >= 12200)
+            if (oracleReader->version >= 0x12200)
                 oracleReader->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
             oracleReader->dumpStream << " Opcodes *.*" << endl;
-            if (oracleReader->version >= 12200)
+            if (oracleReader->version >= 0x12200)
                 oracleReader->dumpStream << " Container ID: 0" << endl << " Container UID: 0" << endl;
             oracleReader->dumpStream << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << endl;
-            if (oracleReader->version < 12200)
+            if (oracleReader->version < 0x12200)
                 oracleReader->dumpStream << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << endl;
             else
                 oracleReader->dumpStream << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << endl;
@@ -344,7 +347,7 @@ namespace OpenLogReplicator {
             typesum chSum = oracleReader->read16(oracleReader->headerBuffer + blockSize + 14);
             typesum chSum2 = calcChSum(oracleReader->headerBuffer + blockSize, blockSize);
 
-            if (oracleReader->version < 12200) {
+            if (oracleReader->version < 0x12200) {
                 oracleReader->dumpStream <<
                         " resetlogs count: 0x" << hex << resetlogsCnt << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
@@ -407,7 +410,7 @@ namespace OpenLogReplicator {
 
             oracleReader->dumpStream << " Miscellaneous flags: 0x" << hex << miscFlags << endl;
 
-            if (oracleReader->version >= 12201) {
+            if (oracleReader->version >= 0x12200) {
                 uint32_t miscFlags2 = oracleReader->read32(oracleReader->headerBuffer + blockSize + 296);
                 oracleReader->dumpStream << " Miscellaneous second flags: 0x" << hex << miscFlags2 << endl;
             }
@@ -417,7 +420,7 @@ namespace OpenLogReplicator {
             typescn scn2 = oracleReader->readSCN(oracleReader->headerBuffer + blockSize + 440);
             uint8_t zeroBlocks = oracleReader->headerBuffer[blockSize + 206];
             uint8_t formatId = oracleReader->headerBuffer[blockSize + 207];
-            if (oracleReader->version < 12200)
+            if (oracleReader->version < 0x12200)
                 oracleReader->dumpStream << " Thread internal enable indicator: thr: " << dec << thr << "," <<
                         " seq: " << dec << seq2 <<
                         " scn: " << PRINTSCN48(scn2) << endl <<
@@ -545,7 +548,7 @@ namespace OpenLogReplicator {
                 extScn = oracleReader->readSCN(oracleReader->recordBuffer + 40);
             }
             if (oracleReader->trace >= TRACE_FULL) {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     cerr << "FULL: C scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
                     PRINTSCN48(extScn) << endl;
                 else
@@ -555,7 +558,7 @@ namespace OpenLogReplicator {
         } else {
             headerLength = 24;
             if (oracleReader->trace >= TRACE_FULL) {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     cerr << "FULL:   scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
                 else
                     cerr << "FULL:   scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
@@ -566,7 +569,7 @@ namespace OpenLogReplicator {
             uint16_t thread = 1; //FIXME
             oracleReader->dumpStream << " " << endl;
 
-            if (oracleReader->version < 12100)
+            if (oracleReader->version < 0x12100)
                 oracleReader->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
@@ -597,14 +600,14 @@ namespace OpenLogReplicator {
             }
 
             if (headerLength == 68) {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     oracleReader->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
                     oracleReader->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
                 uint32_t lwnLen = oracleReader->read32(oracleReader->recordBuffer + 28);
 
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     oracleReader->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << recordBeginBlock << "." <<
                                     setfill('0') << setw(4) << hex << recordBeginPos <<
@@ -619,7 +622,7 @@ namespace OpenLogReplicator {
                         " NST: 0x" << setfill('0') << setw(4) << hex << nst <<
                         " SCN: " << PRINTSCN64(extScn) << ")" << endl;
             } else {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     oracleReader->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
                     oracleReader->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
@@ -643,7 +646,7 @@ namespace OpenLogReplicator {
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
-            if (oracleReader->version >= 12100) {
+            if (oracleReader->version >= 0x12100) {
                 fieldOffset = 32;
                 redoLogRecord[vectors].flgRecord = oracleReader->read16(oracleReader->recordBuffer + pos + 28);
                 redoLogRecord[vectors].conId = oracleReader->read32(oracleReader->recordBuffer + pos + 24);
@@ -1101,7 +1104,7 @@ namespace OpenLogReplicator {
 
         if (checkpointScn > oracleReader->databaseScn) {
             if (oracleReader->trace >= TRACE_FULL) {
-                if (oracleReader->version >= 12200)
+                if (oracleReader->version >= 0x12200)
                     cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN64(checkpointScn) << endl;
                 else
                     cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN48(checkpointScn) << endl;
@@ -1223,7 +1226,7 @@ namespace OpenLogReplicator {
             cerr <<
                 " err: " << dec << ret <<
                 " block: " << dec << blockSize <<
-                " version: " << dec << oracleReader->version <<
+                " version: " << hex << oracleReader->version <<
                 " firstScn: " << PRINTSCN64(firstScn) <<
                 " nextScn: " << PRINTSCN64(nextScn) << endl;
 

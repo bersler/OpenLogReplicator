@@ -29,14 +29,15 @@ namespace OpenLogReplicator {
 
     class OracleColumn {
     public:
-        uint32_t colNo;
-        uint32_t segColNo;
+        uint64_t colNo;
+        uint64_t segColNo;
         string columnName;
-        uint32_t typeNo;
-        uint32_t length;
-        uint32_t numPk;
+        uint64_t typeNo;
+        uint64_t length;
+        uint64_t numPk;
+        bool nullable;
 
-        OracleColumn(uint32_t colNo, uint32_t segSolNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk);
+        OracleColumn(uint64_t colNo, uint64_t segSolNo, string columnName, uint64_t typeNo, uint64_t length, uint64_t numPk, bool nullable);
         virtual ~OracleColumn();
 
         friend ostream& operator<<(ostream& os, const OracleColumn& ors);

@@ -731,18 +731,19 @@ namespace OpenLogReplicator {
 
                     cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
 
-                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                     stmt2.stmt->setInt(1, objn);
                     stmt2.executeQuery();
 
                     while (stmt2.rset->next()) {
-                        uint32_t colNo = stmt2.rset->getNumber(1);
-                        uint32_t segColNo = stmt2.rset->getNumber(2);
+                        uint64_t colNo = stmt2.rset->getNumber(1);
+                        uint64_t segColNo = stmt2.rset->getNumber(2);
                         string columnName = stmt2.rset->getString(3);
-                        uint32_t typeNo = stmt2.rset->getNumber(4);
-                        uint32_t length = stmt2.rset->getNumber(5);
-                        uint32_t numPk = stmt2.rset->getNumber(6);
-                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk);
+                        uint64_t typeNo = stmt2.rset->getNumber(4);
+                        uint64_t length = stmt2.rset->getNumber(5);
+                        int64_t nullable = stmt2.rset->getNumber(6);
+                        uint64_t numPk = stmt2.rset->getNumber(7);
+                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk, (nullable == 0));
                         totalPk += numPk;
                         ++totalCols;
 
@@ -804,7 +805,7 @@ namespace OpenLogReplicator {
         if (trace >= TRACE_FULL) {
             uint64_t timeSinceCheckpoint = (now - previousCheckpoint) / CLOCKS_PER_SEC;
 
-            if (version >= 12200)
+            if (version >= 0x12200)
                 cerr << "INFO: Writing checkpoint information SEQ: " << dec << minSequence << "/" << databaseSequence <<
                 " SCN: " << PRINTSCN64(databaseScn) << " after: " << dec << timeSinceCheckpoint << "s" << endl;
             else

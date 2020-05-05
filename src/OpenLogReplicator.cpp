@@ -195,7 +195,7 @@ int main() {
                 const Value& streamJSON = getJSONfield(format, "stream");
                 uint64_t stream = 0;
                 if (strcmp("JSON", streamJSON.GetString()) == 0)
-                    stream = 1;
+                    stream = STREAM_JSON;
                 else {cerr << "ERROR: bad JSON, only stream of type JSON is currently supported!" << endl; return 1;}
 
                 const Value& topic = getJSONfield(format, "topic");

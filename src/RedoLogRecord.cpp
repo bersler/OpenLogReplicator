@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
 
 
     void RedoLogRecord::dump(OracleReader *oracleReader) {
-        if (oracleReader->version < 12200)
+        if (oracleReader->version < 0x12200)
             cerr << "O scn: " << PRINTSCN48(scnRecord);
         else
             cerr << "O scn: " << PRINTSCN64(scnRecord);

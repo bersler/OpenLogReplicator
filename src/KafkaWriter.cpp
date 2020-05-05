@@ -158,35 +158,35 @@ namespace OpenLogReplicator {
     }
 
     void KafkaWriter::beginTran(typescn scn, typetime time, typexid xid) {
-        commandBuffer
-                ->beginTran()
-                ->append('{')
-                ->appendScn(test, scn)
-                ->append(",\"timestamp\":\"")
-                ->appendDec(time.toTime() * 1000)
-                ->append("\",\"xid\":\"0x")
-                ->appendHex(USN(xid), 4)
-                ->append('.')
-                ->appendHex(SLT(xid), 3)
-                ->append('.')
-                ->appendHex(SQN(xid), 8)
-                ->append("\",dml:[");
+        if (stream == STREAM_JSON) {
+            commandBuffer
+                    ->beginTran()
+                    ->append('{')
+                    ->appendScn(test, scn)
+                    ->append(',')
+                    ->appendTimestamp(time)
+                    ->append(',')
+                    ->appendXid(xid)
+                    ->append(",dml:[");
+        }
+
+        lastTime = time;
         lastScn = scn;
     }
 
     void KafkaWriter::next() {
-        if (test <= 1)
-            commandBuffer->append(',');
+        if (stream == STREAM_JSON) {
+            if (test <= 1)
+                commandBuffer->append(',');
+        }
     }
 
     void KafkaWriter::commitTran() {
-        if (test <= 1)
-            commandBuffer
-                    ->append("]}")
-                    ->commitTran();
-        else
-            commandBuffer
-                    ->commitTran();
+        if (stream == STREAM_JSON) {
+            if (test <= 1)
+                commandBuffer->append("]}");
+            commandBuffer->commitTran();
+        }
     }
 
     //0x05010B0B
@@ -213,25 +213,27 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     pos += 6;
                 else
                     pos += 8;
             }
 
-            if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
-                    ->append('{')
-                    ->appendScn(test, lastScn)
-                    ->append(',')
-                    ->appendOperation("insert")
-                    ->append(',')
-                    ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
-                    ->append(',')
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
-                            oracleReader->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
-                    ->append(",\"after\":{");
+            if (stream == STREAM_JSON) {
+                if (test >= 2)
+                    commandBuffer->append('\n');
+                commandBuffer
+                        ->append('{')
+                        ->appendScn(test, lastScn)
+                        ->append(',')
+                        ->appendOperation("insert")
+                        ->append(',')
+                        ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
+                        ->append(',')
+                        ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
+                                oracleReader->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
+                        ->append(",\"after\":{");
+            }
 
             for (uint64_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
                 bool isNull = false;
@@ -272,7 +274,9 @@ namespace OpenLogReplicator {
                 }
             }
 
-            commandBuffer->append("}}");
+            if (stream == STREAM_JSON) {
+                commandBuffer->append("}}");
+            }
 
             fieldPosStart += oracleReader->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
         }
@@ -302,7 +306,7 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     pos += 6;
                 else
                     pos += 8;

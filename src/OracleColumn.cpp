@@ -22,13 +22,14 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicator {
 
-    OracleColumn::OracleColumn(uint32_t colNo, uint32_t segColNo, string columnName, uint32_t typeNo, uint32_t length, uint32_t numPk) :
+    OracleColumn::OracleColumn(uint64_t colNo, uint64_t segColNo, string columnName, uint64_t typeNo, uint64_t length, uint64_t numPk, bool nullable) :
             colNo(colNo),
             segColNo(segColNo),
             columnName(columnName),
             typeNo(typeNo),
             length(length),
-            numPk(numPk) {
+            numPk(numPk),
+            nullable(nullable) {
     }
 
     OracleColumn::~OracleColumn() {

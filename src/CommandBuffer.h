@@ -64,6 +64,8 @@ namespace OpenLogReplicator {
         CommandBuffer* appendTable(string owner, string table);
         CommandBuffer* appendValue(string columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         CommandBuffer* appendNull(string columnName);
+        CommandBuffer* appendTimestamp(typetime time);
+        CommandBuffer* appendXid(typexid xid);
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();

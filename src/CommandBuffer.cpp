@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
         }
 
         for (uint64_t i = 0; i < length; ++i)
-            intraThreadBuffer[posEndTmp + i] = buffer[i];
+            intraThreadBuffer[posEndTmp + i] = buffer[length - i - 1];
         posEndTmp += length;
 
         return this;
@@ -204,6 +204,26 @@ namespace OpenLogReplicator {
         append('"');
         append(columnName);
         append("\":null");
+
+        return this;
+    }
+
+    CommandBuffer* CommandBuffer::appendTimestamp(typetime time) {
+        append("\"timestamp\":\"");
+        appendDec(time.toTime() * 1000);
+        append('"');
+
+        return this;
+    }
+
+    CommandBuffer* CommandBuffer::appendXid(typexid xid) {
+        append("\"xid\":\"0x");
+        appendHex(USN(xid), 4);
+        append('.');
+        appendHex(SLT(xid), 3);
+        append('.');
+        appendHex(SQN(xid), 8);
+        append('"');
 
         return this;
     }

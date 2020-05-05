@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
         Topic *ktopic;
         uint64_t trace;
         uint64_t trace2;
+        typetime lastTime;
         typescn lastScn;
 
     public:

@@ -47,6 +47,8 @@ typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
 
+#define STREAM_JSON                 1
+
 #define TRACE_NO                    0
 #define TRACE_WARN                  1
 #define TRACE_INFO                  2
@@ -115,15 +117,15 @@ namespace OpenLogReplicator {
         }
 
         time_t toTime() {
-            struct tm eopchtime;
+            struct tm epochtime;
             uint64_t rest = val;
-            eopchtime.tm_sec = rest % 60; rest /= 60;
-            eopchtime.tm_min = rest % 60; rest /= 60;
-            eopchtime.tm_hour = rest % 24; rest /= 24;
-            eopchtime.tm_mday = (rest % 31) + 1; rest /= 31;
-            eopchtime.tm_mon = (rest % 12) + 1; rest /= 12;
-            eopchtime.tm_year = rest + 1988;
-            return mktime(&eopchtime);
+            epochtime.tm_sec = rest % 60; rest /= 60;
+            epochtime.tm_min = rest % 60; rest /= 60;
+            epochtime.tm_hour = rest % 24; rest /= 24;
+            epochtime.tm_mday = (rest % 31) + 1; rest /= 31;
+            epochtime.tm_mon = (rest % 12); rest /= 12;
+            epochtime.tm_year = rest + 88;
+            return mktime(&epochtime);
         }
 
         friend ostream& operator<<(ostream& os, const typetime& time) {

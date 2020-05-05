@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->typ & 0x80) != 0)
                 encrypted = true;
 
-            if (oracleReader->version < 12000) {
+            if (oracleReader->version < 0x12000) {
                 if (redoLogRecord->typ == 6)
                     oracleReader->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
                         " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint64_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl << endl;
-            } else if (oracleReader->version < 12200) {
+            } else if (oracleReader->version < 0x12200) {
                 if (redoLogRecord->typ == 6)
                     oracleReader->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
@@ -194,7 +194,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
                     typescn scnx = oracleReader->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleReader->version < 12200)
+                    if (oracleReader->version < 0x12200)
                         oracleReader->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
                                 " lkc:  " << (uint64_t)lkc << "    " <<
@@ -232,7 +232,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
                     typescn scnx = oracleReader->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleReader->version < 12200)
+                    if (oracleReader->version < 0x12200)
                         oracleReader->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
                                 " lkc:  " << (uint64_t)lkc << "    " <<
@@ -279,7 +279,7 @@ namespace OpenLogReplicator {
                 uint8_t ver = redoLogRecord->data[fieldPos + 46];
                 uint8_t entries = redoLogRecord->data[fieldPos + 45];
 
-                if (oracleReader->version < 12200)
+                if (oracleReader->version < 0x12200)
                     oracleReader->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN48(scn) <<
                             " ver: 0x" << setfill('0') << setw(2) << hex << (uint64_t)ver <<
@@ -312,11 +312,11 @@ namespace OpenLogReplicator {
                     uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typescn scn = oracleReader->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
-                    if (oracleReader->version < 12100)
+                    if (oracleReader->version < 0x12100)
                         oracleReader->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
                                 " flg: " << (uint64_t)flg << " " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
-                    else if (oracleReader->version < 12200)
+                    else if (oracleReader->version < 0x12200)
                         oracleReader->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
                                 " flg: (opt=" << (uint64_t)(flg & 0x03) << " whr=" << (uint64_t)(flg >>2) << ") " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
@@ -774,13 +774,13 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
             isKtubl = true;
             ktuType = "ktubl";
-            if (oracleReader->version < 19000) {
+            if (oracleReader->version < 0x19000) {
                 prevObj = "[";
                 postObj = "]";
             }
         }
 
-        if (oracleReader->version < 19000) {
+        if (oracleReader->version < 0x19000) {
             oracleReader->dumpStream <<
                     ktuType << " redo:" <<
                     " slt: " << dec << (uint64_t)redoLogRecord->slt <<
@@ -810,7 +810,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_LASTBUFFERSPLIT) != 0)
             lastBufferSplit = "Yes";
         else {
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 lastBufferSplit = "No";
             else
                 lastBufferSplit = " No";
@@ -820,14 +820,14 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
             userUndoDone = "Yes";
         else {
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 userUndoDone = "No";
             else
                 userUndoDone = " No";
         }
 
         string undoType;
-        if (oracleReader->version < 12200) {
+        if (oracleReader->version < 0x12200) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -836,7 +836,7 @@ namespace OpenLogReplicator {
                 undoType = "Multi-block undo - MID";
             else
                 undoType = "Regular undo      ";
-        } else if (oracleReader->version < 19000) {
+        } else if (oracleReader->version < 0x19000) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-Block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -860,7 +860,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_ISTEMPOBJECT) != 0)
             tempObject = "Yes";
         else {
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 tempObject = "No";
             else
                 tempObject = " No";
@@ -870,7 +870,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_TABLESPACEUNDO) != 0)
             tablespaceUndo = "Yes";
         else {
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 tablespaceUndo = "No";
             else
                 tablespaceUndo = " No";
@@ -880,7 +880,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {
-            if (oracleReader->version < 19000)
+            if (oracleReader->version < 0x19000)
                 userOnly = "No";
             else
                 userOnly = " No";
@@ -898,7 +898,7 @@ namespace OpenLogReplicator {
                     uint16_t flg2 = oracleReader->read16(redoLogRecord->data + fieldPos + 24);
                     int16_t buExtIdx = oracleReader->read16(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleReader->version < 12200) {
+                    if (oracleReader->version < 0x12200) {
                         oracleReader->dumpStream <<
                                 "Undo type:  " << undoType << "  " <<
                                 "Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -909,7 +909,7 @@ namespace OpenLogReplicator {
                         oracleReader->dumpStream <<
                                 " BuExt idx: " << dec << buExtIdx <<
                                 " flg2: " << hex << flg2 << endl;
-                    } else if (oracleReader->version < 19000) {
+                    } else if (oracleReader->version < 0x19000) {
                         oracleReader->dumpStream <<
                                 "Undo type:  " << undoType <<
                                 "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -947,7 +947,7 @@ namespace OpenLogReplicator {
                     uint32_t prevBcl = oracleReader->read32(redoLogRecord->data + fieldPos + 68);
                     uint32_t logonUser = oracleReader->read32(redoLogRecord->data + fieldPos + 72);
 
-                    if (oracleReader->version < 12200) {
+                    if (oracleReader->version < 0x12200) {
                         oracleReader->dumpStream <<
                                 "Undo type:  " << undoType << "  " <<
                                 "Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -967,7 +967,7 @@ namespace OpenLogReplicator {
                         oracleReader->dumpStream <<
                                 " BuExt idx: " << dec << buExtIdx <<
                                 " flg2: " << hex << flg2 << endl;
-                    } else if (oracleReader->version < 19000) {
+                    } else if (oracleReader->version < 0x19000) {
                         oracleReader->dumpStream <<
                                 "Undo type:  " << undoType <<
                                 "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -1015,7 +1015,7 @@ namespace OpenLogReplicator {
         } else {
             //KTUBU
             if (oracleReader->dumpRedoLog >= 1) {
-                if (oracleReader->version < 19000) {
+                if (oracleReader->version < 0x19000) {
                     oracleReader->dumpStream <<
                             "Undo type:  " << undoType << " " <<
                             "Undo type:  " << getUndoType() <<
@@ -1103,7 +1103,7 @@ namespace OpenLogReplicator {
                 pos += 3;
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                    if (oracleReader->version < 12200)
+                    if (oracleReader->version < 0x12200)
                         pos += 6;
                     else
                         pos += 8;
