@@ -23,6 +23,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "types.h"
 #include "CommandBuffer.h"
 #include "OracleReader.h"
+#include "OracleObject.h"
+#include "OracleColumn.h"
 #include "RedoLogRecord.h"
 #include "MemoryException.h"
 
@@ -208,8 +210,10 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendTimestamp(typetime time) {
-        append("\"timestamp\":\"");
+    CommandBuffer* CommandBuffer::appendTimestamp(string name, typetime time) {
+        append('"');
+        append(name);
+        append("\":\"");
         appendDec(time.toTime() * 1000);
         append('"');
 
@@ -533,6 +537,80 @@ namespace OpenLogReplicator {
 
         intraThreadBuffer[posEndTmp++] = chr;
 
+        return this;
+    }
+
+    CommandBuffer* CommandBuffer::appendDbzHead(OracleObject *object) {
+        append("{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"struct\",\"fields\":[");
+        for (uint64_t i = 0; i < object->columns.size(); ++i) {
+            if (i > 0)
+                append(',');
+
+            append("{\"type\":\"");
+            switch(object->columns[i]->typeNo) {
+            case 1: //varchar(2)
+            case 96: //char
+                append("string");
+                break;
+
+            case 2: //numeric
+                if (object->columns[i]->length < 3)
+                    append("int8");
+                else if (object->columns[i]->length < 5)
+                    append("int16");
+                else if (object->columns[i]->length < 10)
+                    append("int32");
+                else if (object->columns[i]->length < 19)
+                    append("int64");
+                else
+                    append("Decimal");
+                break;
+
+            case 12:
+            case 180:
+                append("datetime");
+                break;
+            }
+            append("\",\"optional\":\"");
+            if (object->columns[i]->nullable)
+                append("false");
+            else
+                append("true");
+            append(",\"field\":\"");
+            append(object->columns[i]->columnName);
+            append("\"}");
+        }
+        append("],\"payload\":{");
+        return this;
+    }
+
+    CommandBuffer* CommandBuffer::appendDbzTail(OracleObject *object, typetime time, typescn scn, char op) {
+        append(",\"source\":{\"version\":\"0.5.1\",\"connector\":\"oracle\",\"name\":\"");
+        append(oracleReader->alias);
+        append("\",");
+        appendTimestamp("ts_ms", time);
+        append("\"snapshot\":\"false\",");
+        append("\"db\":\"");
+        append(oracleReader->database);
+        append("\",\"schema\":\")");
+        append(object->owner);
+        append("\",\"table\":\"");
+        append(object->objectName);
+        append("\",\"txId\":null,\"scn\":");
+        appendScn(0, scn);
+        append("\",\"lcr_position\":null},\"op\":\"");
+        append(op);
+        append("\",");
+        appendTimestamp("ts_ms", time);
+        append(",\"transaction\":null,\"messagetopic\":\"");
+        append(oracleReader->alias);
+        append('.');
+        append(object->owner);
+        append('.');
+        append(object->objectName);
+        append("\",\"messagesource\":\"OpenLogReplicator from Oracle on ");
+        append(oracleReader->alias);
+        append("\"}}");
         return this;
     }
 

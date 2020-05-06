@@ -48,6 +48,7 @@ typedef uint32_t typeseq;
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
 
 #define STREAM_JSON                 1
+#define STREAM_DBZ_JSON             2
 
 #define TRACE_NO                    0
 #define TRACE_WARN                  1

@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
     Thread::Thread(const string alias, CommandBuffer *commandBuffer) :
         shutdown(false),
         pthread(0),
-        alias(alias.c_str()),
+        alias(alias),
         commandBuffer(commandBuffer) {
     }
 

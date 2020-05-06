@@ -57,7 +57,6 @@ namespace OpenLogReplicator {
     class OracleReader : public Thread {
     protected:
         OracleReaderRedo* currentRedo;
-        string database;
         typeseq databaseSequence;
         typeseq databaseSequenceArchMax;
         Environment *env;
@@ -76,6 +75,7 @@ namespace OpenLogReplicator {
         void refreshOnlineLogs();
 
     public:
+        string database;
         typescn databaseScn;
         unordered_map<typeobj, OracleObject*> objectMap;
         unordered_map<typexid, Transaction*> xidTransactionMap;

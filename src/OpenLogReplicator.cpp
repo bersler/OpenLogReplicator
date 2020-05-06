@@ -158,6 +158,7 @@ int main() {
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
                         password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead,
                         checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                commandBuffer->setOracleReader(oracleReader);
                 readers.push_back(oracleReader);
 
                 //initialize
@@ -196,6 +197,8 @@ int main() {
                 uint64_t stream = 0;
                 if (strcmp("JSON", streamJSON.GetString()) == 0)
                     stream = STREAM_JSON;
+                else if (strcmp("DBZ-JSON", streamJSON.GetString()) == 0)
+                    stream = STREAM_DBZ_JSON;
                 else {cerr << "ERROR: bad JSON, only stream of type JSON is currently supported!" << endl; return 1;}
 
                 const Value& topic = getJSONfield(format, "topic");

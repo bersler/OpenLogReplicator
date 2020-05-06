@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
     class Writer;
     class RedoLogRecord;
     class OracleReader;
+    class OracleObject;
 
     class CommandBuffer {
     protected:
@@ -64,8 +65,11 @@ namespace OpenLogReplicator {
         CommandBuffer* appendTable(string owner, string table);
         CommandBuffer* appendValue(string columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         CommandBuffer* appendNull(string columnName);
-        CommandBuffer* appendTimestamp(typetime time);
+        CommandBuffer* appendTimestamp(string name, typetime time);
         CommandBuffer* appendXid(typexid xid);
+        CommandBuffer* appendDbzHead(OracleObject *object);
+        CommandBuffer* appendDbzTail(OracleObject *object, typetime time, typescn scn, char op);
+
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();
         CommandBuffer* rewind();
@@ -77,3 +81,4 @@ namespace OpenLogReplicator {
 }
 
 #endif
+

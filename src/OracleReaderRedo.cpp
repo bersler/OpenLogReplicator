@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
     uint64_t OracleReaderRedo::checkRedoHeader() {
         int64_t bytes = pread(fileDes, oracleReader->headerBuffer, REDO_PAGE_SIZE_MAX * 2, 0);
         if (bytes < REDO_PAGE_SIZE_MAX * 2) {
-            cerr << "ERROR: unable to read redo header for " << path.c_str() << " bytes read: " << dec << bytes << endl;
+            cerr << "ERROR: unable to read redo header for " << path << " bytes read: " << dec << bytes << endl;
             return REDO_ERROR;
         }
 
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
 
         //check first block
         if (bytes < ((int64_t)blockSize * 2)) {
-            cerr << "ERROR: unable to read redo header for " << path.c_str() << endl;
+            cerr << "ERROR: unable to read redo header for " << path << endl;
             return REDO_ERROR;
         }
 
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
 
         if (resetlogsCnt != oracleReader->resetlogs) {
             cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
-                    oracleReader->resetlogs << "): " << path.c_str() << endl;
+                    oracleReader->resetlogs << "): " << path << endl;
             return REDO_ERROR;
         }
 
@@ -261,13 +261,13 @@ namespace OpenLogReplicator {
                 //archive log incorrect sequence
                 if (group == 0) {
                     cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") for archived redo log does not match database information (" <<
-                            firstScn << "): " << path.c_str() << endl;
+                            firstScn << "): " << path << endl;
                     return REDO_ERROR;
                 //redo log switch appeared and header is now overwritten
                 } else {
                     if (oracleReader->trace >= TRACE_WARN)
                         cerr << "WARNING: first SCN (" << dec << firstScnHeader << ") for online redo log does not match database information (" <<
-                                firstScn << "): " << path.c_str() << endl;
+                                firstScn << "): " << path << endl;
                     return REDO_WRONG_SEQUENCE_SWITCHED;
                 }
             }
@@ -281,7 +281,7 @@ namespace OpenLogReplicator {
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
             cerr << "ERROR: next SCN (" << nextScn << ") does not match database information (" <<
-                    nextScnHeader << "): " << path.c_str() << endl;
+                    nextScnHeader << "): " << path << endl;
             return REDO_ERROR;
         }
 
@@ -463,7 +463,7 @@ namespace OpenLogReplicator {
 
         fileDes = open(path.c_str(), O_RDONLY | O_LARGEFILE | ((oracleReader->directRead > 0) ? O_DIRECT : 0));
         if (fileDes == -1) {
-            cerr << "ERROR: can not open: " << path.c_str() << endl;
+            cerr << "ERROR: can not open: " << path << endl;
             throw RedoLogException("eror reading file", nullptr, 0);
         }
     }

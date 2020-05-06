@@ -51,7 +51,6 @@ namespace OpenLogReplicator {
             uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
-        database(database.c_str()),
         databaseSequence(0),
         databaseSequenceArchMax(0),
         env(nullptr),
@@ -59,6 +58,7 @@ namespace OpenLogReplicator {
         user(user),
         passwd(passwd),
         connectString(connectString),
+        database(database),
         databaseScn(0),
         lastOpTransactionMap(maxConcurrentTransactions),
         transactionHeap(maxConcurrentTransactions),
@@ -726,7 +726,7 @@ namespace OpenLogReplicator {
                         stmt.rset->getNumber(3);
                     uint64_t depdendencies = stmt.rset->getNumber(6);
                     uint64_t totalPk = 0, totalCols = 0;
-                    OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner.c_str(), objectName.c_str());
+                    OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner, objectName);
                     ++tabCnt;
 
                     cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
@@ -743,7 +743,7 @@ namespace OpenLogReplicator {
                         uint64_t length = stmt2.rset->getNumber(5);
                         int64_t nullable = stmt2.rset->getNumber(6);
                         uint64_t numPk = stmt2.rset->getNumber(7);
-                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName.c_str(), typeNo, length, numPk, (nullable == 0));
+                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, numPk, (nullable == 0));
                         totalPk += numPk;
                         ++totalCols;
 

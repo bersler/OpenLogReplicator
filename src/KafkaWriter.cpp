@@ -45,8 +45,8 @@ namespace OpenLogReplicator {
         Writer(alias, oracleReader, stream, sortColumns, metadata, singleDml, nullColumns, test),
         conf(nullptr),
         tconf(nullptr),
-        brokers(brokers.c_str()),
-        topic(topic.c_str()),
+        brokers(brokers),
+        topic(topic),
         producer(nullptr),
         ktopic(nullptr),
         trace(trace),
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
                     ->append('{')
                     ->appendScn(test, scn)
                     ->append(',')
-                    ->appendTimestamp(time)
+                    ->appendTimestamp("timestamp", time)
                     ->append(',')
                     ->appendXid(xid)
                     ->append(",dml:[");
@@ -238,6 +238,13 @@ namespace OpenLogReplicator {
             for (uint64_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
                 bool isNull = false;
 
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer
+                            ->beginTran()
+                            ->appendDbzHead(redoLogRecord2->object)
+                            ->append("\"before\":null,\"after\":{");
+                }
+
                 if (i >= jcc)
                     isNull = true;
                 else {
@@ -271,6 +278,14 @@ namespace OpenLogReplicator {
                             redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
 
                     pos += fieldLength;
+                }
+
+                if (stream == STREAM_DBZ_JSON) {
+
+                    commandBuffer
+                            ->append('}')
+                            ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, 'c')
+                            ->commitTran();
                 }
             }
 
@@ -312,22 +327,31 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
-            if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
-                    ->append('{')
-                    ->appendScn(test, lastScn)
-                    ->append(',')
-                    ->appendOperation("delete")
-                    ->append(',')
-                    ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
-                    ->append(',')
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
-                            oracleReader->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
-                    ->append(",\"before\":{");
+            if (stream == STREAM_JSON) {
+                if (test >= 2)
+                    commandBuffer->append('\n');
+                commandBuffer
+                        ->append('{')
+                        ->appendScn(test, lastScn)
+                        ->append(',')
+                        ->appendOperation("delete")
+                        ->append(',')
+                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->append(',')
+                        ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
+                                oracleReader->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
+                        ->append(",\"before\":{");
+            }
 
             for (uint64_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
                 bool isNull = false;
+
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer
+                            ->beginTran()
+                            ->appendDbzHead(redoLogRecord2->object)
+                            ->append("\"before\":{");
+                }
 
                 if (i >= jcc)
                     isNull = true;
@@ -363,9 +387,18 @@ namespace OpenLogReplicator {
 
                     pos += fieldLength;
                 }
+
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer
+                        ->append("},\"after\":null,")
+                        ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, 'd')
+                        ->commitTran();
+                }
             }
 
-            commandBuffer->append("}}");
+            if (stream == STREAM_JSON) {
+                commandBuffer->append("}}");
+            }
 
             fieldPosStart += oracleReader->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
         }
@@ -376,15 +409,19 @@ namespace OpenLogReplicator {
         typeslot slot;
         RedoLogRecord *redoLogRecord;
 
-        if (test >= 2)
-            commandBuffer->append('\n');
-        commandBuffer
-                ->append('{')
-                ->appendScn(test, lastScn)
-                ->append(',');
+        if (stream == STREAM_JSON) {
+            if (test >= 2)
+                commandBuffer->append('\n');
+            commandBuffer
+                    ->append('{')
+                    ->appendScn(test, lastScn)
+                    ->append(',');
+        }
 
         if (type == TRANSACTION_INSERT) {
-            commandBuffer->appendOperation("insert");
+            if (stream == STREAM_JSON) {
+                commandBuffer->appendOperation("insert");
+            }
 
             redoLogRecord = redoLogRecord2;
             while (redoLogRecord != nullptr) {
@@ -404,7 +441,9 @@ namespace OpenLogReplicator {
             }
 
         } else if (type == TRANSACTION_DELETE) {
-            commandBuffer->appendOperation("delete");
+            if (stream == STREAM_JSON) {
+                commandBuffer->appendOperation("delete");
+            }
 
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
@@ -414,7 +453,9 @@ namespace OpenLogReplicator {
                 slot = redoLogRecord2->slot;
             }
         } else {
-            commandBuffer->appendOperation("update");
+            if (stream == STREAM_JSON) {
+                commandBuffer->appendOperation("update");
+            }
 
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
@@ -425,11 +466,20 @@ namespace OpenLogReplicator {
             }
         }
 
-        commandBuffer
-                ->append(',')
-                ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
-                ->append(',')
-                ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, bdba, slot);
+        if (stream == STREAM_JSON) {
+            commandBuffer
+                    ->append(',')
+                    ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
+                    ->append(',')
+                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, bdba, slot);
+        }
+
+        if (stream == STREAM_DBZ_JSON) {
+            commandBuffer
+                    ->beginTran()
+                    ->appendDbzHead(redoLogRecord2->object)
+                    ->append("\"before\":");
+        }
 
         uint64_t fieldPos, colNum, colShift, cc, headerSize;
         uint16_t fieldLength;
@@ -452,9 +502,18 @@ namespace OpenLogReplicator {
             afterRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
         }
 
+        //data in UNDO
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
-            if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->append(",\"before\":{");
+            if (stream == STREAM_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append(",\"before\":{");
+            }
+
+            if (stream == STREAM_DBZ_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('{');
+            }
+
             redoLogRecord = redoLogRecord1;
             prevValue = false;
             colNums = nullptr;
@@ -605,13 +664,40 @@ namespace OpenLogReplicator {
 
                 redoLogRecord = redoLogRecord->next;
             }
-            if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->append('}');
+
+            if (stream == STREAM_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('}');
+            }
+
+            if (stream == STREAM_DBZ_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('}');
+            }
+        } else {
+            if (stream == STREAM_DBZ_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append("null");
+            }
         }
 
-        if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
+        if (stream == STREAM_DBZ_JSON) {
             if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->append(",\"after\":{");
+                commandBuffer->append(",\"after\":");
+        }
+
+        //data in REDO
+        if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
+            if (stream == STREAM_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append(",\"after\":{");
+            }
+
+            if (stream == STREAM_DBZ_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('{');
+            }
+
             redoLogRecord = redoLogRecord2;
             prevValue = false;
 
@@ -739,62 +825,53 @@ namespace OpenLogReplicator {
 
                 redoLogRecord = redoLogRecord->next;
             }
-            if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->append('}');
-        }
 
-        if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-            if (sortColumns >= 2) {
-                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
-                    if (redoLogRecord1->object->columns[i]->numPk == 0 && colSupp[i] == 0) {
-                        if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
-                            if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
-                                beforePos[i] = 0;
-                                afterPos[i] = 0;
-                                beforeLen[i] = 0;
-                                afterLen[i] = 0;
+            if (stream == STREAM_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('}');
+            }
+
+            if (stream == STREAM_DBZ_JSON) {
+                if (type != TRANSACTION_UPDATE || sortColumns == 0)
+                    commandBuffer->append('}');
+            }
+
+
+            if (type == TRANSACTION_UPDATE && sortColumns > 0) {
+                if (sortColumns >= 2) {
+                    for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                        if (redoLogRecord1->object->columns[i]->numPk == 0 && colSupp[i] == 0) {
+                            if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
+                                if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
+                                    beforePos[i] = 0;
+                                    afterPos[i] = 0;
+                                    beforeLen[i] = 0;
+                                    afterLen[i] = 0;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            commandBuffer->append(",\"before\":{");
-            for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
-                if (beforePos[i] > 0 || afterPos[i] > 0) {
-                    if (beforePos[i] == 0 || beforeLen[i] == 0) {
-                        if (nullColumns >= 1 || colSupp[i] > 0 || afterPos[i] > 0) {
-                            if (prevValue)
-                                commandBuffer->append(',');
-                            else
-                                prevValue = true;
-
-                            commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
-                        }
-                    } else {
-                        if (prevValue)
-                            commandBuffer->append(',');
-                        else
-                            prevValue = true;
-
-                        commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                                beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
-                    }
+                if (stream == STREAM_JSON) {
+                    commandBuffer->append(",\"before\":{");
                 }
-            }
-            commandBuffer->append('}');
-            prevValue = false;
-            commandBuffer->append(",\"after\":{");
-            for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
-                if (afterPos[i] > 0 || beforePos[i] > 0) {
-                    if (afterPos[i] == 0 && (redoLogRecord1->object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
-                        if (beforeLen[i] == 0) {
-                            if (prevValue)
-                                commandBuffer->append(',');
-                            else
-                                prevValue = true;
 
-                            commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer->append("\"before\":{");
+                }
+
+                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                    if (beforePos[i] > 0 || afterPos[i] > 0) {
+                        if (beforePos[i] == 0 || beforeLen[i] == 0) {
+                            if (nullColumns >= 1 || colSupp[i] > 0 || afterPos[i] > 0) {
+                                if (prevValue)
+                                    commandBuffer->append(',');
+                                else
+                                    prevValue = true;
+
+                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                            }
                         } else {
                             if (prevValue)
                                 commandBuffer->append(',');
@@ -804,38 +881,89 @@ namespace OpenLogReplicator {
                             commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
                                     beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                         }
-                    } else {
-                        if (afterLen[i] == 0) {
-                            if (prevValue)
-                                commandBuffer->append(',');
-                            else
-                                prevValue = true;
+                    }
+                }
 
-                            commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                if (stream == STREAM_JSON) {
+                    commandBuffer->append("},\"after\":{");
+                }
+
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer->append("},\"after\":{");
+                }
+
+                prevValue = false;
+
+                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                    if (afterPos[i] > 0 || beforePos[i] > 0) {
+                        if (afterPos[i] == 0 && (redoLogRecord1->object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
+                            if (beforeLen[i] == 0) {
+                                if (prevValue)
+                                    commandBuffer->append(',');
+                                else
+                                    prevValue = true;
+
+                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                            } else {
+                                if (prevValue)
+                                    commandBuffer->append(',');
+                                else
+                                    prevValue = true;
+
+                                commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
+                                        beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                            }
                         } else {
-                            if (prevValue)
-                                commandBuffer->append(',');
-                            else
-                                prevValue = true;
+                            if (afterLen[i] == 0) {
+                                if (prevValue)
+                                    commandBuffer->append(',');
+                                else
+                                    prevValue = true;
 
-                            commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                                    afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                            } else {
+                                if (prevValue)
+                                    commandBuffer->append(',');
+                                else
+                                    prevValue = true;
+
+                                commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
+                                        afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                            }
                         }
                     }
                 }
-            }
-            commandBuffer->append('}');
+                if (stream == STREAM_JSON) {
+                    commandBuffer->append('}');
+                }
 
-            delete[] afterRecord;
-            delete[] beforeRecord;
-            delete[] colSupp;
-            delete[] afterLen;
-            delete[] beforeLen;
-            delete[] afterPos;
-            delete[] beforePos;
+                if (stream == STREAM_DBZ_JSON) {
+                    commandBuffer->append('}');
+                }
+
+                delete[] afterRecord;
+                delete[] beforeRecord;
+                delete[] colSupp;
+                delete[] afterLen;
+                delete[] beforeLen;
+                delete[] afterPos;
+                delete[] beforePos;
+            }
         }
 
-        commandBuffer->append('}');
+        if (stream == STREAM_JSON) {
+            commandBuffer->append('}');
+        }
+
+        if (stream == STREAM_DBZ_JSON) {
+            char op = 'u';
+            if (type == TRANSACTION_INSERT) op = 'c';
+            else if (type == TRANSACTION_DELETE) op = 'd';
+
+            commandBuffer
+                    ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, op)
+                    ->commitTran();
+        }
     }
 
     //0x18010000
@@ -897,39 +1025,44 @@ namespace OpenLogReplicator {
             cerr << endl;
 
         if (type == 85) {
-            if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
-                    ->append('{')
-                    ->appendScn(test, lastScn)
-                    ->append(',')
-                    ->appendOperation("truncate")
-                    ->append(',')
-                    ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
-                    ->append('}');
-
+            if (stream == STREAM_JSON) {
+                if (test >= 2)
+                    commandBuffer->append('\n');
+                commandBuffer
+                        ->append('{')
+                        ->appendScn(test, lastScn)
+                        ->append(',')
+                        ->appendOperation("truncate")
+                        ->append(',')
+                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->append('}');
+            }
         } else if (type == 12) {
-            if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
-                    ->append('{')
-                    ->appendScn(test, lastScn)
-                    ->append(',')
-                    ->appendOperation("drop")
-                    ->append(',')
-                    ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
-                    ->append('}');
+            if (stream == STREAM_JSON) {
+                if (test >= 2)
+                    commandBuffer->append('\n');
+                commandBuffer
+                        ->append('{')
+                        ->appendScn(test, lastScn)
+                        ->append(',')
+                        ->appendOperation("drop")
+                        ->append(',')
+                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->append('}');
+            }
         } else if (type == 15) {
-            if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
-                    ->append('{')
-                    ->appendScn(test, lastScn)
-                    ->append(',')
-                    ->appendOperation("alter")
-                    ->append(',')
-                    ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
-                    ->append('}');
+            if (stream == STREAM_JSON) {
+                if (test >= 2)
+                    commandBuffer->append('\n');
+                commandBuffer
+                        ->append('{')
+                        ->appendScn(test, lastScn)
+                        ->append(',')
+                        ->appendOperation("alter")
+                        ->append(',')
+                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->append('}');
+            }
        }
     }
 }
