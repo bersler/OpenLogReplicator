@@ -540,8 +540,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendDbzHead(OracleObject *object) {
-        append("{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"struct\",\"fields\":[");
+    CommandBuffer* CommandBuffer::appendDbzCols(OracleObject *object) {
         for (uint64_t i = 0; i < object->columns.size(); ++i) {
             if (i > 0)
                 append(',');
@@ -576,11 +575,53 @@ namespace OpenLogReplicator {
                 append("false");
             else
                 append("true");
-            append(",\"field\":\"");
+            append("\",\"field\":\"");
             append(object->columns[i]->columnName);
             append("\"}");
         }
-        append("],\"payload\":{");
+    }
+
+    CommandBuffer* CommandBuffer::appendDbzHead(OracleObject *object) {
+        append("{\"schema\":{\"type\":\"struct\",\"fields\":[");
+        append("{\"type\":\"struct\",\"fields\":[");
+        appendDbzCols(object);
+        append("],\"optional\":true,\"name\":\"");
+        append(oracleReader->alias);
+        append('.');
+        append(object->owner);
+        append('.');
+        append(object->objectName);
+        append("\",\"field\":\"before\"},");
+        append("{\"type\":\"struct\",\"fields\":[");
+        appendDbzCols(object);
+        append("],\"optional\":true,\"name\":\"");
+        append(oracleReader->alias);
+        append('.');
+        append(object->owner);
+        append('.');
+        append(object->objectName);
+        append("\",\"field\":\"after\"},"
+                "{\"type\":\"struct\",\"fields\":["
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"name\"},"
+                "{\"type\":\"int64\",\"optional\":false,\"field\":\"ts_ms\"},"
+                "{\"type\":\"string\",\"optional\":true,\"name\":\"io.debezium.data.Enum\",\"version\":1,\"parameters\":{\"allowed\":\"true,last,false\"},\"default\":\"false\",\"field\":\"snapshot\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"db\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"schema\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"table\"},"
+                "{\"type\":\"string\",\"optional\":true,\"field\":\"txId\"},"
+                "{\"type\":\"int64\",\"optional\":true,\"field\":\"scn\"},"
+                "{\"type\":\"string\",\"optional\":true,\"field\":\"lcr_position\"}],"
+                "\"optional\":false,\"name\":\"io.debezium.connector.oracle.Source\",\"field\":\"source\"},"
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"op\"},"
+                "{\"type\":\"int64\",\"optional\":true,\"field\":\"ts_ms\"},"
+                "{\"type\":\"struct\",\"fields\":["
+                "{\"type\":\"string\",\"optional\":false,\"field\":\"id\"},"
+                "{\"type\":\"int64\",\"optional\":false,\"field\":\"total_order\"},"
+                "{\"type\":\"int64\",\"optional\":false,\"field\":\"data_collection_order\"}],\"optional\":true,\"field\":\"transaction\"},"
+                "{\"type\":\"string\",\"optional\":true,\"field\":\"messagetopic\"},"
+                "{\"type\":\"string\",\"optional\":true,\"field\":\"messagesource\"}],\"optional\":false,\"name\":\"asgard.DEBEZIUM.CUSTOMERS.Envelope\"},\"payload\":{");
         return this;
     }
 
@@ -589,16 +630,15 @@ namespace OpenLogReplicator {
         append(oracleReader->alias);
         append("\",");
         appendTimestamp("ts_ms", time);
-        append("\"snapshot\":\"false\",");
-        append("\"db\":\"");
+        append(",\"snapshot\":\"false\",\"db\":\"");
         append(oracleReader->database);
-        append("\",\"schema\":\")");
+        append("\",\"schema\":\"");
         append(object->owner);
         append("\",\"table\":\"");
         append(object->objectName);
-        append("\",\"txId\":null,\"scn\":");
+        append("\",\"txId\":null,");
         appendScn(0, scn);
-        append("\",\"lcr_position\":null},\"op\":\"");
+        append(",\"lcr_position\":null},\"op\":\"");
         append(op);
         append("\",");
         appendTimestamp("ts_ms", time);

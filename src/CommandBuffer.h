@@ -67,6 +67,7 @@ namespace OpenLogReplicator {
         CommandBuffer* appendNull(string columnName);
         CommandBuffer* appendTimestamp(string name, typetime time);
         CommandBuffer* appendXid(typexid xid);
+        CommandBuffer* appendDbzCols(OracleObject *object);
         CommandBuffer* appendDbzHead(OracleObject *object);
         CommandBuffer* appendDbzTail(OracleObject *object, typetime time, typescn scn, char op);
 
