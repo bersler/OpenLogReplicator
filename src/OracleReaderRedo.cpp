@@ -1290,7 +1290,7 @@ namespace OpenLogReplicator {
                     if (oracleReader->shutdown)
                         break;
 
-                    usleep(REDO_SLEEP_RETRY);
+                    usleep(oracleReader->redoReadSleep);
                 }
             }
 

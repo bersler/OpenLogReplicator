@@ -38,6 +38,8 @@ namespace OpenLogReplicator {
             posEnd(0),
             posEndTmp(0),
             posSize(0),
+            test(0),
+            timestampFormat(0),
             outputBufferSize(outputBufferSize) {
         intraThreadBuffer = new uint8_t[outputBufferSize];
 
@@ -171,15 +173,15 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendScn(uint64_t test, typescn scn) {
-        append("\"scn\":\"");
-
-        if (test >= 2)
+    CommandBuffer* CommandBuffer::appendScn(typescn scn) {
+        if (test >= 2) {
+            append("\"scn\":\"");
             appendHex(scn, 16);
-        else
+            append('"');
+        } else {
+            append("\"scn\":");
             append(to_string(scn));
-
-        append('"');
+        }
 
         return this;
     }
@@ -210,12 +212,11 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendTimestamp(string name, typetime time) {
+    CommandBuffer* CommandBuffer::appendMs(string name, uint64_t time) {
         append('"');
         append(name);
-        append("\":\"");
-        appendDec(time.toTime() * 1000);
-        append('"');
+        append("\":");
+        appendDec(time);
 
         return this;
     }
@@ -372,15 +373,15 @@ namespace OpenLogReplicator {
 
         case 12:
         case 180:
-            append('\"');
-    //2012-04-23T18:25:43.511Z - ISO 8601 format
-
             if (fieldLength != 7 && fieldLength != 11) {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
                     cout << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
                 cout << endl;
-            } else {
+                append('null');
+            } else if (timestampFormat == 0) {
+                //2012-04-23T18:25:43.511Z - ISO 8601 format
+                append('\"');
                 uint64_t val1 = redoLogRecord->data[fieldPos + 0],
                          val2 = redoLogRecord->data[fieldPos + 1];
                 bool bc = false;
@@ -451,8 +452,39 @@ namespace OpenLogReplicator {
                             append(buffer[i] + '0');
                     }
                 }
+                append('\"');
+            } else if (timestampFormat == 1) {
+                //unix epoch format
+                struct tm epochtime;
+                uint64_t val1 = redoLogRecord->data[fieldPos + 0],
+                         val2 = redoLogRecord->data[fieldPos + 1];
+
+                //AD
+                if (val1 >= 100 && val2 >= 100) {
+                    val1 -= 100;
+                    val2 -= 100;
+                    uint64_t year;
+                    year = val1 * 100 + val2;
+                    if (year >= 1900) {
+                        epochtime.tm_sec = redoLogRecord->data[fieldPos + 6] - 1;
+                        epochtime.tm_min = redoLogRecord->data[fieldPos + 5] - 1;
+                        epochtime.tm_hour = redoLogRecord->data[fieldPos + 4] - 1;
+                        epochtime.tm_mday = redoLogRecord->data[fieldPos + 3];
+                        epochtime.tm_mon = redoLogRecord->data[fieldPos + 2] - 1;
+                        epochtime.tm_year = year - 1900;
+
+                        uint64_t fraction = 0;
+                        if (fieldLength == 11)
+                            fraction = oracleReader->read32Big(redoLogRecord->data + fieldPos + 7);
+
+                        appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
+                    } else {
+                        append('null');
+                    }
+                } else {
+                    append('null');
+                }
             }
-            append('\"');
             break;
 
         default:
@@ -542,6 +574,8 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendDbzCols(OracleObject *object) {
         for (uint64_t i = 0; i < object->columns.size(); ++i) {
+            bool microTimestamp = false;
+
             if (i > 0)
                 append(',');
 
@@ -553,29 +587,42 @@ namespace OpenLogReplicator {
                 break;
 
             case 2: //numeric
-                if (object->columns[i]->length < 3)
-                    append("int8");
-                else if (object->columns[i]->length < 5)
-                    append("int16");
-                else if (object->columns[i]->length < 10)
-                    append("int32");
-                else if (object->columns[i]->length < 19)
-                    append("int64");
-                else
+                if (object->columns[i]->scale > 0)
                     append("Decimal");
+                else {
+                    uint64_t digits = object->columns[i]->precision - object->columns[i]->scale;
+                    if (digits < 3)
+                        append("int8");
+                    else if (digits < 5)
+                        append("int16");
+                    else if (digits < 10)
+                        append("int32");
+                    else if (digits < 19)
+                        append("int64");
+                    else
+                        append("Decimal");
+                }
                 break;
 
             case 12:
             case 180:
-                append("datetime");
+                if (timestampFormat == 0)
+                    append("datetime");
+                else if (timestampFormat == 1) {
+                    append("int64");
+                    microTimestamp = true;
+                }
                 break;
             }
-            append("\",\"optional\":\"");
+            append("\",\"optional\":");
             if (object->columns[i]->nullable)
-                append("false");
-            else
                 append("true");
-            append("\",\"field\":\"");
+            else
+                append("false");
+
+            if (microTimestamp)
+                append(",\"name\":\"io.debezium.time.MicroTimestamp\",\"version\":1");
+            append(",\"field\":\"");
             append(object->columns[i]->columnName);
             append("\"}");
         }
@@ -591,7 +638,7 @@ namespace OpenLogReplicator {
         append(object->owner);
         append('.');
         append(object->objectName);
-        append("\",\"field\":\"before\"},");
+        append(".Value\",\"field\":\"before\"},");
         append("{\"type\":\"struct\",\"fields\":[");
         appendDbzCols(object);
         append("],\"optional\":true,\"name\":\"");
@@ -600,7 +647,7 @@ namespace OpenLogReplicator {
         append(object->owner);
         append('.');
         append(object->objectName);
-        append("\",\"field\":\"after\"},"
+        append(".Value\",\"field\":\"after\"},"
                 "{\"type\":\"struct\",\"fields\":["
                 "{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},"
                 "{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},"
@@ -625,23 +672,29 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendDbzTail(OracleObject *object, typetime time, typescn scn, char op) {
-        append(",\"source\":{\"version\":\"0.5.1\",\"connector\":\"oracle\",\"name\":\"");
+    CommandBuffer* CommandBuffer::appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid) {
+        append(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
         append(oracleReader->alias);
         append("\",");
-        appendTimestamp("ts_ms", time);
+        appendMs("ts_ms", time);
         append(",\"snapshot\":\"false\",\"db\":\"");
-        append(oracleReader->database);
+        append(oracleReader->databaseContext);
         append("\",\"schema\":\"");
         append(object->owner);
         append("\",\"table\":\"");
         append(object->objectName);
-        append("\",\"txId\":null,");
-        appendScn(0, scn);
+        append("\",\"txId\":\"");
+        appendDec(USN(xid));
+        append('.');
+        appendDec(SLT(xid));
+        append('.');
+        appendDec(SQN(xid));
+        append("\",");
+        appendScn(scn);
         append(",\"lcr_position\":null},\"op\":\"");
         append(op);
         append("\",");
-        appendTimestamp("ts_ms", time);
+        appendMs("ts_ms", time);
         append(",\"transaction\":null,\"messagetopic\":\"");
         append(oracleReader->alias);
         append('.');

@@ -31,7 +31,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
+    Writer::Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml,
+            uint64_t nullColumns, uint64_t test, uint64_t timestampFormat) :
         Thread(alias, oracleReader->commandBuffer),
         oracleReader(oracleReader),
         stream(stream),
@@ -39,7 +40,8 @@ namespace OpenLogReplicator {
         metadata(metadata),
         singleDml(singleDml),
         nullColumns(nullColumns),
-        test(test) {
+        test(test),
+        timestampFormat(timestampFormat) {
     }
 
     Writer::~Writer() {

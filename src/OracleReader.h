@@ -76,6 +76,7 @@ namespace OpenLogReplicator {
 
     public:
         string database;
+        string databaseContext;
         typescn databaseScn;
         unordered_map<typeobj, OracleObject*> objectMap;
         unordered_map<typexid, Transaction*> xidTransactionMap;
@@ -90,6 +91,7 @@ namespace OpenLogReplicator {
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t directRead;
+        uint64_t redoReadSleep;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;           //compatiblity level of redo logs
@@ -149,7 +151,7 @@ namespace OpenLogReplicator {
 
         OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
                 const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t directRead,
-                uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+                uint64_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleReader();
     };
 }

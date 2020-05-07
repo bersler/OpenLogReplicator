@@ -50,6 +50,8 @@ namespace OpenLogReplicator {
         volatile uint64_t posEnd;
         volatile uint64_t posEndTmp;
         volatile uint64_t posSize;
+        uint64_t test;
+        uint64_t timestampFormat;
         uint64_t outputBufferSize;
 
         void stop(void);
@@ -60,16 +62,16 @@ namespace OpenLogReplicator {
         CommandBuffer* append(char chr);
         CommandBuffer* appendHex(uint64_t val, uint64_t length);
         CommandBuffer* appendDec(uint64_t val);
-        CommandBuffer* appendScn(uint64_t test, typescn scn);
+        CommandBuffer* appendScn(typescn scn);
         CommandBuffer* appendOperation(string operation);
         CommandBuffer* appendTable(string owner, string table);
         CommandBuffer* appendValue(string columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         CommandBuffer* appendNull(string columnName);
-        CommandBuffer* appendTimestamp(string name, typetime time);
+        CommandBuffer* appendMs(string name, uint64_t time);
         CommandBuffer* appendXid(typexid xid);
         CommandBuffer* appendDbzCols(OracleObject *object);
         CommandBuffer* appendDbzHead(OracleObject *object);
-        CommandBuffer* appendDbzTail(OracleObject *object, typetime time, typescn scn, char op);
+        CommandBuffer* appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid);
 
         CommandBuffer* beginTran();
         CommandBuffer* commitTran();

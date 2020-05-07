@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
 
     OracleReader::OracleReader(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
             const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t directRead,
-            uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+            uint64_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias, commandBuffer),
         currentRedo(nullptr),
         databaseSequence(0),
@@ -59,6 +59,7 @@ namespace OpenLogReplicator {
         passwd(passwd),
         connectString(connectString),
         database(database),
+        databaseContext(""),
         databaseScn(0),
         lastOpTransactionMap(maxConcurrentTransactions),
         transactionHeap(maxConcurrentTransactions),
@@ -70,6 +71,7 @@ namespace OpenLogReplicator {
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
         directRead(directRead),
+        redoReadSleep(redoReadSleep),
         trace(trace),
         trace2(trace2),
         version(0),
@@ -202,7 +204,7 @@ namespace OpenLogReplicator {
                         }
 
                         if (redo == nullptr && !isHigher) {
-                            usleep(REDO_SLEEP_RETRY);
+                            usleep(redoReadSleep);
                         } else
                             break;
 
@@ -284,7 +286,7 @@ namespace OpenLogReplicator {
             if (this->shutdown)
                 break;
             if (!logsProcessed)
-                usleep(REDO_SLEEP_RETRY);
+                usleep(redoReadSleep);
         }
 
         writeCheckpoint(true);
@@ -598,7 +600,7 @@ namespace OpenLogReplicator {
         try {
             OracleStatement stmt(&conn, env);
             //check archivelog mode, supplemental log min, endian
-            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') AS DB_NAME FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
             stmt.executeQuery();
 
             if (stmt.rset->next()) {
@@ -660,6 +662,8 @@ namespace OpenLogReplicator {
                         cout << "- conId: " << dec << conId << endl;
                     }
                 }
+
+                databaseContext = stmt.rset->getString(7);
 
             } else {
                 cerr << "ERROR: reading SYS.V_$DATABASE" << endl;
@@ -731,7 +735,7 @@ namespace OpenLogReplicator {
 
                     cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
 
-                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
                     stmt2.stmt->setInt(1, objn);
                     stmt2.executeQuery();
 
@@ -741,9 +745,16 @@ namespace OpenLogReplicator {
                         string columnName = stmt2.rset->getString(3);
                         uint64_t typeNo = stmt2.rset->getNumber(4);
                         uint64_t length = stmt2.rset->getNumber(5);
-                        int64_t nullable = stmt2.rset->getNumber(6);
-                        uint64_t numPk = stmt2.rset->getNumber(7);
-                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, numPk, (nullable == 0));
+                        int64_t precision = -1;
+                        if (!stmt2.rset->isNull(6))
+                            precision = stmt2.rset->getNumber(6);
+                        int64_t scale = -1;
+                        if (!stmt2.rset->isNull(7))
+                            scale = stmt2.rset->getNumber(7);
+
+                        int64_t nullable = stmt2.rset->getNumber(8);
+                        uint64_t numPk = stmt2.rset->getNumber(9);
+                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
                         totalPk += numPk;
                         ++totalCols;
 

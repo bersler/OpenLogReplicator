@@ -45,6 +45,7 @@ namespace OpenLogReplicator {
         uint64_t singleDml;         //0 - transactions grouped, 1 - every dml is a single transaction
         uint64_t nullColumns;       //0 - hide all null columns, only show for modified values, 1 - put all null columns present in REDO
         uint64_t test;              //0 - normal work, 1 - don't connect to Kafka, stream output to log, 2 - like but produce simplified JSON
+        uint64_t timestampFormat;   //0 - timestamp in ISO 8601 format, 1 - timestamp in Unix epoch format
 
     public:
         void stop(void);
@@ -58,7 +59,8 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;
         virtual void parseDDL(RedoLogRecord *redoLogRecord1) = 0;
 
-        Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test);
+        Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns,
+                uint64_t test, uint64_t timestampFormat);
         virtual ~Writer();
     };
 }

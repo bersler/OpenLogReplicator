@@ -80,7 +80,7 @@ int main() {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v. 0.5.1 (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> readers, writers;
     list<CommandBuffer *> buffers;
 
@@ -93,7 +93,7 @@ int main() {
             {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
 
         const Value& version = getJSONfield(document, "version");
-        if (strcmp(version.GetString(), "0.5.1") != 0)
+        if (strcmp(version.GetString(), PROGRAM_VERSION) != 0)
             {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
 
         const Value& dumpRedoLogJSON = getJSONfield(document, "dump-redo-log");
@@ -110,6 +110,9 @@ int main() {
 
         const Value& directReadJSON = getJSONfield(document, "direct-read");
         uint64_t directRead = directReadJSON.GetUint64();
+
+        const Value& redoReadSleepJSON = getJSONfield(document, "redo-read-sleep");
+        uint64_t redoReadSleep = redoReadSleepJSON.GetUint64();
 
         const Value& checkpointIntervalJSON = getJSONfield(document, "checkpoint-interval");
         uint64_t checkpointInterval = checkpointIntervalJSON.GetUint64();
@@ -156,7 +159,7 @@ int main() {
 
                 buffers.push_back(commandBuffer);
                 OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead,
+                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead, redoReadSleep,
                         checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
                 commandBuffer->setOracleReader(oracleReader);
                 readers.push_back(oracleReader);
@@ -212,6 +215,8 @@ int main() {
                 uint64_t nullColumns = nullColumnsJSON.GetUint64();
                 const Value& testJSON = getJSONfield(format, "test");
                 uint64_t test = testJSON.GetUint64();
+                const Value& timestampFormatJSON = getJSONfield(format, "timestamp-format");
+                uint64_t timestampFormat = timestampFormatJSON.GetUint64();
 
                 OracleReader *oracleReader = nullptr;
 
@@ -223,8 +228,10 @@ int main() {
 
                 cout << "Adding target: " << alias.GetString() << endl;
                 KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleReader, trace, trace2,
-                        stream, sortColumns, metadata, singleDml, nullColumns, test);
+                        stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat);
                 oracleReader->commandBuffer->writer = kafkaWriter;
+                oracleReader->commandBuffer->test = test;
+                oracleReader->commandBuffer->timestampFormat = timestampFormat;
                 writers.push_back(kafkaWriter);
 
                 //initialize

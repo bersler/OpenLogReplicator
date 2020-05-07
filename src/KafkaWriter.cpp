@@ -40,9 +40,10 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, OracleReader *oracleReader, uint64_t trace, uint64_t trace2,
-            uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test) :
-        Writer(alias, oracleReader, stream, sortColumns, metadata, singleDml, nullColumns, test),
+    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, OracleReader *oracleReader, uint64_t trace,
+            uint64_t trace2, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
+            uint64_t timestampFormat) :
+        Writer(alias, oracleReader, stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers),
@@ -162,9 +163,9 @@ namespace OpenLogReplicator {
             commandBuffer
                     ->beginTran()
                     ->append('{')
-                    ->appendScn(test, scn)
+                    ->appendScn(scn)
                     ->append(',')
-                    ->appendTimestamp("timestamp", time)
+                    ->appendMs("timestamp", time.toTime() * 1000)
                     ->append(',')
                     ->appendXid(xid)
                     ->append(",dml:[");
@@ -224,7 +225,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append('\n');
                 commandBuffer
                         ->append('{')
-                        ->appendScn(test, lastScn)
+                        ->appendScn(lastScn)
                         ->append(',')
                         ->appendOperation("insert")
                         ->append(',')
@@ -284,7 +285,7 @@ namespace OpenLogReplicator {
 
                     commandBuffer
                             ->append('}')
-                            ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, 'c')
+                            ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
                             ->commitTran();
                 }
             }
@@ -332,7 +333,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append('\n');
                 commandBuffer
                         ->append('{')
-                        ->appendScn(test, lastScn)
+                        ->appendScn(lastScn)
                         ->append(',')
                         ->appendOperation("delete")
                         ->append(',')
@@ -391,7 +392,7 @@ namespace OpenLogReplicator {
                 if (stream == STREAM_DBZ_JSON) {
                     commandBuffer
                         ->append("},\"after\":null,")
-                        ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, 'd')
+                        ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
                         ->commitTran();
                 }
             }
@@ -414,7 +415,7 @@ namespace OpenLogReplicator {
                 commandBuffer->append('\n');
             commandBuffer
                     ->append('{')
-                    ->appendScn(test, lastScn)
+                    ->appendScn(lastScn)
                     ->append(',');
         }
 
@@ -858,7 +859,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->append("\"before\":{");
+                    commandBuffer->append("{");
                 }
 
                 for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
@@ -961,7 +962,7 @@ namespace OpenLogReplicator {
             else if (type == TRANSACTION_DELETE) op = 'd';
 
             commandBuffer
-                    ->appendDbzTail(redoLogRecord2->object, lastTime, lastScn, op)
+                    ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
                     ->commitTran();
         }
     }
@@ -1030,7 +1031,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append('\n');
                 commandBuffer
                         ->append('{')
-                        ->appendScn(test, lastScn)
+                        ->appendScn(lastScn)
                         ->append(',')
                         ->appendOperation("truncate")
                         ->append(',')
@@ -1043,7 +1044,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append('\n');
                 commandBuffer
                         ->append('{')
-                        ->appendScn(test, lastScn)
+                        ->appendScn(lastScn)
                         ->append(',')
                         ->appendOperation("drop")
                         ->append(',')
@@ -1056,7 +1057,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append('\n');
                 commandBuffer
                         ->append('{')
-                        ->appendScn(test, lastScn)
+                        ->appendScn(lastScn)
                         ->append(',')
                         ->appendOperation("alter")
                         ->append(',')

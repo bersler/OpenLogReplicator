@@ -46,6 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
+#define PROGRAM_VERSION             "0.5.2"
 
 #define STREAM_JSON                 1
 #define STREAM_DBZ_JSON             2
@@ -77,8 +78,6 @@ typedef uint32_t typeseq;
 #define REDO_WRONG_SEQUENCE_SWITCHED 2
 #define REDO_ERROR                  3
 #define REDO_EMPTY                  4
-
-#define REDO_SLEEP_RETRY            10000
 
 #define USN(xid)                    ((uint16_t)(((uint64_t)xid)>>48))
 #define SLT(xid)                    ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))

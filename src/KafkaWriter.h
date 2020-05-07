@@ -64,7 +64,8 @@ namespace OpenLogReplicator {
         virtual void parseDDL(RedoLogRecord *redoLogRecord1);
 
         KafkaWriter(const string alias, const string brokers, const string topic, OracleReader *oracleReader, uint64_t trace, uint64_t trace2,
-                uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test);
+                uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
+                uint64_t timestampFormat);
         virtual ~KafkaWriter();
     };
 }
