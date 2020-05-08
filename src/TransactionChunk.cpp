@@ -28,8 +28,10 @@ namespace OpenLogReplicator {
             size(0),
             prev(prev),
             next(nullptr) {
-        if (prev != nullptr)
+        if (prev != nullptr) {
             prev->next = this;
+        }
+
         buffer = (uint8_t*)malloc(redoBufferSize);
         if (buffer == nullptr) {
             cerr << "ERROR: malloc buffer alloc error: " << dec << redoBufferSize << " bytes" << endl;

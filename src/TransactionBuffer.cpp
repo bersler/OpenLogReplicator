@@ -86,9 +86,9 @@ namespace OpenLogReplicator {
     void TransactionBuffer::deleteTransactionChunk(TransactionChunk* tc) {
         ++freeBuffers;
 
+        tc->prev = nullptr;
         tc->next = unused;
-        if (unused != nullptr)
-            unused->prev = tc;
+        unused->prev = tc;
         unused = tc;
     }
 
@@ -187,7 +187,6 @@ namespace OpenLogReplicator {
             tcLast = tcNew;
         }
         appendTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
-
         return tcLast;
     }
 
@@ -253,10 +252,10 @@ namespace OpenLogReplicator {
         --tc->elements;
 
         if (tc->elements == 0 && tc->prev != nullptr) {
-            TransactionChunk *prevTc = tc->prev;
-            prevTc->next = nullptr;
-            deleteTransactionChunk(tc);
-            tc = prevTc;
+            TransactionChunk *tcTmp = tc;
+            tc = tc->prev;
+            tc->next = nullptr;
+            deleteTransactionChunk(tcTmp);
         }
 
         if (tc->elements == 0) {
@@ -281,25 +280,23 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::deleteTransactionChunks(TransactionChunk* tc, TransactionChunk* tcLast) {
-        uint64_t num = 1;
         TransactionChunk* tcTemp = tc;
+        ++freeBuffers;
         while (tcTemp->next != nullptr) {
-            ++num;
+            ++freeBuffers;
             tcTemp = tcTemp->next;
         }
-        freeBuffers += num;
 
         tcLast->next = unused;
-        if (unused != nullptr)
-            unused->prev = tcLast;
+        unused->prev = tcLast;
         unused = tc;
     }
 
     TransactionBuffer::~TransactionBuffer() {
         while (unused != nullptr) {
-            TransactionChunk *nextTc = unused->next;
+            TransactionChunk *tcTemp = unused->next;
             delete unused;
-            unused = nextTc;
+            unused = tcTemp;
         }
     }
 }

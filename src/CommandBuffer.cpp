@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendScn(typescn scn) {
         if (test >= 2) {
-            append("\"scn\":\"");
+            append("\"scn\":\"0x");
             appendHex(scn, 16);
             append('"');
         } else {
@@ -222,12 +222,12 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::appendXid(typexid xid) {
-        append("\"xid\":\"0x");
-        appendHex(USN(xid), 4);
+        append("\"xid\":\"");
+        appendDec(USN(xid));
         append('.');
-        appendHex(SLT(xid), 3);
+        appendDec(SLT(xid));
         append('.');
-        appendHex(SQN(xid), 8);
+        appendDec(SQN(xid));
         append('"');
 
         return this;

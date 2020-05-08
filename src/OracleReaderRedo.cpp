@@ -1004,17 +1004,37 @@ namespace OpenLogReplicator {
         case 0x0B060506:
         case 0x0B06050B:
             {
+                if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                    cerr << "rollback, searching for UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                            " DBA: " << hex << redoLogRecord2->dba <<
+                            " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
+                            " RCI: " << dec << (uint64_t)redoLogRecord2->rci << endl;
+                }
                 Transaction *transaction = oracleReader->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
                         redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci);
 
                 //match
                 if (transaction != nullptr) {
+                    if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                        cerr << "match, rolled back" << endl;
+                    }
+
                     oracleReader->lastOpTransactionMap.erase(transaction);
                     transaction->rollbackLastOp(oracleReader, curScn, oracleReader->transactionBuffer);
                     oracleReader->transactionHeap.update(transaction->pos);
-                    oracleReader->lastOpTransactionMap.set(transaction);
 
+                    if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                        cerr << "rollback, now last: UBA: " << PRINTUBA(transaction->lastUba) <<
+                                " DBA: " << hex << transaction->lastDba <<
+                                " SLT: " << dec << (uint64_t)transaction->lastSlt <<
+                                " RCI: " << dec << (uint64_t)transaction->lastRci << endl;
+                    }
+                    oracleReader->lastOpTransactionMap.set(transaction);
                 } else {
+                    if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                        cerr << "no match, searching" << endl;
+                    }
+
                     //check all previous transactions - not yet implemented
                     bool foundPrevious = false;
 
@@ -1030,12 +1050,20 @@ namespace OpenLogReplicator {
                         }
                     }
                     if (!foundPrevious) {
+                        if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                            cerr << "still no match, failing" << endl;
+                        }
+
                         if (oracleReader->trace >= TRACE_WARN)
                             cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<
                                     " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
                                     " RCI: " << dec << (uint64_t)redoLogRecord2->rci << endl;
                     } else {
+                        if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
+                            cerr << "found" << endl;
+                        }
+
                         if (oracleReader->trace >= TRACE_WARN)
                             cerr << "WARNING: would like to rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: " << hex << redoLogRecord2->dba <<

@@ -1,11 +1,12 @@
 {
-  "version": "0.5.0",
+  "version": "0.5.2",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
   "trace2": 0,
   "direct-read": 0,
   "checkpoint-interval": 10,
+  "redo-read-sleep": 10000,
   "redo-buffer-mb": 4096,
   "output-buffer-mb": 1024,
   "max-concurrent-transactions": 65536,
@@ -27,10 +28,9 @@
   "targets": [
     {
       "type": "KAFKA",
-      "format": {"stream": "JSON", "sort-columns": 2, "metadata": 0, "single-dml": 0, "null-columns": 0, "test": 0},
+      "format": {"stream": "JSON", "topic": "O112A", "sort-columns": 2, "metadata": 0, "single-dml": 0, "null-columns": 0, "test": 0, "timestamp-format": 0},
       "alias": "T2",
       "brokers": "localhost:9092",
-      "topic": "O112A",
       "source": "S1"
     }
   ]
