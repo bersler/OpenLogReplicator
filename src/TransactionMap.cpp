@@ -87,32 +87,18 @@ namespace OpenLogReplicator {
         uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
         Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1 = nullptr, *transactionTempPartial2 = nullptr;
-        uint64_t partialMatches1 = 0, partialMatches2 = 0;
 
         while (transactionTemp != nullptr) {
-            if (transactionTemp->lastUba == uba && transactionTemp->lastDba == dba &&
+            if (transactionTemp->lastUba == uba &&
                     transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
                 return transactionTemp;
 
-            if (transactionTemp->lastUba == uba && (uba != 0 || transactionTemp->lastDba == dba) &&
-                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
-                transactionTempPartial1 = transactionTemp;
-                ++partialMatches1;
-            }
-
-            if (transactionTemp->lastUba == uba && transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci) {
-                transactionTempPartial2 = transactionTemp;
-                ++partialMatches2;
-            }
+            if (uba == 0 && transactionTemp->lastDba == dba &&
+                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
+                return transactionTemp;
 
             transactionTemp = transactionTemp->next;
         }
-
-        if (partialMatches1 == 1)
-            return transactionTempPartial1;
-
-        if (partialMatches2 == 1)
-            return transactionTempPartial2;
 
         return nullptr;
     }

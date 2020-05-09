@@ -138,12 +138,12 @@ namespace OpenLogReplicator {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: add: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
-        tcLast = transactionBuffer->addTransactionChunk(oracleReader, tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+        transactionBuffer->addTransactionChunk(oracleReader, tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
         ++opCodes;
         touch(redoLogRecord1->scn, sequence);
     }
 
-    bool Transaction::rollbackPreviousOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
+    bool Transaction::rollbackPartOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci) {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback previous: " << PRINTUBA(uba) << ", dba: 0x" << hex << dba << ", slt: " << dec << (uint64_t)slt << ", rci: " << dec << (uint64_t)rci << endl;
 
@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
     void Transaction::rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer) {
         if ((oracleReader->trace2 & TRACE2_UBA) != 0)
             cerr << "UBA: rollback last: " << PRINTUBA(lastUba) << ", dba: 0x" << hex << lastDba << ", slt: " << dec << (uint64_t)lastSlt << ", rci: " << dec << (uint64_t)lastRci << endl;
-        tcLast = transactionBuffer->rollbackTransactionChunk(oracleReader, tcLast, lastUba, lastDba, lastSlt, lastRci);
+        transactionBuffer->rollbackTransactionChunk(oracleReader, tcLast, lastUba, lastDba, lastSlt, lastRci);
 
         --opCodes;
         if (lastScn == ZERO_SCN || lastScn < scn)
@@ -222,8 +222,10 @@ namespace OpenLogReplicator {
                                         ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBdba << "." << hex << redoLogRecord1->suppLogSlot << ") " <<
                                     " scn: " << PRINTSCN64(scn) << endl;
                         }
-                        if (prevScn != 0 && prevScn > scn)
-                            cerr << "ERROR: SCN swap" << endl;
+                        if (prevScn != 0 && prevScn > scn) {
+                            if (oracleReader->trace >= TRACE_WARN)
+                                cerr << "WARNING: SCN swap" << endl;
+                        }
                     }
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
@@ -294,8 +296,7 @@ namespace OpenLogReplicator {
                                     }
                                 }
                             } else {
-                                if (oracleReader->trace >= TRACE_WARN)
-                                    cerr << "ERROR: next BDBA/SLOT does not match, probably the value of force-checkpoint-scn is set too low and part of transaction got lost" << endl;
+                                cerr << "ERROR: next BDBA/SLOT does not match" << endl;
                             }
                         }
 

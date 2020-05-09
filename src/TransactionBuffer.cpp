@@ -41,11 +41,12 @@ namespace OpenLogReplicator {
         TransactionChunk *tc, *prevTc;
 
         prevTc = new TransactionChunk(nullptr, redoBufferSize);
-        if (prevTc == nullptr) {
+        tmpTc = new TransactionChunk(nullptr, redoBufferSize);
+        if (prevTc == nullptr || tmpTc == nullptr) {
             cerr << "ERROR: out of memory for transaction buffer, for size: " << dec << this->redoBuffers << endl;
             throw MemoryException("out of memory");
         }
-        unused = prevTc;
+        unusedTc = prevTc;
 
         for (uint64_t a = 1; a < this->redoBuffers; ++a) {
             tc = new TransactionChunk(prevTc, redoBufferSize);
@@ -58,22 +59,22 @@ namespace OpenLogReplicator {
     }
 
     TransactionChunk *TransactionBuffer::newTransactionChunk(OracleReader *oracleReader) {
-        if (unused == nullptr) {
+        if (unusedTc == nullptr) {
             cerr << "ERROR: out of transaction buffer, size1: " << dec << freeBuffers << endl;
             oracleReader->dumpTransactions();
             throw MemoryException("out of memory");
         }
 
-        TransactionChunk *tc = unused;
-        unused = unused->next;
+        TransactionChunk *tc = unusedTc;
+        unusedTc = unusedTc->next;
 
-        if (unused == nullptr) {
+        if (unusedTc == nullptr) {
             cerr << "ERROR: out of transaction buffer, you can increase the redo-buffer-mb parameter" << endl;
             oracleReader->dumpTransactions();
             throw MemoryException("out of memory");
         }
 
-        unused->prev = nullptr;
+        unusedTc->prev = nullptr;
         tc->next = nullptr;
         tc->size = 0;
         tc->elements = 0;
@@ -87,12 +88,12 @@ namespace OpenLogReplicator {
         ++freeBuffers;
 
         tc->prev = nullptr;
-        tc->next = unused;
-        unused->prev = tc;
-        unused = tc;
+        tc->next = unusedTc;
+        unusedTc->prev = tc;
+        unusedTc = tc;
     }
 
-    TransactionChunk* TransactionBuffer::addTransactionChunk(OracleReader *oracleReader, TransactionChunk* tcLast, typeobj objn, typeobj objd,
+    void TransactionBuffer::addTransactionChunk(OracleReader *oracleReader, TransactionChunk* &tcLast, typeobj objn, typeobj objd,
             typeuba uba, typedba dba, typeslt slt, typerci rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
         if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
@@ -125,7 +126,6 @@ namespace OpenLogReplicator {
                     if (elementsSkipped > tcTemp->elements || pos < ROW_HEADER_TOTAL) {
                         cerr << "ERROR: bad data during finding scn out of order" << endl;
                         oracleReader->dumpTransactions();
-                        return tcLast;
                     }
                     prevScn = *((typescn *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SCN));
                     prevSubScn = *((typesubscn *)(tcTemp->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
@@ -136,7 +136,6 @@ namespace OpenLogReplicator {
                     if (pos < prevSize) {
                         cerr << "ERROR: trying move pos " << dec << pos << " back " << prevSize << endl;
                         oracleReader->dumpTransactions();
-                        return tcLast;
                     }
                     pos -= prevSize;
                     ++elementsSkipped;
@@ -173,7 +172,6 @@ namespace OpenLogReplicator {
                     tcTemp = tcNew;
                 }
                 appendTransactionChunk(tcTemp, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
-                return tcLast;
             }
         }
 
@@ -187,7 +185,6 @@ namespace OpenLogReplicator {
             tcLast = tcNew;
         }
         appendTransactionChunk(tcLast, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
-        return tcLast;
     }
 
     void TransactionBuffer::appendTransactionChunk(TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba,
@@ -213,12 +210,65 @@ namespace OpenLogReplicator {
         ++tc->elements;
     }
 
-    bool TransactionBuffer::deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* tc, typeuba &uba, typedba &dba, typeslt &slt, typerci &rci) {
-        cerr << "ERROR: part transaction delete: not yet implemented" << endl;
+    bool TransactionBuffer::deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* &tcLast, typeuba &uba, typedba &dba, typeslt &slt, typerci &rci) {
+        TransactionChunk *tc = tcLast;
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
             oracleReader->dumpTransactions();
             return false;
+        }
+
+        while (tc != nullptr) {
+            uint64_t pos = tc->size;
+            int64_t left = tc->elements;
+
+            while (pos > 0) {
+                if (pos < ROW_HEADER_TOTAL || left <= 0) {
+                    cerr << "ERROR: error while deleting transaction part" << endl;
+                    oracleReader->dumpTransactions();
+                    return false;
+                }
+
+                uint64_t lastSize = *((uint64_t *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+                typeuba prevUba = *((typeuba *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_UBA));
+                typedba prevDba = *((typedba *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_DBA));
+                typeslt prevSlt = *((typeslt *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SLT));
+                typerci prevRci = *((typerci *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_RCI));
+
+                //found match
+                if ((prevUba == uba || (prevDba == dba && uba== 0)) && prevSlt == slt && prevRci == rci) {
+                    if (pos < tc->size) {
+                        memcpy(tmpTc->buffer, tc->buffer + pos, tc->size - pos);
+                        memcpy(tc->buffer + pos - lastSize, tmpTc->buffer, tc->size - pos);
+                    }
+                    tc->size -= lastSize;
+
+                    --tc->elements;
+                    if (tc->elements == 0 && tc->next != nullptr) {
+                        if (tc->prev == nullptr) {
+                            memcpy(tc->buffer, tc->next->buffer, tc->next->size);
+                            tc->elements = tc->next->elements;
+                            tc->size = tc->next->size;
+                            TransactionChunk *tcTmp = tc->next;
+                            tc->next = tc->next->next;
+                            deleteTransactionChunk(tcTmp);
+                            if (tc->next == nullptr)
+                                tcLast = tc;
+                        } else {
+                            tc->prev->next = tc->next;
+                            if (tc->next != nullptr)
+                                tc->next->prev = tc->prev;
+                            deleteTransactionChunk(tc);
+                        }
+                    }
+                    return true;
+                }
+
+                pos -= lastSize;
+                --left;
+            }
+
+            tc = tc->prev;
         }
 
         return false;
@@ -240,43 +290,42 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    TransactionChunk* TransactionBuffer::rollbackTransactionChunk(OracleReader *oracleReader, TransactionChunk* tc, typeuba &lastUba, typedba &lastDba,
+    void TransactionBuffer::rollbackTransactionChunk(OracleReader *oracleReader, TransactionChunk* &tcLast, typeuba &lastUba, typedba &lastDba,
             typeslt &lastSlt, typerci &lastRci) {
-        if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
+        if (tcLast->size < ROW_HEADER_TOTAL || tcLast->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer" << endl;
             oracleReader->dumpTransactions();
-            return tc;
+            return;
         }
-        uint64_t lastSize = *((uint64_t *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        tc->size -= lastSize;
-        --tc->elements;
 
-        if (tc->elements == 0 && tc->prev != nullptr) {
-            TransactionChunk *tcTmp = tc;
-            tc = tc->prev;
-            tc->next = nullptr;
+        uint64_t lastSize = *((uint64_t *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        tcLast->size -= lastSize;
+        --tcLast->elements;
+
+        if (tcLast->elements == 0 && tcLast->prev != nullptr) {
+            TransactionChunk *tcTmp = tcLast;
+            tcLast = tcLast->prev;
+            tcLast->next = nullptr;
             deleteTransactionChunk(tcTmp);
         }
 
-        if (tc->elements == 0) {
+        if (tcLast->elements == 0) {
             lastUba = 0;
             lastDba = 0;
             lastSlt = 0;
             lastRci = 0;
-            return tc;
+            return;
         }
 
-        if (tc->size < ROW_HEADER_TOTAL) {
-            cerr << "ERROR: can't set last UBA size: " << dec << tc->size << ", elements: " << tc->elements << endl;
+        if (tcLast->size < ROW_HEADER_TOTAL) {
+            cerr << "ERROR: can't set last UBA size: " << dec << tcLast->size << ", elements: " << tcLast->elements << endl;
             oracleReader->dumpTransactions();
-            return tc;
+            return;
         }
-        lastUba = *((typeuba *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_UBA));
-        lastDba = *((typedba *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_DBA));
-        lastSlt = *((typeslt *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_SLT));
-        lastRci = *((typerci *)(tc->buffer + tc->size - ROW_HEADER_TOTAL + ROW_HEADER_RCI));
-
-        return tc;
+        lastUba = *((typeuba *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_UBA));
+        lastDba = *((typedba *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_DBA));
+        lastSlt = *((typeslt *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_SLT));
+        lastRci = *((typerci *)(tcLast->buffer + tcLast->size - ROW_HEADER_TOTAL + ROW_HEADER_RCI));
     }
 
     void TransactionBuffer::deleteTransactionChunks(TransactionChunk* tc, TransactionChunk* tcLast) {
@@ -287,16 +336,21 @@ namespace OpenLogReplicator {
             tcTemp = tcTemp->next;
         }
 
-        tcLast->next = unused;
-        unused->prev = tcLast;
-        unused = tc;
+        tcLast->next = unusedTc;
+        unusedTc->prev = tcLast;
+        unusedTc = tc;
     }
 
     TransactionBuffer::~TransactionBuffer() {
-        while (unused != nullptr) {
-            TransactionChunk *tcTemp = unused->next;
-            delete unused;
-            unused = tcTemp;
+        if (tmpTc != nullptr) {
+            delete tmpTc;
+            tmpTc = nullptr;
+        }
+
+        while (unusedTc != nullptr) {
+            TransactionChunk *tcTemp = unusedTc->next;
+            delete unusedTc;
+            unusedTc = tcTemp;
         }
     }
 }

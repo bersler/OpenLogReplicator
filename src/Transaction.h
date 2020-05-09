@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         void add(OracleReader *oracleReader, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
                 RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
         void rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPreviousOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
+        bool rollbackPartOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
                 typedba dba, typeslt slt, typerci rci);
 
         void flush(OracleReader *oracleReader);
