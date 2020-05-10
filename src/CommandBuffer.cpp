@@ -237,6 +237,11 @@ namespace OpenLogReplicator {
         uint64_t j, jMax;
         uint8_t digits;
 
+        if (redoLogRecord->length == 0) {
+            cerr << "ERROR, trying to output null data" << endl;
+            return this;
+        }
+
         append('"');
         append(columnName);
         append("\":");

@@ -898,7 +898,7 @@ namespace OpenLogReplicator {
                 for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
                     if (afterPos[i] > 0 || beforePos[i] > 0) {
                         if (afterPos[i] == 0 && (redoLogRecord1->object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
-                            if (beforeLen[i] == 0) {
+                            if (beforePos[i] == 0 || beforeLen[i] == 0) {
                                 if (prevValue)
                                     commandBuffer->append(',');
                                 else
@@ -915,7 +915,7 @@ namespace OpenLogReplicator {
                                         beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                             }
                         } else {
-                            if (afterLen[i] == 0) {
+                            if (afterPos[i] == 0 || afterLen[i] == 0) {
                                 if (prevValue)
                                     commandBuffer->append(',');
                                 else
