@@ -167,7 +167,7 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::flush(OracleReader *oracleReader) {
-        TransactionChunk *tcTemp = tc;
+        TransactionChunk *tcTmp = tc;
         bool hasPrev = false, opFlush = false;
 
         //transaction that has some DML's
@@ -185,21 +185,21 @@ namespace OpenLogReplicator {
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
 
-            while (tcTemp != nullptr) {
+            while (tcTmp != nullptr) {
                 pos = 0;
-                for (uint64_t i = 0; i < tcTemp->elements; ++i) {
-                    typeop2 op = *((typeop2*)(tcTemp->buffer + pos));
+                for (uint64_t i = 0; i < tcTmp->elements; ++i) {
+                    typeop2 op = *((typeop2*)(tcTmp->buffer + pos));
 
-                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO1)),
-                                  *redoLogRecord2 = ((RedoLogRecord *)(tcTemp->buffer + pos + ROW_HEADER_REDO2));
-                    redoLogRecord1->data = tcTemp->buffer + pos + ROW_HEADER_DATA;
-                    redoLogRecord2->data = tcTemp->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
-                    typescn scn = *((typescn *)(tcTemp->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
+                    RedoLogRecord *redoLogRecord1 = ((RedoLogRecord *)(tcTmp->buffer + pos + ROW_HEADER_REDO1)),
+                                  *redoLogRecord2 = ((RedoLogRecord *)(tcTmp->buffer + pos + ROW_HEADER_REDO2));
+                    redoLogRecord1->data = tcTmp->buffer + pos + ROW_HEADER_DATA;
+                    redoLogRecord2->data = tcTmp->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
+                    typescn scn = *((typescn *)(tcTmp->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
 
                     if (oracleReader->trace >= TRACE_WARN) {
                         if ((oracleReader->trace2 & TRACE2_TRANSACTION) != 0) {
-                            typeobj objn = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
-                            typeobj objd = *((typeobj*)(tcTemp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
+                            typeobj objn = *((typeobj*)(tcTmp->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
+                            typeobj objd = *((typeobj*)(tcTmp->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
                             cerr << "TRANSACTION Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
                     }
                     prevScn = scn;
                 }
-                tcTemp = tcTemp->next;
+                tcTmp = tcTmp->next;
             }
 
             oracleReader->commandBuffer->writer->commitTran();
@@ -389,11 +389,11 @@ namespace OpenLogReplicator {
 
     ostream& operator<<(ostream& os, const Transaction& tran) {
         uint64_t tcCount = 0, tcSumSize = 0;
-        TransactionChunk *tcTemp = tran.tc;
-        while (tcTemp != nullptr) {
-            tcSumSize += tcTemp->size;
+        TransactionChunk *tcTmp = tran.tc;
+        while (tcTmp != nullptr) {
+            tcSumSize += tcTmp->size;
             ++tcCount;
-            tcTemp = tcTemp->next;
+            tcTmp = tcTmp->next;
         }
 
         os << "T scn: " << PRINTSCN64(tran.firstScn) << "-" << PRINTSCN64(tran.lastScn) <<
@@ -407,4 +407,3 @@ namespace OpenLogReplicator {
         return os;
     }
 }
-

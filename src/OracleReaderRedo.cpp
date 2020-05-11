@@ -1378,5 +1378,4 @@ namespace OpenLogReplicator {
         os << "(" << dec << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.path << "\")";
         return os;
     }
-
 }

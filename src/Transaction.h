@@ -71,4 +71,3 @@ namespace OpenLogReplicator {
 }
 
 #endif
-

@@ -885,5 +885,4 @@ namespace OpenLogReplicator {
     bool OracleReaderRedoCompareReverse::operator()(OracleReaderRedo* const& p1, OracleReaderRedo* const& p2) {
         return p1->sequence < p2->sequence;
     }
-
 }

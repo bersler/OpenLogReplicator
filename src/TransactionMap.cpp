@@ -36,10 +36,10 @@ namespace OpenLogReplicator {
         if (hashMap[hashKey] == nullptr) {
             hashMap[hashKey] = transaction;
         } else {
-            Transaction *transactionTemp = hashMap[hashKey];
-            while (transactionTemp->next != nullptr)
-                transactionTemp = transactionTemp->next;
-            transactionTemp->next = transaction;
+            Transaction *transactionTmp = hashMap[hashKey];
+            while (transactionTmp->next != nullptr)
+                transactionTmp = transactionTmp->next;
+            transactionTmp->next = transaction;
         }
         ++elements;
     }
@@ -57,23 +57,23 @@ namespace OpenLogReplicator {
             return;
         }
 
-        Transaction *transactionTemp = hashMap[hashKey];
-        if (transactionTemp == transaction) {
-            hashMap[hashKey] = transactionTemp->next;
-            transactionTemp->next = nullptr;
+        Transaction *transactionTmp = hashMap[hashKey];
+        if (transactionTmp == transaction) {
+            hashMap[hashKey] = transactionTmp->next;
+            transactionTmp->next = nullptr;
             --elements;
             return;
         }
-        Transaction *transactionTempNext = transactionTemp->next;
-        while (transactionTempNext != nullptr) {
-            if (transactionTempNext == transaction) {
-                transactionTemp->next = transactionTempNext->next;
-                transactionTempNext->next = nullptr;
+        Transaction *transactionTmpNext = transactionTmp->next;
+        while (transactionTmpNext != nullptr) {
+            if (transactionTmpNext == transaction) {
+                transactionTmp->next = transactionTmpNext->next;
+                transactionTmpNext->next = nullptr;
                 --elements;
                 return;
             }
-            transactionTemp = transactionTempNext;
-            transactionTempNext = transactionTemp->next;
+            transactionTmp = transactionTmpNext;
+            transactionTmpNext = transactionTmp->next;
         }
 
         cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(transaction->lastUba) <<
@@ -86,18 +86,18 @@ namespace OpenLogReplicator {
     Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci) {
         uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
 
-        Transaction *transactionTemp = hashMap[hashKey], *transactionTempPartial1 = nullptr, *transactionTempPartial2 = nullptr;
+        Transaction *transactionTmp = hashMap[hashKey];
 
-        while (transactionTemp != nullptr) {
-            if (transactionTemp->lastUba == uba &&
-                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
-                return transactionTemp;
+        while (transactionTmp != nullptr) {
+            if (transactionTmp->lastUba == uba &&
+                    transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci)
+                return transactionTmp;
 
-            if (uba == 0 && transactionTemp->lastDba == dba &&
-                    transactionTemp->lastSlt == slt && transactionTemp->lastRci == rci)
-                return transactionTemp;
+            if (uba == 0 && transactionTmp->lastDba == dba &&
+                    transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci)
+                return transactionTmp;
 
-            transactionTemp = transactionTemp->next;
+            transactionTmp = transactionTmp->next;
         }
 
         return nullptr;
@@ -120,5 +120,4 @@ namespace OpenLogReplicator {
             hashMap = nullptr;
         }
     }
-
 }
