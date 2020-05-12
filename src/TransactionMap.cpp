@@ -21,6 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include <string.h>
 #include "MemoryException.h"
+#include "RedoLogRecord.h"
 #include "TransactionMap.h"
 #include "Transaction.h"
 
@@ -29,24 +30,25 @@ using namespace std;
 namespace OpenLogReplicator {
 
     void TransactionMap::set(Transaction* transaction) {
-        if (transaction->lastUba == 0 && transaction->lastDba == 0 && transaction->lastSlt == 0 && transaction->lastRci == 0)
+        if (transaction->opCodes == 0)
             return;
         uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
 
-        if (hashMap[hashKey] == nullptr) {
-            hashMap[hashKey] = transaction;
-        } else {
-            Transaction *transactionTmp = hashMap[hashKey];
-            while (transactionTmp->next != nullptr)
-                transactionTmp = transactionTmp->next;
-            transactionTmp->next = transaction;
+        Transaction *transactionTmp = hashMap[hashKey];
+        while (transactionTmp != nullptr) {
+            if (transactionTmp == transaction) {
+                cerr << "ERROR: transaction already present in hash map" << endl;
+                return;
+            }
+            transactionTmp = transactionTmp->next;
         }
+
+        transaction->next = hashMap[hashKey];
+        hashMap[hashKey] = transaction;
         ++elements;
     }
 
     void TransactionMap::erase(Transaction * transaction) {
-        if (transaction->lastUba == 0 && transaction->lastDba == 0 && transaction->lastSlt == 0 && transaction->lastRci == 0)
-            return;
         uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
 
         if (hashMap[hashKey] == nullptr) {
@@ -83,18 +85,13 @@ namespace OpenLogReplicator {
         return;
     }
 
-    Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci) {
+    Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci, uint64_t opFlags) {
         uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
-
         Transaction *transactionTmp = hashMap[hashKey];
 
         while (transactionTmp != nullptr) {
-            if (transactionTmp->lastUba == uba &&
-                    transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci)
-                return transactionTmp;
-
-            if (uba == 0 && transactionTmp->lastDba == dba &&
-                    transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci)
+            if (transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci  && transactionTmp->lastUba == uba &&
+                    ((opFlags & OPFLAG_BEGIN_TRANS) != 0 || transactionTmp->lastDba == dba))
                 return transactionTmp;
 
             transactionTmp = transactionTmp->next;

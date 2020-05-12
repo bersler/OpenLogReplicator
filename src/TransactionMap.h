@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         virtual ~TransactionMap();
         void erase(Transaction * transaction);
         void set(Transaction * transaction);
-        Transaction* getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci);
+        Transaction* getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
     };
 }
 

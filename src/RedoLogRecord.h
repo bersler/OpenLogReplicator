@@ -86,6 +86,8 @@ namespace OpenLogReplicator {
 #define SUPPLOG_INSERT          0x02
 #define SUPPLOG_DELETE          0x04
 
+#define OPFLAG_BEGIN_TRANS      0x01
+
     class OracleObject;
     class OracleReader;
 
@@ -154,6 +156,7 @@ namespace OpenLogReplicator {
         uint16_t suppLogAfter;
         typedba suppLogBdba;
         typeslot suppLogSlot;
+        uint64_t opFlags;
 
         void dumpHex(ostream &str, OracleReader *oracleReader);
         void dump(OracleReader *oracleReader);

@@ -38,8 +38,8 @@ namespace OpenLogReplicator {
         typeseq firstSequence;
         typescn firstScn;
         typescn lastScn;
-        TransactionChunk *tc;
-        TransactionChunk *tcLast;
+        TransactionChunk *firstTc;
+        TransactionChunk *lastTc;
         uint64_t opCodes;
         uint64_t pos;
         typeuba lastUba;
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
                 RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
         void rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer);
         bool rollbackPartOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
-                typedba dba, typeslt slt, typerci rci);
+                typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
 
         void flush(OracleReader *oracleReader);
 

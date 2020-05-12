@@ -892,6 +892,7 @@ namespace OpenLogReplicator {
                 oracleReader->dumpStream << "too short field ktubl: " << dec << fieldLength << endl;
                 return;
             }
+            redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
 
             if (fieldLength == 28) {
                 if (oracleReader->dumpRedoLog >= 1) {

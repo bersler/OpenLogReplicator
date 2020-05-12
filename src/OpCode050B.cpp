@@ -54,6 +54,7 @@ namespace OpenLogReplicator {
             uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktub(fieldPos, fieldLength);
+                redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
             }
             fieldPos += (fieldLength + 3) & 0xFFFC;
         }
