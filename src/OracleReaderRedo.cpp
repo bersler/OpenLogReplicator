@@ -862,10 +862,6 @@ namespace OpenLogReplicator {
                         redoLogRecord->rci, redoLogRecord, &zero, oracleReader->transactionBuffer, sequence);
                 oracleReader->transactionHeap.update(transaction->pos);
             }
-            transaction->lastUba = redoLogRecord->uba;
-            transaction->lastDba = redoLogRecord->dba;
-            transaction->lastSlt = redoLogRecord->slt;
-            transaction->lastRci = redoLogRecord->rci;
 
             if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {
                 cerr << "redo, now last: UBA: " << PRINTUBA(transaction->lastUba) <<
@@ -980,10 +976,6 @@ namespace OpenLogReplicator {
                             redoLogRecord1, redoLogRecord2, oracleReader->transactionBuffer, sequence);
                     oracleReader->transactionHeap.update(transaction->pos);
                 }
-                transaction->lastUba = redoLogRecord1->uba;
-                transaction->lastDba = redoLogRecord1->dba;
-                transaction->lastSlt = redoLogRecord1->slt;
-                transaction->lastRci = redoLogRecord1->rci;
                 transaction->isShutdown = isShutdown;
 
                 if ((oracleReader->trace2 & TRACE2_ROLLBACK) != 0) {

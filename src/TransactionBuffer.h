@@ -56,15 +56,15 @@ namespace OpenLogReplicator {
         uint64_t redoBuffers;
 
         TransactionChunk* newTransactionChunk(OracleReader *oracleReader);
-        void addTransactionChunk(OracleReader *oracleReader, TransactionChunk* &lastTc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
+        bool addTransactionChunk(OracleReader *oracleReader, TransactionChunk* &lastTc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
                 uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void rollbackTransactionChunk(OracleReader *oracleReader, TransactionChunk* &lastTc, typeuba &lastUba, typedba &lastDba,
                 uint8_t &lastSlt, uint8_t &lastRci);
-        bool getLastRecord(TransactionChunk* tc, typeop2 &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2);
-        bool deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* &lastTc, typeuba &uba, typedba &dba, uint8_t &slt, uint8_t &rci,
+        bool getLastRecord(TransactionChunk* lastTc, typeop2 &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2);
+        bool deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* &firstTc, TransactionChunk* &lastTc, typeuba &uba, typedba &dba, uint8_t &slt, uint8_t &rci,
                 uint64_t opFlags);
         void deleteTransactionChunk(TransactionChunk* tc);
-        void deleteTransactionChunks(TransactionChunk* firstTc, TransactionChunk* lastTc);
+        void deleteTransactionChunks(TransactionChunk* startTc, TransactionChunk* endTc);
 
         TransactionBuffer(uint64_t redoBuffers, uint64_t redoBufferSize);
         virtual ~TransactionBuffer();

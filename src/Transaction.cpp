@@ -141,7 +141,12 @@ namespace OpenLogReplicator {
                     " SLT: " << dec << (uint64_t)slt <<
                     " RCI: " << dec << (uint64_t)rci << endl;
 
-        transactionBuffer->addTransactionChunk(oracleReader, lastTc, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2);
+        if (transactionBuffer->addTransactionChunk(oracleReader, lastTc, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2)) {
+            lastUba = redoLogRecord1->uba;
+            lastDba = redoLogRecord1->dba;
+            lastSlt = redoLogRecord1->slt;
+            lastRci = redoLogRecord1->rci;
+        }
         ++opCodes;
         touch(redoLogRecord1->scn, sequence);
     }
@@ -157,7 +162,7 @@ namespace OpenLogReplicator {
                     " opcodes: " << dec << opCodes << endl;
         }
 
-        if (transactionBuffer->deleteTransactionPart(oracleReader, lastTc, uba, dba, slt, rci, opFlags)) {
+        if (transactionBuffer->deleteTransactionPart(oracleReader, firstTc, lastTc, uba, dba, slt, rci, opFlags)) {
             --opCodes;
             if (lastScn == ZERO_SCN || lastScn < scn)
                 lastScn = scn;
