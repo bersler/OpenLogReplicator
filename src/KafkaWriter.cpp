@@ -140,6 +140,7 @@ namespace OpenLogReplicator {
         Conf *conf = Conf::create(Conf::CONF_GLOBAL);
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
         conf->set("metadata.broker.list", brokers, errstr);
+        conf->set("client.id", "OpenLogReplicator", errstr);
 
         if (test == 0) {
             producer = Producer::create(conf, errstr);
