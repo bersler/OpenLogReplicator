@@ -34,6 +34,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "CommandBuffer.h"
 #include "KafkaWriter.h"
 #include "OracleAnalyser.h"
+#include "RedoLogException.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -253,10 +254,10 @@ int main() {
             mainThread.wait(lck);
         }
 
+    } catch (RedoLogException &e) {
     } catch (exception &e) {
-        cerr << "ERROR parsing OpenLogReplicator.json" << endl;
+        cerr << "ERROR: parsing OpenLogReplicator.json" << endl;
     }
-
 
     for (auto analyser : analysers)
         analyser->stop();

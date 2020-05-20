@@ -46,10 +46,10 @@ namespace OpenLogReplicator {
         try {
             ret = ((Thread *) context)->run();
         } catch(RedoLogException &ex) {
-            cerr << "ERROR REDO LOG: " << ex.msg << endl;
+            cerr << "ERROR: REDO LOG: " << ex.msg << endl;
             stopMain();
         } catch(MemoryException &ex) {
-            cerr << "ERROR MEMORY: " << ex.msg << endl;
+            cerr << "ERROR: MEMORY: " << ex.msg << endl;
             stopMain();
         }
         return ret;

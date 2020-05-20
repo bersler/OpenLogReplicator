@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
         if (stat(path, &fileStat) != 0)
-            return false;
+            return REDO_ERROR;
         fileSize = fileStat.st_size;
 
         fileDes = open(path, O_RDONLY | O_LARGEFILE | ((oracleAnalyser->directRead > 0) ? O_DIRECT : 0));
