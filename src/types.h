@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.3"
+#define PROGRAM_VERSION             "0.5.4"
 
 #define STREAM_JSON                 1
 #define STREAM_DBZ_JSON             2
@@ -59,26 +59,17 @@ typedef uint32_t typeseq;
 
 #define TRACE2_PERFORMANCE          0x0000001
 #define TRACE2_DISK                 0x0000002
-#define TRACE2_TRANSACTION          0x0000004
-#define TRACE2_DUMP                 0x0000008
-#define TRACE2_UBA                  0x0000010
-#define TRACE2_REDO                 0x0000020
-#define TRACE2_JSON                 0x0000040
-#define TRACE2_CHECKPOINT_FLUSH     0x0000080
-#define TRACE2_OUTPUT_BUFFER        0x0000100
-#define TRACE2_ROLLBACK             0x0000200
+#define TRACE2_VECTOR               0x0000004
+#define TRACE2_TRANSACTION          0x0000008
+#define TRACE2_DUMP                 0x0000010
+#define TRACE2_UBA                  0x0000020
+#define TRACE2_REDO                 0x0000040
+#define TRACE2_JSON                 0x0000080
+#define TRACE2_CHECKPOINT_FLUSH     0x0000100
+#define TRACE2_OUTPUT_BUFFER        0x0000200
+#define TRACE2_ROLLBACK             0x0000400
 
-#define DISK_BUFFER_SIZE            (16*1024*1024)
 #define REDO_RECORD_MAX_SIZE        1048576
-#define REDO_PAGE_SIZE_MIN          512
-#define REDO_PAGE_SIZE_MAX          1024
-#define READ_CHUNK_MIN_SIZE         8192
-
-#define REDO_OK                     0
-#define REDO_WRONG_SEQUENCE         1
-#define REDO_WRONG_SEQUENCE_SWITCHED 2
-#define REDO_ERROR                  3
-#define REDO_EMPTY                  4
 
 #define USN(xid)                    ((uint16_t)(((uint64_t)xid)>>48))
 #define SLT(xid)                    ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))

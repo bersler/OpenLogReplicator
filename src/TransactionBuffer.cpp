@@ -26,9 +26,9 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string.h>
 #include "TransactionBuffer.h"
 #include "MemoryException.h"
+#include "OracleAnalyser.h"
 #include "TransactionChunk.h"
 #include "RedoLogRecord.h"
-#include "OracleReader.h"
 
 using namespace std;
 
@@ -58,10 +58,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    TransactionChunk *TransactionBuffer::newTransactionChunk(OracleReader *oracleReader) {
+    TransactionChunk *TransactionBuffer::newTransactionChunk(OracleAnalyser *oracleAnalyser) {
         if (unusedTc == nullptr) {
             cerr << "ERROR: out of transaction buffer, size1: " << dec << freeBuffers << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             throw MemoryException("out of memory");
         }
 
@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
 
         if (unusedTc == nullptr) {
             cerr << "ERROR: out of transaction buffer, you can increase the redo-buffer-mb parameter" << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             throw MemoryException("out of memory");
         }
 
@@ -93,13 +93,13 @@ namespace OpenLogReplicator {
         unusedTc = tc;
     }
 
-    bool TransactionBuffer::addTransactionChunk(OracleReader *oracleReader, TransactionChunk* &lastTc, typeobj objn, typeobj objd,
+    bool TransactionBuffer::addTransactionChunk(OracleAnalyser *oracleAnalyser, TransactionChunk* &lastTc, typeobj objn, typeobj objd,
             typeuba uba, typedba dba, typeslt slt, typerci rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
         if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
             cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL)
                     << ") exceeding redo buffer size (" << redoBufferSize << "), try increasing the redo-buffer-size parameter" << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             throw MemoryException("too big chunk size");
         }
 
@@ -118,7 +118,7 @@ namespace OpenLogReplicator {
                 while (true) {
                     if (pos < prevSize) {
                         cerr << "ERROR: trying move pos " << dec << pos << " back " << prevSize << endl;
-                        oracleReader->dumpTransactions();
+                        oracleAnalyser->dumpTransactions();
                         return false;
                     }
                     pos -= prevSize;
@@ -133,7 +133,7 @@ namespace OpenLogReplicator {
                     }
                     if (elementsSkipped > tc->elements || pos < ROW_HEADER_TOTAL) {
                         cerr << "ERROR: bad data during finding SCN out of order" << endl;
-                        oracleReader->dumpTransactions();
+                        oracleAnalyser->dumpTransactions();
                         return false;
                     }
 
@@ -148,7 +148,7 @@ namespace OpenLogReplicator {
                 if (pos < tc->size) {
                     //does the block need to be divided
                     if (tc->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
-                        TransactionChunk *tmpTc = newTransactionChunk(oracleReader);
+                        TransactionChunk *tmpTc = newTransactionChunk(oracleAnalyser);
                         tmpTc->elements = elementsSkipped;
                         tmpTc->size = tc->size - pos;
                         tmpTc->prev = tc;
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
 
                 //new block needed
                 if (tc->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
-                    TransactionChunk *tcNew = newTransactionChunk(oracleReader);
+                    TransactionChunk *tcNew = newTransactionChunk(oracleAnalyser);
                     tcNew->prev = tc;
                     tcNew->next = tc->next;
                     tc->next->prev = tcNew;
@@ -193,7 +193,7 @@ namespace OpenLogReplicator {
 
         //new block needed
         if (lastTc->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > redoBufferSize) {
-            TransactionChunk *tcNew = newTransactionChunk(oracleReader);
+            TransactionChunk *tcNew = newTransactionChunk(oracleAnalyser);
             tcNew->prev = lastTc;
             tcNew->elements = 0;
             tcNew->size = 0;
@@ -227,12 +227,12 @@ namespace OpenLogReplicator {
         ++tc->elements;
     }
 
-    bool TransactionBuffer::deleteTransactionPart(OracleReader *oracleReader, TransactionChunk* &firstTc, TransactionChunk* &lastTc, typeuba &uba, typedba &dba, typeslt &slt, typerci &rci,
+    bool TransactionBuffer::deleteTransactionPart(OracleAnalyser *oracleAnalyser, TransactionChunk* &firstTc, TransactionChunk* &lastTc, typeuba &uba, typedba &dba, typeslt &slt, typerci &rci,
             uint64_t opFlags) {
         TransactionChunk *tc = lastTc;
         if (tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer size1: " << dec << lastTc->size << " elements: " << dec << lastTc->elements << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             return false;
         }
 
@@ -243,7 +243,7 @@ namespace OpenLogReplicator {
             while (pos > 0) {
                 if (pos < ROW_HEADER_TOTAL || left <= 0) {
                     cerr << "ERROR: error while deleting transaction part" << endl;
-                    oracleReader->dumpTransactions();
+                    oracleAnalyser->dumpTransactions();
                     return false;
                 }
 
@@ -302,11 +302,11 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void TransactionBuffer::rollbackTransactionChunk(OracleReader *oracleReader, TransactionChunk* &lastTc, typeuba &lastUba, typedba &lastDba,
+    void TransactionBuffer::rollbackTransactionChunk(OracleAnalyser *oracleAnalyser, TransactionChunk* &lastTc, typeuba &lastUba, typedba &lastDba,
             typeslt &lastSlt, typerci &lastRci) {
         if (lastTc->size < ROW_HEADER_TOTAL || lastTc->elements == 0) {
             cerr << "ERROR: trying to remove from empty buffer size2: " << dec << lastTc->size << " elements: " << dec << lastTc->elements << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             return;
         }
 
@@ -331,7 +331,7 @@ namespace OpenLogReplicator {
 
         if (lastTc->size < ROW_HEADER_TOTAL) {
             cerr << "ERROR: can't set last UBA size: " << dec << lastTc->size << ", elements: " << lastTc->elements << endl;
-            oracleReader->dumpTransactions();
+            oracleAnalyser->dumpTransactions();
             return;
         }
         lastUba = *((typeuba *)(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_UBA));

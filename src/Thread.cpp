@@ -20,7 +20,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include "Thread.h"
 
-#include "CommandBuffer.h"
 #include "OracleObject.h"
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
@@ -33,11 +32,10 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    Thread::Thread(const string alias, CommandBuffer *commandBuffer) :
+    Thread::Thread(const string alias) :
         shutdown(false),
         pthread(0),
-        alias(alias),
-        commandBuffer(commandBuffer) {
+        alias(alias) {
     }
 
     Thread::~Thread() {
@@ -58,6 +56,6 @@ namespace OpenLogReplicator {
     }
 
     void Thread::stop(void) {
-        this->shutdown = true;
+        shutdown = true;
     }
 }

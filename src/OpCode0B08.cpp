@@ -20,15 +20,16 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0B08.h"
-#include "OracleReader.h"
+
+#include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B08::OpCode0B08(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleReader, redoLogRecord) {
+    OpCode0B08::OpCode0B08(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyser, redoLogRecord) {
     }
 
     OpCode0B08::~OpCode0B08() {
@@ -38,7 +39,7 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktbRedo(fieldPos, fieldLength);
             } else if (i == 2) {

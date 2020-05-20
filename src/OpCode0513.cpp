@@ -20,17 +20,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode0513.h"
+
+#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0513::OpCode0513(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleReader, redoLogRecord) {
+    OpCode0513::OpCode0513(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyser, redoLogRecord) {
     }
 
     OpCode0513::~OpCode0513() {
@@ -41,7 +42,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = redoLogRecord->fieldPos;
 
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
 
             if (i == 1) dumpMsgSessionSerial(fieldPos, fieldLength);
             else
@@ -76,47 +77,47 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) {
-        uint16_t flags = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
-        if ((flags & 0x0001) != 0) oracleReader->dumpStream << "DDL transaction" << endl;
-        if ((flags & 0x0002) != 0) oracleReader->dumpStream << "Space Management transaction" << endl;
-        if ((flags & 0x0004) != 0) oracleReader->dumpStream << "Recursive transaction" << endl;
-        if ((flags & 0x0008) != 0) oracleReader->dumpStream << "Logmnr Internal transaction" << endl;
-        if ((flags & 0x0010) != 0) oracleReader->dumpStream << "DB Open in Migrate Mode" << endl;
-        if ((flags & 0x0020) != 0) oracleReader->dumpStream << "LSBY ignore" << endl;
-        if ((flags & 0x0040) != 0) oracleReader->dumpStream << "LogMiner no tx chunking" << endl;
-        if ((flags & 0x0080) != 0) oracleReader->dumpStream << "LogMiner Stealth transaction" << endl;
-        if ((flags & 0x0100) != 0) oracleReader->dumpStream << "LSBY preserve" << endl;
-        if ((flags & 0x0200) != 0) oracleReader->dumpStream << "LogMiner Marker transaction" << endl;
-        if ((flags & 0x0400) != 0) oracleReader->dumpStream << "Transaction in pragama'ed plsql" << endl;
-        if ((flags & 0x0800) != 0) oracleReader->dumpStream << "Tx audit CV flags undefined" << endl;
+        uint16_t flags = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 0);
+        if ((flags & 0x0001) != 0) oracleAnalyser->dumpStream << "DDL transaction" << endl;
+        if ((flags & 0x0002) != 0) oracleAnalyser->dumpStream << "Space Management transaction" << endl;
+        if ((flags & 0x0004) != 0) oracleAnalyser->dumpStream << "Recursive transaction" << endl;
+        if ((flags & 0x0008) != 0) oracleAnalyser->dumpStream << "Logmnr Internal transaction" << endl;
+        if ((flags & 0x0010) != 0) oracleAnalyser->dumpStream << "DB Open in Migrate Mode" << endl;
+        if ((flags & 0x0020) != 0) oracleAnalyser->dumpStream << "LSBY ignore" << endl;
+        if ((flags & 0x0040) != 0) oracleAnalyser->dumpStream << "LogMiner no tx chunking" << endl;
+        if ((flags & 0x0080) != 0) oracleAnalyser->dumpStream << "LogMiner Stealth transaction" << endl;
+        if ((flags & 0x0100) != 0) oracleAnalyser->dumpStream << "LSBY preserve" << endl;
+        if ((flags & 0x0200) != 0) oracleAnalyser->dumpStream << "LogMiner Marker transaction" << endl;
+        if ((flags & 0x0400) != 0) oracleAnalyser->dumpStream << "Transaction in pragama'ed plsql" << endl;
+        if ((flags & 0x0800) != 0) oracleAnalyser->dumpStream << "Tx audit CV flags undefined" << endl;
     }
 
     void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpRedoLog >= 1) {
-            uint16_t serialNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 2);
+        if (oracleAnalyser->dumpRedoLog >= 1) {
+            uint16_t serialNumber = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 2);
             uint16_t sessionNumber;
-            if (oracleReader->version < 0x19000)
-                sessionNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 0);
+            if (oracleAnalyser->version < 0x19000)
+                sessionNumber = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 0);
             else
-                sessionNumber = oracleReader->read16(redoLogRecord->data + fieldPos + 4);
+                sessionNumber = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 4);
 
-            oracleReader->dumpStream <<
+            oracleAnalyser->dumpStream <<
                     "session number   = " << dec << sessionNumber << endl <<
                     "serial  number   = " << dec << serialNumber << endl;
         }
     }
 
     void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpRedoLog >= 1) {
-            uint32_t version = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
-            oracleReader->dumpStream << "version " << dec << version << endl;
+        if (oracleAnalyser->dumpRedoLog >= 1) {
+            uint32_t version = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
+            oracleAnalyser->dumpStream << "version " << dec << version << endl;
         }
     }
 
     void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) {
-        if (oracleReader->dumpRedoLog >= 1) {
-            uint32_t auditSessionid = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
-            oracleReader->dumpStream << "audit sessionid " << auditSessionid << endl;
+        if (oracleAnalyser->dumpRedoLog >= 1) {
+            uint32_t auditSessionid = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
+            oracleAnalyser->dumpStream << "audit sessionid " << auditSessionid << endl;
         }
     }
 }

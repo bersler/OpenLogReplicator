@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     class OpCode0502;
     class OpCode0504;
     class RedoLogRecord;
-    class OracleReader;
+    class OracleAnalyser;
 
     class Transaction {
     public:
@@ -50,20 +50,20 @@ namespace OpenLogReplicator {
         bool isBegin;
         bool isCommit;
         bool isRollback;
-        bool isShutdown;
+        bool shutdown;
         Transaction *next;
 
         bool operator< (Transaction &p);
         void touch(typescn scn, typeseq sequence);
-        void add(OracleReader *oracleReader, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
+        void add(OracleAnalyser *oracleAnalyser, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
                 RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
-        void rollbackLastOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPartOp(OracleReader *oracleReader, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
+        void rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer);
+        bool rollbackPartOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
                 typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
 
-        void flush(OracleReader *oracleReader);
+        void flush(OracleAnalyser *oracleAnalyser);
 
-        Transaction(OracleReader *oracleReader, typexid xid, TransactionBuffer *transactionBuffer);
+        Transaction(OracleAnalyser *oracleAnalyser, typexid xid, TransactionBuffer *transactionBuffer);
         virtual ~Transaction();
 
         friend ostream& operator<<(ostream& os, const Transaction& tran);

@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         if (heapSize + 1 == heapMaxSize) {
             cerr << "ERROR: transactions heap exceeded: " << heapSize << ", you can try to increase max-concurrent-transactions parameter" << endl;
             for (uint64_t i = 1; i <= heapSize; ++i) {
-                cout << "[" << dec << i << "]: " << *heap[i] << endl;
+                cerr << "[" << dec << i << "]: " << *heap[i] << endl;
             }
             throw MemoryException("out of memory");
         }

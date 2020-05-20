@@ -22,16 +22,16 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include "types.h"
 #include "CommandBuffer.h"
-#include "OracleReader.h"
 #include "OracleObject.h"
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
 #include "MemoryException.h"
+#include "OracleAnalyser.h"
 
 namespace OpenLogReplicator {
 
     CommandBuffer::CommandBuffer(uint64_t outputBufferSize) :
-            oracleReader(nullptr),
+            oracleAnalyser(nullptr),
             shutdown(false),
             writer(nullptr),
             posStart(0),
@@ -47,20 +47,19 @@ namespace OpenLogReplicator {
             cerr << "ERROR: could not allocate memory for output buffer (" << dec << outputBufferSize << " bytes)" << endl;
             throw MemoryException("out of memory");
         }
-
     }
 
     void CommandBuffer::stop(void) {
-        this->shutdown = true;
+        shutdown = true;
     }
 
-    void CommandBuffer::setOracleReader(OracleReader *oracleReader) {
-        this->oracleReader = oracleReader;
+    void CommandBuffer::setOracleAnalyser(OracleAnalyser *oracleAnalyser) {
+        this->oracleAnalyser = oracleAnalyser;
     }
 
 
     CommandBuffer* CommandBuffer::appendEscape(const uint8_t *str, uint64_t length) {
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         {
@@ -68,10 +67,10 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + length * 2 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (1)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
-            if (this->shutdown)
+            if (shutdown)
                 return this;
         }
 
@@ -109,7 +108,7 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendHex(uint64_t val, uint64_t length) {
         static const char* digits = "0123456789abcdef";
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         {
@@ -117,7 +116,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + length >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
         }
@@ -135,7 +134,7 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::appendDec(uint64_t val) {
-        if (this->shutdown)
+        if (shutdown)
             return this;
         char buffer[21];
         uint64_t length = 0;
@@ -156,7 +155,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + length >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
         }
@@ -371,8 +370,8 @@ namespace OpenLogReplicator {
             } else {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): " << dec << fieldLength << " - ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
-                cout << endl;
+                    cerr << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
+                cerr << endl;
             }
             break;
 
@@ -381,8 +380,8 @@ namespace OpenLogReplicator {
             if (fieldLength != 7 && fieldLength != 11) {
                 cerr << "ERROR: unknown value (type: " << typeNo << "): ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
-                    cout << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
-                cout << endl;
+                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
+                cerr << endl;
                 append('null');
             } else if (timestampFormat == 0) {
                 //2012-04-23T18:25:43.511Z - ISO 8601 format
@@ -442,7 +441,7 @@ namespace OpenLogReplicator {
                 if (fieldLength == 11) {
                     uint64_t digits = 0;
                     uint8_t buffer[10];
-                    uint64_t val = oracleReader->read32Big(redoLogRecord->data + fieldPos + 7);
+                    uint64_t val = oracleAnalyser->read32Big(redoLogRecord->data + fieldPos + 7);
 
                     for (int64_t i = 9; i > 0; --i) {
                         buffer[i] = val % 10;
@@ -480,7 +479,7 @@ namespace OpenLogReplicator {
 
                         uint64_t fraction = 0;
                         if (fieldLength == 11)
-                            fraction = oracleReader->read32Big(redoLogRecord->data + fieldPos + 7);
+                            fraction = oracleAnalyser->read32Big(redoLogRecord->data + fieldPos + 7);
 
                         appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
                     } else {
@@ -500,7 +499,7 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::append(const string str) {
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         uint64_t length = str.length();
@@ -509,7 +508,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + length >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
         }
@@ -554,7 +553,7 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::append(char chr) {
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         {
@@ -562,7 +561,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + 1 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
         }
@@ -631,6 +630,7 @@ namespace OpenLogReplicator {
             append(object->columns[i]->columnName);
             append("\"}");
         }
+        return this;
     }
 
     CommandBuffer* CommandBuffer::appendDbzHead(OracleObject *object) {
@@ -638,7 +638,7 @@ namespace OpenLogReplicator {
         append("{\"type\":\"struct\",\"fields\":[");
         appendDbzCols(object);
         append("],\"optional\":true,\"name\":\"");
-        append(oracleReader->alias);
+        append(oracleAnalyser->alias);
         append('.');
         append(object->owner);
         append('.');
@@ -647,7 +647,7 @@ namespace OpenLogReplicator {
         append("{\"type\":\"struct\",\"fields\":[");
         appendDbzCols(object);
         append("],\"optional\":true,\"name\":\"");
-        append(oracleReader->alias);
+        append(oracleAnalyser->alias);
         append('.');
         append(object->owner);
         append('.');
@@ -679,11 +679,11 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid) {
         append(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
-        append(oracleReader->alias);
+        append(oracleAnalyser->alias);
         append("\",");
         appendMs("ts_ms", time);
         append(",\"snapshot\":\"false\",\"db\":\"");
-        append(oracleReader->databaseContext);
+        append(oracleAnalyser->databaseContext);
         append("\",\"schema\":\"");
         append(object->owner);
         append("\",\"table\":\"");
@@ -701,19 +701,19 @@ namespace OpenLogReplicator {
         append("\",");
         appendMs("ts_ms", time);
         append(",\"transaction\":null,\"messagetopic\":\"");
-        append(oracleReader->alias);
+        append(oracleAnalyser->alias);
         append('.');
         append(object->owner);
         append('.');
         append(object->objectName);
         append("\",\"messagesource\":\"OpenLogReplicator from Oracle on ");
-        append(oracleReader->alias);
+        append(oracleAnalyser->alias);
         append("\"}}");
         return this;
     }
 
     CommandBuffer* CommandBuffer::beginTran() {
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         {
@@ -721,7 +721,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 && posEndTmp + 8 >= posStart) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (8)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
         }
@@ -749,7 +749,7 @@ namespace OpenLogReplicator {
             posEndTmp = (posEndTmp + 7) & 0xFFFFFFFFFFFFFFF8;
             posEnd = posEndTmp;
 
-            readersCond.notify_all();
+            analysersCond.notify_all();
         }
 
         if (posEndTmp + 1 >= outputBufferSize) {
@@ -761,7 +761,7 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::rewind() {
-        if (this->shutdown)
+        if (shutdown)
             return this;
 
         {
@@ -769,7 +769,7 @@ namespace OpenLogReplicator {
             while (posSize > 0 || posStart == 0) {
                 cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
                 writerCond.wait(lck);
-                if (this->shutdown)
+                if (shutdown)
                     return this;
             }
 

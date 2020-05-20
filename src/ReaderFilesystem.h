@@ -1,4 +1,4 @@
-/* Header for OpCode0501 class
+/* Header for ReaderFilesystem class
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -9,7 +9,7 @@ by the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
 Open Log Replicator is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
+but WITHOUT ANY WARRANTfY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
@@ -17,27 +17,30 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
+#include <string>
+#include <pthread.h>
+#include "types.h"
+#include "Reader.h"
 
-#ifndef OPCODE0501_H_
-#define OPCODE0501_H_
+#ifndef READERFILESYSTEM_H_
+#define READERFILESYSTEM_H_
+
+using namespace std;
 
 namespace OpenLogReplicator {
 
-    class RedoLogRecord;
+    class OracleAnalyser;
 
-    class OpCode0501: public OpCode {
+    class ReaderFilesystem : public Reader {
     protected:
-        void ktudb(uint64_t fieldPos, uint64_t fieldLength);
-        void kteoputrn(uint64_t fieldPos, uint64_t fieldLength);
-        void suppLog(uint64_t fieldPos, uint64_t fieldLength);
-        void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
-        virtual const char* getUndoType();
-    public:
-        OpCode0501(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
-        virtual ~OpCode0501();
+        int64_t fileDes;
+        virtual void redoClose();
+        virtual uint64_t redoOpen();
+        virtual uint64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
 
-        virtual void process();
+    public:
+        ReaderFilesystem(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group);
+        virtual ~ReaderFilesystem();
     };
 }
 

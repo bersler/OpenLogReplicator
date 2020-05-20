@@ -33,13 +33,15 @@ namespace OpenLogReplicator {
 #define TRANSACTION_DELETE 2
 #define TRANSACTION_UPDATE 3
 
+    class CommandBuffer;
+    class OracleAnalyser;
     class RedoLogRecord;
-    class OracleReader;
 
     class Writer : public Thread {
     protected:
-        OracleReader *oracleReader;
-        uint64_t stream;            //1 - JSON
+        CommandBuffer *commandBuffer;
+        OracleAnalyser *oracleAnalyser;
+        uint64_t stream;            //1 - JSON, 2 - DBZ-JSON
         uint64_t sortColumns;       //1 - sort cols for UPDATE operations, 2 - sort cols & remove unchanged values
         uint64_t metadata;          //0 - no metadata in output, 1 - metadata in output
         uint64_t singleDml;         //0 - transactions grouped, 1 - every dml is a single transaction
@@ -48,7 +50,6 @@ namespace OpenLogReplicator {
         uint64_t timestampFormat;   //0 - timestamp in ISO 8601 format, 1 - timestamp in Unix epoch format
 
     public:
-        void stop(void);
         virtual void *run() = 0;
         uint64_t initialize();
         virtual void beginTran(typescn scn, typetime time, typexid xid) = 0;
@@ -59,7 +60,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;
         virtual void parseDDL(RedoLogRecord *redoLogRecord1) = 0;
 
-        Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns,
+        Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns,
                 uint64_t test, uint64_t timestampFormat);
         virtual ~Writer();
     };

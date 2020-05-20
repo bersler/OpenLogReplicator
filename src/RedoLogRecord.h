@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
 #define OPFLAG_BEGIN_TRANS      0x01
 
     class OracleObject;
-    class OracleReader;
+    class OracleAnalyser;
 
     class RedoLogRecord {
     public:
@@ -158,8 +158,8 @@ namespace OpenLogReplicator {
         typeslot suppLogSlot;
         uint64_t opFlags;
 
-        void dumpHex(ostream &str, OracleReader *oracleReader);
-        void dump(OracleReader *oracleReader);
+        void dumpHex(ostream &str, OracleAnalyser *oracleAnalyser);
+        void dump(OracleAnalyser *oracleAnalyser);
     };
 }
 

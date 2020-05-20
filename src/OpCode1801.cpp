@@ -20,17 +20,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <iomanip>
 #include "OpCode1801.h"
+
+#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode1801::OpCode1801(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleReader, redoLogRecord),
+    OpCode1801::OpCode1801(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyser, redoLogRecord),
             validDDL(false),
             type(0) {
     }
@@ -44,13 +45,13 @@ namespace OpenLogReplicator {
 
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             if (i == 1) {
-                redoLogRecord->xid = XID(oracleReader->read16(redoLogRecord->data + fieldPos + 4),
-                        oracleReader->read16(redoLogRecord->data + fieldPos + 6),
-                        oracleReader->read32(redoLogRecord->data + fieldPos + 8));
-                type = oracleReader->read16(redoLogRecord->data + fieldPos + 12);
-                uint16_t tmp = oracleReader->read16(redoLogRecord->data + fieldPos + 16);
-                //uint16_t seq = oracleReader->read16(redoLogRecord->data + fieldPos + 18);
-                //uint16_t cnt = oracleReader->read16(redoLogRecord->data + fieldPos + 20);
+                redoLogRecord->xid = XID(oracleAnalyser->read16(redoLogRecord->data + fieldPos + 4),
+                        oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6),
+                        oracleAnalyser->read32(redoLogRecord->data + fieldPos + 8));
+                type = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 12);
+                uint16_t tmp = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 16);
+                //uint16_t seq = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 18);
+                //uint16_t cnt = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 20);
                 if (type == 85 // truncate table
                         //|| type == 1 //create table
                         || type == 12 // drop table
@@ -64,17 +65,17 @@ namespace OpenLogReplicator {
                     validDDL = false;
                 }
             } else if (i == 12) {
-                if (validDDL && redoLogRecord->scn > oracleReader->databaseScn) {
-                    redoLogRecord->objn = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
+                if (validDDL && redoLogRecord->scn > oracleAnalyser->databaseScn) {
+                    redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
                     if (type == 12 || type == 15) {
-                        OracleObject *obj = oracleReader->checkDict(redoLogRecord->objn, 0);
+                        OracleObject *obj = oracleAnalyser->checkDict(redoLogRecord->objn, 0);
                         if (obj != nullptr)
                             obj->altered = true;
                     }
                 }
             }
 
-            fieldPos += (oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+            fieldPos += (oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
         }
     }
 }

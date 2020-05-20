@@ -28,23 +28,19 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class CommandBuffer;
-
     class Thread {
-
-    public:
+public:
         volatile bool shutdown;
         pthread_t pthread;
         string alias;
-        CommandBuffer *commandBuffer;
 
         static void *runStatic(void *context);
 
-        void stop(void);
         virtual void *run() = 0;
+        virtual void stop(void);
         uint64_t initialize();
 
-        Thread(const string alias, CommandBuffer *commandBuffer);
+        Thread(const string alias);
         virtual ~Thread();
     };
 }

@@ -21,17 +21,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "OpCode0513.h"
 #include "OpCode0514.h"
+
+#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0514::OpCode0514(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode0513(oracleReader, redoLogRecord) {
+    OpCode0514::OpCode0514(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode0513(oracleAnalyser, redoLogRecord) {
     }
 
     OpCode0514::~OpCode0514() {
@@ -42,7 +43,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = redoLogRecord->fieldPos;
 
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
 
             if (i == 1) dumpMsgSessionSerial(fieldPos, fieldLength);
             else

@@ -21,13 +21,14 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "RedoLogRecord.h"
-#include "OracleReader.h"
+
+#include "OracleAnalyser.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    void RedoLogRecord::dumpHex(ostream &stream, OracleReader *oracleReader) {
+    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyser *oracleAnalyser) {
         stream << "##: " << dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
@@ -40,7 +41,7 @@ namespace OpenLogReplicator {
 
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(data + fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(data + fieldLengthsDelta + i * 2);
             stream << "##: " << dec << fieldLength << " (" << i << ")";
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)
@@ -56,8 +57,8 @@ namespace OpenLogReplicator {
     }
 
 
-    void RedoLogRecord::dump(OracleReader *oracleReader) {
-        if (oracleReader->version < 0x12200)
+    void RedoLogRecord::dump(OracleAnalyser *oracleAnalyser) {
+        if (oracleAnalyser->version < 0x12200)
             cerr << "O scn: " << PRINTSCN48(scnRecord);
         else
             cerr << "O scn: " << PRINTSCN64(scnRecord);

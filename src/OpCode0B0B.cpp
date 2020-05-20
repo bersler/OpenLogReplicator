@@ -21,17 +21,17 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "OpCode0B0B.h"
 #include "CommandBuffer.h"
+#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "OracleReader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B0B::OpCode0B0B(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleReader, redoLogRecord) {
+    OpCode0B0B::OpCode0B0B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyser, redoLogRecord) {
     }
 
     OpCode0B0B::~OpCode0B0B() {
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktbRedo(fieldPos, fieldLength);
             } else if (i == 2) {
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
             } else if (i == 3) {
                 redoLogRecord->rowLenghsDelta = fieldPos;
                 if (fieldLength < redoLogRecord->nrow * 2) {
-                    oracleReader->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
+                    oracleAnalyser->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
                     return;
                 }
             } else if (i == 4) {

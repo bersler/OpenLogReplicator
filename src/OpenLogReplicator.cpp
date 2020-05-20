@@ -32,8 +32,8 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <rapidjson/document.h>
 
 #include "CommandBuffer.h"
-#include "OracleReader.h"
 #include "KafkaWriter.h"
+#include "OracleAnalyser.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -64,7 +64,7 @@ void stopMain() {
 }
 
 void signalHandler(int s) {
-    cout << "Caught signal " << s << ", exiting" << endl;
+    cerr << "Caught signal " << s << ", exiting" << endl;
     stopMain();
 }
 
@@ -81,7 +81,7 @@ int main() {
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
     cout << "Open Log Replicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
-    list<Thread *> readers, writers;
+    list<Thread *> analysers, writers;
     list<CommandBuffer *> buffers;
 
     try {
@@ -112,7 +112,7 @@ int main() {
         uint64_t directRead = directReadJSON.GetUint64();
 
         const Value& redoReadSleepJSON = getJSONfield(document, "redo-read-sleep");
-        uint64_t redoReadSleep = redoReadSleepJSON.GetUint64();
+        uint32_t redoReadSleep = redoReadSleepJSON.GetUint();
 
         const Value& checkpointIntervalJSON = getJSONfield(document, "checkpoint-interval");
         uint64_t checkpointInterval = checkpointIntervalJSON.GetUint64();
@@ -158,27 +158,27 @@ int main() {
                 CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSize);
 
                 buffers.push_back(commandBuffer);
-                OracleReader *oracleReader = new OracleReader(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
+                OracleAnalyser *oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
                         password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead, redoReadSleep,
                         checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
-                commandBuffer->setOracleReader(oracleReader);
-                readers.push_back(oracleReader);
+                commandBuffer->setOracleAnalyser(oracleAnalyser);
+                analysers.push_back(oracleAnalyser);
 
                 //initialize
-                if (!oracleReader->initialize()) {
-                    delete oracleReader;
-                    oracleReader = nullptr;
+                if (!oracleAnalyser->initialize()) {
+                    delete oracleAnalyser;
+                    oracleAnalyser = nullptr;
                     return -1;
                 }
 
-                oracleReader->addTable(eventtable.GetString(), 1);
+                oracleAnalyser->addTable(eventtable.GetString(), 1);
                 for (SizeType j = 0; j < tables.Size(); ++j) {
                     const Value& table = getJSONfield(tables[j], "table");
-                    oracleReader->addTable(table.GetString(), 0);
+                    oracleAnalyser->addTable(table.GetString(), 0);
                 }
 
                 //run
-                pthread_create(&oracleReader->pthread, nullptr, &OracleReader::runStatic, (void*)oracleReader);
+                pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser);
             }
         }
 
@@ -218,20 +218,20 @@ int main() {
                 const Value& timestampFormatJSON = getJSONfield(format, "timestamp-format");
                 uint64_t timestampFormat = timestampFormatJSON.GetUint64();
 
-                OracleReader *oracleReader = nullptr;
+                OracleAnalyser *oracleAnalyser = nullptr;
 
-                for (auto reader : readers)
-                    if (reader->alias.compare(source.GetString()) == 0)
-                        oracleReader = (OracleReader*)reader;
-                if (oracleReader == nullptr)
+                for (auto analyser : analysers)
+                    if (analyser->alias.compare(source.GetString()) == 0)
+                        oracleAnalyser = (OracleAnalyser*)analyser;
+                if (oracleAnalyser == nullptr)
                     {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
 
                 cout << "Adding target: " << alias.GetString() << endl;
-                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleReader, trace, trace2,
+                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser, trace, trace2,
                         stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat);
-                oracleReader->commandBuffer->writer = kafkaWriter;
-                oracleReader->commandBuffer->test = test;
-                oracleReader->commandBuffer->timestampFormat = timestampFormat;
+                oracleAnalyser->commandBuffer->writer = kafkaWriter;
+                oracleAnalyser->commandBuffer->test = test;
+                oracleAnalyser->commandBuffer->timestampFormat = timestampFormat;
                 writers.push_back(kafkaWriter);
 
                 //initialize
@@ -258,24 +258,24 @@ int main() {
     }
 
 
-    for (auto reader : readers)
-        reader->stop();
+    for (auto analyser : analysers)
+        analyser->stop();
     for (auto commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
         commandBuffer->writerCond.notify_all();
     }
-    for (auto reader : readers) {
-        reader->stop();
-        pthread_join(reader->pthread, nullptr);
-        delete reader;
+    for (auto analyser : analysers) {
+        analyser->stop();
+        pthread_join(analyser->pthread, nullptr);
+        delete analyser;
     }
-    readers.clear();
+    analysers.clear();
 
     for (auto writer : writers)
         writer->stop();
     for (auto commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
-        commandBuffer->readersCond.notify_all();
+        commandBuffer->analysersCond.notify_all();
     }
     for (auto writer : writers) {
         pthread_join(writer->pthread, nullptr);

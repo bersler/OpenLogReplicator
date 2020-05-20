@@ -34,7 +34,7 @@ using namespace RdKafka;
 namespace OpenLogReplicator {
 
     class RedoLogRecord;
-    class OracleReader;
+    class OracleAnalyser;
 
     class KafkaWriter : public Writer {
     protected:
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1);
 
-        KafkaWriter(const string alias, const string brokers, const string topic, OracleReader *oracleReader, uint64_t trace, uint64_t trace2,
+        KafkaWriter(const string alias, const string brokers, const string topic, OracleAnalyser *oracleAnalyser, uint64_t trace, uint64_t trace2,
                 uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
                 uint64_t timestampFormat);
         virtual ~KafkaWriter();

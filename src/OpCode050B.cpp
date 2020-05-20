@@ -21,26 +21,27 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include "types.h"
 #include "OpCode050B.h"
-#include "OracleReader.h"
+
+#include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode050B::OpCode050B(OracleReader *oracleReader, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleReader, redoLogRecord) {
+    OpCode050B::OpCode050B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyser, redoLogRecord) {
 
         if (redoLogRecord->fieldCnt >= 1) {
             uint64_t fieldPos = redoLogRecord->fieldPos;
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
             if (fieldLength < 8) {
-                oracleReader->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+                oracleAnalyser->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
                 return;
             }
 
-            redoLogRecord->objn = oracleReader->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->objd = oracleReader->read32(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
+            redoLogRecord->objd = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);
         }
     }
 
@@ -51,7 +52,7 @@ namespace OpenLogReplicator {
         OpCode::process();
         uint64_t fieldPos = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleReader->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 1) {
                 ktub(fieldPos, fieldLength);
                 redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;

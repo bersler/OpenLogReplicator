@@ -32,19 +32,19 @@ namespace OpenLogReplicator {
 
     class Writer;
     class RedoLogRecord;
-    class OracleReader;
+    class OracleAnalyser;
     class OracleObject;
 
     class CommandBuffer {
     protected:
         volatile bool shutdown;
-        OracleReader *oracleReader;
+        OracleAnalyser *oracleAnalyser;
     public:
         static char translationMap[65];
         Writer *writer;
         uint8_t *intraThreadBuffer;
         mutex mtx;
-        condition_variable readersCond;
+        condition_variable analysersCond;
         condition_variable writerCond;
         volatile uint64_t posStart;
         volatile uint64_t posEnd;
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         uint64_t outputBufferSize;
 
         void stop(void);
-        void setOracleReader(OracleReader *oracleReader);
+        void setOracleAnalyser(OracleAnalyser *oracleAnalyser);
         CommandBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
         CommandBuffer* appendEscape(const uint8_t *str, uint64_t length);
         CommandBuffer* append(const string str);

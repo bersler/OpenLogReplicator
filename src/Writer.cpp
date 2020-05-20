@@ -21,7 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "Writer.h"
 
 #include "CommandBuffer.h"
-#include "OracleReader.h"
+#include "OracleAnalyser.h"
 #include "OracleObject.h"
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
@@ -31,10 +31,11 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const string alias, OracleReader *oracleReader, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml,
+    Writer::Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml,
             uint64_t nullColumns, uint64_t test, uint64_t timestampFormat) :
-        Thread(alias, oracleReader->commandBuffer),
-        oracleReader(oracleReader),
+        Thread(alias),
+        commandBuffer(oracleAnalyser->commandBuffer),
+        oracleAnalyser(oracleAnalyser),
         stream(stream),
         sortColumns(sortColumns),
         metadata(metadata),
