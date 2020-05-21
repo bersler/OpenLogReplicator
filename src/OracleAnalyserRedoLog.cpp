@@ -362,8 +362,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (headerLength > recordLength)
+        if (headerLength > recordLength) {
+            dumpRedoVector();
             throw RedoLogException("too small log record: ", path.c_str(), recordLength);
+        }
 
         uint64_t pos = headerLength;
         while (pos < recordLength) {
@@ -389,8 +391,10 @@ namespace OpenLogReplicator {
                 redoLogRecord[vectors].conId = 0;
             }
 
-            if (pos + fieldOffset + 1 >= recordLength)
+            if (pos + fieldOffset + 1 >= recordLength) {
+                dumpRedoVector();
                 throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
+            }
 
             uint8_t *fieldList = oracleAnalyser->recordBuffer + pos + fieldOffset;
 
@@ -409,12 +413,16 @@ namespace OpenLogReplicator {
             for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
                 redoLogRecord[vectors].length += (oracleAnalyser->read16(fieldList + i * 2) + 3) & 0xFFFC;
                 fieldPos += (oracleAnalyser->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
-                if (pos + redoLogRecord[vectors].length > recordLength)
+                if (pos + redoLogRecord[vectors].length > recordLength) {
+                    dumpRedoVector();
                     throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecord[vectors].length);
+                }
             }
 
-            if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length)
+            if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
+                dumpRedoVector();
                 throw RedoLogException("incomplete record", nullptr, 0);
+            }
 
             redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
             redoLogRecord[vectors].recordObjd = 0xFFFFFFFF;
@@ -811,6 +819,21 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OracleAnalyserRedoLog::dumpRedoVector() {
+        if (oracleAnalyser->trace >= TRACE_WARN) {
+            cerr << "WARNING: Dumping redo Vector" << endl;
+            cerr << "WARNING: ##: " << dec << recordLength4;
+            for (uint64_t j = 0; j < recordLength4; ++j) {
+                if ((j & 0x0F) == 0)
+                    cerr << endl << "WARNING: ##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                if ((j & 0x07) == 0)
+                    cerr << " ";
+                cerr << setfill('0') << setw(2) << hex << (uint64_t)oracleAnalyser->recordBuffer[j] << " ";
+            }
+            cerr << endl;
+        }
+    }
+
     void OracleAnalyserRedoLog::flushTransactions(typescn checkpointScn) {
         bool shutdown = false;
         Transaction *transaction = oracleAnalyser->transactionHeap.top();
@@ -959,6 +982,7 @@ namespace OpenLogReplicator {
                         recordLength4 = (oracleAnalyser->read32(reader->redoBuffer + bufferPos + blockPos) + 3) & 0xFFFFFFFC;
                         recordLeftToCopy = recordLength4;
                         if (recordLength4 > REDO_RECORD_MAX_SIZE) {
+                            dumpRedoVector();
                             cerr << "WARNING: too big log record: " << dec << recordLeftToCopy << " bytes" << endl;
                             throw RedoLogException("too big log record: ", path.c_str(), recordLeftToCopy);
                         }

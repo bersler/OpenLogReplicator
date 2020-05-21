@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         void flushTransactions(typescn checkpointScn);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void dumpRedoVector();
 
     public:
         string path;

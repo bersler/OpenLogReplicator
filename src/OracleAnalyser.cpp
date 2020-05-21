@@ -179,11 +179,11 @@ namespace OpenLogReplicator {
 
         if (atShutdown) {
             if (trace >= TRACE_INFO) {
-                cerr << "INFO: Writing checkpopint at exit for " << database << endl
-                        << "- conId: " << dec << conId << endl
-                        << "- sequence: " << dec << minSequence << endl
-                        << "- scn: " << dec << databaseScn << endl
-                        << "- resetlogs: " << dec << resetlogs << endl;
+                cerr << "INFO: Writing checkpopint at exit for " << database << endl;
+                cerr << "INFO: conId: " << dec << conId <<
+                        " sequence: " << dec << minSequence <<
+                        " scn: " << dec << databaseScn <<
+                        " resetlogs: " << dec << resetlogs << endl;
             }
         }
 
@@ -563,11 +563,8 @@ namespace OpenLogReplicator {
                     stmt.createStatement("select sys_context('USERENV','CON_ID') CON_ID from DUAL");
                     stmt.executeQuery();
 
-                    if (stmt.rset->next()) {
+                    if (stmt.rset->next())
                         conId = stmt.rset->getNumber(1);
-                        if (trace >= TRACE_INFO)
-                            cerr << "INFO: conId: " << dec << conId << endl;
-                    }
                 }
 
                 databaseContext = stmt.rset->getString(7);
@@ -598,9 +595,10 @@ namespace OpenLogReplicator {
         }
 
         if (trace >= TRACE_INFO) {
-            cerr << "INFO: sequence: " << dec << databaseSequence << endl;
-            cerr << "INFO: scn: " << dec << databaseScn << endl;
-            cerr << "INFO: resetlogs: " << dec << resetlogs << endl;
+            cerr << "INFO: conId: " << dec << conId <<
+                    " sequence: " << dec << databaseSequence <<
+                    " scn: " << dec << databaseScn <<
+                    " resetlogs: " << dec << resetlogs << endl;
         }
 
         if (databaseSequence == 0 || databaseScn == 0)
