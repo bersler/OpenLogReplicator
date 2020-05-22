@@ -68,6 +68,7 @@ namespace OpenLogReplicator {
 
         priority_queue<OracleAnalyserRedoLog*, vector<OracleAnalyserRedoLog*>, OracleAnalyserRedoLogCompare> archiveRedoQueue;
         set<OracleAnalyserRedoLog*> onlineRedoSet;
+        set<Reader*> readers;
 
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint();
@@ -76,7 +77,7 @@ namespace OpenLogReplicator {
         void archLogGetList();
         void updateOnlineLogs();
         bool readerCheckRedoLog(Reader *reader, string path);
-        void readerDrop(Reader *&reader);
+        void readerDropAll();
         Reader *readerCreate(int64_t group);
 
     public:

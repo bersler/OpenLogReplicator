@@ -417,6 +417,7 @@ namespace OpenLogReplicator {
                         oracleAnalyser->analyserCond.notify_all();
                     } else {
                         //nothing new read, check if header has changed
+                        usleep(oracleAnalyser->redoReadSleep);
                         curRet = reloadHeader();
                     }
 

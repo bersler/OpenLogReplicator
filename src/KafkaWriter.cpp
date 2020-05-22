@@ -196,6 +196,7 @@ namespace OpenLogReplicator {
         uint64_t pos = 0,  fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
+        OracleObject *object = redoLogRecord2->object;
 
         for (uint64_t i = 1; i < 4; ++i) {
             fieldLength = oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
@@ -230,20 +231,20 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendOperation("insert")
                         ->append(',')
-                        ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
+                        ->appendTable(object->owner, object->objectName)
                         ->append(',')
-                        ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
+                        ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                         ->append(",\"after\":{");
             }
 
-            for (uint64_t i = 0; i < redoLogRecord2->object->columns.size(); ++i) {
+            for (uint64_t i = 0; i < object->columns.size(); ++i) {
                 bool isNull = false;
 
                 if (stream == STREAM_DBZ_JSON) {
                     commandBuffer
                             ->beginTran()
-                            ->appendDbzHead(redoLogRecord2->object)
+                            ->appendDbzHead(object)
                             ->append("\"before\":null,\"after\":{");
                 }
 
@@ -268,7 +269,7 @@ namespace OpenLogReplicator {
                         else
                             prevValue = true;
 
-                        commandBuffer->appendNull(redoLogRecord2->object->columns[i]->columnName);
+                        commandBuffer->appendNull(object->columns[i]->columnName);
                     }
                 } else {
                     if (prevValue)
@@ -276,8 +277,8 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(redoLogRecord2->object->columns[i]->columnName,
-                            redoLogRecord2, redoLogRecord2->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                    commandBuffer->appendValue(object->columns[i]->columnName,
+                            redoLogRecord2, object->columns[i]->typeNo, fieldPos + pos, fieldLength);
 
                     pos += fieldLength;
                 }
@@ -286,7 +287,7 @@ namespace OpenLogReplicator {
 
                     commandBuffer
                             ->append('}')
-                            ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
+                            ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
                             ->commitTran();
                 }
             }
@@ -304,6 +305,7 @@ namespace OpenLogReplicator {
         uint64_t pos = 0, fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength;
+        OracleObject *object = redoLogRecord1->object;
 
         for (uint64_t i = 1; i < 6; ++i) {
             fieldLength = oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
@@ -338,20 +340,20 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendOperation("delete")
                         ->append(',')
-                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->appendTable(object->owner, object->objectName)
                         ->append(',')
-                        ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
+                        ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                         ->append(",\"before\":{");
             }
 
-            for (uint64_t i = 0; i < redoLogRecord1->object->columns.size(); ++i) {
+            for (uint64_t i = 0; i < object->columns.size(); ++i) {
                 bool isNull = false;
 
                 if (stream == STREAM_DBZ_JSON) {
                     commandBuffer
                             ->beginTran()
-                            ->appendDbzHead(redoLogRecord2->object)
+                            ->appendDbzHead(object)
                             ->append("\"before\":{");
                 }
 
@@ -376,7 +378,7 @@ namespace OpenLogReplicator {
                         else
                             prevValue = true;
 
-                        commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                        commandBuffer->appendNull(object->columns[i]->columnName);
                     }
                 } else {
                     if (prevValue)
@@ -384,8 +386,8 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                            redoLogRecord1, redoLogRecord1->object->columns[i]->typeNo, fieldPos + pos, fieldLength);
+                    commandBuffer->appendValue(object->columns[i]->columnName,
+                            redoLogRecord1, object->columns[i]->typeNo, fieldPos + pos, fieldLength);
 
                     pos += fieldLength;
                 }
@@ -393,7 +395,7 @@ namespace OpenLogReplicator {
                 if (stream == STREAM_DBZ_JSON) {
                     commandBuffer
                         ->append("},\"after\":null,")
-                        ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
+                        ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
                         ->commitTran();
                 }
             }
@@ -409,7 +411,8 @@ namespace OpenLogReplicator {
     void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
         typedba bdba;
         typeslot slot;
-        RedoLogRecord *redoLogRecord;
+        RedoLogRecord *redoLogRecord = nullptr;
+        OracleObject *object = nullptr;
 
         if (stream == STREAM_JSON) {
             if (test >= 2)
@@ -425,6 +428,7 @@ namespace OpenLogReplicator {
                 commandBuffer->appendOperation("insert");
             }
 
+            object = redoLogRecord2->object;
             redoLogRecord = redoLogRecord2;
             while (redoLogRecord != nullptr) {
                 if ((redoLogRecord->fb & FB_F) != 0)
@@ -447,6 +451,7 @@ namespace OpenLogReplicator {
                 commandBuffer->appendOperation("delete");
             }
 
+            object = redoLogRecord1->object;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -459,6 +464,7 @@ namespace OpenLogReplicator {
                 commandBuffer->appendOperation("update");
             }
 
+            object = redoLogRecord1->object;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -471,15 +477,15 @@ namespace OpenLogReplicator {
         if (stream == STREAM_JSON) {
             commandBuffer
                     ->append(',')
-                    ->appendTable(redoLogRecord2->object->owner, redoLogRecord2->object->objectName)
+                    ->appendTable(object->owner, object->objectName)
                     ->append(',')
-                    ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, bdba, slot);
+                    ->appendRowid(object->objn, object->objd, bdba, slot);
         }
 
         if (stream == STREAM_DBZ_JSON) {
             commandBuffer
                     ->beginTran()
-                    ->appendDbzHead(redoLogRecord2->object)
+                    ->appendDbzHead(object)
                     ->append("\"before\":");
         }
 
@@ -492,16 +498,16 @@ namespace OpenLogReplicator {
         uint8_t *colSupp = nullptr;
         RedoLogRecord **beforeRecord = nullptr, **afterRecord = nullptr;
         if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-            afterPos = new uint64_t[redoLogRecord1->object->totalCols * sizeof(uint64_t)];
-            memset(afterPos, 0, redoLogRecord1->object->totalCols * sizeof(uint64_t));
-            beforePos = new uint64_t[redoLogRecord1->object->totalCols * sizeof(uint64_t)];
-            memset(beforePos, 0, redoLogRecord1->object->totalCols * sizeof(uint64_t));
-            afterLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
-            beforeLen = new uint16_t[redoLogRecord1->object->totalCols * sizeof(uint16_t)];
-            colSupp = new uint8_t[redoLogRecord1->object->totalCols * sizeof(uint8_t)];
-            memset(colSupp, 0, redoLogRecord1->object->totalCols * sizeof(uint8_t));
-            beforeRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
-            afterRecord = new RedoLogRecord*[redoLogRecord1->object->totalCols * sizeof(RedoLogRecord *)];
+            afterPos = new uint64_t[object->totalCols * sizeof(uint64_t)];
+            memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
+            beforePos = new uint64_t[object->totalCols * sizeof(uint64_t)];
+            memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
+            afterLen = new uint16_t[object->totalCols * sizeof(uint16_t)];
+            beforeLen = new uint16_t[object->totalCols * sizeof(uint16_t)];
+            colSupp = new uint8_t[object->totalCols * sizeof(uint8_t)];
+            memset(colSupp, 0, object->totalCols * sizeof(uint8_t));
+            beforeRecord = new RedoLogRecord*[object->totalCols * sizeof(RedoLogRecord *)];
+            afterRecord = new RedoLogRecord*[object->totalCols * sizeof(RedoLogRecord *)];
         }
 
         //data in UNDO
@@ -552,7 +558,7 @@ namespace OpenLogReplicator {
                         } else
                             colNum = i + colShift;
 
-                        if (colNum > redoLogRecord->object->columns.size()) {
+                        if (colNum > object->columns.size()) {
                             cerr << "ERROR: too big column id: " << dec << colNum << endl;
                             break;
                         }
@@ -574,8 +580,8 @@ namespace OpenLogReplicator {
                                     } else
                                         prevValue = true;
 
-                                    commandBuffer->appendValue(redoLogRecord->object->columns[colNum]->columnName,
-                                            redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                                    commandBuffer->appendValue(object->columns[colNum]->columnName,
+                                            redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
                                 } else {
                                     if (nullColumns >= 1) {
                                         if (prevValue)
@@ -583,7 +589,7 @@ namespace OpenLogReplicator {
                                         else
                                             prevValue = true;
 
-                                        commandBuffer->appendNull(redoLogRecord->object->columns[colNum]->columnName);
+                                        commandBuffer->appendNull(object->columns[colNum]->columnName);
                                     }
                                 }
                             }
@@ -644,7 +650,7 @@ namespace OpenLogReplicator {
                                             else
                                                 prevValue = true;
 
-                                            commandBuffer->appendNull(redoLogRecord->object->columns[colNum]->columnName);
+                                            commandBuffer->appendNull(object->columns[colNum]->columnName);
                                         }
                                     } else {
                                         if (prevValue) {
@@ -652,8 +658,8 @@ namespace OpenLogReplicator {
                                         } else
                                             prevValue = true;
 
-                                        commandBuffer->appendValue(redoLogRecord->object->columns[colNum]->columnName,
-                                                redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, colLength);
+                                        commandBuffer->appendValue(object->columns[colNum]->columnName,
+                                                redoLogRecord, object->columns[colNum]->typeNo, fieldPos, colLength);
                                     }
                                 }
 
@@ -721,7 +727,7 @@ namespace OpenLogReplicator {
                             cerr << "ERROR: reached out of columns" << endl;
                             break;
                         }
-                        if (colNum > redoLogRecord->object->columns.size()) {
+                        if (colNum > object->columns.size()) {
                             cerr << "ERROR: too big column id: " << dec << colNum << endl;
                             break;
                         }
@@ -734,7 +740,7 @@ namespace OpenLogReplicator {
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendNull(redoLogRecord->object->columns[colNum]->columnName);
+                                commandBuffer->appendNull(object->columns[colNum]->columnName);
                             }
                         } else {
                             if (type == TRANSACTION_UPDATE && sortColumns > 0) {
@@ -747,8 +753,8 @@ namespace OpenLogReplicator {
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendValue(redoLogRecord->object->columns[colNum]->columnName,
-                                        redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                                commandBuffer->appendValue(object->columns[colNum]->columnName,
+                                        redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
                             }
                         }
 
@@ -802,7 +808,7 @@ namespace OpenLogReplicator {
                                     else
                                         prevValue = true;
 
-                                    commandBuffer->appendNull(redoLogRecord->object->columns[colNum]->columnName);
+                                    commandBuffer->appendNull(object->columns[colNum]->columnName);
                                 }
                             } else {
                                 if (prevValue)
@@ -810,8 +816,8 @@ namespace OpenLogReplicator {
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendValue(redoLogRecord->object->columns[colNum]->columnName,
-                                        redoLogRecord, redoLogRecord->object->columns[colNum]->typeNo, fieldPos, fieldLength);
+                                commandBuffer->appendValue(object->columns[colNum]->columnName,
+                                        redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
                             }
                         }
 
@@ -841,8 +847,8 @@ namespace OpenLogReplicator {
 
             if (type == TRANSACTION_UPDATE && sortColumns > 0) {
                 if (sortColumns >= 2) {
-                    for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
-                        if (redoLogRecord1->object->columns[i]->numPk == 0 && colSupp[i] == 0) {
+                    for (uint64_t i = 0; i < object->totalCols; ++i) {
+                        if (object->columns[i]->numPk == 0 && colSupp[i] == 0) {
                             if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
                                 if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
                                     beforePos[i] = 0;
@@ -863,7 +869,7 @@ namespace OpenLogReplicator {
                     commandBuffer->append("{");
                 }
 
-                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                for (uint64_t i = 0; i < object->totalCols; ++i) {
                     if (beforePos[i] > 0 || afterPos[i] > 0) {
                         if (beforePos[i] == 0 || beforeLen[i] == 0) {
                             if (nullColumns >= 1 || colSupp[i] > 0 || afterPos[i] > 0) {
@@ -872,7 +878,7 @@ namespace OpenLogReplicator {
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                                commandBuffer->appendNull(object->columns[i]->columnName);
                             }
                         } else {
                             if (prevValue)
@@ -880,8 +886,8 @@ namespace OpenLogReplicator {
                             else
                                 prevValue = true;
 
-                            commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                                    beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                            commandBuffer->appendValue(object->columns[i]->columnName,
+                                    beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                         }
                     }
                 }
@@ -896,24 +902,24 @@ namespace OpenLogReplicator {
 
                 prevValue = false;
 
-                for (uint64_t i = 0; i < redoLogRecord1->object->totalCols; ++i) {
+                for (uint64_t i = 0; i < object->totalCols; ++i) {
                     if (afterPos[i] > 0 || beforePos[i] > 0) {
-                        if (afterPos[i] == 0 && (redoLogRecord1->object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
+                        if (afterPos[i] == 0 && (object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
                             if (beforePos[i] == 0 || beforeLen[i] == 0) {
                                 if (prevValue)
                                     commandBuffer->append(',');
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                                commandBuffer->appendNull(object->columns[i]->columnName);
                             } else {
                                 if (prevValue)
                                     commandBuffer->append(',');
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                                        beforeRecord[i], redoLogRecord1->object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                                commandBuffer->appendValue(object->columns[i]->columnName,
+                                        beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
                             }
                         } else {
                             if (afterPos[i] == 0 || afterLen[i] == 0) {
@@ -922,15 +928,15 @@ namespace OpenLogReplicator {
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendNull(redoLogRecord1->object->columns[i]->columnName);
+                                commandBuffer->appendNull(object->columns[i]->columnName);
                             } else {
                                 if (prevValue)
                                     commandBuffer->append(',');
                                 else
                                     prevValue = true;
 
-                                commandBuffer->appendValue(redoLogRecord1->object->columns[i]->columnName,
-                                        afterRecord[i], redoLogRecord1->object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                                commandBuffer->appendValue(object->columns[i]->columnName,
+                                        afterRecord[i], object->columns[i]->typeNo, afterPos[i], afterLen[i]);
                             }
                         }
                     }
@@ -963,7 +969,7 @@ namespace OpenLogReplicator {
             else if (type == TRANSACTION_DELETE) op = 'd';
 
             commandBuffer
-                    ->appendDbzTail(redoLogRecord2->object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
+                    ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
                     ->commitTran();
         }
     }
@@ -972,6 +978,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1) {
         uint64_t fieldPos = redoLogRecord1->fieldPos;
         uint16_t seq = 0, cnt = 0, type = 0;
+        OracleObject *object = redoLogRecord1->object;
 
         if (oracleAnalyser->trace >= TRACE_DETAIL)
             cerr << "INFO: DDL";
@@ -1036,7 +1043,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendOperation("truncate")
                         ->append(',')
-                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->appendTable(object->owner, object->objectName)
                         ->append('}');
             }
         } else if (type == 12) {
@@ -1049,7 +1056,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendOperation("drop")
                         ->append(',')
-                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->appendTable(object->owner, object->objectName)
                         ->append('}');
             }
         } else if (type == 15) {
@@ -1062,7 +1069,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendOperation("alter")
                         ->append(',')
-                        ->appendTable(redoLogRecord1->object->owner, redoLogRecord1->object->objectName)
+                        ->appendTable(object->owner, object->objectName)
                         ->append('}');
             }
        }

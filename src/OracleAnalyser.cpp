@@ -96,10 +96,7 @@ namespace OpenLogReplicator {
     }
 
     OracleAnalyser::~OracleAnalyser() {
-        if (archReader != nullptr)
-            readerDrop(archReader);
-        for (OracleAnalyserRedoLog* analyserRedoLog: onlineRedoSet)
-            readerDrop(analyserRedoLog->reader);
+        readerDropAll();
 
         while (!archiveRedoQueue.empty()) {
             OracleAnalyserRedoLog *redoTmp = archiveRedoQueue.top();
@@ -620,8 +617,7 @@ namespace OpenLogReplicator {
                 //new group
                 if (groupNew != group) {
                     if (group != groupLastOk || onlineReader != nullptr) {
-                        if (onlineReader != nullptr)
-                            readerDrop(onlineReader);
+                        readerDropAll();
                         cerr << "ERROR: can't read any member of group " << dec << group << endl;
                         return 0;
                     }
@@ -640,12 +636,12 @@ namespace OpenLogReplicator {
             }
 
             if (group != groupLastOk) {
-                if (onlineReader != nullptr)
-                    readerDrop(onlineReader);
+                readerDropAll();
                 cerr << "ERROR: can't read any member of group " << dec << group << endl;
                 return 0;
             }
         } catch(SQLException &ex) {
+            readerDropAll();
             throw RedoLogException("errog getting online log list", nullptr, 0);
         }
 
@@ -806,6 +802,7 @@ namespace OpenLogReplicator {
 
         writeCheckpoint(true);
         dumpTransactions();
+        readerDropAll();
 
         if (trace >= TRACE_INFO)
             cerr << "INFO: Oracle Analyser for: " << database << " is shut down" << endl;
@@ -838,19 +835,23 @@ namespace OpenLogReplicator {
             return false;
     }
 
-    void OracleAnalyser::readerDrop(Reader *&reader) {
+    void OracleAnalyser::readerDropAll() {
         {
             unique_lock<mutex> lck(mtx);
-            reader->shutdown = true;
+            for (Reader * reader : readers)
+                reader->shutdown = true;
             readerCond.notify_all();
             sleepingCond.notify_all();
         }
-        pthread_join(reader->pthread, nullptr);
-        reader = nullptr;
+        for (Reader * reader : readers)
+            pthread_join(reader->pthread, nullptr);
+        archReader = nullptr;
+        readers.clear();
     }
 
     Reader *OracleAnalyser::readerCreate(int64_t group) {
         Reader *reader = new ReaderFilesystem(alias, this, group);
+        readers.insert(reader);
         pthread_create(&reader->pthread, nullptr, &ReaderFilesystem::runStatic, (void*)reader);
         return reader;
     }

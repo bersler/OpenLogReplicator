@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.5"
+#define PROGRAM_VERSION             "0.5.6"
 
 #define STREAM_JSON                 1
 #define STREAM_DBZ_JSON             2
