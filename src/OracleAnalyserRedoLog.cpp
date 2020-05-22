@@ -413,7 +413,15 @@ namespace OpenLogReplicator {
             for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
                 redoLogRecord[vectors].length += (oracleAnalyser->read16(fieldList + i * 2) + 3) & 0xFFFC;
                 fieldPos += (oracleAnalyser->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+
                 if (pos + redoLogRecord[vectors].length > recordLength) {
+                    cerr << "ERROR: position of field list outside of record (" <<
+                            "i: " << dec << i <<
+                            " c: " << dec << redoLogRecord[vectors].fieldCnt << " " <<
+                            " o: " << dec << fieldOffset <<
+                            " p: " << dec << pos <<
+                            " l: " << dec << redoLogRecord[vectors].length <<
+                            " r: " << dec << recordLength << ")" << endl;
                     dumpRedoVector();
                     throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecord[vectors].length);
                 }
