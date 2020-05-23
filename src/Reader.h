@@ -66,7 +66,6 @@ namespace OpenLogReplicator {
 
         uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber);
         uint64_t reloadHeader();
-        //void clone(OracleAnalyserRedoLog *redo);
 
     public:
         uint8_t *redoBuffer;

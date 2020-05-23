@@ -959,6 +959,7 @@ namespace OpenLogReplicator {
                     cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;
                     oracleAnalyser->dumpRedoLog = 0;
                 }
+                printHeaderInfo();
             }
         }
 

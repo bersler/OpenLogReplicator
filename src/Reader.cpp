@@ -92,6 +92,13 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
+        typesum chSum = oracleAnalyser->read16(buffer + 14);
+        typesum chSum2 = calcChSum(buffer, blockSize);
+        if (chSum != chSum2) {
+            cerr << "ERROR: header sum for block number for " << dec << blockNumber << ", should be: " << hex << chSum << ", calculated: " << hex << chSum2 << endl;
+            return REDO_ERROR;
+        }
+
         return REDO_OK;
     }
 
