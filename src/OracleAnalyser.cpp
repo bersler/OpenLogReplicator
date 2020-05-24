@@ -35,6 +35,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleAnalyserRedoLog.h"
 #include "Reader.h"
 #include "ReaderFilesystem.h"
+#include "RedoLogRecord.h"
 #include "RedoLogException.h"
 #include "OracleStatement.h"
 #include "Transaction.h"
@@ -59,6 +60,8 @@ namespace OpenLogReplicator {
         passwd(passwd),
         connectString(connectString),
         archReader(nullptr),
+        rolledBack1(nullptr),
+        rolledBack2(nullptr),
         database(database),
         databaseContext(""),
         databaseScn(0),
@@ -97,6 +100,7 @@ namespace OpenLogReplicator {
 
     OracleAnalyser::~OracleAnalyser() {
         readerDropAll();
+        freeRollbackList();
 
         while (!archiveRedoQueue.empty()) {
             OracleAnalyserRedoLog *redoTmp = archiveRedoQueue.top();
@@ -583,7 +587,7 @@ namespace OpenLogReplicator {
                 stmt.executeQuery();
 
                 if (stmt.rset->next()) {
-                    databaseSequence = stmt.rset->getNumber(1);
+                databaseSequence = stmt.rset->getNumber(1);
                     databaseScn = currentDatabaseScn;
                 }
             } catch(SQLException &ex) {
@@ -731,6 +735,9 @@ namespace OpenLogReplicator {
                     throw RedoLogException("read archive log", nullptr, 0);
                 }
 
+                if (rolledBack1 != nullptr)
+                    freeRollbackList();
+
                 ++databaseSequence;
                 writeCheckpoint(false);
             }
@@ -807,6 +814,95 @@ namespace OpenLogReplicator {
         if (trace >= TRACE_INFO)
             cerr << "INFO: Oracle Analyser for: " << database << " is shut down" << endl;
         return 0;
+    }
+
+    void OracleAnalyser::freeRollbackList() {
+        RedoLogRecord *tmpRedoLogRecord1, *tmpRedoLogRecord2;
+        uint64_t lostElements = 0;
+
+        while (rolledBack1 != nullptr) {
+            if (trace >= TRACE_WARN)
+                cerr << "WARNING: element on rollback list UBA: " << PRINTUBA(rolledBack1->uba) <<
+                        " DBA: 0x" << hex << rolledBack2->dba <<
+                        " SLT: " << dec << (uint64_t)rolledBack2->slt <<
+                        " RCI: " << dec << (uint64_t)rolledBack2->rci <<
+                        " OPFLAGS: " << hex << rolledBack2->opFlags << endl;
+
+            tmpRedoLogRecord1 = rolledBack1;
+            tmpRedoLogRecord2 = rolledBack2;
+            rolledBack1 = rolledBack1->next;
+            rolledBack2 = rolledBack2->next;
+            delete tmpRedoLogRecord1;
+            delete tmpRedoLogRecord2;
+            ++lostElements;
+        }
+    }
+
+    bool OracleAnalyser::onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        RedoLogRecord *tmpRedoLogRecord1, *tmpRedoLogRecord2;
+
+        tmpRedoLogRecord1 = rolledBack1;
+        tmpRedoLogRecord2 = rolledBack2;
+        while (tmpRedoLogRecord1 != nullptr) {
+            if ((trace2 & TRACE2_UBA) != 0)
+                cerr << "WARNING: checking element on rollback list:" <<
+                        " UBA: " << PRINTUBA(tmpRedoLogRecord1->uba) <<
+                        " DBA: 0x" << hex << tmpRedoLogRecord2->dba <<
+                        " SLT: " << dec << (uint64_t)tmpRedoLogRecord2->slt <<
+                        " RCI: " << dec << (uint64_t)tmpRedoLogRecord2->rci <<
+                        " OPFLAGS: " << hex << tmpRedoLogRecord2->opFlags <<
+                        " for: " <<
+                        " UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                        " DBA: 0x" << hex << redoLogRecord1->dba <<
+                        " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
+                        " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
+                        " OPFLAGS: " << hex << redoLogRecord1->opFlags <<
+                        endl;
+
+            if (tmpRedoLogRecord2->slt == redoLogRecord1->slt &&
+                    tmpRedoLogRecord2->rci == redoLogRecord1->rci &&
+                    tmpRedoLogRecord1->uba == redoLogRecord1->uba &&
+                    ((tmpRedoLogRecord2->opFlags & OPFLAG_BEGIN_TRANS) != 0 || tmpRedoLogRecord2->dba == redoLogRecord1->dba)) {
+
+                if (tmpRedoLogRecord1->next != nullptr) {
+                    tmpRedoLogRecord1->next->prev = tmpRedoLogRecord1->prev;
+                    tmpRedoLogRecord2->next->prev = tmpRedoLogRecord2->prev;
+                }
+
+                if (tmpRedoLogRecord1->prev == nullptr) {
+                    rolledBack1 = tmpRedoLogRecord1->next;
+                    rolledBack2 = tmpRedoLogRecord2->next;
+                } else {
+                    tmpRedoLogRecord1->prev->next = tmpRedoLogRecord1->next;
+                    tmpRedoLogRecord2->prev->next = tmpRedoLogRecord2->next;
+                }
+
+                delete tmpRedoLogRecord1;
+                delete tmpRedoLogRecord2;
+                return true;
+            }
+
+            tmpRedoLogRecord1 = tmpRedoLogRecord1->next;
+            tmpRedoLogRecord2 = tmpRedoLogRecord2->next;
+        }
+        return false;
+    }
+
+    void OracleAnalyser::addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+        RedoLogRecord *tmpRedoLogRecord1 = new RedoLogRecord();
+        RedoLogRecord *tmpRedoLogRecord2 = new RedoLogRecord();
+        memcpy(tmpRedoLogRecord1, redoLogRecord1, sizeof(RedoLogRecord));
+        memcpy(tmpRedoLogRecord2, redoLogRecord2, sizeof(RedoLogRecord));
+
+        tmpRedoLogRecord1->next = rolledBack1;
+        tmpRedoLogRecord2->next = rolledBack2;
+
+        if (rolledBack1 != nullptr) {
+            rolledBack1->prev = tmpRedoLogRecord1;
+            rolledBack2->prev = tmpRedoLogRecord2;
+        }
+        rolledBack1 = tmpRedoLogRecord1;
+        rolledBack2 = tmpRedoLogRecord2;
     }
 
     OracleObject *OracleAnalyser::checkDict(typeobj objn, typeobj objd) {

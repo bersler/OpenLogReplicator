@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
     class OracleObject;
     class OracleAnalyserRedoLog;
     class Reader;
+    class RedoLogRecord;
     class Transaction;
 
     struct OracleAnalyserRedoLogCompare {
@@ -65,6 +66,8 @@ namespace OpenLogReplicator {
         string passwd;
         string connectString;
         Reader *archReader;
+        RedoLogRecord *rolledBack1;
+        RedoLogRecord *rolledBack2;
 
         priority_queue<OracleAnalyserRedoLog*, vector<OracleAnalyserRedoLog*>, OracleAnalyserRedoLogCompare> archiveRedoQueue;
         set<OracleAnalyserRedoLog*> onlineRedoSet;
@@ -147,6 +150,9 @@ namespace OpenLogReplicator {
 
         uint64_t initialize();
         void *run();
+        void freeRollbackList();
+        bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         OracleObject *checkDict(typeobj objn, typeobj objd);
         void dumpTransactions();
         void addTable(string mask, uint64_t options);

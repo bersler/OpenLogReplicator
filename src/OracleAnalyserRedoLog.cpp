@@ -710,6 +710,16 @@ namespace OpenLogReplicator {
         //delete multiple rows
         case 0x05010B0C:
             {
+                if (oracleAnalyser->onRollbackList(redoLogRecord1, redoLogRecord2)) {
+                    if (oracleAnalyser->trace >= TRACE_WARN)
+                        cerr << "INFO: rolling transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                                " DBA: 0x" << hex << redoLogRecord1->dba <<
+                                " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
+                                " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
+                                " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
+                    break;
+                }
+
                 Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
                     transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid, oracleAnalyser->transactionBuffer);
@@ -809,8 +819,10 @@ namespace OpenLogReplicator {
                             cerr << "still no match, failing" << endl;
                         }
 
+                        oracleAnalyser->addToRollbackList(redoLogRecord1, redoLogRecord2);
+
                         if (oracleAnalyser->trace >= TRACE_WARN)
-                            cerr << "WARNING: can't rollback transaction part, UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                            cerr << "INFO: can't rollback transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " DBA: 0x" << hex << redoLogRecord2->dba <<
                                     " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
                                     " RCI: " << dec << (uint64_t)redoLogRecord2->rci <<
