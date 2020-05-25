@@ -34,9 +34,10 @@ namespace OpenLogReplicator {
     class ReaderFilesystem : public Reader {
     protected:
         int64_t fileDes;
+        uint64_t flags;
         virtual void redoClose();
         virtual uint64_t redoOpen();
-        virtual uint64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
+        virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
 
     public:
         ReaderFilesystem(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group);

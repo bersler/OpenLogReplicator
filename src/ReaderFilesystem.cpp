@@ -33,7 +33,8 @@ namespace OpenLogReplicator {
 
     ReaderFilesystem::ReaderFilesystem(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
         Reader(alias, oracleAnalyser, group),
-        fileDes(0) {
+        fileDes(0),
+        flags(0) {
     }
 
     ReaderFilesystem::~ReaderFilesystem() {
@@ -49,18 +50,49 @@ namespace OpenLogReplicator {
 
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
+
         if (stat(path, &fileStat) != 0)
             return REDO_ERROR;
+
+        flags = O_RDONLY | O_LARGEFILE;
         fileSize = fileStat.st_size;
 
-        fileDes = open(path, O_RDONLY | O_LARGEFILE | ((oracleAnalyser->directRead > 0) ? O_DIRECT : 0));
-        if (fileDes == -1)
-            return REDO_ERROR;
-        else
-            return REDO_OK;
+        if ((oracleAnalyser->directRead & 1) == 1)
+            flags |= O_DIRECT;
+        if ((oracleAnalyser->directRead & 2) == 2)
+            flags |= O_SYNC;
+
+        fileDes = open(path, flags);
+        if (fileDes == -1) {
+            if (oracleAnalyser->directRead ==  0)
+                return REDO_ERROR;
+
+            flags &= (~O_DIRECT);
+            fileDes = open(path, flags);
+            if (fileDes == -1)
+                return REDO_ERROR;
+
+            if (oracleAnalyser->trace >= TRACE_WARN)
+                cerr << "WARNING: file system does not support direct read for: " << path << endl;
+        }
+
+        return REDO_OK;
     }
 
-    uint64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
-        return pread(fileDes, buf, size, pos);
+    int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
+        int64_t bytes = pread(fileDes, buf, size, pos);
+
+        //O_DIRECT does not work
+        if (bytes < 0 && (flags & O_DIRECT) != 0) {
+            flags &= ~O_DIRECT;
+            fcntl(fileDes, F_SETFL, flags);
+            if (oracleAnalyser->trace >= TRACE_WARN)
+                cerr << "WARNING: disabling direct read for: " << path << endl;
+
+            //disable it and re-try the read
+            bytes = pread(fileDes, buf, size, pos);
+        }
+
+        return bytes;
     }
 }
