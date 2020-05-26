@@ -295,6 +295,8 @@ namespace OpenLogReplicator {
                 break;
 
             if (curStatus == READER_STATUS_CHECK) {
+                if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
+                    cerr << "FILE: trying to open: " << path << endl;
                 redoClose();
                 uint64_t curRet = redoOpen();
                 {
@@ -443,7 +445,27 @@ namespace OpenLogReplicator {
         return 0;
     }
 
-    void Reader::updatePath(const char *path) {
-        strncpy(this->path, path, 1024);
+    void Reader::updatePath(string &newPath) {
+        uint64_t sourceLength, targetLength, newPathLength = newPath.length();
+        char pathBuffer[MAX_PATH_LENGTH];
+
+        for (uint64_t i = 0; i < oracleAnalyser->pathMapping.size() / 2; ++i) {
+            sourceLength = oracleAnalyser->pathMapping[i * 2].length();
+            targetLength = oracleAnalyser->pathMapping[i * 2 + 1].length();
+
+            if (sourceLength < newPathLength &&
+                    newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
+                    memcmp(newPath.c_str(), oracleAnalyser->pathMapping[i * 2].c_str(), sourceLength) == 0) {
+
+                memcpy(pathBuffer, oracleAnalyser->pathMapping[i * 2 + 1].c_str(), targetLength);
+                memcpy(pathBuffer + targetLength, newPath.c_str() + sourceLength, newPathLength - sourceLength);
+                pathBuffer[newPathLength - sourceLength + targetLength] = 0;
+                path = pathBuffer;
+
+                return;
+            }
+        }
+
+        path = newPath;
     }
 }

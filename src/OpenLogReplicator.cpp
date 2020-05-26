@@ -109,9 +109,6 @@ int main() {
         const Value& dumpRawDataJSON = getJSONfield(document, "dump-raw-data");
         uint64_t dumpRawData = dumpRawDataJSON.GetUint64();
 
-        const Value& directReadJSON = getJSONfield(document, "direct-read");
-        uint64_t directRead = directReadJSON.GetUint64();
-
         const Value& redoReadSleepJSON = getJSONfield(document, "redo-read-sleep");
         uint32_t redoReadSleep = redoReadSleepJSON.GetUint();
 
@@ -146,6 +143,8 @@ int main() {
 
             if (strcmp("ORACLE", type.GetString()) == 0) {
                 const Value& alias = getJSONfield(source, "alias");
+                const Value& flagsJSON = getJSONfield(source, "flags");
+                uint64_t flags = flagsJSON.GetUint64();
                 const Value& name = getJSONfield(source, "name");
                 const Value& user = getJSONfield(source, "user");
                 const Value& password = getJSONfield(source, "password");
@@ -154,14 +153,24 @@ int main() {
                 const Value& tables = getJSONfield(source, "tables");
                 if (!tables.IsArray())
                     {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
+                const Value& pathMapping = getJSONfield(source, "path-mapping");
+                if (!pathMapping.IsArray())
+                    {cerr << "ERROR: bad JSON, path-mapping should be array!" << endl; return 1;}
 
                 cout << "Adding source: " << name.GetString() << endl;
                 CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSize);
 
                 buffers.push_back(commandBuffer);
                 OracleAnalyser *oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, directRead, redoReadSleep,
+                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, redoReadSleep,
                         checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+
+                for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
+                    const Value& sourceMapping = pathMapping[j * 2];
+                    const Value& targetMapping = pathMapping[j * 2 + 1];
+                    oracleAnalyser->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                }
+
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
                 analysers.push_back(oracleAnalyser);
 

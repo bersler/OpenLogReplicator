@@ -79,7 +79,7 @@ namespace OpenLogReplicator {
         void checkConnection(bool reconnect);
         void archLogGetList();
         void updateOnlineLogs();
-        bool readerCheckRedoLog(Reader *reader, string path);
+        bool readerCheckRedoLog(Reader *reader, string &path);
         void readerDropAll();
         Reader *readerCreate(int64_t group);
 
@@ -101,7 +101,8 @@ namespace OpenLogReplicator {
         ofstream dumpStream;
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
-        uint64_t directRead;
+        uint64_t flags;
+        vector<string> pathMapping;
         uint32_t redoReadSleep;
         uint64_t trace;
         uint64_t trace2;
@@ -159,9 +160,10 @@ namespace OpenLogReplicator {
         void checkForCheckpoint();
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
+        void addPathMapping(const string source, const string target);
 
         OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t directRead,
+                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags,
                 uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleAnalyser();
     };

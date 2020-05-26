@@ -51,24 +51,24 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
 
-        if (stat(path, &fileStat) != 0)
+        if (stat(path.c_str(), &fileStat) != 0)
             return REDO_ERROR;
 
         flags = O_RDONLY | O_LARGEFILE;
         fileSize = fileStat.st_size;
 
-        if ((oracleAnalyser->directRead & 1) == 1)
+        if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)
             flags |= O_DIRECT;
-        if ((oracleAnalyser->directRead & 2) == 2)
+        if ((oracleAnalyser->flags & REDO_FLAGS_SYNC) != 0)
             flags |= O_SYNC;
 
-        fileDes = open(path, flags);
+        fileDes = open(path.c_str(), flags);
         if (fileDes == -1) {
-            if (oracleAnalyser->directRead ==  0)
+            if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) == 0)
                 return REDO_ERROR;
 
             flags &= (~O_DIRECT);
-            fileDes = open(path, flags);
+            fileDes = open(path.c_str(), flags);
             if (fileDes == -1)
                 return REDO_ERROR;
 

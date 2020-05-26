@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         void resetRedo();
         void continueRedo(OracleAnalyserRedoLog *prev);
         uint64_t processLog();
-        OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const char* path);
+        OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const string path);
         virtual ~OracleAnalyserRedoLog();
 
         friend ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors);

@@ -174,54 +174,55 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendScn(typescn scn) {
         if (test >= 2) {
-            append("\"scn\":\"0x");
+            appendChr("\"scn\":\"0x");
             appendHex(scn, 16);
             append('"');
         } else {
-            append("\"scn\":");
-            append(to_string(scn));
+            appendChr("\"scn\":");
+            string scnStr = to_string(scn);
+            appendStr(scnStr);
         }
 
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendOperation(string operation) {
-        append("\"operation\":\"");
-        append(operation);
+    CommandBuffer* CommandBuffer::appendOperation(char *operation) {
+        appendChr("\"operation\":\"");
+        appendChr(operation);
         append('"');
 
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendTable(string owner, string table) {
-        append("\"table\":\"");
-        append(owner);
+    CommandBuffer* CommandBuffer::appendTable(string &owner, string &table) {
+        appendChr("\"table\":\"");
+        appendStr(owner);
         append('.');
-        append(table);
+        appendStr(table);
         append('"');
 
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendNull(string columnName) {
+    CommandBuffer* CommandBuffer::appendNull(string &columnName) {
         append('"');
-        append(columnName);
-        append("\":null");
+        appendStr(columnName);
+        appendChr("\":null");
 
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendMs(string name, uint64_t time) {
+    CommandBuffer* CommandBuffer::appendMs(char *name, uint64_t time) {
         append('"');
-        append(name);
-        append("\":");
+        appendChr(name);
+        appendChr("\":");
         appendDec(time);
 
         return this;
     }
 
     CommandBuffer* CommandBuffer::appendXid(typexid xid) {
-        append("\"xid\":\"");
+        appendChr("\"xid\":\"");
         appendDec(USN(xid));
         append('.');
         appendDec(SLT(xid));
@@ -232,7 +233,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendValue(string columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
+    CommandBuffer* CommandBuffer::appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
         uint64_t j, jMax;
         uint8_t digits;
 
@@ -242,8 +243,8 @@ namespace OpenLogReplicator {
         }
 
         append('"');
-        append(columnName);
-        append("\":");
+        appendStr(columnName);
+        appendChr("\":");
 
         switch(typeNo) {
         case 1: //varchar(2)
@@ -420,7 +421,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (bc)
-                    append("BC");
+                    appendChr("BC");
 
                 append('-');
                 append('0' + (redoLogRecord->data[fieldPos + 2] / 10));
@@ -492,13 +493,13 @@ namespace OpenLogReplicator {
             break;
 
         default:
-            append("\"?\"");
+            appendChr("\"?\"");
         }
 
         return this;
     }
 
-    CommandBuffer* CommandBuffer::append(const string str) {
+    CommandBuffer* CommandBuffer::appendStr(string &str) {
         if (shutdown)
             return this;
 
@@ -524,12 +525,38 @@ namespace OpenLogReplicator {
         return this;
     }
 
+    CommandBuffer* CommandBuffer::appendChr(const char *str) {
+        if (shutdown)
+            return this;
+
+        uint64_t length = strlen(str);
+        {
+            unique_lock<mutex> lck(mtx);
+            while (posSize > 0 && posEndTmp + length >= posStart) {
+                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                writerCond.wait(lck);
+                if (shutdown)
+                    return this;
+            }
+        }
+
+        if (posEndTmp + length >= outputBufferSize) {
+            cerr << "ERROR: JSON buffer overflow (2)" << endl;
+            return this;
+        }
+
+        memcpy(intraThreadBuffer + posEndTmp, str, length);
+        posEndTmp += length;
+
+        return this;
+    }
+
     char CommandBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     CommandBuffer* CommandBuffer::appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) {
         uint32_t afn =  bdba >> 22;
         bdba &= 0x003FFFFF;
-        append("\"rowid\":\"");
+        appendChr("\"rowid\":\"");
         append(translationMap[(objd >> 30) & 0x3F]);
         append(translationMap[(objd >> 24) & 0x3F]);
         append(translationMap[(objd >> 18) & 0x3F]);
@@ -583,76 +610,76 @@ namespace OpenLogReplicator {
             if (i > 0)
                 append(',');
 
-            append("{\"type\":\"");
+            appendChr("{\"type\":\"");
             switch(object->columns[i]->typeNo) {
             case 1: //varchar(2)
             case 96: //char
-                append("string");
+                appendChr("string");
                 break;
 
             case 2: //numeric
                 if (object->columns[i]->scale > 0)
-                    append("Decimal");
+                    appendChr("Decimal");
                 else {
                     uint64_t digits = object->columns[i]->precision - object->columns[i]->scale;
                     if (digits < 3)
-                        append("int8");
+                        appendChr("int8");
                     else if (digits < 5)
-                        append("int16");
+                        appendChr("int16");
                     else if (digits < 10)
-                        append("int32");
+                        appendChr("int32");
                     else if (digits < 19)
-                        append("int64");
+                        appendChr("int64");
                     else
-                        append("Decimal");
+                        appendChr("Decimal");
                 }
                 break;
 
             case 12:
             case 180:
                 if (timestampFormat == 0)
-                    append("datetime");
+                    appendChr("datetime");
                 else if (timestampFormat == 1) {
-                    append("int64");
+                    appendChr("int64");
                     microTimestamp = true;
                 }
                 break;
             }
-            append("\",\"optional\":");
+            appendChr("\",\"optional\":");
             if (object->columns[i]->nullable)
-                append("true");
+                appendChr("true");
             else
-                append("false");
+                appendChr("false");
 
             if (microTimestamp)
-                append(",\"name\":\"io.debezium.time.MicroTimestamp\",\"version\":1");
-            append(",\"field\":\"");
-            append(object->columns[i]->columnName);
-            append("\"}");
+                appendChr(",\"name\":\"io.debezium.time.MicroTimestamp\",\"version\":1");
+            appendChr(",\"field\":\"");
+            appendStr(object->columns[i]->columnName);
+            appendChr("\"}");
         }
         return this;
     }
 
     CommandBuffer* CommandBuffer::appendDbzHead(OracleObject *object) {
-        append("{\"schema\":{\"type\":\"struct\",\"fields\":[");
-        append("{\"type\":\"struct\",\"fields\":[");
+        appendChr("{\"schema\":{\"type\":\"struct\",\"fields\":[");
+        appendChr("{\"type\":\"struct\",\"fields\":[");
         appendDbzCols(object);
-        append("],\"optional\":true,\"name\":\"");
-        append(oracleAnalyser->alias);
+        appendChr("],\"optional\":true,\"name\":\"");
+        appendStr(oracleAnalyser->alias);
         append('.');
-        append(object->owner);
+        appendStr(object->owner);
         append('.');
-        append(object->objectName);
-        append(".Value\",\"field\":\"before\"},");
-        append("{\"type\":\"struct\",\"fields\":[");
+        appendStr(object->objectName);
+        appendChr(".Value\",\"field\":\"before\"},");
+        appendChr("{\"type\":\"struct\",\"fields\":[");
         appendDbzCols(object);
-        append("],\"optional\":true,\"name\":\"");
-        append(oracleAnalyser->alias);
+        appendChr("],\"optional\":true,\"name\":\"");
+        appendStr(oracleAnalyser->alias);
         append('.');
-        append(object->owner);
+        appendStr(object->owner);
         append('.');
-        append(object->objectName);
-        append(".Value\",\"field\":\"after\"},"
+        appendStr(object->objectName);
+        appendChr(".Value\",\"field\":\"after\"},"
                 "{\"type\":\"struct\",\"fields\":["
                 "{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},"
                 "{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},"
@@ -678,37 +705,37 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid) {
-        append(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
-        append(oracleAnalyser->alias);
-        append("\",");
+        appendChr(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
+        appendStr(oracleAnalyser->alias);
+        appendChr("\",");
         appendMs("ts_ms", time);
-        append(",\"snapshot\":\"false\",\"db\":\"");
-        append(oracleAnalyser->databaseContext);
-        append("\",\"schema\":\"");
-        append(object->owner);
-        append("\",\"table\":\"");
-        append(object->objectName);
-        append("\",\"txId\":\"");
+        appendChr(",\"snapshot\":\"false\",\"db\":\"");
+        appendStr(oracleAnalyser->databaseContext);
+        appendChr("\",\"schema\":\"");
+        appendStr(object->owner);
+        appendChr("\",\"table\":\"");
+        appendStr(object->objectName);
+        appendChr("\",\"txId\":\"");
         appendDec(USN(xid));
         append('.');
         appendDec(SLT(xid));
         append('.');
         appendDec(SQN(xid));
-        append("\",");
+        appendChr("\",");
         appendScn(scn);
-        append(",\"lcr_position\":null},\"op\":\"");
+        appendChr(",\"lcr_position\":null},\"op\":\"");
         append(op);
-        append("\",");
+        appendChr("\",");
         appendMs("ts_ms", time);
-        append(",\"transaction\":null,\"messagetopic\":\"");
-        append(oracleAnalyser->alias);
+        appendChr(",\"transaction\":null,\"messagetopic\":\"");
+        appendStr(oracleAnalyser->alias);
         append('.');
-        append(object->owner);
+        appendStr(object->owner);
         append('.');
-        append(object->objectName);
-        append("\",\"messagesource\":\"OpenLogReplicator from Oracle on ");
-        append(oracleAnalyser->alias);
-        append("\"}}");
+        appendStr(object->objectName);
+        appendChr("\",\"messagesource\":\"OpenLogReplicator from Oracle on ");
+        appendStr(oracleAnalyser->alias);
+        appendChr("\"}}");
         return this;
     }
 

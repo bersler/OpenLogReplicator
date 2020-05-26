@@ -49,9 +49,10 @@ const Value& getJSONfield(const Document& document, const char* field);
 
 namespace OpenLogReplicator {
 
-    OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-            const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t directRead,
-            uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+    OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
+            const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
+            uint64_t flags, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize,
+            uint64_t maxConcurrentTransactions) :
         Thread(alias),
         databaseSequence(0),
         env(nullptr),
@@ -72,7 +73,7 @@ namespace OpenLogReplicator {
         commandBuffer(commandBuffer),
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
-        directRead(directRead),
+        flags(flags),
         redoReadSleep(redoReadSleep),
         trace(trace),
         trace2(trace2),
@@ -622,7 +623,7 @@ namespace OpenLogReplicator {
                 if (groupNew != group) {
                     if (group != groupLastOk || onlineReader != nullptr) {
                         readerDropAll();
-                        cerr << "ERROR: can't read any member of group " << dec << group << endl;
+                        cerr << "ERROR: can't read any member of group " << dec << group << " - set \"trace2\": 2 to check which files are read" << endl;
                         return 0;
                     }
 
@@ -910,13 +911,13 @@ namespace OpenLogReplicator {
         return object;
     }
 
-    bool OracleAnalyser::readerCheckRedoLog(Reader *reader, string path) {
+    bool OracleAnalyser::readerCheckRedoLog(Reader *reader, string &path) {
         unique_lock<mutex> lck(mtx);
         reader->status = READER_STATUS_CHECK;
         reader->sequence = 0;
         reader->firstScn = ZERO_SCN;
         reader->nextScn = ZERO_SCN;
-        reader->updatePath(path.c_str());
+        reader->updatePath(path);
         readerCond.notify_all();
         sleepingCond.notify_all();
         while (!shutdown) {
@@ -1074,6 +1075,13 @@ namespace OpenLogReplicator {
             sleepingCond.notify_all();
             analyserCond.notify_all();
         }
+    }
+
+    void OracleAnalyser::addPathMapping(const string source, const string target) {
+        cerr << "added mapping [" << source << "] -> [" << target << "]" << endl;
+        string sourceMaping = source, targetMapping = target;
+        pathMapping.push_back(sourceMaping);
+        pathMapping.push_back(targetMapping);
     }
 
     bool OracleAnalyserRedoLogCompare::operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2) {

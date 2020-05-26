@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
     public:
         virtual void *run();
 
-        void addTable(string mask);
+        void addTable(string &mask);
         uint64_t initialize();
 
         virtual void beginTran(typescn scn, typetime time, typexid xid);
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1);
 
-        KafkaWriter(const string alias, const string brokers, const string topic, OracleAnalyser *oracleAnalyser, uint64_t trace, uint64_t trace2,
+        KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t trace, uint64_t trace2,
                 uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
                 uint64_t timestampFormat);
         virtual ~KafkaWriter();

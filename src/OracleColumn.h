@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         uint64_t numPk;
         bool nullable;
 
-        OracleColumn(uint64_t colNo, uint64_t segSolNo, string columnName, uint64_t typeNo, uint64_t length, int64_t precision,
+        OracleColumn(uint64_t colNo, uint64_t segSolNo, const string columnName, uint64_t typeNo, uint64_t length, int64_t precision,
                 int64_t scale, uint64_t numPk, bool nullable);
         virtual ~OracleColumn();
 

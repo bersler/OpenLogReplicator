@@ -40,7 +40,7 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(const string alias, const string brokers, const string topic, OracleAnalyser *oracleAnalyser, uint64_t trace,
+    KafkaWriter::KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t trace,
             uint64_t trace2, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
             uint64_t timestampFormat) :
         Writer(alias, oracleAnalyser, stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat),
@@ -169,7 +169,7 @@ namespace OpenLogReplicator {
                     ->appendMs("timestamp", time.toTime() * 1000)
                     ->append(',')
                     ->appendXid(xid)
-                    ->append(",dml:[");
+                    ->appendChr(",dml:[");
         }
 
         lastTime = time;
@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::commitTran() {
         if (stream == STREAM_JSON) {
             if (test <= 1)
-                commandBuffer->append("]}");
+                commandBuffer->appendChr("]}");
             commandBuffer->commitTran();
         }
     }
@@ -235,7 +235,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
-                        ->append(",\"after\":{");
+                        ->appendChr(",\"after\":{");
             }
 
             for (uint64_t i = 0; i < object->columns.size(); ++i) {
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
                     commandBuffer
                             ->beginTran()
                             ->appendDbzHead(object)
-                            ->append("\"before\":null,\"after\":{");
+                            ->appendChr("\"before\":null,\"after\":{");
                 }
 
                 if (i >= jcc)
@@ -293,7 +293,7 @@ namespace OpenLogReplicator {
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->append("}}");
+                commandBuffer->appendChr("}}");
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
@@ -344,7 +344,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
-                        ->append(",\"before\":{");
+                        ->appendChr(",\"before\":{");
             }
 
             for (uint64_t i = 0; i < object->columns.size(); ++i) {
@@ -354,7 +354,7 @@ namespace OpenLogReplicator {
                     commandBuffer
                             ->beginTran()
                             ->appendDbzHead(object)
-                            ->append("\"before\":{");
+                            ->appendChr("\"before\":{");
                 }
 
                 if (i >= jcc)
@@ -394,14 +394,14 @@ namespace OpenLogReplicator {
 
                 if (stream == STREAM_DBZ_JSON) {
                     commandBuffer
-                        ->append("},\"after\":null,")
+                        ->appendChr("},\"after\":null,")
                         ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
                         ->commitTran();
                 }
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->append("}}");
+                commandBuffer->appendChr("}}");
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
@@ -486,7 +486,7 @@ namespace OpenLogReplicator {
             commandBuffer
                     ->beginTran()
                     ->appendDbzHead(object)
-                    ->append("\"before\":");
+                    ->appendChr("\"before\":");
         }
 
         uint64_t fieldPos, colNum, colShift, cc, headerSize;
@@ -514,7 +514,7 @@ namespace OpenLogReplicator {
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
                 if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append(",\"before\":{");
+                    commandBuffer->appendChr(",\"before\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
@@ -685,20 +685,20 @@ namespace OpenLogReplicator {
         } else {
             if (stream == STREAM_DBZ_JSON) {
                 if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append("null");
+                    commandBuffer->appendChr("null");
             }
         }
 
         if (stream == STREAM_DBZ_JSON) {
             if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->append(",\"after\":");
+                commandBuffer->appendChr(",\"after\":");
         }
 
         //data in REDO
         if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
                 if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append(",\"after\":{");
+                    commandBuffer->appendChr(",\"after\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
@@ -862,11 +862,11 @@ namespace OpenLogReplicator {
                 }
 
                 if (stream == STREAM_JSON) {
-                    commandBuffer->append(",\"before\":{");
+                    commandBuffer->appendChr(",\"before\":{");
                 }
 
                 if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->append("{");
+                    commandBuffer->appendChr("{");
                 }
 
                 for (uint64_t i = 0; i < object->totalCols; ++i) {
@@ -893,11 +893,11 @@ namespace OpenLogReplicator {
                 }
 
                 if (stream == STREAM_JSON) {
-                    commandBuffer->append("},\"after\":{");
+                    commandBuffer->appendChr("},\"after\":{");
                 }
 
                 if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->append("},\"after\":{");
+                    commandBuffer->appendChr("},\"after\":{");
                 }
 
                 prevValue = false;

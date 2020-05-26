@@ -1,10 +1,9 @@
 {
-  "version": "0.5.8",
+  "version": "0.5.9",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
   "trace2": 0,
-  "direct-read": 0,
   "checkpoint-interval": 10,
   "redo-read-sleep": 10000,
   "redo-buffer-mb": 4096,
@@ -14,6 +13,8 @@
     {
       "type": "ORACLE",
       "alias": "S1",
+      "flags": 0,
+      "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
       "name": "O112A",
       "user": "system",
       "password": "unknPwd4%",

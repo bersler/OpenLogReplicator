@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         uint8_t *headerBuffer;
         int64_t group;
         typeseq sequence;
-        char path[1024];
+        string path;
         uint64_t blockSize;
         typeblk numBlocks;
         typescn firstScn;
@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         virtual ~Reader();
 
         void *run();
-        void updatePath(const char *path);
+        void updatePath(string &newPath);
         typesum calcChSum(uint8_t *buffer, uint64_t size);
     };
 }
