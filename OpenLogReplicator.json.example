@@ -13,7 +13,7 @@
     {
       "type": "ORACLE",
       "alias": "S1",
-      "flags": 0,
+      "flags": 1,
       "disable-checks": 0,
       "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
       "name": "O112A",
