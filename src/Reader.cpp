@@ -21,6 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <unistd.h>
 #include <string.h>
 #include "Reader.h"
+#include "MemoryException.h"
 #include "OracleAnalyser.h"
 
 using namespace std;
@@ -46,6 +47,10 @@ namespace OpenLogReplicator {
         status(READER_STATUS_SLEEPING),
         bufferStart(0),
         bufferEnd(0) {
+        if (redoBuffer == nullptr)
+            throw MemoryException("Reader::Reader.1", sizeof(uint8_t) * DISK_BUFFER_SIZE);
+        if (headerBuffer == nullptr)
+            throw MemoryException("Reader::Reader.2", sizeof(uint8_t) * 2 * REDO_PAGE_SIZE_MAX);
     }
 
     Reader::~Reader() {
@@ -92,11 +97,13 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        typesum chSum = oracleAnalyser->read16(buffer + 14);
-        typesum chSum2 = calcChSum(buffer, blockSize);
-        if (chSum != chSum2) {
-            cerr << "ERROR: header sum for block number for " << dec << blockNumber << ", should be: " << hex << chSum << ", calculated: " << hex << chSum2 << endl;
-            return REDO_ERROR;
+        if ((oracleAnalyser->disableChecks & DISABLE_CHECK_CRCSUM) == 0) {
+            typesum chSum = oracleAnalyser->read16(buffer + 14);
+            typesum chSum2 = calcChSum(buffer, blockSize);
+            if (chSum != chSum2) {
+                cerr << "ERROR: header sum for block number for " << dec << blockNumber << ", should be: " << hex << chSum << ", calculated: " << hex << chSum2 << endl;
+                return REDO_ERROR;
+            }
         }
 
         return REDO_OK;

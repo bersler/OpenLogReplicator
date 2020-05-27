@@ -32,9 +32,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <rapidjson/document.h>
 
 #include "CommandBuffer.h"
+#include "ConfigurationException.h"
 #include "KafkaWriter.h"
+#include "MemoryException.h"
 #include "OracleAnalyser.h"
 #include "RedoLogException.h"
+#include "RuntimeException.h"
 
 using namespace std;
 using namespace rapidjson;
@@ -43,7 +46,7 @@ using namespace OpenLogReplicator;
 const Value& getJSONfield(const Value& value, const char* field) {
     if (!value.HasMember(field)) {
         cerr << "ERROR: Bad JSON: field " << field << " not found" << endl;
-        throw new exception;
+        throw ConfigurationException("JSON format error");
     }
     return value[field];
 }
@@ -51,7 +54,7 @@ const Value& getJSONfield(const Value& value, const char* field) {
 const Value& getJSONfield(const Document& document, const char* field) {
     if (!document.HasMember(field)) {
         cerr << "ERROR: Bad JSON: field " << field << " not found" << endl;
-        throw new exception;
+        throw ConfigurationException("JSON format error");
     }
     return document[field];
 }
@@ -84,6 +87,8 @@ int main() {
     cout << "Open Log Replicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
     list<Thread *> analysers, writers;
     list<CommandBuffer *> buffers;
+    OracleAnalyser *oracleAnalyser = nullptr;
+    KafkaWriter *kafkaWriter = nullptr;
 
     try {
         ifstream config("OpenLogReplicator.json");
@@ -91,11 +96,11 @@ int main() {
         Document document;
 
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
-            {cerr << "ERROR: parsing OpenLogReplicator.json" << endl; return 1;}
+            throw ConfigurationException("parsing OpenLogReplicator.json");
 
         const Value& version = getJSONfield(document, "version");
         if (strcmp(version.GetString(), PROGRAM_VERSION) != 0)
-            {cerr << "ERROR: bad JSON, incompatible version!" << endl; return 1;}
+            throw ConfigurationException("bad JSON, incompatible version");
 
         const Value& dumpRedoLogJSON = getJSONfield(document, "dump-redo-log");
         uint64_t dumpRedoLog = dumpRedoLogJSON.GetUint64();
@@ -136,7 +141,8 @@ int main() {
         //iterate through sources
         const Value& sources = getJSONfield(document, "sources");
         if (!sources.IsArray())
-            {cerr << "ERROR: bad JSON, sources should be an array!" << endl; return 1;}
+            throw ConfigurationException("bad JSON, sources should be an array");
+
         for (SizeType i = 0; i < sources.Size(); ++i) {
             const Value& source = sources[i];
             const Value& type = getJSONfield(source, "type");
@@ -145,6 +151,8 @@ int main() {
                 const Value& alias = getJSONfield(source, "alias");
                 const Value& flagsJSON = getJSONfield(source, "flags");
                 uint64_t flags = flagsJSON.GetUint64();
+                const Value& disableChecksJSON = getJSONfield(source, "disable-checks");
+                uint64_t disableChecks = disableChecksJSON.GetUint64();
                 const Value& name = getJSONfield(source, "name");
                 const Value& user = getJSONfield(source, "user");
                 const Value& password = getJSONfield(source, "password");
@@ -152,18 +160,25 @@ int main() {
                 const Value& eventtable = getJSONfield(source, "eventtable");
                 const Value& tables = getJSONfield(source, "tables");
                 if (!tables.IsArray())
-                    {cerr << "ERROR: bad JSON, objects should be array!" << endl; return 1;}
+                    throw ConfigurationException("bad JSON, tables should be array");
+
                 const Value& pathMapping = getJSONfield(source, "path-mapping");
                 if (!pathMapping.IsArray())
-                    {cerr << "ERROR: bad JSON, path-mapping should be array!" << endl; return 1;}
+                    throw ConfigurationException("bad JSON, path-mapping should be array");
+                if ((pathMapping.Size() % 2) != 0)
+                    throw ConfigurationException("path-mapping should contain pairs of elements");
 
                 cout << "Adding source: " << name.GetString() << endl;
                 CommandBuffer *commandBuffer = new CommandBuffer(outputBufferSize);
+                if (commandBuffer == nullptr)
+                    throw MemoryException("main.1", sizeof(CommandBuffer));
 
                 buffers.push_back(commandBuffer);
-                OracleAnalyser *oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
-                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, redoReadSleep,
-                        checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), user.GetString(),
+                        password.GetString(), server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks,
+                        redoReadSleep, checkpointInterval, redoBuffers, redoBufferSize, maxConcurrentTransactions);
+                if (oracleAnalyser == nullptr)
+                    throw MemoryException("main.2", sizeof(OracleAnalyser));
 
                 for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
                     const Value& sourceMapping = pathMapping[j * 2];
@@ -172,30 +187,26 @@ int main() {
                 }
 
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
-                analysers.push_back(oracleAnalyser);
-
-                //initialize
-                if (!oracleAnalyser->initialize()) {
-                    delete oracleAnalyser;
-                    oracleAnalyser = nullptr;
-                    return -1;
-                }
-
+                oracleAnalyser->initialize();
                 oracleAnalyser->addTable(eventtable.GetString(), 1);
+
                 for (SizeType j = 0; j < tables.Size(); ++j) {
                     const Value& table = getJSONfield(tables[j], "table");
                     oracleAnalyser->addTable(table.GetString(), 0);
                 }
 
-                //run
-                pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser);
+                if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser))
+                    throw ConfigurationException("error spawnig thead");
+
+                analysers.push_back(oracleAnalyser);
+                oracleAnalyser = nullptr;
             }
         }
 
         //iterate through targets
         const Value& targets = getJSONfield(document, "targets");
         if (!targets.IsArray())
-            {cerr << "ERROR: bad JSON, targets should be an array!" << endl; return 1;}
+            throw ConfigurationException("bad JSON, targets should be array");
         for (SizeType i = 0; i < targets.Size(); ++i) {
             const Value& target = targets[i];
             const Value& type = getJSONfield(target, "type");
@@ -212,7 +223,8 @@ int main() {
                     stream = STREAM_JSON;
                 else if (strcmp("DBZ-JSON", streamJSON.GetString()) == 0)
                     stream = STREAM_DBZ_JSON;
-                else {cerr << "ERROR: bad JSON, only stream of type JSON is currently supported!" << endl; return 1;}
+                else
+                    throw ConfigurationException("bad JSON, invalid stream type");
 
                 const Value& topic = getJSONfield(format, "topic");
                 const Value& sortColumnsJSON = getJSONfield(format, "sort-columns");
@@ -234,26 +246,24 @@ int main() {
                     if (analyser->alias.compare(source.GetString()) == 0)
                         oracleAnalyser = (OracleAnalyser*)analyser;
                 if (oracleAnalyser == nullptr)
-                    {cerr << "ERROR: Alias " << alias.GetString() << " not found!" << endl; return 1;}
+                    throw ConfigurationException("bad JSON, unknown alias");
 
                 cout << "Adding target: " << alias.GetString() << endl;
-                KafkaWriter *kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser, trace, trace2,
+                kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser, trace, trace2,
                         stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat);
+                if (kafkaWriter == nullptr)
+                    throw MemoryException("main.3", sizeof(KafkaWriter));
+
                 oracleAnalyser->commandBuffer->writer = kafkaWriter;
                 oracleAnalyser->commandBuffer->test = test;
                 oracleAnalyser->commandBuffer->timestampFormat = timestampFormat;
+
+                kafkaWriter->initialize();
+                if (pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter))
+                    throw ConfigurationException("error spawnig thead");
+
                 writers.push_back(kafkaWriter);
-
-                //initialize
-                if (!kafkaWriter->initialize()) {
-                    delete kafkaWriter;
-                    kafkaWriter = nullptr;
-                    cerr << "ERROR: Kafka starting writer for " << brokers.GetString() << " topic " << topic.GetString() << endl;
-                    return -1;
-                }
-
-                //run
-                pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter);
+                kafkaWriter = nullptr;
             }
         }
 
@@ -263,9 +273,24 @@ int main() {
             mainThread.wait(lck);
         }
 
-    } catch (RedoLogException &e) {
-    } catch (exception &e) {
-        cerr << "ERROR: parsing OpenLogReplicator.json" << endl;
+    } catch(ConfigurationException &ex) {
+        cerr << "ERROR: configuration error: " << ex.msg << endl;
+    } catch(RedoLogException &ex) {
+        cerr << "ERROR: redo log format: " << ex.msg << endl;
+    } catch(RuntimeException &ex) {
+        cerr << "ERROR: runtime: " << ex.msg << endl;
+    } catch (MemoryException &e) {
+        cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
+    }
+
+    if (oracleAnalyser != nullptr) {
+        delete oracleAnalyser;
+        oracleAnalyser = nullptr;
+    }
+
+    if (kafkaWriter != nullptr) {
+        delete kafkaWriter;
+        kafkaWriter = nullptr;
     }
 
     for (auto analyser : analysers)

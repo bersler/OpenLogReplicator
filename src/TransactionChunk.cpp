@@ -32,11 +32,9 @@ namespace OpenLogReplicator {
             prev->next = this;
         }
 
-        buffer = (uint8_t*)malloc(redoBufferSize);
-        if (buffer == nullptr) {
-            cerr << "ERROR: malloc buffer alloc error: " << dec << redoBufferSize << " bytes" << endl;
-            throw MemoryException("error allocating memory");
-        }
+        buffer = (uint8_t*)malloc(sizeof(uint8_t*) * redoBufferSize);
+        if (buffer == nullptr)
+            throw MemoryException("TransactionChunk::TransactionChunk.1", sizeof(uint8_t*) * redoBufferSize);
     }
 
     TransactionChunk::~TransactionChunk() {

@@ -23,11 +23,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string.h>
 #include "types.h"
 #include "CommandBuffer.h"
-#include "Transaction.h"
-#include "TransactionBuffer.h"
-#include "TransactionChunk.h"
-#include "RedoLogRecord.h"
-#include "Writer.h"
+#include "MemoryException.h"
 #include "OpCode.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
@@ -41,6 +37,11 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
 #include "OracleAnalyser.h"
+#include "RedoLogRecord.h"
+#include "Transaction.h"
+#include "TransactionBuffer.h"
+#include "TransactionChunk.h"
+#include "Writer.h"
 
 using namespace std;
 
@@ -123,6 +124,9 @@ namespace OpenLogReplicator {
                     oracleAnalyser->write16(redoLogRecord1->data + fieldPos + 20, flg);
 
                     OpCode0501 *opCode0501 = new OpCode0501(oracleAnalyser, redoLogRecord1);
+                    if (opCode0501 == nullptr)
+                        throw MemoryException("Transaction::add.1", sizeof(OpCode0501));
+
                     opCode0501->process();
                     delete opCode0501;
                 } else {

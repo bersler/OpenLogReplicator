@@ -27,8 +27,10 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string.h>
 #include <librdkafka/rdkafkacpp.h>
 #include "types.h"
-#include "KafkaWriter.h"
 #include "CommandBuffer.h"
+#include "ConfigurationException.h"
+#include "KafkaWriter.h"
+#include "MemoryException.h"
 #include "OracleAnalyser.h"
 #include "OracleAnalyser.h"
 #include "OracleColumn.h"
@@ -135,7 +137,7 @@ namespace OpenLogReplicator {
         return 0;
     }
 
-    uint64_t KafkaWriter::initialize() {
+    void KafkaWriter::initialize() {
         string errstr;
         Conf *conf = Conf::create(Conf::CONF_GLOBAL);
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
@@ -145,18 +147,16 @@ namespace OpenLogReplicator {
         if (test == 0) {
             producer = Producer::create(conf, errstr);
             if (producer == nullptr) {
-                std::cerr << "ERROR: creating Kafka producer: " << errstr << endl;
-                return 0;
+                std::cerr << "ERROR: Kafka message: " << errstr << endl;
+                throw ConfigurationException("error creating topic");
             }
 
             ktopic = Topic::create(producer, topic, tconf, errstr);
             if (ktopic == nullptr) {
-                std::cerr << "ERROR: Failed to create Kafka topic: " << errstr << endl;
-                return 0;
+                std::cerr << "ERROR: Kafka message: " << errstr << endl;
+                throw ConfigurationException("error creating topic");
             }
         }
-
-        return 1;
     }
 
     void KafkaWriter::beginTran(typescn scn, typetime time, typexid xid) {
@@ -498,16 +498,36 @@ namespace OpenLogReplicator {
         uint8_t *colSupp = nullptr;
         RedoLogRecord **beforeRecord = nullptr, **afterRecord = nullptr;
         if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-            afterPos = new uint64_t[object->totalCols * sizeof(uint64_t)];
+            afterPos = new uint64_t[object->totalCols];
+            if (afterPos == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
             memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
-            beforePos = new uint64_t[object->totalCols * sizeof(uint64_t)];
+
+            beforePos = new uint64_t[object->totalCols];
+            if (beforePos == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
             memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
-            afterLen = new uint16_t[object->totalCols * sizeof(uint16_t)];
-            beforeLen = new uint16_t[object->totalCols * sizeof(uint16_t)];
-            colSupp = new uint8_t[object->totalCols * sizeof(uint8_t)];
+
+            afterLen = new uint16_t[object->totalCols];
+            if (afterLen == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
+
+            beforeLen = new uint16_t[object->totalCols];
+            if (beforeLen == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
+
+            colSupp = new uint8_t[object->totalCols];
+            if (colSupp == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.5", sizeof(uint8_t) * object->totalCols);
             memset(colSupp, 0, object->totalCols * sizeof(uint8_t));
-            beforeRecord = new RedoLogRecord*[object->totalCols * sizeof(RedoLogRecord *)];
-            afterRecord = new RedoLogRecord*[object->totalCols * sizeof(RedoLogRecord *)];
+
+            beforeRecord = new RedoLogRecord*[object->totalCols];
+            if (beforeRecord == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
+
+            afterRecord = new RedoLogRecord*[object->totalCols];
+            if (afterRecord == nullptr)
+                throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
         }
 
         //data in UNDO

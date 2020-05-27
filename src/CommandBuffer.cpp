@@ -43,10 +43,8 @@ namespace OpenLogReplicator {
             outputBufferSize(outputBufferSize) {
         intraThreadBuffer = new uint8_t[outputBufferSize];
 
-        if (intraThreadBuffer == nullptr) {
-            cerr << "ERROR: could not allocate memory for output buffer (" << dec << outputBufferSize << " bytes)" << endl;
-            throw MemoryException("out of memory");
-        }
+        if (intraThreadBuffer == nullptr)
+            throw MemoryException("CommandBuffer::CommandBuffer", outputBufferSize);
     }
 
     void CommandBuffer::stop(void) {

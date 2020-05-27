@@ -1,5 +1,5 @@
 {
-  "version": "0.5.9",
+  "version": "0.5.10",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -14,6 +14,7 @@
       "type": "ORACLE",
       "alias": "S1",
       "flags": 0,
+      "disable-checks": 0,
       "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
       "name": "O112A",
       "user": "system",

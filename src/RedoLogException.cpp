@@ -26,15 +26,13 @@ namespace OpenLogReplicator {
     RedoLogException::~RedoLogException() {
     }
 
-    RedoLogException::RedoLogException(const char* msg, const char* parameter, uint64_t code) :
+    RedoLogException::RedoLogException(const char* msg) :
             exception(),
-            msg(msg),
-            parameter(parameter),
-            code(code) {
+            msg(msg) {
     }
 
     ostream& operator<<(ostream& os, const RedoLogException& ors) {
-        os << ors.msg << ors.parameter << " code: " << ors.code << ")";
+        os << ors.msg;
         return os;
     }
 }

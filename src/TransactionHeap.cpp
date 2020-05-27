@@ -32,10 +32,8 @@ namespace OpenLogReplicator {
     }
 
     void TransactionHeap::pop(uint64_t pos) {
-        if (pos > heapSize) {
-            cerr << "ERROR: pop of non existent transaction from heap pos: " << dec << pos << ", heapSize: " << heapSize << endl;
-            throw MemoryException("heap inconsistency");
-        }
+        if (pos > heapSize)
+            throw MemoryException("TransactionHeap::pop.1", 0);
 
         while ((pos << 1) < heapSize) {
             if (*heap[pos << 1] < *heap[heapSize]) {
@@ -75,7 +73,7 @@ namespace OpenLogReplicator {
             for (uint64_t i = 1; i <= heapSize; ++i) {
                 cerr << "[" << dec << i << "]: " << *heap[i] << endl;
             }
-            throw MemoryException("out of memory");
+            throw MemoryException("TransactionHeap::add.1", 0);
         }
 
         uint64_t pos = heapSize + 1;
@@ -92,10 +90,8 @@ namespace OpenLogReplicator {
     }
 
     void TransactionHeap::update(uint64_t pos) {
-        if (pos > heapSize) {
-            cerr << "ERROR: update of non existent transaction pos: " << dec << pos << ", heapSize: " << heapSize << endl;
-            throw MemoryException("heap inconsistency");
-        }
+        if (pos > heapSize)
+            throw MemoryException("TransactionHeap::update.1", 0);
 
         Transaction *transaction = heap[pos];
         while (true) {
@@ -131,10 +127,8 @@ namespace OpenLogReplicator {
         heapMaxSize(heapMaxSize),
         heapSize(0) {
         heap = new Transaction*[heapMaxSize];
-        if (heap == nullptr) {
-            cerr << "ERROR: can't allocate transaction heap, for size: " << dec << heapMaxSize << endl;
-            throw MemoryException("out of memory");
-        }
+        if (heap == nullptr)
+            throw MemoryException("TransactionHeap::TransactionHeap.1", sizeof(Transaction*) * heapMaxSize);
     }
 
     TransactionHeap::~TransactionHeap() {

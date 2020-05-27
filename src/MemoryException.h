@@ -30,8 +30,9 @@ namespace OpenLogReplicator {
     class MemoryException: public exception {
     public:
         const char *msg;
+        uint64_t bytes;
 
-        MemoryException(const char* msg);
+        MemoryException(const char* msg, uint64_t bytes);
         virtual ~MemoryException();
 
         friend ostream& operator<<(ostream& os, const MemoryException& ors);

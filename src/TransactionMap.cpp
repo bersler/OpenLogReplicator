@@ -104,11 +104,9 @@ namespace OpenLogReplicator {
         elements(0),
         maxConcurrentTransactions(maxConcurrentTransactions) {
         hashMap = new Transaction*[maxConcurrentTransactions * 2];
-        if (hashMap == nullptr) {
-            cerr << "ERROR: unable allocate memory for Transaction map(" << dec << maxConcurrentTransactions << ")" << endl;
-            throw MemoryException("out of memory");
-        }
-        memset(hashMap, 0, (sizeof(Transaction*)) * (maxConcurrentTransactions * 2));
+        if (hashMap == nullptr)
+            throw MemoryException("TransactionMap::TransactionMap.1", sizeof(Transaction*) * maxConcurrentTransactions * 2);
+        memset(hashMap, 0, sizeof(Transaction*) * maxConcurrentTransactions * 2);
     }
 
     TransactionMap::~TransactionMap() {

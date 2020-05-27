@@ -1,4 +1,4 @@
-/* Exception used in program
+/* Header for RuntimeException class
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -17,23 +17,25 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "MemoryException.h"
+#include <iostream>
+#include <exception>
+
+#ifndef RUNTIMEEXCEPTION_H_
+#define RUNTIMEEXCEPTION_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    MemoryException::~MemoryException() {
-    }
+    class RuntimeException: public exception {
+    public:
+        const char *msg;
 
-    MemoryException::MemoryException(const char* msg, uint64_t bytes) :
-            exception(),
-            msg(msg),
-            bytes(bytes) {
-    }
+        RuntimeException(const char* msg);
+        virtual ~RuntimeException();
 
-    ostream& operator<<(ostream& os, const MemoryException& ors) {
-        os << ors.msg;
-        return os;
-    }
+        friend ostream& operator<<(ostream& os, const RuntimeException& ors);
+    };
 }
+
+#endif

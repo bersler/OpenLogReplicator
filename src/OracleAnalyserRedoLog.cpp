@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyserRedoLog.h"
-
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -28,12 +26,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <ctime>
 #include <string.h>
 #include <signal.h>
-#include "OracleObject.h"
-#include "Reader.h"
-#include "RedoLogException.h"
-#include "RedoLogRecord.h"
-#include "Transaction.h"
-#include "TransactionMap.h"
+#include "MemoryException.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
 #include "OpCode0504.h"
@@ -51,6 +44,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B0C.h"
 #include "OpCode1801.h"
 #include "OracleAnalyser.h"
+#include "OracleAnalyserRedoLog.h"
+#include "OracleObject.h"
+#include "Reader.h"
+#include "RedoLogException.h"
+#include "RedoLogRecord.h"
+#include "Transaction.h"
+#include "TransactionMap.h"
 
 using namespace std;
 
@@ -364,7 +364,7 @@ namespace OpenLogReplicator {
 
         if (headerLength > recordLength) {
             dumpRedoVector();
-            throw RedoLogException("too small log record: ", path.c_str(), recordLength);
+            throw RedoLogException("too small log record");
         }
 
         uint64_t pos = headerLength;
@@ -393,7 +393,7 @@ namespace OpenLogReplicator {
 
             if (pos + fieldOffset + 1 >= recordLength) {
                 dumpRedoVector();
-                throw RedoLogException("position of field list outside of record: ", nullptr, pos + fieldOffset);
+                throw RedoLogException("position of field list outside of record");
             }
 
             uint8_t *fieldList = oracleAnalyser->recordBuffer + pos + fieldOffset;
@@ -423,13 +423,13 @@ namespace OpenLogReplicator {
                             " l: " << dec << redoLogRecord[vectors].length <<
                             " r: " << dec << recordLength << ")" << endl;
                     dumpRedoVector();
-                    throw RedoLogException("position of field list outside of record: ", nullptr, pos + redoLogRecord[vectors].length);
+                    throw RedoLogException("position of field list outside of record");
                 }
             }
 
             if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
                 dumpRedoVector();
-                throw RedoLogException("incomplete record", nullptr, 0);
+                throw RedoLogException("incomplete record");
             }
 
             redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
@@ -440,54 +440,104 @@ namespace OpenLogReplicator {
             switch (redoLogRecord[vectors].opCode) {
             case 0x0501: //Undo
                 opCodes[vectors] = new OpCode0501(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.1", sizeof(OpCode0501));
                 break;
+
             case 0x0502: //Begin transaction
                 opCodes[vectors] = new OpCode0502(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.2", sizeof(OpCode0502));
                 break;
+
             case 0x0504: //Commit/rollback transaction
                 opCodes[vectors] = new OpCode0504(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.3", sizeof(OpCode0504));
                 break;
+
             case 0x0506: //Partial rollback
                 opCodes[vectors] = new OpCode0506(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.4", sizeof(OpCode0506));
                 break;
+
             case 0x050B:
                 opCodes[vectors] = new OpCode050B(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.5", sizeof(OpCode050B));
                 break;
+
             case 0x0513: //Session information
                 opCodes[vectors] = new OpCode0513(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.6", sizeof(OpCode0513));
                 break;
+
             case 0x0514: //Session information
                 opCodes[vectors] = new OpCode0514(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.7", sizeof(OpCode0514));
                 break;
+
             case 0x0B02: //REDO: Insert row piece
                 opCodes[vectors] = new OpCode0B02(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.8", sizeof(OpCode0B02));
                 break;
+
             case 0x0B03: //REDO: Delete row piece
                 opCodes[vectors] = new OpCode0B03(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.9", sizeof(OpCode0B03));
                 break;
+
             case 0x0B04: //REDO: Lock row piece
                 opCodes[vectors] = new OpCode0B04(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.10", sizeof(OpCode0B04));
                 break;
+
             case 0x0B05: //REDO: Update row piece
                 opCodes[vectors] = new OpCode0B05(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.11", sizeof(OpCode0B05));
                 break;
+
             case 0x0B06: //REDO: Overwrite row piece
                 opCodes[vectors] = new OpCode0B06(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.12", sizeof(OpCode0B06));
                 break;
+
             case 0x0B08: //REDO: Change forwarding address
                 opCodes[vectors] = new OpCode0B08(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.13", sizeof(OpCode0B08));
                 break;
+
             case 0x0B0B: //REDO: Insert multiple rows
                 opCodes[vectors] = new OpCode0B0B(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.14", sizeof(OpCode0B0B));
                 break;
+
             case 0x0B0C: //REDO: Delete multiple rows
                 opCodes[vectors] = new OpCode0B0C(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.15", sizeof(OpCode0B0C));
                 break;
+
             case 0x1801: //DDL
                 opCodes[vectors] = new OpCode1801(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.16", sizeof(OpCode1801));
                 break;
+
             default:
                 opCodes[vectors] = new OpCode(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.17", sizeof(OpCode));
                 break;
             }
 
@@ -600,6 +650,9 @@ namespace OpenLogReplicator {
                     cerr << "ERROR: transaction missing" << endl;
 
                 transaction = new Transaction(oracleAnalyser, redoLogRecord->xid, oracleAnalyser->transactionBuffer);
+                if (transaction == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.1", sizeof(Transaction));
+
                 transaction->add(oracleAnalyser, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
                         redoLogRecord->rci, redoLogRecord, &zero, oracleAnalyser->transactionBuffer, sequence);
                 oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
@@ -629,6 +682,9 @@ namespace OpenLogReplicator {
         Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
             transaction = new Transaction(oracleAnalyser, redoLogRecord->xid, oracleAnalyser->transactionBuffer);
+            if (transaction == nullptr)
+                throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.2", sizeof(Transaction));
+
             transaction->touch(curScn, sequence);
             oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
             oracleAnalyser->transactionHeap.add(transaction);
@@ -723,6 +779,9 @@ namespace OpenLogReplicator {
                 Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
                     transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid, oracleAnalyser->transactionBuffer);
+                    if (transaction == nullptr)
+                        throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.3", sizeof(Transaction));
+
                     transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
                             redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
                     oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
@@ -1005,7 +1064,7 @@ namespace OpenLogReplicator {
                         if (recordLength4 > REDO_RECORD_MAX_SIZE) {
                             dumpRedoVector();
                             cerr << "WARNING: too big log record: " << dec << recordLeftToCopy << " bytes" << endl;
-                            throw RedoLogException("too big log record: ", path.c_str(), recordLeftToCopy);
+                            throw RedoLogException("too big log record");
                         }
 
                         recordPos = 0;

@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
         virtual void *run();
 
         void addTable(string &mask);
-        uint64_t initialize();
+        void initialize();
 
         virtual void beginTran(typescn scn, typetime time, typexid xid);
         virtual void next();

@@ -25,7 +25,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleObject.h"
 #include "OracleColumn.h"
 #include "RedoLogRecord.h"
-#include "RedoLogException.h"
 
 using namespace std;
 

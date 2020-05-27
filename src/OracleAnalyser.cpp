@@ -28,16 +28,19 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <rapidjson/document.h>
 #include "types.h"
 
+#include "CommandBuffer.h"
+#include "ConfigurationException.h"
+#include "MemoryException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "CommandBuffer.h"
 #include "OracleAnalyser.h"
 #include "OracleAnalyserRedoLog.h"
+#include "OracleStatement.h"
 #include "Reader.h"
 #include "ReaderFilesystem.h"
-#include "RedoLogRecord.h"
 #include "RedoLogException.h"
-#include "OracleStatement.h"
+#include "RedoLogRecord.h"
+#include "RuntimeException.h"
 #include "Transaction.h"
 #include "TransactionChunk.h"
 
@@ -49,10 +52,18 @@ const Value& getJSONfield(const Document& document, const char* field);
 
 namespace OpenLogReplicator {
 
+    string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
+    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') AS DB_NAME FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+    string OracleAnalyser::SQL_GET_CON_ID("SELECT SYS_CONTEXT('USERENV','CON_ID') CON_ID FROM DUAL");
+    string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
+    string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i");
+    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            uint64_t flags, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize,
-            uint64_t maxConcurrentTransactions) :
+            uint64_t flags, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
+            uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias),
         databaseSequence(0),
         env(nullptr),
@@ -74,6 +85,7 @@ namespace OpenLogReplicator {
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
         flags(flags),
+        disableChecks(disableChecks),
         redoReadSleep(redoReadSleep),
         trace(trace),
         trace2(trace2),
@@ -165,10 +177,8 @@ namespace OpenLogReplicator {
         ofstream outfile;
         outfile.open((database + ".json").c_str(), ios::out | ios::trunc);
 
-        if (!outfile.is_open()) {
-            cerr << "ERROR: writing checkpoint data for " << database << endl;
-            return;
-        }
+        if (!outfile.is_open())
+            throw RuntimeException("writing checkpoint data");
 
         stringstream ss;
         ss << "{\"database\":\"" << database
@@ -202,11 +212,11 @@ namespace OpenLogReplicator {
         Document document;
 
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
-            {cerr << "ERROR: parsing " << database << ".json at byte " << dec << document.GetErrorOffset() << endl; infile.close(); return; }
+            throw RuntimeException("JSON: parsing of <database>.json");
 
         const Value& databaseJSON = getJSONfield(document, "database");
         if (database.compare(databaseJSON.GetString()) != 0)
-            {cerr << "ERROR: bad JSON, invalid database name (" << databaseJSON.GetString() << ")!" << endl; infile.close(); return; }
+            throw RuntimeException("JSON: parsing of <database>.json - invalid database name");
 
         const Value& databaseSequenceJSON = getJSONfield(document, "sequence");
         databaseSequence = databaseSequenceJSON.GetUint64();
@@ -234,7 +244,7 @@ namespace OpenLogReplicator {
                 try {
                     conn = env->createConnection(user, passwd, connectString);
                 } catch(SQLException &ex) {
-                    cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+                    cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
                 }
             }
 
@@ -251,7 +261,9 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl;
+            stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
             stmt.stmt->setInt(1, databaseSequence);
             stmt.stmt->setInt(2, resetlogs);
             stmt.executeQuery();
@@ -267,13 +279,17 @@ namespace OpenLogReplicator {
                 nextScn = stmt.rset->getNumber(5);
 
                 OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, path.c_str());
+                if (redo == nullptr)
+                    throw MemoryException("OracleAnalyser::archLogGetList.1", sizeof(OracleAnalyserRedoLog));
+
                 redo->firstScn = firstScn;
                 redo->nextScn = nextScn;
                 redo->sequence = sequence;
                 archiveRedoQueue.push(redo);
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: getting arch log list: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            throw RuntimeException("getting archive log list");
         }
     }
 
@@ -282,7 +298,7 @@ namespace OpenLogReplicator {
             oracleAnalyserRedoLog->resetRedo();
             if (!readerUpdateRedoLog(oracleAnalyserRedoLog->reader)) {
                 cerr << "ERROR: updating failed for " << dec << oracleAnalyserRedoLog->path << endl;
-                throw RedoLogException("can't update file", nullptr, 0);
+                throw RuntimeException("can't update file");
             }
         }
     }
@@ -495,38 +511,38 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t OracleAnalyser::initialize() {
+    void OracleAnalyser::initialize() {
         checkConnection(false);
         if (conn == nullptr)
-            return 0;
+            throw RuntimeException("connecting to the database");
 
         typescn currentDatabaseScn;
         typeresetlogs currentResetlogs;
 
         try {
             OracleStatement stmt(&conn, env);
-            //check archivelog mode, supplemental log min, endian
-            stmt.createStatement("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') AS DB_NAME FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_DATABASE_INFORMATION << endl;
+            stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
             stmt.executeQuery();
 
             if (stmt.rset->next()) {
-
                 string LOG_MODE = stmt.rset->getString(1);
                 if (LOG_MODE.compare("ARCHIVELOG") != 0) {
-                    cerr << "ERROR: database not in ARCHIVELOG mode. RUN: " << endl;
+                    cerr << "run: " << endl;
                     cerr << " SHUTDOWN IMMEDIATE;" << endl;
                     cerr << " STARTUP MOUNT;" << endl;
                     cerr << " ALTER DATABASE ARCHIVELOG;" << endl;
                     cerr << " ALTER DATABASE OPEN;" << endl;
-                    return 0;
+                    throw RuntimeException("database not in ARCHIVELOG mode");
                 }
 
                 string SUPPLEMENTAL_LOG_MIN = stmt.rset->getString(2);
                 if (SUPPLEMENTAL_LOG_MIN.compare("YES") != 0) {
-                    cerr << "ERROR: SUPPLEMENTAL_LOG_DATA_MIN missing: RUN:" << endl;
+                    cerr << "run:" << endl;
                     cerr << " ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
                     cerr << " ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
-                    return 0;
+                    throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
                 string ENDIANNESS = stmt.rset->getString(3);
@@ -548,8 +564,8 @@ namespace OpenLogReplicator {
                 currentDatabaseScn = stmt.rset->getNumber(4);
                 currentResetlogs = stmt.rset->getNumber(5);
                 if (resetlogs != 0 && currentResetlogs != resetlogs) {
-                    cerr << "ERROR: Incorrect database incarnation. Previous resetlogs:" << dec << resetlogs << ", current: " << currentResetlogs << endl;
-                    return 0;
+                    cerr << "ERROR: Previous resetlogs:" << dec << resetlogs << ", current: " << currentResetlogs << endl;
+                    throw RuntimeException("incorrect database incarnation");
                 } else {
                     resetlogs = currentResetlogs;
                 }
@@ -562,7 +578,9 @@ namespace OpenLogReplicator {
                 conId = 0;
                 if (VERSION.find("Oracle Database 11g") == string::npos) {
                     OracleStatement stmt(&conn, env);
-                    stmt.createStatement("select sys_context('USERENV','CON_ID') CON_ID from DUAL");
+                    if ((trace2 & TRACE2_SQL) != 0)
+                        cerr << "SQL: " << SQL_GET_CON_ID << endl;
+                    stmt.createStatement(SQL_GET_CON_ID);
                     stmt.executeQuery();
 
                     if (stmt.rset->next())
@@ -570,21 +588,36 @@ namespace OpenLogReplicator {
                 }
 
                 databaseContext = stmt.rset->getString(7);
-
             } else {
-                cerr << "ERROR: reading SYS.V_$DATABASE" << endl;
-                return 0;
+                throw RuntimeException("reading SYS.V_$DATABASE");
             }
 
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
-            return 0;
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            throw RuntimeException("getting information about log files");
+        }
+
+        if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
+            checkTableForGrants("SYS.TAB$");
+            checkTableForGrants("SYS.OBJ$");
+            checkTableForGrants("SYS.COL$");
+            checkTableForGrants("SYS.CCOL$");
+            checkTableForGrants("SYS.CDEF$");
+            checkTableForGrants("SYS.USER$");
+            checkTableForGrants("SYS.V_$ARCHIVED_LOG");
+            checkTableForGrants("SYS.V_$LOGFILE");
+            checkTableForGrants("SYS.V_$LOG");
+            checkTableForGrants("SYS.V_$DATABASE");
+            checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
+            checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
         }
 
         if (databaseSequence == 0 || databaseScn == 0) {
             try {
                 OracleStatement stmt(&conn, env);
-                stmt.createStatement("select SEQUENCE# from SYS.V_$LOG where status = 'CURRENT'");
+                if ((trace2 & TRACE2_SQL) != 0)
+                    cerr << "SQL: " << SQL_GET_CURRENT_SEQUENCE << endl;
+                stmt.createStatement(SQL_GET_CURRENT_SEQUENCE);
                 stmt.executeQuery();
 
                 if (stmt.rset->next()) {
@@ -592,7 +625,8 @@ namespace OpenLogReplicator {
                     databaseScn = currentDatabaseScn;
                 }
             } catch(SQLException &ex) {
-                cerr << "ERROR: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+                cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+                throw RuntimeException("getting current log sequence");
             }
         }
 
@@ -604,7 +638,7 @@ namespace OpenLogReplicator {
         }
 
         if (databaseSequence == 0 || databaseScn == 0)
-            return 0;
+            throw RuntimeException("getting database sequence or current SCN");
 
         Reader *onlineReader = nullptr;
         int64_t group = -1, groupNew = -1, groupLastOk = -1;
@@ -612,7 +646,9 @@ namespace OpenLogReplicator {
 
         try {
             OracleStatement stmt(&conn, env);
-            stmt.createStatement("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_LOGFILE_LIST << endl;
+            stmt.createStatement(SQL_GET_LOGFILE_LIST);
             stmt.executeQuery();
 
             while (stmt.rset->next()) {
@@ -623,8 +659,8 @@ namespace OpenLogReplicator {
                 if (groupNew != group) {
                     if (group != groupLastOk || onlineReader != nullptr) {
                         readerDropAll();
-                        cerr << "ERROR: can't read any member of group " << dec << group << " - set \"trace2\": 2 to check which files are read" << endl;
-                        return 0;
+                        cerr << "ERROR: can't read any member of group " << dec << group << " - set \"trace2\": " << dec << TRACE2_FILE << " to check which files are read" << endl;
+                        throw RuntimeException("can't read any member of group");
                     }
 
                     group = groupNew;
@@ -633,6 +669,11 @@ namespace OpenLogReplicator {
 
                 if (group > groupLastOk && readerCheckRedoLog(onlineReader, path)) {
                     OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, group, path.c_str());
+                    if (redo == nullptr) {
+                        readerDropAll();
+                        throw MemoryException("OracleAnalyser::initialize.1", sizeof(OracleAnalyserRedoLog));
+                    }
+
                     redo->reader = onlineReader;
                     onlineRedoSet.insert(redo);
                     groupLastOk = group;
@@ -643,16 +684,16 @@ namespace OpenLogReplicator {
             if (group != groupLastOk) {
                 readerDropAll();
                 cerr << "ERROR: can't read any member of group " << dec << group << endl;
-                return 0;
+                cerr << "ERROR: can't read any member of group " << dec << group << " - set \"trace2\": 2 to check which files are read" << endl;
+                throw RuntimeException("can't read any member of group");
             }
         } catch(SQLException &ex) {
             readerDropAll();
-            throw RedoLogException("errog getting online log list", nullptr, 0);
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            throw RuntimeException("getting information about log files");
         }
 
         archReader = readerCreate(0);
-
-        return 1;
     }
 
     void *OracleAnalyser::run(void) {
@@ -733,7 +774,7 @@ namespace OpenLogReplicator {
                         break;
                     }
                     cerr << "ERROR: process log returned: " << dec << ret << endl;
-                    throw RedoLogException("read archive log", nullptr, 0);
+                    throw RedoLogException("read archive log");
                 }
 
                 if (rolledBack1 != nullptr)
@@ -760,7 +801,7 @@ namespace OpenLogReplicator {
                     continue;
                 else if (redo->sequence > databaseSequence) {
                     cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead" << endl;
-                    throw RedoLogException("read archive log", nullptr, 0);
+                    throw RedoLogException("read archive log");
                 }
 
                 logsProcessed = true;
@@ -768,12 +809,12 @@ namespace OpenLogReplicator {
 
                 if (!readerCheckRedoLog(archReader, redo->path)) {
                     cerr << "ERROR: while opening archive log: " << redo->path << endl;
-                    throw RedoLogException("read archive log", nullptr, 0);
+                    throw RedoLogException("read archive log");
                 }
 
                 if (!readerUpdateRedoLog(archReader)) {
                     cerr << "ERROR: while reading archive log: " << redo->path << endl;
-                    throw RedoLogException("read archive log", nullptr, 0);
+                    throw RedoLogException("read archive log");
                 }
 
                 if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
@@ -789,7 +830,7 @@ namespace OpenLogReplicator {
 
                 if (ret != REDO_FINISHED) {
                     cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
-                    throw RedoLogException("read archive log", nullptr, 0);
+                    throw RedoLogException("read archive log");
                 }
 
                 ++databaseSequence;
@@ -891,7 +932,13 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         RedoLogRecord *tmpRedoLogRecord1 = new RedoLogRecord();
+        if (tmpRedoLogRecord1 == nullptr)
+            throw MemoryException("OracleAnalyser::addToRollbackList.1", sizeof(RedoLogRecord));
+
         RedoLogRecord *tmpRedoLogRecord2 = new RedoLogRecord();
+        if (tmpRedoLogRecord2 == nullptr)
+            throw MemoryException("OracleAnalyser::addToRollbackList.2", sizeof(RedoLogRecord));
+
         memcpy(tmpRedoLogRecord1, redoLogRecord1, sizeof(RedoLogRecord));
         memcpy(tmpRedoLogRecord2, redoLogRecord2, sizeof(RedoLogRecord));
 
@@ -946,10 +993,30 @@ namespace OpenLogReplicator {
         readers.clear();
     }
 
+    void OracleAnalyser::checkTableForGrants(string tableName) {
+        try {
+            stringstream query;
+            query << "SELECT 1 FROM " << tableName << " WHERE 0 = 1";
+
+            OracleStatement stmt(&conn, env);
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << query.str() << endl;
+            stmt.createStatement(query.str());
+            stmt.executeQuery();
+        } catch(SQLException &ex) {
+            cerr << "ERROR: run: GRANT SELECT ON " << tableName << " TO " << user << ";" << endl;
+            throw ConfigurationException("grants missing");
+        }
+    }
+
     Reader *OracleAnalyser::readerCreate(int64_t group) {
         Reader *reader = new ReaderFilesystem(alias, this, group);
+        if (reader == nullptr)
+            throw MemoryException("OracleAnalyser::readerCreate.1", sizeof(ReaderFilesystem));
+
         readers.insert(reader);
-        pthread_create(&reader->pthread, nullptr, &ReaderFilesystem::runStatic, (void*)reader);
+        if (pthread_create(&reader->pthread, nullptr, &ReaderFilesystem::runStatic, (void*)reader))
+            throw ConfigurationException("spawnig thead");
         return reader;
     }
 
@@ -970,12 +1037,9 @@ namespace OpenLogReplicator {
         try {
             OracleStatement stmt(&conn, env);
             OracleStatement stmt2(&conn, env);
-            stmt.createStatement(
-                    "SELECT tab.DATAOBJ# as objd, tab.OBJ# as objn, tab.CLUCOLS as clucols, usr.USERNAME AS owner, obj.NAME AS objectName, decode(bitand(tab.FLAGS, 8388608), 8388608, 1, 0) as dependencies "
-                    "FROM SYS.TAB$ tab, SYS.OBJ$ obj, ALL_USERS usr "
-                    "WHERE tab.OBJ# = obj.OBJ# "
-                    "AND obj.OWNER# = usr.USER_ID "
-                    "AND usr.USERNAME || '.' || obj.NAME LIKE :i");
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_TABLE_LIST << endl;
+            stmt.createStatement(SQL_GET_TABLE_LIST);
             stmt.stmt->setString(1, mask);
 
             stmt.executeQuery();
@@ -993,12 +1057,19 @@ namespace OpenLogReplicator {
                         stmt.rset->getNumber(3);
                     uint64_t depdendencies = stmt.rset->getNumber(6);
                     uint64_t totalPk = 0, totalCols = 0;
+
                     OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner, objectName);
+                    if (object == nullptr) {
+                        cout << endl;
+                        throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
+                    }
                     ++tabCnt;
 
                     cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
 
-                    stmt2.createStatement("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D on D.con# = L.con# AND D.type# = 2 WHERE L.intcol# = C.intcol# and L.obj# = C.obj#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+                    if ((trace2 & TRACE2_SQL) != 0)
+                        cerr << "SQL: " << SQL_GET_COLUMN_LIST << endl;
+                    stmt2.createStatement(SQL_GET_COLUMN_LIST);
                     stmt2.stmt->setInt(1, objn);
                     stmt2.executeQuery();
 
@@ -1017,7 +1088,13 @@ namespace OpenLogReplicator {
 
                         int64_t nullable = stmt2.rset->getNumber(8);
                         uint64_t numPk = stmt2.rset->getNumber(9);
+
                         OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
+                        if (column == nullptr) {
+                            cout << endl;
+                            throw MemoryException("OracleAnalyser::addTable.2", sizeof(OracleColumn));
+                        }
+
                         totalPk += numPk;
                         ++totalCols;
 
@@ -1030,7 +1107,9 @@ namespace OpenLogReplicator {
                 }
             }
         } catch(SQLException &ex) {
-            cerr << "ERROR: getting table metadata: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cout << endl;
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            throw RuntimeException("getting table metadata");
         }
         cout << " (total: " << dec << tabCnt << ")" << endl;
     }
@@ -1078,7 +1157,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::addPathMapping(const string source, const string target) {
-        cerr << "added mapping [" << source << "] -> [" << target << "]" << endl;
+        if ((trace2 & TRACE2_FILE) != 0)
+            cerr << "FILE: added mapping [" << source << "] -> [" << target << "]" << endl;
         string sourceMaping = source, targetMapping = target;
         pathMapping.push_back(sourceMaping);
         pathMapping.push_back(targetMapping);

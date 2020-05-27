@@ -1,4 +1,4 @@
-/* Exception used in program
+/* Header for ConfigurationException class
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -17,23 +17,25 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "MemoryException.h"
+#include <iostream>
+#include <exception>
+
+#ifndef CONFIGURATIONEXCEPTION_H_
+#define CONFIGURATIONEXCEPTION_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    MemoryException::~MemoryException() {
-    }
+    class ConfigurationException: public exception {
+    public:
+        const char *msg;
 
-    MemoryException::MemoryException(const char* msg, uint64_t bytes) :
-            exception(),
-            msg(msg),
-            bytes(bytes) {
-    }
+        ConfigurationException(const char* msg);
+        virtual ~ConfigurationException();
 
-    ostream& operator<<(ostream& os, const MemoryException& ors) {
-        os << ors.msg;
-        return os;
-    }
+        friend ostream& operator<<(ostream& os, const ConfigurationException& ors);
+    };
 }
+
+#endif

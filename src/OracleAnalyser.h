@@ -59,6 +59,14 @@ namespace OpenLogReplicator {
 
     class OracleAnalyser : public Thread {
     protected:
+        static string SQL_GET_ARCHIVE_LOG_LIST;
+        static string SQL_GET_DATABASE_INFORMATION;
+        static string SQL_GET_CON_ID;
+        static string SQL_GET_CURRENT_SEQUENCE;
+        static string SQL_GET_LOGFILE_LIST;
+        static string SQL_GET_TABLE_LIST;
+        static string SQL_GET_COLUMN_LIST;
+
         typeseq databaseSequence;
         Environment *env;
         Connection *conn;
@@ -81,6 +89,7 @@ namespace OpenLogReplicator {
         void updateOnlineLogs();
         bool readerCheckRedoLog(Reader *reader, string &path);
         void readerDropAll();
+        void checkTableForGrants(string tableName);
         Reader *readerCreate(int64_t group);
 
     public:
@@ -102,6 +111,7 @@ namespace OpenLogReplicator {
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t flags;
+        uint64_t disableChecks;
         vector<string> pathMapping;
         uint32_t redoReadSleep;
         uint64_t trace;
@@ -149,7 +159,7 @@ namespace OpenLogReplicator {
         static void writeSCNLittle(uint8_t* buf, typescn val);
         static void writeSCNBig(uint8_t* buf, typescn val);
 
-        uint64_t initialize();
+        void initialize();
         void *run();
         void freeRollbackList();
         bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
@@ -164,7 +174,8 @@ namespace OpenLogReplicator {
 
         OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
                 const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags,
-                uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
+                uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize,
+                uint64_t maxConcurrentTransactions);
         virtual ~OracleAnalyser();
     };
 }

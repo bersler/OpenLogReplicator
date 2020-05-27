@@ -17,22 +17,21 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "MemoryException.h"
+#include "ConfigurationException.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    MemoryException::~MemoryException() {
+ConfigurationException::~ConfigurationException() {
     }
 
-    MemoryException::MemoryException(const char* msg, uint64_t bytes) :
+ConfigurationException::ConfigurationException(const char* msg) :
             exception(),
-            msg(msg),
-            bytes(bytes) {
+            msg(msg) {
     }
 
-    ostream& operator<<(ostream& os, const MemoryException& ors) {
+    ostream& operator<<(ostream& os, const ConfigurationException& ors) {
         os << ors.msg;
         return os;
     }
