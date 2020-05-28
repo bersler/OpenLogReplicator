@@ -5,6 +5,7 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/CommandBuffer.cpp \
+../src/ConfigurationException.cpp \
 ../src/KafkaWriter.cpp \
 ../src/MemoryException.cpp \
 ../src/OpCode.cpp \
@@ -34,6 +35,7 @@ CPP_SRCS += \
 ../src/ReaderFilesystem.cpp \
 ../src/RedoLogException.cpp \
 ../src/RedoLogRecord.cpp \
+../src/RuntimeException.cpp \
 ../src/Thread.cpp \
 ../src/Transaction.cpp \
 ../src/TransactionBuffer.cpp \
@@ -44,6 +46,7 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/CommandBuffer.o \
+./src/ConfigurationException.o \
 ./src/KafkaWriter.o \
 ./src/MemoryException.o \
 ./src/OpCode.o \
@@ -73,6 +76,7 @@ OBJS += \
 ./src/ReaderFilesystem.o \
 ./src/RedoLogException.o \
 ./src/RedoLogRecord.o \
+./src/RuntimeException.o \
 ./src/Thread.o \
 ./src/Transaction.o \
 ./src/TransactionBuffer.o \
@@ -83,6 +87,7 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/CommandBuffer.d \
+./src/ConfigurationException.d \
 ./src/KafkaWriter.d \
 ./src/MemoryException.d \
 ./src/OpCode.d \
@@ -112,6 +117,7 @@ CPP_DEPS += \
 ./src/ReaderFilesystem.d \
 ./src/RedoLogException.d \
 ./src/RedoLogRecord.d \
+./src/RuntimeException.d \
 ./src/Thread.d \
 ./src/Transaction.d \
 ./src/TransactionBuffer.d \
