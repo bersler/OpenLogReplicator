@@ -17,10 +17,11 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <stdint.h>
-#include <string>
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
+#include <string>
+#include <stdint.h>
+
 #include "types.h"
 
 #ifndef COMMANDBUFFER_H_

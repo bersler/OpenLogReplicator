@@ -18,13 +18,13 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
-#include "Writer.h"
 
 #include "CommandBuffer.h"
 #include "OracleAnalyser.h"
-#include "OracleObject.h"
 #include "OracleColumn.h"
+#include "OracleObject.h"
 #include "RedoLogRecord.h"
+#include "Writer.h"
 
 using namespace std;
 

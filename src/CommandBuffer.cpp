@@ -20,13 +20,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <string.h>
 
-#include "types.h"
 #include "CommandBuffer.h"
-#include "OracleObject.h"
-#include "OracleColumn.h"
-#include "RedoLogRecord.h"
 #include "MemoryException.h"
 #include "OracleAnalyser.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
+#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
 

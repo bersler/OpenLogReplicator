@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <ostream>
 #include <iomanip>
+#include <ostream>
 #include <stdint.h>
 #include <time.h>
 
@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.10"
+#define PROGRAM_VERSION             "0.5.11"
 #define MAX_PATH_LENGTH             2048
 
 #define STREAM_JSON                 1
@@ -73,8 +73,9 @@ typedef uint32_t typeseq;
 #define TRACE2_ROLLBACK             0x0001000
 
 #define REDO_RECORD_MAX_SIZE        1048576
-#define REDO_FLAGS_DIRECT           1
-#define REDO_FLAGS_NOATIME          2
+#define REDO_FLAGS_DIRECT           0x0000001
+#define REDO_FLAGS_NOATIME          0x0000002
+#define REDO_FLAGS_ON_ERROR_CONTINUE 0x0000004
 
 #define DISABLE_CHECK_CRCSUM        0x0000001
 #define DISABLE_CHECK_GRANTS        0x0000002

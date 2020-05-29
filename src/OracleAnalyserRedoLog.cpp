@@ -17,15 +17,16 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
-#include <iostream>
-#include <sstream>
 #include <cstdio>
-#include <iomanip>
-#include <list>
 #include <ctime>
-#include <string.h>
+#include <iomanip>
+#include <iostream>
+#include <list>
+#include <sstream>
+#include <string>
 #include <signal.h>
+#include <string.h>
+
 #include "MemoryException.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
@@ -49,6 +50,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "Reader.h"
 #include "RedoLogException.h"
 #include "RedoLogRecord.h"
+#include "RuntimeException.h"
 #include "Transaction.h"
 #include "TransactionMap.h"
 
@@ -1091,7 +1093,14 @@ namespace OpenLogReplicator {
                         if ((oracleAnalyser->trace2 & TRACE2_VECTOR) != 0)
                             cerr << "VECTOR: * block: " << dec << recordBeginBlock << " pos: " << dec << recordBeginPos << ", length: " << recordLength4 << endl;
 
-                        analyzeRecord();
+                        try {
+                            analyzeRecord();
+                        } catch(RedoLogException &ex) {
+                            if (oracleAnalyser->trace >= TRACE_WARN)
+                                cerr << "WARNING: " << ex.msg << " forced to continue working" << endl;
+                            if ((oracleAnalyser->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0)
+                                throw new RuntimeException(ex.msg);
+                        }
                     }
                 }
 

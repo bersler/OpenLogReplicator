@@ -17,18 +17,20 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
+#include <algorithm>
 #include <cstdio>
-#include <string>
 #include <fstream>
-#include <streambuf>
+#include <iostream>
 #include <list>
 #include <mutex>
+#include <sstream>
+#include <streambuf>
+#include <string>
+#include <vector>
+#include <execinfo.h>
+#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <string.h>
-#include <execinfo.h>
 #include <rapidjson/document.h>
 
 #include "CommandBuffer.h"
@@ -36,7 +38,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "KafkaWriter.h"
 #include "MemoryException.h"
 #include "OracleAnalyser.h"
-#include "RedoLogException.h"
 #include "RuntimeException.h"
 
 using namespace std;
@@ -186,17 +187,35 @@ int main() {
                     oracleAnalyser->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
                 }
 
+                string keysStr("");
+                vector<string> keys;
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
                 oracleAnalyser->initialize();
-                oracleAnalyser->addTable(eventtable.GetString(), 1);
+                oracleAnalyser->addTable(eventtable.GetString(), keys, keysStr, 1);
 
                 for (SizeType j = 0; j < tables.Size(); ++j) {
                     const Value& table = getJSONfield(tables[j], "table");
-                    oracleAnalyser->addTable(table.GetString(), 0);
+
+                    if (tables[j].HasMember("key")) {
+                        const Value& key = tables[j]["key"];
+                        keysStr = key.GetString();
+                        stringstream keyStream(keysStr);
+
+                        while (keyStream.good()) {
+                            string keyCol, keyCol2;
+                            getline(keyStream, keyCol, ',' );
+                            keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
+                            transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
+                            keys.push_back(keyCol);
+                        }
+                    } else
+                        keysStr = "";
+                    oracleAnalyser->addTable(table.GetString(), keys, keysStr, 0);
+                    keys.clear();
                 }
 
                 if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser))
-                    throw ConfigurationException("error spawnig thead");
+                    throw ConfigurationException("error spawning thread");
 
                 analysers.push_back(oracleAnalyser);
                 oracleAnalyser = nullptr;
@@ -242,7 +261,7 @@ int main() {
 
                 OracleAnalyser *oracleAnalyser = nullptr;
 
-                for (auto analyser : analysers)
+                for (Thread *analyser : analysers)
                     if (analyser->alias.compare(source.GetString()) == 0)
                         oracleAnalyser = (OracleAnalyser*)analyser;
                 if (oracleAnalyser == nullptr)
@@ -260,7 +279,7 @@ int main() {
 
                 kafkaWriter->initialize();
                 if (pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter))
-                    throw ConfigurationException("error spawnig thead");
+                    throw ConfigurationException("error spawning thread");
 
                 writers.push_back(kafkaWriter);
                 kafkaWriter = nullptr;
@@ -275,8 +294,6 @@ int main() {
 
     } catch(ConfigurationException &ex) {
         cerr << "ERROR: configuration error: " << ex.msg << endl;
-    } catch(RedoLogException &ex) {
-        cerr << "ERROR: redo log format: " << ex.msg << endl;
     } catch(RuntimeException &ex) {
         cerr << "ERROR: runtime: " << ex.msg << endl;
     } catch (MemoryException &e) {
@@ -293,33 +310,33 @@ int main() {
         kafkaWriter = nullptr;
     }
 
-    for (auto analyser : analysers)
+    for (Thread *analyser : analysers)
         analyser->stop();
-    for (auto commandBuffer : buffers) {
+    for (CommandBuffer *commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
         commandBuffer->writerCond.notify_all();
     }
-    for (auto analyser : analysers) {
+    for (Thread *analyser : analysers) {
         analyser->stop();
         pthread_join(analyser->pthread, nullptr);
         delete analyser;
     }
     analysers.clear();
 
-    for (auto writer : writers)
+    for (Thread *writer : writers)
         writer->stop();
-    for (auto commandBuffer : buffers) {
+    for (CommandBuffer *commandBuffer : buffers) {
         unique_lock<mutex> lck(commandBuffer->mtx);
         commandBuffer->analysersCond.notify_all();
     }
-    for (auto writer : writers) {
+    for (Thread *writer : writers) {
         pthread_join(writer->pthread, nullptr);
         delete writer;
     }
     writers.clear();
 
     //deactivate command buffers
-    for (auto commandBuffer : buffers) {
+    for (CommandBuffer *commandBuffer : buffers) {
         commandBuffer->stop();
         delete commandBuffer;
     }

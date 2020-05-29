@@ -18,11 +18,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
-#include <unistd.h>
 #include <string.h>
-#include "Reader.h"
-#include "MemoryException.h"
+#include <unistd.h>
+
 #include "OracleAnalyser.h"
+#include "MemoryException.h"
+#include "Reader.h"
 
 using namespace std;
 
@@ -112,7 +113,7 @@ namespace OpenLogReplicator {
     uint64_t Reader::reloadHeader() {
         int64_t bytes = redoRead(headerBuffer, 0, REDO_PAGE_SIZE_MAX * 2);
         if (bytes < REDO_PAGE_SIZE_MAX * 2) {
-            cerr << "ERROR: unable to read redo header for " << path << " bytes read: " << dec << bytes << endl;
+            cerr << "ERROR: unable read file " << path << endl;
             return REDO_ERROR;
         }
 
@@ -426,6 +427,7 @@ namespace OpenLogReplicator {
                         break;
                     }
 
+                    //some data has been read, try to process it first
                     if (curBufferEnd > bufferEnd) {
                         unique_lock<mutex> lck(oracleAnalyser->mtx);
                         bufferEnd = curBufferEnd;
@@ -438,7 +440,6 @@ namespace OpenLogReplicator {
                     }
 
                     if (curRet == REDO_OVERWRITTEN || curRet == REDO_ERROR) {
-                        cerr << "Overwritten redo log with new data, curRet = " << dec << curRet << endl;
                         unique_lock<mutex> lck(oracleAnalyser->mtx);
                         status = READER_STATUS_SLEEPING;
                         ret = curRet;

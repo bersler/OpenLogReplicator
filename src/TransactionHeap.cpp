@@ -19,9 +19,10 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 #include <stdint.h>
-#include "TransactionHeap.h"
+
 #include "MemoryException.h"
 #include "Transaction.h"
+#include "TransactionHeap.h"
 
 using namespace std;
 

@@ -18,6 +18,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
+
 #include "OracleColumn.h"
 
 namespace OpenLogReplicator {

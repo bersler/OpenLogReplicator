@@ -17,8 +17,9 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
 #include <pthread.h>
+#include <string>
+
 #include "types.h"
 #include "Reader.h"
 

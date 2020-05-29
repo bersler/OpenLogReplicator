@@ -17,18 +17,19 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
-#include <iomanip>
 #include <cstdlib>
-#include <unistd.h>
-#include <stdlib.h>
+#include <iomanip>
+#include <iostream>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include "TransactionBuffer.h"
+#include <unistd.h>
+
 #include "MemoryException.h"
 #include "OracleAnalyser.h"
-#include "TransactionChunk.h"
 #include "RedoLogRecord.h"
+#include "TransactionBuffer.h"
+#include "TransactionChunk.h"
 
 using namespace std;
 

@@ -17,21 +17,20 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <sys/stat.h>
-#include <string>
-#include <iostream>
-#include <fstream>
 #include <cstdio>
+#include <fstream>
+#include <iostream>
 #include <mutex>
+#include <string>
 #include <unistd.h>
 #include <string.h>
 #include <librdkafka/rdkafkacpp.h>
-#include "types.h"
+#include <sys/stat.h>
+
 #include "CommandBuffer.h"
 #include "ConfigurationException.h"
 #include "KafkaWriter.h"
 #include "MemoryException.h"
-#include "OracleAnalyser.h"
 #include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
@@ -866,7 +865,8 @@ namespace OpenLogReplicator {
 
 
             if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                if (sortColumns >= 2) {
+                //remove unchanged column values - only for tables with defined primary key
+                if (sortColumns >= 2 && object->totalPk > 0) {
                     for (uint64_t i = 0; i < object->totalCols; ++i) {
                         if (object->columns[i]->numPk == 0 && colSupp[i] == 0) {
                             if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {

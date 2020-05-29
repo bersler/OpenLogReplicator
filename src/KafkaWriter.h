@@ -17,11 +17,12 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <set>
 #include <queue>
-#include <stdint.h>
+#include <set>
 #include <occi.h>
+#include <stdint.h>
 #include <librdkafka/rdkafkacpp.h>
+
 #include "types.h"
 #include "Writer.h"
 

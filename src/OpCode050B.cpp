@@ -17,11 +17,10 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
 #include <iomanip>
-#include "types.h"
-#include "OpCode050B.h"
+#include <iostream>
 
+#include "OpCode050B.h"
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
 

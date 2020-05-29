@@ -17,15 +17,16 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+
+#include "OracleAnalyser.h"
 #include "Reader.h"
 #include "ReaderFilesystem.h"
-#include "OracleAnalyser.h"
 
 using namespace std;
 
@@ -61,7 +62,7 @@ namespace OpenLogReplicator {
         flags = O_RDONLY | O_LARGEFILE;
         fileSize = fileStat.st_size;
 
-        if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)
+        if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) == 0)
             flags |= O_DIRECT;
         if ((oracleAnalyser->flags & REDO_FLAGS_NOATIME) != 0)
             flags |= O_NOATIME;
@@ -71,7 +72,7 @@ namespace OpenLogReplicator {
             cerr << "FILE: open for " << path << " returns " << dec << fileDes << endl;
 
         if (fileDes == -1) {
-            if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) == 0)
+            if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)
                 return REDO_ERROR;
 
             flags &= (~O_DIRECT);
@@ -93,11 +94,13 @@ namespace OpenLogReplicator {
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
             flags &= ~O_DIRECT;
             fcntl(fileDes, F_SETFL, flags);
-            if (oracleAnalyser->trace >= TRACE_WARN)
-                cerr << "WARNING: disabling direct read for: " << path << endl;
 
             //disable it and re-try the read
             bytes = pread(fileDes, buf, size, pos);
+
+            //display warning only if this helped
+            if (oracleAnalyser->trace >= TRACE_WARN && bytes > 0)
+                cerr << "WARNING: disabling direct read for: " << path << endl;
         }
 
         return bytes;

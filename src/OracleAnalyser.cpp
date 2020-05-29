@@ -17,28 +17,25 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cstdio>
-#include <unistd.h>
+#include <string>
 #include <pthread.h>
-#include <string.h>
+#include <unistd.h>
 #include <rapidjson/document.h>
-#include "types.h"
 
 #include "CommandBuffer.h"
 #include "ConfigurationException.h"
 #include "MemoryException.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
 #include "OracleAnalyser.h"
 #include "OracleAnalyserRedoLog.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
 #include "OracleStatement.h"
 #include "Reader.h"
 #include "ReaderFilesystem.h"
-#include "RedoLogException.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Transaction.h"
@@ -53,12 +50,13 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
-    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') AS DB_NAME FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_CON_ID("SELECT SYS_CONTEXT('USERENV','CON_ID') CON_ID FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i");
-    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#) AS NUMPK FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i ORDER BY 4,5");
+    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.OBJ# = :i ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
 
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
@@ -192,7 +190,7 @@ namespace OpenLogReplicator {
         if (atShutdown) {
             if (trace >= TRACE_INFO) {
                 cerr << "INFO: Writing checkpopint at exit for " << database << endl;
-                cerr << "INFO: conId: " << dec << conId <<
+                cerr << "INFO: con_id: " << dec << conId <<
                         " sequence: " << dec << minSequence <<
                         " scn: " << dec << databaseScn <<
                         " resetlogs: " << dec << resetlogs << endl;
@@ -294,7 +292,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::updateOnlineLogs() {
-        for (OracleAnalyserRedoLog *oracleAnalyserRedoLog: onlineRedoSet) {
+        for (OracleAnalyserRedoLog *oracleAnalyserRedoLog : onlineRedoSet) {
             oracleAnalyserRedoLog->resetRedo();
             if (!readerUpdateRedoLog(oracleAnalyserRedoLog->reader)) {
                 cerr << "ERROR: updating failed for " << dec << oracleAnalyserRedoLog->path << endl;
@@ -601,6 +599,7 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.TAB$");
             checkTableForGrants("SYS.OBJ$");
             checkTableForGrants("SYS.COL$");
+            checkTableForGrants("SYS.CON$");
             checkTableForGrants("SYS.CCOL$");
             checkTableForGrants("SYS.CDEF$");
             checkTableForGrants("SYS.USER$");
@@ -631,7 +630,7 @@ namespace OpenLogReplicator {
         }
 
         if (trace >= TRACE_INFO) {
-            cerr << "INFO: conId: " << dec << conId <<
+            cerr << "INFO: con_id: " << dec << conId <<
                     " sequence: " << dec << databaseSequence <<
                     " scn: " << dec << databaseScn <<
                     " resetlogs: " << dec << resetlogs << endl;
@@ -683,7 +682,6 @@ namespace OpenLogReplicator {
 
             if (group != groupLastOk) {
                 readerDropAll();
-                cerr << "ERROR: can't read any member of group " << dec << group << endl;
                 cerr << "ERROR: can't read any member of group " << dec << group << " - set \"trace2\": 2 to check which files are read" << endl;
                 throw RuntimeException("can't read any member of group");
             }
@@ -718,7 +716,7 @@ namespace OpenLogReplicator {
                     cerr << "REDO: searching online redo log for sequence: " << dec << databaseSequence << endl;
 
                 //find the candidate to read
-                for (OracleAnalyserRedoLog *oracleAnalyserRedoLog: onlineRedoSet) {
+                for (OracleAnalyserRedoLog *oracleAnalyserRedoLog : onlineRedoSet) {
                     if (oracleAnalyserRedoLog->sequence == databaseSequence)
                         redo = oracleAnalyserRedoLog;
                     if ((trace2 & TRACE2_REDO) != 0)
@@ -729,7 +727,7 @@ namespace OpenLogReplicator {
                 if (redo == nullptr) {
                     bool isHigher = false;
                     while (!shutdown) {
-                        for (auto redoTmp: onlineRedoSet) {
+                        for (OracleAnalyserRedoLog *redoTmp : onlineRedoSet) {
                             if (redoTmp->reader->sequence > databaseSequence)
                                 isHigher = true;
                             if (redoTmp->reader->sequence == databaseSequence) {
@@ -773,8 +771,7 @@ namespace OpenLogReplicator {
                             cerr << "INFO: online redo log overwritten by new data, will continue from archived redo log" << endl;
                         break;
                     }
-                    cerr << "ERROR: process log returned: " << dec << ret << endl;
-                    throw RedoLogException("read archive log");
+                    throw RuntimeException("read archive log");
                 }
 
                 if (rolledBack1 != nullptr)
@@ -801,7 +798,7 @@ namespace OpenLogReplicator {
                     continue;
                 else if (redo->sequence > databaseSequence) {
                     cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead" << endl;
-                    throw RedoLogException("read archive log");
+                    throw RuntimeException("getting archive log list");
                 }
 
                 logsProcessed = true;
@@ -809,12 +806,12 @@ namespace OpenLogReplicator {
 
                 if (!readerCheckRedoLog(archReader, redo->path)) {
                     cerr << "ERROR: while opening archive log: " << redo->path << endl;
-                    throw RedoLogException("read archive log");
+                    throw RuntimeException("open archive log file");
                 }
 
                 if (!readerUpdateRedoLog(archReader)) {
                     cerr << "ERROR: while reading archive log: " << redo->path << endl;
-                    throw RedoLogException("read archive log");
+                    throw RuntimeException("read archive log file");
                 }
 
                 if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
@@ -830,7 +827,7 @@ namespace OpenLogReplicator {
 
                 if (ret != REDO_FINISHED) {
                     cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
-                    throw RedoLogException("read archive log");
+                    throw RuntimeException("read archive log file");
                 }
 
                 ++databaseSequence;
@@ -982,12 +979,12 @@ namespace OpenLogReplicator {
     void OracleAnalyser::readerDropAll() {
         {
             unique_lock<mutex> lck(mtx);
-            for (Reader * reader : readers)
+            for (Reader *reader : readers)
                 reader->shutdown = true;
             readerCond.notify_all();
             sleepingCond.notify_all();
         }
-        for (Reader * reader : readers)
+        for (Reader *reader : readers)
             pthread_join(reader->pthread, nullptr);
         archReader = nullptr;
         readers.clear();
@@ -1016,7 +1013,7 @@ namespace OpenLogReplicator {
 
         readers.insert(reader);
         if (pthread_create(&reader->pthread, nullptr, &ReaderFilesystem::runStatic, (void*)reader))
-            throw ConfigurationException("spawnig thead");
+            throw ConfigurationException("spawning thread");
         return reader;
     }
 
@@ -1029,10 +1026,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyser::addTable(string mask, uint64_t options) {
+    void OracleAnalyser::addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options) {
         checkConnection(false);
-        cout << "- reading table schema for: " << mask;
+        cout << "- reading table schema for: " << mask << endl;
         uint64_t tabCnt = 0;
+        OracleObject *object = nullptr;
 
         try {
             OracleStatement stmt(&conn, env);
@@ -1044,74 +1042,141 @@ namespace OpenLogReplicator {
 
             stmt.executeQuery();
             while (stmt.rset->next()) {
-                //skip partitioned/IOT tables
+                typeobj objn = stmt.rset->getNumber(2);
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                typeobj objn = stmt.rset->getNumber(2);
+
+                //skip partitioned/IOT tables
                 if (stmt.rset->isNull(1)) {
-                    cout << endl << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT";
-                } else {
-                    typeobj objd = stmt.rset->getNumber(1);
-                    uint64_t cluCols = 0;
-                    if (!stmt.rset->isNull(3))
-                        stmt.rset->getNumber(3);
-                    uint64_t depdendencies = stmt.rset->getNumber(6);
-                    uint64_t totalPk = 0, totalCols = 0;
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT" << endl;
+                    continue;
+                }
+                typeobj objd = stmt.rset->getNumber(1);
 
-                    OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner, objectName);
-                    if (object == nullptr) {
-                        cout << endl;
-                        throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
-                    }
-                    ++tabCnt;
+                //table already added with another rule
+                if (checkDict(objn, objd) != nullptr) {
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - already added" << endl;
+                    continue;
+                }
 
-                    cout << endl << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
+                uint64_t cluCols = 0, totalPk = 0, totalCols = 0, keysCnt = 0;
+                boolean suppLogPrimary = false, suppLogAll = false, supLogColMissing = false;
+                if (!stmt.rset->isNull(3))
+                    stmt.rset->getNumber(3);
+                uint64_t depdendencies = stmt.rset->getNumber(6);
 
+                OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner, objectName);
+                if (object == nullptr)
+                    throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
+                ++tabCnt;
+
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
                     if ((trace2 & TRACE2_SQL) != 0)
-                        cerr << "SQL: " << SQL_GET_COLUMN_LIST << endl;
-                    stmt2.createStatement(SQL_GET_COLUMN_LIST);
+                        cerr << "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl;
+                    stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
                     stmt2.stmt->setInt(1, objn);
                     stmt2.executeQuery();
 
                     while (stmt2.rset->next()) {
-                        uint64_t colNo = stmt2.rset->getNumber(1);
-                        uint64_t segColNo = stmt2.rset->getNumber(2);
-                        string columnName = stmt2.rset->getString(3);
-                        uint64_t typeNo = stmt2.rset->getNumber(4);
-                        uint64_t length = stmt2.rset->getNumber(5);
-                        int64_t precision = -1;
-                        if (!stmt2.rset->isNull(6))
-                            precision = stmt2.rset->getNumber(6);
-                        int64_t scale = -1;
-                        if (!stmt2.rset->isNull(7))
-                            scale = stmt2.rset->getNumber(7);
+                        uint64_t typeNo = stmt2.rset->getNumber(1);
+                        if (typeNo == 14) suppLogPrimary = true;
+                        else if (typeNo == 17) suppLogAll = true;
+                    }
+                }
 
-                        int64_t nullable = stmt2.rset->getNumber(8);
-                        uint64_t numPk = stmt2.rset->getNumber(9);
+                if ((trace2 & TRACE2_SQL) != 0)
+                    cerr << "SQL: " << SQL_GET_COLUMN_LIST << endl;
+                stmt2.createStatement(SQL_GET_COLUMN_LIST);
+                stmt2.stmt->setInt(1, objn);
+                stmt2.executeQuery();
 
-                        OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
-                        if (column == nullptr) {
-                            cout << endl;
-                            throw MemoryException("OracleAnalyser::addTable.2", sizeof(OracleColumn));
+                while (stmt2.rset->next()) {
+                    uint64_t colNo = stmt2.rset->getNumber(1);
+                    uint64_t segColNo = stmt2.rset->getNumber(2);
+                    string columnName = stmt2.rset->getString(3);
+                    uint64_t typeNo = stmt2.rset->getNumber(4);
+                    uint64_t length = stmt2.rset->getNumber(5);
+                    int64_t precision = -1;
+                    if (!stmt2.rset->isNull(6))
+                        precision = stmt2.rset->getNumber(6);
+                    int64_t scale = -1;
+                    if (!stmt2.rset->isNull(7))
+                        scale = stmt2.rset->getNumber(7);
+
+                    int64_t nullable = stmt2.rset->getNumber(8);
+                    uint64_t numPk = stmt2.rset->getNumber(9);
+                    uint64_t numSup = stmt2.rset->getNumber(10);
+
+                    //column part of defined primary key
+                    if (keys.size() > 0) {
+                        numPk = 0;
+                        for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
+                            if (columnName.compare(it->c_str()) == 0) {
+                                numPk = 1;
+                                ++keysCnt;
+                                if (numSup == 0)
+                                    supLogColMissing = true;
+                                break;
+                            }
                         }
-
-                        totalPk += numPk;
-                        ++totalCols;
-
-                        object->addColumn(column);
+                    } else {
+                        if (numPk > 0 && numSup == 0)
+                            supLogColMissing = true;
                     }
 
-                    object->totalCols = totalCols;
-                    object->totalPk = totalPk;
-                    addToDict(object);
+                    OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
+                    if (column == nullptr)
+                        throw MemoryException("OracleAnalyser::addTable.2", sizeof(OracleColumn));
+
+                    totalPk += numPk;
+                    ++totalCols;
+
+                    object->addColumn(column);
                 }
+
+                //check if table has all listed columns
+                if (keys.size() != keysCnt) {
+                    delete object;
+                    object = nullptr;
+                    cerr << "ERROR: table " << owner << "." << objectName << " could not find all column set (" << keysStr << ")" << endl;
+                    throw ConfigurationException("column not found");
+                }
+
+                cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
+
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+                    //use default primary key
+                    if (keys.size() == 0) {
+                        if (totalPk == 0)
+                            cout << " - primary key missing" << endl;
+                        else if (!suppLogPrimary && !suppLogAll && supLogColMissing)
+                            cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;" << endl;
+                        else
+                            cout << endl;
+                    //user defined primary key
+                    } else {
+                        if (!suppLogAll && supLogColMissing)
+                            cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;" << endl;
+                        else
+                            cout << endl;
+                    }
+                } else
+                    cout << endl;
+
+                object->totalCols = totalCols;
+                object->totalPk = totalPk;
+                addToDict(object);
+                object = nullptr;
             }
         } catch(SQLException &ex) {
-            cout << endl;
+            if (object != nullptr) {
+                delete object;
+                object = nullptr;
+            }
             cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
             throw RuntimeException("getting table metadata");
         }
-        cout << " (total: " << dec << tabCnt << ")" << endl;
+        cout << "  * total: " << dec << tabCnt << " tables" << endl;
     }
 
     void OracleAnalyser::checkForCheckpoint() {

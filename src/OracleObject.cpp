@@ -17,9 +17,9 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
 #include <iostream>
-#include "types.h"
+#include <string>
+
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
     }
 
     OracleObject::~OracleObject() {
-        for (auto column: columns) {
+        for (OracleColumn *column: columns) {
             delete column;
         }
         columns.clear();
@@ -55,8 +55,8 @@ namespace OpenLogReplicator {
     ostream& operator<<(ostream& os, const OracleObject& object) {
         os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << dec << object.objn << ", " <<
                 object.objd << ", " << object.cluCols << ", " << object.totalCols << ")" << endl;
-        for (auto it : object.columns)
-            os << "     - " << *it << endl;
+        for (OracleColumn *column : object.columns)
+            os << "     - " << *column << endl;
         return os;
     }
 }

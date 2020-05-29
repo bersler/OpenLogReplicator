@@ -17,12 +17,11 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
 #include <iomanip>
-#include "types.h"
-#include "RedoLogRecord.h"
+#include <iostream>
 
 #include "OracleAnalyser.h"
+#include "RedoLogRecord.h"
 
 using namespace std;
 
@@ -69,7 +68,7 @@ namespace OpenLogReplicator {
                 " rbl: " << dec << rbl <<
                 " seq: " << dec << (uint64_t)seq <<
                 " typ: " << dec << (uint64_t)typ <<
-                " conId: " << dec << conId <<
+                " con_id: " << dec << conId <<
                 " flgRecord: " << dec << flgRecord <<
 //                " vectorNo: " << dec << vectorNo <<
                 " robjn: " << dec << recordObjn <<

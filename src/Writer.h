@@ -19,6 +19,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <string>
 #include <pthread.h>
+
 #include "types.h"
 #include "Thread.h"
 

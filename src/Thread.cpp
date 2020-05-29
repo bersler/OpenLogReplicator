@@ -18,15 +18,15 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
-#include "Thread.h"
 
 #include "ConfigurationException.h"
 #include "MemoryException.h"
-#include "OracleObject.h"
 #include "OracleColumn.h"
-#include "RedoLogRecord.h"
+#include "OracleObject.h"
 #include "RedoLogException.h"
+#include "RedoLogRecord.h"
 #include "RuntimeException.h"
+#include "Thread.h"
 
 using namespace std;
 
@@ -49,9 +49,6 @@ namespace OpenLogReplicator {
             ret = ((Thread *) context)->run();
         } catch(ConfigurationException &ex) {
             cerr << "ERROR: configuration error: " << ex.msg << endl;
-            stopMain();
-        } catch(RedoLogException &ex) {
-            cerr << "ERROR: error reading redo log: " << ex.msg << endl;
             stopMain();
         } catch(RuntimeException &ex) {
             cerr << "ERROR: runtime: " << ex.msg << endl;

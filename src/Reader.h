@@ -17,12 +17,13 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <condition_variable>
+#include <mutex>
 #include <string>
 #include <pthread.h>
-#include <mutex>
-#include <condition_variable>
-#include "Thread.h"
+
 #include "types.h"
+#include "Thread.h"
 
 #ifndef READER_H_
 #define READER_H_

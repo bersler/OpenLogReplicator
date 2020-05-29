@@ -17,22 +17,23 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE.txt  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <set>
-#include <queue>
-#include <unordered_map>
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <mutex>
 #include <condition_variable>
-#include <stdint.h>
+#include <fstream>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include <occi.h>
+#include <stdint.h>
 
 #include "types.h"
-#include "TransactionMap.h"
-#include "TransactionHeap.h"
-#include "TransactionBuffer.h"
 #include "Thread.h"
+#include "TransactionBuffer.h"
+#include "TransactionHeap.h"
+#include "TransactionMap.h"
 
 #ifndef ORACLEANALYSER_H_
 #define ORACLEANALYSER_H_
@@ -66,6 +67,7 @@ namespace OpenLogReplicator {
         static string SQL_GET_LOGFILE_LIST;
         static string SQL_GET_TABLE_LIST;
         static string SQL_GET_COLUMN_LIST;
+        static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
 
         typeseq databaseSequence;
         Environment *env;
@@ -166,7 +168,7 @@ namespace OpenLogReplicator {
         void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         OracleObject *checkDict(typeobj objn, typeobj objd);
         void dumpTransactions();
-        void addTable(string mask, uint64_t options);
+        void addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options);
         void checkForCheckpoint();
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
