@@ -235,7 +235,7 @@ namespace OpenLogReplicator {
         uint8_t digits;
 
         if (redoLogRecord->length == 0) {
-            cerr << "ERROR, trying to output null data" << endl;
+            cerr << "ERROR, trying to output null data for column: " << columnName << endl;
             return this;
         }
 
@@ -263,12 +263,13 @@ namespace OpenLogReplicator {
             jMax = fieldLength - 1;
 
             //positive number
-            if (digits >= 0xC0 && jMax >= 1) {
-                uint64_t val;
+            if (digits > 0x80 && jMax >= 1) {
+                uint64_t val, zeros = 0;
                 //part of the total
-                if (digits == 0xC0)
+                if (digits <= 0xC0) {
                     append('0');
-                else {
+                    zeros = 0xC0 - digits;
+                } else {
                     digits -= 0xC0;
                     //part of the total - omitting first zero for first digit
                     val = redoLogRecord->data[fieldPos + j] - 1;
@@ -300,6 +301,12 @@ namespace OpenLogReplicator {
                 if (j <= jMax) {
                     append('.');
 
+                    while (zeros > 0) {
+                        append('0');
+                        append('0');
+                        --zeros;
+                    }
+
                     while (j <= jMax - 1) {
                         val = redoLogRecord->data[fieldPos + j] - 1;
                         append('0' + (val / 10));
@@ -314,25 +321,27 @@ namespace OpenLogReplicator {
                         append('0' + (val % 10));
                 }
             //negative number
-            } else if (digits <= 0x3F && fieldLength >= 2) {
-                uint64_t val;
+            } else if (digits < 0x80 && jMax >= 1) {
+                uint64_t val, zeros = 0;
                 append('-');
 
                 if (redoLogRecord->data[fieldPos + jMax] == 0x66)
                     --jMax;
 
                 //part of the total
-                if (digits == 0x3F)
+                if (digits >= 0x3F) {
                     append('0');
-                else {
+                    zeros = digits - 0x3F;
+                } else {
                     digits = 0x3F - digits;
 
                     val = 101 - redoLogRecord->data[fieldPos + j];
                     if (val < 10)
                         append('0' + val);
-                    else
+                    else {
                         append('0' + (val / 10));
                         append('0' + (val % 10));
+                    }
                     ++j;
                     --digits;
 
@@ -353,6 +362,12 @@ namespace OpenLogReplicator {
                 if (j <= jMax) {
                     append('.');
 
+                    while (zeros > 0) {
+                        append('0');
+                        append('0');
+                        --zeros;
+                    }
+
                     while (j <= jMax - 1) {
                         val = 101 - redoLogRecord->data[fieldPos + j];
                         append('0' + (val / 10));
@@ -366,9 +381,9 @@ namespace OpenLogReplicator {
                         append('0' + (val % 10));
                 }
             } else {
-                cerr << "ERROR: unknown value (type: " << typeNo << "): " << dec << fieldLength << " - ";
+                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
-                    cerr << " " << hex << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
+                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
                 cerr << endl;
             }
             break;
@@ -376,7 +391,7 @@ namespace OpenLogReplicator {
         case 12:
         case 180:
             if (fieldLength != 7 && fieldLength != 11) {
-                cerr << "ERROR: unknown value (type: " << typeNo << "): ";
+                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
                     cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
                 cerr << endl;

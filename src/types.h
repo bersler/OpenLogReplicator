@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.11"
+#define PROGRAM_VERSION             "0.5.12"
 #define MAX_PATH_LENGTH             2048
 
 #define STREAM_JSON                 1
@@ -80,6 +80,7 @@ typedef uint32_t typeseq;
 #define DISABLE_CHECK_CRCSUM        0x0000001
 #define DISABLE_CHECK_GRANTS        0x0000002
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG 0x0000004
+#define DISABLE_CHECK_ALTER_TABLE   0x0000008
 
 #define USN(xid)                    ((uint16_t)(((uint64_t)xid)>>48))
 #define SLT(xid)                    ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))
