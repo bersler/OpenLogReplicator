@@ -69,8 +69,14 @@ namespace OpenLogReplicator {
                     redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
                     if (type == 12 || type == 15) {
                         OracleObject *obj = oracleAnalyser->checkDict(redoLogRecord->objn, 0);
-                        if (obj != nullptr)
-                            obj->altered = true;
+                        if (obj != nullptr) {
+                            if (oracleAnalyser->trace >= TRACE_WARN) {
+                                cerr << "WARNING: table " << obj->owner << "." << obj->objectName << " altered, removing from replication" << endl;
+                            }
+                            if ((oracleAnalyser->disableChecks & DISABLE_CHECK_ALTER_TABLE) == 0) {
+                                obj->altered = true;
+                            }
+                        }
                     }
                 }
             }

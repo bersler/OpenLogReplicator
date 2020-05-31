@@ -62,6 +62,7 @@ const Value& getJSONfield(const Document& document, const char* field) {
 
 mutex mainMtx;
 condition_variable mainThread;
+bool exitOnSignal = false;
 
 void stopMain() {
     unique_lock<mutex> lck(mainMtx);
@@ -69,8 +70,11 @@ void stopMain() {
 }
 
 void signalHandler(int s) {
-    cerr << "Caught signal " << s << ", exiting" << endl;
-    stopMain();
+    if (!exitOnSignal) {
+        cerr << "Caught signal " << s << ", exiting" << endl;
+        exitOnSignal = true;
+        stopMain();
+    }
 }
 
 void signalCrash(int sig) {
