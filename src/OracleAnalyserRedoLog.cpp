@@ -643,8 +643,9 @@ namespace OpenLogReplicator {
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
             redoLogRecord->object = oracleAnalyser->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0 || (redoLogRecord->object->altered && redoLogRecord->opCode != 0x01801))
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0 || (redoLogRecord->object->altered && redoLogRecord->opCode != 0x01801)) {
                 return;
+            }
 
             Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {

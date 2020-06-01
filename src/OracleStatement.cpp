@@ -31,6 +31,16 @@ namespace OpenLogReplicator {
     }
 
     void OracleStatement::createStatement(string sql) {
+        if (stmt != nullptr) {
+            if (rset != nullptr) {
+                stmt->closeResultSet(rset);
+                rset = nullptr;
+            }
+            if (*conn != nullptr)
+                (*conn)->terminateStatement(stmt);
+            stmt = nullptr;
+        }
+
         try {
             stmt = (*conn)->createStatement(sql);
         } catch(SQLException &ex) {

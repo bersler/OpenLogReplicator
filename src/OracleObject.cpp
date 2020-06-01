@@ -20,6 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iostream>
 #include <string>
 
+#include "ConfigurationException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
@@ -49,6 +50,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleObject::addColumn(OracleColumn *column) {
+        if (column->colNo != columns.size() + 1) {
+            cerr << "ERROR: trying to insert column " << column->columnName << "(" << dec << column->colNo << ") on position " << (columns.size() + 1) << endl;
+            throw ConfigurationException("metadata error");
+        }
         columns.push_back(column);
     }
 
