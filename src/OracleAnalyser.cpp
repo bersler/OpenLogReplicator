@@ -92,7 +92,6 @@ namespace OpenLogReplicator {
         resetlogs(0),
         previousCheckpoint(clock()),
         checkpointInterval(checkpointInterval),
-        bigEndian(false),
         read16(read16Little),
         read32(read32Little),
         read56(read56Little),
@@ -545,7 +544,6 @@ namespace OpenLogReplicator {
 
                 string ENDIANNESS = stmt.rset->getString(3);
                 if (ENDIANNESS.compare("Big") == 0) {
-                    bigEndian = true;
                     read16 = read16Big;
                     read32 = read32Big;
                     read56 = read56Big;

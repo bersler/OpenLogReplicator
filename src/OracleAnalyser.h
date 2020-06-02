@@ -123,7 +123,6 @@ namespace OpenLogReplicator {
         typeresetlogs resetlogs;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
-        bool bigEndian;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
