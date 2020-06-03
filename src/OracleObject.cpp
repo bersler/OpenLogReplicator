@@ -28,11 +28,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleObject::OracleObject(typeobj objn, typeobj objd, uint64_t depdendencies, uint64_t cluCols, uint64_t options, const string owner,
+    OracleObject::OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const string owner,
             const string objectName) :
         objn(objn),
         objd(objd),
-        depdendencies(depdendencies),
         cluCols(cluCols),
         totalPk(0),
         options(options),

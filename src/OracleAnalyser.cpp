@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_CON_ID("SELECT SYS_CONTEXT('USERENV','CON_ID') CON_ID FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1),DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i ORDER BY 4,5");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i ORDER BY 4,5");
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.COL#");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
 
@@ -1054,11 +1054,13 @@ namespace OpenLogReplicator {
                 typeobj objn = stmt.rset->getNumber(2);
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                uint64_t clustered = stmt.rset->getNumber(7);
-                uint64_t iot = stmt.rset->getNumber(8);
+                bool clustered = (((int)stmt.rset->getNumber(6)) != 0);
+                bool iot = (((int)stmt.rset->getNumber(7)) != 0);
+                bool suppLogSchemaPrimary = (((int)stmt.rset->getNumber(8)) != 0);
+                bool suppLogSchemaAll = (((int)stmt.rset->getNumber(9)) != 0);
 
                 //skip IOT tables
-                if (iot > 0) {
+                if (iot) {
                     cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
                     continue;
                 }
@@ -1077,17 +1079,16 @@ namespace OpenLogReplicator {
                 }
 
                 uint64_t cluCols = 0, totalPk = 0, totalCols = 0, keysCnt = 0;
-                boolean suppLogPrimary = false, suppLogAll = false, supLogColMissing = false;
+                boolean suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
                 if (!stmt.rset->isNull(3))
                     stmt.rset->getNumber(3);
-                uint64_t depdendencies = stmt.rset->getNumber(6);
 
-                OracleObject *object = new OracleObject(objn, objd, depdendencies, cluCols, options, owner, objectName);
+                OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner, objectName);
                 if (object == nullptr)
                     throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
                 ++tabCnt;
 
-                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll) {
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
                     if ((trace2 & TRACE2_SQL) != 0)
                         cerr << "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl;
                     stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
@@ -1096,8 +1097,8 @@ namespace OpenLogReplicator {
 
                     while (stmt2.rset->next()) {
                         uint64_t typeNo = stmt2.rset->getNumber(1);
-                        if (typeNo == 14) suppLogPrimary = true;
-                        else if (typeNo == 17) suppLogAll = true;
+                        if (typeNo == 14) suppLogTablePrimary = true;
+                        else if (typeNo == 17) suppLogTableAll = true;
                     }
                 }
 
@@ -1141,7 +1142,7 @@ namespace OpenLogReplicator {
                             supLogColMissing = true;
                     }
 
-                    if (trace >= TRACE_DETAIL)
+                    if (trace >= TRACE_FULL)
                         cout << "    - col: " << dec << colNo << ": " << columnName << " (pk: " << dec << numPk << ")" << endl;
 
                     OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
@@ -1162,8 +1163,8 @@ namespace OpenLogReplicator {
                     throw ConfigurationException("column not found");
                 }
 
-                cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
-                if (clustered > 0)
+                cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+                if (clustered)
                     cout << " part of cluster";
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
@@ -1171,13 +1172,15 @@ namespace OpenLogReplicator {
                     if (keys.size() == 0) {
                         if (totalPk == 0)
                             cout << " - primary key missing" << endl;
-                        else if (!suppLogPrimary && !suppLogAll && !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
+                        else if (!suppLogTablePrimary && !suppLogTableAll &&
+                                !suppLogSchemaPrimary && !suppLogSchemaAll &&
+                                !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
                             cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;" << endl;
                         else
                             cout << endl;
                     //user defined primary key
                     } else {
-                        if (!suppLogAll && !suppLogDbAll && supLogColMissing)
+                        if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
                             cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;" << endl;
                         else
                             cout << endl;

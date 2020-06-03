@@ -553,8 +553,8 @@ namespace OpenLogReplicator {
                     oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
-                    if (i + redoLogRecord1p->rowData + 1 > redoLogRecord1p->fieldCnt) {
-                        cerr << "ERROR: reached out of columns" << endl;
+                    if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
+                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc << endl;
                         break;
                     }
                     if (colNums != nullptr) {
@@ -563,8 +563,8 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (colNum > object->columns.size()) {
-                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                    if (colNum >= object->columns.size()) {
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
 
@@ -594,11 +594,16 @@ namespace OpenLogReplicator {
                 uint8_t* colSizes = redoLogRecord1p->data + redoLogRecord1p->suppLogLenDelta;
 
                 for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
+                    if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
+                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC << endl;
+                        break;
+                    }
+
                     oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
                     if (colNum >= object->columns.size()) {
-                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": refering to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
 
@@ -646,6 +651,11 @@ namespace OpenLogReplicator {
                     oracleAnalyser->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
+                    if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
+                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc << endl;
+                        break;
+                    }
+
                     oracleAnalyser->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
 
                     if (colNums != nullptr) {
@@ -654,8 +664,8 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (colNum > object->columns.size()) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                    if (colNum >= object->columns.size()) {
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
 
