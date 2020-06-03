@@ -121,7 +121,7 @@ namespace OpenLogReplicator {
         uint32_t redoReadSleep;
         uint64_t trace;
         uint64_t trace2;
-        uint64_t version;           //compatiblity level of redo logs
+        uint64_t version;                   //compatiblity level of redo logs
         typecon conId;
         typeresetlogs resetlogs;
 

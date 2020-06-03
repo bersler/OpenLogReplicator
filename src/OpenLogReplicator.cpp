@@ -337,7 +337,6 @@ int main() {
     }
     writers.clear();
 
-    //deactivate command buffers
     for (CommandBuffer *commandBuffer : buffers) {
         commandBuffer->stop();
         delete commandBuffer;

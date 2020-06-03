@@ -37,8 +37,7 @@ namespace OpenLogReplicator {
         options(options),
         totalCols(0),
         owner(owner),
-        objectName(objectName),
-        altered(false) {
+        objectName(objectName) {
     }
 
     OracleObject::~OracleObject() {

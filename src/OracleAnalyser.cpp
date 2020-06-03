@@ -1059,7 +1059,7 @@ namespace OpenLogReplicator {
                 bool suppLogSchemaPrimary = (((int)stmt.rset->getNumber(8)) != 0);
                 bool suppLogSchemaAll = (((int)stmt.rset->getNumber(9)) != 0);
 
-                //skip IOT tables
+                //skip Index Organized Tables (IOT)
                 if (iot) {
                     cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
                     continue;

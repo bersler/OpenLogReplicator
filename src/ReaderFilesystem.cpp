@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
             flags &= ~O_DIRECT;
             fcntl(fileDes, F_SETFL, flags);
 
-            //disable it and re-try the read
+            //disable direc read and re-try the read
             bytes = pread(fileDes, buf, size, pos);
 
             //display warning only if this helped

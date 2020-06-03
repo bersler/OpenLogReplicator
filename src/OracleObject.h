@@ -42,7 +42,6 @@ namespace OpenLogReplicator {
         string owner;
         string objectName;
         vector<OracleColumn*> columns;
-        bool altered;
 
         void addColumn(OracleColumn *column);
 

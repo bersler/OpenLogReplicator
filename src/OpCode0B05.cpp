@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
 
-            //fields: 3 + cc
+            //fields: 4 + cc .. 4 + cc - 1
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
                 oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
 

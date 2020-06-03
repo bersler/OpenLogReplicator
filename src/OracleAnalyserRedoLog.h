@@ -48,7 +48,6 @@ namespace OpenLogReplicator {
         uint64_t recordPos;
         uint64_t recordLength4;
         uint64_t recordLeftToCopy;
-        //uint64_t redoBufferPos;
         uint64_t blockNumber;
 
         void printHeaderInfo();

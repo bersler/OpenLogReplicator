@@ -198,8 +198,6 @@ namespace OpenLogReplicator {
         TransactionChunk *tc = firstTc;
         bool hasPrev = false, opFlush = false;
 
-        //transaction that has some DML's
-
         if (opCodes > 0 && !isRollback) {
             if ((oracleAnalyser->trace2 & TRACE2_TRANSACTION) != 0) {
                 cerr << endl << "TRANSACTION: " << *this << endl;

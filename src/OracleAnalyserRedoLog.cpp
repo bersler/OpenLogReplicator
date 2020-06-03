@@ -650,9 +650,8 @@ namespace OpenLogReplicator {
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
             redoLogRecord->object = oracleAnalyser->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0 || (redoLogRecord->object->altered && redoLogRecord->opCode != 0x01801)) {
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
                 return;
-            }
 
             Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
@@ -748,16 +747,12 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord1->object = oracleAnalyser->checkDict(objn, objd);
-        if (redoLogRecord1->object == nullptr || redoLogRecord1->object->altered)
+        if (redoLogRecord1->object == nullptr)
             return;
 
         //cluster key
         if ((redoLogRecord2->fb & FB_K) != 0)
             return;
-
-        //if (redoLogRecord1->opCode == 0x0B02 || (redoLogRecord1->fb & FB_K) != 0) return;
-        //if (redoLogRecord1->opCode == 0x0B03 || (redoLogRecord1->fb & FB_K) != 0) return;
-        //if (redoLogRecord2->opCode == 0x0B03 || (redoLogRecord2->fb & FB_K) != 0) return;
 
         redoLogRecord2->object = redoLogRecord1->object;
 
