@@ -47,16 +47,16 @@ namespace OpenLogReplicator {
 
     void OpCode0506::process() {
         OpCode::process();
-        uint64_t fieldPos = redoLogRecord->fieldPos;
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            if (i == 1) {
-                ktub(fieldPos, fieldLength);
-            } else if (i == 2) {
-                ktuxvoff(fieldPos, fieldLength);
-            }
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        ktub(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        ktuxvoff(fieldPos, fieldLength);
     }
 
     const char* OpCode0506::getUndoType() {

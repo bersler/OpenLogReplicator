@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
         string user;
         string passwd;
         string connectString;
+        string database;
         Reader *archReader;
         RedoLogRecord *rolledBack1;
         RedoLogRecord *rolledBack2;
@@ -82,6 +83,10 @@ namespace OpenLogReplicator {
         priority_queue<OracleAnalyserRedoLog*, vector<OracleAnalyserRedoLog*>, OracleAnalyserRedoLogCompare> archiveRedoQueue;
         set<OracleAnalyserRedoLog*> onlineRedoSet;
         set<Reader*> readers;
+        unordered_map<typeobj, OracleObject*> objectMap;
+        boolean suppLogDbPrimary, suppLogDbAll;
+        clock_t previousCheckpoint;
+        uint64_t checkpointInterval;
 
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint();
@@ -99,10 +104,8 @@ namespace OpenLogReplicator {
         condition_variable readerCond;
         condition_variable sleepingCond;
         condition_variable analyserCond;
-        string database;
         string databaseContext;
         typescn databaseScn;
-        unordered_map<typeobj, OracleObject*> objectMap;
         unordered_map<typexid, Transaction*> xidTransactionMap;
         TransactionMap lastOpTransactionMap;
         TransactionHeap transactionHeap;
@@ -121,8 +124,6 @@ namespace OpenLogReplicator {
         uint64_t version;           //compatiblity level of redo logs
         typecon conId;
         typeresetlogs resetlogs;
-        clock_t previousCheckpoint;
-        uint64_t checkpointInterval;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -172,6 +173,9 @@ namespace OpenLogReplicator {
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
         void addPathMapping(const string source, const string target);
+
+        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
+        bool hasNextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum);
 
         OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
                 const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags,

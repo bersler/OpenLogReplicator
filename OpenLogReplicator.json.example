@@ -1,5 +1,5 @@
 {
-  "version": "0.5.12",
+  "version": "0.5.13",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -30,7 +30,7 @@
   "targets": [
     {
       "type": "KAFKA",
-      "format": {"stream": "JSON", "topic": "O112A", "sort-columns": 2, "metadata": 0, "single-dml": 0, "null-columns": 0, "test": 0, "timestamp-format": 0},
+      "format": {"stream": "JSON", "topic": "O112A", "metadata": 0, "single-dml": 0, "show-columns": 0, "test": 0, "timestamp-format": 0},
       "alias": "T2",
       "brokers": "localhost:9092",
       "source": "S1"

@@ -30,16 +30,15 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml,
-            uint64_t nullColumns, uint64_t test, uint64_t timestampFormat) :
+    Writer::Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t metadata, uint64_t singleDml,
+            uint64_t showColumns, uint64_t test, uint64_t timestampFormat) :
         Thread(alias),
         commandBuffer(oracleAnalyser->commandBuffer),
         oracleAnalyser(oracleAnalyser),
         stream(stream),
-        sortColumns(sortColumns),
         metadata(metadata),
         singleDml(singleDml),
-        nullColumns(nullColumns),
+        showColumns(showColumns),
         test(test),
         timestampFormat(timestampFormat) {
     }

@@ -39,41 +39,64 @@ namespace OpenLogReplicator {
 
     void OpCode0513::process() {
         OpCode::process();
-        uint64_t fieldPos = redoLogRecord->fieldPos;
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
 
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        dumpMsgSessionSerial(fieldPos, fieldLength);
 
-            if (i == 1) dumpMsgSessionSerial(fieldPos, fieldLength);
-            else
-            if (i == 2) dumpVal(fieldPos, fieldLength, "current username = ");
-            else
-            if (i == 3) dumpVal(fieldPos, fieldLength, "login   username = ");
-            else
-            if (i == 4) dumpVal(fieldPos, fieldLength, "client info      = ");
-            else
-            if (i == 5) dumpVal(fieldPos, fieldLength, "OS username      = ");
-            else
-            if (i == 6) dumpVal(fieldPos, fieldLength, "Machine name     = ");
-            else
-            if (i == 7) dumpVal(fieldPos, fieldLength, "OS terminal      = ");
-            else
-            if (i == 8) dumpVal(fieldPos, fieldLength, "OS process id    = ");
-            else
-            if (i == 9) dumpVal(fieldPos, fieldLength, "OS program name  = ");
-            else
-            if (i == 10) dumpVal(fieldPos, fieldLength, "transaction name = ");
-            else
-            if (i == 11) dumpMsgFlags(fieldPos, fieldLength);
-            else
-            if (i == 12) dumpMsgVersion(fieldPos, fieldLength);
-            else
-            if (i == 13) dumpMsgAuditSessionid(fieldPos, fieldLength);
-            else
-            if (i == 14) dumpVal(fieldPos, fieldLength, "Client Id  = ");
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        dumpVal(fieldPos, fieldLength, "current username = ");
 
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 3
+        dumpVal(fieldPos, fieldLength, "login   username = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 4
+        dumpVal(fieldPos, fieldLength, "client info      = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 5
+        dumpVal(fieldPos, fieldLength, "OS username      = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 6
+        dumpVal(fieldPos, fieldLength, "Machine name     = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 7
+        dumpVal(fieldPos, fieldLength, "OS terminal      = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 8
+        dumpVal(fieldPos, fieldLength, "OS process id    = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 9
+        dumpVal(fieldPos, fieldLength, "OS program name  = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 10
+        dumpVal(fieldPos, fieldLength, "transaction name = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 11
+        dumpMsgFlags(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 12
+        dumpMsgVersion(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 13
+        dumpMsgAuditSessionid(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 14
+        dumpVal(fieldPos, fieldLength, "Client Id  = ");
     }
 
     void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) {

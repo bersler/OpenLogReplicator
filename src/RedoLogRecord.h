@@ -112,6 +112,7 @@ namespace OpenLogReplicator {
         uint8_t *data;            //data
         uint16_t fieldCnt;
         uint64_t fieldPos;
+        uint64_t rowData;
         uint16_t nrow;
         uint64_t slotsDelta;
         uint64_t rowLenghsDelta;
@@ -157,6 +158,9 @@ namespace OpenLogReplicator {
         uint16_t suppLogAfter;
         typedba suppLogBdba;
         typeslot suppLogSlot;
+        uint64_t suppLogRowData;
+        uint64_t suppLogNumsDelta;
+        uint64_t suppLogLenDelta;
         uint64_t opFlags;
 
         void dumpHex(ostream &str, OracleAnalyser *oracleAnalyser);

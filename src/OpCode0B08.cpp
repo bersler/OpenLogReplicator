@@ -37,16 +37,15 @@ namespace OpenLogReplicator {
 
     void OpCode0B08::process() {
         OpCode::process();
-        uint64_t fieldPos = redoLogRecord->fieldPos;
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            if (i == 1) {
-                ktbRedo(fieldPos, fieldLength);
-            } else if (i == 2) {
-                kdoOpCode(fieldPos, fieldLength);
-            }
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
 
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        ktbRedo(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        kdoOpCode(fieldPos, fieldLength);
     }
 }

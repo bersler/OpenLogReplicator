@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.12"
+#define PROGRAM_VERSION             "0.5.13"
 #define MAX_PATH_LENGTH             2048
 
 #define STREAM_JSON                 1
@@ -71,6 +71,7 @@ typedef uint32_t typeseq;
 #define TRACE2_CHECKPOINT_FLUSH     0x0000400
 #define TRACE2_OUTPUT_BUFFER        0x0000800
 #define TRACE2_ROLLBACK             0x0001000
+#define TRACE2_DML                  0x0002000
 
 #define REDO_RECORD_MAX_SIZE        1048576
 #define REDO_FLAGS_DIRECT           0x0000001

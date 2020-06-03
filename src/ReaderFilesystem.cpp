@@ -99,8 +99,8 @@ namespace OpenLogReplicator {
             bytes = pread(fileDes, buf, size, pos);
 
             //display warning only if this helped
-            if (oracleAnalyser->trace >= TRACE_WARN && bytes > 0)
-                cerr << "WARNING: disabling direct read for: " << path << endl;
+            if (oracleAnalyser->trace >= TRACE_INFO && bytes > 0)
+                cerr << "INFO: disabling direct read for: " << path << endl;
         }
 
         return bytes;

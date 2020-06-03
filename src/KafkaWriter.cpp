@@ -42,9 +42,9 @@ using namespace RdKafka;
 namespace OpenLogReplicator {
 
     KafkaWriter::KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t trace,
-            uint64_t trace2, uint64_t stream, uint64_t sortColumns, uint64_t metadata, uint64_t singleDml, uint64_t nullColumns, uint64_t test,
+            uint64_t trace2, uint64_t stream, uint64_t metadata, uint64_t singleDml, uint64_t showColumns, uint64_t test,
             uint64_t timestampFormat) :
-        Writer(alias, oracleAnalyser, stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat),
+        Writer(alias, oracleAnalyser, stream, metadata, singleDml, showColumns, test, timestampFormat),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers),
@@ -192,15 +192,14 @@ namespace OpenLogReplicator {
 
     //0x05010B0B
     void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        uint64_t pos = 0,  fieldPos = redoLogRecord2->fieldPos, fieldPosStart;
+        uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
-        uint16_t fieldLength;
+        uint16_t fieldLength = 0;
         OracleObject *object = redoLogRecord2->object;
 
-        for (uint64_t i = 1; i < 4; ++i) {
-            fieldLength = oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + i * 2);
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
+            oracleAnalyser->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength);
+
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
@@ -262,7 +261,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (isNull) {
-                    if (nullColumns >= 1) {
+                    if (showColumns >= 1 || object->columns[i]->numPk > 0) {
                         if (prevValue)
                             commandBuffer->append(',');
                         else
@@ -301,15 +300,14 @@ namespace OpenLogReplicator {
 
     //0x05010B0C
     void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        uint64_t pos = 0, fieldPos = redoLogRecord1->fieldPos, fieldPosStart;
+        uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
-        uint16_t fieldLength;
+        uint16_t fieldLength = 0;
         OracleObject *object = redoLogRecord1->object;
 
-        for (uint64_t i = 1; i < 6; ++i) {
-            fieldLength = oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
+            oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
@@ -371,7 +369,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (isNull) {
-                    if (nullColumns >= 1) {
+                    if (showColumns >= 1 || object->columns[i]->numPk > 0) {
                         if (prevValue)
                             commandBuffer->append(',');
                         else
@@ -410,7 +408,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
         typedba bdba;
         typeslot slot;
-        RedoLogRecord *redoLogRecord = nullptr;
+        RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
         OracleObject *object = nullptr;
 
         if (stream == STREAM_JSON) {
@@ -428,21 +426,21 @@ namespace OpenLogReplicator {
             }
 
             object = redoLogRecord2->object;
-            redoLogRecord = redoLogRecord2;
-            while (redoLogRecord != nullptr) {
-                if ((redoLogRecord->fb & FB_F) != 0)
+            redoLogRecord2p = redoLogRecord2;
+            while (redoLogRecord2p != nullptr) {
+                if ((redoLogRecord2p->fb & FB_F) != 0)
                     break;
-                redoLogRecord = redoLogRecord->next;
+                redoLogRecord2p = redoLogRecord2p->next;
             }
 
-            if (redoLogRecord == nullptr) {
+            if (redoLogRecord2p == nullptr) {
                 if (oracleAnalyser->trace >= TRACE_WARN)
                     cerr << "WARNING: could not find correct rowid for INSERT" << endl;
                 bdba = 0;
                 slot = 0;
             } else {
-                bdba = redoLogRecord->bdba;
-                slot = redoLogRecord->slot;
+                bdba = redoLogRecord2p->bdba;
+                slot = redoLogRecord2p->slot;
             }
 
         } else if (type == TRANSACTION_DELETE) {
@@ -488,494 +486,326 @@ namespace OpenLogReplicator {
                     ->appendChr("\"before\":");
         }
 
-        uint64_t fieldPos, colNum, colShift, cc, headerSize;
+        uint64_t fieldPos, fieldNum, colNum, colShift, rowDeps;
         uint16_t fieldLength;
         uint8_t *nulls, bits, *colNums;
         bool prevValue = false;
-        uint64_t *afterPos = nullptr, *beforePos = nullptr;
-        uint16_t *afterLen = nullptr, *beforeLen = nullptr;
-        uint8_t *colSupp = nullptr;
-        RedoLogRecord **beforeRecord = nullptr, **afterRecord = nullptr;
-        if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-            afterPos = new uint64_t[object->totalCols];
-            if (afterPos == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
-            memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
 
-            beforePos = new uint64_t[object->totalCols];
-            if (beforePos == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
-            memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
+        uint64_t *afterPos = new uint64_t[object->totalCols];
+        if (afterPos == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
+        memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
 
-            afterLen = new uint16_t[object->totalCols];
-            if (afterLen == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
+        uint64_t *beforePos = new uint64_t[object->totalCols];
+        if (beforePos == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
+        memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
 
-            beforeLen = new uint16_t[object->totalCols];
-            if (beforeLen == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
+        uint16_t *afterLen = new uint16_t[object->totalCols];
+        if (afterLen == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
 
-            colSupp = new uint8_t[object->totalCols];
-            if (colSupp == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.5", sizeof(uint8_t) * object->totalCols);
-            memset(colSupp, 0, object->totalCols * sizeof(uint8_t));
+        uint16_t *beforeLen = new uint16_t[object->totalCols];
+        if (beforeLen == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
 
-            beforeRecord = new RedoLogRecord*[object->totalCols];
-            if (beforeRecord == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
+        uint8_t *colIsSupp = new uint8_t[object->totalCols];
+        if (colIsSupp == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.5", sizeof(uint64_t) * object->totalCols);
+        memset(colIsSupp, 0, object->totalCols * sizeof(uint8_t));
 
-            afterRecord = new RedoLogRecord*[object->totalCols];
-            if (afterRecord == nullptr)
-                throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
-        }
+        RedoLogRecord **beforeRecord = new RedoLogRecord*[object->totalCols];
+        if (beforeRecord == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
+
+        RedoLogRecord **afterRecord = new RedoLogRecord*[object->totalCols];
+        if (afterRecord == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
 
         //data in UNDO
+        redoLogRecord1p = redoLogRecord1;
+        redoLogRecord2p = redoLogRecord2;
+        colNums = nullptr;
+
+        while (redoLogRecord1p != nullptr) {
+            fieldPos = 0;
+            fieldNum = 0;
+            fieldLength = 0;
+
+            //UNDO
+            if (redoLogRecord1p->rowData > 0) {
+                nulls = redoLogRecord1p->data + redoLogRecord1p->nullsDelta;
+                bits = 1;
+
+                if (redoLogRecord1p->suppLogBefore > 0)
+                    colShift = redoLogRecord1p->suppLogBefore - 1;
+                else
+                    colShift = 0;
+
+                if (redoLogRecord1p->colNumsDelta > 0) {
+                    colNums = redoLogRecord1p->data + redoLogRecord1p->colNumsDelta;
+                    colShift -= oracleAnalyser->read16(colNums);
+                } else {
+                    colNums = nullptr;
+                }
+
+                for (uint64_t i = fieldNum; i < redoLogRecord1p->rowData - 1; ++i)
+                    oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+
+                for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
+                    if (i + redoLogRecord1p->rowData + 1 > redoLogRecord1p->fieldCnt) {
+                        cerr << "ERROR: reached out of columns" << endl;
+                        break;
+                    }
+                    if (colNums != nullptr) {
+                        colNum = oracleAnalyser->read16(colNums) + colShift;
+                        colNums += 2;
+                    } else
+                        colNum = i + colShift;
+
+                    if (colNum > object->columns.size()) {
+                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                        break;
+                    }
+
+                    oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+
+                    if ((*nulls & bits) != 0)
+                        fieldLength = 0;
+
+                    beforePos[colNum] = fieldPos;
+                    beforeLen[colNum] = fieldLength;
+                    beforeRecord[colNum] = redoLogRecord1p;
+
+                    bits <<= 1;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
+                    }
+                }
+            }
+
+            //supplemental columns
+            if (redoLogRecord1p->suppLogRowData > 0) {
+                for (uint64_t i = fieldNum; i < redoLogRecord1p->suppLogRowData - 1; ++i)
+                    oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+
+                colNums = redoLogRecord1p->data + redoLogRecord1p->suppLogNumsDelta;
+                uint8_t* colSizes = redoLogRecord1p->data + redoLogRecord1p->suppLogLenDelta;
+
+                for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
+                    oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                    colNum = oracleAnalyser->read16(colNums) - 1;
+
+                    if (colNum >= object->columns.size()) {
+                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                        break;
+                    }
+
+                    colNums += 2;
+                    uint16_t colLength = oracleAnalyser->read16(colSizes);
+
+                    colIsSupp[colNum] = 1;
+                    if (colLength == 0xFFFF)
+                        colLength = 0;
+
+                    //insert, lock, update
+                    if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10) {
+                        afterRecord[colNum] = redoLogRecord1p;
+                        afterPos[colNum] = fieldPos;
+                        afterLen[colNum] = colLength;
+                    }
+                    //delete, update, overwrite
+                    if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10) {
+                        beforeRecord[colNum] = redoLogRecord1p;
+                        beforePos[colNum] = fieldPos;
+                        beforeLen[colNum] = colLength;
+                    }
+
+                    colSizes += 2;
+                }
+            }
+
+            //REDO
+            if (redoLogRecord2p->rowData > 0) {
+                fieldPos = 0;
+                fieldNum = 0;
+                fieldLength = 0;
+                nulls = redoLogRecord2p->data + redoLogRecord2p->nullsDelta;
+                bits = 1;
+
+                if (redoLogRecord2p->colNumsDelta > 0) {
+                    colNums = redoLogRecord2p->data + redoLogRecord2p->colNumsDelta;
+                    colShift = redoLogRecord2p->suppLogAfter - 1 - oracleAnalyser->read16(colNums);
+                } else {
+                    colNums = nullptr;
+                    colShift = redoLogRecord2p->suppLogAfter - 1;
+                }
+
+                for (uint64_t i = fieldNum; i < redoLogRecord2p->rowData - 1; ++i)
+                    oracleAnalyser->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
+
+                for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
+                    oracleAnalyser->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
+
+                    if (colNums != nullptr) {
+                        colNum = oracleAnalyser->read16(colNums) + colShift;
+                        colNums += 2;
+                    } else
+                        colNum = i + colShift;
+
+                    if (colNum > object->columns.size()) {
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": too big column id: " << dec << colNum << endl;
+                        break;
+                    }
+
+                    if ((*nulls & bits) != 0)
+                        fieldLength = 0;
+
+                    afterPos[colNum] = fieldPos;
+                    afterLen[colNum] = fieldLength;
+                    afterRecord[colNum] = redoLogRecord2p;
+
+                    bits <<= 1;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
+                    }
+                }
+            }
+
+            redoLogRecord1p = redoLogRecord1p->next;
+            redoLogRecord2p = redoLogRecord2p->next;
+        }
+
+        if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
+            cerr << "DML: tab: " << object->owner << "." << object->objectName << " type: " << type << endl;
+            for (uint64_t i = 0; i < object->totalCols; ++i) {
+                cerr << "DML: " << dec << i << ": ";
+                if (beforePos[i] > 0)
+                    cerr << " B(" << beforePos[i] << ", " << dec << beforeLen[i] << ")";
+                if (afterPos[i] > 0)
+                    cerr << " A(" << afterPos[i] << ", " << dec << afterLen[i] << ")";
+                cerr << " pk: " << dec << object->columns[i]->numPk;
+                cerr << " supp: " << dec << (uint64_t)colIsSupp[i];
+                cerr << endl;
+            }
+        }
+
+
+        if (type == TRANSACTION_UPDATE && showColumns <= 1) {
+            for (uint64_t i = 0; i < object->totalCols; ++i) {
+
+                //remove unchanged column values - only for tables with defined primary key
+                if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
+                    if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
+                        beforePos[i] = 0;
+                        afterPos[i] = 0;
+                        beforeLen[i] = 0;
+                        afterLen[i] = 0;
+                    }
+                }
+
+                //remove columns additionally present, but not modified
+                if (beforePos[i] > 0 && beforeLen[i] == 0 && afterPos[i] == 0) {
+                    if (object->columns[i]->numPk == 0) {
+                        beforePos[i] = 0;
+                    } else {
+                        afterPos[i] = beforePos[i];
+                        afterLen[i] = beforeLen[i];
+                        afterRecord[i] = beforeRecord[i];
+                    }
+                }
+                if (afterPos[i] > 0 && afterLen[i] == 0 && beforePos[i] == 0) {
+                    if (object->columns[i]->numPk == 0) {
+                        afterPos[i] = 0;
+                    } else {
+                        beforePos[i] = afterPos[i];
+                        beforeLen[i] = afterLen[i];
+                        beforeRecord[i] = afterRecord[i];
+                    }
+                }
+            }
+        }
+
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->appendChr(",\"before\":{");
+                commandBuffer->appendChr(",\"before\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('{');
+                commandBuffer->appendChr("{");
             }
 
-            redoLogRecord = redoLogRecord1;
             prevValue = false;
-            colNums = nullptr;
 
-            while (redoLogRecord != nullptr) {
-                if (redoLogRecord->opCode == 0x0501) {
-                    fieldPos = redoLogRecord->fieldPos;
-                    nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
-                    bits = 1;
-                    cc = redoLogRecord->cc;
-                    if (redoLogRecord->colNumsDelta > 0) {
-                        colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
-                        headerSize = 5;
-                        colShift = redoLogRecord->suppLogBefore - 1 - oracleAnalyser->read16(colNums);
-                    } else {
-                        colNums = nullptr;
-                        headerSize = 4;
-                        colShift = redoLogRecord->suppLogBefore - 1;
-                    }
+            for (uint64_t i = 0; i < object->totalCols; ++i) {
+                //value present before
+                if (beforePos[i] > 0 && beforeLen[i] > 0) {
+                    if (prevValue)
+                        commandBuffer->append(',');
+                    else
+                        prevValue = true;
 
-                    for (uint64_t i = 1; i <= headerSize; ++i) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
+                    commandBuffer->appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
 
-                    for (uint64_t i = 0; i < cc; ++i) {
-                        if (i + headerSize + 1 > redoLogRecord->fieldCnt) {
-                            cerr << "ERROR: reached out of columns" << endl;
-                            break;
-                        }
-                        if (colNums != nullptr) {
-                            colNum = oracleAnalyser->read16(colNums) + colShift;
-                            colNums += 2;
-                        } else
-                            colNum = i + colShift;
+                } else
+                if ((type == TRANSACTION_DELETE && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
+                    (type == TRANSACTION_UPDATE && (afterPos[i] > 0 || beforePos[i] > 0))) {
+                    if (prevValue)
+                        commandBuffer->append(',');
+                    else
+                        prevValue = true;
 
-                        if (colNum > object->columns.size()) {
-                            cerr << "ERROR: too big column id: " << dec << colNum << endl;
-                            break;
-                        }
-
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (i + headerSize + 1) * 2);
-                        if (((*nulls & bits) != 0 || fieldLength == 0) && type == TRANSACTION_DELETE) {
-                            //null
-                        } else {
-                            if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                                if (fieldLength != 0) {
-                                    beforePos[colNum] = fieldPos;
-                                    beforeLen[colNum] = fieldLength;
-                                    beforeRecord[colNum] = redoLogRecord;
-                                }
-                            } else {
-                                if ((*nulls & bits) == 0 && fieldLength > 0) {
-                                    if (prevValue) {
-                                        commandBuffer->append(',');
-                                    } else
-                                        prevValue = true;
-
-                                    commandBuffer->appendValue(object->columns[colNum]->columnName,
-                                            redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
-                                } else {
-                                    if (nullColumns >= 1) {
-                                        if (prevValue)
-                                            commandBuffer->append(',');
-                                        else
-                                            prevValue = true;
-
-                                        commandBuffer->appendNull(object->columns[colNum]->columnName);
-                                    }
-                                }
-                            }
-                        }
-
-                        bits <<= 1;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
-                        }
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
-
-                    if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 1) * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                        ++headerSize;
-                    }
-
-                    //supplemental columns
-                    if (cc + headerSize + 1 <= redoLogRecord->fieldCnt) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 1) * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                        if (redoLogRecord->suppLogCC > 0 && redoLogRecord->cc + headerSize + 4 <= redoLogRecord->fieldCnt) {
-                            fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 2) * 2);
-                            colNums = redoLogRecord->data + fieldPos;
-                            fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                            fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 3) * 2);
-                            uint8_t* colSizes = redoLogRecord->data + fieldPos;
-                            fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                            for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
-                                fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (redoLogRecord->cc + headerSize + 4 + i) * 2);
-                                colNum = oracleAnalyser->read16(colNums) + colShift - 1;
-                                colNums += 2;
-                                uint16_t colLength = oracleAnalyser->read16(colSizes);
-
-                                if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                                    colSupp[colNum] = 1;
-                                    beforePos[colNum] = fieldPos;
-                                    afterPos[colNum] = fieldPos;
-                                    beforeRecord[colNum] = redoLogRecord;
-                                    afterRecord[colNum] = redoLogRecord;
-                                    if (colLength != 0xFFFF) {
-                                        beforeLen[colNum] = colLength;
-                                        afterLen[colNum] = colLength;
-                                    } else {
-                                        beforeLen[colNum] = 0;
-                                        afterLen[colNum] = 0;
-                                    }
-                                } else {
-                                    if (colLength == 0xFFFF) {
-                                        if (nullColumns >= 1) {
-                                            if (prevValue)
-                                                commandBuffer->append(',');
-                                            else
-                                                prevValue = true;
-
-                                            commandBuffer->appendNull(object->columns[colNum]->columnName);
-                                        }
-                                    } else {
-                                        if (prevValue) {
-                                            commandBuffer->append(',');
-                                        } else
-                                            prevValue = true;
-
-                                        commandBuffer->appendValue(object->columns[colNum]->columnName,
-                                                redoLogRecord, object->columns[colNum]->typeNo, fieldPos, colLength);
-                                    }
-                                }
-
-                                colSizes += 2;
-                                fieldPos += (fieldLength + 3) & 0xFFFC;
-                            }
-                        }
-                    }
+                    commandBuffer->appendNull(object->columns[i]->columnName);
                 }
-
-                redoLogRecord = redoLogRecord->next;
             }
 
             if (stream == STREAM_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('}');
+                commandBuffer->append('}');
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('}');
-            }
-        } else {
-            if (stream == STREAM_DBZ_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->appendChr("null");
+                commandBuffer->append('}');
             }
         }
 
-        if (stream == STREAM_DBZ_JSON) {
-            if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                commandBuffer->appendChr(",\"after\":");
-        }
-
-        //data in REDO
         if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->appendChr(",\"after\":{");
+                commandBuffer->appendChr(",\"after\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('{');
+                commandBuffer->appendChr(",\"after\":{");
             }
 
-            redoLogRecord = redoLogRecord2;
             prevValue = false;
 
-            while (redoLogRecord != nullptr) {
-                if (redoLogRecord->opCode == 0x0B02) {
-                    fieldPos = redoLogRecord->fieldPos;
-                    nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
-                    bits = 1;
-                    cc = redoLogRecord->cc;
-                    colNum = redoLogRecord->suppLogAfter - 1;
+            for (uint64_t i = 0; i < object->totalCols; ++i) {
+                if (afterPos[i] > 0 && afterLen[i] > 0) {
+                    if (prevValue)
+                        commandBuffer->append(',');
+                    else
+                        prevValue = true;
 
-                    for (uint64_t i = 1; i <= 2; ++i) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
+                    commandBuffer->appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                } else
+                if ((type == TRANSACTION_INSERT && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
+                    (type == TRANSACTION_UPDATE && (afterPos[i] > 0 || beforePos[i] > 0))) {
+                    if (prevValue)
+                        commandBuffer->append(',');
+                    else
+                        prevValue = true;
 
-                    for (uint64_t i = 0; i < cc; ++i) {
-                        if (i + 3 > redoLogRecord->fieldCnt) {
-                            cerr << "ERROR: reached out of columns" << endl;
-                            break;
-                        }
-                        if (colNum > object->columns.size()) {
-                            cerr << "ERROR: too big column id: " << dec << colNum << endl;
-                            break;
-                        }
-
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (i + 3) * 2);
-                        if ((*nulls & bits) != 0 || fieldLength == 0) {
-                            if (nullColumns >= 1) {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendNull(object->columns[colNum]->columnName);
-                            }
-                        } else {
-                            if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                                afterPos[colNum] = fieldPos;
-                                afterLen[colNum] = fieldLength;
-                                afterRecord[colNum] = redoLogRecord;
-                            } else {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendValue(object->columns[colNum]->columnName,
-                                        redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
-                            }
-                        }
-
-                        bits <<= 1;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
-                        }
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                        ++colNum;
-                    }
-
-                } else if (redoLogRecord->opCode == 0x0B05 || redoLogRecord->opCode == 0x0B06) {
-                    fieldPos = redoLogRecord->fieldPos;
-                    nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
-                    if (redoLogRecord->colNumsDelta > 0) {
-                        colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
-                        colShift = redoLogRecord->suppLogAfter - 1 - oracleAnalyser->read16(colNums);
-                        headerSize = 3;
-                    } else {
-                        colNums = nullptr;
-                        colShift = redoLogRecord->suppLogAfter - 1;
-                        headerSize = 2;
-                    }
-                    bits = 1;
-
-                    for (uint64_t i = 1; i <= headerSize; ++i) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
-
-                    for (uint64_t i = 0; i < redoLogRecord->cc && i + headerSize + 1 <= redoLogRecord->fieldCnt; ++i) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (i + headerSize + 1) * 2);
-                        if (colNums != nullptr) {
-                            colNum = oracleAnalyser->read16(colNums) + colShift;
-                            colNums += 2;
-                        } else
-                            colNum = i + colShift;
-
-                        if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                            if (fieldLength != 0) {
-                                afterPos[colNum] = fieldPos;
-                                afterLen[colNum] = fieldLength;
-                                afterRecord[colNum] = redoLogRecord;
-                            }
-                        } else {
-                            if ((*nulls & bits) != 0 || fieldLength == 0) {
-                                if (nullColumns >= 1) {
-                                    if (prevValue)
-                                        commandBuffer->append(',');
-                                    else
-                                        prevValue = true;
-
-                                    commandBuffer->appendNull(object->columns[colNum]->columnName);
-                                }
-                            } else {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendValue(object->columns[colNum]->columnName,
-                                        redoLogRecord, object->columns[colNum]->typeNo, fieldPos, fieldLength);
-                            }
-                        }
-
-                        bits <<= 1;
-                        if (bits == 0) {
-                            bits = 1;
-                            ++nulls;
-                        }
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-                    }
-
+                    commandBuffer->appendNull(object->columns[i]->columnName);
                 }
-
-                redoLogRecord = redoLogRecord->next;
             }
 
             if (stream == STREAM_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('}');
+                commandBuffer->append('}');
             }
-
             if (stream == STREAM_DBZ_JSON) {
-                if (type != TRANSACTION_UPDATE || sortColumns == 0)
-                    commandBuffer->append('}');
-            }
-
-
-            if (type == TRANSACTION_UPDATE && sortColumns > 0) {
-                //remove unchanged column values - only for tables with defined primary key
-                if (sortColumns >= 2 && object->totalPk > 0) {
-                    for (uint64_t i = 0; i < object->totalCols; ++i) {
-                        if (object->columns[i]->numPk == 0 && colSupp[i] == 0) {
-                            if (beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
-                                if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
-                                    beforePos[i] = 0;
-                                    afterPos[i] = 0;
-                                    beforeLen[i] = 0;
-                                    afterLen[i] = 0;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (stream == STREAM_JSON) {
-                    commandBuffer->appendChr(",\"before\":{");
-                }
-
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->appendChr("{");
-                }
-
-                for (uint64_t i = 0; i < object->totalCols; ++i) {
-                    if (beforePos[i] > 0 || afterPos[i] > 0) {
-                        if (beforePos[i] == 0 || beforeLen[i] == 0) {
-                            if (nullColumns >= 1 || colSupp[i] > 0 || afterPos[i] > 0) {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendNull(object->columns[i]->columnName);
-                            }
-                        } else {
-                            if (prevValue)
-                                commandBuffer->append(',');
-                            else
-                                prevValue = true;
-
-                            commandBuffer->appendValue(object->columns[i]->columnName,
-                                    beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
-                        }
-                    }
-                }
-
-                if (stream == STREAM_JSON) {
-                    commandBuffer->appendChr("},\"after\":{");
-                }
-
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->appendChr("},\"after\":{");
-                }
-
-                prevValue = false;
-
-                for (uint64_t i = 0; i < object->totalCols; ++i) {
-                    if (afterPos[i] > 0 || beforePos[i] > 0) {
-                        if (afterPos[i] == 0 && (object->columns[i]->numPk > 0 || colSupp[i] > 0)) {
-                            if (beforePos[i] == 0 || beforeLen[i] == 0) {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendNull(object->columns[i]->columnName);
-                            } else {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendValue(object->columns[i]->columnName,
-                                        beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
-                            }
-                        } else {
-                            if (afterPos[i] == 0 || afterLen[i] == 0) {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendNull(object->columns[i]->columnName);
-                            } else {
-                                if (prevValue)
-                                    commandBuffer->append(',');
-                                else
-                                    prevValue = true;
-
-                                commandBuffer->appendValue(object->columns[i]->columnName,
-                                        afterRecord[i], object->columns[i]->typeNo, afterPos[i], afterLen[i]);
-                            }
-                        }
-                    }
-                }
-                if (stream == STREAM_JSON) {
-                    commandBuffer->append('}');
-                }
-
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer->append('}');
-                }
-
-                delete[] afterRecord;
-                delete[] beforeRecord;
-                delete[] colSupp;
-                delete[] afterLen;
-                delete[] beforeLen;
-                delete[] afterPos;
-                delete[] beforePos;
+                commandBuffer->append('}');
             }
         }
 
@@ -992,6 +822,14 @@ namespace OpenLogReplicator {
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
                     ->commitTran();
         }
+
+        delete[] afterRecord;
+        delete[] beforeRecord;
+        delete[] colIsSupp;
+        delete[] afterLen;
+        delete[] beforeLen;
+        delete[] afterPos;
+        delete[] beforePos;
     }
 
     //0x18010000

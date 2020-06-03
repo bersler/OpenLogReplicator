@@ -37,23 +37,22 @@ namespace OpenLogReplicator {
 
     void OpCode0B0C::process() {
         OpCode::process();
-        uint64_t fieldPos = redoLogRecord->fieldPos;
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            if (i == 1) {
-                ktbRedo(fieldPos, oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
-            } else if (i == 2) {
-                kdoOpCode(fieldPos, oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2));
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
 
-                if (oracleAnalyser->dumpRedoLog >= 1) {
-                    if ((redoLogRecord->op & 0x1F) == OP_QMD) {
-                        for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                            oracleAnalyser->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyser->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
-                    }
-                }
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        ktbRedo(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        kdoOpCode(fieldPos, fieldLength);
+
+        if (oracleAnalyser->dumpRedoLog >= 1) {
+            if ((redoLogRecord->op & 0x1F) == OP_QMD) {
+                for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
+                    oracleAnalyser->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyser->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
             }
-
-            fieldPos += (fieldLength + 3) & 0xFFFC;
         }
     }
 }

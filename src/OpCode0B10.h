@@ -1,4 +1,4 @@
-/* Header for OpCode0B06 class
+/* Header for OpCode0B10 class
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -19,17 +19,17 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include "OpCode.h"
 
-#ifndef OPCODE0B06_H_
-#define OPCODE0B06_H_
+#ifndef OPCODE0B10_H_
+#define OPCODE0B10_H_
 
 namespace OpenLogReplicator {
 
     class RedoLogRecord;
 
-    class OpCode0B06: public OpCode {
+    class OpCode0B10: public OpCode {
     public:
-        OpCode0B06(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
-        virtual ~OpCode0B06();
+        OpCode0B10(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        virtual ~OpCode0B10();
 
         virtual void process();
     };

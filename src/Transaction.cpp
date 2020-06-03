@@ -35,6 +35,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B08.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
+#include "OpCode0B10.h"
 #include "OpCode1801.h"
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
@@ -268,6 +269,8 @@ namespace OpenLogReplicator {
                     case 0x05010B06:
                     //change row forwading address
                     case 0x05010B08:
+                    //supp log for update
+                    case 0x05010B10:
 
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
                         if (type == 0) {

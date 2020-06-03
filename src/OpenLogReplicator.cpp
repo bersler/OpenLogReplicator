@@ -250,14 +250,12 @@ int main() {
                     throw ConfigurationException("bad JSON, invalid stream type");
 
                 const Value& topic = getJSONfield(format, "topic");
-                const Value& sortColumnsJSON = getJSONfield(format, "sort-columns");
-                uint64_t sortColumns = sortColumnsJSON.GetUint64();
                 const Value& metadataJSON = getJSONfield(format, "metadata");
                 uint64_t metadata = metadataJSON.GetUint64();
                 const Value& singleDmlJSON = getJSONfield(format, "single-dml");
                 uint64_t singleDml = singleDmlJSON.GetUint64();
-                const Value& nullColumnsJSON = getJSONfield(format, "null-columns");
-                uint64_t nullColumns = nullColumnsJSON.GetUint64();
+                const Value& showColumnsJSON = getJSONfield(format, "show-columns");
+                uint64_t showColumns = showColumnsJSON.GetUint64();
                 const Value& testJSON = getJSONfield(format, "test");
                 uint64_t test = testJSON.GetUint64();
                 const Value& timestampFormatJSON = getJSONfield(format, "timestamp-format");
@@ -273,7 +271,7 @@ int main() {
 
                 cout << "Adding target: " << alias.GetString() << endl;
                 kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser, trace, trace2,
-                        stream, sortColumns, metadata, singleDml, nullColumns, test, timestampFormat);
+                        stream, metadata, singleDml, showColumns, test, timestampFormat);
                 if (kafkaWriter == nullptr)
                     throw MemoryException("main.3", sizeof(KafkaWriter));
 

@@ -24,6 +24,7 @@ CPP_SRCS += \
 ../src/OpCode0B08.cpp \
 ../src/OpCode0B0B.cpp \
 ../src/OpCode0B0C.cpp \
+../src/OpCode0B10.cpp \
 ../src/OpCode1801.cpp \
 ../src/OpenLogReplicator.cpp \
 ../src/OracleAnalyser.cpp \
@@ -65,6 +66,7 @@ OBJS += \
 ./src/OpCode0B08.o \
 ./src/OpCode0B0B.o \
 ./src/OpCode0B0C.o \
+./src/OpCode0B10.o \
 ./src/OpCode1801.o \
 ./src/OpenLogReplicator.o \
 ./src/OracleAnalyser.o \
@@ -106,6 +108,7 @@ CPP_DEPS += \
 ./src/OpCode0B08.d \
 ./src/OpCode0B0B.d \
 ./src/OpCode0B0C.d \
+./src/OpCode0B10.d \
 ./src/OpCode1801.d \
 ./src/OpenLogReplicator.d \
 ./src/OracleAnalyser.d \

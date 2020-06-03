@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 5.11
+/* Oracle Redo OpCode: 11.16
    Copyright (C) 2018-2020 Adam Leszczynski.
 
 This file is part of Open Log Replicator.
@@ -20,7 +20,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <iomanip>
 #include <iostream>
 
-#include "OpCode050B.h"
+#include "OpCode0B10.h"
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
 
@@ -28,37 +28,24 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode050B::OpCode050B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
+    OpCode0B10::OpCode0B10(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
             OpCode(oracleAnalyser, redoLogRecord) {
-
-        if (redoLogRecord->fieldCnt >= 1) {
-            uint64_t fieldPos = redoLogRecord->fieldPos;
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
-            if (fieldLength < 8) {
-                oracleAnalyser->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
-                return;
-            }
-
-            redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->objd = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);
-        }
     }
 
-    OpCode050B::~OpCode050B() {
+    OpCode0B10::~OpCode0B10() {
     }
 
-    void OpCode050B::process() {
+    void OpCode0B10::process() {
         OpCode::process();
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
-        ktub(fieldPos, fieldLength);
-        redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
-    }
+        ktbRedo(fieldPos, fieldLength);
 
-    const char* OpCode050B::getUndoType() {
-        return "User undo done    Begin trans    ";
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        kdoOpCode(fieldPos, fieldLength);
     }
 }

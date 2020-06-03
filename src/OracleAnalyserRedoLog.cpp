@@ -43,6 +43,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OpCode0B08.h"
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
+#include "OpCode0B10.h"
 #include "OpCode1801.h"
 #include "OracleAnalyser.h"
 #include "OracleAnalyserRedoLog.h"
@@ -530,16 +531,22 @@ namespace OpenLogReplicator {
                     throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.15", sizeof(OpCode0B0C));
                 break;
 
+            case 0x0B10: //REDO: Supp log for update
+                opCodes[vectors] = new OpCode0B10(oracleAnalyser, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr)
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.16", sizeof(OpCode0B10));
+                break;
+
             case 0x1801: //DDL
                 opCodes[vectors] = new OpCode1801(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.16", sizeof(OpCode1801));
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.17", sizeof(OpCode1801));
                 break;
 
             default:
                 opCodes[vectors] = new OpCode(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.17", sizeof(OpCode));
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.18", sizeof(OpCode));
                 break;
             }
 
@@ -744,6 +751,14 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->object == nullptr || redoLogRecord1->object->altered)
             return;
 
+        //cluster key
+        if ((redoLogRecord2->fb & FB_K) != 0)
+            return;
+
+        //if (redoLogRecord1->opCode == 0x0B02 || (redoLogRecord1->fb & FB_K) != 0) return;
+        //if (redoLogRecord1->opCode == 0x0B03 || (redoLogRecord1->fb & FB_K) != 0) return;
+        //if (redoLogRecord2->opCode == 0x0B03 || (redoLogRecord2->fb & FB_K) != 0) return;
+
         redoLogRecord2->object = redoLogRecord1->object;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
@@ -768,6 +783,8 @@ namespace OpenLogReplicator {
         case 0x05010B0B:
         //delete multiple rows
         case 0x05010B0C:
+        //supp log for update
+        case 0x05010B10:
             {
                 if (oracleAnalyser->onRollbackList(redoLogRecord1, redoLogRecord2)) {
                     if (oracleAnalyser->trace >= TRACE_WARN)
@@ -828,6 +845,9 @@ namespace OpenLogReplicator {
         //rollback: overwrite row piece
         case 0x0B060506:
         case 0x0B06050B:
+        //rollback: supp log for update
+        case 0x0B100506:
+        case 0x0B10050B:
             {
                 if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
                     cerr << "rollback, searching for UBA: " << PRINTUBA(redoLogRecord1->uba) <<

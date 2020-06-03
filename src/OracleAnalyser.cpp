@@ -36,6 +36,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleStatement.h"
 #include "Reader.h"
 #include "ReaderFilesystem.h"
+#include "RedoLogException.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Transaction.h"
@@ -50,11 +51,11 @@ const Value& getJSONfield(const Document& document, const char* field);
 namespace OpenLogReplicator {
 
     string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
-    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_CON_ID("SELECT SYS_CONTEXT('USERENV','CON_ID') CON_ID FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i ORDER BY 4,5");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1),DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE :i ORDER BY 4,5");
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.COL#");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
 
@@ -69,10 +70,14 @@ namespace OpenLogReplicator {
         user(user),
         passwd(passwd),
         connectString(connectString),
+        database(database),
         archReader(nullptr),
         rolledBack1(nullptr),
         rolledBack2(nullptr),
-        database(database),
+        suppLogDbPrimary(false),
+        suppLogDbAll(false),
+        previousCheckpoint(clock()),
+        checkpointInterval(checkpointInterval),
         databaseContext(""),
         databaseScn(0),
         lastOpTransactionMap(maxConcurrentTransactions),
@@ -90,8 +95,6 @@ namespace OpenLogReplicator {
         version(0),
         conId(0),
         resetlogs(0),
-        previousCheckpoint(clock()),
-        checkpointInterval(checkpointInterval),
         read16(read16Little),
         read32(read32Little),
         read56(read56Little),
@@ -542,7 +545,15 @@ namespace OpenLogReplicator {
                     throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
-                string ENDIANNESS = stmt.rset->getString(3);
+                string SUPPLEMENTAL_LOG_PK = stmt.rset->getString(3);
+                if (SUPPLEMENTAL_LOG_PK.compare("YES") == 0)
+                    suppLogDbPrimary = true;
+
+                string SUPPLEMENTAL_LOG_ALL = stmt.rset->getString(4);
+                if (SUPPLEMENTAL_LOG_ALL.compare("YES") == 0)
+                    suppLogDbAll = true;
+
+                string ENDIANNESS = stmt.rset->getString(5);
                 if (ENDIANNESS.compare("Big") == 0) {
                     read16 = read16Big;
                     read32 = read32Big;
@@ -557,8 +568,8 @@ namespace OpenLogReplicator {
                     writeSCN = writeSCNBig;
                 }
 
-                currentDatabaseScn = stmt.rset->getNumber(4);
-                currentResetlogs = stmt.rset->getNumber(5);
+                currentDatabaseScn = stmt.rset->getNumber(6);
+                currentResetlogs = stmt.rset->getNumber(7);
                 if (resetlogs != 0 && currentResetlogs != resetlogs) {
                     cerr << "ERROR: Previous resetlogs:" << dec << resetlogs << ", current: " << currentResetlogs << endl;
                     throw RuntimeException("incorrect database incarnation");
@@ -567,7 +578,7 @@ namespace OpenLogReplicator {
                 }
 
                 //12+
-                string VERSION = stmt.rset->getString(6);
+                string VERSION = stmt.rset->getString(8);
                 if (trace >= TRACE_INFO)
                     cerr << "INFO: version: " << dec << VERSION << endl;
 
@@ -583,7 +594,7 @@ namespace OpenLogReplicator {
                         conId = stmt.rset->getNumber(1);
                 }
 
-                databaseContext = stmt.rset->getString(7);
+                databaseContext = stmt.rset->getString(9);
             } else {
                 throw RuntimeException("reading SYS.V_$DATABASE");
             }
@@ -1043,10 +1054,18 @@ namespace OpenLogReplicator {
                 typeobj objn = stmt.rset->getNumber(2);
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
+                uint64_t clustered = stmt.rset->getNumber(7);
+                uint64_t iot = stmt.rset->getNumber(8);
 
-                //skip partitioned/IOT tables
+                //skip IOT tables
+                if (iot > 0) {
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
+                    continue;
+                }
+
+                //skip partitioned tables
                 if (stmt.rset->isNull(1)) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned or IOT" << endl;
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned" << endl;
                     continue;
                 }
                 typeobj objd = stmt.rset->getNumber(1);
@@ -1068,7 +1087,7 @@ namespace OpenLogReplicator {
                     throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
                 ++tabCnt;
 
-                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll) {
                     if ((trace2 & TRACE2_SQL) != 0)
                         cerr << "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl;
                     stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
@@ -1122,6 +1141,9 @@ namespace OpenLogReplicator {
                             supLogColMissing = true;
                     }
 
+                    if (trace >= TRACE_DETAIL)
+                        cout << "    - col: " << dec << colNo << ": " << columnName << " (pk: " << dec << numPk << ")" << endl;
+
                     OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
                     if (column == nullptr)
                         throw MemoryException("OracleAnalyser::addTable.2", sizeof(OracleColumn));
@@ -1141,19 +1163,21 @@ namespace OpenLogReplicator {
                 }
 
                 cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ", DEP: " << dec << depdendencies << ")";
+                if (clustered > 0)
+                    cout << " part of cluster";
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
                     //use default primary key
                     if (keys.size() == 0) {
                         if (totalPk == 0)
                             cout << " - primary key missing" << endl;
-                        else if (!suppLogPrimary && !suppLogAll && supLogColMissing)
+                        else if (!suppLogPrimary && !suppLogAll && !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
                             cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;" << endl;
                         else
                             cout << endl;
                     //user defined primary key
                     } else {
-                        if (!suppLogAll && supLogColMissing)
+                        if (!suppLogAll && !suppLogDbAll && supLogColMissing)
                             cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;" << endl;
                         else
                             cout << endl;
@@ -1225,6 +1249,30 @@ namespace OpenLogReplicator {
         string sourceMaping = source, targetMapping = target;
         pathMapping.push_back(sourceMaping);
         pathMapping.push_back(targetMapping);
+    }
+
+    void OracleAnalyser::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+        ++fieldNum;
+        if (fieldNum > redoLogRecord->fieldCnt) {
+            cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt << endl;
+            throw RedoLogException("field missing in vector");
+        }
+
+        if (fieldNum == 1)
+            fieldPos = redoLogRecord->fieldPos;
+        else
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+
+        if (fieldPos + fieldLength > redoLogRecord->length) {
+            cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt << endl;
+            cerr << "ERROR: pos: " << dec << fieldPos << ", length:" << fieldLength << " max: " << redoLogRecord->length << endl;
+            throw RedoLogException("field length out of vector");
+        }
+    }
+
+    bool OracleAnalyser::hasNextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum) {
+        return fieldNum < redoLogRecord->fieldCnt;
     }
 
     bool OracleAnalyserRedoLogCompare::operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2) {

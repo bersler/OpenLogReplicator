@@ -29,9 +29,40 @@ using namespace std;
 namespace OpenLogReplicator {
 
     OpCode0B06::OpCode0B06(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode0B03(oracleAnalyser, redoLogRecord) {
+            OpCode(oracleAnalyser, redoLogRecord) {
     }
 
     OpCode0B06::~OpCode0B06() {
+    }
+
+    void OpCode0B06::process() {
+        OpCode::process();
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        ktbRedo(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        kdoOpCode(fieldPos, fieldLength);
+        redoLogRecord->nullsDelta = fieldPos + 45;
+        uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+        uint8_t bits = 1;
+
+        redoLogRecord->rowData = fieldNum + 1;
+        //fields: 2 + cc
+        for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+
+            if (oracleAnalyser->dumpRedoLog >= 1)
+                dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
+            bits <<= 1;
+            if (bits == 0) {
+                bits = 1;
+                ++nulls;
+            }
+        }
     }
 }

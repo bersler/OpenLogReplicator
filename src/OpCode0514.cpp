@@ -40,26 +40,38 @@ namespace OpenLogReplicator {
 
     void OpCode0514::process() {
         OpCode::process();
-        uint64_t fieldPos = redoLogRecord->fieldPos;
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
 
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        dumpMsgSessionSerial(fieldPos, fieldLength);
 
-            if (i == 1) dumpMsgSessionSerial(fieldPos, fieldLength);
-            else
-            if (i == 2) dumpVal(fieldPos, fieldLength, "transaction name = ");
-            else
-            if (i == 3) dumpMsgFlags(fieldPos, fieldLength);
-            else
-            if (i == 4) dumpMsgVersion(fieldPos, fieldLength);
-            else
-            if (i == 5) dumpMsgAuditSessionid(fieldPos, fieldLength);
-            else
-            if (i == 7) dumpVal(fieldPos, fieldLength, "Client Id = ");
-            else
-            if (i == 8) dumpVal(fieldPos, fieldLength, "login   username = ");
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2
+        dumpVal(fieldPos, fieldLength, "transaction name = ");
 
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        }
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 3
+        dumpMsgFlags(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 4
+        dumpMsgVersion(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 5
+        dumpMsgAuditSessionid(fieldPos, fieldLength);
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 6
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 7
+        dumpVal(fieldPos, fieldLength, "Client Id = ");
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 8
+        dumpVal(fieldPos, fieldLength, "login   username = ");
     }
 }

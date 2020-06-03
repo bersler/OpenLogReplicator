@@ -23,6 +23,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include "OpCode.h"
 #include "OracleAnalyser.h"
+#include "RedoLogException.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
@@ -35,10 +36,6 @@ namespace OpenLogReplicator {
     }
 
     OpCode::~OpCode() {
-    }
-
-    typeop1 OpCode::getOpCode(void) {
-        return redoLogRecord->opCode;
     }
 
     void OpCode::process() {
@@ -1133,8 +1130,8 @@ namespace OpenLogReplicator {
     void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg) {
         if (oracleAnalyser->dumpRedoLog >= 1) {
             oracleAnalyser->dumpStream << msg;
-            for (uint64_t j = 0; j < fieldLength; ++j)
-                oracleAnalyser->dumpStream << redoLogRecord->data[fieldPos + j];
+            for (uint64_t i = 0; i < fieldLength; ++i)
+                oracleAnalyser->dumpStream << redoLogRecord->data[fieldPos + i];
             oracleAnalyser->dumpStream << endl;
         }
     }
@@ -1149,5 +1146,60 @@ namespace OpenLogReplicator {
         if ((fb & FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
         if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; //cluster Key
         fbStr[8] = 0;
+    }
+
+    void OpCode::suppLog(uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+
+        if (fieldLength < 20) {
+            oracleAnalyser->dumpStream << "ERROR: too short supplemental log: " << dec << fieldLength << endl;
+            return;
+        }
+
+        redoLogRecord->suppLogType = redoLogRecord->data[fieldPos + 0];
+        redoLogRecord->suppLogFb = redoLogRecord->data[fieldPos + 1];
+        redoLogRecord->suppLogCC = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 2);
+        redoLogRecord->suppLogBefore = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6);
+        redoLogRecord->suppLogAfter = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 8);
+
+        if (oracleAnalyser->dumpRedoLog >= 2) {
+            oracleAnalyser->dumpStream <<
+                    "supp log type: " << dec << (uint64_t)redoLogRecord->suppLogType <<
+                    " fb: " << dec << (uint64_t)redoLogRecord->suppLogFb <<
+                    " cc: " << dec << redoLogRecord->suppLogCC <<
+                    " before: " << dec << redoLogRecord->suppLogBefore <<
+                    " after: " << dec << redoLogRecord->suppLogAfter << endl;
+
+        }
+
+        if (fieldLength >= 26) {
+            redoLogRecord->suppLogBdba = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 20);
+            redoLogRecord->suppLogSlot = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 24);
+            oracleAnalyser->dumpStream <<
+                    "supp log bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->suppLogBdba <<
+                    "." << hex << redoLogRecord->suppLogSlot << endl;
+        }
+
+        if (oracleAnalyser->hasNextField(redoLogRecord, fieldNum)) {
+            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            redoLogRecord->suppLogNumsDelta = fieldPos;
+            uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
+
+            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            redoLogRecord->suppLogLenDelta = fieldPos;
+
+            redoLogRecord->suppLogRowData = fieldNum + 1;
+
+            for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
+                oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+
+                if (oracleAnalyser->dumpRedoLog >= 2)
+                    dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNumsSupp), fieldLength, 0);
+                colNumsSupp += 2;
+            }
+        }
     }
 }
