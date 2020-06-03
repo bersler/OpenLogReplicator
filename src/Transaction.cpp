@@ -267,7 +267,7 @@ namespace OpenLogReplicator {
                     case 0x05010B05:
                     //overwrite row piece
                     case 0x05010B06:
-                    //change row forwading address
+                    //change row forwarding address
                     case 0x05010B08:
                     //supp log for update
                     case 0x05010B10:
