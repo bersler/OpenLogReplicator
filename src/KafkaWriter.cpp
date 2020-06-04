@@ -844,102 +844,89 @@ namespace OpenLogReplicator {
 
     //0x18010000
     void KafkaWriter::parseDDL(RedoLogRecord *redoLogRecord1) {
-        uint64_t fieldPos = redoLogRecord1->fieldPos;
-        uint16_t seq = 0, cnt = 0, type = 0;
+        uint64_t fieldPos = 0, fieldNum = 0, sqlLength;
+        uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
         OracleObject *object = redoLogRecord1->object;
+        uint8_t *sqlText = nullptr;
 
-        if (oracleAnalyser->trace >= TRACE_DETAIL)
-            cerr << "INFO: DDL";
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 1
+        type = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 12);
+        seq = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 18);
+        cnt = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 20);
 
-        uint16_t fieldLength;
-        for (uint64_t i = 1; i <= redoLogRecord1->fieldCnt; ++i) {
-            fieldLength = oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + i * 2);
-            if (i == 1) {
-                type = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 12);
-                seq = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 18);
-                cnt = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 20);
-                if (oracleAnalyser->trace >= TRACE_DETAIL) {
-                    cerr << " SEQ: " << dec << seq << "/" << dec << cnt;
-                    cerr << " TYPE: " << dec << type;
-                }
-            } else if (i == 8) {
-                //DDL text
-                if (oracleAnalyser->trace >= TRACE_DETAIL) {
-                    cerr << " DDL[" << dec << fieldLength << "]: '";
-                    for (uint64_t j = 0; j < (uint64_t)(fieldLength - 1); ++j) {
-                        cerr << *(redoLogRecord1->data + fieldPos + j);
-                    }
-                    cerr << "'";
-                }
-            } else if (i == 9) {
-                //owner
-                if (oracleAnalyser->trace >= TRACE_DETAIL) {
-                    cerr << " OWNER[" << dec << fieldLength << "]: '";
-                    for (uint64_t j = 0; j < fieldLength; ++j) {
-                        cerr << *(redoLogRecord1->data + fieldPos + j);
-                    }
-                    cerr << "'";
-                }
-            } else if (i == 10) {
-                //table
-                if (oracleAnalyser->trace >= TRACE_DETAIL) {
-                    cerr << " TABLE[" << fieldLength << "]: '";
-                    for (uint64_t j = 0; j < fieldLength; ++j) {
-                        cerr << *(redoLogRecord1->data + fieldPos + j);
-                    }
-                    cerr << "'";
-                }
-            } else if (i == 12) {
-                redoLogRecord1->objn = oracleAnalyser->read32(redoLogRecord1->data + fieldPos + 0);
-                if (oracleAnalyser->trace >= TRACE_DETAIL) {
-                    cerr << " OBJN: " << dec << redoLogRecord1->objn;
-                }
-            }
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
 
-            fieldPos += (fieldLength + 3) & 0xFFFC;
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 2
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 3
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 4
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 5
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 6
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 7
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        //field: 8
+        sqlLength = fieldLength;
+        sqlText = redoLogRecord1->data + fieldPos;
+
+        if (stream == STREAM_JSON) {
+            if (test >= 2)
+                commandBuffer->append('\n');
+
+            commandBuffer
+                    ->append('{')
+                    ->appendScn(lastScn)
+                    ->append(',')
+                    ->appendTable(object->owner, object->objectName)
+                    ->appendChr(",\"type\":")
+                    ->appendDec(type)
+                    ->appendChr(",\"seq\":")
+                    ->appendDec(seq)
+                    ->append(',');
+
+            if (type == 85)
+                commandBuffer->appendOperation("truncate");
+            else if (type == 12)
+                commandBuffer->appendOperation("drop");
+            else if (type == 15)
+                commandBuffer->appendOperation("alter");
+            else
+                commandBuffer->appendOperation("?");
+
+            commandBuffer
+                    ->appendChr(",\"sql\":\"")
+                    ->appendEscape(sqlText, sqlLength - 1)
+                    ->appendChr("\"}");
         }
-        if (oracleAnalyser->trace >= TRACE_DETAIL)
-            cerr << endl;
-
-        if (type == 85) {
-            if (stream == STREAM_JSON) {
-                if (test >= 2)
-                    commandBuffer->append('\n');
-                commandBuffer
-                        ->append('{')
-                        ->appendScn(lastScn)
-                        ->append(',')
-                        ->appendOperation("truncate")
-                        ->append(',')
-                        ->appendTable(object->owner, object->objectName)
-                        ->append('}');
-            }
-        } else if (type == 12) {
-            if (stream == STREAM_JSON) {
-                if (test >= 2)
-                    commandBuffer->append('\n');
-                commandBuffer
-                        ->append('{')
-                        ->appendScn(lastScn)
-                        ->append(',')
-                        ->appendOperation("drop")
-                        ->append(',')
-                        ->appendTable(object->owner, object->objectName)
-                        ->append('}');
-            }
-        } else if (type == 15) {
-            if (stream == STREAM_JSON) {
-                if (test >= 2)
-                    commandBuffer->append('\n');
-                commandBuffer
-                        ->append('{')
-                        ->appendScn(lastScn)
-                        ->append(',')
-                        ->appendOperation("alter")
-                        ->append(',')
-                        ->appendTable(object->owner, object->objectName)
-                        ->append('}');
-            }
-       }
     }
 }
