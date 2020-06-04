@@ -53,11 +53,12 @@ namespace OpenLogReplicator {
             kteop(fieldPos, fieldLength);
         }
 
-        if (oracleAnalyser->hasNextField(redoLogRecord, fieldNum)) {
-            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
-            //field: 2/3
-            pdb(fieldPos, fieldLength);
-        }
+        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+            return;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        //field: 2/3
+        pdb(fieldPos, fieldLength);
     }
 
     void OpCode0502::kteop(uint64_t fieldPos, uint64_t fieldLength) {

@@ -47,9 +47,15 @@ namespace OpenLogReplicator {
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
+        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+            return;
+
         oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+            return;
 
         oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 3
@@ -58,6 +64,9 @@ namespace OpenLogReplicator {
             oracleAnalyser->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
             return;
         }
+
+        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+            return;
 
         oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 4

@@ -1257,7 +1257,10 @@ namespace OpenLogReplicator {
     void OracleAnalyser::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
         ++fieldNum;
         if (fieldNum > redoLogRecord->fieldCnt) {
-            cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt << endl;
+            cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                    ", op: " << hex << redoLogRecord->opCode <<
+                    ", cc: " << dec << redoLogRecord->cc <<
+                    ", suppCC: " << dec << redoLogRecord->suppLogCC << endl;
             throw RedoLogException("field missing in vector");
         }
 
