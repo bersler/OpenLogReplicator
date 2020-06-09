@@ -48,8 +48,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #define REDO_EMPTY                  4
 
 #define DISK_BUFFER_SIZE            (4*1024*1024)
-#define REDO_PAGE_SIZE_MAX          1024
-#define READ_CHUNK_MIN_SIZE         1024
+#define REDO_PAGE_SIZE_MAX          4096
 
 using namespace std;
 

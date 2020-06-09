@@ -95,6 +95,7 @@ namespace OpenLogReplicator {
         version(0),
         conId(0),
         resetlogs(0),
+        isBigEndian(false),
         read16(read16Little),
         read32(read32Little),
         read56(read56Little),
@@ -566,6 +567,7 @@ namespace OpenLogReplicator {
                     write56 = write56Big;
                     write64 = write64Big;
                     writeSCN = writeSCNBig;
+                    isBigEndian = true;
                 }
 
                 currentDatabaseScn = stmt.rset->getNumber(6);

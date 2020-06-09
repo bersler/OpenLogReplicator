@@ -63,6 +63,8 @@ namespace OpenLogReplicator {
         typescn firstScn;
         typescn nextScn;
         Reader *reader;
+        uint64_t vectors;
+        OpCode *opCodes[VECTOR_MAX_LENGTH];
 
         void resetRedo();
         void continueRedo(OracleAnalyserRedoLog *prev);

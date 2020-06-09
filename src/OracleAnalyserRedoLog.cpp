@@ -80,7 +80,8 @@ namespace OpenLogReplicator {
             sequence(0),
             firstScn(firstScn),
             nextScn(nextScn),
-            reader(nullptr) {
+            reader(nullptr),
+            vectors(0) {
     }
 
     void OracleAnalyserRedoLog::printHeaderInfo() {
@@ -255,14 +256,14 @@ namespace OpenLogReplicator {
 
     void OracleAnalyserRedoLog::analyzeRecord() {
         RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
-        OpCode *opCodes[VECTOR_MAX_LENGTH];
         uint64_t isUndoRedo[VECTOR_MAX_LENGTH];
-        uint64_t vectors = 0;
         uint64_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
         uint64_t vectorsUndo = 0;
         uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
         uint64_t vectorsRedo = 0;
 
+        vectors = 0;
+        memset(opCodes, 0, sizeof(opCodes));
         uint64_t recordLength = oracleAnalyser->read32(oracleAnalyser->recordBuffer);
         uint8_t vld = oracleAnalyser->recordBuffer[4];
         curScnPrev = curScn;
@@ -646,6 +647,11 @@ namespace OpenLogReplicator {
                     cerr << "DUMP: merging Multi-block" << endl;
             }
 
+            //track DDL
+            if (redoLogRecord->opCode == 0x1801)
+                if ((oracleAnalyser->flags & REDO_FLAGS_TRACK_DDL) == 0)
+                    return;
+
             RedoLogRecord zero;
             memset(&zero, 0, sizeof(struct RedoLogRecord));
 
@@ -655,9 +661,6 @@ namespace OpenLogReplicator {
 
             Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
-                if (oracleAnalyser->trace >= TRACE_DETAIL)
-                    cerr << "ERROR: transaction missing" << endl;
-
                 transaction = new Transaction(oracleAnalyser, redoLogRecord->xid, oracleAnalyser->transactionBuffer);
                 if (transaction == nullptr)
                     throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.1", sizeof(Transaction));
@@ -743,7 +746,7 @@ namespace OpenLogReplicator {
             cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             if (oracleAnalyser->dumpRedoLog >= 1)
                 oracleAnalyser->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
-            return;
+            throw RedoLogException("BDBA does not match");
         }
 
         redoLogRecord1->object = oracleAnalyser->checkDict(objn, objd);
@@ -1112,6 +1115,14 @@ namespace OpenLogReplicator {
                         try {
                             analyzeRecord();
                         } catch(RedoLogException &ex) {
+
+                            for (uint64_t i = 0; i < vectors; ++i) {
+                                if (opCodes[i] != nullptr) {
+                                    delete opCodes[i];
+                                    opCodes[i] = nullptr;
+                                }
+                            }
+
                             if (oracleAnalyser->trace >= TRACE_WARN)
                                 cerr << "WARNING: " << ex.msg << " forced to continue working" << endl;
                             if ((oracleAnalyser->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0)

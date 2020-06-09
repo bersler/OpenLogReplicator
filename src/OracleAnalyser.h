@@ -124,6 +124,7 @@ namespace OpenLogReplicator {
         uint64_t version;                   //compatiblity level of redo logs
         typecon conId;
         typeresetlogs resetlogs;
+        bool isBigEndian;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);

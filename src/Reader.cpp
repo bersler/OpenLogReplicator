@@ -71,8 +71,9 @@ namespace OpenLogReplicator {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
-        if (buffer[0] != 1 || buffer[1] != 0x22) {
-            cerr << "ERROR: header bad magic number for block " << dec << blockNumber << endl;
+        if ((blockSize == 512 && headerBuffer[1] != 0x22) || (blockSize == 1024 && headerBuffer[1] != 0x22) ||
+                (blockSize == 4096 && headerBuffer[1] != 0x82)) {
+            cerr << "ERROR: unsupported block size: " << dec << blockSize << ", magic field[1]: [" << hex << (uint64_t)headerBuffer[1] << "]" << endl;
             return REDO_ERROR;
         }
 
@@ -118,25 +119,22 @@ namespace OpenLogReplicator {
         }
 
         //check file header
-        if (headerBuffer[0] != 0 ||
-                headerBuffer[1] != 0x22 ||
-                headerBuffer[28] != 0x7D ||
-                headerBuffer[29] != 0x7C ||
-                headerBuffer[30] != 0x7B ||
-                headerBuffer[31] != 0x7A) {
-            cerr << "[0]: " << hex << (uint64_t)headerBuffer[0] << endl;
-            cerr << "[1]: " << hex << (uint64_t)headerBuffer[1] << endl;
-            cerr << "[28]: " << hex << (uint64_t)headerBuffer[28] << endl;
-            cerr << "[29]: " << hex << (uint64_t)headerBuffer[29] << endl;
-            cerr << "[30]: " << hex << (uint64_t)headerBuffer[30] << endl;
-            cerr << "[31]: " << hex << (uint64_t)headerBuffer[31] << endl;
-            cerr << "ERROR: block header bad magic fields" << endl;
+        if (headerBuffer[0] != 0) {
+            cerr << "ERROR: block header bad magic field[0]: [" << hex << (uint64_t)headerBuffer[0] << "]" << endl;
+            return REDO_ERROR;
+        }
+
+        if ((oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7A || headerBuffer[29] != 0x7B || headerBuffer[30] != 0x7C || headerBuffer[31] != 0x7D))
+                || (!oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A))) {
+            cerr << "ERROR: block header bad magic fields[28-31]: [" << hex << (uint64_t)headerBuffer[28] << ", " <<
+                    hex << (uint64_t)headerBuffer[29] << ", " << hex << (uint64_t)headerBuffer[30] << ", " << hex << (uint64_t)headerBuffer[31] << "]" << endl;
             return REDO_ERROR;
         }
 
         blockSize = oracleAnalyser->read16(headerBuffer + 20);
-        if (blockSize != 512 && blockSize != 1024) {
-            cerr << "ERROR: unsupported block size: " << blockSize << endl;
+        if ((blockSize == 512 && headerBuffer[1] != 0x22) || (blockSize == 1024 && headerBuffer[1] != 0x22) ||
+                (blockSize == 4096 && headerBuffer[1] != 0x82)) {
+            cerr << "ERROR: unsupported block size: " << blockSize << ", magic field[1]: [" << hex << (uint64_t)headerBuffer[1] << "]" << endl;
             return REDO_ERROR;
         }
 
@@ -337,7 +335,7 @@ namespace OpenLogReplicator {
 
                 if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
                     cerr << "DISK: reading " << path << " at (" << dec << curBufferStart << "/" << bufferEnd << ") at size: " << fileSize << endl;
-                uint64_t lastRead = READ_CHUNK_MIN_SIZE;
+                uint64_t lastRead = blockSize;
                 while (!shutdown && curBufferStart + DISK_BUFFER_SIZE > bufferEnd) {
                     uint64_t toRead = lastRead;
                     if (bufferEnd + toRead - bufferStart > DISK_BUFFER_SIZE)
@@ -358,11 +356,11 @@ namespace OpenLogReplicator {
                         toRead = DISK_BUFFER_SIZE - bufferPos;
 
                     if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                        cerr << "DISK: reading " << path << " at (" << bufferStart << "/" << bufferEnd << ")" << " bytes: " << dec << toRead << endl;
+                        cerr << "DISK: reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " bytes: " << dec << toRead << endl;
                     int64_t actualRead = redoRead(redoBuffer + bufferPos, bufferEnd, toRead);
 
                     if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                        cerr << "DISK: reading " << path << " at (" << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead << endl;
+                        cerr << "DISK: reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead << endl;
 
                     if (actualRead < 0) {
                         unique_lock<mutex> lck(oracleAnalyser->mtx);
@@ -409,12 +407,12 @@ namespace OpenLogReplicator {
                             lastRead = DISK_BUFFER_SIZE / 8;
                     } else if (goodBlocks < maxNumBlock / 4) {
                         lastRead /= 4;
-                        if (lastRead < READ_CHUNK_MIN_SIZE)
-                            lastRead = READ_CHUNK_MIN_SIZE;
+                        if (lastRead < blockSize)
+                            lastRead = blockSize;
                     } else if (goodBlocks < maxNumBlock / 2) {
                         lastRead /= 2;
-                        if (lastRead < READ_CHUNK_MIN_SIZE)
-                            lastRead = READ_CHUNK_MIN_SIZE;
+                        if (lastRead < blockSize)
+                            lastRead = blockSize;
                     }
 
                     //reached EOF
