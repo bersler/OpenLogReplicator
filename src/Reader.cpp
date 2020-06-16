@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
+uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
 
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
@@ -397,9 +397,54 @@ namespace OpenLogReplicator {
                             break;
                         }
 
-                        curBufferEnd += blockSize;
                         ++goodBlocks;
                     }
+
+                    //read verification to prevent buffer overwrite
+                    if (goodBlocks > 0 && group != 0 && (oracleAnalyser->flags & REDO_FLAGS_DISABLE_READ_VERIFICATION) == 0) {
+                        actualRead = redoRead(redoBuffer + bufferPos, bufferEnd, goodBlocks * blockSize);
+                        reachedZero = false;
+
+                        if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
+                            cerr << "DISK: second reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead << endl;
+
+                        if (actualRead < 0) {
+                            unique_lock<mutex> lck(oracleAnalyser->mtx);
+                            status = READER_STATUS_SLEEPING;
+                            ret = REDO_ERROR;
+                            oracleAnalyser->analyserCond.notify_all();
+                            break;
+                        }
+
+                        maxNumBlock = actualRead / blockSize;
+                        goodBlocks = 0;
+                        curRet = REDO_OK;
+
+                        for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+                            curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock);
+                            if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
+                                cerr << "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet << endl;
+
+                            if (curRet == REDO_OVERWRITTEN) {
+                                unique_lock<mutex> lck(oracleAnalyser->mtx);
+                                status = READER_STATUS_SLEEPING;
+                                ret = curRet;
+                                break;
+                            } else if (curRet == REDO_ERROR) {
+                                unique_lock<mutex> lck(oracleAnalyser->mtx);
+                                status = READER_STATUS_SLEEPING;
+                                ret = curRet;
+                                break;
+                            } else if (curRet == REDO_EMPTY) {
+                                reachedZero = true;
+                                break;
+                            }
+
+                            ++goodBlocks;
+                        }
+                    }
+
+                    curBufferEnd += goodBlocks * blockSize;
 
                     if (goodBlocks == maxNumBlock) {
                         lastRead = lastRead * 2;
