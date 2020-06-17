@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         }
     }
 
-uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
+uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum) {
 
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
@@ -99,7 +99,8 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
             return REDO_ERROR;
         }
 
-        if ((oracleAnalyser->disableChecks & DISABLE_CHECK_CRCSUM) == 0) {
+        if ((oracleAnalyser->disableChecks & DISABLE_CHECK_CRCSUM) == 0 &&
+                (checkSum || group == 0 || (oracleAnalyser->flags & REDO_FLAGS_DISABLE_READ_VERIFICATION) != 0)) {
             typesum chSum = oracleAnalyser->read16(buffer + 14);
             typesum chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
@@ -232,7 +233,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
         firstScnHeader = oracleAnalyser->readSCN(headerBuffer + blockSize + 180);
         nextScnHeader = oracleAnalyser->readSCN(headerBuffer + blockSize + 192);
 
-        uint64_t ret = checkBlockHeader(headerBuffer + blockSize, 1);
+        uint64_t ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
         if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
             cerr << "DISK: block: 1 check: " << ret << endl;
         if (ret != REDO_OK)
@@ -378,7 +379,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
                     bool reachedZero = false;
 
                     for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                        curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock);
+                        curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock, false);
                         if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
                             cerr << "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet << endl;
 
@@ -421,7 +422,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber) {
                         curRet = REDO_OK;
 
                         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock);
+                            curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock, true);
                             if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
                                 cerr << "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet << endl;
 

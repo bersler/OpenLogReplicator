@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
         virtual uint64_t redoOpen() = 0;
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size) = 0;
 
-        uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber);
+        uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum);
         uint64_t reloadHeader();
 
     public:
