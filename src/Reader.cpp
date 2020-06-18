@@ -71,9 +71,11 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
-        if ((blockSize == 512 && headerBuffer[1] != 0x22) || (blockSize == 1024 && headerBuffer[1] != 0x22) ||
+        if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
+                (blockSize == 1024 && headerBuffer[1] != 0x22) ||
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {
-            cerr << "ERROR: unsupported block size: " << dec << blockSize << ", magic field[1]: [" << hex << (uint64_t)headerBuffer[1] << "]" << endl;
+            cerr << "ERROR: unsupported block size: " << dec << blockSize << ", magic field[1]: [0x" <<
+                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]" << endl;
             return REDO_ERROR;
         }
 
@@ -99,12 +101,14 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
             return REDO_ERROR;
         }
 
-        if ((oracleAnalyser->disableChecks & DISABLE_CHECK_CRCSUM) == 0 &&
+        if ((oracleAnalyser->flags & REDO_FLAGS_BLOCK_CHECK_SUM) != 0 &&
                 (checkSum || group == 0 || (oracleAnalyser->flags & REDO_FLAGS_DISABLE_READ_VERIFICATION) != 0)) {
             typesum chSum = oracleAnalyser->read16(buffer + 14);
             typesum chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
-                cerr << "ERROR: header sum for block number for " << dec << blockNumber << ", should be: " << hex << chSum << ", calculated: " << hex << chSum2 << endl;
+                cerr << "ERROR: header sum for block number for block " << dec << blockNumber <<
+                        ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
+                        ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2 << endl;
                 return REDO_ERROR;
             }
         }
@@ -121,21 +125,25 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
 
         //check file header
         if (headerBuffer[0] != 0) {
-            cerr << "ERROR: block header bad magic field[0]: [" << hex << (uint64_t)headerBuffer[0] << "]" << endl;
+            cerr << "ERROR: block header bad magic field[0]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "]" << endl;
             return REDO_ERROR;
         }
 
         if ((oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7A || headerBuffer[29] != 0x7B || headerBuffer[30] != 0x7C || headerBuffer[31] != 0x7D))
                 || (!oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A))) {
-            cerr << "ERROR: block header bad magic fields[28-31]: [" << hex << (uint64_t)headerBuffer[28] << ", " <<
-                    hex << (uint64_t)headerBuffer[29] << ", " << hex << (uint64_t)headerBuffer[30] << ", " << hex << (uint64_t)headerBuffer[31] << "]" << endl;
+            cerr << "ERROR: block header bad magic fields[28-31]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[28] <<
+                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[29] <<
+                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[30] <<
+                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "]" << endl;
             return REDO_ERROR;
         }
 
         blockSize = oracleAnalyser->read16(headerBuffer + 20);
-        if ((blockSize == 512 && headerBuffer[1] != 0x22) || (blockSize == 1024 && headerBuffer[1] != 0x22) ||
+        if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
+                (blockSize == 1024 && headerBuffer[1] != 0x22) ||
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {
-            cerr << "ERROR: unsupported block size: " << blockSize << ", magic field[1]: [" << hex << (uint64_t)headerBuffer[1] << "]" << endl;
+            cerr << "ERROR: unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
+                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]" << endl;
             return REDO_ERROR;
         }
 
@@ -225,7 +233,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
             oracleAnalyser->version = version;
 
         if (version == 0 || version != oracleAnalyser->version) {
-            cerr << "ERROR: Unsupported database version: " << hex << compatVsn << endl;
+            cerr << "ERROR: Unsupported database version: 0x" << setfill('0') << setw(8) << hex << compatVsn << endl;
             return REDO_ERROR;
         }
 
@@ -337,7 +345,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
                 if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
                     cerr << "DISK: reading " << path << " at (" << dec << curBufferStart << "/" << bufferEnd << ") at size: " << fileSize << endl;
                 uint64_t lastRead = blockSize;
-                while (!shutdown && curBufferStart + DISK_BUFFER_SIZE > bufferEnd) {
+                while (!shutdown && status == READER_STATUS_READ && curBufferStart + DISK_BUFFER_SIZE > bufferEnd) {
                     uint64_t toRead = lastRead;
                     if (bufferEnd + toRead - bufferStart > DISK_BUFFER_SIZE)
                         toRead = DISK_BUFFER_SIZE - bufferEnd + bufferStart;

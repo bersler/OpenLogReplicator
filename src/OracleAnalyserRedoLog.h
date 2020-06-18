@@ -36,7 +36,6 @@ namespace OpenLogReplicator {
     class OracleAnalyserRedoLog {
     private:
         OracleAnalyser *oracleAnalyser;
-        int64_t group;
         typescn lastCheckpointScn;
         typescn extScn;
         typescn curScn;
@@ -58,6 +57,7 @@ namespace OpenLogReplicator {
         void dumpRedoVector();
 
     public:
+        int64_t group;
         string path;
         typeseq sequence;
         typescn firstScn;

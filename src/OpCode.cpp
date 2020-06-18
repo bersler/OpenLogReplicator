@@ -348,7 +348,7 @@ namespace OpenLogReplicator {
 
         if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleAnalyser->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec << fieldLength <<
-                    " (cc: " << redoLogRecord->cc << ")" << endl;
+                    " (cc: " << dec << (uint64_t)redoLogRecord->cc << ")" << endl;
             return;
         }
         redoLogRecord->nullsDelta = fieldPos + 45;
@@ -467,7 +467,7 @@ namespace OpenLogReplicator {
 
         if (fieldLength < 26 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleAnalyser->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << dec <<
-                    fieldLength << " (cc: " << redoLogRecord->cc << ")" << endl;
+                    fieldLength << " (cc: " << dec << (uint64_t)redoLogRecord->cc << ")" << endl;
             return;
         }
 
@@ -573,7 +573,7 @@ namespace OpenLogReplicator {
 
         if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
             oracleAnalyser->dumpStream << "ERROR: too short field KDO OpCode ORP for nulls: " << dec << fieldLength <<
-                    " (cc: " << redoLogRecord->cc << ")" << endl;
+                    " (cc: " << dec << (uint64_t)redoLogRecord->cc << ")" << endl;
             return;
         }
 

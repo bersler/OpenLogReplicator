@@ -782,7 +782,10 @@ namespace OpenLogReplicator {
                             cerr << "INFO: online redo log overwritten by new data, will continue from archived redo log" << endl;
                         break;
                     }
-                    throw RuntimeException("read archive log");
+                    if (redo->group == 0)
+                        throw RuntimeException("read archived redo log");
+                    else
+                        throw RuntimeException("read online redo log");
                 }
 
                 if (rolledBack1 != nullptr)
@@ -1261,7 +1264,7 @@ namespace OpenLogReplicator {
         if (fieldNum > redoLogRecord->fieldCnt) {
             cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
                     ", op: " << hex << redoLogRecord->opCode <<
-                    ", cc: " << dec << redoLogRecord->cc <<
+                    ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
                     ", suppCC: " << dec << redoLogRecord->suppLogCC << endl;
             throw RedoLogException("field missing in vector");
         }

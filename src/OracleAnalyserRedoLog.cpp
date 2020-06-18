@@ -63,7 +63,6 @@ namespace OpenLogReplicator {
 
     OracleAnalyserRedoLog::OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const string path) :
             oracleAnalyser(oracleAnalyser),
-            group(group),
             lastCheckpointScn(0),
             extScn(0),
             curScn(ZERO_SCN),
@@ -76,6 +75,7 @@ namespace OpenLogReplicator {
             recordLeftToCopy(0),
             recordLength4(0),
             blockNumber(0),
+            group(group),
             path(path),
             sequence(0),
             firstScn(firstScn),
