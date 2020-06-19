@@ -487,7 +487,7 @@ namespace OpenLogReplicator {
                     " ckix: " << dec << (uint64_t)ckix << endl;
             oracleAnalyser->dumpStream << "ncol: " << dec << (uint64_t)ncol <<
                     " nnew: " << dec << (uint64_t)redoLogRecord->cc <<
-                    " size: " << size << endl;
+                    " size: " << dec << size << endl;
         }
     }
 
@@ -1149,10 +1149,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::suppLog(uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        oracleAnalyser->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
 
         if (fieldLength < 20) {
             oracleAnalyser->dumpStream << "ERROR: too short supplemental log: " << dec << fieldLength << endl;
@@ -1183,23 +1182,23 @@ namespace OpenLogReplicator {
                     "." << hex << redoLogRecord->suppLogSlot << endl;
         }
 
-        if (oracleAnalyser->hasNextField(redoLogRecord, fieldNum)) {
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
+
+        redoLogRecord->suppLogNumsDelta = fieldPos;
+        uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        redoLogRecord->suppLogLenDelta = fieldPos;
+
+        redoLogRecord->suppLogRowData = fieldNum + 1;
+
+        for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
             oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
-            redoLogRecord->suppLogNumsDelta = fieldPos;
-            uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
 
-            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
-            redoLogRecord->suppLogLenDelta = fieldPos;
-
-            redoLogRecord->suppLogRowData = fieldNum + 1;
-
-            for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
-                oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
-
-                if (oracleAnalyser->dumpRedoLog >= 2)
-                    dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNumsSupp), fieldLength, 0);
-                colNumsSupp += 2;
-            }
+            if (oracleAnalyser->dumpRedoLog >= 2)
+                dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNumsSupp), fieldLength, 0);
+            colNumsSupp += 2;
         }
     }
 }

@@ -50,6 +50,14 @@ namespace OpenLogReplicator {
         typetime lastTime;
         typescn lastScn;
 
+        uint64_t *afterPos;
+        uint64_t *beforePos;
+        uint16_t *afterLen;
+        uint16_t *beforeLen;
+        uint8_t *colIsSupp;
+        RedoLogRecord **beforeRecord;
+        RedoLogRecord **afterRecord;
+
     public:
         virtual void *run();
 

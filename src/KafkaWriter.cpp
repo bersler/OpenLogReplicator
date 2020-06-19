@@ -35,9 +35,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "RedoLogRecord.h"
+#include "RuntimeException.h"
 
 using namespace std;
 using namespace RdKafka;
+
+void stopMain();
 
 namespace OpenLogReplicator {
 
@@ -53,10 +56,46 @@ namespace OpenLogReplicator {
         ktopic(nullptr),
         trace(trace),
         trace2(trace2),
-        lastScn(0) {
+        lastScn(0),
+        afterPos(nullptr),
+        beforePos(nullptr),
+        afterLen(nullptr),
+        beforeLen(nullptr),
+        colIsSupp(nullptr),
+        beforeRecord(nullptr),
+        afterRecord(nullptr) {
     }
 
     KafkaWriter::~KafkaWriter() {
+        if (afterRecord != nullptr) {
+            delete[] afterRecord;
+            afterRecord = nullptr;
+        }
+        if (beforeRecord != nullptr) {
+            delete[] beforeRecord;
+            beforeRecord = nullptr;
+        }
+        if (colIsSupp != nullptr) {
+            delete[] colIsSupp;
+            colIsSupp = nullptr;
+        }
+        if (afterLen != nullptr) {
+            delete[] afterLen;
+            afterLen = nullptr;
+        }
+        if (beforeLen != nullptr) {
+            delete[] beforeLen;
+            beforeLen = nullptr;
+        }
+        if (afterPos != nullptr) {
+            delete[] afterPos;
+            afterPos = nullptr;
+        }
+        if (beforePos != nullptr) {
+            delete[] beforePos;
+            beforePos = nullptr;
+        }
+
         if (ktopic != nullptr) {
             delete ktopic;
             ktopic = nullptr;
@@ -80,56 +119,68 @@ namespace OpenLogReplicator {
         uint64_t length = 0;
 
         length = 0;
-        while (true) {
-            if (length == 0) {
-                unique_lock<mutex> lck(commandBuffer->mtx);
-                while (commandBuffer->posStart == commandBuffer->posEnd) {
-                    if (shutdown)
-                        break;
-                    commandBuffer->analysersCond.wait(lck);
-                }
-
-                if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-                    commandBuffer->posStart = 0;
-                    commandBuffer->posSize = 0;
-                }
-                if (commandBuffer->posStart == commandBuffer->posEnd)
-                    length = 0;
-                else
-                    length = *((uint64_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
-            }
-            if ((trace2 & TRACE2_OUTPUT_BUFFER) != 0)
-                cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
-
-            if (length > 0) {
-                if (test >= 1) {
-                    for (uint64_t i = 0; i < length - 8; ++i)
-                        cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
-                    cout << endl;
-                } else {
-                    if (producer->produce(
-                            ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 8,
-                            length - 8, nullptr, nullptr)) {
-                        cerr << "ERROR: writing to topic " << endl;
-                    }
-                }
-
-                {
+        try {
+            while (!shutdown) {
+                if (length == 0) {
                     unique_lock<mutex> lck(commandBuffer->mtx);
-                    commandBuffer->posStart += (length + 7) & 0xFFFFFFFFFFFFFFF8;
+                    while (commandBuffer->posStart == commandBuffer->posEnd) {
+                        if (shutdown)
+                            break;
+                        commandBuffer->analysersCond.wait(lck);
+                    }
 
                     if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
                         commandBuffer->posStart = 0;
                         commandBuffer->posSize = 0;
                     }
-
-                    commandBuffer->writerCond.notify_all();
+                    if (commandBuffer->posStart == commandBuffer->posEnd)
+                        length = 0;
+                    else
+                        length = *((uint64_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
                 }
-                length = 0;
-            } else
-                if (shutdown)
-                    break;
+                if ((trace2 & TRACE2_OUTPUT_BUFFER) != 0)
+                    cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
+
+                if (length > 0) {
+                    if (test >= 1) {
+                        for (uint64_t i = 0; i < length - 8; ++i)
+                            cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
+                        cout << endl;
+                    } else {
+                        if (producer->produce(
+                                ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 8,
+                                length - 8, nullptr, nullptr)) {
+                            cerr << "ERROR: writing to topic " << endl;
+                        }
+                    }
+
+                    {
+                        unique_lock<mutex> lck(commandBuffer->mtx);
+                        commandBuffer->posStart += (length + 7) & 0xFFFFFFFFFFFFFFF8;
+
+                        if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
+                            commandBuffer->posStart = 0;
+                            commandBuffer->posSize = 0;
+                        }
+
+                        commandBuffer->writerCond.notify_all();
+                    }
+                    length = 0;
+                } else
+                    if (shutdown)
+                        break;
+            }
+        } catch(ConfigurationException &ex) {
+            cerr << "ERROR: configuration error: " << ex.msg << endl;
+            stopMain();
+        } catch(RuntimeException &ex) {
+            cerr << "ERROR: runtime: " << ex.msg << endl;
+            stopMain();
+        } catch (MemoryException &e) {
+            cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
+            stopMain();
         }
+
 
         if ((trace2 & TRACE2_OUTPUT_BUFFER) != 0)
             cerr << "Kafka writer buffer at shutdown: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
@@ -487,40 +538,68 @@ namespace OpenLogReplicator {
         }
 
         uint64_t fieldPos, fieldNum, colNum, colShift, rowDeps;
-        uint16_t fieldLength;
+        uint16_t fieldLength, colLength;
         uint8_t *nulls, bits, *colNums;
         bool prevValue = false;
 
-        uint64_t *afterPos = new uint64_t[object->totalCols];
-        if (afterPos == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
-        memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
+        if (afterRecord != nullptr) {
+            delete[] afterRecord;
+            afterRecord = nullptr;
+        }
+        afterRecord = new RedoLogRecord*[object->totalCols];
+        if (afterRecord == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
 
-        uint64_t *beforePos = new uint64_t[object->totalCols];
-        if (beforePos == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
-        memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
+        if (beforeRecord != nullptr) {
+            delete[] beforeRecord;
+            beforeRecord = nullptr;
+        }
+        beforeRecord = new RedoLogRecord*[object->totalCols];
+        if (beforeRecord == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
 
-        uint16_t *afterLen = new uint16_t[object->totalCols];
-        if (afterLen == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
-
-        uint16_t *beforeLen = new uint16_t[object->totalCols];
-        if (beforeLen == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
-
-        uint8_t *colIsSupp = new uint8_t[object->totalCols];
+        if (colIsSupp != nullptr) {
+            delete[] colIsSupp;
+            colIsSupp = nullptr;
+        }
+        colIsSupp = new uint8_t[object->totalCols];
         if (colIsSupp == nullptr)
             throw MemoryException("KafkaWriter::parseDML.5", sizeof(uint64_t) * object->totalCols);
         memset(colIsSupp, 0, object->totalCols * sizeof(uint8_t));
 
-        RedoLogRecord **beforeRecord = new RedoLogRecord*[object->totalCols];
-        if (beforeRecord == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
+        if (afterLen != nullptr) {
+            delete[] afterLen;
+            afterLen = nullptr;
+        }
+        afterLen = new uint16_t[object->totalCols];
+        if (afterLen == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
 
-        RedoLogRecord **afterRecord = new RedoLogRecord*[object->totalCols];
-        if (afterRecord == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
+        if (beforeLen != nullptr) {
+            delete[] beforeLen;
+            beforeLen = nullptr;
+        }
+        beforeLen = new uint16_t[object->totalCols];
+        if (beforeLen == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
+
+        if (afterPos != nullptr) {
+            delete[] afterPos;
+            afterPos = nullptr;
+        }
+        afterPos = new uint64_t[object->totalCols];
+        if (afterPos == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
+        memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
+
+        if (beforePos != nullptr) {
+            delete[] beforePos;
+            beforePos = nullptr;
+        }
+        beforePos = new uint64_t[object->totalCols];
+        if (beforePos == nullptr)
+            throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
+        memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
 
         //data in UNDO
         redoLogRecord1p = redoLogRecord1;
@@ -564,17 +643,21 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->columns.size()) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
                         break;
                     }
 
-                    oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
-
                     if ((*nulls & bits) != 0)
-                        fieldLength = 0;
+                        colLength = 0;
+                    else {
+                        oracleAnalyser->skipEmptyFields(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                        oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                        colLength = fieldLength;
+                    }
 
                     beforePos[colNum] = fieldPos;
-                    beforeLen[colNum] = fieldLength;
+                    beforeLen[colNum] = colLength;
                     beforeRecord[colNum] = redoLogRecord1p;
 
                     bits <<= 1;
@@ -603,12 +686,12 @@ namespace OpenLogReplicator {
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
                     if (colNum >= object->columns.size()) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": refering to unknown column id, probably table was altered: " << dec << colNum << endl;
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
 
                     colNums += 2;
-                    uint16_t colLength = oracleAnalyser->read16(colSizes);
+                    colLength = oracleAnalyser->read16(colSizes);
 
                     colIsSupp[colNum] = 1;
                     if (colLength == 0xFFFF)
@@ -670,10 +753,12 @@ namespace OpenLogReplicator {
                     }
 
                     if ((*nulls & bits) != 0)
-                        fieldLength = 0;
+                        colLength = 0;
+                    else
+                        colLength = fieldLength;
 
                     afterPos[colNum] = fieldPos;
-                    afterLen[colNum] = fieldLength;
+                    afterLen[colNum] = colLength;
                     afterRecord[colNum] = redoLogRecord2p;
 
                     bits <<= 1;
@@ -833,13 +918,13 @@ namespace OpenLogReplicator {
                     ->commitTran();
         }
 
-        delete[] afterRecord;
-        delete[] beforeRecord;
-        delete[] colIsSupp;
-        delete[] afterLen;
-        delete[] beforeLen;
-        delete[] afterPos;
-        delete[] beforePos;
+        delete[] beforePos; beforePos = nullptr;
+        delete[] afterPos; afterPos = nullptr;
+        delete[] beforeLen; beforeLen = nullptr;
+        delete[] afterLen; afterLen = nullptr;
+        delete[] colIsSupp; colIsSupp = nullptr;
+        delete[] beforeRecord; beforeRecord = nullptr;
+        delete[] afterRecord; afterRecord = nullptr;
     }
 
     //0x18010000
@@ -855,46 +940,32 @@ namespace OpenLogReplicator {
         seq = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 18);
         cnt = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + 20);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 2
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 3
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 4
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 5
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 6
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 7
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord1, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 8
         sqlLength = fieldLength;
         sqlText = redoLogRecord1->data + fieldPos;

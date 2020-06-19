@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
             uint16_t fieldLength = oracleAnalyser->read16(data + fieldLengthsDelta + i * 2);
-            stream << "##: " << dec << fieldLength << " (" << i << ")";
+            stream << "##: " << dec << fieldLength << " (" << i << ", " << fieldPosLocal << ")";
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)
                     stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";

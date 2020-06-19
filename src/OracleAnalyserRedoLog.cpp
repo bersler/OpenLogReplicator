@@ -262,6 +262,13 @@ namespace OpenLogReplicator {
         uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
         uint64_t vectorsRedo = 0;
 
+        for (uint64_t i = 0; i < vectors; ++i) {
+            if (opCodes[i] != nullptr) {
+                delete opCodes[i];
+                opCodes[i] = nullptr;
+            }
+        }
+
         vectors = 0;
         memset(opCodes, 0, sizeof(opCodes));
         uint64_t recordLength = oracleAnalyser->read32(oracleAnalyser->recordBuffer);
@@ -1115,18 +1122,12 @@ namespace OpenLogReplicator {
                         try {
                             analyzeRecord();
                         } catch(RedoLogException &ex) {
-
-                            for (uint64_t i = 0; i < vectors; ++i) {
-                                if (opCodes[i] != nullptr) {
-                                    delete opCodes[i];
-                                    opCodes[i] = nullptr;
-                                }
-                            }
-
-                            if (oracleAnalyser->trace >= TRACE_WARN)
-                                cerr << "WARNING: " << ex.msg << " forced to continue working" << endl;
                             if ((oracleAnalyser->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0)
-                                throw new RuntimeException(ex.msg);
+                                throw RuntimeException(ex.msg);
+                            else
+                                if (oracleAnalyser->trace >= TRACE_WARN)
+                                    cerr << "WARNING: " << ex.msg << " forced to continue working" << endl;
+
                         }
                     }
                 }
@@ -1188,6 +1189,12 @@ namespace OpenLogReplicator {
     }
 
     OracleAnalyserRedoLog::~OracleAnalyserRedoLog() {
+        for (uint64_t i = 0; i < vectors; ++i) {
+            if (opCodes[i] != nullptr) {
+                delete opCodes[i];
+                opCodes[i] = nullptr;
+            }
+        }
     }
 
     ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors) {

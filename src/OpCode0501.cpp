@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
             uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
             if (i == 2) {
                 if (fieldLength < 8) {
-                    oracleAnalyser->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+                    cerr << "ERROR: too short field ktub: " << dec << fieldLength << endl;
                     return;
                 }
 
@@ -59,10 +59,8 @@ namespace OpenLogReplicator {
         //field: 1
         ktudb(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 2
         ktub(fieldPos, fieldLength);
 
@@ -70,10 +68,8 @@ namespace OpenLogReplicator {
         if (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID) != 0)
             return;
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 3
         if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
             ktbRedo(fieldPos, fieldLength);
@@ -81,12 +77,10 @@ namespace OpenLogReplicator {
             kteoputrn(fieldPos, fieldLength);
         }
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
-            return;
-
         uint8_t *colNums = nullptr, *nulls = nullptr;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
         //field: 4
 
         if (redoLogRecord->opc == 0x0B01) {
@@ -122,7 +116,10 @@ namespace OpenLogReplicator {
                 uint8_t bits = 1;
 
                 for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                    oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                    if ((*nulls & bits) == 0) {
+                        oracleAnalyser->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                    }
 
                     if (oracleAnalyser->dumpRedoLog >= 1)
                         dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNums), fieldLength, *nulls & bits);
@@ -135,6 +132,7 @@ namespace OpenLogReplicator {
                 }
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                    oracleAnalyser->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
                     oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
                     rowDeps(fieldPos, fieldLength);
                 }
@@ -204,7 +202,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyser->dumpStream << "too short field ktudb: " << dec << fieldLength << endl;
+            cerr << "ERROR: too short field ktudb: " << dec << fieldLength << endl;
             return;
         }
 
@@ -232,7 +230,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::kteoputrn(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            oracleAnalyser->dumpStream << "ERROR: too short field kteoputrn: " << dec << fieldLength << endl;
+            cerr << "ERROR: too short field kteoputrn: " << dec << fieldLength << endl;
             return;
         }
         if (oracleAnalyser->dumpRedoLog >= 2) {
@@ -244,7 +242,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            oracleAnalyser->dumpStream << "ERROR: too short row dependencies: " << dec << fieldLength << endl;
+            cerr << "ERROR: too short row dependencies: " << dec << fieldLength << endl;
             return;
         }
 

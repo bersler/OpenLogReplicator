@@ -47,51 +47,37 @@ namespace OpenLogReplicator {
         //field: 1
         dumpMsgSessionSerial(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 2
         dumpVal(fieldPos, fieldLength, "transaction name = ");
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 3
         dumpMsgFlags(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 4
         dumpMsgVersion(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 5
         dumpMsgAuditSessionid(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 6
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 7
         dumpVal(fieldPos, fieldLength, "Client Id = ");
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 8
         dumpVal(fieldPos, fieldLength, "login   username = ");
     }

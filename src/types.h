@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.17"
+#define PROGRAM_VERSION             "0.5.18"
 #define MAX_PATH_LENGTH             2048
 
 #define STREAM_JSON                 1

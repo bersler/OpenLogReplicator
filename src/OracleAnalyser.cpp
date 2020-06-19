@@ -48,6 +48,8 @@ using namespace oracle::occi;
 
 const Value& getJSONfield(const Document& document, const char* field);
 
+void stopMain();
+
 namespace OpenLogReplicator {
 
     string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
@@ -713,148 +715,159 @@ namespace OpenLogReplicator {
         OracleAnalyserRedoLog *redo = nullptr;
         bool logsProcessed;
 
-        while (!shutdown) {
-            logsProcessed = false;
-
-            //read from line redo log
-            if ((trace2 & TRACE2_REDO) != 0)
-                cerr << "REDO: checking online redo logs" << endl;
-            updateOnlineLogs();
-
+        try {
             while (!shutdown) {
-                redo = nullptr;
+                logsProcessed = false;
+
+                //read from line redo log
                 if ((trace2 & TRACE2_REDO) != 0)
-                    cerr << "REDO: searching online redo log for sequence: " << dec << databaseSequence << endl;
+                    cerr << "REDO: checking online redo logs" << endl;
+                updateOnlineLogs();
 
-                //find the candidate to read
-                for (OracleAnalyserRedoLog *oracleAnalyserRedoLog : onlineRedoSet) {
-                    if (oracleAnalyserRedoLog->sequence == databaseSequence)
-                        redo = oracleAnalyserRedoLog;
+                while (!shutdown) {
+                    redo = nullptr;
                     if ((trace2 & TRACE2_REDO) != 0)
-                        cerr << "REDO: " << oracleAnalyserRedoLog->path << " is " << dec << oracleAnalyserRedoLog->sequence << endl;
-                }
+                        cerr << "REDO: searching online redo log for sequence: " << dec << databaseSequence << endl;
 
-                //keep reading online redo logs while it is possible
-                if (redo == nullptr) {
-                    bool isHigher = false;
-                    while (!shutdown) {
-                        for (OracleAnalyserRedoLog *redoTmp : onlineRedoSet) {
-                            if (redoTmp->reader->sequence > databaseSequence)
-                                isHigher = true;
-                            if (redoTmp->reader->sequence == databaseSequence) {
-                                redo = redoTmp;
-                                redo->sequence = redoTmp->reader->sequence;
-                                redo->firstScn = redoTmp->reader->firstScn;
-                                redo->nextScn = redoTmp->reader->nextScn;
-                            }
-                        }
-
-                        //all so far read, waiting for switch
-                        if (redo == nullptr && !isHigher) {
-                            usleep(redoReadSleep);
-                        } else
-                            break;
-
-                        if (shutdown)
-                            break;
-
-                        updateOnlineLogs();
+                    //find the candidate to read
+                    for (OracleAnalyserRedoLog *oracleAnalyserRedoLog : onlineRedoSet) {
+                        if (oracleAnalyserRedoLog->sequence == databaseSequence)
+                            redo = oracleAnalyserRedoLog;
+                        if ((trace2 & TRACE2_REDO) != 0)
+                            cerr << "REDO: " << oracleAnalyserRedoLog->path << " is " << dec << oracleAnalyserRedoLog->sequence << endl;
                     }
-                }
 
-                if (redo == nullptr) {
-                    //cout << "- Oracle Analyser for: " << database << " - none found" << endl;
-                    break;
-                }
+                    //keep reading online redo logs while it is possible
+                    if (redo == nullptr) {
+                        bool isHigher = false;
+                        while (!shutdown) {
+                            for (OracleAnalyserRedoLog *redoTmp : onlineRedoSet) {
+                                if (redoTmp->reader->sequence > databaseSequence)
+                                    isHigher = true;
+                                if (redoTmp->reader->sequence == databaseSequence) {
+                                    redo = redoTmp;
+                                    redo->sequence = redoTmp->reader->sequence;
+                                    redo->firstScn = redoTmp->reader->firstScn;
+                                    redo->nextScn = redoTmp->reader->nextScn;
+                                }
+                            }
 
-                //if online redo log is overwritten - then switch to reading archive logs
-                if (shutdown)
-                    break;
-                logsProcessed = true;
-                ret = redo->processLog();
+                            //all so far read, waiting for switch
+                            if (redo == nullptr && !isHigher) {
+                                usleep(redoReadSleep);
+                            } else
+                                break;
 
-                if (shutdown)
-                    break;
+                            if (shutdown)
+                                break;
 
-                if (ret != REDO_FINISHED) {
-                    if (ret == REDO_OVERWRITTEN) {
-                        if (trace >= TRACE_INFO)
-                            cerr << "INFO: online redo log overwritten by new data, will continue from archived redo log" << endl;
+                            updateOnlineLogs();
+                        }
+                    }
+
+                    if (redo == nullptr) {
+                        //cout << "- Oracle Analyser for: " << database << " - none found" << endl;
                         break;
                     }
-                    if (redo->group == 0)
-                        throw RuntimeException("read archived redo log");
-                    else
-                        throw RuntimeException("read online redo log");
+
+                    //if online redo log is overwritten - then switch to reading archive logs
+                    if (shutdown)
+                        break;
+                    logsProcessed = true;
+                    ret = redo->processLog();
+
+                    if (shutdown)
+                        break;
+
+                    if (ret != REDO_FINISHED) {
+                        if (ret == REDO_OVERWRITTEN) {
+                            if (trace >= TRACE_INFO)
+                                cerr << "INFO: online redo log overwritten by new data, will continue from archived redo log" << endl;
+                            break;
+                        }
+                        if (redo->group == 0)
+                            throw RuntimeException("read archived redo log");
+                        else
+                            throw RuntimeException("read online redo log");
+                    }
+
+                    if (rolledBack1 != nullptr)
+                        freeRollbackList();
+
+                    ++databaseSequence;
+                    writeCheckpoint(false);
                 }
 
-                if (rolledBack1 != nullptr)
-                    freeRollbackList();
-
-                ++databaseSequence;
-                writeCheckpoint(false);
-            }
-
-            //try to read all archived redo logs
-            if (shutdown)
-                break;
-            if ((trace2 & TRACE2_REDO) != 0)
-                cerr << "REDO: checking archive redo logs" << endl;
-            archLogGetList();
-
-            while (!archiveRedoQueue.empty() && !shutdown) {
-                OracleAnalyserRedoLog *redoPrev = redo;
-                redo = archiveRedoQueue.top();
+                //try to read all archived redo logs
+                if (shutdown)
+                    break;
                 if ((trace2 & TRACE2_REDO) != 0)
-                    cerr << "REDO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
+                    cerr << "REDO: checking archive redo logs" << endl;
+                archLogGetList();
 
-                if (redo->sequence < databaseSequence)
-                    continue;
-                else if (redo->sequence > databaseSequence) {
-                    cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead" << endl;
-                    throw RuntimeException("getting archive log list");
+                while (!archiveRedoQueue.empty() && !shutdown) {
+                    OracleAnalyserRedoLog *redoPrev = redo;
+                    redo = archiveRedoQueue.top();
+                    if ((trace2 & TRACE2_REDO) != 0)
+                        cerr << "REDO: searching archived redo log for sequence: " << dec << databaseSequence << endl;
+
+                    if (redo->sequence < databaseSequence)
+                        continue;
+                    else if (redo->sequence > databaseSequence) {
+                        cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead" << endl;
+                        throw RuntimeException("getting archive log list");
+                    }
+
+                    logsProcessed = true;
+                    redo->reader = archReader;
+
+                    if (!readerCheckRedoLog(archReader, redo->path)) {
+                        cerr << "ERROR: while opening archive log: " << redo->path << endl;
+                        throw RuntimeException("open archive log file");
+                    }
+
+                    if (!readerUpdateRedoLog(archReader)) {
+                        cerr << "ERROR: while reading archive log: " << redo->path << endl;
+                        throw RuntimeException("read archive log file");
+                    }
+
+                    if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
+                        redo->continueRedo(redoPrev);
+                    } else {
+                        redo->resetRedo();
+                    }
+
+                    ret = redo->processLog();
+
+                    if (shutdown)
+                        break;
+
+                    if (ret != REDO_FINISHED) {
+                        cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
+                        throw RuntimeException("read archive log file");
+                    }
+
+                    ++databaseSequence;
+                    writeCheckpoint(false);
+                    archiveRedoQueue.pop();
+                    delete redo;
+                    redo = nullptr;
                 }
-
-                logsProcessed = true;
-                redo->reader = archReader;
-
-                if (!readerCheckRedoLog(archReader, redo->path)) {
-                    cerr << "ERROR: while opening archive log: " << redo->path << endl;
-                    throw RuntimeException("open archive log file");
-                }
-
-                if (!readerUpdateRedoLog(archReader)) {
-                    cerr << "ERROR: while reading archive log: " << redo->path << endl;
-                    throw RuntimeException("read archive log file");
-                }
-
-                if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
-                    redo->continueRedo(redoPrev);
-                } else {
-                    redo->resetRedo();
-                }
-
-                ret = redo->processLog();
 
                 if (shutdown)
                     break;
-
-                if (ret != REDO_FINISHED) {
-                    cerr << "ERROR: archive log processing returned: " << dec << ret << endl;
-                    throw RuntimeException("read archive log file");
-                }
-
-                ++databaseSequence;
-                writeCheckpoint(false);
-                archiveRedoQueue.pop();
-                delete redo;
-                redo = nullptr;
+                if (!logsProcessed)
+                    usleep(redoReadSleep);
             }
-
-            if (shutdown)
-                break;
-            if (!logsProcessed)
-                usleep(redoReadSleep);
+        } catch(ConfigurationException &ex) {
+            cerr << "ERROR: configuration error: " << ex.msg << endl;
+            stopMain();
+        } catch(RuntimeException &ex) {
+            cerr << "ERROR: runtime: " << ex.msg << endl;
+            stopMain();
+        } catch (MemoryException &e) {
+            cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
+            stopMain();
         }
 
         if (trace >= TRACE_INFO)
@@ -1132,6 +1145,9 @@ namespace OpenLogReplicator {
 
                     //column part of defined primary key
                     if (keys.size() > 0) {
+                        //manually defined pk overlaps with table pk
+                        if (numPk > 0 && (suppLogTablePrimary || suppLogSchemaPrimary || suppLogDbPrimary))
+                            numSup = 1;
                         numPk = 0;
                         for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
                             if (columnName.compare(it->c_str()) == 0) {
@@ -1259,10 +1275,33 @@ namespace OpenLogReplicator {
         pathMapping.push_back(targetMapping);
     }
 
+    void OracleAnalyser::skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+        uint16_t nextFieldLength;
+        while (fieldNum + 1 <= redoLogRecord->fieldCnt) {
+            nextFieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (fieldNum + 1) * 2);
+            if (nextFieldLength != 0)
+                return;
+            ++fieldNum;
+
+            if (fieldNum == 1)
+                fieldPos = redoLogRecord->fieldPos;
+            else
+                fieldPos += (fieldLength + 3) & 0xFFFC;
+            fieldLength = nextFieldLength;
+
+            if (fieldPos + fieldLength > redoLogRecord->length) {
+                cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt << endl;
+                cerr << "ERROR: pos: " << dec << fieldPos << ", length:" << fieldLength << " max: " << redoLogRecord->length << endl;
+                throw RedoLogException("field length out of vector");
+            }
+        }
+    }
+
     void OracleAnalyser::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
         ++fieldNum;
         if (fieldNum > redoLogRecord->fieldCnt) {
             cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                    ", data: " << dec << redoLogRecord->rowData <<
                     ", op: " << hex << redoLogRecord->opCode <<
                     ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
                     ", suppCC: " << dec << redoLogRecord->suppLogCC << endl;
@@ -1282,8 +1321,24 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool OracleAnalyser::hasNextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum) {
-        return fieldNum < redoLogRecord->fieldCnt;
+    bool OracleAnalyser::nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+        if (fieldNum >= redoLogRecord->fieldCnt)
+            return false;
+
+        ++fieldNum;
+
+        if (fieldNum == 1)
+            fieldPos = redoLogRecord->fieldPos;
+        else
+            fieldPos += (fieldLength + 3) & 0xFFFC;
+        fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+
+        if (fieldPos + fieldLength > redoLogRecord->length) {
+            cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt << endl;
+            cerr << "ERROR: pos: " << dec << fieldPos << ", length:" << fieldLength << " max: " << redoLogRecord->length << endl;
+            throw RedoLogException("field length out of vector");
+        }
+        return true;
     }
 
     bool OracleAnalyserRedoLogCompare::operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2) {

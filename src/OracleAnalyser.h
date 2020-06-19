@@ -175,8 +175,9 @@ namespace OpenLogReplicator {
         virtual void stop(void);
         void addPathMapping(const string source, const string target);
 
+        void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        bool hasNextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum);
+        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
 
         OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
                 const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags,

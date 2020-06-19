@@ -19,18 +19,12 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 #include <iostream>
 
-#include "ConfigurationException.h"
-#include "MemoryException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "RedoLogException.h"
 #include "RedoLogRecord.h"
-#include "RuntimeException.h"
 #include "Thread.h"
 
 using namespace std;
-
-void stopMain();
 
 namespace OpenLogReplicator {
 
@@ -44,19 +38,7 @@ namespace OpenLogReplicator {
     }
 
     void *Thread::runStatic(void *context){
-        void *ret = nullptr;
-        try {
-            ret = ((Thread *) context)->run();
-        } catch(ConfigurationException &ex) {
-            cerr << "ERROR: configuration error: " << ex.msg << endl;
-            stopMain();
-        } catch(RuntimeException &ex) {
-            cerr << "ERROR: runtime: " << ex.msg << endl;
-            stopMain();
-        } catch (MemoryException &e) {
-            cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
-            stopMain();
-        }
+        void *ret = ((Thread *) context)->run();
         return ret;
     }
 

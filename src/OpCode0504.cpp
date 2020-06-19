@@ -44,10 +44,8 @@ namespace OpenLogReplicator {
         //field: 1
         ktucm(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 2
         if ((redoLogRecord->flg & FLG_KTUCF_OP0504) != 0)
             ktucf(fieldPos, fieldLength);

@@ -44,19 +44,15 @@ namespace OpenLogReplicator {
         //field: 1
         ktudh(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
-            return;
-
         if (redoLogRecord->flg == 0x0080) {
-            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+                return;
             //field: 2
             kteop(fieldPos, fieldLength);
         }
 
-        if (!oracleAnalyser->hasNextField(redoLogRecord, fieldNum))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
-
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 2/3
         pdb(fieldPos, fieldLength);
     }
