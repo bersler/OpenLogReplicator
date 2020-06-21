@@ -60,12 +60,12 @@ namespace OpenLogReplicator {
     protected:
         OracleAnalyser *oracleAnalyser;
 
-        virtual void redoClose() = 0;
-        virtual uint64_t redoOpen() = 0;
+        virtual void redoClose(void) = 0;
+        virtual uint64_t redoOpen(void) = 0;
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size) = 0;
 
         uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum);
-        uint64_t reloadHeader();
+        uint64_t reloadHeader(void);
 
     public:
         uint8_t *redoBuffer;
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group);
         virtual ~Reader();
 
-        void *run();
+        void *run(void);
         void updatePath(string &newPath);
         typesum calcChSum(uint8_t *buffer, uint64_t size);
     };

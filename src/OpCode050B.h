@@ -28,13 +28,13 @@ namespace OpenLogReplicator {
 
     class OpCode050B: public OpCode {
     protected:
-        virtual const char* getUndoType();
+        virtual const char* getUndoType(void);
 
     public:
         OpCode050B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
         virtual ~OpCode050B();
 
-        virtual void process();
+        virtual void process(void);
     };
 }
 

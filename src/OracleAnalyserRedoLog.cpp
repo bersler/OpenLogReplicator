@@ -75,16 +75,27 @@ namespace OpenLogReplicator {
             recordLeftToCopy(0),
             recordLength4(0),
             blockNumber(0),
+            vectors(0),
             group(group),
             path(path),
             sequence(0),
             firstScn(firstScn),
             nextScn(nextScn),
-            reader(nullptr),
-            vectors(0) {
+            reader(nullptr) {
+        memset(&zero, 0, sizeof(struct RedoLogRecord));
     }
 
-    void OracleAnalyserRedoLog::printHeaderInfo() {
+    OracleAnalyserRedoLog::~OracleAnalyserRedoLog() {
+        for (uint64_t i = 0; i < vectors; ++i) {
+            if (opCodes[i] != nullptr) {
+                delete opCodes[i];
+                opCodes[i] = nullptr;
+            }
+        }
+    }
+
+
+    void OracleAnalyserRedoLog::printHeaderInfo(void) {
 
         if (oracleAnalyser->dumpRedoLog >= 1) {
             char SID[9];
@@ -254,7 +265,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyserRedoLog::analyzeRecord() {
+    void OracleAnalyserRedoLog::analyzeRecord(void) {
         RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
         uint64_t isUndoRedo[VECTOR_MAX_LENGTH];
         uint64_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
@@ -539,7 +550,7 @@ namespace OpenLogReplicator {
                     throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.15", sizeof(OpCode0B0C));
                 break;
 
-            case 0x0B10: //REDO: Supp log for update
+            case 0x0B10: //REDO: Supplemental log for update
                 opCodes[vectors] = new OpCode0B10(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr)
                     throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.16", sizeof(OpCode0B10));
@@ -589,12 +600,6 @@ namespace OpenLogReplicator {
             opCodes[i] = nullptr;
         }
 
-        for (uint64_t i = 0; i < vectors; ++i) {
-            //begin transaction
-            if (redoLogRecord[i].opCode == 0x0502) {
-            }
-        }
-
         uint64_t iPair = 0;
         for (uint64_t i = 0; i < vectors; ++i) {
             //begin transaction
@@ -602,13 +607,14 @@ namespace OpenLogReplicator {
                 if (SQN(redoLogRecord[i].xid) > 0)
                     appendToTransaction(&redoLogRecord[i]);
 
-                //commit/rollback transaction
+            //commit/rollback transaction
             } else if (redoLogRecord[i].opCode == 0x0504) {
                 appendToTransaction(&redoLogRecord[i]);
 
             //ddl, etc.
             } else if (isUndoRedo[i] == 0) {
                 appendToTransaction(&redoLogRecord[i]);
+
             } else if (iPair < vectorsUndo) {
                 if (opCodesUndo[iPair] == i) {
                     if (iPair < vectorsRedo)
@@ -625,12 +631,6 @@ namespace OpenLogReplicator {
                 }
             }
         }
-
-        for (uint64_t i = 0; i < vectors; ++i) {
-            //commit transaction
-            if (redoLogRecord[i].opCode == 0x0504) {
-            }
-        }
     }
 
     void OracleAnalyserRedoLog::appendToTransaction(RedoLogRecord *redoLogRecord) {
@@ -644,23 +644,11 @@ namespace OpenLogReplicator {
         if (redoLogRecord->conId > 1 && redoLogRecord->conId != oracleAnalyser->conId)
             return;
 
-        //DDL or part of multi-block UNDO
-        if (redoLogRecord->opCode == 0x1801 || redoLogRecord->opCode == 0x0501) {
-            if (redoLogRecord->opCode == 0x0501) {
-                if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0) {
-                    return;
-                }
-                if ((oracleAnalyser->trace2 & TRACE2_DUMP) != 0)
-                    cerr << "DUMP: merging Multi-block" << endl;
-            }
-
+        //DDL
+        if (redoLogRecord->opCode == 0x1801) {
             //track DDL
-            if (redoLogRecord->opCode == 0x1801)
-                if ((oracleAnalyser->flags & REDO_FLAGS_TRACK_DDL) == 0)
-                    return;
-
-            RedoLogRecord zero;
-            memset(&zero, 0, sizeof(struct RedoLogRecord));
+            if ((oracleAnalyser->flags & REDO_FLAGS_TRACK_DDL) == 0)
+                return;
 
             redoLogRecord->object = oracleAnalyser->checkDict(redoLogRecord->objn, redoLogRecord->objd);
             if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
@@ -695,6 +683,14 @@ namespace OpenLogReplicator {
 
             return;
         } else
+        if (redoLogRecord->opCode == 0x0501) {
+            if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
+                return;
+
+            redoLogRecord->object = oracleAnalyser->checkDict(redoLogRecord->objn, redoLogRecord->objd);
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+                return;
+        } else
         if (redoLogRecord->opCode != 0x0502 && redoLogRecord->opCode != 0x0504)
             return;
 
@@ -710,9 +706,13 @@ namespace OpenLogReplicator {
         } else
             transaction->touch(curScn, sequence);
 
+        if (redoLogRecord->opCode == 0x0501) {
+            transaction->addSplitBlock(oracleAnalyser, redoLogRecord);
+        } else
+
         if (redoLogRecord->opCode == 0x0502) {
             transaction->isBegin = true;
-        }
+        } else
 
         if (redoLogRecord->opCode == 0x0504) {
             transaction->isCommit = true;
@@ -805,19 +805,31 @@ namespace OpenLogReplicator {
                 if (transaction == nullptr) {
                     transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid, oracleAnalyser->transactionBuffer);
                     if (transaction == nullptr)
-                        throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.3", sizeof(Transaction));
+                        throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.4", sizeof(Transaction));
 
-                    transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
+                    //process split block
+                    if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) != 0)
+                        transaction->addSplitBlock(oracleAnalyser, redoLogRecord1, redoLogRecord2);
+                    else {
+                        transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                                redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
+                        oracleAnalyser->lastOpTransactionMap.set(transaction);
+                    }
+
                     oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleAnalyser->transactionHeap.add(transaction);
                 } else {
-                    if (transaction->opCodes > 0)
-                        oracleAnalyser->lastOpTransactionMap.erase(transaction);
+                    if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) != 0)
+                        transaction->addSplitBlock(oracleAnalyser, redoLogRecord1, redoLogRecord2);
+                    else {
+                        if (transaction->opCodes > 0)
+                            oracleAnalyser->lastOpTransactionMap.erase(transaction);
 
-                    transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                            redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
-                    oracleAnalyser->transactionHeap.update(transaction->pos);
+                        transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
+                                redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
+                        oracleAnalyser->transactionHeap.update(transaction->pos);
+                        oracleAnalyser->lastOpTransactionMap.set(transaction);
+                    }
                 }
                 transaction->shutdown = shutdown;
 
@@ -827,7 +839,6 @@ namespace OpenLogReplicator {
                             " SLT: " << dec << (uint64_t)transaction->lastSlt <<
                             " RCI: " << dec << (uint64_t)transaction->lastRci << endl;
                 }
-                oracleAnalyser->lastOpTransactionMap.set(transaction);
                 oracleAnalyser->transactionHeap.update(transaction->pos);
             }
             break;
@@ -926,7 +937,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyserRedoLog::dumpRedoVector() {
+    void OracleAnalyserRedoLog::dumpRedoVector(void) {
         if (oracleAnalyser->trace >= TRACE_WARN) {
             cerr << "WARNING: Dumping redo Vector" << endl;
             cerr << "WARNING: ##: " << dec << recordLength4;
@@ -942,7 +953,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyserRedoLog::flushTransactions(typescn checkpointScn) {
-        bool shutdown = false;
+        bool shutdownInstructed = false;
         Transaction *transaction = oracleAnalyser->transactionHeap.top();
         if ((oracleAnalyser->trace2 & TRACE2_CHECKPOINT_FLUSH) != 0) {
             cerr << "FLUSH" << endl;
@@ -957,7 +968,7 @@ namespace OpenLogReplicator {
                 if (transaction->lastScn > oracleAnalyser->databaseScn) {
                     if (transaction->isBegin)  {
                         if (transaction->shutdown)
-                            shutdown = true;
+                            shutdownInstructed = true;
                         else
                             transaction->flush(oracleAnalyser);
                     } else {
@@ -1005,11 +1016,11 @@ namespace OpenLogReplicator {
         }
         lastCheckpointScn = checkpointScn;
 
-        if (shutdown)
+        if (shutdownInstructed)
             stopMain();
     }
 
-    void OracleAnalyserRedoLog::resetRedo() {
+    void OracleAnalyserRedoLog::resetRedo(void) {
         lastCheckpointScn = 0;
         extScn = 0;
         curScn = ZERO_SCN;
@@ -1042,7 +1053,7 @@ namespace OpenLogReplicator {
         reader->bufferEnd = prev->reader->bufferEnd;
     }
 
-    uint64_t OracleAnalyserRedoLog::processLog() {
+    uint64_t OracleAnalyserRedoLog::processLog(void) {
         cerr << "Processing log: " << *this << endl;
         if (oracleAnalyser->trace < TRACE_INFO)
             cerr << endl;
@@ -1171,8 +1182,15 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (curRet == REDO_FINISHED && curScn != ZERO_SCN)
+        if (curRet == REDO_FINISHED && curScn != ZERO_SCN) {
+            Transaction *transaction;
+            for (uint64_t i = 1; i <= oracleAnalyser->transactionHeap.heapSize; ++i) {
+                transaction = oracleAnalyser->transactionHeap.heap[i];
+                transaction->flushSplitBlocks(oracleAnalyser);
+            }
+
             flushTransactions(curScn);
+        }
 
         if ((oracleAnalyser->trace2 & TRACE2_PERFORMANCE) != 0) {
             clock_t cEnd = clock();
@@ -1186,15 +1204,6 @@ namespace OpenLogReplicator {
             oracleAnalyser->dumpStream.close();
 
         return curRet;
-    }
-
-    OracleAnalyserRedoLog::~OracleAnalyserRedoLog() {
-        for (uint64_t i = 0; i < vectors; ++i) {
-            if (opCodes[i] != nullptr) {
-                delete opCodes[i];
-                opCodes[i] = nullptr;
-            }
-        }
     }
 
     ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors) {

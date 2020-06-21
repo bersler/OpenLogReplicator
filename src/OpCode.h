@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
 
         void ktub(uint64_t fieldPos, uint64_t fieldLength);
-        virtual const char* getUndoType();
+        virtual const char* getUndoType(void);
         void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
         void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength);
         void dumpRows(uint8_t *data);
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
         OpCode(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
         virtual ~OpCode();
 
-        virtual void process();
+        virtual void process(void);
     };
 }
 

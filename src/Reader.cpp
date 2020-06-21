@@ -116,7 +116,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
         return REDO_OK;
     }
 
-    uint64_t Reader::reloadHeader() {
+    uint64_t Reader::reloadHeader(void) {
         int64_t bytes = redoRead(headerBuffer, 0, REDO_PAGE_SIZE_MAX * 2);
         if (bytes < REDO_PAGE_SIZE_MAX * 2) {
             cerr << "ERROR: unable read file " << path << endl;
@@ -292,7 +292,7 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
         return sum & 0xFFFF;
     }
 
-    void *Reader::run() {
+    void *Reader::run(void) {
         uint64_t curStatus;
         while (!shutdown) {
             {

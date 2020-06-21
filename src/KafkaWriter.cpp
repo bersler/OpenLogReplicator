@@ -64,6 +64,33 @@ namespace OpenLogReplicator {
         colIsSupp(nullptr),
         beforeRecord(nullptr),
         afterRecord(nullptr) {
+        afterRecord = new RedoLogRecord*[MAX_NO_COLUMNS];
+        if (afterRecord == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.1", sizeof(RedoLogRecord*) * MAX_NO_COLUMNS);
+
+        beforeRecord = new RedoLogRecord*[MAX_NO_COLUMNS];
+        if (beforeRecord == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.2", sizeof(RedoLogRecord*) * MAX_NO_COLUMNS);
+
+        colIsSupp = new uint8_t[MAX_NO_COLUMNS];
+        if (colIsSupp == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.3", sizeof(uint64_t) * MAX_NO_COLUMNS);
+
+        afterLen = new uint16_t[MAX_NO_COLUMNS];
+        if (afterLen == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.4", sizeof(uint16_t) * MAX_NO_COLUMNS);
+
+        beforeLen = new uint16_t[MAX_NO_COLUMNS];
+        if (beforeLen == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.5", sizeof(uint16_t) * MAX_NO_COLUMNS);
+
+        afterPos = new uint64_t[MAX_NO_COLUMNS];
+        if (afterPos == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.6", sizeof(uint64_t) * MAX_NO_COLUMNS);
+
+        beforePos = new uint64_t[MAX_NO_COLUMNS];
+        if (beforePos == nullptr)
+            throw MemoryException("KafkaWriter::KafkaWriter.7", sizeof(uint64_t) * MAX_NO_COLUMNS);
     }
 
     KafkaWriter::~KafkaWriter() {
@@ -114,8 +141,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void *KafkaWriter::run() {
-        cout << "Starting thread: Kafka writer for : " << brokers << " topic: " << topic << endl;
+    void *KafkaWriter::run(void) {
+        cout << "Starting thread: Kafka writer for: " << brokers << " topic: " << topic << endl;
         uint64_t length = 0;
 
         length = 0;
@@ -187,7 +214,7 @@ namespace OpenLogReplicator {
         return 0;
     }
 
-    void KafkaWriter::initialize() {
+    void KafkaWriter::initialize(void) {
         string errstr;
         Conf *conf = Conf::create(Conf::CONF_GLOBAL);
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
@@ -226,14 +253,14 @@ namespace OpenLogReplicator {
         lastScn = scn;
     }
 
-    void KafkaWriter::next() {
+    void KafkaWriter::next(void) {
         if (stream == STREAM_JSON) {
             if (test <= 1)
                 commandBuffer->append(',');
         }
     }
 
-    void KafkaWriter::commitTran() {
+    void KafkaWriter::commitTran(void) {
         if (stream == STREAM_JSON) {
             if (test <= 1)
                 commandBuffer->appendChr("]}");
@@ -245,7 +272,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
-        uint16_t fieldLength = 0;
+        uint16_t fieldLength = 0, colLength = 0;
         OracleObject *object = redoLogRecord2->object;
 
         for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
@@ -285,64 +312,64 @@ namespace OpenLogReplicator {
                         ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                         ->appendChr(",\"after\":{");
+            } else if (stream == STREAM_DBZ_JSON) {
+                commandBuffer
+                        ->beginTran()
+                        ->appendDbzHead(object)
+                        ->appendChr("\"before\":null,\"after\":{");
             }
 
-            for (uint64_t i = 0; i < object->columns.size(); ++i) {
-                bool isNull = false;
 
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer
-                            ->beginTran()
-                            ->appendDbzHead(object)
-                            ->appendChr("\"before\":null,\"after\":{");
-                }
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                bool isNull = false;
 
                 if (i >= jcc)
                     isNull = true;
                 else {
-                    fieldLength = redoLogRecord2->data[fieldPos + pos];
+                    colLength = redoLogRecord2->data[fieldPos + pos];
                     ++pos;
-                    if (fieldLength == 0xFF) {
+                    if (colLength == 0xFF) {
+                        colLength = 0;
                         isNull = true;
                     } else
-                    if (fieldLength == 0xFE) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord2->data + fieldPos + pos);
+                    if (colLength == 0xFE) {
+                        colLength = oracleAnalyser->read16(redoLogRecord2->data + fieldPos + pos);
                         pos += 2;
                     }
                 }
 
-                if (isNull) {
-                    if (showColumns >= 1 || object->columns[i]->numPk > 0) {
+                if (object->columns[i] != nullptr) {
+                    if (isNull) {
+                        if (showColumns >= 1 || object->columns[i]->numPk > 0) {
+                            if (prevValue)
+                                commandBuffer->append(',');
+                            else
+                                prevValue = true;
+
+                            commandBuffer->appendNull(object->columns[i]->columnName);
+                        }
+                    } else {
                         if (prevValue)
                             commandBuffer->append(',');
                         else
                             prevValue = true;
 
-                        commandBuffer->appendNull(object->columns[i]->columnName);
+                        commandBuffer->appendValue(object->columns[i]->columnName,
+                                redoLogRecord2, object->columns[i]->typeNo, fieldPos + pos, colLength);
                     }
-                } else {
-                    if (prevValue)
-                        commandBuffer->append(',');
-                    else
-                        prevValue = true;
-
-                    commandBuffer->appendValue(object->columns[i]->columnName,
-                            redoLogRecord2, object->columns[i]->typeNo, fieldPos + pos, fieldLength);
-
-                    pos += fieldLength;
                 }
-
-                if (stream == STREAM_DBZ_JSON) {
-
-                    commandBuffer
-                            ->append('}')
-                            ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
-                            ->commitTran();
-                }
+                pos += colLength;
             }
 
             if (stream == STREAM_JSON) {
                 commandBuffer->appendChr("}}");
+            } else
+            if (stream == STREAM_DBZ_JSON) {
+
+                commandBuffer
+                        ->append('}')
+                        ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
+                        ->commitTran();
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
@@ -353,7 +380,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
-        uint16_t fieldLength = 0;
+        uint16_t fieldLength = 0, colLength = 0;
         OracleObject *object = redoLogRecord1->object;
 
         for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
@@ -393,63 +420,64 @@ namespace OpenLogReplicator {
                         ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                         ->appendChr(",\"before\":{");
+            } else
+            if (stream == STREAM_DBZ_JSON) {
+                commandBuffer
+                        ->beginTran()
+                        ->appendDbzHead(object)
+                        ->appendChr("\"before\":{");
             }
 
-            for (uint64_t i = 0; i < object->columns.size(); ++i) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 bool isNull = false;
-
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer
-                            ->beginTran()
-                            ->appendDbzHead(object)
-                            ->appendChr("\"before\":{");
-                }
 
                 if (i >= jcc)
                     isNull = true;
                 else {
-                    fieldLength = redoLogRecord1->data[fieldPos + pos];
+                    colLength = redoLogRecord1->data[fieldPos + pos];
                     ++pos;
-                    if (fieldLength == 0xFF) {
+                    if (colLength == 0xFF) {
+                        colLength = 0;
                         isNull = true;
                     } else
-                    if (fieldLength == 0xFE) {
-                        fieldLength = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + pos);
+                    if (colLength == 0xFE) {
+                        colLength = oracleAnalyser->read16(redoLogRecord1->data + fieldPos + pos);
                         pos += 2;
                     }
                 }
 
-                if (isNull) {
-                    if (showColumns >= 1 || object->columns[i]->numPk > 0) {
+                if (object->columns[i] != nullptr) {
+                    if (isNull) {
+                        if (showColumns >= 1 || object->columns[i]->numPk > 0) {
+                            if (prevValue)
+                                commandBuffer->append(',');
+                            else
+                                prevValue = true;
+
+                            commandBuffer->appendNull(object->columns[i]->columnName);
+                        }
+                    } else {
                         if (prevValue)
                             commandBuffer->append(',');
                         else
                             prevValue = true;
 
-                        commandBuffer->appendNull(object->columns[i]->columnName);
+                        commandBuffer->appendValue(object->columns[i]->columnName,
+                                redoLogRecord1, object->columns[i]->typeNo, fieldPos + pos, colLength);
                     }
-                } else {
-                    if (prevValue)
-                        commandBuffer->append(',');
-                    else
-                        prevValue = true;
-
-                    commandBuffer->appendValue(object->columns[i]->columnName,
-                            redoLogRecord1, object->columns[i]->typeNo, fieldPos + pos, fieldLength);
-
-                    pos += fieldLength;
                 }
 
-                if (stream == STREAM_DBZ_JSON) {
-                    commandBuffer
-                        ->appendChr("},\"after\":null,")
-                        ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
-                        ->commitTran();
-                }
+                pos += colLength;
             }
 
             if (stream == STREAM_JSON) {
                 commandBuffer->appendChr("}}");
+            } else
+            if (stream == STREAM_DBZ_JSON) {
+                commandBuffer
+                    ->appendChr("},\"after\":null,")
+                    ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
+                    ->commitTran();
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
@@ -542,64 +570,9 @@ namespace OpenLogReplicator {
         uint8_t *nulls, bits, *colNums;
         bool prevValue = false;
 
-        if (afterRecord != nullptr) {
-            delete[] afterRecord;
-            afterRecord = nullptr;
-        }
-        afterRecord = new RedoLogRecord*[object->totalCols];
-        if (afterRecord == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.7", sizeof(RedoLogRecord*) * object->totalCols);
-
-        if (beforeRecord != nullptr) {
-            delete[] beforeRecord;
-            beforeRecord = nullptr;
-        }
-        beforeRecord = new RedoLogRecord*[object->totalCols];
-        if (beforeRecord == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.6", sizeof(RedoLogRecord*) * object->totalCols);
-
-        if (colIsSupp != nullptr) {
-            delete[] colIsSupp;
-            colIsSupp = nullptr;
-        }
-        colIsSupp = new uint8_t[object->totalCols];
-        if (colIsSupp == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.5", sizeof(uint64_t) * object->totalCols);
-        memset(colIsSupp, 0, object->totalCols * sizeof(uint8_t));
-
-        if (afterLen != nullptr) {
-            delete[] afterLen;
-            afterLen = nullptr;
-        }
-        afterLen = new uint16_t[object->totalCols];
-        if (afterLen == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.3", sizeof(uint16_t) * object->totalCols);
-
-        if (beforeLen != nullptr) {
-            delete[] beforeLen;
-            beforeLen = nullptr;
-        }
-        beforeLen = new uint16_t[object->totalCols];
-        if (beforeLen == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.4", sizeof(uint16_t) * object->totalCols);
-
-        if (afterPos != nullptr) {
-            delete[] afterPos;
-            afterPos = nullptr;
-        }
-        afterPos = new uint64_t[object->totalCols];
-        if (afterPos == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.1", sizeof(uint64_t) * object->totalCols);
-        memset(afterPos, 0, object->totalCols * sizeof(uint64_t));
-
-        if (beforePos != nullptr) {
-            delete[] beforePos;
-            beforePos = nullptr;
-        }
-        beforePos = new uint64_t[object->totalCols];
-        if (beforePos == nullptr)
-            throw MemoryException("KafkaWriter::parseDML.2", sizeof(uint64_t) * object->totalCols);
-        memset(beforePos, 0, object->totalCols * sizeof(uint64_t));
+        memset(colIsSupp, 0, object->maxSegCol * sizeof(uint8_t));
+        memset(afterPos, 0, object->maxSegCol * sizeof(uint64_t));
+        memset(beforePos, 0, object->maxSegCol * sizeof(uint64_t));
 
         //data in UNDO
         redoLogRecord1p = redoLogRecord1;
@@ -642,7 +615,7 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (colNum >= object->columns.size()) {
+                    if (colNum >= object->maxSegCol) {
                         cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column" << endl;
                         break;
@@ -656,9 +629,11 @@ namespace OpenLogReplicator {
                         colLength = fieldLength;
                     }
 
-                    beforePos[colNum] = fieldPos;
-                    beforeLen[colNum] = colLength;
-                    beforeRecord[colNum] = redoLogRecord1p;
+                    if (object->columns[colNum] != nullptr) {
+                        beforePos[colNum] = fieldPos;
+                        beforeLen[colNum] = colLength;
+                        beforeRecord[colNum] = redoLogRecord1p;
+                    }
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -685,7 +660,7 @@ namespace OpenLogReplicator {
                     oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
-                    if (colNum >= object->columns.size()) {
+                    if (colNum >= object->maxSegCol) {
                         cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
@@ -693,21 +668,23 @@ namespace OpenLogReplicator {
                     colNums += 2;
                     colLength = oracleAnalyser->read16(colSizes);
 
-                    colIsSupp[colNum] = 1;
-                    if (colLength == 0xFFFF)
-                        colLength = 0;
+                    if (object->columns[colNum] != nullptr) {
+                        colIsSupp[colNum] = 1;
+                        if (colLength == 0xFFFF)
+                            colLength = 0;
 
-                    //insert, lock, update
-                    if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10) {
-                        afterRecord[colNum] = redoLogRecord1p;
-                        afterPos[colNum] = fieldPos;
-                        afterLen[colNum] = colLength;
-                    }
-                    //delete, update, overwrite
-                    if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10) {
-                        beforeRecord[colNum] = redoLogRecord1p;
-                        beforePos[colNum] = fieldPos;
-                        beforeLen[colNum] = colLength;
+                        //insert, lock, update
+                        if (afterPos[colNum] == 0 && (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)) {
+                            afterRecord[colNum] = redoLogRecord1p;
+                            afterPos[colNum] = fieldPos;
+                            afterLen[colNum] = colLength;
+                        }
+                        //delete, update, overwrite
+                        if (beforePos[colNum] == 0 && (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)) {
+                            beforeRecord[colNum] = redoLogRecord1p;
+                            beforePos[colNum] = fieldPos;
+                            beforeLen[colNum] = colLength;
+                        }
                     }
 
                     colSizes += 2;
@@ -747,19 +724,28 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (colNum >= object->columns.size()) {
+                    if (colNum >= object->maxSegCol) {
                         cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
                         break;
                     }
 
-                    if ((*nulls & bits) != 0)
-                        colLength = 0;
-                    else
-                        colLength = fieldLength;
+                    if (object->columns[colNum] != nullptr) {
+                        if ((*nulls & bits) != 0)
+                            colLength = 0;
+                        else
+                            colLength = fieldLength;
 
-                    afterPos[colNum] = fieldPos;
-                    afterLen[colNum] = colLength;
-                    afterRecord[colNum] = redoLogRecord2p;
+                        afterPos[colNum] = fieldPos;
+                        afterLen[colNum] = colLength;
+                        afterRecord[colNum] = redoLogRecord2p;
+                    } else {
+                        //present null value for
+                        if (redoLogRecord2p->data[fieldPos] == 1 && fieldLength == 1 && colNum + 1 < object->maxSegCol && object->columns[colNum + 1] != nullptr) {
+                            afterPos[colNum + 1] = fieldPos;
+                            afterLen[colNum + 1] = 0;
+                            afterRecord[colNum + 1] = redoLogRecord2p;
+                        }
+                    }
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -775,7 +761,10 @@ namespace OpenLogReplicator {
 
         if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
             cerr << "DML: tab: " << object->owner << "." << object->objectName << " type: " << type << endl;
-            for (uint64_t i = 0; i < object->totalCols; ++i) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
+
                 cerr << "DML: " << dec << i << ": ";
                 if (beforePos[i] > 0)
                     cerr << " B(" << beforePos[i] << ", " << dec << beforeLen[i] << ")";
@@ -789,7 +778,9 @@ namespace OpenLogReplicator {
 
 
         if (type == TRANSACTION_UPDATE && showColumns <= 1) {
-            for (uint64_t i = 0; i < object->totalCols; ++i) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
 
                 //remove unchanged column values - only for tables with defined primary key
                 if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
@@ -834,7 +825,10 @@ namespace OpenLogReplicator {
 
             prevValue = false;
 
-            for (uint64_t i = 0; i < object->totalCols; ++i) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
+
                 //value present before
                 if (beforePos[i] > 0 && beforeLen[i] > 0) {
                     if (prevValue)
@@ -876,7 +870,10 @@ namespace OpenLogReplicator {
 
             prevValue = false;
 
-            for (uint64_t i = 0; i < object->totalCols; ++i) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
+
                 if (afterPos[i] > 0 && afterLen[i] > 0) {
                     if (prevValue)
                         commandBuffer->append(',');
@@ -917,14 +914,6 @@ namespace OpenLogReplicator {
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
                     ->commitTran();
         }
-
-        delete[] beforePos; beforePos = nullptr;
-        delete[] afterPos; afterPos = nullptr;
-        delete[] beforeLen; beforeLen = nullptr;
-        delete[] afterLen; afterLen = nullptr;
-        delete[] colIsSupp; colIsSupp = nullptr;
-        delete[] beforeRecord; beforeRecord = nullptr;
-        delete[] afterRecord; afterRecord = nullptr;
     }
 
     //0x18010000

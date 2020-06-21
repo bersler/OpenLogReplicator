@@ -22,6 +22,18 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #ifndef TRANSACTION_H_
 #define TRANSACTION_H_
 
+#define SPLIT_BLOCK_SIZE       (0)
+#define SPLIT_BLOCK_NEXT       (sizeof(uint8_t*))
+#define SPLIT_BLOCK_OP1        (sizeof(uint8_t*)+sizeof(uint8_t*))
+#define SPLIT_BLOCK_OP2        (sizeof(uint8_t*)+sizeof(uint8_t*)+sizeof(typeop1))
+
+#define SPLIT_BLOCK_RECORD1    (sizeof(uint8_t*)+sizeof(uint8_t*)+sizeof(typeop1)+sizeof(typeop1))
+#define SPLIT_BLOCK_DATA1      (sizeof(uint8_t*)+sizeof(uint8_t*)+sizeof(typeop1)+sizeof(typeop1)+sizeof(RedoLogRecord))
+
+#define SPLIT_BLOCK_RECORD2    (sizeof(uint8_t*)+sizeof(uint8_t*)+sizeof(typeop1)+sizeof(typeop1)+sizeof(RedoLogRecord))
+#define SPLIT_BLOCK_DATA2      (sizeof(uint8_t*)+sizeof(uint8_t*)+sizeof(typeop1)+sizeof(typeop1)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord))
+
+
 namespace OpenLogReplicator {
 
     class TransactionChunk;
@@ -33,6 +45,13 @@ namespace OpenLogReplicator {
     class OracleAnalyser;
 
     class Transaction {
+    protected:
+        uint8_t *splitBlockList;
+
+        void mergeSplitBlocksToBuffer(OracleAnalyser *oracleAnalyser, uint8_t *buffer, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void mergeSplitBlocks(OracleAnalyser *oracleAnalyser, RedoLogRecord *headRedoLogRecord1, RedoLogRecord *midRedoLogRecord1, RedoLogRecord *tailRedoLogRecord1,
+                RedoLogRecord *redoLogRecord2);
+
     public:
         typexid xid;
         typeseq firstSequence;
@@ -53,19 +72,21 @@ namespace OpenLogReplicator {
         bool shutdown;
         Transaction *next;
 
-        bool operator< (Transaction &p);
+        Transaction(OracleAnalyser *oracleAnalyser, typexid xid, TransactionBuffer *transactionBuffer);
+        virtual ~Transaction();
+
         void touch(typescn scn, typeseq sequence);
+        void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void add(OracleAnalyser *oracleAnalyser, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
                 RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
         void rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer);
         bool rollbackPartOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
                 typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
-
+        void flushSplitBlocks(OracleAnalyser *oracleAnalyser);
         void flush(OracleAnalyser *oracleAnalyser);
 
-        Transaction(OracleAnalyser *oracleAnalyser, typexid xid, TransactionBuffer *transactionBuffer);
-        virtual ~Transaction();
-
+        bool operator< (Transaction &p);
         friend ostream& operator<<(ostream& os, const Transaction& tran);
     };
 }

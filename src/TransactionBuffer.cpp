@@ -109,7 +109,8 @@ namespace OpenLogReplicator {
             typescn prevScn = *((typescn *)(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SCN));
             typesubscn prevSubScn = *((typescn *)(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
 
-            if ((prevScn > redoLogRecord1->scn || ((prevScn == redoLogRecord1->scn && prevSubScn > redoLogRecord1->subScn)))) {
+            if ((prevScn > redoLogRecord1->scn ||
+                    ((prevScn == redoLogRecord1->scn && prevSubScn > redoLogRecord1->subScn)))) {
                 //locate correct position
                 TransactionChunk* tc = lastTc;
                 uint64_t elementsSkipped = 0;
@@ -141,7 +142,8 @@ namespace OpenLogReplicator {
                     prevScn = *((typescn *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SCN));
                     prevSubScn = *((typesubscn *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SUBSCN));
 
-                    if ((prevScn < redoLogRecord1->scn || ((prevScn == redoLogRecord1->scn && prevSubScn <= redoLogRecord1->subScn))))
+                    if ((prevScn < redoLogRecord1->scn ||
+                            ((prevScn == redoLogRecord1->scn && prevSubScn <= redoLogRecord1->subScn))))
                         break;
                 }
 

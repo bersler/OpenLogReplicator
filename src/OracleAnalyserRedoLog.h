@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
     class Reader;
 
     class OracleAnalyserRedoLog {
-    private:
+    protected:
         OracleAnalyser *oracleAnalyser;
         typescn lastCheckpointScn;
         typescn extScn;
@@ -48,13 +48,16 @@ namespace OpenLogReplicator {
         uint64_t recordLength4;
         uint64_t recordLeftToCopy;
         uint64_t blockNumber;
+        OpCode *opCodes[VECTOR_MAX_LENGTH];
+        RedoLogRecord zero;
+        uint64_t vectors;
 
-        void printHeaderInfo();
-        void analyzeRecord();
+        void printHeaderInfo(void);
+        void analyzeRecord(void);
         void flushTransactions(typescn checkpointScn);
         void appendToTransaction(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void dumpRedoVector();
+        void dumpRedoVector(void);
 
     public:
         int64_t group;
@@ -63,14 +66,12 @@ namespace OpenLogReplicator {
         typescn firstScn;
         typescn nextScn;
         Reader *reader;
-        uint64_t vectors;
-        OpCode *opCodes[VECTOR_MAX_LENGTH];
 
-        void resetRedo();
+        void resetRedo(void);
         void continueRedo(OracleAnalyserRedoLog *prev);
-        uint64_t processLog();
+        uint64_t processLog(void);
         OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const string path);
-        virtual ~OracleAnalyserRedoLog();
+        virtual ~OracleAnalyserRedoLog(void);
 
         friend ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors);
     };

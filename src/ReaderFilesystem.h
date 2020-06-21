@@ -36,8 +36,8 @@ namespace OpenLogReplicator {
     protected:
         int64_t fileDes;
         uint64_t flags;
-        virtual void redoClose();
-        virtual uint64_t redoOpen();
+        virtual void redoClose(void);
+        virtual uint64_t redoOpen(void);
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
 
     public:

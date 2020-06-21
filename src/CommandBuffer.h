@@ -67,6 +67,7 @@ namespace OpenLogReplicator {
         CommandBuffer* appendScn(typescn scn);
         CommandBuffer* appendOperation(char *operation);
         CommandBuffer* appendTable(string &owner, string &table);
+        CommandBuffer* appendTimestamp(const uint8_t *data, uint64_t length);
         CommandBuffer* appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         CommandBuffer* appendNull(string &columnName);
         CommandBuffer* appendMs(char *name, uint64_t time);
@@ -75,10 +76,10 @@ namespace OpenLogReplicator {
         CommandBuffer* appendDbzHead(OracleObject *object);
         CommandBuffer* appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid);
 
-        CommandBuffer* beginTran();
-        CommandBuffer* commitTran();
-        CommandBuffer* rewind();
-        uint64_t currentTranSize();
+        CommandBuffer* beginTran(void);
+        CommandBuffer* commitTran(void);
+        CommandBuffer* rewind(void);
+        uint64_t currentTranSize(void);
 
         CommandBuffer(uint64_t outputBufferSize);
         virtual ~CommandBuffer();

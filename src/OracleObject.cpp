@@ -21,6 +21,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string>
 
 #include "ConfigurationException.h"
+#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
@@ -35,7 +36,7 @@ namespace OpenLogReplicator {
         cluCols(cluCols),
         totalPk(0),
         options(options),
-        totalCols(0),
+        maxSegCol(0),
         owner(owner),
         objectName(objectName) {
     }
@@ -47,17 +48,23 @@ namespace OpenLogReplicator {
         columns.clear();
     }
 
-    void OracleObject::addColumn(OracleColumn *column) {
-        if (column->colNo != columns.size() + 1) {
-            cerr << "ERROR: trying to insert column " << column->columnName << "(" << dec << column->colNo << ") on position " << (columns.size() + 1) << endl;
+    void OracleObject::addColumn(OracleAnalyser *oracleAnalyser, OracleColumn *column) {
+        if (column->segColNo < columns.size() + 1) {
+            cerr << "WARNING: trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
+                ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
+                ") on position " << (columns.size() + 1) << endl;
             throw ConfigurationException("metadata error");
         }
+
+        while (column->segColNo > columns.size() + 1)
+            columns.push_back(nullptr);
+
         columns.push_back(column);
     }
 
     ostream& operator<<(ostream& os, const OracleObject& object) {
         os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << dec << object.objn << ", " <<
-                object.objd << ", " << object.cluCols << ", " << object.totalCols << ")" << endl;
+                object.objd << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
         for (OracleColumn *column : object.columns)
             os << "     - " << *column << endl;
         return os;

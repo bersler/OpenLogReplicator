@@ -46,8 +46,9 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.5.18"
+#define PROGRAM_VERSION             "0.5.19"
 #define MAX_PATH_LENGTH             2048
+#define MAX_NO_COLUMNS              1000
 
 #define STREAM_JSON                 1
 #define STREAM_DBZ_JSON             2
@@ -72,6 +73,8 @@ typedef uint32_t typeseq;
 #define TRACE2_OUTPUT_BUFFER        0x0000800
 #define TRACE2_ROLLBACK             0x0001000
 #define TRACE2_DML                  0x0002000
+#define TRACE2_TYPES                0x0004000
+#define TRACE2_SPLIT                0x0008000
 
 #define REDO_RECORD_MAX_SIZE            1048576
 
@@ -81,6 +84,7 @@ typedef uint32_t typeseq;
 #define REDO_FLAGS_TRACK_DDL            0x0000008
 #define REDO_FLAGS_DISABLE_READ_VERIFICATION 0x0000010
 #define REDO_FLAGS_BLOCK_CHECK_SUM      0x0000020
+#define REDO_FLAGS_HIDE_INVISIBLE_COLUMNS 0x0000040
 
 #define DISABLE_CHECK_GRANTS            0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG  0x0000002
@@ -106,7 +110,7 @@ namespace OpenLogReplicator {
     class typetime {
         uint32_t val;
     public:
-        typetime() {
+        typetime(void) {
             this->val = 0;
         }
 
@@ -123,7 +127,7 @@ namespace OpenLogReplicator {
             return *this;
         }
 
-        time_t toTime() {
+        time_t toTime(void) {
             struct tm epochtime;
             uint64_t rest = val;
             epochtime.tm_sec = rest % 60; rest /= 60;

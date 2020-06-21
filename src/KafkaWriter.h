@@ -59,14 +59,14 @@ namespace OpenLogReplicator {
         RedoLogRecord **afterRecord;
 
     public:
-        virtual void *run();
+        virtual void *run(void);
 
         void addTable(string &mask);
-        void initialize();
+        void initialize(void);
 
         virtual void beginTran(typescn scn, typetime time, typexid xid);
-        virtual void next();
-        virtual void commitTran();
+        virtual void next(void);
+        virtual void commitTran(void);
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);

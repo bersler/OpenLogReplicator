@@ -64,7 +64,7 @@ mutex mainMtx;
 condition_variable mainThread;
 bool exitOnSignal = false;
 
-void stopMain() {
+void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
     mainThread.notify_all();
 }
@@ -85,7 +85,7 @@ void signalCrash(int sig) {
     exit(1);
 }
 
-int main() {
+int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
@@ -162,7 +162,6 @@ int main() {
                 const Value& user = getJSONfield(source, "user");
                 const Value& password = getJSONfield(source, "password");
                 const Value& server = getJSONfield(source, "server");
-                const Value& eventtable = getJSONfield(source, "eventtable");
                 const Value& tables = getJSONfield(source, "tables");
                 if (!tables.IsArray())
                     throw ConfigurationException("bad JSON, tables should be array");
@@ -195,7 +194,10 @@ int main() {
                 vector<string> keys;
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
                 oracleAnalyser->initialize();
-                oracleAnalyser->addTable(eventtable.GetString(), keys, keysStr, 1);
+                if (source.HasMember("eventtable")) {
+                    const Value& eventtable = getJSONfield(source, "eventtable");
+                    oracleAnalyser->addTable(eventtable.GetString(), keys, keysStr, 1);
+                }
 
                 for (SizeType j = 0; j < tables.Size(); ++j) {
                     const Value& table = getJSONfield(tables[j], "table");

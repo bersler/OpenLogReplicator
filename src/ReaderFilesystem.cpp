@@ -42,14 +42,14 @@ namespace OpenLogReplicator {
         redoClose();
     }
 
-    void ReaderFilesystem::redoClose() {
+    void ReaderFilesystem::redoClose(void) {
         if (fileDes > 0) {
             close(fileDes);
             fileDes = -1;
         }
     }
 
-    uint64_t ReaderFilesystem::redoOpen() {
+    uint64_t ReaderFilesystem::redoOpen(void) {
         struct stat fileStat;
 
         int ret = stat(path.c_str(), &fileStat);

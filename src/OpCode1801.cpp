@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     OpCode1801::~OpCode1801() {
     }
 
-    void OpCode1801::process() {
+    void OpCode1801::process(void) {
         OpCode::process();
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;

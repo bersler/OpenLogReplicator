@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
     OpCode0504::~OpCode0504() {
     }
 
-    void OpCode0504::process() {
+    void OpCode0504::process(void) {
         OpCode::process();
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;

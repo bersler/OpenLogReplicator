@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
     OpCode::~OpCode() {
     }
 
-    void OpCode::process() {
+    void OpCode::process(void) {
         if (oracleAnalyser->dumpRedoLog >= 1) {
             bool encrypted = false;
             if ((redoLogRecord->typ & 0x80) != 0)
@@ -1035,7 +1035,7 @@ namespace OpenLogReplicator {
     }
 
 
-    const char* OpCode::getUndoType() {
+    const char* OpCode::getUndoType(void) {
         return "";
     }
 
@@ -1137,14 +1137,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char *fbStr) {
-        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; //last column continues in Next piece
-        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; //first column continues from Previous piece
+        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; //Last column continues in Next piece
+        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; //First column continues from Previous piece
         if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last data piece
         if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; //First data piece
         if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; //Deleted row
         if ((fb & FB_H) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; //Head piece of row
         if ((fb & FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
-        if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; //cluster Key
+        if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; //Cluster Key
         fbStr[8] = 0;
     }
 
@@ -1171,7 +1171,6 @@ namespace OpenLogReplicator {
                     " cc: " << dec << redoLogRecord->suppLogCC <<
                     " before: " << dec << redoLogRecord->suppLogBefore <<
                     " after: " << dec << redoLogRecord->suppLogAfter << endl;
-
         }
 
         if (fieldLength >= 26) {
@@ -1180,6 +1179,9 @@ namespace OpenLogReplicator {
             oracleAnalyser->dumpStream <<
                     "supp log bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->suppLogBdba <<
                     "." << hex << redoLogRecord->suppLogSlot << endl;
+        } else {
+            redoLogRecord->suppLogBdba = redoLogRecord->bdba;
+            redoLogRecord->suppLogSlot = redoLogRecord->slot;
         }
 
         if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))

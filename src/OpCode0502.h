@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         OpCode0502(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0502();
 
-        virtual void process();
+        virtual void process(void);
 
         void kteop(uint64_t fieldPos, uint64_t fieldLength);
         void ktudh(uint64_t fieldPos, uint64_t fieldLength);

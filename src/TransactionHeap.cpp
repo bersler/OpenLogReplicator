@@ -28,7 +28,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void TransactionHeap::pop() {
+    void TransactionHeap::pop(void) {
         pop((uint64_t)1);
     }
 
@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
         --heapSize;
     }
 
-    Transaction *TransactionHeap::top() {
+    Transaction *TransactionHeap::top(void) {
         if (heapSize > 0)
             return heap[1];
         else

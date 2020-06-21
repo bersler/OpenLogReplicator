@@ -31,26 +31,27 @@ namespace OpenLogReplicator {
     OpCode0501::OpCode0501(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
             OpCode(oracleAnalyser, redoLogRecord) {
 
-        uint64_t fieldPos = redoLogRecord->fieldPos;
-        for (uint64_t i = 1; i <= redoLogRecord->fieldCnt && i <= 2; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            if (i == 2) {
-                if (fieldLength < 8) {
-                    cerr << "ERROR: too short field ktub: " << dec << fieldLength << endl;
-                    return;
-                }
+        uint64_t fieldNum = 0, fieldPos = 0;
+        uint16_t fieldLength = 0;
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
 
-                redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
-                redoLogRecord->objd = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);
-            }
-            fieldPos += (fieldLength + 3) & 0xFFFC;
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
+        //field: 2
+        if (fieldLength < 8) {
+            cerr << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+            return;
         }
+
+        redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->objd = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);
     }
 
     OpCode0501::~OpCode0501() {
     }
 
-    void OpCode0501::process() {
+    void OpCode0501::process(void) {
         OpCode::process();
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
@@ -196,7 +197,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    const char* OpCode0501::getUndoType() {
+    const char* OpCode0501::getUndoType(void) {
         return "";
     }
 

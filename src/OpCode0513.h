@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         OpCode0513(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0513();
 
-        virtual void process();
+        virtual void process(void);
     };
 }
 

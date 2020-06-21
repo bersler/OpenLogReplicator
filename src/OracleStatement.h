@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
 
         OracleStatement(Connection **conn, Environment *env);
         void createStatement(string sql);
-        void executeQuery();
+        void executeQuery(void);
         virtual ~OracleStatement();
     };
 }

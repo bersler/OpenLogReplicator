@@ -50,11 +50,11 @@ namespace OpenLogReplicator {
         uint64_t timestampFormat;   //0 - timestamp in ISO 8601 format, 1 - timestamp in Unix epoch format
 
     public:
-        virtual void *run() = 0;
-        uint64_t initialize();
+        virtual void *run(void) = 0;
+        uint64_t initialize(void);
         virtual void beginTran(typescn scn, typetime time, typexid xid) = 0;
-        virtual void next() = 0;
-        virtual void commitTran() = 0;
+        virtual void next(void) = 0;
+        virtual void commitTran(void) = 0;
         virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
         virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;

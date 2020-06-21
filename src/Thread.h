@@ -37,9 +37,9 @@ public:
 
         static void *runStatic(void *context);
 
-        virtual void *run() = 0;
+        virtual void *run(void) = 0;
         virtual void stop(void);
-        uint64_t initialize();
+        uint64_t initialize(void);
 
         Thread(const string alias);
         virtual ~Thread();

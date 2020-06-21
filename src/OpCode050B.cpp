@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
     OpCode050B::~OpCode050B() {
     }
 
-    void OpCode050B::process() {
+    void OpCode050B::process(void) {
         OpCode::process();
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
     }
 
-    const char* OpCode050B::getUndoType() {
+    const char* OpCode050B::getUndoType(void) {
         return "User undo done    Begin trans    ";
     }
 }

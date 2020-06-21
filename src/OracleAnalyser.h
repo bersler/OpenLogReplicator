@@ -62,11 +62,12 @@ namespace OpenLogReplicator {
     protected:
         static string SQL_GET_ARCHIVE_LOG_LIST;
         static string SQL_GET_DATABASE_INFORMATION;
-        static string SQL_GET_CON_ID;
+        static string SQL_GET_CON_INFO;
         static string SQL_GET_CURRENT_SEQUENCE;
         static string SQL_GET_LOGFILE_LIST;
         static string SQL_GET_TABLE_LIST;
         static string SQL_GET_COLUMN_LIST;
+        static string SQL_GET_COLUMN_LIST_INV;
         static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
 
         typeseq databaseSequence;
@@ -89,13 +90,13 @@ namespace OpenLogReplicator {
         uint64_t checkpointInterval;
 
         void writeCheckpoint(bool atShutdown);
-        void readCheckpoint();
+        void readCheckpoint(void);
         void addToDict(OracleObject *object);
         void checkConnection(bool reconnect);
-        void archLogGetList();
-        void updateOnlineLogs();
+        void archLogGetList(void);
+        void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader *reader, string &path);
-        void readerDropAll();
+        void readerDropAll(void);
         void checkTableForGrants(string tableName);
         Reader *readerCreate(int64_t group);
 
@@ -123,8 +124,10 @@ namespace OpenLogReplicator {
         uint64_t trace2;
         uint64_t version;                   //compatiblity level of redo logs
         typecon conId;
+        string conName;
         typeresetlogs resetlogs;
         bool isBigEndian;
+        unordered_map<uint16_t, string> timeZoneMap;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -162,15 +165,16 @@ namespace OpenLogReplicator {
         static void writeSCNLittle(uint8_t* buf, typescn val);
         static void writeSCNBig(uint8_t* buf, typescn val);
 
-        void initialize();
-        void *run();
-        void freeRollbackList();
+        void initialize(void);
+        void closeDbConnection(void);
+        void *run(void);
+        void freeRollbackList(void);
         bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         OracleObject *checkDict(typeobj objn, typeobj objd);
-        void dumpTransactions();
+        void dumpTransactions(void);
         void addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options);
-        void checkForCheckpoint();
+        void checkForCheckpoint(void);
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
         void addPathMapping(const string source, const string target);

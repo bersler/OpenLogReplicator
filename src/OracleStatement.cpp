@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleStatement::executeQuery() {
+    void OracleStatement::executeQuery(void) {
         rset = stmt->executeQuery();
     }
 

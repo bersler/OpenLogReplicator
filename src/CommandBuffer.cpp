@@ -46,6 +46,13 @@ namespace OpenLogReplicator {
             throw MemoryException("CommandBuffer::CommandBuffer", outputBufferSize);
     }
 
+    CommandBuffer::~CommandBuffer() {
+        if (intraThreadBuffer != nullptr) {
+            delete[] intraThreadBuffer;
+            intraThreadBuffer = nullptr;
+        }
+    }
+
     void CommandBuffer::stop(void) {
         shutdown = true;
     }
@@ -230,6 +237,112 @@ namespace OpenLogReplicator {
         return this;
     }
 
+    CommandBuffer* CommandBuffer::appendTimestamp(const uint8_t *data, uint64_t length) {
+        if (timestampFormat == 0 || timestampFormat == 1) {
+            //2012-04-23T18:25:43.511Z - ISO 8601 format
+            uint64_t val1 = data[0],
+                     val2 = data[1];
+            bool bc = false;
+
+            //AD
+            if (val1 >= 100 && val2 >= 100) {
+                val1 -= 100;
+                val2 -= 100;
+            //BC
+            } else {
+                val1 = 100 - val1;
+                val2 = 100 - val2;
+                bc = true;
+            }
+            if (val1 > 0) {
+                if (val1 > 10) {
+                    append('0' + (val1 / 10));
+                    append('0' + (val1 % 10));
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                } else {
+                    append('0' + val1);
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                }
+            } else {
+                if (val2 > 10) {
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                } else
+                    append('0' + val2);
+            }
+
+            if (bc)
+                appendChr("BC");
+
+            append('-');
+            append('0' + (data[2] / 10));
+            append('0' + (data[2] % 10));
+            append('-');
+            append('0' + (data[3] / 10));
+            append('0' + (data[3] % 10));
+            append('T');
+            append('0' + ((data[4] - 1) / 10));
+            append('0' + ((data[4] - 1) % 10));
+            append(':');
+            append('0' + ((data[5] - 1) / 10));
+            append('0' + ((data[5] - 1) % 10));
+            append(':');
+            append('0' + ((data[6] - 1) / 10));
+            append('0' + ((data[6] - 1) % 10));
+
+            if (length == 11) {
+                uint64_t digits = 0;
+                uint8_t buffer[10];
+                uint64_t val = oracleAnalyser->read32Big(data + 7);
+
+                for (int64_t i = 9; i > 0; --i) {
+                    buffer[i] = val % 10;
+                    val /= 10;
+                    if (buffer[i] != 0 && digits == 0)
+                        digits = i;
+                }
+
+                if (digits > 0) {
+                    append('.');
+                    for (uint64_t i = 1; i <= digits; ++i)
+                        append(buffer[i] + '0');
+                }
+            }
+        } else if (timestampFormat == 2) {
+            //unix epoch format
+            struct tm epochtime;
+            uint64_t val1 = data[0],
+                     val2 = data[1];
+
+            //AD
+            if (val1 >= 100 && val2 >= 100) {
+                val1 -= 100;
+                val2 -= 100;
+                uint64_t year;
+                year = val1 * 100 + val2;
+                if (year >= 1900) {
+                    epochtime.tm_sec = data[6] - 1;
+                    epochtime.tm_min = data[5] - 1;
+                    epochtime.tm_hour = data[4] - 1;
+                    epochtime.tm_mday = data[3];
+                    epochtime.tm_mon = data[2] - 1;
+                    epochtime.tm_year = year - 1900;
+
+                    uint64_t fraction = 0;
+                    if (length == 11)
+                        fraction = oracleAnalyser->read32Big(data + 7);
+
+                    appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
+                }
+            }
+        }
+
+        return this;
+    }
+
+
     CommandBuffer* CommandBuffer::appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
         uint64_t j, jMax;
         uint8_t digits;
@@ -246,9 +359,16 @@ namespace OpenLogReplicator {
         switch(typeNo) {
         case 1: //varchar(2)
         case 96: //char
-            append('\"');
+            append('"');
             appendEscape(redoLogRecord->data + fieldPos, fieldLength);
-            append('\"');
+            append('"');
+            break;
+
+        case 23: //raw
+            append('"');
+            for (uint64_t j = 0; j < fieldLength; ++j)
+                appendHex(*(redoLogRecord->data + fieldPos + j), 2);
+            append('"');
             break;
 
         case 2: //numeric
@@ -388,123 +508,85 @@ namespace OpenLogReplicator {
             }
             break;
 
-        case 12:
-        case 180:
+        case 12:  //date
+        case 180: //timestamp
             if (fieldLength != 7 && fieldLength != 11) {
                 cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
                 for (uint64_t j = 0; j < fieldLength; ++j)
                     cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
                 cerr << endl;
-                append('null');
-            } else if (timestampFormat == 0) {
-                //2012-04-23T18:25:43.511Z - ISO 8601 format
-                append('\"');
-                uint64_t val1 = redoLogRecord->data[fieldPos + 0],
-                         val2 = redoLogRecord->data[fieldPos + 1];
-                bool bc = false;
+                appendChr("\"?\"");
+            } else {
+                append('"');
+                appendTimestamp(redoLogRecord->data + fieldPos, fieldLength);
+                append('"');
+            }
+            break;
 
-                //AD
-                if (val1 >= 100 && val2 >= 100) {
-                    val1 -= 100;
-                    val2 -= 100;
-                //BC
-                } else {
-                    val1 = 100 - val1;
-                    val2 = 100 - val2;
-                    bc = true;
-                }
-                if (val1 > 0) {
-                    if (val1 > 10) {
-                        append('0' + (val1 / 10));
-                        append('0' + (val1 % 10));
-                        append('0' + (val2 / 10));
-                        append('0' + (val2 % 10));
+        //case 231: //timestamp with local time zone
+        case 181: //timestamp with time zone
+            if (fieldLength != 13) {
+                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
+                for (uint64_t j = 0; j < fieldLength; ++j)
+                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
+                cerr << endl;
+                appendChr("\"?\"");
+            } else {
+                append('"');
+                appendTimestamp(redoLogRecord->data + fieldPos, fieldLength - 2);
+
+                //append time zone information, but leave time in UTC
+                if (timestampFormat == 1) {
+                    if (redoLogRecord->data[fieldPos + 11] >= 5 && redoLogRecord->data[fieldPos + 11] <= 36) {
+                        append(' ');
+                        if (redoLogRecord->data[fieldPos + 11] < 20 ||
+                                (redoLogRecord->data[fieldPos + 11] == 20 && redoLogRecord->data[fieldPos + 12] < 60))
+                            append('-');
+                        else
+                            append('+');
+
+                        if (redoLogRecord->data[fieldPos + 11] < 20) {
+                            if (20 - redoLogRecord->data[fieldPos + 11] < 10)
+                                append('0');
+                            appendDec(20 - redoLogRecord->data[fieldPos + 11]);
+                        } else {
+                            if (redoLogRecord->data[fieldPos + 11] - 20 < 10)
+                                append('0');
+                            appendDec(redoLogRecord->data[fieldPos + 11] - 20);
+                        }
+
+                        append(':');
+
+                        if (redoLogRecord->data[fieldPos + 12] < 60) {
+                            if (60 - redoLogRecord->data[fieldPos + 12] < 10)
+                                append('0');
+                            appendDec(60 - redoLogRecord->data[fieldPos + 12]);
+                        } else {
+                            if (redoLogRecord->data[fieldPos + 12] - 60 < 10)
+                                append('0');
+                            appendDec(redoLogRecord->data[fieldPos + 12] - 60);
+                        }
                     } else {
-                        append('0' + val1);
-                        append('0' + (val2 / 10));
-                        append('0' + (val2 % 10));
-                    }
-                } else {
-                    if (val2 > 10) {
-                        append('0' + (val2 / 10));
-                        append('0' + (val2 % 10));
-                    } else
-                        append('0' + val2);
-                }
-
-                if (bc)
-                    appendChr("BC");
-
-                append('-');
-                append('0' + (redoLogRecord->data[fieldPos + 2] / 10));
-                append('0' + (redoLogRecord->data[fieldPos + 2] % 10));
-                append('-');
-                append('0' + (redoLogRecord->data[fieldPos + 3] / 10));
-                append('0' + (redoLogRecord->data[fieldPos + 3] % 10));
-                append('T');
-                append('0' + ((redoLogRecord->data[fieldPos + 4] - 1) / 10));
-                append('0' + ((redoLogRecord->data[fieldPos + 4] - 1) % 10));
-                append(':');
-                append('0' + ((redoLogRecord->data[fieldPos + 5] - 1) / 10));
-                append('0' + ((redoLogRecord->data[fieldPos + 5] - 1) % 10));
-                append(':');
-                append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) / 10));
-                append('0' + ((redoLogRecord->data[fieldPos + 6] - 1) % 10));
-
-                if (fieldLength == 11) {
-                    uint64_t digits = 0;
-                    uint8_t buffer[10];
-                    uint64_t val = oracleAnalyser->read32Big(redoLogRecord->data + fieldPos + 7);
-
-                    for (int64_t i = 9; i > 0; --i) {
-                        buffer[i] = val % 10;
-                        val /= 10;
-                        if (buffer[i] != 0 && digits == 0)
-                            digits = i;
-                    }
-
-                    if (digits > 0) {
-                        append('.');
-                        for (uint64_t i = 1; i <= digits; ++i)
-                            append(buffer[i] + '0');
+                        uint16_t tzkey = (redoLogRecord->data[fieldPos + 11] << 8) | redoLogRecord->data[fieldPos + 12];
+                        string tz = oracleAnalyser->timeZoneMap[tzkey];
+                        if (tz.length() == 0)
+                            tz = "TZ?";
+                        append(' ');
+                        appendStr(tz);
                     }
                 }
-                append('\"');
-            } else if (timestampFormat == 1) {
-                //unix epoch format
-                struct tm epochtime;
-                uint64_t val1 = redoLogRecord->data[fieldPos + 0],
-                         val2 = redoLogRecord->data[fieldPos + 1];
 
-                //AD
-                if (val1 >= 100 && val2 >= 100) {
-                    val1 -= 100;
-                    val2 -= 100;
-                    uint64_t year;
-                    year = val1 * 100 + val2;
-                    if (year >= 1900) {
-                        epochtime.tm_sec = redoLogRecord->data[fieldPos + 6] - 1;
-                        epochtime.tm_min = redoLogRecord->data[fieldPos + 5] - 1;
-                        epochtime.tm_hour = redoLogRecord->data[fieldPos + 4] - 1;
-                        epochtime.tm_mday = redoLogRecord->data[fieldPos + 3];
-                        epochtime.tm_mon = redoLogRecord->data[fieldPos + 2] - 1;
-                        epochtime.tm_year = year - 1900;
-
-                        uint64_t fraction = 0;
-                        if (fieldLength == 11)
-                            fraction = oracleAnalyser->read32Big(redoLogRecord->data + fieldPos + 7);
-
-                        appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
-                    } else {
-                        append('null');
-                    }
-                } else {
-                    append('null');
-                }
+                append('"');
             }
             break;
 
         default:
+            if ((oracleAnalyser->trace2 & TRACE2_TYPES) != 0) {
+                cerr << "TYPES: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
+                for (uint64_t j = 0; j < fieldLength; ++j)
+                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
+                cerr << endl;
+            }
             appendChr("\"?\"");
         }
 
@@ -619,6 +701,9 @@ namespace OpenLogReplicator {
         for (uint64_t i = 0; i < object->columns.size(); ++i) {
             bool microTimestamp = false;
 
+            if (object->columns[i] == nullptr)
+                continue;
+
             if (i > 0)
                 append(',');
 
@@ -649,9 +734,9 @@ namespace OpenLogReplicator {
 
             case 12:
             case 180:
-                if (timestampFormat == 0)
+                if (timestampFormat == 0 || timestampFormat == 1)
                     appendChr("datetime");
-                else if (timestampFormat == 1) {
+                else if (timestampFormat == 2) {
                     appendChr("int64");
                     microTimestamp = true;
                 }
@@ -751,7 +836,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::beginTran() {
+    CommandBuffer* CommandBuffer::beginTran(void) {
         if (shutdown)
             return this;
 
@@ -776,7 +861,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::commitTran() {
+    CommandBuffer* CommandBuffer::commitTran(void) {
         if (posEndTmp == posEnd) {
             cerr << "WARNING: JSON buffer - commit of empty transaction" << endl;
             return this;
@@ -799,7 +884,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::rewind() {
+    CommandBuffer* CommandBuffer::rewind(void) {
         if (shutdown)
             return this;
 
@@ -820,14 +905,7 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    uint64_t CommandBuffer::currentTranSize() {
+    uint64_t CommandBuffer::currentTranSize(void) {
         return posEndTmp - posEnd;
-    }
-
-    CommandBuffer::~CommandBuffer() {
-        if (intraThreadBuffer != nullptr) {
-            delete[] intraThreadBuffer;
-            intraThreadBuffer = nullptr;
-        }
     }
 }
