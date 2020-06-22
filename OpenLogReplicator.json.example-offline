@@ -7,14 +7,7 @@
       "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
-      "user": "system",
-      "password": "unknPwd4%",
-      "server": "//server:4999/O112A.ORADOMAIN",
-      "tables": [
-        {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
-        {"table": "OWNER1.TABLENAME2"},
-        {"table": "OWNER2.TAB%"}]
-    }
+      "mode": "offline"
   ],
   "targets": [
     {

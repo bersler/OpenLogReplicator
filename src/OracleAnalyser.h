@@ -89,6 +89,7 @@ namespace OpenLogReplicator {
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
 
+        void populateTimeZone();
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint(void);
         void addToDict(OracleObject *object);
@@ -117,6 +118,7 @@ namespace OpenLogReplicator {
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t flags;
+        uint64_t mode;
         uint64_t disableChecks;
         vector<string> pathMapping;
         uint32_t redoReadSleep;
@@ -166,6 +168,8 @@ namespace OpenLogReplicator {
         static void writeSCNBig(uint8_t* buf, typescn val);
 
         void initialize(void);
+        void readSchema(void);
+        void writeSchema(void);
         void closeDbConnection(void);
         void *run(void);
         void freeRollbackList(void);
@@ -183,10 +187,10 @@ namespace OpenLogReplicator {
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
 
-        OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user, const string passwd,
-                const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags,
-                uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers, uint64_t redoBufferSize,
-                uint64_t maxConcurrentTransactions);
+        OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
+                const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
+                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
+                uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
         virtual ~OracleAnalyser();
     };
 }

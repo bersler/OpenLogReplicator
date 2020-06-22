@@ -46,7 +46,7 @@ using namespace std;
 using namespace rapidjson;
 using namespace oracle::occi;
 
-const Value& getJSONfield(const Document& document, const char* field);
+const Value& getJSONfield(string &fileName, const Document& document, const char* field);
 
 void stopMain();
 
@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
 
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            uint64_t flags, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
+            uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
             uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias),
         databaseSequence(0),
@@ -91,6 +91,7 @@ namespace OpenLogReplicator {
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
         flags(flags),
+        mode(mode),
         disableChecks(disableChecks),
         redoReadSleep(redoReadSleep),
         trace(trace),
@@ -111,9 +112,45 @@ namespace OpenLogReplicator {
         write64(write64Little),
         writeSCN(writeSCNLittle) {
 
+        populateTimeZone();
         readCheckpoint();
         env = Environment::createEnvironment (Environment::DEFAULT);
+    }
 
+    OracleAnalyser::~OracleAnalyser() {
+        readerDropAll();
+        freeRollbackList();
+
+        while (!archiveRedoQueue.empty()) {
+            OracleAnalyserRedoLog *redoTmp = archiveRedoQueue.top();
+            archiveRedoQueue.pop();
+            delete redoTmp;
+        }
+
+        closeDbConnection();
+
+        delete transactionBuffer;
+
+        for (auto it : objectMap) {
+            OracleObject *object = it.second;
+            delete object;
+        }
+        objectMap.clear();
+        timeZoneMap.clear();
+
+        for (auto it : xidTransactionMap) {
+            Transaction *transaction = it.second;
+            delete transaction;
+        }
+        xidTransactionMap.clear();
+
+        if (recordBuffer != nullptr) {
+            delete[] recordBuffer;
+            recordBuffer = nullptr;
+        }
+    }
+
+    void OracleAnalyser::populateTimeZone() {
         timeZoneMap[0x80a8] = "Africa/Abidjan";
         timeZoneMap[0x80c8] = "Africa/Accra";
         timeZoneMap[0x80bc] = "Africa/Addis_Ababa";
@@ -711,39 +748,6 @@ namespace OpenLogReplicator {
         timeZoneMap[0xa070] = "Zulu";
     }
 
-    OracleAnalyser::~OracleAnalyser() {
-        readerDropAll();
-        freeRollbackList();
-
-        while (!archiveRedoQueue.empty()) {
-            OracleAnalyserRedoLog *redoTmp = archiveRedoQueue.top();
-            archiveRedoQueue.pop();
-            delete redoTmp;
-        }
-
-        closeDbConnection();
-
-        delete transactionBuffer;
-
-        for (auto it : objectMap) {
-            OracleObject *object = it.second;
-            delete object;
-        }
-        objectMap.clear();
-        timeZoneMap.clear();
-
-        for (auto it : xidTransactionMap) {
-            Transaction *transaction = it.second;
-            delete transaction;
-        }
-        xidTransactionMap.clear();
-
-        if (recordBuffer != nullptr) {
-            delete[] recordBuffer;
-            recordBuffer = nullptr;
-        }
-    }
-
     void OracleAnalyser::writeCheckpoint(bool atShutdown) {
         clock_t now = clock();
         typeseq minSequence = 0xFFFFFFFF;
@@ -768,11 +772,12 @@ namespace OpenLogReplicator {
                 " SCN: " << PRINTSCN48(databaseScn) << " after: " << dec << timeSinceCheckpoint << "s" << endl;
         }
 
+        string fileName = database + "-chkpt.json";
         ofstream outfile;
-        outfile.open((database + ".json").c_str(), ios::out | ios::trunc);
+        outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
         if (!outfile.is_open())
-            throw RuntimeException("writing checkpoint data");
+            throw RuntimeException("writing checkpoint data to <database>-chkpt.json");
 
         stringstream ss;
         ss << "{\"database\":\"" << database
@@ -785,7 +790,7 @@ namespace OpenLogReplicator {
 
         if (atShutdown) {
             if (trace >= TRACE_INFO) {
-                cerr << "INFO: Writing checkpopint at exit for " << database << endl;
+                cerr << "INFO: Writing checkpoint at exit for " << database << endl;
                 cerr << "INFO: sequence: " << dec << minSequence <<
                         " scn: " << dec << databaseScn <<
                         " resetlogs: " << dec << resetlogs;
@@ -801,7 +806,8 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::readCheckpoint(void) {
         ifstream infile;
-        infile.open((database + ".json").c_str(), ios::in);
+        string fileName = database + "-chkpt.json";
+        infile.open(fileName.c_str(), ios::in);
         if (!infile.is_open())
             return;
 
@@ -809,19 +815,19 @@ namespace OpenLogReplicator {
         Document document;
 
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
-            throw RuntimeException("JSON: parsing of <database>.json");
+            throw RuntimeException("parsing of <database>-chkpt.json");
 
-        const Value& databaseJSON = getJSONfield(document, "database");
+        const Value& databaseJSON = getJSONfield(fileName, document, "database");
         if (database.compare(databaseJSON.GetString()) != 0)
-            throw RuntimeException("JSON: parsing of <database>.json - invalid database name");
+            throw RuntimeException("parsing of <database>-chkpt.json - invalid database name");
 
-        const Value& databaseSequenceJSON = getJSONfield(document, "sequence");
+        const Value& databaseSequenceJSON = getJSONfield(fileName, document, "sequence");
         databaseSequence = databaseSequenceJSON.GetUint64();
 
-        const Value& resetlogsJSON = getJSONfield(document, "resetlogs");
+        const Value& resetlogsJSON = getJSONfield(fileName, document, "resetlogs");
         resetlogs = resetlogsJSON.GetUint64();
 
-        const Value& scnJSON = getJSONfield(document, "scn");
+        const Value& scnJSON = getJSONfield(fileName, document, "scn");
         databaseScn = scnJSON.GetUint64();
 
         infile.close();
@@ -1227,7 +1233,7 @@ namespace OpenLogReplicator {
                 stmt.executeQuery();
 
                 if (stmt.rset->next()) {
-                databaseSequence = stmt.rset->getNumber(1);
+                    databaseSequence = stmt.rset->getNumber(1);
                     databaseScn = currentDatabaseScn;
                 }
             } catch(SQLException &ex) {
@@ -1302,6 +1308,70 @@ namespace OpenLogReplicator {
         }
 
         archReader = readerCreate(0);
+    }
+
+    void OracleAnalyser::readSchema(void) {
+
+    }
+
+    void OracleAnalyser::writeSchema(void) {
+        if (trace >= TRACE_INFO) {
+            cerr << "INFO: Writing schema information for " << database << endl;
+        }
+
+        string fileName = database + "-schema.json";
+        ofstream outfile;
+        outfile.open(fileName.c_str(), ios::out | ios::trunc);
+
+        if (!outfile.is_open())
+            throw RuntimeException("writing schema data");
+
+        stringstream ss;
+        ss << "{\"database\":\"" << database << "\"," <<
+                "\"big-endian\":" << dec << isBigEndian << "," <<
+                "\"database-context\":\"" << databaseContext << "\"," <<
+                "\"con-id\":" << conId << "," <<
+                "\"con-name\":\"" << conName << "\"," <<
+                "\"schema\":[";
+
+        bool hasPrev = false;
+        for (auto it : objectMap) {
+            OracleObject *object = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss << "{\"objn\":" << dec << object->objn << "," <<
+                    "\"objd\":" << object->objd << "," <<
+                    "\"clu-cols\":" << object->cluCols << "," <<
+                    "\"total-pk\":" << object->totalPk << "," <<
+                    "\"options\":" << object->options << "," <<
+                    "\"max-seg-col\":" << object->maxSegCol << "," <<
+                    "\"owner\":\"" << object->owner << "\"," <<
+                    "\"object-name\":\"" << object->objectName << "\"," <<
+                    "\"columns\":[";
+            for (uint64_t i = 0; i < object->columns.size(); ++i) {
+                if (i > 0)
+                    ss << ",";
+                ss << "{\"col-no\":" << dec << object->columns[i]->colNo << "," <<
+                        "\"seg-col-no\":" << object->columns[i]->segColNo << "," <<
+                        "\"column-name\":\"" << object->columns[i]->columnName << "\"," <<
+                        "\"type-no\":" << object->columns[i]->typeNo << "," <<
+                        "\"length\":" << object->columns[i]->length << "," <<
+                        "\"precision\":" << object->columns[i]->precision << "," <<
+                        "\"scale\":" << object->columns[i]->scale << "," <<
+                        "\"num-pk\":" << object->columns[i]->numPk << "," <<
+                        "\"nullable\":" << object->columns[i]->nullable << "}";
+            }
+
+            ss << "]}";
+        }
+
+        ss << "]}";
+        outfile << ss.rdbuf();
+        outfile.close();
     }
 
     void OracleAnalyser::closeDbConnection(void) {

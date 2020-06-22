@@ -1,15 +1,26 @@
 {
   "version": "0.6.0",
+  "dump-redo-log": 0,
+  "dump-raw-data": 0,
+  "trace": 0,
+  "trace2": 0,
+  "checkpoint-interval": 10,
+  "redo-read-sleep": 10000,
   "redo-buffer-mb": 4096,
   "output-buffer-mb": 1024,
+  "max-concurrent-transactions": 65536,
   "sources": [
     {
       "type": "ORACLE",
       "alias": "S1",
+      "flags": 0,
+      "disable-checks": 0,
+      "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
       "name": "O112A",
       "user": "system",
       "password": "unknPwd4%",
       "server": "//server:4999/O112A.ORADOMAIN",
+      "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
         {"table": "OWNER1.TABLENAME2"},
@@ -19,7 +30,7 @@
   "targets": [
     {
       "type": "KAFKA",
-      "format": {"stream": "JSON", "topic": "O112A"},
+      "format": {"stream": "JSON", "topic": "O112A", "metadata": 0, "single-dml": 0, "show-columns": 0, "test": 0, "timestamp-format": 0},
       "alias": "T2",
       "brokers": "localhost:9092",
       "source": "S1"

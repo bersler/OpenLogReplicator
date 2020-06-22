@@ -1055,8 +1055,6 @@ namespace OpenLogReplicator {
 
     uint64_t OracleAnalyserRedoLog::processLog(void) {
         cerr << "Processing log: " << *this << endl;
-        if (oracleAnalyser->trace < TRACE_INFO)
-            cerr << endl;
         uint64_t blockPos = 16, bufferPos = 0;
         uint64_t curBufferStart = 0, curBufferEnd = 0, curRet, curStatus;
 

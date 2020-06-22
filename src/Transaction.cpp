@@ -386,9 +386,10 @@ namespace OpenLogReplicator {
             if (curRedoLogRecord == nullptr) {
                 curRedoLogRecord = newRedoLogRecord;
             } else {
-                if (curRedoLogRecord->scnRecord != newRedoLogRecord->scnRecord ||
-                        curRedoLogRecord->slt != newRedoLogRecord->slt ||
-                        curRedoLogRecord->rci != newRedoLogRecord->rci) {
+                if (curRedoLogRecord->slt != newRedoLogRecord->slt || curRedoLogRecord->rci != newRedoLogRecord->rci ||
+                        ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0 && headRedoLogRecord1 != nullptr) ||
+                        ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) != 0 && midRedoLogRecord1 != nullptr) ||
+                        ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0 && tailRedoLogRecord1 != nullptr)) {
                     if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0)
                         cerr << "SPLIT: flush" << endl;
 
@@ -416,34 +417,15 @@ namespace OpenLogReplicator {
             }
 
             if ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0) {
-                if (headRedoLogRecord1 != nullptr) {
-                    cerr << "ERROR: duplicate spit HEAD UNDO block" << endl;
-                    headRedoLogRecord1->dump(oracleAnalyser);
-                    newRedoLogRecord->dump(oracleAnalyser);
-                } else {
-                    headBlock = splitBlockList;
-                    headRedoLogRecord1 = newRedoLogRecord;
-                    redoLogRecord2 = (RedoLogRecord*)(splitBlockList + SPLIT_BLOCK_RECORD2 + headRedoLogRecord1->length);
-                }
-            } else
-            if ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                if (tailRedoLogRecord1 != nullptr) {
-                    cerr << "ERROR: duplicate spit TAIL UNDO block" << endl;
-                    tailRedoLogRecord1->dump(oracleAnalyser);
-                    newRedoLogRecord->dump(oracleAnalyser);
-                } else {
-                    tailBlock = splitBlockList;
-                    tailRedoLogRecord1 = newRedoLogRecord;
-                }
+                headBlock = splitBlockList;
+                headRedoLogRecord1 = newRedoLogRecord;
+                redoLogRecord2 = (RedoLogRecord*)(splitBlockList + SPLIT_BLOCK_RECORD2 + headRedoLogRecord1->length);
+            } else if ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
+                tailBlock = splitBlockList;
+                tailRedoLogRecord1 = newRedoLogRecord;
             } else {
-                if (midRedoLogRecord1 != nullptr) {
-                    cerr << "ERROR: duplicate spit MID UNDO block" << endl;
-                    midRedoLogRecord1->dump(oracleAnalyser);
-                    newRedoLogRecord->dump(oracleAnalyser);
-                } else {
-                    midBlock = splitBlockList;
-                    midRedoLogRecord1 = newRedoLogRecord;
-                }
+                midBlock = splitBlockList;
+                midRedoLogRecord1 = newRedoLogRecord;
             }
 
             splitBlockList = *((uint8_t**)(splitBlockList + SPLIT_BLOCK_NEXT));
