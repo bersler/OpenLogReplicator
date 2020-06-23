@@ -1,5 +1,5 @@
 /* Memory buffer for handling JSON data
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -157,7 +157,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;
@@ -567,12 +567,14 @@ namespace OpenLogReplicator {
                             appendDec(redoLogRecord->data[fieldPos + 12] - 60);
                         }
                     } else {
-                        uint16_t tzkey = (redoLogRecord->data[fieldPos + 11] << 8) | redoLogRecord->data[fieldPos + 12];
-                        string tz = oracleAnalyser->timeZoneMap[tzkey];
-                        if (tz.length() == 0)
-                            tz = "TZ?";
                         append(' ');
-                        appendStr(tz);
+
+                        uint16_t tzkey = (redoLogRecord->data[fieldPos + 11] << 8) | redoLogRecord->data[fieldPos + 12];
+                        char *tz = oracleAnalyser->timeZoneMap[tzkey];
+                        if (tz == nullptr)
+                            appendChr("TZ?");
+                        else
+                            appendChr(tz);
                     }
                 }
 
@@ -601,7 +603,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (4)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;
@@ -627,7 +629,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;
@@ -680,7 +682,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + 1 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (6)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;
@@ -843,7 +845,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 && posEndTmp + 8 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (8)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (7)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;
@@ -891,7 +893,7 @@ namespace OpenLogReplicator {
         {
             unique_lock<mutex> lck(mtx);
             while (posSize > 0 || posStart == 0) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
+                cerr << "WARNING, JSON buffer full, log reader suspended (8)" << endl;
                 writerCond.wait(lck);
                 if (shutdown)
                     return this;

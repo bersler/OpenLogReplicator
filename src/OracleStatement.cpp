@@ -1,5 +1,5 @@
 /* Encapsulation of Oracle Stament/ResultSet classes
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 

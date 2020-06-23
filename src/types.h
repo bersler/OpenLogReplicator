@@ -1,5 +1,5 @@
 /* Definition of types and macros
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -46,7 +46,7 @@ typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.0"
+#define PROGRAM_VERSION             "0.6.1"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 
@@ -88,6 +88,7 @@ typedef uint32_t typeseq;
 #define REDO_FLAGS_DISABLE_READ_VERIFICATION 0x0000010
 #define REDO_FLAGS_BLOCK_CHECK_SUM      0x0000020
 #define REDO_FLAGS_HIDE_INVISIBLE_COLUMNS 0x0000040
+#define REDO_FLAGS_INCOMPLETE_TRANSACTIONS 0x0000080
 
 #define DISABLE_CHECK_GRANTS            0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG  0x0000002

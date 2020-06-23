@@ -1,5 +1,5 @@
 /* Base class for process which is reading from redo log
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -248,8 +248,12 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
             return ret;
 
         if (resetlogsCnt != oracleAnalyser->resetlogs) {
-            cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
-                    oracleAnalyser->resetlogs << "): " << path << endl;
+            if (group == 0)
+                cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
+                        oracleAnalyser->resetlogs << "): " << path << endl;
+            else
+                cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for online redo log does not match database information (" <<
+                        oracleAnalyser->resetlogs << "): " << path << endl;
             return REDO_ERROR;
         }
 
@@ -298,9 +302,9 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
             {
                 unique_lock<mutex> lck(oracleAnalyser->mtx);
                 oracleAnalyser->analyserCond.notify_all();
-                if (status == READER_STATUS_SLEEPING) {
+                if (status == READER_STATUS_SLEEPING && !shutdown) {
                     oracleAnalyser->sleepingCond.wait(lck);
-                } else if (status == READER_STATUS_READ && bufferStart + DISK_BUFFER_SIZE == bufferEnd) {
+                } else if (status == READER_STATUS_READ && bufferStart + DISK_BUFFER_SIZE == bufferEnd && !shutdown) {
                     oracleAnalyser->readerCond.wait(lck);
                 }
                 curStatus = status;

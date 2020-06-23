@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.2
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -51,8 +51,10 @@ namespace OpenLogReplicator {
             kteop(fieldPos, fieldLength);
         }
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength)) {
+            oracleAnalyser->dumpStream << endl;
             return;
+        }
         //field: 2/3
         pdb(fieldPos, fieldLength);
     }

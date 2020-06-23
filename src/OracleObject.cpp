@@ -1,5 +1,5 @@
 /* Table from Oracle Database
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -53,8 +53,11 @@ namespace OpenLogReplicator {
             cerr << "WARNING: trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
                 ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
                 ") on position " << (columns.size() + 1) << endl;
-            throw ConfigurationException("metadata error");
+            throw ConfigurationException("too low segColNo value, metadata error");
         }
+
+        if (column->segColNo > 1000)
+            throw ConfigurationException("invalid segColNo value, metadata error");
 
         while (column->segColNo > columns.size() + 1)
             columns.push_back(nullptr);

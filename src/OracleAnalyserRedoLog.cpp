@@ -1,5 +1,5 @@
 /* Class reading a redo log file
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -640,12 +640,12 @@ namespace OpenLogReplicator {
             cerr << endl;
         }
 
-        //skip other PDB vectors
-        if (redoLogRecord->conId > 1 && redoLogRecord->conId != oracleAnalyser->conId)
-            return;
-
         //DDL
         if (redoLogRecord->opCode == 0x1801) {
+            //skip other PDB vectors
+            if (oracleAnalyser->conId > 0 && redoLogRecord->conId != oracleAnalyser->conId)
+                return;
+
             //track DDL
             if ((oracleAnalyser->flags & REDO_FLAGS_TRACK_DDL) == 0)
                 return;
@@ -735,9 +735,10 @@ namespace OpenLogReplicator {
         }
 
         //skip other PDB vectors
-        if (redoLogRecord1->conId > 1 && redoLogRecord1->conId != oracleAnalyser->conId)
+        if (oracleAnalyser->conId > 0 && redoLogRecord2->conId != oracleAnalyser->conId && redoLogRecord1->opCode == 0x0501)
             return;
-        if (redoLogRecord2->conId > 1 && redoLogRecord2->conId != oracleAnalyser->conId)
+        if (oracleAnalyser->conId > 0 && redoLogRecord1->conId != oracleAnalyser->conId &&
+                (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
             return;
 
         typeobj objn, objd;
@@ -966,16 +967,18 @@ namespace OpenLogReplicator {
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->lastScn > oracleAnalyser->databaseScn) {
-                    if (transaction->isBegin)  {
-                        if (transaction->shutdown)
-                            shutdownInstructed = true;
-                        else
-                            transaction->flush(oracleAnalyser);
-                    } else {
+                    if (!transaction->isBegin)  {
                         if (oracleAnalyser->trace >= TRACE_WARN) {
                             cerr << "WARNING: skipping transaction with no begin: " << *transaction << endl;
                             oracleAnalyser->dumpTransactions();
                         }
+                    }
+
+                    if (transaction->isBegin || (oracleAnalyser->flags & REDO_FLAGS_INCOMPLETE_TRANSACTIONS) != 0) {
+                        if (transaction->shutdown)
+                            shutdownInstructed = true;
+                        else
+                            transaction->flush(oracleAnalyser);
                     }
                 } else {
                     if (oracleAnalyser->trace >= TRACE_DETAIL) {

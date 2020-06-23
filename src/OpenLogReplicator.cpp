@@ -1,5 +1,5 @@
 /* Main class for the program
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "Open Log Replicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski, aleszczynski@bersler.com, see LICENSE file for licensing information" << endl;
+    cout << "Open Log Replicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
     list<Thread *> analysers, writers;
     list<CommandBuffer *> buffers;
     OracleAnalyser *oracleAnalyser = nullptr;
@@ -196,7 +196,7 @@ int main(int argc, char **argv) {
                 uint64_t mode = MODE_ONLINE;
                 if (source.HasMember("mode")) {
                     const Value& modeJSON = source["mode"];
-                    if (strncmp(modeJSON.GetString(),"offline", 7) != 0)
+                    if (strncmp(modeJSON.GetString(),"offline", 7) == 0)
                         mode = MODE_OFFLINE;
                 }
 
@@ -249,9 +249,10 @@ int main(int argc, char **argv) {
                 }
 
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
-                oracleAnalyser->initialize();
 
                 if (mode == MODE_ONLINE) {
+                    oracleAnalyser->initialize();
+
                     string keysStr("");
                     vector<string> keys;
                     if (source.HasMember("event-table")) {
@@ -285,8 +286,10 @@ int main(int argc, char **argv) {
                     }
 
                     oracleAnalyser->writeSchema();
-                } else
-                    oracleAnalyser->readSchema();
+                } else {
+                    if (!oracleAnalyser->readSchema())
+                        throw ConfigurationException("can't read schema from <database>-schema.json");
+                }
 
                 if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser))
                     throw ConfigurationException("error spawning thread");

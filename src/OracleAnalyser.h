@@ -1,5 +1,5 @@
 /* Header for OracleAnalyser class
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -23,6 +23,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <mutex>
 #include <queue>
 #include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -69,6 +70,7 @@ namespace OpenLogReplicator {
         static string SQL_GET_COLUMN_LIST;
         static string SQL_GET_COLUMN_LIST_INV;
         static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
+        static string SQL_GET_PARAMETER;
 
         typeseq databaseSequence;
         Environment *env;
@@ -77,6 +79,8 @@ namespace OpenLogReplicator {
         string passwd;
         string connectString;
         string database;
+        string dbRecoveryFileDest;
+        string logArchiveFormat;
         Reader *archReader;
         RedoLogRecord *rolledBack1;
         RedoLogRecord *rolledBack2;
@@ -89,6 +93,8 @@ namespace OpenLogReplicator {
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
 
+        stringstream& writeEscapeValue(stringstream &ss, string &str);
+        string getParameterValue(const char *parameter);
         void populateTimeZone();
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint(void);
@@ -129,7 +135,7 @@ namespace OpenLogReplicator {
         string conName;
         typeresetlogs resetlogs;
         bool isBigEndian;
-        unordered_map<uint16_t, string> timeZoneMap;
+        unordered_map<uint16_t, char*> timeZoneMap;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -168,7 +174,7 @@ namespace OpenLogReplicator {
         static void writeSCNBig(uint8_t* buf, typescn val);
 
         void initialize(void);
-        void readSchema(void);
+        bool readSchema(void);
         void writeSchema(void);
         void closeDbConnection(void);
         void *run(void);

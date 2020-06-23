@@ -1,5 +1,5 @@
 /* Thread reading Oracle Redo Logs
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -46,6 +46,7 @@ using namespace std;
 using namespace rapidjson;
 using namespace oracle::occi;
 
+const Value& getJSONfield(string &fileName, const Value& value, const char* field);
 const Value& getJSONfield(string &fileName, const Document& document, const char* field);
 
 void stopMain();
@@ -61,6 +62,7 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
+    string OracleAnalyser::SQL_GET_PARAMETER("SELECT VALUE FROM SYS.V_$PARAMETER WHERE NAME = :i");
 
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
@@ -148,6 +150,41 @@ namespace OpenLogReplicator {
             delete[] recordBuffer;
             recordBuffer = nullptr;
         }
+    }
+
+    stringstream& OracleAnalyser::writeEscapeValue(stringstream &ss, string &str) {
+        const char *c_str = str.c_str();
+        for (uint64_t i = 0; i < str.length(); ++i) {
+            if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
+                //skip
+            } else if (*c_str == '"' || *c_str == '\\' || *c_str == '/') {
+                ss << '\\' << *c_str;
+            } else {
+                ss << *c_str;
+            }
+            ++c_str;
+        }
+        return ss;
+    }
+
+    string OracleAnalyser::getParameterValue(const char *parameter) {
+        try {
+            OracleStatement stmt(&conn, env);
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_PARAMETER << endl;
+            stmt.createStatement(SQL_GET_PARAMETER);
+            stmt.stmt->setString(1, parameter);
+            stmt.executeQuery();
+
+            if (stmt.rset->next())
+                return stmt.rset->getString(1);
+        } catch(SQLException &ex) {
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            throw RuntimeException("getting parameter value");
+        }
+
+        //no value found
+        throw RuntimeException("getting parameter value");
     }
 
     void OracleAnalyser::populateTimeZone() {
@@ -808,8 +845,11 @@ namespace OpenLogReplicator {
         ifstream infile;
         string fileName = database + "-chkpt.json";
         infile.open(fileName.c_str(), ios::in);
-        if (!infile.is_open())
+        if (!infile.is_open()) {
+            if (mode == MODE_OFFLINE)
+                throw RuntimeException("checkpoint file <database>-chkpt.json is required for offline mode");
             return;
+        }
 
         string configJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
         Document document;
@@ -860,39 +900,43 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::archLogGetList(void) {
-        checkConnection(true);
+        if (mode == MODE_ONLINE) {
+            checkConnection(true);
 
-        try {
-            OracleStatement stmt(&conn, env);
-            if ((trace2 & TRACE2_SQL) != 0)
-                cerr << "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl;
-            stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-            stmt.stmt->setInt(1, databaseSequence);
-            stmt.stmt->setInt(2, resetlogs);
-            stmt.executeQuery();
+            try {
+                OracleStatement stmt(&conn, env);
+                if ((trace2 & TRACE2_SQL) != 0)
+                    cerr << "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl;
+                stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
+                stmt.stmt->setInt(1, databaseSequence);
+                stmt.stmt->setInt(2, resetlogs);
+                stmt.executeQuery();
 
-            string path;
-            typeseq sequence;
-            typescn firstScn, nextScn;
+                string path;
+                typeseq sequence;
+                typescn firstScn, nextScn;
 
-            while (stmt.rset->next()) {
-                path = stmt.rset->getString(1);
-                sequence = stmt.rset->getNumber(2);
-                firstScn = stmt.rset->getNumber(3);
-                nextScn = stmt.rset->getNumber(5);
+                while (stmt.rset->next()) {
+                    path = stmt.rset->getString(1);
+                    sequence = stmt.rset->getNumber(2);
+                    firstScn = stmt.rset->getNumber(3);
+                    nextScn = stmt.rset->getNumber(5);
 
-                OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, path.c_str());
-                if (redo == nullptr)
-                    throw MemoryException("OracleAnalyser::archLogGetList.1", sizeof(OracleAnalyserRedoLog));
+                    OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, path.c_str());
+                    if (redo == nullptr)
+                        throw MemoryException("OracleAnalyser::archLogGetList.1", sizeof(OracleAnalyserRedoLog));
 
-                redo->firstScn = firstScn;
-                redo->nextScn = nextScn;
-                redo->sequence = sequence;
-                archiveRedoQueue.push(redo);
+                    redo->firstScn = firstScn;
+                    redo->nextScn = nextScn;
+                    redo->sequence = sequence;
+                    archiveRedoQueue.push(redo);
+                }
+            } catch(SQLException &ex) {
+                cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+                throw RuntimeException("getting archive log list");
             }
-        } catch(SQLException &ex) {
-            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
-            throw RuntimeException("getting archive log list");
+        } else if (mode == MODE_OFFLINE) {
+            throw RuntimeException("offline mode archive log list not yet implemented");
         }
     }
 
@@ -1209,20 +1253,24 @@ namespace OpenLogReplicator {
         }
 
         if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
-            checkTableForGrants("SYS.TAB$");
-            checkTableForGrants("SYS.OBJ$");
-            checkTableForGrants("SYS.COL$");
-            checkTableForGrants("SYS.CON$");
             checkTableForGrants("SYS.CCOL$");
             checkTableForGrants("SYS.CDEF$");
+            checkTableForGrants("SYS.COL$");
+            checkTableForGrants("SYS.CON$");
+            checkTableForGrants("SYS.OBJ$");
+            checkTableForGrants("SYS.TAB$");
             checkTableForGrants("SYS.USER$");
             checkTableForGrants("SYS.V_$ARCHIVED_LOG");
-            checkTableForGrants("SYS.V_$LOGFILE");
-            checkTableForGrants("SYS.V_$LOG");
             checkTableForGrants("SYS.V_$DATABASE");
             checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
+            checkTableForGrants("SYS.V_$LOG");
+            checkTableForGrants("SYS.V_$LOGFILE");
+            checkTableForGrants("SYS.V_$PARAMETER");
             checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
         }
+
+        dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
+        logArchiveFormat = getParameterValue("log_archive_format");
 
         if (databaseSequence == 0 || databaseScn == 0) {
             try {
@@ -1310,8 +1358,154 @@ namespace OpenLogReplicator {
         archReader = readerCreate(0);
     }
 
-    void OracleAnalyser::readSchema(void) {
+    bool OracleAnalyser::readSchema(void) {
+        ifstream infile;
+        string fileName = database + "-schema.json";
+        infile.open(fileName.c_str(), ios::in);
+        if (!infile.is_open())
+            return false;
 
+        string schemaJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
+        Document document;
+
+        if (schemaJSON.length() == 0 || document.Parse(schemaJSON.c_str()).HasParseError())
+            throw RuntimeException("parsing of <database>-schema.json");
+
+        const Value& databaseJSON = getJSONfield(fileName, document, "database");
+        database = databaseJSON.GetString();
+
+        const Value& bigEndianJSON = getJSONfield(fileName, document, "big-endian");
+        isBigEndian = bigEndianJSON.GetUint64();
+
+        const Value& resetlogsJSON = getJSONfield(fileName, document, "resetlogs");
+        resetlogs = resetlogsJSON.GetUint64();
+
+        const Value& databaseContextJSON = getJSONfield(fileName, document, "database-context");
+        databaseContext = databaseContextJSON.GetString();
+
+        const Value& conIdJSON = getJSONfield(fileName, document, "con-id");
+        conId = conIdJSON.GetUint64();
+
+        const Value& conNameJSON = getJSONfield(fileName, document, "con-name");
+        conName = conNameJSON.GetString();
+
+        const Value& dbRecoveryFileDestJSON = getJSONfield(fileName, document, "db-recovery-file-dest");
+        dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
+
+        const Value& logArchiveFormatJSON = getJSONfield(fileName, document, "log-archive-format");
+        logArchiveFormat = logArchiveFormatJSON.GetString();
+
+        const Value& onlineRedo = getJSONfield(fileName, document, "online-redo");
+        if (!onlineRedo.IsArray())
+            throw ConfigurationException("bad JSON in <database>-schema.json, online-redo should be an array");
+
+        for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
+
+            const Value& groupJSON = getJSONfield(fileName, onlineRedo[i], "group");
+            uint64_t group = groupJSON.GetInt64();
+
+            const Value& pathJSON = getJSONfield(fileName, onlineRedo[i], "path");
+            string path = pathJSON.GetString();
+
+            Reader *reader = readerCreate(group);
+            if (!readerCheckRedoLog(reader, path))
+                throw ConfigurationException("redo log not available");
+
+            OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, group, path.c_str());
+            if (redo == nullptr) {
+                readerDropAll();
+                throw MemoryException("OracleAnalyser::readSchema.1", sizeof(OracleAnalyserRedoLog));
+            }
+
+            redo->reader = reader;
+            onlineRedoSet.insert(redo);
+        }
+        archReader = readerCreate(0);
+
+        updateOnlineLogs();
+
+        const Value& schema = getJSONfield(fileName, document, "schema");
+        if (!schema.IsArray())
+            throw ConfigurationException("bad JSON in <database>-schema.json, schema should be an array");
+
+        for (SizeType i = 0; i < schema.Size(); ++i) {
+
+            const Value& objnJSON = getJSONfield(fileName, schema[i], "objn");
+            typeobj objn = objnJSON.GetInt64();
+
+            const Value& objdJSON = getJSONfield(fileName, schema[i], "objd");
+            typeobj objd = objdJSON.GetInt64();
+
+            const Value& cluColsJSON = getJSONfield(fileName, schema[i], "clu-cols");
+            uint64_t cluCols = cluColsJSON.GetInt64();
+
+            const Value& totalPkJSON = getJSONfield(fileName, schema[i], "total-pk");
+            uint64_t totalPk = totalPkJSON.GetInt64();
+
+            const Value& optionsJSON = getJSONfield(fileName, schema[i], "options");
+            uint64_t options = optionsJSON.GetInt64();
+
+            const Value& maxSegColJSON = getJSONfield(fileName, schema[i], "max-seg-col");
+            uint64_t maxSegCol = maxSegColJSON.GetInt64();
+
+            const Value& ownerJSON = getJSONfield(fileName, schema[i], "owner");
+            string owner = ownerJSON.GetString();
+
+            const Value& objectNameJSON = getJSONfield(fileName, schema[i], "object-name");
+            string objectName = objectNameJSON.GetString();
+
+            OracleObject *object = new OracleObject(objn, objd, cluCols, options, owner, objectName);
+            object->totalPk = totalPk;
+            object->maxSegCol = maxSegCol;
+
+            const Value& columns = getJSONfield(fileName, schema[i], "columns");
+            if (!columns.IsArray())
+                throw ConfigurationException("bad JSON in <database>-schema.json, columns should be an array");
+
+            for (SizeType j = 0; j < columns.Size(); ++j) {
+
+                const Value& colNoJSON = getJSONfield(fileName, columns[j], "col-no");
+                uint64_t colNo = colNoJSON.GetUint64();
+
+                const Value& segColNoJSON = getJSONfield(fileName, columns[j], "seg-col-no");
+                uint64_t segColNo = segColNoJSON.GetUint64();
+                if (segColNo > 1000)
+                    throw ConfigurationException("bad JSON in <database>-schema.json, invalid seg-col-no value");
+
+                const Value& columnNameJSON = getJSONfield(fileName, columns[j], "column-name");
+                string columnName = columnNameJSON.GetString();
+
+                const Value& typeNoJSON = getJSONfield(fileName, columns[j], "type-no");
+                uint64_t typeNo = typeNoJSON.GetUint64();
+
+                const Value& lengthJSON = getJSONfield(fileName, columns[j], "length");
+                uint64_t length = lengthJSON.GetUint64();
+
+                const Value& precisionJSON = getJSONfield(fileName, columns[j], "precision");
+                int64_t precision = precisionJSON.GetInt64();
+
+                const Value& scaleJSON = getJSONfield(fileName, columns[j], "scale");
+                int64_t scale = scaleJSON.GetInt64();
+
+                const Value& numPkJSON = getJSONfield(fileName, columns[j], "num-pk");
+                uint64_t numPk = numPkJSON.GetUint64();
+
+                const Value& nullableJSON = getJSONfield(fileName, columns[j], "nullable");
+                bool nullable = nullableJSON.GetUint64();
+
+                OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, nullable);
+
+                while (segColNo > object->columns.size() + 1)
+                    object->columns.push_back(nullptr);
+
+                object->columns.push_back(column);
+            }
+
+            addToDict(object);
+        }
+
+        infile.close();
+        return true;
     }
 
     void OracleAnalyser::writeSchema(void) {
@@ -1329,12 +1523,33 @@ namespace OpenLogReplicator {
         stringstream ss;
         ss << "{\"database\":\"" << database << "\"," <<
                 "\"big-endian\":" << dec << isBigEndian << "," <<
+                "\"resetlogs\":" << dec << resetlogs << "," <<
                 "\"database-context\":\"" << databaseContext << "\"," <<
-                "\"con-id\":" << conId << "," <<
+                "\"con-id\":" << dec << conId << "," <<
                 "\"con-name\":\"" << conName << "\"," <<
-                "\"schema\":[";
+                "\"db-recovery-file-dest\":\"";
+        writeEscapeValue(ss, dbRecoveryFileDest);
+        ss << "\"," << "\"log-archive-format\":\"";
+        writeEscapeValue(ss, logArchiveFormat);
+        ss << "\"," << "\"online-redo\":[";
 
         bool hasPrev = false;
+        for (Reader *reader : readers) {
+            if (reader->group == 0)
+                continue;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss << "{\"group\":" << reader->group << ",\"path\":\"";
+            writeEscapeValue(ss, reader->path);
+            ss << "\"}";
+        }
+        ss << "]," << "\"schema\":[";
+
+        hasPrev = false;
         for (auto it : objectMap) {
             OracleObject *object = it.second;
 
@@ -1344,26 +1559,30 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss << "{\"objn\":" << dec << object->objn << "," <<
-                    "\"objd\":" << object->objd << "," <<
-                    "\"clu-cols\":" << object->cluCols << "," <<
-                    "\"total-pk\":" << object->totalPk << "," <<
-                    "\"options\":" << object->options << "," <<
-                    "\"max-seg-col\":" << object->maxSegCol << "," <<
+                    "\"objd\":" << dec << object->objd << "," <<
+                    "\"clu-cols\":" << dec << object->cluCols << "," <<
+                    "\"total-pk\":" << dec << object->totalPk << "," <<
+                    "\"options\":" << dec << object->options << "," <<
+                    "\"max-seg-col\":" << dec << object->maxSegCol << "," <<
                     "\"owner\":\"" << object->owner << "\"," <<
                     "\"object-name\":\"" << object->objectName << "\"," <<
                     "\"columns\":[";
+
             for (uint64_t i = 0; i < object->columns.size(); ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
+
                 if (i > 0)
                     ss << ",";
                 ss << "{\"col-no\":" << dec << object->columns[i]->colNo << "," <<
-                        "\"seg-col-no\":" << object->columns[i]->segColNo << "," <<
+                        "\"seg-col-no\":" << dec << object->columns[i]->segColNo << "," <<
                         "\"column-name\":\"" << object->columns[i]->columnName << "\"," <<
-                        "\"type-no\":" << object->columns[i]->typeNo << "," <<
-                        "\"length\":" << object->columns[i]->length << "," <<
-                        "\"precision\":" << object->columns[i]->precision << "," <<
-                        "\"scale\":" << object->columns[i]->scale << "," <<
-                        "\"num-pk\":" << object->columns[i]->numPk << "," <<
-                        "\"nullable\":" << object->columns[i]->nullable << "}";
+                        "\"type-no\":" << dec << object->columns[i]->typeNo << "," <<
+                        "\"length\":" << dec << object->columns[i]->length << "," <<
+                        "\"precision\":" << dec << object->columns[i]->precision << "," <<
+                        "\"scale\":" << dec << object->columns[i]->scale << "," <<
+                        "\"num-pk\":" << dec << object->columns[i]->numPk << "," <<
+                        "\"nullable\":" << dec << object->columns[i]->nullable << "}";
             }
 
             ss << "]}";
@@ -1387,7 +1606,8 @@ namespace OpenLogReplicator {
 
     void *OracleAnalyser::run(void) {
         cout << "Starting thread: Oracle Analyser for: " << database << endl;
-        checkConnection(true);
+        if (mode == MODE_ONLINE)
+            checkConnection(true);
 
         uint64_t ret = REDO_OK;
         OracleAnalyserRedoLog *redo = nullptr;
@@ -1443,10 +1663,8 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    if (redo == nullptr) {
-                        //cout << "- Oracle Analyser for: " << database << " - none found" << endl;
+                    if (redo == nullptr)
                         break;
-                    }
 
                     //if online redo log is overwritten - then switch to reading archive logs
                     if (shutdown)
@@ -1460,7 +1678,7 @@ namespace OpenLogReplicator {
                     if (ret != REDO_FINISHED) {
                         if (ret == REDO_OVERWRITTEN) {
                             if (trace >= TRACE_INFO)
-                                cerr << "INFO: online redo log overwritten by new data, will continue from archived redo log" << endl;
+                                cerr << "INFO: online redo log has been overwritten by new data, continuing reading from archived redo log" << endl;
                             break;
                         }
                         if (redo->group == 0)
@@ -1669,11 +1887,10 @@ namespace OpenLogReplicator {
         reader->updatePath(path);
         readerCond.notify_all();
         sleepingCond.notify_all();
-        while (!shutdown) {
-            if (reader->status == READER_STATUS_CHECK)
-                analyserCond.wait(lck);
-            else
+        while (reader->status == READER_STATUS_CHECK) {
+            if (shutdown)
                 break;
+            analyserCond.wait(lck);
         }
         if (reader->ret == REDO_OK)
             return true;
@@ -1931,11 +2148,10 @@ namespace OpenLogReplicator {
         reader->status = READER_STATUS_UPDATE;
         readerCond.notify_all();
         sleepingCond.notify_all();
-        while (!shutdown) {
-            if (reader->status == READER_STATUS_UPDATE)
-                analyserCond.wait(lck);
-            else
+        while (reader->status == READER_STATUS_UPDATE) {
+            if (shutdown)
                 break;
+            analyserCond.wait(lck);
         }
 
         if (reader->ret == REDO_OK)
@@ -1989,6 +2205,8 @@ namespace OpenLogReplicator {
         if (fieldNum > redoLogRecord->fieldCnt) {
             cerr << "ERROR: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
                     ", data: " << dec << redoLogRecord->rowData <<
+                    ", objn: " << dec << redoLogRecord->objn <<
+                    ", objd: " << dec << redoLogRecord->objd <<
                     ", op: " << hex << redoLogRecord->opCode <<
                     ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
                     ", suppCC: " << dec << redoLogRecord->suppLogCC << endl;

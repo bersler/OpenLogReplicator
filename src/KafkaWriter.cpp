@@ -1,5 +1,5 @@
 /* Thread writing to Kafka stream
-   Copyright (C) 2018-2020 Adam Leszczynski.
+   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of Open Log Replicator.
 
@@ -661,7 +661,8 @@ namespace OpenLogReplicator {
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
                     if (colNum >= object->maxSegCol) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
                         break;
                     }
 
@@ -725,7 +726,8 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->maxSegCol) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id, probably table was altered: " << dec << colNum << endl;
+                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
                         break;
                     }
 
