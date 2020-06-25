@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <condition_variable>
@@ -27,7 +27,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <occi.h>
 #include <stdint.h>
 
 #include "types.h"
@@ -36,11 +35,17 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "TransactionHeap.h"
 #include "TransactionMap.h"
 
+#ifdef ONLINE_MODEIMPL_OCCI
+#include <occi.h>
+#endif /* ONLINE_MODEIMPL_OCCI */
+
 #ifndef ORACLEANALYSER_H_
 #define ORACLEANALYSER_H_
 
 using namespace std;
+#ifdef ONLINE_MODEIMPL_OCCI
 using namespace oracle::occi;
+#endif /* ONLINE_MODEIMPL_OCCI */
 
 namespace OpenLogReplicator {
 
@@ -72,15 +77,19 @@ namespace OpenLogReplicator {
         static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
         static string SQL_GET_PARAMETER;
 
-        typeseq databaseSequence;
+#ifdef ONLINE_MODEIMPL_OCCI
         Environment *env;
         Connection *conn;
+#endif /* ONLINE_MODEIMPL_OCCI */
+
+        typeseq databaseSequence;
         string user;
         string passwd;
         string connectString;
         string database;
         string dbRecoveryFileDest;
         string logArchiveFormat;
+        string logArchiveDest;
         Reader *archReader;
         RedoLogRecord *rolledBack1;
         RedoLogRecord *rolledBack2;
@@ -89,7 +98,7 @@ namespace OpenLogReplicator {
         set<OracleAnalyserRedoLog*> onlineRedoSet;
         set<Reader*> readers;
         unordered_map<typeobj, OracleObject*> objectMap;
-        boolean suppLogDbPrimary, suppLogDbAll;
+        bool suppLogDbPrimary, suppLogDbAll;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
 
@@ -102,7 +111,7 @@ namespace OpenLogReplicator {
         void checkConnection(bool reconnect);
         void archLogGetList(void);
         void updateOnlineLogs(void);
-        bool readerCheckRedoLog(Reader *reader, string &path);
+        bool readerCheckRedoLog(Reader *reader, string path);
         void readerDropAll(void);
         void checkTableForGrants(string tableName);
         Reader *readerCreate(int64_t group);
@@ -133,7 +142,9 @@ namespace OpenLogReplicator {
         uint64_t version;                   //compatiblity level of redo logs
         typecon conId;
         string conName;
+        string lastCheckedDay;
         typeresetlogs resetlogs;
+        typeactivation activation;
         bool isBigEndian;
         unordered_map<uint16_t, char*> timeZoneMap;
 
@@ -173,7 +184,7 @@ namespace OpenLogReplicator {
         static void writeSCNLittle(uint8_t* buf, typescn val);
         static void writeSCNBig(uint8_t* buf, typescn val);
 
-        void initialize(void);
+        void initializeOnlineMode(void);
         bool readSchema(void);
         void writeSchema(void);
         void closeDbConnection(void);
@@ -192,6 +203,9 @@ namespace OpenLogReplicator {
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
+        string applyMapping(string path);
+        void printRollbackInfo(RedoLogRecord *redoLogRecord, Transaction *transaction, const char *msg);
+        void printRollbackInfo(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, Transaction *transaction, const char *msg);
 
         OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
                 const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,

@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
@@ -23,14 +23,23 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 
 namespace OpenLogReplicator {
 
-    OracleStatement::OracleStatement(Connection **conn, Environment *env) :
+    OracleStatement::OracleStatement(
+#ifdef ONLINE_MODEIMPL_OCCI
+            Connection **conn, Environment *env
+#endif /* ONLINE_MODEIMPL_OCCI */
+    )
+#ifdef ONLINE_MODEIMPL_OCCI
+    :
         conn(conn),
         env(env),
         stmt(nullptr),
-        rset(nullptr) {
+        rset(nullptr)
+#endif /* ONLINE_MODEIMPL_OCCI */
+    {
     }
 
     void OracleStatement::createStatement(string sql) {
+#ifdef ONLINE_MODEIMPL_OCCI
         if (stmt != nullptr) {
             if (rset != nullptr) {
                 stmt->closeResultSet(rset);
@@ -54,13 +63,17 @@ namespace OpenLogReplicator {
                 }
             }
         }
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     void OracleStatement::executeQuery(void) {
+#ifdef ONLINE_MODEIMPL_OCCI
         rset = stmt->executeQuery();
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     OracleStatement::~OracleStatement() {
+#ifdef ONLINE_MODEIMPL_OCCI
         if (stmt != nullptr) {
             if (rset != nullptr) {
                 stmt->closeResultSet(rset);
@@ -70,5 +83,6 @@ namespace OpenLogReplicator {
                 (*conn)->terminateStatement(stmt);
             stmt = nullptr;
         }
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 }

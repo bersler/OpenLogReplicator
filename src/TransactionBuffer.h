@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
@@ -26,22 +26,17 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #define ROW_HEADER_REDO1    (sizeof(typeop2))
 #define ROW_HEADER_REDO2    (sizeof(typeop2)+sizeof(struct RedoLogRecord))
 #define ROW_HEADER_DATA     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_OBJN     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_OBJD     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj))
-#define ROW_HEADER_SIZE     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj))
-#define ROW_HEADER_SLT      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t))
-#define ROW_HEADER_RCI      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+1)
-#define ROW_HEADER_SUBSCN   (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+2)
-#define ROW_HEADER_DBA      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+sizeof(uint32_t))
-#define ROW_HEADER_UBA      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(typedba))
-#define ROW_HEADER_SCN      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(typedba)+sizeof(typeuba))
-#define ROW_HEADER_TOTAL    (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(typeobj)+sizeof(typeobj)+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(typedba)+sizeof(typeuba)+sizeof(typescn))
+#define ROW_HEADER_SIZE     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_SUBSCN   (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t))
+#define ROW_HEADER_SCN      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t)+sizeof(uint32_t))
+#define ROW_HEADER_TOTAL    (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(typescn))
 
 namespace OpenLogReplicator {
 
     class OracleAnalyser;
-    class TransactionChunk;
     class RedoLogRecord;
+    class Transaction;
+    class TransactionChunk;
 
     class TransactionBuffer {
     protected:
@@ -49,20 +44,16 @@ namespace OpenLogReplicator {
         TransactionChunk *copyTc;
         uint64_t redoBufferSize;
 
-        void appendTransactionChunk(TransactionChunk* tc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
-                uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void appendTransactionChunk(TransactionChunk* tc, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
     public:
         uint64_t freeBuffers;
         uint64_t redoBuffers;
 
         TransactionChunk* newTransactionChunk(OracleAnalyser *oracleAnalyser);
-        bool addTransactionChunk(OracleAnalyser *oracleAnalyser, TransactionChunk* &lastTc, typeobj objn, typeobj objd, typeuba uba, typedba dba,
-                uint8_t slt, uint8_t rci, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void rollbackTransactionChunk(OracleAnalyser *oracleAnalyser, TransactionChunk* &lastTc, typeuba &lastUba, typedba &lastDba,
-                uint8_t &lastSlt, uint8_t &lastRci);
-        bool getLastRecord(TransactionChunk* lastTc, typeop2 &opCode, RedoLogRecord* &redoLogRecord1, RedoLogRecord* &redoLogRecord2);
-        bool deleteTransactionPart(OracleAnalyser *oracleAnalyser, TransactionChunk* &firstTc, TransactionChunk* &lastTc, typeuba &uba, typedba &dba, uint8_t &slt, uint8_t &rci,
-                uint64_t opFlags);
+        void addTransactionChunk(OracleAnalyser *oracleAnalyser, Transaction *transaction, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void rollbackTransactionChunk(OracleAnalyser *oracleAnalyser, Transaction *transaction);
+        bool deleteTransactionPart(OracleAnalyser *oracleAnalyser, Transaction *transaction,
+                RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* startTc, TransactionChunk* endTc);
 

@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
@@ -37,7 +37,6 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 namespace OpenLogReplicator {
 
     class TransactionChunk;
-    class TransactionBuffer;
     class OpCode;
     class OpCode0502;
     class OpCode0504;
@@ -61,10 +60,8 @@ namespace OpenLogReplicator {
         TransactionChunk *lastTc;
         uint64_t opCodes;
         uint64_t pos;
-        typeuba lastUba;
-        typedba lastDba;
-        typeslt lastSlt;
-        typerci lastRci;
+        RedoLogRecord *lastRedoLogRecord1;
+        RedoLogRecord *lastRedoLogRecord2;
         typetime commitTime;
         bool isBegin;
         bool isCommit;
@@ -72,19 +69,20 @@ namespace OpenLogReplicator {
         bool shutdown;
         Transaction *next;
 
-        Transaction(OracleAnalyser *oracleAnalyser, typexid xid, TransactionBuffer *transactionBuffer);
+        Transaction(OracleAnalyser *oracleAnalyser, typexid xid);
         virtual ~Transaction();
 
         void touch(typescn scn, typeseq sequence);
         void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
         void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void add(OracleAnalyser *oracleAnalyser, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
-                RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence);
-        void rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer);
-        bool rollbackPartOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba,
-                typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
+        void add(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, typeseq sequence, typescn scn);
+        void rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn);
+        bool rollbackPartOp(OracleAnalyser *oracleAnalyser, RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2, typescn scn);
         void flushSplitBlocks(OracleAnalyser *oracleAnalyser);
         void flush(OracleAnalyser *oracleAnalyser);
+        void updateLastRecord(void);
+        static bool matchesForRollback(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+                RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
 
         bool operator< (Transaction &p);
         friend ostream& operator<<(ostream& os, const Transaction& tran);

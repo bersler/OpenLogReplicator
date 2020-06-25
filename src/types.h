@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iomanip>
@@ -29,6 +29,7 @@ using namespace std;
 
 typedef uint16_t typesum;
 typedef uint32_t typeresetlogs;
+typedef uint32_t typeactivation;
 typedef uint16_t typeop1;
 typedef uint32_t typeop2;
 typedef uint32_t typecon;
@@ -45,8 +46,10 @@ typedef uint64_t typescn;
 typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
+#define ONLINE_MODEIMPL_OCCI
+
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.1"
+#define PROGRAM_VERSION             "0.6.2"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 
@@ -55,6 +58,7 @@ typedef uint32_t typeseq;
 
 #define MODE_ONLINE                 1
 #define MODE_OFFLINE                2
+#define MODE_ARCHIVELOG             3
 
 #define TRACE_NO                    0
 #define TRACE_WARN                  1
@@ -68,16 +72,15 @@ typedef uint32_t typeseq;
 #define TRACE2_DISK                 0x0000008
 #define TRACE2_VECTOR               0x0000010
 #define TRACE2_TRANSACTION          0x0000020
-#define TRACE2_DUMP                 0x0000040
-#define TRACE2_UBA                  0x0000080
-#define TRACE2_REDO                 0x0000100
-#define TRACE2_JSON                 0x0000200
-#define TRACE2_CHECKPOINT_FLUSH     0x0000400
-#define TRACE2_OUTPUT_BUFFER        0x0000800
-#define TRACE2_ROLLBACK             0x0001000
-#define TRACE2_DML                  0x0002000
-#define TRACE2_TYPES                0x0004000
-#define TRACE2_SPLIT                0x0008000
+#define TRACE2_COMMIT_ROLLBACK      0x0000040
+#define TRACE2_REDO                 0x0000080
+#define TRACE2_JSON                 0x0000100
+#define TRACE2_CHECKPOINT_FLUSH     0x0000200
+#define TRACE2_OUTPUT_BUFFER        0x0000400
+#define TRACE2_DML                  0x0000800
+#define TRACE2_TYPES                0x0001000
+#define TRACE2_SPLIT                0x0001000
+#define TRACE2_ARCHIVE_LIST         0x0004000
 
 #define REDO_RECORD_MAX_SIZE            1048576
 

@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
@@ -41,7 +41,8 @@ namespace OpenLogReplicator {
         firstScn(ZERO_SCN),
         nextScn(ZERO_SCN),
         compatVsn(0),
-        resetlogsCnt(0),
+        resetlogsRead(0),
+        activationRead(0),
         firstScnHeader(0),
         nextScnHeader(ZERO_SCN),
         fileSize(0),
@@ -66,8 +67,7 @@ namespace OpenLogReplicator {
         }
     }
 
-uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum) {
-
+    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
@@ -237,7 +237,8 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
             return REDO_ERROR;
         }
 
-        resetlogsCnt = oracleAnalyser->read32(headerBuffer + blockSize + 160);
+        activationRead = oracleAnalyser->read32(headerBuffer + blockSize + 52);
+        resetlogsRead = oracleAnalyser->read32(headerBuffer + blockSize + 160);
         firstScnHeader = oracleAnalyser->readSCN(headerBuffer + blockSize + 180);
         nextScnHeader = oracleAnalyser->readSCN(headerBuffer + blockSize + 192);
 
@@ -247,13 +248,23 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
         if (ret != REDO_OK)
             return ret;
 
-        if (resetlogsCnt != oracleAnalyser->resetlogs) {
+        if (resetlogsRead != oracleAnalyser->resetlogs) {
             if (group == 0)
-                cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for archived redo log does not match database information (" <<
+                cerr << "ERROR: resetlogs id (" << dec << resetlogsRead << ") for archived redo log does not match database information (" <<
                         oracleAnalyser->resetlogs << "): " << path << endl;
             else
-                cerr << "ERROR: resetlogs id (" << dec << resetlogsCnt << ") for online redo log does not match database information (" <<
+                cerr << "ERROR: resetlogs id (" << dec << resetlogsRead << ") for online redo log does not match database information (" <<
                         oracleAnalyser->resetlogs << "): " << path << endl;
+            return REDO_ERROR;
+        }
+
+        if (activationRead != oracleAnalyser->activation) {
+            if (group == 0)
+                cerr << "ERROR: activation id (" << dec << activationRead << ") for archived redo log does not match database information (" <<
+                        oracleAnalyser->activation << "): " << path << endl;
+            else
+                cerr << "ERROR: activation id (" << dec << activationRead << ") for online redo log does not match database information (" <<
+                        oracleAnalyser->activation << "): " << path << endl;
             return REDO_ERROR;
         }
 
@@ -507,29 +518,5 @@ uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool che
 
         redoClose();
         return 0;
-    }
-
-    void Reader::updatePath(string &newPath) {
-        uint64_t sourceLength, targetLength, newPathLength = newPath.length();
-        char pathBuffer[MAX_PATH_LENGTH];
-
-        for (uint64_t i = 0; i < oracleAnalyser->pathMapping.size() / 2; ++i) {
-            sourceLength = oracleAnalyser->pathMapping[i * 2].length();
-            targetLength = oracleAnalyser->pathMapping[i * 2 + 1].length();
-
-            if (sourceLength < newPathLength &&
-                    newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
-                    memcmp(newPath.c_str(), oracleAnalyser->pathMapping[i * 2].c_str(), sourceLength) == 0) {
-
-                memcpy(pathBuffer, oracleAnalyser->pathMapping[i * 2 + 1].c_str(), targetLength);
-                memcpy(pathBuffer + targetLength, newPath.c_str() + sourceLength, newPathLength - sourceLength);
-                pathBuffer[newPathLength - sourceLength + targetLength] = 0;
-                path = pathBuffer;
-
-                return;
-            }
-        }
-
-        path = newPath;
     }
 }

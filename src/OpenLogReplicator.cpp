@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <algorithm>
@@ -198,7 +198,14 @@ int main(int argc, char **argv) {
                     const Value& modeJSON = source["mode"];
                     if (strncmp(modeJSON.GetString(),"offline", 7) == 0)
                         mode = MODE_OFFLINE;
+                    else if (strncmp(modeJSON.GetString(),"archivelog", 10) == 0)
+                        mode = MODE_ARCHIVELOG;
                 }
+
+#ifndef ONLINE_MODEIMPL_OCCI
+                if (mode == MODE_ONLINE)
+                    throw ConfigurationException("online mode is not compiled, exiting");
+#endif /* ONLINE_MODEIMPL_OCCI */
 
                 //optional
                 uint64_t disableChecks = 0;
@@ -251,7 +258,7 @@ int main(int argc, char **argv) {
                 commandBuffer->setOracleAnalyser(oracleAnalyser);
 
                 if (mode == MODE_ONLINE) {
-                    oracleAnalyser->initialize();
+                    oracleAnalyser->initializeOnlineMode();
 
                     string keysStr("");
                     vector<string> keys;

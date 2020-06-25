@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iomanip>
@@ -48,26 +48,24 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Transaction::Transaction(OracleAnalyser *oracleAnalyser, typexid xid, TransactionBuffer *transactionBuffer) :
+    Transaction::Transaction(OracleAnalyser *oracleAnalyser, typexid xid) :
             splitBlockList(nullptr),
             xid(xid),
             firstSequence(0),
             firstScn(ZERO_SCN),
             lastScn(ZERO_SCN),
+            firstTc(nullptr),
+            lastTc(nullptr),
             opCodes(0),
             pos(0),
-            lastUba(0),
-            lastDba(0),
-            lastSlt(0),
-            lastRci(0),
+            lastRedoLogRecord1(nullptr),
+            lastRedoLogRecord2(nullptr),
             commitTime(0),
             isBegin(false),
             isCommit(false),
             isRollback(false),
             shutdown(false),
             next(nullptr) {
-        firstTc = transactionBuffer->newTransactionChunk(oracleAnalyser);
-        lastTc = firstTc;
     }
 
     Transaction::~Transaction() {
@@ -183,30 +181,17 @@ namespace OpenLogReplicator {
 
         opCode0501->process();
 
+
         if (oracleAnalyser->onRollbackList(headRedoLogRecord1, redoLogRecord2)) {
-            if (oracleAnalyser->trace >= TRACE_WARN)
-                cerr << "INFO: rolling transaction part UBA: " << PRINTUBA(headRedoLogRecord1->uba) <<
-                        " DBA: 0x" << hex << headRedoLogRecord1->dba <<
-                        " SLT: " << dec << (uint64_t)headRedoLogRecord1->slt <<
-                        " RCI: " << dec << (uint64_t)headRedoLogRecord1->rci <<
-                        " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
+            oracleAnalyser->printRollbackInfo(headRedoLogRecord1, redoLogRecord2, this, "merged, rolled back");
         } else {
             if (opCodes > 0)
                 oracleAnalyser->lastOpTransactionMap.erase(this);
 
-            add(oracleAnalyser, headRedoLogRecord1->objn, headRedoLogRecord1->objd, headRedoLogRecord1->uba, headRedoLogRecord1->dba, headRedoLogRecord1->slt,
-                    headRedoLogRecord1->rci, headRedoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, firstSequence);
+            oracleAnalyser->printRollbackInfo(headRedoLogRecord1, redoLogRecord2, this, "merged");
+            add(oracleAnalyser, headRedoLogRecord1, redoLogRecord2, firstSequence, headRedoLogRecord1->scn);
             oracleAnalyser->transactionHeap.update(pos);
-
-            if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                cerr << "redo, now last: UBA: " << PRINTUBA(lastUba) <<
-                        " DBA: 0x" << hex << lastDba <<
-                        " SLT: " << dec << (uint64_t)lastSlt <<
-                        " RCI: " << dec << (uint64_t)lastRci << endl;
-            }
-
             oracleAnalyser->lastOpTransactionMap.set(this);
-            oracleAnalyser->transactionHeap.update(pos);
         }
 
         delete opCode0501;
@@ -301,42 +286,18 @@ namespace OpenLogReplicator {
         *((uint8_t**) (splitBlock + SPLIT_BLOCK_NEXT)) = tmpSplitBlockList;
     }
 
-    void Transaction::add(OracleAnalyser *oracleAnalyser, typeobj objn, typeobj objd, typeuba uba, typedba dba, typeslt slt, typerci rci,
-            RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, TransactionBuffer *transactionBuffer, typeseq sequence) {
+    void Transaction::add(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, typeseq sequence,
+            typescn scn) {
 
-        uint8_t buffer[REDO_RECORD_MAX_SIZE];
-        if ((oracleAnalyser->trace2 & TRACE2_DUMP) != 0)
-            cerr << "DUMP: add: " << setfill('0') << setw(4) << hex << redoLogRecord1->opCode << ":" <<
-                    setfill('0') << setw(4) << hex << redoLogRecord2->opCode << " XID: " << PRINTXID(redoLogRecord1->xid) << endl;
-
-        if ((oracleAnalyser->trace2 & TRACE2_UBA) != 0)
-            cerr << "add UBA: " << PRINTUBA(uba) <<
-                    " DBA: 0x" << hex << dba <<
-                    " SLT: " << dec << (uint64_t)slt <<
-                    " RCI: " << dec << (uint64_t)rci << endl;
-
-        if (transactionBuffer->addTransactionChunk(oracleAnalyser, lastTc, objn, objd, uba, dba, slt, rci, redoLogRecord1, redoLogRecord2)) {
-            lastUba = redoLogRecord1->uba;
-            lastDba = redoLogRecord1->dba;
-            lastSlt = redoLogRecord1->slt;
-            lastRci = redoLogRecord1->rci;
-        }
+        oracleAnalyser->transactionBuffer->addTransactionChunk(oracleAnalyser, this, redoLogRecord1, redoLogRecord2);
         ++opCodes;
-        touch(redoLogRecord1->scn, sequence);
+        touch(scn, sequence);
     }
 
-    bool Transaction::rollbackPartOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer, typeuba uba, typedba dba, typeslt slt, typerci rci,
-            uint64_t opFlags) {
-        if ((oracleAnalyser->trace2 & TRACE2_UBA) != 0) {
-            cerr << "rollback previous UBA: " << PRINTUBA(uba) <<
-                    " DBA: 0x" << hex << dba <<
-                    " SLT: " << dec << (uint64_t)slt <<
-                    " RCI: " << dec << (uint64_t)rci <<
-                    " OPFLAGS: " << hex << opFlags <<
-                    " opcodes: " << dec << opCodes << endl;
-        }
+    bool Transaction::rollbackPartOp(OracleAnalyser *oracleAnalyser, RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2,
+            typescn scn) {
 
-        if (transactionBuffer->deleteTransactionPart(oracleAnalyser, firstTc, lastTc, uba, dba, slt, rci, opFlags)) {
+        if (oracleAnalyser->transactionBuffer->deleteTransactionPart(oracleAnalyser, this, rollbackRedoLogRecord1, rollbackRedoLogRecord2)) {
             --opCodes;
             if (lastScn == ZERO_SCN || lastScn < scn)
                 lastScn = scn;
@@ -345,19 +306,8 @@ namespace OpenLogReplicator {
             return false;
     }
 
-    void Transaction::rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn, TransactionBuffer *transactionBuffer) {
-        if ((oracleAnalyser->trace2 & TRACE2_UBA) != 0)
-            cerr << "rollback last UBA: " << PRINTUBA(lastUba) <<
-                    " DBA: 0x" << hex << lastDba <<
-                    " SLT: " << dec << (uint64_t)lastSlt <<
-                    " RCI: " << dec << (uint64_t)lastRci << endl;
-        transactionBuffer->rollbackTransactionChunk(oracleAnalyser, lastTc, lastUba, lastDba, lastSlt, lastRci);
-        if ((oracleAnalyser->trace2 & TRACE2_UBA) != 0)
-            cerr << "rollback after last UBA: " << PRINTUBA(lastUba) <<
-                    " DBA: 0x" << hex << lastDba <<
-                    " SLT: " << dec << (uint64_t)lastSlt <<
-                    " RCI: " << dec << (uint64_t)lastRci << endl;
-
+    void Transaction::rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn) {
+        oracleAnalyser->transactionBuffer->rollbackTransactionChunk(oracleAnalyser, this);
         --opCodes;
         if (lastScn == ZERO_SCN || lastScn < scn)
             lastScn = scn;
@@ -386,7 +336,8 @@ namespace OpenLogReplicator {
             if (curRedoLogRecord == nullptr) {
                 curRedoLogRecord = newRedoLogRecord;
             } else {
-                if (curRedoLogRecord->slt != newRedoLogRecord->slt || curRedoLogRecord->rci != newRedoLogRecord->rci ||
+                if (curRedoLogRecord->slt != newRedoLogRecord->slt ||
+                        curRedoLogRecord->rci != newRedoLogRecord->rci ||
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0 && headRedoLogRecord1 != nullptr) ||
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) != 0 && midRedoLogRecord1 != nullptr) ||
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0 && tailRedoLogRecord1 != nullptr)) {
@@ -492,15 +443,13 @@ namespace OpenLogReplicator {
 
                     if (oracleAnalyser->trace >= TRACE_WARN) {
                         if ((oracleAnalyser->trace2 & TRACE2_TRANSACTION) != 0) {
-                            typeobj objn = *((typeobj*)(tc->buffer + pos + ROW_HEADER_OBJN + redoLogRecord1->length + redoLogRecord2->length));
-                            typeobj objd = *((typeobj*)(tc->buffer + pos + ROW_HEADER_OBJD + redoLogRecord1->length + redoLogRecord2->length));
                             cerr << "TRANSACTION Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
                                     " op: " << setfill('0') << setw(8) << hex << op <<
-                                    " objn: " << dec << objn <<
-                                    " objd: " << dec << objd <<
+                                    " objn: " << dec << redoLogRecord1->objn <<
+                                    " objd: " << dec << redoLogRecord1->objd <<
                                     " flg1: 0x" << setfill('0') << setw(4) << hex << redoLogRecord1->flg <<
                                     " flg2: 0x" << setfill('0') << setw(4) << hex << redoLogRecord2->flg <<
                                     " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
@@ -660,6 +609,48 @@ namespace OpenLogReplicator {
         }
     }
 
+    void Transaction::updateLastRecord(void) {
+        if (lastTc == nullptr || lastTc->elements == 0) {
+            cerr << "ERROR: updating last element of empty transaction" << endl;
+
+            lastRedoLogRecord1 = nullptr;
+            lastRedoLogRecord2 = nullptr;
+            return;
+        }
+
+        uint64_t lastSize = *((uint64_t *)(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        lastRedoLogRecord1 = (RedoLogRecord*)(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_REDO1);
+        lastRedoLogRecord2 = (RedoLogRecord*)(lastTc->buffer + lastTc->size - lastSize + ROW_HEADER_REDO2);
+    }
+
+    bool Transaction::matchesForRollback(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
+            RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2) {
+
+/*
+        cerr << "ROLLBACK:    undo:" <<
+                " OP: " << hex << redoLogRecord2->opCode <<
+                " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
+                " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
+                " SCN: " << PRINTSCN64(redoLogRecord1->scn) <<
+                " UBA: " << PRINTUBA(redoLogRecord1->uba) << endl;
+
+        cerr << "rollback:" <<
+                " OP: " << hex << rollbackRedoLogRecord1->opCode <<
+                " SLT: " << dec << (uint64_t)rollbackRedoLogRecord2->slt <<
+                " RCI: " << dec << (uint64_t)rollbackRedoLogRecord2->rci <<
+                " SCN: " << PRINTSCN64(rollbackRedoLogRecord2->scn) <<
+                " UBA: " << PRINTUBA(rollbackRedoLogRecord1->uba) << endl;
+*/
+
+        bool val =
+                (redoLogRecord1->slt == rollbackRedoLogRecord2->slt &&
+                redoLogRecord1->rci == rollbackRedoLogRecord2->rci &&
+                redoLogRecord1->uba == rollbackRedoLogRecord1->uba &&
+                redoLogRecord1->scn <= rollbackRedoLogRecord2->scn &&
+          ((rollbackRedoLogRecord2->opFlags & OPFLAG_BEGIN_TRANS) != 0 || (redoLogRecord2->dba == rollbackRedoLogRecord1->dba && redoLogRecord2->slot == rollbackRedoLogRecord1->slot)));
+        return val;
+    }
+
     bool Transaction::operator< (Transaction &p) {
         if (isCommit && !p.isCommit)
             return true;
@@ -672,7 +663,6 @@ namespace OpenLogReplicator {
         return lastScn == p.lastScn && xid < p.xid;
     }
 
-
     ostream& operator<<(ostream& os, const Transaction& tran) {
         uint64_t tcCount = 0, tcSumSize = 0;
         TransactionChunk *tc = tran.firstTc;
@@ -682,14 +672,12 @@ namespace OpenLogReplicator {
             tc = tc->next;
         }
 
-        os << "T scn: " << PRINTSCN64(tran.firstScn) << "-" << PRINTSCN64(tran.lastScn) <<
+        os << "scn: " << dec << tran.firstScn << "-" << tran.lastScn <<
                 " xid: " << PRINTXID(tran.xid) <<
-                " begin: " << dec << tran.isBegin <<
-                " commit: " << dec << tran.isCommit <<
-                " rollback: " << dec << tran.isRollback <<
-                " opCodes: " << dec << tran.opCodes <<
+                " flags: " << dec << tran.isBegin << "/" << tran.isCommit << "/" << tran.isRollback <<
+                " op: " << dec << tran.opCodes <<
                 " chunks: " << dec << tcCount <<
-                " size: " << tcSumSize;
+                " sz: " << tcSumSize;
         return os;
     }
 }

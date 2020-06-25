@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <cstdio>
@@ -118,12 +118,11 @@ namespace OpenLogReplicator {
             uint32_t controlSeq = oracleAnalyser->read32(reader->headerBuffer + reader->blockSize + 36);
             uint32_t fileSize = oracleAnalyser->read32(reader->headerBuffer + reader->blockSize + 40);
             uint16_t fileNumber = oracleAnalyser->read16(reader->headerBuffer + reader->blockSize + 48);
-            uint32_t activationId = oracleAnalyser->read32(reader->headerBuffer + reader->blockSize + 52);
 
             oracleAnalyser->dumpStream << " FILE HEADER:" << endl <<
                     "\tCompatibility Vsn = " << dec << reader->compatVsn << "=0x" << hex << reader->compatVsn << endl <<
                     "\tDb ID=" << dec << dbid << "=0x" << hex << dbid << ", Db Name='" << SID << "'" << endl <<
-                    "\tActivation ID=" << dec << activationId << "=0x" << hex << activationId << endl <<
+                    "\tActivation ID=" << dec << reader->activationRead << "=0x" << hex << reader->activationRead << endl <<
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << reader->blockSize << ", File Type=2 LOG" << endl;
 
@@ -161,7 +160,7 @@ namespace OpenLogReplicator {
 
             if (oracleAnalyser->version < 0x12200) {
                 oracleAnalyser->dumpStream <<
-                        " resetlogs count: 0x" << hex << reader->resetlogsCnt << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
+                        " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
                         " Low  scn: " << PRINTSCN48(reader->firstScnHeader) << " (" << dec << reader->firstScnHeader << ")" << " " << firstTime << endl <<
                         " Next scn: " << PRINTSCN48(reader->nextScnHeader) << " (" << dec << reader->nextScn << ")" << " " << nextTime << endl <<
@@ -175,7 +174,7 @@ namespace OpenLogReplicator {
                 typescn realNextScn = oracleAnalyser->readSCN(reader->headerBuffer + reader->blockSize + 272);
 
                 oracleAnalyser->dumpStream <<
-                        " resetlogs count: 0x" << hex << reader->resetlogsCnt << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
+                        " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << endl <<
                         " Low  scn: " << PRINTSCN64(reader->firstScnHeader) << " " << firstTime << endl <<
                         " Next scn: " << PRINTSCN64(reader->nextScnHeader) << " " << nextTime << endl <<
@@ -656,30 +655,21 @@ namespace OpenLogReplicator {
 
             Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
-                transaction = new Transaction(oracleAnalyser, redoLogRecord->xid, oracleAnalyser->transactionBuffer);
+                transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
                 if (transaction == nullptr)
                     throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.1", sizeof(Transaction));
-
-                transaction->add(oracleAnalyser, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleAnalyser->transactionBuffer, sequence);
                 oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
+
+                transaction->add(oracleAnalyser, redoLogRecord, &zero, sequence, curScn);
                 oracleAnalyser->transactionHeap.add(transaction);
             } else {
                 if (transaction->opCodes > 0)
                     oracleAnalyser->lastOpTransactionMap.erase(transaction);
-                transaction->add(oracleAnalyser, redoLogRecord->objn, redoLogRecord->objd, redoLogRecord->uba, redoLogRecord->dba, redoLogRecord->slt,
-                        redoLogRecord->rci, redoLogRecord, &zero, oracleAnalyser->transactionBuffer, sequence);
+
+                transaction->add(oracleAnalyser, redoLogRecord, &zero, sequence, curScn);
                 oracleAnalyser->transactionHeap.update(transaction->pos);
             }
-
-            if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                cerr << "redo, now last: UBA: " << PRINTUBA(transaction->lastUba) <<
-                        " DBA: 0x" << hex << transaction->lastDba <<
-                        " SLT: " << dec << (uint64_t)transaction->lastSlt <<
-                        " RCI: " << dec << (uint64_t)transaction->lastRci << endl;
-            }
             oracleAnalyser->lastOpTransactionMap.set(transaction);
-            oracleAnalyser->transactionHeap.update(transaction->pos);
 
             return;
         } else
@@ -696,12 +686,12 @@ namespace OpenLogReplicator {
 
         Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
-            transaction = new Transaction(oracleAnalyser, redoLogRecord->xid, oracleAnalyser->transactionBuffer);
+            transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
             if (transaction == nullptr)
                 throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.2", sizeof(Transaction));
+            oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
 
             transaction->touch(curScn, sequence);
-            oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
             oracleAnalyser->transactionHeap.add(transaction);
         } else
             transaction->touch(curScn, sequence);
@@ -770,7 +760,7 @@ namespace OpenLogReplicator {
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
             if (oracleAnalyser->trace >= TRACE_DETAIL)
-                cerr << "INFO: Exiting on user request" << endl;
+                cerr << "INFO: found shutdown command in events table" << endl;
             shutdown = true;
         }
 
@@ -793,31 +783,31 @@ namespace OpenLogReplicator {
         case 0x05010B10:
             {
                 if (oracleAnalyser->onRollbackList(redoLogRecord1, redoLogRecord2)) {
-                    if (oracleAnalyser->trace >= TRACE_WARN)
-                        cerr << "INFO: rolling transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                    if (oracleAnalyser->trace >= TRACE_FULL)
+                        cerr << "FULL: rolling transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                 " DBA: 0x" << hex << redoLogRecord1->dba <<
                                 " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
                                 " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
+                                " SCN: " << PRINTSCN64(redoLogRecord1->scnRecord) <<
                                 " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
                     break;
                 }
 
                 Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
-                    transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid, oracleAnalyser->transactionBuffer);
+                    transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid);
                     if (transaction == nullptr)
                         throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.4", sizeof(Transaction));
+                    oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
 
                     //process split block
                     if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) != 0)
                         transaction->addSplitBlock(oracleAnalyser, redoLogRecord1, redoLogRecord2);
                     else {
-                        transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                                redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
+                        oracleAnalyser->printRollbackInfo(redoLogRecord1, redoLogRecord2, transaction, "new transaction");
+                        transaction->add(oracleAnalyser, redoLogRecord1, redoLogRecord2, sequence, curScn);
                         oracleAnalyser->lastOpTransactionMap.set(transaction);
                     }
-
-                    oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
                     oracleAnalyser->transactionHeap.add(transaction);
                 } else {
                     if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) != 0)
@@ -826,21 +816,13 @@ namespace OpenLogReplicator {
                         if (transaction->opCodes > 0)
                             oracleAnalyser->lastOpTransactionMap.erase(transaction);
 
-                        transaction->add(oracleAnalyser, objn, objd, redoLogRecord1->uba, redoLogRecord1->dba, redoLogRecord1->slt, redoLogRecord1->rci,
-                                redoLogRecord1, redoLogRecord2, oracleAnalyser->transactionBuffer, sequence);
+                        oracleAnalyser->printRollbackInfo(redoLogRecord1, redoLogRecord2, transaction, "");
+                        transaction->add(oracleAnalyser, redoLogRecord1, redoLogRecord2, sequence, curScn);
                         oracleAnalyser->transactionHeap.update(transaction->pos);
                         oracleAnalyser->lastOpTransactionMap.set(transaction);
                     }
                 }
                 transaction->shutdown = shutdown;
-
-                if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                    cerr << "redo, now last: UBA: " << PRINTUBA(transaction->lastUba) <<
-                            " DBA: 0x" << hex << transaction->lastDba <<
-                            " SLT: " << dec << (uint64_t)transaction->lastSlt <<
-                            " RCI: " << dec << (uint64_t)transaction->lastRci << endl;
-                }
-                oracleAnalyser->transactionHeap.update(transaction->pos);
             }
             break;
 
@@ -866,38 +848,19 @@ namespace OpenLogReplicator {
         case 0x0B100506:
         case 0x0B10050B:
             {
-                if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                    cerr << "rollback, searching for UBA: " << PRINTUBA(redoLogRecord1->uba) <<
-                            " DBA: 0x" << hex << redoLogRecord2->dba <<
-                            " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
-                            " RCI: " << dec << (uint64_t)redoLogRecord2->rci <<
-                            " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
-                }
-                Transaction *transaction = oracleAnalyser->lastOpTransactionMap.getMatch(redoLogRecord1->uba,
-                        redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci, redoLogRecord2->opFlags);
+                Transaction *transaction = oracleAnalyser->lastOpTransactionMap.getMatchForRollback(redoLogRecord1, redoLogRecord2);
 
                 //match
                 if (transaction != nullptr) {
-                    if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                        cerr << "match, rolled back" << endl;
-                    }
+                    oracleAnalyser->printRollbackInfo(redoLogRecord1, redoLogRecord2, transaction, "match, rolled back");
 
                     oracleAnalyser->lastOpTransactionMap.erase(transaction);
-                    transaction->rollbackLastOp(oracleAnalyser, curScn, oracleAnalyser->transactionBuffer);
+                    transaction->rollbackLastOp(oracleAnalyser, curScn);
                     oracleAnalyser->transactionHeap.update(transaction->pos);
 
-                    if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                        cerr << "rollback, now last: UBA: " << PRINTUBA(transaction->lastUba) <<
-                                " DBA: 0x" << hex << transaction->lastDba <<
-                                " SLT: " << dec << (uint64_t)transaction->lastSlt <<
-                                " RCI: " << dec << (uint64_t)transaction->lastRci << endl;
-                    }
-                    oracleAnalyser->lastOpTransactionMap.set(transaction);
+                    if (transaction->opCodes > 0)
+                        oracleAnalyser->lastOpTransactionMap.set(transaction);
                 } else {
-                    if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                        cerr << "no match, searching" << endl;
-                    }
-
                     //check all previous transactions
                     bool foundPrevious = false;
 
@@ -905,8 +868,8 @@ namespace OpenLogReplicator {
                         transaction = oracleAnalyser->transactionHeap.heap[i];
 
                         if (transaction->opCodes > 0 &&
-                                transaction->rollbackPartOp(oracleAnalyser, curScn, oracleAnalyser->transactionBuffer, redoLogRecord1->uba,
-                                redoLogRecord2->dba, redoLogRecord2->slt, redoLogRecord2->rci, redoLogRecord2->opFlags)) {
+                                transaction->rollbackPartOp(oracleAnalyser, redoLogRecord1, redoLogRecord2, curScn)) {
+                            oracleAnalyser->printRollbackInfo(redoLogRecord1, redoLogRecord2, transaction, "partial match, rolled back");
                             oracleAnalyser->transactionHeap.update(transaction->pos);
                             foundPrevious = true;
                             break;
@@ -914,22 +877,8 @@ namespace OpenLogReplicator {
                     }
 
                     if (!foundPrevious) {
-                        if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                            cerr << "still no match, failing" << endl;
-                        }
-
+                        oracleAnalyser->printRollbackInfo(redoLogRecord1, redoLogRecord2, nullptr, "no match");
                         oracleAnalyser->addToRollbackList(redoLogRecord1, redoLogRecord2);
-
-                        if (oracleAnalyser->trace >= TRACE_WARN)
-                            cerr << "INFO: can't rollback transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
-                                    " DBA: 0x" << hex << redoLogRecord2->dba <<
-                                    " SLT: " << dec << (uint64_t)redoLogRecord2->slt <<
-                                    " RCI: " << dec << (uint64_t)redoLogRecord2->rci <<
-                                    " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
-                    } else {
-                        if ((oracleAnalyser->trace2 & TRACE2_ROLLBACK) != 0) {
-                            cerr << "match part, rolled back" << endl;
-                        }
                     }
                 }
             }
@@ -968,22 +917,22 @@ namespace OpenLogReplicator {
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->lastScn > oracleAnalyser->databaseScn) {
                     if (!transaction->isBegin)  {
-                        if (oracleAnalyser->trace >= TRACE_WARN) {
-                            cerr << "WARNING: skipping transaction with no begin: " << *transaction << endl;
-                            oracleAnalyser->dumpTransactions();
+                        if (oracleAnalyser->trace >= TRACE_INFO) {
+                            cerr << "INFO: skipping transaction with no begin: " << *transaction << endl;
+                            if (oracleAnalyser->trace >= TRACE_FULL)
+                                oracleAnalyser->dumpTransactions();
                         }
                     }
 
                     if (transaction->isBegin || (oracleAnalyser->flags & REDO_FLAGS_INCOMPLETE_TRANSACTIONS) != 0) {
-                        if (transaction->shutdown)
+                        if (transaction->shutdown) {
                             shutdownInstructed = true;
-                        else
+                        } else
                             transaction->flush(oracleAnalyser);
                     }
                 } else {
-                    if (oracleAnalyser->trace >= TRACE_DETAIL) {
+                    if (oracleAnalyser->trace >= TRACE_INFO)
                         cerr << "INFO: skipping transaction already committed: " << *transaction << endl;
-                    }
                 }
 
                 oracleAnalyser->transactionHeap.pop();
@@ -993,19 +942,13 @@ namespace OpenLogReplicator {
                 oracleAnalyser->xidTransactionMap.erase(transaction->xid);
                 if (oracleAnalyser->trace >= TRACE_FULL)
                     cerr << "FULL: dropping" << endl;
-                oracleAnalyser->transactionBuffer->deleteTransactionChunks(transaction->firstTc, transaction->lastTc);
+                if (transaction->firstTc != nullptr)
+                    oracleAnalyser->transactionBuffer->deleteTransactionChunks(transaction->firstTc, transaction->lastTc);
                 delete transaction;
 
                 transaction = oracleAnalyser->transactionHeap.top();
             } else
                 break;
-        }
-
-        if ((oracleAnalyser->trace2 & TRACE2_DUMP) != 0) {
-            for (auto const& xid : oracleAnalyser->xidTransactionMap) {
-                Transaction *transaction = oracleAnalyser->xidTransactionMap[xid.first];
-                cerr << "DUMP: " << *transaction << endl;
-            }
         }
 
         if (checkpointScn > oracleAnalyser->databaseScn) {
@@ -1057,6 +1000,10 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleAnalyserRedoLog::processLog(void) {
+        if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->firstScn != 0) {
+            firstScn = reader->firstScn;
+            nextScn = reader->nextScn;
+        }
         cerr << "Processing log: " << *this << endl;
         uint64_t blockPos = 16, bufferPos = 0;
         uint64_t curBufferStart = 0, curBufferEnd = 0, curRet, curStatus;
@@ -1208,7 +1155,8 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors) {
-        os << "(" << dec << ors.group << ", " << ors.firstScn << ", " << ors.sequence << ", \"" << ors.path << "\")";
+        os << "(" << dec << ors.group << ", " << ors.firstScn << ", " <<
+                ((ors.nextScn != ZERO_SCN) ? ors.nextScn : 0) << ", " << ors.sequence << ", \"" << ors.path << "\")";
         return os;
     }
 }

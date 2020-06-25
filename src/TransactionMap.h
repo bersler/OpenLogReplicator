@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
@@ -27,6 +27,7 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 namespace OpenLogReplicator {
 
     class Transaction;
+    class RedoLogRecord;
 
     class TransactionMap {
     protected:
@@ -39,7 +40,7 @@ namespace OpenLogReplicator {
         virtual ~TransactionMap();
         void erase(Transaction * transaction);
         void set(Transaction * transaction);
-        Transaction* getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci, uint64_t opFlags);
+        Transaction* getMatchForRollback(RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
     };
 }
 

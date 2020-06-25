@@ -14,14 +14,16 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
+
 
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <dirent.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <rapidjson/document.h>
@@ -42,9 +44,11 @@ along with Open Log Replicator; see the file LICENSE.txt  If not see
 #include "Transaction.h"
 #include "TransactionChunk.h"
 
-using namespace std;
 using namespace rapidjson;
-using namespace oracle::occi;
+using namespace std;
+#ifdef ONLINE_MODEIMPL_OCCI
+    using namespace oracle::occi;
+#endif /* ONLINE_MODEIMPL_OCCI */
 
 const Value& getJSONfield(string &fileName, const Value& value, const char* field);
 const Value& getJSONfield(string &fileName, const Document& document, const char* field);
@@ -53,8 +57,8 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
-    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
+    string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT NAME, SEQUENCE#, FIRST_CHANGE#, FIRST_TIME, NEXT_CHANGE#, NEXT_TIME FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :i AND ACTIVATION# = :i AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
+    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, D.ACTIVATION#, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_CON_INFO("SELECT SYS_CONTEXT('USERENV','CON_ID'), SYS_CONTEXT('USERENV','CON_NAME') FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
@@ -69,9 +73,11 @@ namespace OpenLogReplicator {
             uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
             uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
         Thread(alias),
-        databaseSequence(0),
+#ifdef ONLINE_MODEIMPL_OCCI
         env(nullptr),
         conn(nullptr),
+#endif /* ONLINE_MODEIMPL_OCCI */
+        databaseSequence(0),
         user(user),
         passwd(passwd),
         connectString(connectString),
@@ -101,6 +107,7 @@ namespace OpenLogReplicator {
         version(0),
         conId(0),
         resetlogs(0),
+        activation(0),
         isBigEndian(false),
         read16(read16Little),
         read32(read32Little),
@@ -115,8 +122,9 @@ namespace OpenLogReplicator {
         writeSCN(writeSCNLittle) {
 
         populateTimeZone();
-        readCheckpoint();
-        env = Environment::createEnvironment (Environment::DEFAULT);
+#ifdef ONLINE_MODEIMPL_OCCI
+            env = Environment::createEnvironment (Environment::DEFAULT);
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     OracleAnalyser::~OracleAnalyser() {
@@ -168,6 +176,7 @@ namespace OpenLogReplicator {
     }
 
     string OracleAnalyser::getParameterValue(const char *parameter) {
+#ifdef ONLINE_MODEIMPL_OCCI
         try {
             OracleStatement stmt(&conn, env);
             if ((trace2 & TRACE2_SQL) != 0)
@@ -185,6 +194,9 @@ namespace OpenLogReplicator {
 
         //no value found
         throw RuntimeException("getting parameter value");
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     void OracleAnalyser::populateTimeZone() {
@@ -820,7 +832,8 @@ namespace OpenLogReplicator {
         ss << "{\"database\":\"" << database
                 << "\",\"sequence\":" << dec << minSequence
                 << ",\"scn\":" << dec << databaseScn
-                << ",\"resetlogs\":" << dec << resetlogs << "}";
+                << ",\"resetlogs\":" << dec << resetlogs
+                << ",\"activation\":" << dec << activation << "}";
 
         outfile << ss.rdbuf();
         outfile.close();
@@ -830,7 +843,8 @@ namespace OpenLogReplicator {
                 cerr << "INFO: Writing checkpoint at exit for " << database << endl;
                 cerr << "INFO: sequence: " << dec << minSequence <<
                         " scn: " << dec << databaseScn <<
-                        " resetlogs: " << dec << resetlogs;
+                        " resetlogs: " << dec << resetlogs <<
+                        " activation: " << dec << activation;
                 if (conId > 0)
                     cerr << " con_id: " << dec << conId <<
                             " con_name: " << conName;
@@ -846,7 +860,7 @@ namespace OpenLogReplicator {
         string fileName = database + "-chkpt.json";
         infile.open(fileName.c_str(), ios::in);
         if (!infile.is_open()) {
-            if (mode == MODE_OFFLINE)
+            if (mode == MODE_OFFLINE || mode == MODE_ARCHIVELOG)
                 throw RuntimeException("checkpoint file <database>-chkpt.json is required for offline mode");
             return;
         }
@@ -865,7 +879,18 @@ namespace OpenLogReplicator {
         databaseSequence = databaseSequenceJSON.GetUint64();
 
         const Value& resetlogsJSON = getJSONfield(fileName, document, "resetlogs");
-        resetlogs = resetlogsJSON.GetUint64();
+        typeresetlogs resetlogsRead = resetlogsJSON.GetUint64();
+        if (resetlogs != resetlogsRead) {
+            cerr << "ERROR: resetlogs id read from checkpoint JSON: " << dec << resetlogsRead << ", current: " << resetlogs << endl;
+            throw RuntimeException("parsing of <database>-chkpt.json - incorrect resetlogs");
+        }
+
+        const Value& activationJSON = getJSONfield(fileName, document, "activation");
+        typeactivation activationRead = activationJSON.GetUint64();
+        if (activation != activationRead) {
+            cerr << "ERROR: activation id read from checkpoint JSON: " << dec << activationRead << ", current: " << activation << endl;
+            throw RuntimeException("parsing of <database>-chkpt.json - incorrect activation");
+        }
 
         const Value& scnJSON = getJSONfield(fileName, document, "scn");
         databaseScn = scnJSON.GetUint64();
@@ -880,6 +905,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::checkConnection(bool reconnect) {
+#ifdef ONLINE_MODEIMPL_OCCI
         while (!shutdown) {
             if (conn == nullptr) {
                 if (trace >= TRACE_INFO)
@@ -897,10 +923,14 @@ namespace OpenLogReplicator {
             cerr << "ERROR: cannot connect to database, retry in 5 sec." << endl;
             sleep(5);
         }
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     void OracleAnalyser::archLogGetList(void) {
         if (mode == MODE_ONLINE) {
+#ifdef ONLINE_MODEIMPL_OCCI
             checkConnection(true);
 
             try {
@@ -910,6 +940,7 @@ namespace OpenLogReplicator {
                 stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
                 stmt.stmt->setInt(1, databaseSequence);
                 stmt.stmt->setInt(2, resetlogs);
+                stmt.stmt->setInt(3, activation);
                 stmt.executeQuery();
 
                 string path;
@@ -935,8 +966,137 @@ namespace OpenLogReplicator {
                 cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
                 throw RuntimeException("getting archive log list");
             }
-        } else if (mode == MODE_OFFLINE) {
-            throw RuntimeException("offline mode archive log list not yet implemented");
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
+        } else if (mode == MODE_OFFLINE || mode == MODE_ARCHIVELOG) {
+            if (dbRecoveryFileDest.length() > 0) {
+
+                string path = applyMapping(dbRecoveryFileDest + "/" + database + "/archivelog");
+
+                DIR *dir;
+                if ((dir = opendir(path.c_str())) == nullptr) {
+                    cerr << "ERROR: can't access directory: " << path << endl;
+                    throw RuntimeException("reading archive log list");
+                }
+
+                if ((trace2 & TRACE2_ARCHIVE_LIST) != 0)
+                    cerr << "ARCH_LIST: checking path: " << path << endl;
+
+                string newLastCheckedDay;
+                struct dirent *ent;
+                while ((ent = readdir(dir)) != nullptr) {
+                    if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                        continue;
+                    if (ent->d_type != DT_DIR)
+                        continue;
+
+                    //skip earlier days
+                    if (lastCheckedDay.length() > 0 && lastCheckedDay.compare(ent->d_name) > 0)
+                        continue;
+
+                    if ((trace2 & TRACE2_ARCHIVE_LIST) != 0)
+                        cerr << "ARCH_LIST: checking path: " << path << "/" << ent->d_name << endl;
+
+                    string path2 = path + "/" + ent->d_name;
+                    DIR *dir2;
+                    if ((dir2 = opendir(path2.c_str())) == nullptr) {
+                        closedir(dir);
+                        cerr << "ERROR: can't access directory: " << path2 << endl;
+                        throw RuntimeException("reading archive log list");
+                    }
+
+                    struct dirent *ent2;
+                    while ((ent2 = readdir(dir2)) != nullptr) {
+                        if (strcmp(ent2->d_name, ".") == 0 || strcmp(ent2->d_name, "..") == 0)
+                            continue;
+
+                        string filename = path + "/" + ent->d_name + "/" + ent2->d_name;
+                        if ((trace2 & TRACE2_ARCHIVE_LIST) != 0)
+                            cerr << "ARCH_LIST: checking path: " << filename << endl;
+
+                        //checking if file name looks something like o1_mf_1_SSSS_XXXXXXXX_.arc
+                        //SS - sequence number
+
+                        uint64_t sequence = 0, i, j, iMax = strnlen(ent2->d_name, 256);
+                        for (i = 0; i < iMax; ++i)
+                            if (ent2->d_name[i] == '_')
+                                break;
+
+                        //first '_'
+                        if (i >= iMax || ent2->d_name[i] != '_')
+                            continue;
+
+                        for (++i; i < iMax; ++i)
+                            if (ent2->d_name[i] == '_')
+                                break;
+
+                        //second '_'
+                        if (i >= iMax || ent2->d_name[i] != '_')
+                            continue;
+
+                        for (++i; i < iMax; ++i)
+                            if (ent2->d_name[i] == '_')
+                                break;
+
+                        //third '_'
+                        if (i >= iMax || ent2->d_name[i] != '_')
+                            continue;
+
+                        for (++i; i < iMax; ++i)
+                            if (ent2->d_name[i] >= '0' && ent2->d_name[i] <= '9')
+                                sequence = sequence * 10 + (ent2->d_name[i] - '0');
+                            else
+                                break;
+
+                        //forth '_'
+                        if (i >= iMax || ent2->d_name[i] != '_')
+                            continue;
+
+                        for (++i; i < iMax; ++i)
+                            if (ent2->d_name[i] == '_')
+                                break;
+
+                        if (i >= iMax || ent2->d_name[i] != '_')
+                            continue;
+
+                        //fifth '_'
+                        if (strncmp(ent2->d_name + i, "_.arc", 5) != 0)
+                            continue;
+
+                        if ((trace2 & TRACE2_ARCHIVE_LIST) != 0)
+                            cerr << "ARCH_LIST: found sequence: " << sequence << endl;
+
+                        if (sequence >= databaseSequence) {
+                            OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, filename.c_str());
+                            if (redo == nullptr)
+                                throw MemoryException("OracleAnalyser::archLogGetList.2", sizeof(OracleAnalyserRedoLog));
+
+                            redo->firstScn = ZERO_SCN;
+                            redo->nextScn = ZERO_SCN;
+                            redo->sequence = sequence;
+                            archiveRedoQueue.push(redo);
+                        }
+                    }
+                    closedir(dir2);
+
+                    if (newLastCheckedDay.length() == 0 ||
+                        (newLastCheckedDay.length() > 0 && newLastCheckedDay.compare(ent->d_name) < 0))
+                        newLastCheckedDay = ent->d_name;
+                }
+                closedir(dir);
+
+                if (newLastCheckedDay.length() != 0 &&
+                        (lastCheckedDay.length() == 0 || (lastCheckedDay.length() > 0 && lastCheckedDay.compare(newLastCheckedDay) < 0))) {
+                    if ((trace2 & TRACE2_ARCHIVE_LIST) != 0)
+                        cerr << "ARCH_LIST: updating last checked day to: " << newLastCheckedDay << endl;
+                    lastCheckedDay = newLastCheckedDay;
+                }
+
+            } else if (logArchiveDest.length() > 0 && logArchiveFormat.length() > 0) {
+                throw RuntimeException("only db_recovery_file_dest location of archvied red logs is supported for offline mode");
+            } else
+                throw RuntimeException("missing location of archived redo logs for offline mode");
         }
     }
 
@@ -946,6 +1106,10 @@ namespace OpenLogReplicator {
             if (!readerUpdateRedoLog(oracleAnalyserRedoLog->reader)) {
                 cerr << "ERROR: updating failed for " << dec << oracleAnalyserRedoLog->path << endl;
                 throw RuntimeException("can't update file");
+            } else {
+                oracleAnalyserRedoLog->sequence = oracleAnalyserRedoLog->reader->sequence;
+                oracleAnalyserRedoLog->firstScn = oracleAnalyserRedoLog->reader->firstScn;
+                oracleAnalyserRedoLog->nextScn = oracleAnalyserRedoLog->reader->nextScn;
             }
         }
     }
@@ -1158,13 +1322,15 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyser::initialize(void) {
+    void OracleAnalyser::initializeOnlineMode(void) {
+#ifdef ONLINE_MODEIMPL_OCCI
         checkConnection(false);
         if (conn == nullptr)
             throw RuntimeException("connecting to the database");
 
         typescn currentDatabaseScn;
         typeresetlogs currentResetlogs;
+        typeactivation currentActivation;
 
         try {
             OracleStatement stmt(&conn, env);
@@ -1223,8 +1389,16 @@ namespace OpenLogReplicator {
                     resetlogs = currentResetlogs;
                 }
 
+                currentActivation = stmt.rset->getNumber(8);
+                if (activation != 0 && currentActivation != activation) {
+                    cerr << "ERROR: Previous activation: " << dec << activation << ", current: " << currentActivation << endl;
+                    throw RuntimeException("incorrect database activation id");
+                } else {
+                    activation = currentActivation;
+                }
+
                 //12+
-                string VERSION = stmt.rset->getString(8);
+                string VERSION = stmt.rset->getString(9);
                 if (trace >= TRACE_INFO)
                     cerr << "INFO: version: " << dec << VERSION << endl;
 
@@ -1242,7 +1416,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                databaseContext = stmt.rset->getString(9);
+                databaseContext = stmt.rset->getString(10);
             } else {
                 throw RuntimeException("reading SYS.V_$DATABASE");
             }
@@ -1270,6 +1444,7 @@ namespace OpenLogReplicator {
         }
 
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
+        logArchiveDest = getParameterValue("log_archive_dest");
         logArchiveFormat = getParameterValue("log_archive_format");
 
         if (databaseSequence == 0 || databaseScn == 0) {
@@ -1293,7 +1468,8 @@ namespace OpenLogReplicator {
         if (trace >= TRACE_INFO) {
             cerr << "INFO: sequence: " << dec << databaseSequence <<
                     " scn: " << dec << databaseScn <<
-                    " resetlogs: " << dec << resetlogs;
+                    " resetlogs: " << dec << resetlogs <<
+                    " activation: " << dec << activation;
             if (conId > 0)
                 cerr << " con_id: " << dec << conId <<
                         " con_name: " << conName;
@@ -1356,12 +1532,20 @@ namespace OpenLogReplicator {
         }
 
         archReader = readerCreate(0);
+        readCheckpoint();
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     bool OracleAnalyser::readSchema(void) {
         ifstream infile;
         string fileName = database + "-schema.json";
         infile.open(fileName.c_str(), ios::in);
+
+        if (trace >= TRACE_INFO)
+            cerr << "INFO: reading schema from JSON for " << database << endl;
+
         if (!infile.is_open())
             return false;
 
@@ -1380,6 +1564,9 @@ namespace OpenLogReplicator {
         const Value& resetlogsJSON = getJSONfield(fileName, document, "resetlogs");
         resetlogs = resetlogsJSON.GetUint64();
 
+        const Value& activationJSON = getJSONfield(fileName, document, "activation");
+        activation = activationJSON.GetUint64();
+
         const Value& databaseContextJSON = getJSONfield(fileName, document, "database-context");
         databaseContext = databaseContextJSON.GetString();
 
@@ -1394,6 +1581,9 @@ namespace OpenLogReplicator {
 
         const Value& logArchiveFormatJSON = getJSONfield(fileName, document, "log-archive-format");
         logArchiveFormat = logArchiveFormatJSON.GetString();
+
+        const Value& logArchiveDestJSON = getJSONfield(fileName, document, "log-archive-dest");
+        logArchiveDest = logArchiveDestJSON.GetString();
 
         const Value& onlineRedo = getJSONfield(fileName, document, "online-redo");
         if (!onlineRedo.IsArray())
@@ -1421,8 +1611,6 @@ namespace OpenLogReplicator {
             onlineRedoSet.insert(redo);
         }
         archReader = readerCreate(0);
-
-        updateOnlineLogs();
 
         const Value& schema = getJSONfield(fileName, document, "schema");
         if (!schema.IsArray())
@@ -1505,6 +1693,8 @@ namespace OpenLogReplicator {
         }
 
         infile.close();
+
+        readCheckpoint();
         return true;
     }
 
@@ -1524,11 +1714,14 @@ namespace OpenLogReplicator {
         ss << "{\"database\":\"" << database << "\"," <<
                 "\"big-endian\":" << dec << isBigEndian << "," <<
                 "\"resetlogs\":" << dec << resetlogs << "," <<
+                "\"activation\":" << dec << activation << "," <<
                 "\"database-context\":\"" << databaseContext << "\"," <<
                 "\"con-id\":" << dec << conId << "," <<
                 "\"con-name\":\"" << conName << "\"," <<
                 "\"db-recovery-file-dest\":\"";
         writeEscapeValue(ss, dbRecoveryFileDest);
+        ss << "\"," << "\"log-archive-dest\":\"";
+        writeEscapeValue(ss, logArchiveDest);
         ss << "\"," << "\"log-archive-format\":\"";
         writeEscapeValue(ss, logArchiveFormat);
         ss << "\"," << "\"online-redo\":[";
@@ -1544,7 +1737,7 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss << "{\"group\":" << reader->group << ",\"path\":\"";
-            writeEscapeValue(ss, reader->path);
+            writeEscapeValue(ss, reader->pathOrig);
             ss << "\"}";
         }
         ss << "]," << "\"schema\":[";
@@ -1594,6 +1787,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::closeDbConnection(void) {
+#ifdef ONLINE_MODEIMPL_OCCI
         if (conn != nullptr) {
             env->terminateConnection(conn);
             conn = nullptr;
@@ -1602,10 +1796,21 @@ namespace OpenLogReplicator {
             Environment::terminateEnvironment(env);
             env = nullptr;
         }
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     void *OracleAnalyser::run(void) {
-        cout << "Starting thread: Oracle Analyser for: " << database << endl;
+        string modeStr;
+        if (mode == MODE_ONLINE)
+            modeStr = "online";
+        else if (mode == MODE_OFFLINE)
+            modeStr = "offline";
+        else if (mode == MODE_ARCHIVELOG)
+            modeStr = "archivelog";
+
+        cout << "Starting thread: Oracle Analyser for: " << database << " in " << modeStr << " mode" << endl;
         if (mode == MODE_ONLINE)
             checkConnection(true);
 
@@ -1642,12 +1847,8 @@ namespace OpenLogReplicator {
                             for (OracleAnalyserRedoLog *redoTmp : onlineRedoSet) {
                                 if (redoTmp->reader->sequence > databaseSequence)
                                     isHigher = true;
-                                if (redoTmp->reader->sequence == databaseSequence) {
+                                if (redoTmp->reader->sequence == databaseSequence)
                                     redo = redoTmp;
-                                    redo->sequence = redoTmp->reader->sequence;
-                                    redo->firstScn = redoTmp->reader->firstScn;
-                                    redo->nextScn = redoTmp->reader->nextScn;
-                                }
                             }
 
                             //all so far read, waiting for switch
@@ -1770,7 +1971,8 @@ namespace OpenLogReplicator {
             cerr << "INFO: Oracle Analyser for: " << database << " shutting down" << endl;
 
         writeCheckpoint(true);
-        dumpTransactions();
+        if (trace >= TRACE_FULL)
+            dumpTransactions();
         readerDropAll();
 
         if (trace >= TRACE_INFO)
@@ -1788,6 +1990,7 @@ namespace OpenLogReplicator {
                         " DBA: 0x" << hex << rolledBack2->dba <<
                         " SLT: " << dec << (uint64_t)rolledBack2->slt <<
                         " RCI: " << dec << (uint64_t)rolledBack2->rci <<
+                        " SCN: " << PRINTSCN64(rolledBack2->scnRecord) <<
                         " OPFLAGS: " << hex << rolledBack2->opFlags << endl;
 
             tmpRedoLogRecord1 = rolledBack1;
@@ -1801,51 +2004,34 @@ namespace OpenLogReplicator {
     }
 
     bool OracleAnalyser::onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        RedoLogRecord *tmpRedoLogRecord1, *tmpRedoLogRecord2;
+        RedoLogRecord *rollbackRedoLogRecord1, *rollbackRedoLogRecord2;
 
-        tmpRedoLogRecord1 = rolledBack1;
-        tmpRedoLogRecord2 = rolledBack2;
-        while (tmpRedoLogRecord1 != nullptr) {
-            if ((trace2 & TRACE2_UBA) != 0)
-                cerr << "WARNING: checking element on rollback list:" <<
-                        " UBA: " << PRINTUBA(tmpRedoLogRecord1->uba) <<
-                        " DBA: 0x" << hex << tmpRedoLogRecord2->dba <<
-                        " SLT: " << dec << (uint64_t)tmpRedoLogRecord2->slt <<
-                        " RCI: " << dec << (uint64_t)tmpRedoLogRecord2->rci <<
-                        " OPFLAGS: " << hex << tmpRedoLogRecord2->opFlags <<
-                        " for: " <<
-                        " UBA: " << PRINTUBA(redoLogRecord1->uba) <<
-                        " DBA: 0x" << hex << redoLogRecord1->dba <<
-                        " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
-                        " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
-                        " OPFLAGS: " << hex << redoLogRecord1->opFlags <<
-                        endl;
+        rollbackRedoLogRecord1 = rolledBack1;
+        rollbackRedoLogRecord2 = rolledBack2;
+        while (rollbackRedoLogRecord1 != nullptr) {
+            if (Transaction::matchesForRollback(redoLogRecord1, redoLogRecord2, rollbackRedoLogRecord1, rollbackRedoLogRecord2)) {
 
-            if (tmpRedoLogRecord2->slt == redoLogRecord1->slt &&
-                    tmpRedoLogRecord2->rci == redoLogRecord1->rci &&
-                    tmpRedoLogRecord1->uba == redoLogRecord1->uba &&
-                    ((tmpRedoLogRecord2->opFlags & OPFLAG_BEGIN_TRANS) != 0 || tmpRedoLogRecord2->dba == redoLogRecord1->dba)) {
-
-                if (tmpRedoLogRecord1->next != nullptr) {
-                    tmpRedoLogRecord1->next->prev = tmpRedoLogRecord1->prev;
-                    tmpRedoLogRecord2->next->prev = tmpRedoLogRecord2->prev;
+                printRollbackInfo(rollbackRedoLogRecord1, rollbackRedoLogRecord2, nullptr, "rolled back from list");
+                if (rollbackRedoLogRecord1->next != nullptr) {
+                    rollbackRedoLogRecord1->next->prev = rollbackRedoLogRecord1->prev;
+                    rollbackRedoLogRecord2->next->prev = rollbackRedoLogRecord2->prev;
                 }
 
-                if (tmpRedoLogRecord1->prev == nullptr) {
-                    rolledBack1 = tmpRedoLogRecord1->next;
-                    rolledBack2 = tmpRedoLogRecord2->next;
+                if (rollbackRedoLogRecord1->prev == nullptr) {
+                    rolledBack1 = rollbackRedoLogRecord1->next;
+                    rolledBack2 = rollbackRedoLogRecord2->next;
                 } else {
-                    tmpRedoLogRecord1->prev->next = tmpRedoLogRecord1->next;
-                    tmpRedoLogRecord2->prev->next = tmpRedoLogRecord2->next;
+                    rollbackRedoLogRecord1->prev->next = rollbackRedoLogRecord1->next;
+                    rollbackRedoLogRecord2->prev->next = rollbackRedoLogRecord2->next;
                 }
 
-                delete tmpRedoLogRecord1;
-                delete tmpRedoLogRecord2;
+                delete rollbackRedoLogRecord1;
+                delete rollbackRedoLogRecord2;
                 return true;
             }
 
-            tmpRedoLogRecord1 = tmpRedoLogRecord1->next;
-            tmpRedoLogRecord2 = tmpRedoLogRecord2->next;
+            rollbackRedoLogRecord1 = rollbackRedoLogRecord1->next;
+            rollbackRedoLogRecord2 = rollbackRedoLogRecord2->next;
         }
         return false;
     }
@@ -1878,13 +2064,14 @@ namespace OpenLogReplicator {
         return object;
     }
 
-    bool OracleAnalyser::readerCheckRedoLog(Reader *reader, string &path) {
+    bool OracleAnalyser::readerCheckRedoLog(Reader *reader, string path) {
         unique_lock<mutex> lck(mtx);
         reader->status = READER_STATUS_CHECK;
         reader->sequence = 0;
         reader->firstScn = ZERO_SCN;
         reader->nextScn = ZERO_SCN;
-        reader->updatePath(path);
+        reader->pathOrig = path;
+        reader->path = applyMapping(path);
         readerCond.notify_all();
         sleepingCond.notify_all();
         while (reader->status == READER_STATUS_CHECK) {
@@ -1913,6 +2100,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::checkTableForGrants(string tableName) {
+#ifdef ONLINE_MODEIMPL_OCCI
         try {
             stringstream query;
             query << "SELECT 1 FROM " << tableName << " WHERE 0 = 1";
@@ -1928,6 +2116,9 @@ namespace OpenLogReplicator {
             cerr << "HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";" << endl;
             throw ConfigurationException("grants missing");
         }
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     Reader *OracleAnalyser::readerCreate(int64_t group) {
@@ -1951,6 +2142,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options) {
+#ifdef ONLINE_MODEIMPL_OCCI
         checkConnection(false);
         cout << "- reading table schema for: " << mask << endl;
         uint64_t tabCnt = 0;
@@ -2127,18 +2319,21 @@ namespace OpenLogReplicator {
             throw RuntimeException("getting table metadata");
         }
         cout << "  * total: " << dec << tabCnt << " tables" << endl;
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
     }
 
     void OracleAnalyser::checkForCheckpoint(void) {
         uint64_t timeSinceCheckpoint = (clock() - previousCheckpoint) / CLOCKS_PER_SEC;
         if (timeSinceCheckpoint > checkpointInterval) {
             if (trace >= TRACE_FULL) {
-                cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s, forcing checkpoint" << endl;
+                cerr << "FULL: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s, forcing checkpoint" << endl;
             }
             writeCheckpoint(false);
         } else {
             if (trace >= TRACE_FULL) {
-                cerr << "INFO: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s" << endl;
+                cerr << "FULL: Time since last checkpoint: " << dec << timeSinceCheckpoint << "s" << endl;
             }
         }
     }
@@ -2154,9 +2349,10 @@ namespace OpenLogReplicator {
             analyserCond.wait(lck);
         }
 
-        if (reader->ret == REDO_OK)
+        if (reader->ret == REDO_OK) {
+
             return true;
-        else
+        } else
             return false;
     }
 
@@ -2244,6 +2440,75 @@ namespace OpenLogReplicator {
             throw RedoLogException("field length out of vector");
         }
         return true;
+    }
+
+    string OracleAnalyser::applyMapping(string path) {
+        uint64_t sourceLength, targetLength, newPathLength = path.length();
+        char pathBuffer[MAX_PATH_LENGTH];
+
+        for (uint64_t i = 0; i < pathMapping.size() / 2; ++i) {
+            sourceLength = pathMapping[i * 2].length();
+            targetLength = pathMapping[i * 2 + 1].length();
+
+            if (sourceLength <= newPathLength &&
+                    newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
+                    memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
+
+                memcpy(pathBuffer, pathMapping[i * 2 + 1].c_str(), targetLength);
+                memcpy(pathBuffer + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
+                pathBuffer[newPathLength - sourceLength + targetLength] = 0;
+                path = pathBuffer;
+                break;
+            }
+        }
+
+        return path;
+    }
+
+
+    void OracleAnalyser::printRollbackInfo(RedoLogRecord *redoLogRecord, Transaction *transaction, const char *msg) {
+        if ((trace2 & TRACE2_COMMIT_ROLLBACK) == 0)
+            return;
+        cerr << "ROLLBACK:" <<
+                " OP: " << setw(4) << setfill('0') << hex << redoLogRecord->opCode << "    " <<
+                " DBA: 0x" << hex << redoLogRecord->dba << "." << (uint64_t)redoLogRecord->slot <<
+                " DBA: 0x" << hex << redoLogRecord->dba <<
+                " SLT: " << dec << (uint64_t)redoLogRecord->slt <<
+                " RCI: " << dec << (uint64_t)redoLogRecord->rci <<
+                " SCN: " << PRINTSCN64(redoLogRecord->scn) <<
+                " REC: " << PRINTSCN64(redoLogRecord->scnRecord);
+        if (transaction != nullptr)
+            cerr << " XID: " << PRINTXID(transaction->xid);
+        cerr << " " << msg << endl;
+    }
+
+    void OracleAnalyser::printRollbackInfo(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, Transaction *transaction, const char *msg) {
+        if ((trace2 & TRACE2_COMMIT_ROLLBACK) == 0)
+            return;
+
+        cerr << "ROLLBACK:" <<
+                " OP: " << setw(4) << setfill('0') << hex << redoLogRecord1->opCode << redoLogRecord2->opCode <<
+                " UBA: " << PRINTUBA(redoLogRecord1->uba);
+        if (redoLogRecord1->opCode == 0x0501)
+            cerr <<
+                    " DBA: 0x" << hex << redoLogRecord2->dba << "." << (uint64_t)redoLogRecord2->slot <<
+                    " SLT: " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord1->slt <<
+                    " RCI: " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord1->rci;
+        else
+            cerr <<
+                    " DBA: 0x" << hex << redoLogRecord1->dba << "." << (uint64_t)redoLogRecord1->slot <<
+                    " SLT: " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord2->slt <<
+                    " RCI: " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord2->rci;
+
+        cerr <<
+                " SCN: " << PRINTSCN64(redoLogRecord1->scn) <<
+                "." << setfill(' ') << setw(5) << dec << redoLogRecord1->subScn <<
+                " REC: " << PRINTSCN64(redoLogRecord1->scnRecord);
+        if (transaction != nullptr)
+            cerr << " XID: " << PRINTXID(transaction->xid);
+        if (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B)
+            cerr << " OPFLAGS: " << hex << redoLogRecord2->opFlags;
+        cerr << " " << msg << endl;
     }
 
     bool OracleAnalyserRedoLogCompare::operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2) {

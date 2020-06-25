@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iomanip>
@@ -31,9 +31,13 @@ using namespace std;
 namespace OpenLogReplicator {
 
     void TransactionMap::set(Transaction* transaction) {
-        if (transaction->opCodes == 0)
+        if (transaction->lastRedoLogRecord1 == nullptr) {
+            cerr << "ERROR: trying to set empty last record in transaction map" << endl;
             return;
-        uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
+        }
+
+        uint64_t hashKey = HASHINGFUNCTION(transaction->lastRedoLogRecord1->uba, transaction->lastRedoLogRecord1->slt,
+                transaction->lastRedoLogRecord1->rci);
 
         Transaction *transactionTmp = hashMap[hashKey];
         while (transactionTmp != nullptr) {
@@ -50,13 +54,11 @@ namespace OpenLogReplicator {
     }
 
     void TransactionMap::erase(Transaction * transaction) {
-        uint64_t hashKey = HASHINGFUNCTION(transaction->lastUba, transaction->lastSlt, transaction->lastRci);
+        uint64_t hashKey = HASHINGFUNCTION(transaction->lastRedoLogRecord1->uba, transaction->lastRedoLogRecord1->slt,
+                transaction->lastRedoLogRecord1->rci);
 
         if (hashMap[hashKey] == nullptr) {
-            cerr << "ERROR: transaction does not exists in hash map1: UBA: " << PRINTUBA(transaction->lastUba) <<
-                    " DBA: 0x" << setfill('0') << setw(8) << hex << transaction->lastDba <<
-                    " SLT: " << dec << (uint64_t) transaction->lastSlt <<
-                    " RCI: " << dec << (uint64_t) transaction->lastRci << endl;
+            cerr << "ERROR: transaction does not exists in hash map1" << endl;
             return;
         }
 
@@ -79,20 +81,18 @@ namespace OpenLogReplicator {
             transactionTmpNext = transactionTmp->next;
         }
 
-        cerr << "ERROR: transaction does not exists in hash map2: UBA: " << PRINTUBA(transaction->lastUba) <<
-                " DBA: 0x" << setfill('0') << setw(8) << hex << transaction->lastDba <<
-                " SLT: " << dec << (uint64_t) transaction->lastSlt <<
-                " RCI: " << dec << (uint64_t) transaction->lastRci << endl;
+        cerr << "ERROR: transaction does not exists in hash map2" << endl;
         return;
     }
 
-    Transaction* TransactionMap::getMatch(typeuba uba, typedba dba, typeslt slt, typerci rci, uint64_t opFlags) {
-        uint64_t hashKey = HASHINGFUNCTION(uba, slt, rci);
+    //typeuba uba, typedba dba, typeslt slt, typerci rci, typescn scn, uint64_t opFlags
+    Transaction* TransactionMap::getMatchForRollback(RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2) {
+        uint64_t hashKey = HASHINGFUNCTION(rollbackRedoLogRecord1->uba, rollbackRedoLogRecord2->slt, rollbackRedoLogRecord2->rci);
         Transaction *transactionTmp = hashMap[hashKey];
 
         while (transactionTmp != nullptr) {
-            if (transactionTmp->lastSlt == slt && transactionTmp->lastRci == rci  && transactionTmp->lastUba == uba &&
-                    ((opFlags & OPFLAG_BEGIN_TRANS) != 0 || transactionTmp->lastDba == dba))
+            if (Transaction::matchesForRollback(transactionTmp->lastRedoLogRecord1, transactionTmp->lastRedoLogRecord2,
+                    rollbackRedoLogRecord1, rollbackRedoLogRecord2))
                 return transactionTmp;
 
             transactionTmp = transactionTmp->next;

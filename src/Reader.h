@@ -14,7 +14,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE.txt  If not see
+along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <condition_variable>
@@ -73,12 +73,14 @@ namespace OpenLogReplicator {
         int64_t group;
         typeseq sequence;
         string path;
+        string pathOrig;
         uint64_t blockSize;
         typeblk numBlocks;
         typescn firstScn;
         typescn nextScn;
         uint32_t compatVsn;
-        typeresetlogs resetlogsCnt;
+        typeresetlogs resetlogsRead;
+        typeactivation activationRead;
         typescn firstScnHeader;
         typescn nextScnHeader;
 
@@ -92,7 +94,6 @@ namespace OpenLogReplicator {
         virtual ~Reader();
 
         void *run(void);
-        void updatePath(string &newPath);
         typesum calcChSum(uint8_t *buffer, uint64_t size);
     };
 }
