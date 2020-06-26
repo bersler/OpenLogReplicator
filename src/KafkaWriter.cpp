@@ -301,10 +301,12 @@ namespace OpenLogReplicator {
             if (stream == STREAM_JSON) {
                 if (test >= 2)
                     commandBuffer->append('\n');
+                commandBuffer->append('{');
+                if (test >= 2)
+                    commandBuffer
+                            ->appendScn(lastScn)
+                            ->append(',');
                 commandBuffer
-                        ->append('{')
-                        ->appendScn(lastScn)
-                        ->append(',')
                         ->appendOperation("insert")
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
@@ -409,10 +411,12 @@ namespace OpenLogReplicator {
             if (stream == STREAM_JSON) {
                 if (test >= 2)
                     commandBuffer->append('\n');
+                commandBuffer->append('{');
+                if (test >= 2)
+                    commandBuffer
+                            ->appendScn(lastScn)
+                            ->append(',');
                 commandBuffer
-                        ->append('{')
-                        ->appendScn(lastScn)
-                        ->append(',')
                         ->appendOperation("delete")
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
@@ -494,7 +498,9 @@ namespace OpenLogReplicator {
             if (test >= 2)
                 commandBuffer->append('\n');
             commandBuffer
-                    ->append('{')
+                    ->append('{');
+            if (test >= 2)
+                commandBuffer
                     ->appendScn(lastScn)
                     ->append(',');
         }
@@ -964,11 +970,12 @@ namespace OpenLogReplicator {
         if (stream == STREAM_JSON) {
             if (test >= 2)
                 commandBuffer->append('\n');
-
+            commandBuffer->append('{');
+            if (test >= 2)
+                commandBuffer
+                        ->appendScn(lastScn)
+                        ->append(',');
             commandBuffer
-                    ->append('{')
-                    ->appendScn(lastScn)
-                    ->append(',')
                     ->appendTable(object->owner, object->objectName)
                     ->appendChr(",\"type\":")
                     ->appendDec(type)
