@@ -181,6 +181,9 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x0C100200) //12.1.0.2
             version = 0x12102;
         else
+        if (compatVsn == 0x0C200000) //12.2.0.0
+            version = 0x12200;
+        else
         if (compatVsn == 0x0C200100) //12.2.0.1
             version = 0x12201;
         else
