@@ -5,6 +5,8 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/CommandBuffer.cpp \
+../src/CommandBuffer7bit.cpp \
+../src/CommandBuffer8bit.cpp \
 ../src/ConfigurationException.cpp \
 ../src/KafkaWriter.cpp \
 ../src/MemoryException.cpp \
@@ -47,6 +49,8 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/CommandBuffer.o \
+./src/CommandBuffer7bit.o \
+./src/CommandBuffer8bit.o \
 ./src/ConfigurationException.o \
 ./src/KafkaWriter.o \
 ./src/MemoryException.o \
@@ -89,6 +93,8 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/CommandBuffer.d \
+./src/CommandBuffer7bit.d \
+./src/CommandBuffer8bit.d \
 ./src/ConfigurationException.d \
 ./src/KafkaWriter.d \
 ./src/MemoryException.d \

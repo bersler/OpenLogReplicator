@@ -356,8 +356,8 @@ namespace OpenLogReplicator {
                         else
                             prevValue = true;
 
-                        commandBuffer->appendValue(object->columns[i]->columnName,
-                                redoLogRecord2, object->columns[i]->typeNo, fieldPos + pos, colLength);
+                        commandBuffer->appendValue(object->columns[i]->columnName, redoLogRecord2, object->columns[i]->typeNo,
+                                object->columns[i]->charsetId, fieldPos + pos, colLength);
                     }
                 }
                 pos += colLength;
@@ -466,8 +466,8 @@ namespace OpenLogReplicator {
                         else
                             prevValue = true;
 
-                        commandBuffer->appendValue(object->columns[i]->columnName,
-                                redoLogRecord1, object->columns[i]->typeNo, fieldPos + pos, colLength);
+                        commandBuffer->appendValue(object->columns[i]->columnName, redoLogRecord1, object->columns[i]->typeNo,
+                                object->columns[i]->charsetId, fieldPos + pos, colLength);
                     }
                 }
 
@@ -844,7 +844,8 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo, beforePos[i], beforeLen[i]);
+                    commandBuffer->appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo,
+                            object->columns[i]->charsetId, beforePos[i], beforeLen[i]);
 
                 } else
                 if ((type == TRANSACTION_DELETE && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
@@ -888,7 +889,8 @@ namespace OpenLogReplicator {
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo, afterPos[i], afterLen[i]);
+                    commandBuffer->appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo,
+                            object->columns[i]->charsetId, afterPos[i], afterLen[i]);
                 } else
                 if ((type == TRANSACTION_INSERT && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
                     (type == TRANSACTION_UPDATE && (afterPos[i] > 0 || beforePos[i] > 0))) {

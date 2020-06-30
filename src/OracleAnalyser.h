@@ -76,6 +76,7 @@ namespace OpenLogReplicator {
         static string SQL_GET_COLUMN_LIST_INV;
         static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
         static string SQL_GET_PARAMETER;
+        static string SQL_GET_PROPERTY;
 
 #ifdef ONLINE_MODEIMPL_OCCI
         Environment *env;
@@ -87,6 +88,8 @@ namespace OpenLogReplicator {
         string passwd;
         string connectString;
         string database;
+        string nlsCharacterSet;
+        string nlsNcharCharacterSet;
         string dbRecoveryFileDest;
         string logArchiveFormat;
         string logArchiveDest;
@@ -104,6 +107,7 @@ namespace OpenLogReplicator {
 
         stringstream& writeEscapeValue(stringstream &ss, string &str);
         string getParameterValue(const char *parameter);
+        string getPropertyValue(const char *property);
         void populateTimeZone();
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint(void);

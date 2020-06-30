@@ -46,10 +46,12 @@ typedef uint64_t typescn;
 typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
+typedef uint16_t typeunimap;
+
 #define ONLINE_MODEIMPL_OCCI
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.2"
+#define PROGRAM_VERSION             "0.6.3"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 

@@ -63,10 +63,11 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
     string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
-    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
     string OracleAnalyser::SQL_GET_PARAMETER("SELECT VALUE FROM SYS.V_$PARAMETER WHERE NAME = :i");
+    string OracleAnalyser::SQL_GET_PROPERTY("SELECT PROPERTY_VALUE FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME = :1");
 
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
@@ -188,12 +189,36 @@ namespace OpenLogReplicator {
             if (stmt.rset->next())
                 return stmt.rset->getString(1);
         } catch(SQLException &ex) {
-            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage() << " while getting parameter value for " << parameter;
             throw RuntimeException("getting parameter value");
         }
 
         //no value found
         throw RuntimeException("getting parameter value");
+#else
+        throw RuntimeException("online mode is not compiled");
+#endif /* ONLINE_MODEIMPL_OCCI */
+    }
+
+    string OracleAnalyser::getPropertyValue(const char *property) {
+#ifdef ONLINE_MODEIMPL_OCCI
+        try {
+            OracleStatement stmt(&conn, env);
+            if ((trace2 & TRACE2_SQL) != 0)
+                cerr << "SQL: " << SQL_GET_PROPERTY << endl;
+            stmt.createStatement(SQL_GET_PROPERTY);
+            stmt.stmt->setString(1, property);
+            stmt.executeQuery();
+
+            if (stmt.rset->next())
+                return stmt.rset->getString(1);
+        } catch(SQLException &ex) {
+            cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage() << " while getting property value for " << property;
+            throw RuntimeException("getting property value");
+        }
+
+        //no value found
+        throw RuntimeException("getting property value");
 #else
         throw RuntimeException("online mode is not compiled");
 #endif /* ONLINE_MODEIMPL_OCCI */
@@ -1446,6 +1471,9 @@ namespace OpenLogReplicator {
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
         logArchiveDest = getParameterValue("log_archive_dest");
         logArchiveFormat = getParameterValue("log_archive_format");
+        nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
+        nlsNcharCharacterSet = getPropertyValue("NLS_NCHAR_CHARACTERSET");
+        commandBuffer->setNlsCharset(nlsCharacterSet, nlsNcharCharacterSet);
 
         if (databaseSequence == 0 || databaseScn == 0) {
             try {
@@ -1585,6 +1613,12 @@ namespace OpenLogReplicator {
         const Value& logArchiveDestJSON = getJSONfield(fileName, document, "log-archive-dest");
         logArchiveDest = logArchiveDestJSON.GetString();
 
+        const Value& nlsCharacterSetJSON = getJSONfield(fileName, document, "nls-character-set");
+        nlsCharacterSet = nlsCharacterSetJSON.GetString();
+
+        const Value& nlsNcharCharacterSetJSON = getJSONfield(fileName, document, "nls-nchar-character-set");
+        nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
+
         const Value& onlineRedo = getJSONfield(fileName, document, "online-redo");
         if (!onlineRedo.IsArray())
             throw ConfigurationException("bad JSON in <database>-schema.json, online-redo should be an array");
@@ -1678,10 +1712,13 @@ namespace OpenLogReplicator {
                 const Value& numPkJSON = getJSONfield(fileName, columns[j], "num-pk");
                 uint64_t numPk = numPkJSON.GetUint64();
 
+                const Value& charsetIdJSON = getJSONfield(fileName, columns[j], "charset-id");
+                uint64_t charsetId = charsetIdJSON.GetUint64();
+
                 const Value& nullableJSON = getJSONfield(fileName, columns[j], "nullable");
                 bool nullable = nullableJSON.GetUint64();
 
-                OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, nullable);
+                OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId, nullable);
 
                 while (segColNo > object->columns.size() + 1)
                     object->columns.push_back(nullptr);
@@ -1724,6 +1761,11 @@ namespace OpenLogReplicator {
         writeEscapeValue(ss, logArchiveDest);
         ss << "\"," << "\"log-archive-format\":\"";
         writeEscapeValue(ss, logArchiveFormat);
+        ss << "\"," << "\"nls-character-set\":\"";
+        writeEscapeValue(ss, nlsCharacterSet);
+        ss << "\"," << "\"nls-nchar-character-set\":\"";
+        writeEscapeValue(ss, nlsNcharCharacterSet);
+
         ss << "\"," << "\"online-redo\":[";
 
         bool hasPrev = false;
@@ -1775,6 +1817,7 @@ namespace OpenLogReplicator {
                         "\"precision\":" << dec << object->columns[i]->precision << "," <<
                         "\"scale\":" << dec << object->columns[i]->scale << "," <<
                         "\"num-pk\":" << dec << object->columns[i]->numPk << "," <<
+                        "\"charset-id\":" << dec << object->columns[i]->charsetId << "," <<
                         "\"nullable\":" << dec << object->columns[i]->nullable << "}";
             }
 
@@ -2234,9 +2277,31 @@ namespace OpenLogReplicator {
                     if (!stmt2.rset->isNull(7))
                         scale = stmt2.rset->getNumber(7);
 
-                    int64_t nullable = stmt2.rset->getNumber(8);
-                    uint64_t numPk = stmt2.rset->getNumber(9);
-                    uint64_t numSup = stmt2.rset->getNumber(10);
+                    uint64_t charmapId = 0;
+                    uint64_t charsetForm = stmt2.rset->getNumber(8);
+                    if (charsetForm == 1)
+                        charmapId = commandBuffer->defaultCharacterMapId;
+                    else if (charsetForm == 2)
+                        charmapId = commandBuffer->defaultCharacterNcharMapId;
+                    else if (charsetForm == 3) {
+                        charmapId = stmt2.rset->getNumber(9);
+                    }
+
+                    //check character set for char and varchar2
+                    if (typeNo == 1 || typeNo == 96) {
+                        if (charmapId != ORA_CHARSET_CODE_UTF8 &&
+                                charmapId != ORA_CHARSET_CODE_AL32UTF8 &&
+                                charmapId != ORA_CHARSET_CODE_AL16UTF16 &&
+                                commandBuffer->characterMap[charmapId] == nullptr) {
+                            cerr << "ERROR: Table " << owner << "." << objectName << " - unsupported character set id: " << dec << charmapId <<
+                                    " for column: " << columnName << ", hint: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;" << endl;
+                            throw RuntimeException("unsupported character set id");
+                        }
+                    }
+
+                    int64_t nullable = stmt2.rset->getNumber(10);
+                    uint64_t numPk = stmt2.rset->getNumber(11);
+                    uint64_t numSup = stmt2.rset->getNumber(12);
 
                     //column part of defined primary key
                     if (keys.size() > 0) {
@@ -2261,7 +2326,7 @@ namespace OpenLogReplicator {
                     if (trace >= TRACE_FULL)
                         cout << "    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ")" << endl;
 
-                    OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, (nullable == 0));
+                    OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charmapId, (nullable == 0));
                     if (column == nullptr)
                         throw MemoryException("OracleAnalyser::addTable.2", sizeof(OracleColumn));
 

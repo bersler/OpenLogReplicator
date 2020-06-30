@@ -24,7 +24,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
 
     OracleColumn::OracleColumn(uint64_t colNo, uint64_t segColNo, const string columnName, uint64_t typeNo, uint64_t length, int64_t precision,
-            int64_t scale, uint64_t numPk, bool nullable) :
+            int64_t scale, uint64_t numPk, uint64_t charsetId, bool nullable) :
             colNo(colNo),
             segColNo(segColNo),
             columnName(columnName),
@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
             precision(precision),
             scale(scale),
             numPk(numPk),
+            charsetId(charsetId),
             nullable(nullable) {
     }
 
