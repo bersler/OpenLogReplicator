@@ -51,7 +51,7 @@ typedef uint16_t typeunimap;
 #define ONLINE_MODEIMPL_OCCI
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.3"
+#define PROGRAM_VERSION             "0.6.4"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 

@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
                         ->append(',')
-                        ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
+                        ->appendRowid(redoLogRecord2->objn, redoLogRecord2->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                         ->appendChr(",\"after\":{");
             } else if (stream == STREAM_DBZ_JSON) {
@@ -421,7 +421,7 @@ namespace OpenLogReplicator {
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
                         ->append(',')
-                        ->appendRowid(object->objn, object->objd, redoLogRecord2->bdba,
+                        ->appendRowid(redoLogRecord1->objn, redoLogRecord1->objd, redoLogRecord2->bdba,
                                 oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2))
                         ->appendChr(",\"before\":{");
             } else
@@ -493,6 +493,7 @@ namespace OpenLogReplicator {
         typeslot slot;
         RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
         OracleObject *object = nullptr;
+        typeobj objn, objd;
 
         if (stream == STREAM_JSON) {
             if (test >= 2)
@@ -512,6 +513,8 @@ namespace OpenLogReplicator {
 
             object = redoLogRecord2->object;
             redoLogRecord2p = redoLogRecord2;
+            objn = redoLogRecord2->objn;
+            objd = redoLogRecord2->objd;
             while (redoLogRecord2p != nullptr) {
                 if ((redoLogRecord2p->fb & FB_F) != 0)
                     break;
@@ -534,6 +537,8 @@ namespace OpenLogReplicator {
             }
 
             object = redoLogRecord1->object;
+            objn = redoLogRecord1->objn;
+            objd = redoLogRecord1->objd;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -547,6 +552,8 @@ namespace OpenLogReplicator {
             }
 
             object = redoLogRecord1->object;
+            objn = redoLogRecord1->objn;
+            objd = redoLogRecord1->objd;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -561,7 +568,7 @@ namespace OpenLogReplicator {
                     ->append(',')
                     ->appendTable(object->owner, object->objectName)
                     ->append(',')
-                    ->appendRowid(object->objn, object->objd, bdba, slot);
+                    ->appendRowid(objn, objd, bdba, slot);
         }
 
         if (stream == STREAM_DBZ_JSON) {

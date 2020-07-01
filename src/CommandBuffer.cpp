@@ -177,6 +177,35 @@ namespace OpenLogReplicator {
         characterMapBits[590] = 8; characterMapName[590] = "LA8ISO6937"; characterMap[590] = unicode_map_LA8ISO6937;
         characterMapBits[1002] = 8; characterMapName[1002] = "TIMESTEN8"; characterMap[1002] = unicode_map_TIMESTEN8;
 
+        //16-bit character sets - no translation
+        characterMapBits[829] = 16; characterMapName[829] = "JA16VMS"; characterMap[829] = nullptr;
+        characterMapBits[830] = 16; characterMapName[830] = "JA16EUC"; characterMap[830] = nullptr;
+        characterMapBits[831] = 16; characterMapName[831] = "JA16EUCYEN"; characterMap[831] = nullptr;
+        characterMapBits[832] = 16; characterMapName[832] = "JA16SJIS"; characterMap[832] = nullptr;
+        characterMapBits[834] = 16; characterMapName[834] = "JA16SJISYEN"; characterMap[834] = nullptr;
+        characterMapBits[837] = 16; characterMapName[837] = "JA16EUCTILDE"; characterMap[837] = nullptr;
+        characterMapBits[838] = 16; characterMapName[838] = "JA16SJISTILDE"; characterMap[838] = nullptr;
+        characterMapBits[840] = 16; characterMapName[840] = "KO16KSC5601"; characterMap[840] = nullptr;
+        characterMapBits[845] = 16; characterMapName[845] = "KO16KSCCS"; characterMap[845] = nullptr;
+        characterMapBits[846] = 16; characterMapName[846] = "KO16MSWIN949"; characterMap[846] = nullptr;
+        characterMapBits[850] = 16; characterMapName[850] = "ZHS16CGB231280"; characterMap[850] = nullptr;
+        characterMapBits[852] = 16; characterMapName[852] = "ZHS16GBK"; characterMap[852] = nullptr;
+        characterMapBits[862] = 16; characterMapName[862] = "ZHT16DBT"; characterMap[862] = nullptr;
+        characterMapBits[865] = 16; characterMapName[865] = "ZHT16BIG5"; characterMap[865] = nullptr;
+        characterMapBits[867] = 16; characterMapName[867] = "ZHT16MSWIN950"; characterMap[867] = nullptr;
+        characterMapBits[868] = 16; characterMapName[868] = "ZHT16HKSCS"; characterMap[868] = nullptr;
+        characterMapBits[866] = 16; characterMapName[866] = "ZHT16CCDC"; characterMap[866] = nullptr;
+        characterMapBits[992] = 16; characterMapName[992] = "ZHT16HKSCS31"; characterMap[992] = nullptr;
+        characterMapBits[994] = 16; characterMapName[994] = "WE16DECTST2"; characterMap[994] = nullptr;
+        characterMapBits[995] = 16; characterMapName[995] = "WE16DECTST"; characterMap[995] = nullptr;
+        characterMapBits[996] = 16; characterMapName[996] = "KO16TSTSET"; characterMap[996] = nullptr;
+        characterMapBits[997] = 16; characterMapName[997] = "JA16TSTSET2"; characterMap[997] = nullptr;
+
+        //32-bit character sets - no translation
+        characterMapBits[854] = 32; characterMapName[854] = "ZHS32GB18030"; characterMap[854] = nullptr;
+        characterMapBits[860] = 32; characterMapName[860] = "ZHT32EUC"; characterMap[860] = nullptr;
+        characterMapBits[863] = 32; characterMapName[863] = "ZHT32TRIS"; characterMap[863] = nullptr;
+
         if (intraThreadBuffer == nullptr)
             throw MemoryException("CommandBuffer::CommandBuffer", outputBufferSize);
     }
@@ -295,8 +324,9 @@ namespace OpenLogReplicator {
 
             if (charsetId == ORA_CHARSET_CODE_UTF8 || charsetId == ORA_CHARSET_CODE_AL32UTF8) {
                 unicodeCharacter = *str++;
-                noMapping = true;
                 --length;
+                noMapping = true;
+
             } else if (charsetId == ORA_CHARSET_CODE_AL16UTF16) {
                 //U' = yyyy yyyy yyxx xxxx xxxx   // U - 0x10000
                 //W1 = 1101 10yy yyyy yyyy      // 0xD800 + yyyyyyyyyy
@@ -318,7 +348,7 @@ namespace OpenLogReplicator {
                     uint64_t character2 = (((uint64_t)(*str++)) << 8) | ((uint64_t)(*str++));
                     length -= 2;
 
-                    if ((character2 & 0xFC00) == 0xDC00) {
+                    if ((character2 & 0xFC00) != 0xDC00) {
                         cerr << "ERROR: lower UTF-16 character in bad format: " << dec << character2 << endl;
                         throw RuntimeException("unsupported Unicode character map");
                     }
@@ -329,23 +359,35 @@ namespace OpenLogReplicator {
                 }
             } else {
                 uint64_t bits = characterMapBits[charsetId];
-                typeunimap* mapCharset = characterMap[charsetId];
-
-                if (mapCharset == nullptr) {
-                    cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
-                    throw RuntimeException("unsupported Unicode character map");
-                }
 
                 if (bits == 7) {
+                    typeunimap* mapCharset = characterMap[charsetId];
+                    if (mapCharset == nullptr) {
+                        cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
+                        throw RuntimeException("unsupported Unicode character map");
+                    }
+
                     uint64_t character1 = *str++;
                     --length;
-
                     unicodeCharacter = mapCharset[character1 & 0x7F];
+
                 } else if (bits == 8) {
+                    typeunimap* mapCharset = characterMap[charsetId];
+                    if (mapCharset == nullptr) {
+                        cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
+                        throw RuntimeException("unsupported Unicode character map");
+                    }
+
                     uint64_t character1 = *str++;
                     --length;
-
                     unicodeCharacter = mapCharset[character1];
+
+                } else if (bits == 16 || bits == 32) {
+                    uint64_t character1 = *str++;
+                    --length;
+                    unicodeCharacter = character1;
+                    noMapping = true;
+
                 } else {
                     cerr << "ERROR: character bit size not supported: " << dec << bits << endl;
                     throw RuntimeException("unsupported character bit width");
@@ -389,31 +431,31 @@ namespace OpenLogReplicator {
                 //1110xxxx 10xxxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0xFFFF) {
                     intraThreadBuffer[posEndTmp++] = 0xE0 | (uint8_t)(unicodeCharacter >> 12);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 6);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
                     intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
 
                 //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0x1FFFFF) {
                     intraThreadBuffer[posEndTmp++] = 0xF0 | (uint8_t)(unicodeCharacter >> 18);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 12);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 6);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
                     intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
 
                 //111110xx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0x3FFFFFF) {
                     intraThreadBuffer[posEndTmp++] = 0xF8 | (uint8_t)(unicodeCharacter >> 24);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 18);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 12);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 6);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 18) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
                     intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
 
                 //1111110x 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0x7FFFFFFF) {
                     intraThreadBuffer[posEndTmp++] = 0xFC | (uint8_t)(unicodeCharacter >> 32);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 24);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 18);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 12);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter >> 6);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 24) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 18) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
+                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
                     intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
 
                 } else

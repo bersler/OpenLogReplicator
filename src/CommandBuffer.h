@@ -31,6 +31,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #define ORA_CHARSET_CODE_UTF8               871
 #define ORA_CHARSET_CODE_AL32UTF8           873
 #define ORA_CHARSET_CODE_AL16UTF16          2000
+#define ORA_CHARSET_CODE_COPY               100000
 
 using namespace std;
 

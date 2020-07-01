@@ -2215,12 +2215,10 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                //skip partitioned tables
-                if (stmt.rset->isNull(1)) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - partitioned" << endl;
-                    continue;
-                }
-                typeobj objd = stmt.rset->getNumber(1);
+                typeobj objd = 0;
+                //null for partitioned tables
+                if (!stmt.rset->isNull(1))
+                    objd = stmt.rset->getNumber(1);
 
                 //table already added with another rule
                 if (checkDict(objn, objd) != nullptr) {
@@ -2292,9 +2290,10 @@ namespace OpenLogReplicator {
                         if (charmapId != ORA_CHARSET_CODE_UTF8 &&
                                 charmapId != ORA_CHARSET_CODE_AL32UTF8 &&
                                 charmapId != ORA_CHARSET_CODE_AL16UTF16 &&
-                                commandBuffer->characterMap[charmapId] == nullptr) {
+                                commandBuffer->characterMapName[charmapId] == nullptr) {
                             cerr << "ERROR: Table " << owner << "." << objectName << " - unsupported character set id: " << dec << charmapId <<
-                                    " for column: " << columnName << ", hint: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;" << endl;
+                                    " for column: " << columnName << endl;
+                            cerr << "HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;" << endl;
                             throw RuntimeException("unsupported character set id");
                         }
                     }
