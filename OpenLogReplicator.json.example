@@ -1,11 +1,11 @@
 {
-  "version": "0.6.4",
-  "redo-buffer-mb": 4096,
-  "output-buffer-mb": 1024,
+  "version": "0.6.5",
   "sources": [
     {
       "type": "ORACLE",
       "alias": "S1",
+      "memory-min-mb": 64,
+      "memory-max-mb": 1024,
       "name": "O112A",
       "user": "system",
       "password": "unknPwd4%",

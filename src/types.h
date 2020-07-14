@@ -46,14 +46,22 @@ typedef uint64_t typescn;
 typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
 
-typedef uint16_t typeunimap;
+typedef uint16_t typeunicode16;
+typedef uint32_t typeunicode32;
+typedef uint64_t typeunicode;
 
 #define ONLINE_MODEIMPL_OCCI
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.4"
+#define PROGRAM_VERSION             "0.6.5"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
+#define MAX_TRANSACTIONS_LIMIT      1048576
+#define MEMORY_CHUNK_SIZE_MB        1
+#define MEMORY_CHUNK_SIZE_MB_CHR    "1"
+#define MEMORY_CHUNK_SIZE           (MEMORY_CHUNK_SIZE_MB*1024*1024)
+#define MEMORY_CHUNK_MIN_MB         16
+#define MEMORY_CHUNK_MIN_MB_CHR     "16"
 
 #define STREAM_JSON                 1
 #define STREAM_DBZ_JSON             2
@@ -68,21 +76,22 @@ typedef uint16_t typeunimap;
 #define TRACE_DETAIL                3
 #define TRACE_FULL                  4
 
-#define TRACE2_SQL                  0x0000001
-#define TRACE2_PERFORMANCE          0x0000002
+#define TRACE2_THREADS              0x0000001
+#define TRACE2_SQL                  0x0000002
 #define TRACE2_FILE                 0x0000004
 #define TRACE2_DISK                 0x0000008
-#define TRACE2_VECTOR               0x0000010
-#define TRACE2_TRANSACTION          0x0000020
-#define TRACE2_COMMIT_ROLLBACK      0x0000040
-#define TRACE2_REDO                 0x0000080
-#define TRACE2_JSON                 0x0000100
-#define TRACE2_CHECKPOINT_FLUSH     0x0000200
-#define TRACE2_OUTPUT_BUFFER        0x0000400
-#define TRACE2_DML                  0x0000800
-#define TRACE2_TYPES                0x0001000
-#define TRACE2_SPLIT                0x0001000
-#define TRACE2_ARCHIVE_LIST         0x0004000
+#define TRACE2_MEMORY               0x0000010
+#define TRACE2_PERFORMANCE          0x0000020
+#define TRACE2_VECTOR               0x0000040
+#define TRACE2_TRANSACTION          0x0000080
+#define TRACE2_COMMIT_ROLLBACK      0x0000100
+#define TRACE2_REDO                 0x0000200
+#define TRACE2_JSON                 0x0000400
+#define TRACE2_CHECKPOINT_FLUSH     0x0000800
+#define TRACE2_DML                  0x0001000
+#define TRACE2_TYPES                0x0002000
+#define TRACE2_SPLIT                0x0004000
+#define TRACE2_ARCHIVE_LIST         0x0008000
 
 #define REDO_RECORD_MAX_SIZE            1048576
 

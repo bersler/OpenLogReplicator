@@ -38,24 +38,25 @@ namespace OpenLogReplicator {
 
     class KafkaWriter : public Writer {
     protected:
+        uint8_t *msgBuffer;
         Conf *conf;
         Conf *tconf;
         string brokers;
         string topic;
         Producer *producer;
         Topic *ktopic;
-        uint64_t trace;
-        uint64_t trace2;
         typetime lastTime;
         typescn lastScn;
 
-        uint64_t *afterPos;
-        uint64_t *beforePos;
-        uint16_t *afterLen;
-        uint16_t *beforeLen;
-        uint8_t *colIsSupp;
-        RedoLogRecord **beforeRecord;
-        RedoLogRecord **afterRecord;
+        uint64_t afterPos[MAX_NO_COLUMNS];
+        uint64_t beforePos[MAX_NO_COLUMNS];
+        uint16_t afterLen[MAX_NO_COLUMNS];
+        uint16_t beforeLen[MAX_NO_COLUMNS];
+        uint8_t colIsSupp[MAX_NO_COLUMNS];
+        RedoLogRecord *beforeRecord[MAX_NO_COLUMNS];
+        RedoLogRecord *afterRecord[MAX_NO_COLUMNS];
+
+        void sendMessage(uint8_t *buffer, uint64_t length, int msgflags);
 
     public:
         virtual void *run(void);
@@ -71,8 +72,8 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         virtual void parseDDL(RedoLogRecord *redoLogRecord1);
 
-        KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t trace, uint64_t trace2,
-                uint64_t stream, uint64_t metadata, uint64_t singleDml, uint64_t showColumns, uint64_t test, uint64_t timestampFormat);
+        KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t maxMessageKb, uint64_t stream,
+                uint64_t metadata, uint64_t singleDml, uint64_t showColumns, uint64_t test, uint64_t timestampFormat, uint64_t charFormat);
         virtual ~KafkaWriter();
     };
 }

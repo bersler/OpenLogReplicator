@@ -18,8 +18,26 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
+#include <sstream>
+#include <thread>
 #include <string.h>
 
+#include "CharacterSet16bit.h"
+#include "CharacterSet7bit.h"
+#include "CharacterSet8bit.h"
+#include "CharacterSetAL16UTF16.h"
+#include "CharacterSetAL32UTF8.h"
+#include "CharacterSetJA16EUC.h"
+#include "CharacterSetJA16EUCTILDE.h"
+#include "CharacterSetJA16SJIS.h"
+#include "CharacterSetJA16SJISTILDE.h"
+#include "CharacterSetKO16KSCCS.h"
+#include "CharacterSetUTF8.h"
+#include "CharacterSetZHS16GBK.h"
+#include "CharacterSetZHS32GB18030.h"
+#include "CharacterSetZHT16HKSCS31.h"
+#include "CharacterSetZHT32EUC.h"
+#include "CharacterSetZHT32TRIS.h"
 #include "CommandBuffer.h"
 #include "MemoryException.h"
 #include "OracleAnalyser.h"
@@ -30,209 +48,250 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    CommandBuffer::CommandBuffer(uint64_t outputBufferSize) :
-            shutdown(false),
+    CommandBuffer::CommandBuffer() :
             oracleAnalyser(nullptr),
+            test(0),
+            timestampFormat(0),
+            charFormat(0),
+            messageLength(0),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
             writer(nullptr),
-            posStart(0),
-            posEnd(0),
-            posEndTmp(0),
-            posSize(0),
-            test(0),
-            timestampFormat(0),
-            outputBufferSize(outputBufferSize) {
-        intraThreadBuffer = new uint8_t[outputBufferSize];
+            buffersAllocated(0),
+            firstBufferPos(0),
+            firstBuffer(nullptr),
+            curBuffer(nullptr),
+            curBufferPos(0),
+            lastBuffer(nullptr),
+            lastBufferPos(0) {
 
-        //7-bit character sets
-        characterMapBits[1] = 7; characterMapName[1] = "US7ASCII"; characterMap[1] = unicode_map_US7ASCII;
-        characterMapBits[15] = 7; characterMapName[15] = "SF7ASCII"; characterMap[15] = unicode_map_SF7ASCII;
-        characterMapBits[11] = 7; characterMapName[11] = "D7DEC"; characterMap[11] = unicode_map_D7DEC;
-        characterMapBits[13] = 7; characterMapName[13] = "S7DEC"; characterMap[13] = unicode_map_S7DEC;
-        characterMapBits[14] = 7; characterMapName[14] = "E7DEC"; characterMap[14] = unicode_map_E7DEC;
-        characterMapBits[17] = 7; characterMapName[17] = "I7DEC"; characterMap[17] = unicode_map_I7DEC;
-        characterMapBits[16] = 7; characterMapName[16] = "NDK7DEC"; characterMap[16] = unicode_map_NDK7DEC;
-        characterMapBits[21] = 7; characterMapName[21] = "SF7DEC"; characterMap[21] = unicode_map_SF7DEC;
-        characterMapBits[202] = 7; characterMapName[202] = "E7SIEMENS9780X"; characterMap[202] = unicode_map_E7SIEMENS9780X;
-        characterMapBits[203] = 7; characterMapName[203] = "S7SIEMENS9780X"; characterMap[203] = unicode_map_S7SIEMENS9780X;
-        characterMapBits[204] = 7; characterMapName[204] = "DK7SIEMENS9780X"; characterMap[204] = unicode_map_DK7SIEMENS9780X;
-        characterMapBits[206] = 7; characterMapName[206] = "I7SIEMENS9780X"; characterMap[206] = unicode_map_I7SIEMENS9780X;
-        characterMapBits[205] = 7; characterMapName[205] = "N7SIEMENS9780X"; characterMap[205] = unicode_map_N7SIEMENS9780X;
-        characterMapBits[207] = 7; characterMapName[207] = "D7SIEMENS9780X"; characterMap[207] = unicode_map_D7SIEMENS9780X;
-
-        //8-bit character sets
-        //MS Windows character sets
-        characterMapBits[176] = 8; characterMapName[176] = "LT8MSWIN921"; characterMap[176] = unicode_map_LT8MSWIN921;
-        characterMapBits[172] = 8; characterMapName[172] = "ET8MSWIN923"; characterMap[172] = unicode_map_ET8MSWIN923;
-        characterMapBits[170] = 8; characterMapName[170] = "EE8MSWIN1250"; characterMap[170] = unicode_map_EE8MSWIN1250;
-        characterMapBits[171] = 8; characterMapName[171] = "CL8MSWIN1251"; characterMap[171] = unicode_map_CL8MSWIN1251;
-        characterMapBits[178] = 8; characterMapName[178] = "WE8MSWIN1252"; characterMap[178] = unicode_map_WE8MSWIN1252;
-        characterMapBits[174] = 8; characterMapName[174] = "EL8MSWIN1253"; characterMap[174] = unicode_map_EL8MSWIN1253;
-        characterMapBits[177] = 8; characterMapName[177] = "TR8MSWIN1254"; characterMap[177] = unicode_map_TR8MSWIN1254;
-        characterMapBits[175] = 8; characterMapName[175] = "IW8MSWIN1255"; characterMap[175] = unicode_map_IW8MSWIN1255;
-        characterMapBits[560] = 8; characterMapName[560] = "AR8MSWIN1256"; characterMap[560] = unicode_map_AR8MSWIN1256;
-        characterMapBits[179] = 8; characterMapName[179] = "BLT8MSWIN1257"; characterMap[179] = unicode_map_BLT8MSWIN1257;
-        characterMapBits[45] = 8; characterMapName[45] = "VN8MSWIN1258"; characterMap[45] = unicode_map_VN8MSWIN1258;
-        characterMapBits[173] = 8; characterMapName[173] = "BG8MSWIN"; characterMap[173] = unicode_map_BG8MSWIN;
-
-        //ISO 8859 character sets
-        characterMapBits[31] = 8; characterMapName[31] = "WE8ISO8859P1"; characterMap[31] = unicode_map_WE8ISO8859P1;
-        characterMapBits[32] = 8; characterMapName[32] = "EE8ISO8859P2"; characterMap[32] = unicode_map_EE8ISO8859P2;
-        characterMapBits[33] = 8; characterMapName[33] = "SE8ISO8859P3"; characterMap[33] = unicode_map_SE8ISO8859P3;
-        characterMapBits[34] = 8; characterMapName[34] = "NEE8ISO8859P4"; characterMap[34] = unicode_map_NEE8ISO8859P4;
-        characterMapBits[35] = 8; characterMapName[35] = "CL8ISO8859P5"; characterMap[35] = unicode_map_CL8ISO8859P5;
-        characterMapBits[36] = 8; characterMapName[36] = "AR8ISO8859P6"; characterMap[36] = unicode_map_AR8ISO8859P6;
-        characterMapBits[37] = 8; characterMapName[37] = "EL8ISO8859P7"; characterMap[37] = unicode_map_EL8ISO8859P7;
-        characterMapBits[38] = 8; characterMapName[38] = "IW8ISO8859P8"; characterMap[38] = unicode_map_IW8ISO8859P8;
-        characterMapBits[39] = 8; characterMapName[39] = "WE8ISO8859P9"; characterMap[39] = unicode_map_WE8ISO8859P9;
-        characterMapBits[52] = 8; characterMapName[52] = "AZ8ISO8859P9E"; characterMap[52] = unicode_map_AZ8ISO8859P9E;
-        characterMapBits[40] = 8; characterMapName[40] = "NE8ISO8859P10"; characterMap[40] = unicode_map_NE8ISO8859P10;
-        characterMapBits[47] = 8; characterMapName[47] = "BLT8ISO8859P13"; characterMap[47] = unicode_map_BLT8ISO8859P13;
-        characterMapBits[48] = 8; characterMapName[48] = "CEL8ISO8859P14"; characterMap[48] = unicode_map_CEL8ISO8859P14;
-        characterMapBits[46] = 8; characterMapName[46] = "WE8ISO8859P15"; characterMap[46] = unicode_map_WE8ISO8859P15;
-
-        //Mac character sets
-        characterMapBits[159] = 8; characterMapName[159] = "CL8MACCYRILLICS"; characterMap[159] = unicode_map_CL8MACCYRILLICS;
-        characterMapBits[162] = 8; characterMapName[162] = "EE8MACCES"; characterMap[162] = unicode_map_EE8MACCES;
-        characterMapBits[163] = 8; characterMapName[163] = "EE8MACCROATIANS"; characterMap[163] = unicode_map_EE8MACCROATIANS;
-        characterMapBits[164] = 8; characterMapName[164] = "TR8MACTURKISHS"; characterMap[164] = unicode_map_TR8MACTURKISHS;
-        characterMapBits[165] = 8; characterMapName[165] = "IS8MACICELANDICS"; characterMap[165] = unicode_map_IS8MACICELANDICS;
-        characterMapBits[166] = 8; characterMapName[166] = "EL8MACGREEKS"; characterMap[166] = unicode_map_EL8MACGREEKS;
-        characterMapBits[167] = 8; characterMapName[167] = "IW8MACHEBREWS"; characterMap[167] = unicode_map_IW8MACHEBREWS;
-        characterMapBits[352] = 8; characterMapName[352] = "WE8MACROMAN8S"; characterMap[352] = unicode_map_WE8MACROMAN8S;
-        characterMapBits[354] = 8; characterMapName[354] = "TH8MACTHAIS"; characterMap[354] = unicode_map_TH8MACTHAIS;
-        characterMapBits[566] = 8; characterMapName[566] = "AR8ARABICMACS"; characterMap[566] = unicode_map_AR8ARABICMACS;
-
-        //IBM character sets
-        characterMapBits[4] = 8; characterMapName[4] = "US8PC437"; characterMap[4] = unicode_map_US8PC437;
-        characterMapBits[10] = 8; characterMapName[10] = "WE8PC850"; characterMap[10] = unicode_map_WE8PC850;
-        characterMapBits[28] = 8; characterMapName[28] = "WE8PC858"; characterMap[28] = unicode_map_WE8PC858;
-        characterMapBits[140] = 8; characterMapName[140] = "BG8PC437S"; characterMap[140] = unicode_map_BG8PC437S;
-        characterMapBits[150] = 8; characterMapName[150] = "EE8PC852"; characterMap[150] = unicode_map_EE8PC852;
-        characterMapBits[152] = 8; characterMapName[152] = "RU8PC866"; characterMap[152] = unicode_map_RU8PC866;
-        characterMapBits[154] = 8; characterMapName[154] = "IW8PC1507"; characterMap[154] = unicode_map_IW8PC1507;
-        characterMapBits[155] = 8; characterMapName[155] = "RU8PC855"; characterMap[155] = unicode_map_RU8PC855;
-        characterMapBits[156] = 8; characterMapName[156] = "TR8PC857"; characterMap[156] = unicode_map_TR8PC857;
-        characterMapBits[160] = 8; characterMapName[160] = "WE8PC860"; characterMap[160] = unicode_map_WE8PC860;
-        characterMapBits[161] = 8; characterMapName[161] = "IS8PC861"; characterMap[161] = unicode_map_IS8PC861;
-        characterMapBits[190] = 8; characterMapName[190] = "N8PC865"; characterMap[190] = unicode_map_N8PC865;
-        characterMapBits[191] = 8; characterMapName[191] = "BLT8CP921"; characterMap[191] = unicode_map_BLT8CP921;
-        characterMapBits[192] = 8; characterMapName[192] = "LV8PC1117"; characterMap[192] = unicode_map_LV8PC1117;
-        characterMapBits[193] = 8; characterMapName[193] = "LV8PC8LR"; characterMap[193] = unicode_map_LV8PC8LR;
-        characterMapBits[197] = 8; characterMapName[197] = "BLT8PC775"; characterMap[197] = unicode_map_BLT8PC775;
-        characterMapBits[380] = 8; characterMapName[380] = "EL8PC437S"; characterMap[380] = unicode_map_EL8PC437S;
-        characterMapBits[382] = 8; characterMapName[382] = "EL8PC737"; characterMap[382] = unicode_map_EL8PC737;
-        characterMapBits[383] = 8; characterMapName[383] = "LT8PC772"; characterMap[383] = unicode_map_LT8PC772;
-        characterMapBits[384] = 8; characterMapName[384] = "LT8PC774"; characterMap[384] = unicode_map_LT8PC774;
-        characterMapBits[385] = 8; characterMapName[385] = "EL8PC869"; characterMap[385] = unicode_map_EL8PC869;
-        characterMapBits[386] = 8; characterMapName[386] = "EL8PC851"; characterMap[386] = unicode_map_EL8PC851;
-        characterMapBits[390] = 8; characterMapName[390] = "CDN8PC863"; characterMap[390] = unicode_map_CDN8PC863;
-
-        //DOS character sets
-        characterMapBits[507] = 8; characterMapName[507] = "AR8ADOS710T"; characterMap[507] = unicode_map_AR8ADOS710T;
-        characterMapBits[508] = 8; characterMapName[508] = "AR8ADOS720T"; characterMap[508] = unicode_map_AR8ADOS720T;
-        characterMapBits[557] = 8; characterMapName[557] = "AR8ADOS710"; characterMap[557] = unicode_map_AR8ADOS710;
-        characterMapBits[558] = 8; characterMapName[558] = "AR8ADOS720"; characterMap[558] = unicode_map_AR8ADOS720;
-
-        //DEC character sets
-        characterMapBits[2] = 8; characterMapName[2] = "WE8DEC"; characterMap[2] = unicode_map_WE8DEC;
-        characterMapBits[81] = 8; characterMapName[81] = "EL8DEC"; characterMap[81] = unicode_map_EL8DEC;
-        characterMapBits[82] = 8; characterMapName[82] = "TR8DEC"; characterMap[82] = unicode_map_TR8DEC;
-
-        //other character sets
-        characterMapBits[3] = 8; characterMapName[3] = "WE8HP"; characterMap[3] = unicode_map_WE8HP;
-        characterMapBits[25] = 8; characterMapName[25] = "IN8ISCII"; characterMap[25] = unicode_map_IN8ISCII;
-        characterMapBits[41] = 8; characterMapName[41] = "TH8TISASCII"; characterMap[41] = unicode_map_TH8TISASCII;
-        characterMapBits[43] = 8; characterMapName[43] = "BN8BSCII"; characterMap[43] = unicode_map_BN8BSCII;
-        characterMapBits[44] = 8; characterMapName[44] = "VN8VN3"; characterMap[44] = unicode_map_VN8VN3;
-        characterMapBits[49] = 8; characterMapName[49] = "CL8ISOIR111"; characterMap[49] = unicode_map_CL8ISOIR111;
-        characterMapBits[50] = 8; characterMapName[50] = "WE8NEXTSTEP"; characterMap[50] = unicode_map_WE8NEXTSTEP;
-        characterMapBits[51] = 8; characterMapName[51] = "CL8KOI8U"; characterMap[51] = unicode_map_CL8KOI8U;
-        characterMapBits[61] = 8; characterMapName[61] = "AR8ASMO708PLUS"; characterMap[61] = unicode_map_AR8ASMO708PLUS;
-        characterMapBits[110] = 8; characterMapName[110] = "EEC8EUROASCI"; characterMap[110] = unicode_map_EEC8EUROASCI;
-        characterMapBits[113] = 8; characterMapName[113] = "EEC8EUROPA3"; characterMap[113] = unicode_map_EEC8EUROPA3;
-        characterMapBits[114] = 8; characterMapName[114] = "LA8PASSPORT"; characterMap[114] = unicode_map_LA8PASSPORT;
-        characterMapBits[153] = 8; characterMapName[153] = "RU8BESTA"; characterMap[153] = unicode_map_RU8BESTA;
-        characterMapBits[195] = 8; characterMapName[195] = "LV8RST104090"; characterMap[195] = unicode_map_LV8RST104090;
-        characterMapBits[196] = 8; characterMapName[196] = "CL8KOI8R"; characterMap[196] = unicode_map_CL8KOI8R;
-        characterMapBits[241] = 8; characterMapName[241] = "WE8DG"; characterMap[241] = unicode_map_WE8DG;
-        characterMapBits[251] = 8; characterMapName[251] = "WE8NCR4970"; characterMap[251] = unicode_map_WE8NCR4970;
-        characterMapBits[261] = 8; characterMapName[261] = "WE8ROMAN8"; characterMap[261] = unicode_map_WE8ROMAN8;
-        characterMapBits[368] = 8; characterMapName[368] = "HU8CWI2"; characterMap[368] = unicode_map_HU8CWI2;
-        characterMapBits[401] = 8; characterMapName[401] = "HU8ABMOD"; characterMap[401] = unicode_map_HU8ABMOD;
-        characterMapBits[500] = 8; characterMapName[500] = "AR8ASMO8X"; characterMap[500] = unicode_map_AR8ASMO8X;
-        characterMapBits[504] = 8; characterMapName[504] = "AR8NAFITHA711T"; characterMap[504] = unicode_map_AR8NAFITHA711T;
-        characterMapBits[505] = 8; characterMapName[505] = "AR8SAKHR707T"; characterMap[505] = unicode_map_AR8SAKHR707T;
-        characterMapBits[506] = 8; characterMapName[506] = "AR8MUSSAD768T"; characterMap[506] = unicode_map_AR8MUSSAD768T;
-        characterMapBits[509] = 8; characterMapName[509] = "AR8APTEC715T"; characterMap[509] = unicode_map_AR8APTEC715T;
-        characterMapBits[511] = 8; characterMapName[511] = "AR8NAFITHA721T"; characterMap[511] = unicode_map_AR8NAFITHA721T;
-        characterMapBits[514] = 8; characterMapName[514] = "AR8HPARABIC8T"; characterMap[514] = unicode_map_AR8HPARABIC8T;
-        characterMapBits[554] = 8; characterMapName[554] = "AR8NAFITHA711"; characterMap[554] = unicode_map_AR8NAFITHA711;
-        characterMapBits[555] = 8; characterMapName[555] = "AR8SAKHR707"; characterMap[555] = unicode_map_AR8SAKHR707;
-        characterMapBits[556] = 8; characterMapName[556] = "AR8MUSSAD768"; characterMap[556] = unicode_map_AR8MUSSAD768;
-        characterMapBits[559] = 8; characterMapName[559] = "AR8APTEC715"; characterMap[559] = unicode_map_AR8APTEC715;
-        characterMapBits[561] = 8; characterMapName[561] = "AR8NAFITHA721"; characterMap[561] = unicode_map_AR8NAFITHA721;
-        characterMapBits[563] = 8; characterMapName[563] = "AR8SAKHR706"; characterMap[563] = unicode_map_AR8SAKHR706;
-        characterMapBits[590] = 8; characterMapName[590] = "LA8ISO6937"; characterMap[590] = unicode_map_LA8ISO6937;
-        characterMapBits[1002] = 8; characterMapName[1002] = "TIMESTEN8"; characterMap[1002] = unicode_map_TIMESTEN8;
-
-        //16-bit character sets - no translation
-        characterMapBits[829] = 16; characterMapName[829] = "JA16VMS"; characterMap[829] = nullptr;
-        characterMapBits[830] = 16; characterMapName[830] = "JA16EUC"; characterMap[830] = nullptr;
-        characterMapBits[831] = 16; characterMapName[831] = "JA16EUCYEN"; characterMap[831] = nullptr;
-        characterMapBits[832] = 16; characterMapName[832] = "JA16SJIS"; characterMap[832] = nullptr;
-        characterMapBits[834] = 16; characterMapName[834] = "JA16SJISYEN"; characterMap[834] = nullptr;
-        characterMapBits[837] = 16; characterMapName[837] = "JA16EUCTILDE"; characterMap[837] = nullptr;
-        characterMapBits[838] = 16; characterMapName[838] = "JA16SJISTILDE"; characterMap[838] = nullptr;
-        characterMapBits[840] = 16; characterMapName[840] = "KO16KSC5601"; characterMap[840] = nullptr;
-        characterMapBits[845] = 16; characterMapName[845] = "KO16KSCCS"; characterMap[845] = nullptr;
-        characterMapBits[846] = 16; characterMapName[846] = "KO16MSWIN949"; characterMap[846] = nullptr;
-        characterMapBits[850] = 16; characterMapName[850] = "ZHS16CGB231280"; characterMap[850] = nullptr;
-        characterMapBits[852] = 16; characterMapName[852] = "ZHS16GBK"; characterMap[852] = nullptr;
-        characterMapBits[862] = 16; characterMapName[862] = "ZHT16DBT"; characterMap[862] = nullptr;
-        characterMapBits[865] = 16; characterMapName[865] = "ZHT16BIG5"; characterMap[865] = nullptr;
-        characterMapBits[867] = 16; characterMapName[867] = "ZHT16MSWIN950"; characterMap[867] = nullptr;
-        characterMapBits[868] = 16; characterMapName[868] = "ZHT16HKSCS"; characterMap[868] = nullptr;
-        characterMapBits[866] = 16; characterMapName[866] = "ZHT16CCDC"; characterMap[866] = nullptr;
-        characterMapBits[992] = 16; characterMapName[992] = "ZHT16HKSCS31"; characterMap[992] = nullptr;
-        characterMapBits[994] = 16; characterMapName[994] = "WE16DECTST2"; characterMap[994] = nullptr;
-        characterMapBits[995] = 16; characterMapName[995] = "WE16DECTST"; characterMap[995] = nullptr;
-        characterMapBits[996] = 16; characterMapName[996] = "KO16TSTSET"; characterMap[996] = nullptr;
-        characterMapBits[997] = 16; characterMapName[997] = "JA16TSTSET2"; characterMap[997] = nullptr;
-
-        //32-bit character sets - no translation
-        characterMapBits[854] = 32; characterMapName[854] = "ZHS32GB18030"; characterMap[854] = nullptr;
-        characterMapBits[860] = 32; characterMapName[860] = "ZHT32EUC"; characterMap[860] = nullptr;
-        characterMapBits[863] = 32; characterMapName[863] = "ZHT32TRIS"; characterMap[863] = nullptr;
-
-        if (intraThreadBuffer == nullptr)
-            throw MemoryException("CommandBuffer::CommandBuffer", outputBufferSize);
+        characterMap[1] = new CharacterSet7bit("US7ASCII", CharacterSet7bit::unicode_map_US7ASCII);
+        characterMap[2] = new CharacterSet8bit("WE8DEC", CharacterSet8bit::unicode_map_WE8DEC);
+        characterMap[3] = new CharacterSet8bit("WE8HP", CharacterSet8bit::unicode_map_WE8HP, true);
+        characterMap[4] = new CharacterSet8bit("US8PC437", CharacterSet8bit::unicode_map_US8PC437);
+        characterMap[10] = new CharacterSet8bit("WE8PC850", CharacterSet8bit::unicode_map_WE8PC850);
+        characterMap[11] = new CharacterSet7bit("D7DEC", CharacterSet7bit::unicode_map_D7DEC);
+        characterMap[13] = new CharacterSet7bit("S7DEC", CharacterSet7bit::unicode_map_S7DEC);
+        characterMap[14] = new CharacterSet7bit("E7DEC", CharacterSet7bit::unicode_map_E7DEC);
+        characterMap[15] = new CharacterSet7bit("SF7ASCII", CharacterSet7bit::unicode_map_SF7ASCII);
+        characterMap[16] = new CharacterSet7bit("NDK7DEC", CharacterSet7bit::unicode_map_NDK7DEC);
+        characterMap[17] = new CharacterSet7bit("I7DEC", CharacterSet7bit::unicode_map_I7DEC);
+        characterMap[21] = new CharacterSet7bit("SF7DEC", CharacterSet7bit::unicode_map_SF7DEC);
+        characterMap[25] = new CharacterSet8bit("IN8ISCII", CharacterSet8bit::unicode_map_IN8ISCII);
+        characterMap[28] = new CharacterSet8bit("WE8PC858", CharacterSet8bit::unicode_map_WE8PC858);
+        characterMap[31] = new CharacterSet8bit("WE8ISO8859P1", CharacterSet8bit::unicode_map_WE8ISO8859P1);
+        characterMap[32] = new CharacterSet8bit("EE8ISO8859P2", CharacterSet8bit::unicode_map_EE8ISO8859P2);
+        characterMap[33] = new CharacterSet8bit("SE8ISO8859P3", CharacterSet8bit::unicode_map_SE8ISO8859P3);
+        characterMap[34] = new CharacterSet8bit("NEE8ISO8859P4", CharacterSet8bit::unicode_map_NEE8ISO8859P4);
+        characterMap[35] = new CharacterSet8bit("CL8ISO8859P5", CharacterSet8bit::unicode_map_CL8ISO8859P5);
+        characterMap[36] = new CharacterSet8bit("AR8ISO8859P6", CharacterSet8bit::unicode_map_AR8ISO8859P6);
+        characterMap[37] = new CharacterSet8bit("EL8ISO8859P7", CharacterSet8bit::unicode_map_EL8ISO8859P7);
+        characterMap[38] = new CharacterSet8bit("IW8ISO8859P8", CharacterSet8bit::unicode_map_IW8ISO8859P8);
+        characterMap[39] = new CharacterSet8bit("WE8ISO8859P9", CharacterSet8bit::unicode_map_WE8ISO8859P9);
+        characterMap[40] = new CharacterSet8bit("NE8ISO8859P10", CharacterSet8bit::unicode_map_NE8ISO8859P10);
+        characterMap[41] = new CharacterSet8bit("TH8TISASCII", CharacterSet8bit::unicode_map_TH8TISASCII);
+        characterMap[43] = new CharacterSet8bit("BN8BSCII", CharacterSet8bit::unicode_map_BN8BSCII);
+        characterMap[44] = new CharacterSet8bit("VN8VN3", CharacterSet8bit::unicode_map_VN8VN3);
+        characterMap[45] = new CharacterSet8bit("VN8MSWIN1258", CharacterSet8bit::unicode_map_VN8MSWIN1258);
+        characterMap[46] = new CharacterSet8bit("WE8ISO8859P15", CharacterSet8bit::unicode_map_WE8ISO8859P15);
+        characterMap[47] = new CharacterSet8bit("BLT8ISO8859P13", CharacterSet8bit::unicode_map_BLT8ISO8859P13);
+        characterMap[48] = new CharacterSet8bit("CEL8ISO8859P14", CharacterSet8bit::unicode_map_CEL8ISO8859P14);
+        characterMap[49] = new CharacterSet8bit("CL8ISOIR111", CharacterSet8bit::unicode_map_CL8ISOIR111);
+        characterMap[50] = new CharacterSet8bit("WE8NEXTSTEP", CharacterSet8bit::unicode_map_WE8NEXTSTEP);
+        characterMap[51] = new CharacterSet8bit("CL8KOI8U", CharacterSet8bit::unicode_map_CL8KOI8U);
+        characterMap[52] = new CharacterSet8bit("AZ8ISO8859P9E", CharacterSet8bit::unicode_map_AZ8ISO8859P9E);
+        characterMap[61] = new CharacterSet8bit("AR8ASMO708PLUS", CharacterSet8bit::unicode_map_AR8ASMO708PLUS);
+        characterMap[81] = new CharacterSet8bit("EL8DEC", CharacterSet8bit::unicode_map_EL8DEC);
+        characterMap[82] = new CharacterSet8bit("TR8DEC", CharacterSet8bit::unicode_map_TR8DEC);
+        characterMap[110] = new CharacterSet8bit("EEC8EUROASCI", CharacterSet8bit::unicode_map_EEC8EUROASCI, true);
+        characterMap[113] = new CharacterSet8bit("EEC8EUROPA3", CharacterSet8bit::unicode_map_EEC8EUROPA3, true);
+        characterMap[114] = new CharacterSet8bit("LA8PASSPORT", CharacterSet8bit::unicode_map_LA8PASSPORT);
+        characterMap[140] = new CharacterSet8bit("BG8PC437S", CharacterSet8bit::unicode_map_BG8PC437S);
+        characterMap[150] = new CharacterSet8bit("EE8PC852", CharacterSet8bit::unicode_map_EE8PC852);
+        characterMap[152] = new CharacterSet8bit("RU8PC866", CharacterSet8bit::unicode_map_RU8PC866);
+        characterMap[153] = new CharacterSet8bit("RU8BESTA", CharacterSet8bit::unicode_map_RU8BESTA);
+        characterMap[154] = new CharacterSet8bit("IW8PC1507", CharacterSet8bit::unicode_map_IW8PC1507);
+        characterMap[155] = new CharacterSet8bit("RU8PC855", CharacterSet8bit::unicode_map_RU8PC855);
+        characterMap[156] = new CharacterSet8bit("TR8PC857", CharacterSet8bit::unicode_map_TR8PC857);
+        characterMap[159] = new CharacterSet8bit("CL8MACCYRILLICS", CharacterSet8bit::unicode_map_CL8MACCYRILLICS);
+        characterMap[160] = new CharacterSet8bit("WE8PC860", CharacterSet8bit::unicode_map_WE8PC860);
+        characterMap[161] = new CharacterSet8bit("IS8PC861", CharacterSet8bit::unicode_map_IS8PC861);
+        characterMap[162] = new CharacterSet8bit("EE8MACCES", CharacterSet8bit::unicode_map_EE8MACCES);
+        characterMap[163] = new CharacterSet8bit("EE8MACCROATIANS", CharacterSet8bit::unicode_map_EE8MACCROATIANS);
+        characterMap[164] = new CharacterSet8bit("TR8MACTURKISHS", CharacterSet8bit::unicode_map_TR8MACTURKISHS);
+        characterMap[165] = new CharacterSet8bit("IS8MACICELANDICS", CharacterSet8bit::unicode_map_IS8MACICELANDICS, true);
+        characterMap[166] = new CharacterSet8bit("EL8MACGREEKS", CharacterSet8bit::unicode_map_EL8MACGREEKS);
+        characterMap[167] = new CharacterSet8bit("IW8MACHEBREWS", CharacterSet8bit::unicode_map_IW8MACHEBREWS);
+        characterMap[170] = new CharacterSet8bit("EE8MSWIN1250", CharacterSet8bit::unicode_map_EE8MSWIN1250);
+        characterMap[171] = new CharacterSet8bit("CL8MSWIN1251", CharacterSet8bit::unicode_map_CL8MSWIN1251);
+        characterMap[172] = new CharacterSet8bit("ET8MSWIN923", CharacterSet8bit::unicode_map_ET8MSWIN923);
+        characterMap[173] = new CharacterSet8bit("BG8MSWIN", CharacterSet8bit::unicode_map_BG8MSWIN);
+        characterMap[174] = new CharacterSet8bit("EL8MSWIN1253", CharacterSet8bit::unicode_map_EL8MSWIN1253);
+        characterMap[175] = new CharacterSet8bit("IW8MSWIN1255", CharacterSet8bit::unicode_map_IW8MSWIN1255);
+        characterMap[176] = new CharacterSet8bit("LT8MSWIN921", CharacterSet8bit::unicode_map_LT8MSWIN921);
+        characterMap[177] = new CharacterSet8bit("TR8MSWIN1254", CharacterSet8bit::unicode_map_TR8MSWIN1254);
+        characterMap[178] = new CharacterSet8bit("WE8MSWIN1252", CharacterSet8bit::unicode_map_WE8MSWIN1252);
+        characterMap[179] = new CharacterSet8bit("BLT8MSWIN1257", CharacterSet8bit::unicode_map_BLT8MSWIN1257);
+        characterMap[190] = new CharacterSet8bit("N8PC865", CharacterSet8bit::unicode_map_N8PC865);
+        characterMap[191] = new CharacterSet8bit("BLT8CP921", CharacterSet8bit::unicode_map_BLT8CP921);
+        characterMap[192] = new CharacterSet8bit("LV8PC1117", CharacterSet8bit::unicode_map_LV8PC1117);
+        characterMap[193] = new CharacterSet8bit("LV8PC8LR", CharacterSet8bit::unicode_map_LV8PC8LR);
+        characterMap[195] = new CharacterSet8bit("LV8RST104090", CharacterSet8bit::unicode_map_LV8RST104090);
+        characterMap[196] = new CharacterSet8bit("CL8KOI8R", CharacterSet8bit::unicode_map_CL8KOI8R);
+        characterMap[197] = new CharacterSet8bit("BLT8PC775", CharacterSet8bit::unicode_map_BLT8PC775);
+        characterMap[202] = new CharacterSet7bit("E7SIEMENS9780X", CharacterSet7bit::unicode_map_E7SIEMENS9780X);
+        characterMap[203] = new CharacterSet7bit("S7SIEMENS9780X", CharacterSet7bit::unicode_map_S7SIEMENS9780X);
+        characterMap[204] = new CharacterSet7bit("DK7SIEMENS9780X", CharacterSet7bit::unicode_map_DK7SIEMENS9780X);
+        characterMap[206] = new CharacterSet7bit("I7SIEMENS9780X", CharacterSet7bit::unicode_map_I7SIEMENS9780X);
+        characterMap[205] = new CharacterSet7bit("N7SIEMENS9780X", CharacterSet7bit::unicode_map_N7SIEMENS9780X);
+        characterMap[207] = new CharacterSet7bit("D7SIEMENS9780X", CharacterSet7bit::unicode_map_D7SIEMENS9780X);
+        characterMap[241] = new CharacterSet8bit("WE8DG", CharacterSet8bit::unicode_map_WE8DG);
+        characterMap[251] = new CharacterSet8bit("WE8NCR4970", CharacterSet8bit::unicode_map_WE8NCR4970);
+        characterMap[261] = new CharacterSet8bit("WE8ROMAN8", CharacterSet8bit::unicode_map_WE8ROMAN8);
+        characterMap[352] = new CharacterSet8bit("WE8MACROMAN8S", CharacterSet8bit::unicode_map_WE8MACROMAN8S);
+        characterMap[354] = new CharacterSet8bit("TH8MACTHAIS", CharacterSet8bit::unicode_map_TH8MACTHAIS);
+        characterMap[368] = new CharacterSet8bit("HU8CWI2", CharacterSet8bit::unicode_map_HU8CWI2);
+        characterMap[380] = new CharacterSet8bit("EL8PC437S", CharacterSet8bit::unicode_map_EL8PC437S);
+        characterMap[382] = new CharacterSet8bit("EL8PC737", CharacterSet8bit::unicode_map_EL8PC737);
+        characterMap[383] = new CharacterSet8bit("LT8PC772", CharacterSet8bit::unicode_map_LT8PC772);
+        characterMap[384] = new CharacterSet8bit("LT8PC774", CharacterSet8bit::unicode_map_LT8PC774);
+        characterMap[385] = new CharacterSet8bit("EL8PC869", CharacterSet8bit::unicode_map_EL8PC869);
+        characterMap[386] = new CharacterSet8bit("EL8PC851", CharacterSet8bit::unicode_map_EL8PC851);
+        characterMap[390] = new CharacterSet8bit("CDN8PC863", CharacterSet8bit::unicode_map_CDN8PC863);
+        characterMap[401] = new CharacterSet8bit("HU8ABMOD", CharacterSet8bit::unicode_map_HU8ABMOD);
+        characterMap[500] = new CharacterSet8bit("AR8ASMO8X", CharacterSet8bit::unicode_map_AR8ASMO8X);
+        characterMap[504] = new CharacterSet8bit("AR8NAFITHA711T", CharacterSet8bit::unicode_map_AR8NAFITHA711T);
+        characterMap[505] = new CharacterSet8bit("AR8SAKHR707T", CharacterSet8bit::unicode_map_AR8SAKHR707T);
+        characterMap[506] = new CharacterSet8bit("AR8MUSSAD768T", CharacterSet8bit::unicode_map_AR8MUSSAD768T);
+        characterMap[507] = new CharacterSet8bit("AR8ADOS710T", CharacterSet8bit::unicode_map_AR8ADOS710T);
+        characterMap[508] = new CharacterSet8bit("AR8ADOS720T", CharacterSet8bit::unicode_map_AR8ADOS720T);
+        characterMap[509] = new CharacterSet8bit("AR8APTEC715T", CharacterSet8bit::unicode_map_AR8APTEC715T);
+        characterMap[511] = new CharacterSet8bit("AR8NAFITHA721T", CharacterSet8bit::unicode_map_AR8NAFITHA721T);
+        characterMap[514] = new CharacterSet8bit("AR8HPARABIC8T", CharacterSet8bit::unicode_map_AR8HPARABIC8T);
+        characterMap[554] = new CharacterSet8bit("AR8NAFITHA711", CharacterSet8bit::unicode_map_AR8NAFITHA711);
+        characterMap[555] = new CharacterSet8bit("AR8SAKHR707", CharacterSet8bit::unicode_map_AR8SAKHR707);
+        characterMap[556] = new CharacterSet8bit("AR8MUSSAD768", CharacterSet8bit::unicode_map_AR8MUSSAD768);
+        characterMap[557] = new CharacterSet8bit("AR8ADOS710", CharacterSet8bit::unicode_map_AR8ADOS710);
+        characterMap[558] = new CharacterSet8bit("AR8ADOS720", CharacterSet8bit::unicode_map_AR8ADOS720);
+        characterMap[559] = new CharacterSet8bit("AR8APTEC715", CharacterSet8bit::unicode_map_AR8APTEC715);
+        characterMap[560] = new CharacterSet8bit("AR8MSWIN1256", CharacterSet8bit::unicode_map_AR8MSWIN1256);
+        characterMap[561] = new CharacterSet8bit("AR8NAFITHA721", CharacterSet8bit::unicode_map_AR8NAFITHA721);
+        characterMap[563] = new CharacterSet8bit("AR8SAKHR706", CharacterSet8bit::unicode_map_AR8SAKHR706);
+        characterMap[566] = new CharacterSet8bit("AR8ARABICMACS", CharacterSet8bit::unicode_map_AR8ARABICMACS);
+        characterMap[590] = new CharacterSet8bit("LA8ISO6937", CharacterSet8bit::unicode_map_LA8ISO6937);
+        characterMap[829] = new CharacterSet16bit("JA16VMS", CharacterSet16bit::unicode_map_JA16VMS, JA16VMS_b1_min, JA16VMS_b1_max, JA16VMS_b2_min, JA16VMS_b2_max);
+        characterMap[830] = new CharacterSetJA16EUC();
+        characterMap[831] = new CharacterSetJA16EUC("JA16EUCYEN");
+        characterMap[832] = new CharacterSetJA16SJIS();
+        characterMap[834] = new CharacterSetJA16SJIS("JA16SJISYEN");
+        characterMap[837] = new CharacterSetJA16EUCTILDE();
+        characterMap[838] = new CharacterSetJA16SJISTILDE();
+        characterMap[840] = new CharacterSet16bit("KO16KSC5601", CharacterSet16bit::unicode_map_KO16KSC5601_2b, KO16KSC5601_b1_min, KO16KSC5601_b1_max, KO16KSC5601_b2_min, KO16KSC5601_b2_max);
+        characterMap[845] = new CharacterSetKO16KSCCS();
+        characterMap[846] = new CharacterSet16bit("KO16MSWIN949", CharacterSet16bit::unicode_map_KO16MSWIN949_2b, KO16MSWIN949_b1_min, KO16MSWIN949_b1_max, KO16MSWIN949_b2_min, KO16MSWIN949_b2_max);
+        characterMap[850] = new CharacterSet16bit("ZHS16CGB231280", CharacterSet16bit::unicode_map_ZHS16CGB231280_2b, ZHS16CGB231280_b1_min, ZHS16CGB231280_b1_max, ZHS16CGB231280_b2_min, ZHS16CGB231280_b2_max);
+        characterMap[852] = new CharacterSetZHS16GBK();
+        characterMap[854] = new CharacterSetZHS32GB18030();
+        characterMap[860] = new CharacterSetZHT32EUC();
+        characterMap[863] = new CharacterSetZHT32TRIS();
+        characterMap[865] = new CharacterSet16bit("ZHT16BIG5", CharacterSet16bit::unicode_map_ZHT16BIG5_2b, ZHT16BIG5_b1_min, ZHT16BIG5_b1_max, ZHT16BIG5_b2_min, ZHT16BIG5_b2_max);
+        characterMap[866] = new CharacterSet16bit("ZHT16CCDC", CharacterSet16bit::unicode_map_ZHT16CCDC_2b, ZHT16CCDC_b1_min, ZHT16CCDC_b1_max, ZHT16CCDC_b2_min, ZHT16CCDC_b2_max);
+        characterMap[867] = new CharacterSet16bit("ZHT16MSWIN950", CharacterSet16bit::unicode_map_ZHT16MSWIN950_2b, ZHT16MSWIN950_b1_min, ZHT16MSWIN950_b1_max, ZHT16MSWIN950_b2_min, ZHT16MSWIN950_b2_max);
+        characterMap[868] = new CharacterSet16bit("ZHT16HKSCS", CharacterSet16bit::unicode_map_ZHT16HKSCS_2b, ZHT16HKSCS_b1_min, ZHT16HKSCS_b1_max, ZHT16HKSCS_b2_min, ZHT16HKSCS_b2_max);
+        characterMap[871] = new CharacterSetUTF8();
+        characterMap[873] = new CharacterSetAL32UTF8();
+        characterMap[992] = new CharacterSetZHT16HKSCS31();
+        characterMap[1002] = new CharacterSet8bit("TIMESTEN8", CharacterSet8bit::unicode_map_TIMESTEN8);
+        characterMap[2000] = new CharacterSetAL16UTF16();
     }
 
     CommandBuffer::~CommandBuffer() {
-        if (intraThreadBuffer != nullptr) {
-            delete[] intraThreadBuffer;
-            intraThreadBuffer = nullptr;
+        while (firstBuffer != nullptr) {
+            uint8_t* nextBuffer = *((uint8_t**)(firstBuffer + KAFKA_BUFFER_NEXT));
+            oracleAnalyser->freeMemoryChunk("KAFKA", firstBuffer, true);
+            firstBuffer = nextBuffer;
+            --buffersAllocated;
         }
     }
 
-    void CommandBuffer::stop(void) {
-        shutdown = true;
+    void CommandBuffer::initialize(OracleAnalyser *oracleAnalyser) {
+        this->oracleAnalyser = oracleAnalyser;
+
+        buffersAllocated = 1;
+        firstBuffer = oracleAnalyser->getMemoryChunk("KAFKA", false);
+        *((uint8_t**)(firstBuffer + KAFKA_BUFFER_NEXT)) = nullptr;
+        *((uint64_t*)(firstBuffer + KAFKA_BUFFER_END)) = KAFKA_BUFFER_DATA;
+        firstBufferPos = KAFKA_BUFFER_DATA;
+        lastBuffer = firstBuffer;
+        lastBufferPos = KAFKA_BUFFER_DATA;
     }
 
-    void CommandBuffer::setOracleAnalyser(OracleAnalyser *oracleAnalyser) {
-        this->oracleAnalyser = oracleAnalyser;
+    void CommandBuffer::bufferAppend(uint8_t character) {
+        lastBuffer[lastBufferPos] = character;
+        ++messageLength;
+        bufferShift(1);
+    }
+
+    void CommandBuffer::bufferShift(uint64_t bytes) {
+        lastBufferPos += bytes;
+
+        if (lastBufferPos >= MEMORY_CHUNK_SIZE) {
+            uint8_t *nextBuffer = oracleAnalyser->getMemoryChunk("KAFKA", true);
+            *((uint8_t**)(nextBuffer + KAFKA_BUFFER_NEXT)) = nullptr;
+            *((uint64_t*)(nextBuffer + KAFKA_BUFFER_END)) = KAFKA_BUFFER_DATA;
+            {
+                unique_lock<mutex> lck(mtx);
+                *((uint8_t**)(lastBuffer + KAFKA_BUFFER_NEXT)) = nextBuffer;
+                *((uint64_t*)(lastBuffer + KAFKA_BUFFER_END)) = MEMORY_CHUNK_SIZE;
+                ++buffersAllocated;
+                lastBuffer = nextBuffer;
+                lastBufferPos = KAFKA_BUFFER_DATA;
+            }
+        }
+    }
+
+    CommandBuffer* CommandBuffer::beginMessage(void) {
+        curBuffer = lastBuffer;
+        curBufferPos = lastBufferPos;
+        messageLength = 0;
+        *((uint64_t*)(lastBuffer + lastBufferPos)) = 0;
+        bufferShift(KAFKA_BUFFER_LENGTH_SIZE);
+
+        return this;
+    }
+
+    CommandBuffer* CommandBuffer::commitMessage(void) {
+        if (messageLength == 0)
+            cerr << "WARNING: JSON buffer - commit of empty transaction" << endl;
+
+        bufferShift((8 - (messageLength & 7)) & 7);
+        {
+            unique_lock<mutex> lck(mtx);
+            *((uint64_t*)(curBuffer + curBufferPos)) = messageLength;
+            if (curBuffer != lastBuffer)
+                *((uint64_t*)(curBuffer + KAFKA_BUFFER_END)) = MEMORY_CHUNK_SIZE;
+            *((uint64_t*)(lastBuffer + KAFKA_BUFFER_END)) = lastBufferPos;
+            writersCond.notify_all();
+        }
+        return this;
+    }
+
+    uint64_t CommandBuffer::currentMessageSize(void) {
+        return messageLength + KAFKA_BUFFER_LENGTH_SIZE;
+    }
+
+    void CommandBuffer::setParameters(uint64_t test, uint64_t timestampFormat, uint64_t charFormat, Writer *writer) {
+        this->test = test;
+        this->timestampFormat = timestampFormat;
+        this->charFormat = charFormat;
+        this->writer = writer;
     }
 
     void CommandBuffer::setNlsCharset(string &nlsCharset, string &nlsNcharCharset) {
         cout << "- loading character mapping for " << nlsCharset << endl;
 
-        if (strcmp(nlsCharset.c_str(), "AL32UTF8") == 0) defaultCharacterMapId = ORA_CHARSET_CODE_AL32UTF8;
-        else if (strcmp(nlsCharset.c_str(), "UTF8") == 0) defaultCharacterMapId = ORA_CHARSET_CODE_UTF8;
-        else
-        for (auto elem: characterMapName) {
-            if (strcmp(nlsCharset.c_str(), elem.second) == 0) {
+        for (auto elem: characterMap) {
+            if (strcmp(nlsCharset.c_str(), elem.second->name) == 0) {
                 defaultCharacterMapId = elem.first;
                 break;
             }
@@ -242,53 +301,38 @@ namespace OpenLogReplicator {
             throw RuntimeException("unsupported NLS_CHARACTERSET value");
 
         cout << "- loading character mapping for " << nlsNcharCharset << endl;
-        if (strcmp(nlsNcharCharset.c_str(), "AL16UTF16") == 0) defaultCharacterNcharMapId = ORA_CHARSET_CODE_AL16UTF16;
-        else if (strcmp(nlsNcharCharset.c_str(), "UTF8") == 0) defaultCharacterNcharMapId = ORA_CHARSET_CODE_UTF8;
-        else
+        for (auto elem: characterMap) {
+            if (strcmp(nlsNcharCharset.c_str(), elem.second->name) == 0) {
+                defaultCharacterNcharMapId = elem.first;
+                break;
+            }
+        }
+
+        if (defaultCharacterNcharMapId == 0)
             throw RuntimeException("unsupported NLS_NCHAR_CHARACTERSET value");
     }
 
     CommandBuffer* CommandBuffer::appendEscape(const uint8_t *str, uint64_t length) {
-        if (shutdown)
-            return this;
-
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length * 2 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (1)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-            if (shutdown)
-                return this;
-        }
-
-        if (posEndTmp + length * 2 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (1)" << endl;
-            return this;
-        }
-
         while (length > 0) {
             if (*str == '\t') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 't';
+                bufferAppend('\\');
+                bufferAppend('t');
             } else if (*str == '\r') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'r';
+                bufferAppend('\\');
+                bufferAppend('r');
             } else if (*str == '\n') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'n';
+                bufferAppend('\\');
+                bufferAppend('n');
             } else if (*str == '\f') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'f';
+                bufferAppend('\\');
+                bufferAppend('f');
             } else if (*str == '\b') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'b';
+                bufferAppend('\\');
+                bufferAppend('b');
             } else {
                 if (*str == '"' || *str == '\\' || *str == '/')
-                    intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = *(str++);
+                    bufferAppend('\\');
+                bufferAppend(*(str++));
             }
             --length;
         }
@@ -296,170 +340,88 @@ namespace OpenLogReplicator {
         return this;
     }
 
-    CommandBuffer* CommandBuffer::appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId) {
-        if (shutdown)
-            return this;
+CommandBuffer* CommandBuffer::appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId) {
+        bool isNext = false;
 
-        //reserve pessimistic 6 bytes per char
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length * 6 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (1)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-            if (shutdown)
-                return this;
-        }
-
-        if (posEndTmp + length * 6 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (1)" << endl;
-            return this;
+        CharacterSet *characterSet = characterMap[charsetId];
+        if (characterSet == nullptr && (charFormat & 1 == 0)) {
+            cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
+            throw RuntimeException("unsupported character map");
         }
 
         while (length > 0) {
-            bool noMapping = false;
-            uint64_t unicodeCharacter;
+            typeunicode unicodeCharacter;
+            uint64_t unicodeCharacterLength;
 
-            if (charsetId == ORA_CHARSET_CODE_UTF8 || charsetId == ORA_CHARSET_CODE_AL32UTF8) {
+            if ((charFormat & 1) == 0) {
+                unicodeCharacter = characterSet->decode(str, length);
+                unicodeCharacterLength = 8;
+            } else {
                 unicodeCharacter = *str++;
                 --length;
-                noMapping = true;
-
-            } else if (charsetId == ORA_CHARSET_CODE_AL16UTF16) {
-                //U' = yyyy yyyy yyxx xxxx xxxx   // U - 0x10000
-                //W1 = 1101 10yy yyyy yyyy      // 0xD800 + yyyyyyyyyy
-                //W2 = 1101 11xx xxxx xxxx      // 0xDC00 + xxxxxxxxxx
-
-                if (length <= 1)
-                     throw RuntimeException("too short UTF-16 value");
-
-                uint64_t character1 = (((uint64_t)(*str++)) << 8) | ((uint64_t)(*str++));
-                length -= 2;
-
-                if ((character1 & 0xFC00) == 0xDC00) {
-                    cerr << "ERROR: found first lower UTF-16 character: " << dec << character1 << endl;
-                    throw RuntimeException("unsupported UTF-16 value");
-                } else if ((character1 & 0xFC00) == 0xD800) {
-                    if (length <= 1)
-                         throw RuntimeException("too short UTF-16 value");
-
-                    uint64_t character2 = (((uint64_t)(*str++)) << 8) | ((uint64_t)(*str++));
-                    length -= 2;
-
-                    if ((character2 & 0xFC00) != 0xDC00) {
-                        cerr << "ERROR: lower UTF-16 character in bad format: " << dec << character2 << endl;
-                        throw RuntimeException("unsupported Unicode character map");
-                    }
-
-                    unicodeCharacter = 0x10000 + ((character1 & 0xFC00) >> 10) + (character2 & 0xFC00);
-                } else {
-                    unicodeCharacter = character1;
-                }
-            } else {
-                uint64_t bits = characterMapBits[charsetId];
-
-                if (bits == 7) {
-                    typeunimap* mapCharset = characterMap[charsetId];
-                    if (mapCharset == nullptr) {
-                        cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
-                        throw RuntimeException("unsupported Unicode character map");
-                    }
-
-                    uint64_t character1 = *str++;
-                    --length;
-                    unicodeCharacter = mapCharset[character1 & 0x7F];
-
-                } else if (bits == 8) {
-                    typeunimap* mapCharset = characterMap[charsetId];
-                    if (mapCharset == nullptr) {
-                        cerr << "ERROR: can't find character set map for id = " << dec << charsetId << endl;
-                        throw RuntimeException("unsupported Unicode character map");
-                    }
-
-                    uint64_t character1 = *str++;
-                    --length;
-                    unicodeCharacter = mapCharset[character1];
-
-                } else if (bits == 16 || bits == 32) {
-                    uint64_t character1 = *str++;
-                    --length;
-                    unicodeCharacter = character1;
-                    noMapping = true;
-
-                } else {
-                    cerr << "ERROR: character bit size not supported: " << dec << bits << endl;
-                    throw RuntimeException("unsupported character bit width");
-                }
+                unicodeCharacterLength = 2;
             }
 
+            if ((charFormat & 2) == 2) {
+                if (isNext)
+                    bufferAppend(',');
+                else
+                    isNext = true;
+                bufferAppend('0');
+                bufferAppend('x');
+                appendHex(unicodeCharacter, unicodeCharacterLength);
+            } else
             if (unicodeCharacter == '\t') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 't';
+                bufferAppend('\\');
+                bufferAppend('t');
             } else if (unicodeCharacter == '\r') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'r';
+                bufferAppend('\\');
+                bufferAppend('r');
             } else if (unicodeCharacter == '\n') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'n';
+                bufferAppend('\\');
+                bufferAppend('n');
             } else if (unicodeCharacter == '\f') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'f';
+                bufferAppend('\\');
+                bufferAppend('f');
             } else if (unicodeCharacter == '\b') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = 'b';
+                bufferAppend('\\');
+                bufferAppend('b');
             } else if (unicodeCharacter == '"') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = '"';
+                bufferAppend('\\');
+                bufferAppend('"');
             } else if (unicodeCharacter == '\\') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = '\\';
+                bufferAppend('\\');
+                bufferAppend('\\');
             } else if (unicodeCharacter == '/') {
-                intraThreadBuffer[posEndTmp++] = '\\';
-                intraThreadBuffer[posEndTmp++] = '/';
+                bufferAppend('\\');
+                bufferAppend('/');
             } else {
                 //0xxxxxxx
-                if (unicodeCharacter <= 0x7F || noMapping) {
-                    intraThreadBuffer[posEndTmp++] = (uint8_t)unicodeCharacter;
+                if (unicodeCharacter <= 0x7F) {
+                    bufferAppend(unicodeCharacter);
 
                 //110xxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0x7FF) {
-                    intraThreadBuffer[posEndTmp++] = 0xC0 | (uint8_t)(unicodeCharacter >> 6);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
+                    bufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
+                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
                 //1110xxxx 10xxxxxx 10xxxxxx
                 } else if (unicodeCharacter <= 0xFFFF) {
-                    intraThreadBuffer[posEndTmp++] = 0xE0 | (uint8_t)(unicodeCharacter >> 12);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
+                    bufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
+                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
                 //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x1FFFFF) {
-                    intraThreadBuffer[posEndTmp++] = 0xF0 | (uint8_t)(unicodeCharacter >> 18);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
+                } else if (unicodeCharacter <= 0x10FFFF) {
+                    bufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
+                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
+                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
-                //111110xx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x3FFFFFF) {
-                    intraThreadBuffer[posEndTmp++] = 0xF8 | (uint8_t)(unicodeCharacter >> 24);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 18) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
-
-                //1111110x 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x7FFFFFFF) {
-                    intraThreadBuffer[posEndTmp++] = 0xFC | (uint8_t)(unicodeCharacter >> 32);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 24) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 18) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F);
-                    intraThreadBuffer[posEndTmp++] = 0x80 | (uint8_t)(unicodeCharacter & 0x3F);
-
-                } else
+                } else {
+                    cerr << "ERROR: got character code: U+" << dec << unicodeCharacter << endl;
                     throw RuntimeException("unsupported Unicode character");
+                }
             }
         }
 
@@ -468,34 +430,17 @@ namespace OpenLogReplicator {
 
     CommandBuffer* CommandBuffer::appendHex(uint64_t val, uint64_t length) {
         static const char* digits = "0123456789abcdef";
-        if (shutdown)
-            return this;
 
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (2)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-        }
-
-        if (posEndTmp + length >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (5)" << endl;
-            return this;
-        }
-
-        for (uint64_t i = 0, j = (length - 1) * 4; i < length; ++i, j -= 4)
-            intraThreadBuffer[posEndTmp + i] = digits[(val >> j) & 0xF];
-        posEndTmp += length;
+        uint64_t j = (length - 1) * 4;
+        for (uint64_t i = 0; i < length; ++i) {
+            bufferAppend(digits[(val >> j) & 0xF]);
+            j -= 4;
+        };
 
         return this;
     }
 
     CommandBuffer* CommandBuffer::appendDec(uint64_t val) {
-        if (shutdown)
-            return this;
         char buffer[21];
         uint64_t length = 0;
 
@@ -510,24 +455,8 @@ namespace OpenLogReplicator {
             }
         }
 
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (3)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-        }
-
-        if (posEndTmp + length >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (5)" << endl;
-            return this;
-        }
-
         for (uint64_t i = 0; i < length; ++i)
-            intraThreadBuffer[posEndTmp + i] = buffer[length - i - 1];
-        posEndTmp += length;
+            bufferAppend(buffer[length - i - 1]);
 
         return this;
     }
@@ -698,6 +627,14 @@ namespace OpenLogReplicator {
         return this;
     }
 
+    CommandBuffer* CommandBuffer::appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
+        appendChr("\"?\"");
+        cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
+        for (uint64_t j = 0; j < fieldLength; ++j)
+            cerr << " " << hex << setfill('0') << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
+        cerr << endl;
+        return this;
+    }
 
     CommandBuffer* CommandBuffer::appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength) {
         uint64_t j, jMax;
@@ -713,21 +650,14 @@ namespace OpenLogReplicator {
         appendChr("\":");
 
         switch(typeNo) {
-        case 1: //varchar(2)
-        case 96: //char
+        case 1: //varchar2/nvarchar2
+        case 96: //char/nchar
             append('"');
             appendEscapeMap(redoLogRecord->data + fieldPos, fieldLength, charsetId);
             append('"');
             break;
 
-        case 23: //raw
-            append('"');
-            for (uint64_t j = 0; j < fieldLength; ++j)
-                appendHex(*(redoLogRecord->data + fieldPos + j), 2);
-            append('"');
-            break;
-
-        case 2: //numeric
+        case 2: //number/float
             digits = redoLogRecord->data[fieldPos + 0];
             //just zero
             if (digits == 0x80) {
@@ -856,37 +786,54 @@ namespace OpenLogReplicator {
                     if ((val % 10) != 0)
                         append('0' + (val % 10));
                 }
-            } else {
-                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint64_t j = 0; j < fieldLength; ++j)
-                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
-                cerr << endl;
-            }
+            } else
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
             break;
 
         case 12:  //date
         case 180: //timestamp
-            if (fieldLength != 7 && fieldLength != 11) {
-                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint64_t j = 0; j < fieldLength; ++j)
-                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
-                cerr << endl;
-                appendChr("\"?\"");
-            } else {
+            if (fieldLength != 7 && fieldLength != 11)
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
+            else {
                 append('"');
                 appendTimestamp(redoLogRecord->data + fieldPos, fieldLength);
                 append('"');
             }
             break;
 
+        case 23: //raw
+            append('"');
+            for (uint64_t j = 0; j < fieldLength; ++j)
+                appendHex(*(redoLogRecord->data + fieldPos + j), 2);
+            append('"');
+            break;
+
+        case 100: //binary_float
+            if (fieldLength == 4) {
+                stringstream valStringStream;
+                float *valFloat = (float *)redoLogRecord->data + fieldPos;
+                valStringStream << *valFloat;
+                string valString = valStringStream.str();
+                appendStr(valString);
+            } else
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
+            break;
+
+        case 101: //binary_double
+            if (fieldLength == 8) {
+                stringstream valStringStream;
+                double *valDouble = (double *)redoLogRecord->data + fieldPos;
+                valStringStream << *valDouble;
+                string valString = valStringStream.str();
+                appendStr(valString);
+            } else
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
+            break;
+
         //case 231: //timestamp with local time zone
         case 181: //timestamp with time zone
             if (fieldLength != 13) {
-                cerr << "ERROR: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint64_t j = 0; j < fieldLength; ++j)
-                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
-                cerr << endl;
-                appendChr("\"?\"");
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
             } else {
                 append('"');
                 appendTimestamp(redoLogRecord->data + fieldPos, fieldLength - 2);
@@ -939,67 +886,29 @@ namespace OpenLogReplicator {
             break;
 
         default:
-            if ((oracleAnalyser->trace2 & TRACE2_TYPES) != 0) {
-                cerr << "TYPES: unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - ";
-                for (uint64_t j = 0; j < fieldLength; ++j)
-                    cerr << " " << hex << setfill('0') << setw(2) << (uint64_t)redoLogRecord->data[fieldPos + j];
-                cerr << endl;
-            }
-            appendChr("\"?\"");
+            if ((oracleAnalyser->trace2 & TRACE2_TYPES) != 0)
+                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
+            else
+                appendChr("\"?\"");
         }
 
         return this;
     }
 
     CommandBuffer* CommandBuffer::appendStr(string &str) {
-        if (shutdown)
-            return this;
-
+        const char *charstr = str.c_str();
         uint64_t length = str.length();
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (4)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-        }
-
-        if (posEndTmp + length >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (2)" << endl;
-            return this;
-        }
-
-        memcpy(intraThreadBuffer + posEndTmp, str.c_str(), length);
-        posEndTmp += length;
-
+        for (uint i = 0; i < length; ++i)
+            bufferAppend(*charstr++);
         return this;
     }
 
     CommandBuffer* CommandBuffer::appendChr(const char *str) {
-        if (shutdown)
-            return this;
-
-        uint64_t length = strlen(str);
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + length >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (5)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
+        char character = *str++;
+        while (character != 0) {
+            bufferAppend(character);
+            character = *str++;
         }
-
-        if (posEndTmp + length >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (2)" << endl;
-            return this;
-        }
-
-        memcpy(intraThreadBuffer + posEndTmp, str, length);
-        posEndTmp += length;
-
         return this;
     }
 
@@ -1032,26 +941,7 @@ namespace OpenLogReplicator {
     }
 
     CommandBuffer* CommandBuffer::append(char chr) {
-        if (shutdown)
-            return this;
-
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + 1 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (6)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-        }
-
-        if (posEndTmp + 1 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (3)" << endl;
-            return this;
-        }
-
-        intraThreadBuffer[posEndTmp++] = chr;
-
+        bufferAppend(chr);
         return this;
     }
 
@@ -1192,78 +1082,5 @@ namespace OpenLogReplicator {
         appendStr(oracleAnalyser->alias);
         appendChr("\"}}");
         return this;
-    }
-
-    CommandBuffer* CommandBuffer::beginTran(void) {
-        if (shutdown)
-            return this;
-
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 && posEndTmp + 8 >= posStart) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (7)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-        }
-
-        if (posEndTmp + 8 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (8)" << endl;
-            return this;
-        }
-
-        *((uint64_t*)(intraThreadBuffer + posEndTmp)) = 0;
-        posEndTmp += 8;
-
-        return this;
-    }
-
-    CommandBuffer* CommandBuffer::commitTran(void) {
-        if (posEndTmp == posEnd) {
-            cerr << "WARNING: JSON buffer - commit of empty transaction" << endl;
-            return this;
-        }
-
-        {
-            unique_lock<mutex> lck(mtx);
-            *((uint64_t*)(intraThreadBuffer + posEnd)) = posEndTmp - posEnd;
-            posEndTmp = (posEndTmp + 7) & 0xFFFFFFFFFFFFFFF8;
-            posEnd = posEndTmp;
-
-            analysersCond.notify_all();
-        }
-
-        if (posEndTmp + 1 >= outputBufferSize) {
-            cerr << "ERROR: JSON buffer overflow (8)" << endl;
-            return this;
-        }
-
-        return this;
-    }
-
-    CommandBuffer* CommandBuffer::rewind(void) {
-        if (shutdown)
-            return this;
-
-        {
-            unique_lock<mutex> lck(mtx);
-            while (posSize > 0 || posStart == 0) {
-                cerr << "WARNING, JSON buffer full, log reader suspended (8)" << endl;
-                writerCond.wait(lck);
-                if (shutdown)
-                    return this;
-            }
-
-            posSize = posEnd;
-            posEnd = 0;
-            posEndTmp = 0;
-        }
-
-        return this;
-    }
-
-    uint64_t CommandBuffer::currentTranSize(void) {
-        return posEndTmp - posEnd;
     }
 }

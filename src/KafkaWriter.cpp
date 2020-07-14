@@ -22,6 +22,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unistd.h>
 #include <string.h>
 #include <librdkafka/rdkafkacpp.h>
@@ -44,83 +45,25 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t trace,
-            uint64_t trace2, uint64_t stream, uint64_t metadata, uint64_t singleDml, uint64_t showColumns, uint64_t test,
-            uint64_t timestampFormat) :
-        Writer(alias, oracleAnalyser, stream, metadata, singleDml, showColumns, test, timestampFormat),
+    KafkaWriter::KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb, uint64_t stream,
+            uint64_t metadata, uint64_t singleDml, uint64_t showColumns, uint64_t test, uint64_t timestampFormat, uint64_t charFormat) :
+        Writer(alias, oracleAnalyser, stream, metadata, singleDml, showColumns, test, timestampFormat, charFormat, maxMessageMb),
+        msgBuffer(nullptr),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers),
         topic(topic),
         producer(nullptr),
         ktopic(nullptr),
-        trace(trace),
-        trace2(trace2),
-        lastScn(0),
-        afterPos(nullptr),
-        beforePos(nullptr),
-        afterLen(nullptr),
-        beforeLen(nullptr),
-        colIsSupp(nullptr),
-        beforeRecord(nullptr),
-        afterRecord(nullptr) {
-        afterRecord = new RedoLogRecord*[MAX_NO_COLUMNS];
-        if (afterRecord == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.1", sizeof(RedoLogRecord*) * MAX_NO_COLUMNS);
+        lastScn(0) {
 
-        beforeRecord = new RedoLogRecord*[MAX_NO_COLUMNS];
-        if (beforeRecord == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.2", sizeof(RedoLogRecord*) * MAX_NO_COLUMNS);
-
-        colIsSupp = new uint8_t[MAX_NO_COLUMNS];
-        if (colIsSupp == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.3", sizeof(uint64_t) * MAX_NO_COLUMNS);
-
-        afterLen = new uint16_t[MAX_NO_COLUMNS];
-        if (afterLen == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.4", sizeof(uint16_t) * MAX_NO_COLUMNS);
-
-        beforeLen = new uint16_t[MAX_NO_COLUMNS];
-        if (beforeLen == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.5", sizeof(uint16_t) * MAX_NO_COLUMNS);
-
-        afterPos = new uint64_t[MAX_NO_COLUMNS];
-        if (afterPos == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.6", sizeof(uint64_t) * MAX_NO_COLUMNS);
-
-        beforePos = new uint64_t[MAX_NO_COLUMNS];
-        if (beforePos == nullptr)
-            throw MemoryException("KafkaWriter::KafkaWriter.7", sizeof(uint64_t) * MAX_NO_COLUMNS);
+        msgBuffer = oracleAnalyser->getMemoryChunk("KAFKATMP", false);
     }
 
     KafkaWriter::~KafkaWriter() {
-        if (afterRecord != nullptr) {
-            delete[] afterRecord;
-            afterRecord = nullptr;
-        }
-        if (beforeRecord != nullptr) {
-            delete[] beforeRecord;
-            beforeRecord = nullptr;
-        }
-        if (colIsSupp != nullptr) {
-            delete[] colIsSupp;
-            colIsSupp = nullptr;
-        }
-        if (afterLen != nullptr) {
-            delete[] afterLen;
-            afterLen = nullptr;
-        }
-        if (beforeLen != nullptr) {
-            delete[] beforeLen;
-            beforeLen = nullptr;
-        }
-        if (afterPos != nullptr) {
-            delete[] afterPos;
-            afterPos = nullptr;
-        }
-        if (beforePos != nullptr) {
-            delete[] beforePos;
-            beforePos = nullptr;
+        if (msgBuffer != nullptr) {
+            oracleAnalyser->freeMemoryChunk("KAFKATMP", msgBuffer, false);
+            msgBuffer = nullptr;
         }
 
         if (ktopic != nullptr) {
@@ -141,62 +84,112 @@ namespace OpenLogReplicator {
         }
     }
 
-    void *KafkaWriter::run(void) {
-        cout << "Starting thread: Kafka writer for: " << brokers << " topic: " << topic << endl;
-        uint64_t length = 0;
-
-        length = 0;
-        try {
-            while (!shutdown) {
-                if (length == 0) {
-                    unique_lock<mutex> lck(commandBuffer->mtx);
-                    while (commandBuffer->posStart == commandBuffer->posEnd) {
-                        if (shutdown)
-                            break;
-                        commandBuffer->analysersCond.wait(lck);
-                    }
-
-                    if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-                        commandBuffer->posStart = 0;
-                        commandBuffer->posSize = 0;
-                    }
-                    if (commandBuffer->posStart == commandBuffer->posEnd)
-                        length = 0;
-                    else
-                        length = *((uint64_t*)(commandBuffer->intraThreadBuffer + commandBuffer->posStart));
-                }
-                if ((trace2 & TRACE2_OUTPUT_BUFFER) != 0)
-                    cerr << "Kafka writer buffer: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
-
-                if (length > 0) {
-                    if (test >= 1) {
-                        for (uint64_t i = 0; i < length - 8; ++i)
-                            cout << commandBuffer->intraThreadBuffer[commandBuffer->posStart + 8 + i];
-                        cout << endl;
-                    } else {
-                        if (producer->produce(
-                                ktopic, Topic::PARTITION_UA, Producer::RK_MSG_COPY, commandBuffer->intraThreadBuffer + commandBuffer->posStart + 8,
-                                length - 8, nullptr, nullptr)) {
-                            cerr << "ERROR: writing to topic " << endl;
-                        }
-                    }
-
-                    {
-                        unique_lock<mutex> lck(commandBuffer->mtx);
-                        commandBuffer->posStart += (length + 7) & 0xFFFFFFFFFFFFFFF8;
-
-                        if (commandBuffer->posStart == commandBuffer->posSize && commandBuffer->posSize > 0) {
-                            commandBuffer->posStart = 0;
-                            commandBuffer->posSize = 0;
-                        }
-
-                        commandBuffer->writerCond.notify_all();
-                    }
-                    length = 0;
-                } else
-                    if (shutdown)
-                        break;
+    void KafkaWriter::sendMessage(uint8_t *buffer, uint64_t length, int msgflags) {
+        if (test >= 1) {
+            cout.write((const char*)buffer, length);
+            cout << endl;
+        } else {
+            if (producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr)) {
+                cerr << "ERROR: writing to topic, bytes sent: " << dec << length << endl;
+                throw (RuntimeException("writing to topic"));
             }
+        }
+    }
+
+    void *KafkaWriter::run(void) {
+        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") START" << endl;
+
+        cout << "Starting thread: Kafka writer for: " << brokers << " topic: " << topic << endl;
+
+        try {
+            for (;;) {
+                uint64_t length = 0, bufferEnd;
+
+                //get new block to read
+                {
+                    unique_lock<mutex> lck(commandBuffer->mtx);
+                    bufferEnd = *((uint64_t*)(commandBuffer->firstBuffer + KAFKA_BUFFER_END));
+                    length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+
+                    while ((commandBuffer->firstBufferPos == bufferEnd || length == 0) && !shutdown) {
+                        oracleAnalyser->waitingForKafkaWriter = false;
+                        oracleAnalyser->memoryCond.notify_all();
+                        commandBuffer->writersCond.wait(lck);
+                        bufferEnd = *((uint64_t*)(commandBuffer->firstBuffer + KAFKA_BUFFER_END));
+                        length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+
+                        if (!shutdown)
+                            oracleAnalyser->waitingForKafkaWriter = true;
+                    }
+                }
+
+                //all data sent & shutdown command
+                if (commandBuffer->firstBufferPos == bufferEnd && shutdown)
+                    break;
+
+                while (commandBuffer->firstBufferPos < bufferEnd) {
+                    length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+
+                    if (length == 0)
+                        break;
+
+                    commandBuffer->firstBufferPos += KAFKA_BUFFER_LENGTH_SIZE;
+                    uint64_t leftLength = (length + 7) & 0xFFFFFFFFFFFFFFF8;
+
+                    //message in one part - send directly from buffer
+                    if (commandBuffer->firstBufferPos + leftLength < MEMORY_CHUNK_SIZE) {
+                        sendMessage(commandBuffer->firstBuffer + commandBuffer->firstBufferPos, length, Producer::RK_MSG_COPY);
+                        commandBuffer->firstBufferPos += leftLength;
+
+                    //message in many parts - copy
+                    } else {
+                        uint8_t *buffer;
+                        int msgflags = Producer::RK_MSG_COPY;
+                        if (leftLength <= MEMORY_CHUNK_SIZE) {
+                            buffer = msgBuffer;
+                        } else {
+                            buffer = (uint8_t*)malloc(leftLength);
+                            if (buffer == nullptr) {
+                                cerr << "ERROR: could not allocate temporary buffer for Kafka message for " << dec << leftLength << " bytes" << endl;
+                                throw MemoryException("error allocating memory", leftLength);
+                            }
+                            msgflags = Producer::RK_MSG_FREE;
+                        }
+
+                        uint64_t targetPos = 0;
+
+                        while (leftLength > 0) {
+                            if (commandBuffer->firstBufferPos + leftLength >= MEMORY_CHUNK_SIZE) {
+                                uint64_t tmpLength = (MEMORY_CHUNK_SIZE - commandBuffer->firstBufferPos);
+                                memcpy(buffer + targetPos, commandBuffer->firstBuffer + commandBuffer->firstBufferPos, tmpLength);
+                                leftLength -= tmpLength;
+                                targetPos += tmpLength;
+
+                                //switch to next
+                                uint8_t* nextBuffer = *((uint8_t**)(commandBuffer->firstBuffer + KAFKA_BUFFER_NEXT));
+                                oracleAnalyser->freeMemoryChunk("KAFKA", commandBuffer->firstBuffer, true);
+                                commandBuffer->firstBufferPos = KAFKA_BUFFER_DATA;
+
+                                {
+                                    unique_lock<mutex> lck(commandBuffer->mtx);
+                                    --commandBuffer->buffersAllocated;
+                                    commandBuffer->firstBuffer = nextBuffer;
+                                    oracleAnalyser->memoryCond.notify_all();
+                                }
+                            } else {
+                                memcpy(buffer + targetPos, commandBuffer->firstBuffer + commandBuffer->firstBufferPos, leftLength);
+                                commandBuffer->firstBufferPos += leftLength;
+                                leftLength = 0;
+                            }
+                        }
+
+                        sendMessage(buffer, length, msgflags);
+                        break;
+                    }
+                }
+            }
+
         } catch(ConfigurationException &ex) {
             cerr << "ERROR: configuration error: " << ex.msg << endl;
             stopMain();
@@ -208,9 +201,8 @@ namespace OpenLogReplicator {
             stopMain();
         }
 
-
-        if ((trace2 & TRACE2_OUTPUT_BUFFER) != 0)
-            cerr << "Kafka writer buffer at shutdown: " << dec << commandBuffer->posStart << " - " << commandBuffer->posEnd << " (" << length << ")" << endl;
+        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") STOP" << endl;
         return 0;
     }
 
@@ -220,6 +212,8 @@ namespace OpenLogReplicator {
         Conf *tconf = Conf::create(Conf::CONF_TOPIC);
         conf->set("metadata.broker.list", brokers, errstr);
         conf->set("client.id", "OpenLogReplicator", errstr);
+        string maxMessageMbStr = to_string(maxMessageMb * 1024 * 1024);
+        conf->set("message.max.bytes", maxMessageMbStr.c_str(), errstr);
 
         if (test == 0) {
             producer = Producer::create(conf, errstr);
@@ -239,7 +233,7 @@ namespace OpenLogReplicator {
     void KafkaWriter::beginTran(typescn scn, typetime time, typexid xid) {
         if (stream == STREAM_JSON) {
             commandBuffer
-                    ->beginTran()
+                    ->beginMessage()
                     ->append('{')
                     ->appendScn(scn)
                     ->append(',')
@@ -264,7 +258,7 @@ namespace OpenLogReplicator {
         if (stream == STREAM_JSON) {
             if (test <= 1)
                 commandBuffer->appendChr("]}");
-            commandBuffer->commitTran();
+            commandBuffer->commitMessage();
         }
     }
 
@@ -316,7 +310,7 @@ namespace OpenLogReplicator {
                         ->appendChr(",\"after\":{");
             } else if (stream == STREAM_DBZ_JSON) {
                 commandBuffer
-                        ->beginTran()
+                        ->beginMessage()
                         ->appendDbzHead(object)
                         ->appendChr("\"before\":null,\"after\":{");
             }
@@ -371,7 +365,7 @@ namespace OpenLogReplicator {
                 commandBuffer
                         ->append('}')
                         ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
-                        ->commitTran();
+                        ->commitMessage();
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
@@ -427,7 +421,7 @@ namespace OpenLogReplicator {
             } else
             if (stream == STREAM_DBZ_JSON) {
                 commandBuffer
-                        ->beginTran()
+                        ->beginMessage()
                         ->appendDbzHead(object)
                         ->appendChr("\"before\":{");
             }
@@ -481,7 +475,7 @@ namespace OpenLogReplicator {
                 commandBuffer
                     ->appendChr("},\"after\":null,")
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
-                    ->commitTran();
+                    ->commitMessage();
             }
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
@@ -506,15 +500,16 @@ namespace OpenLogReplicator {
                     ->append(',');
         }
 
+        objn = redoLogRecord1->objn;
+        objd = redoLogRecord1->objd;
+        object = redoLogRecord1->object;
+
         if (type == TRANSACTION_INSERT) {
             if (stream == STREAM_JSON) {
                 commandBuffer->appendOperation("insert");
             }
 
-            object = redoLogRecord2->object;
             redoLogRecord2p = redoLogRecord2;
-            objn = redoLogRecord2->objn;
-            objd = redoLogRecord2->objd;
             while (redoLogRecord2p != nullptr) {
                 if ((redoLogRecord2p->fb & FB_F) != 0)
                     break;
@@ -536,9 +531,6 @@ namespace OpenLogReplicator {
                 commandBuffer->appendOperation("delete");
             }
 
-            object = redoLogRecord1->object;
-            objn = redoLogRecord1->objn;
-            objd = redoLogRecord1->objd;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -551,9 +543,6 @@ namespace OpenLogReplicator {
                 commandBuffer->appendOperation("update");
             }
 
-            object = redoLogRecord1->object;
-            objn = redoLogRecord1->objn;
-            objd = redoLogRecord1->objd;
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
@@ -573,7 +562,7 @@ namespace OpenLogReplicator {
 
         if (stream == STREAM_DBZ_JSON) {
             commandBuffer
-                    ->beginTran()
+                    ->beginMessage()
                     ->appendDbzHead(object)
                     ->appendChr("\"before\":");
         }
@@ -791,7 +780,6 @@ namespace OpenLogReplicator {
             }
         }
 
-
         if (type == TRANSACTION_UPDATE && showColumns <= 1) {
             for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 if (object->columns[i] == nullptr)
@@ -929,7 +917,7 @@ namespace OpenLogReplicator {
 
             commandBuffer
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
-                    ->commitTran();
+                    ->commitMessage();
         }
     }
 

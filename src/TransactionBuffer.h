@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <unordered_map>
+
 #include "types.h"
 
 #ifndef TRANSACTIONBUFFER_H_
@@ -31,6 +33,12 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #define ROW_HEADER_SCN      (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t)+sizeof(uint32_t))
 #define ROW_HEADER_TOTAL    (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t)+sizeof(uint32_t)+sizeof(typescn))
 
+#define FULL_BUFFER_SIZE    65536
+#define HEADER_BUFFER_SIZE  (sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint8_t*)+sizeof(TransactionChunk*)+sizeof(TransactionChunk*))
+#define DATA_BUFFER_SIZE    (FULL_BUFFER_SIZE-HEADER_BUFFER_SIZE)
+#define BUFFERS_PER_PAGE    (MEMORY_CHUNK_SIZE_MB*1024*1024/FULL_BUFFER_SIZE)
+#define BUFFERS_FREE_MASK   0xFFFF
+
 namespace OpenLogReplicator {
 
     class OracleAnalyser;
@@ -38,27 +46,35 @@ namespace OpenLogReplicator {
     class Transaction;
     class TransactionChunk;
 
+    struct TransactionChunk {
+        uint64_t elements;
+        uint64_t size;
+        uint64_t pos;
+        uint8_t *header;
+        TransactionChunk *prev;
+        TransactionChunk *next;
+        uint8_t buffer[DATA_BUFFER_SIZE];
+    };
+
     class TransactionBuffer {
     protected:
-        TransactionChunk *unusedTc;
-        TransactionChunk *copyTc;
-        uint64_t redoBufferSize;
+        OracleAnalyser *oracleAnalyser;
+        uint8_t buffer[DATA_BUFFER_SIZE];
 
         void appendTransactionChunk(TransactionChunk* tc, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+
     public:
-        uint64_t freeBuffers;
-        uint64_t redoBuffers;
+        unordered_map<uint8_t*,uint64_t> partiallyFullChunks;
 
-        TransactionChunk* newTransactionChunk(OracleAnalyser *oracleAnalyser);
-        void addTransactionChunk(OracleAnalyser *oracleAnalyser, Transaction *transaction, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void rollbackTransactionChunk(OracleAnalyser *oracleAnalyser, Transaction *transaction);
-        bool deleteTransactionPart(OracleAnalyser *oracleAnalyser, Transaction *transaction,
-                RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
-        void deleteTransactionChunk(TransactionChunk* tc);
-        void deleteTransactionChunks(TransactionChunk* startTc, TransactionChunk* endTc);
-
-        TransactionBuffer(uint64_t redoBuffers, uint64_t redoBufferSize);
+        TransactionBuffer(OracleAnalyser *oracleAnalyser);
         virtual ~TransactionBuffer();
+
+        TransactionChunk* newTransactionChunk(void);
+        void addTransactionChunk(Transaction *transaction, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void rollbackTransactionChunk(Transaction *transaction);
+        bool deleteTransactionPart(Transaction *transaction, RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
+        void deleteTransactionChunk(TransactionChunk* tc);
+        void deleteTransactionChunks(TransactionChunk* tc);
     };
 }
 

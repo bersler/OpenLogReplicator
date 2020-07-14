@@ -22,24 +22,33 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #ifndef TRANSACTIONHEAP_H_
 #define TRANSACTIONHEAP_H_
 
+#define HEAPS_MAX (MAX_TRANSACTIONS_LIMIT*sizeof(Transaction*)/(MEMORY_CHUNK_SIZE_MB*1024*1024))
+#define HEAP_IN_CHUNK (1024*1024/sizeof(Transaction*))
+#define HEAP_AT(a) heapsList[(a)/HEAP_IN_CHUNK][(a)%HEAP_IN_CHUNK]
+
 namespace OpenLogReplicator {
 
+    class OracleAnalyser;
     class Transaction;
 
     class TransactionHeap {
+    protected:
+        OracleAnalyser *oracleAnalyser;
+        uint64_t heaps;
+        Transaction **heapsList[HEAPS_MAX];
+
     public:
-        uint64_t heapMaxSize;
-        uint64_t heapSize;
-        Transaction **heap;
+        uint64_t size;
+
+        TransactionHeap(OracleAnalyser *oracleAnalyser);
+        virtual ~TransactionHeap();
 
         void pop(void);
         void pop(uint64_t pos);
         Transaction *top(void);
+        Transaction *at(uint64_t pos);
         uint64_t add(Transaction *element);
         void update(uint64_t pos);
-
-        TransactionHeap(uint64_t heapMaxSize);
-        virtual ~TransactionHeap();
     };
 }
 

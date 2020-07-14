@@ -104,6 +104,15 @@ namespace OpenLogReplicator {
         bool suppLogDbPrimary, suppLogDbAll;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
+        uint64_t memoryMinMb;
+        uint64_t memoryMaxMb;
+        uint8_t **memoryChunks;
+        uint64_t memoryChunksMin;
+        uint64_t memoryChunksAllocated;
+        uint64_t memoryChunksFree;
+        uint64_t memoryChunksMax;
+        uint64_t memoryChunksHWM;
+        uint64_t memoryChunksSupplemental;
 
         stringstream& writeEscapeValue(stringstream &ss, string &str);
         string getParameterValue(const char *parameter);
@@ -121,17 +130,25 @@ namespace OpenLogReplicator {
         Reader *readerCreate(int64_t group);
 
     public:
+        OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
+                const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
+                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval,
+                uint64_t memoryMinMb, uint64_t memoryMaxMb);
+        virtual ~OracleAnalyser();
+
+        bool waitingForKafkaWriter;
         mutex mtx;
         condition_variable readerCond;
         condition_variable sleepingCond;
         condition_variable analyserCond;
+        condition_variable memoryCond;
         string databaseContext;
         typescn databaseScn;
         unordered_map<typexid, Transaction*> xidTransactionMap;
-        TransactionMap lastOpTransactionMap;
-        TransactionHeap transactionHeap;
+        TransactionMap *lastOpTransactionMap;
+        TransactionHeap *transactionHeap;
         TransactionBuffer *transactionBuffer;
-        uint8_t *recordBuffer;
+        uint8_t recordBuffer[REDO_RECORD_MAX_SIZE];
         CommandBuffer *commandBuffer;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
@@ -211,11 +228,8 @@ namespace OpenLogReplicator {
         void printRollbackInfo(RedoLogRecord *redoLogRecord, Transaction *transaction, const char *msg);
         void printRollbackInfo(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, Transaction *transaction, const char *msg);
 
-        OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
-                const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
-                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
-                uint64_t redoBufferSize, uint64_t maxConcurrentTransactions);
-        virtual ~OracleAnalyser();
+        uint8_t *getMemoryChunk(const char *module, bool supp);
+        void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
     };
 }
 

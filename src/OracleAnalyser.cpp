@@ -17,12 +17,12 @@ You should have received a copy of the GNU General Public License
 along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <dirent.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -42,7 +42,8 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Transaction.h"
-#include "TransactionChunk.h"
+#include "TransactionBuffer.h"
+#include "TransactionMap.h"
 
 using namespace rapidjson;
 using namespace std;
@@ -71,8 +72,8 @@ namespace OpenLogReplicator {
 
     OracleAnalyser::OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
             const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval, uint64_t redoBuffers,
-            uint64_t redoBufferSize, uint64_t maxConcurrentTransactions) :
+            uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval,
+            uint64_t memoryMinMb, uint64_t memoryMaxMb) :
         Thread(alias),
 #ifdef ONLINE_MODEIMPL_OCCI
         env(nullptr),
@@ -90,12 +91,21 @@ namespace OpenLogReplicator {
         suppLogDbAll(false),
         previousCheckpoint(clock()),
         checkpointInterval(checkpointInterval),
+        memoryMinMb(memoryMinMb),
+        memoryMaxMb(memoryMaxMb),
+        memoryChunks(nullptr),
+        memoryChunksMin(memoryMinMb / MEMORY_CHUNK_SIZE_MB),
+        memoryChunksAllocated(0),
+        memoryChunksFree(0),
+        memoryChunksMax(memoryMaxMb / MEMORY_CHUNK_SIZE_MB),
+        memoryChunksHWM(0),
+        memoryChunksSupplemental(0),
+        waitingForKafkaWriter(false),
         databaseContext(""),
         databaseScn(0),
-        lastOpTransactionMap(maxConcurrentTransactions),
-        transactionHeap(maxConcurrentTransactions),
-        transactionBuffer(new TransactionBuffer(redoBuffers, redoBufferSize)),
-        recordBuffer(new uint8_t[REDO_RECORD_MAX_SIZE]),
+        lastOpTransactionMap(nullptr),
+        transactionHeap(nullptr),
+        transactionBuffer(nullptr),
         commandBuffer(commandBuffer),
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
@@ -123,6 +133,36 @@ namespace OpenLogReplicator {
         writeSCN(writeSCNLittle) {
 
         populateTimeZone();
+
+        memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
+        if (memoryChunks == nullptr)
+            throw MemoryException("OracleAnalyser::OracleAnalyser.memoryChunks", memoryMaxMb / MEMORY_CHUNK_SIZE_MB);
+
+        for (uint64_t i = 0; i < memoryChunksMin; ++i) {
+            memoryChunks[i] = new uint8_t[MEMORY_CHUNK_SIZE];
+
+            if (memoryChunks[i] == nullptr)
+                throw MemoryException("OracleAnalyser::OracleAnalyser.memoryChunks.i", MEMORY_CHUNK_SIZE);
+            ++memoryChunksAllocated;
+            ++memoryChunksFree;
+        }
+        memoryChunksHWM = memoryChunksMin;
+
+        uint64_t maps = (memoryMinMb / 1024) + 1;
+        if (maps > MAPS_MAX)
+            maps = MAPS_MAX;
+        lastOpTransactionMap = new TransactionMap(this, maps);
+        if (lastOpTransactionMap == nullptr)
+            throw MemoryException("OracleAnalyser::OracleAnalyser.TransactionMap", sizeof(TransactionMap));
+
+        transactionHeap = new TransactionHeap(this);
+        if (transactionHeap == nullptr)
+            throw MemoryException("OracleAnalyser::OracleAnalyser.TransactionHeap", sizeof(TransactionHeap));
+
+        transactionBuffer = new TransactionBuffer(this);
+        if (transactionBuffer == nullptr)
+            throw MemoryException("OracleAnalyser::OracleAnalyser.TransactionBuffer", sizeof(TransactionBuffer));
+
 #ifdef ONLINE_MODEIMPL_OCCI
             env = Environment::createEnvironment (Environment::DEFAULT);
 #endif /* ONLINE_MODEIMPL_OCCI */
@@ -140,8 +180,6 @@ namespace OpenLogReplicator {
 
         closeDbConnection();
 
-        delete transactionBuffer;
-
         for (auto it : objectMap) {
             OracleObject *object = it.second;
             delete object;
@@ -155,9 +193,30 @@ namespace OpenLogReplicator {
         }
         xidTransactionMap.clear();
 
-        if (recordBuffer != nullptr) {
-            delete[] recordBuffer;
-            recordBuffer = nullptr;
+        if (transactionBuffer != nullptr) {
+            delete transactionBuffer;
+            transactionBuffer = nullptr;
+        }
+
+        if (transactionHeap != nullptr) {
+            delete transactionHeap;
+            transactionHeap = nullptr;
+        }
+
+        if (lastOpTransactionMap != nullptr) {
+            delete lastOpTransactionMap;
+            lastOpTransactionMap = nullptr;
+        }
+
+        while (memoryChunksAllocated > 0) {
+            --memoryChunksAllocated;
+            delete[] memoryChunks[memoryChunksAllocated];
+            memoryChunks[memoryChunksAllocated] = nullptr;
+        }
+
+        if (memoryChunks != nullptr) {
+            delete[] memoryChunks;
+            memoryChunks = nullptr;
         }
     }
 
@@ -827,8 +886,8 @@ namespace OpenLogReplicator {
         typeseq minSequence = 0xFFFFFFFF;
         Transaction *transaction;
 
-        for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i) {
-            transaction = transactionHeap.heap[i];
+        for (uint64_t i = 1; i <= transactionHeap->size; ++i) {
+            transaction = transactionHeap->at(i);
             if (minSequence > transaction->firstSequence)
                 minSequence = transaction->firstSequence;
         }
@@ -958,14 +1017,17 @@ namespace OpenLogReplicator {
 #ifdef ONLINE_MODEIMPL_OCCI
             checkConnection(true);
 
+            cerr << "searching for " << dec << databaseSequence << endl;
+            cerr << "resetlogs: " << dec << resetlogs << endl;
+            cerr << "activation: " << dec << activation << endl;
             try {
                 OracleStatement stmt(&conn, env);
                 if ((trace2 & TRACE2_SQL) != 0)
                     cerr << "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl;
                 stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-                stmt.stmt->setInt(1, databaseSequence);
-                stmt.stmt->setInt(2, resetlogs);
-                stmt.stmt->setInt(3, activation);
+                stmt.stmt->setUInt(1, databaseSequence);
+                stmt.stmt->setUInt(2, resetlogs);
+                stmt.stmt->setUInt(3, activation);
                 stmt.executeQuery();
 
                 string path;
@@ -1853,6 +1915,9 @@ namespace OpenLogReplicator {
         else if (mode == MODE_ARCHIVELOG)
             modeStr = "archivelog";
 
+        if ((trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: ANALYSER (" << hex << this_thread::get_id() << ") START" << endl;
+
         cout << "Starting thread: Oracle Analyser for: " << database << " in " << modeStr << " mode" << endl;
         if (mode == MODE_ONLINE)
             checkConnection(true);
@@ -2019,7 +2084,11 @@ namespace OpenLogReplicator {
         readerDropAll();
 
         if (trace >= TRACE_INFO)
-            cerr << "INFO: Oracle Analyser for: " << database << " is shut down" << endl;
+            cerr << "INFO: Oracle Analyser for: " << database << " is shut down, allocated at most " << dec <<
+                (memoryChunksHWM * MEMORY_CHUNK_SIZE_MB) << "MB memory" << endl;
+
+        if ((trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: ANALYSER (" << hex << this_thread::get_id() << ") STOP" << endl;
         return 0;
     }
 
@@ -2115,8 +2184,10 @@ namespace OpenLogReplicator {
         reader->nextScn = ZERO_SCN;
         reader->pathOrig = path;
         reader->path = applyMapping(path);
+
         readerCond.notify_all();
         sleepingCond.notify_all();
+
         while (reader->status == READER_STATUS_CHECK) {
             if (shutdown)
                 break;
@@ -2177,10 +2248,10 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::dumpTransactions(void) {
         if (trace >= TRACE_INFO) {
-            if (transactionHeap.heapSize > 0)
-                cerr << "INFO: Transactions open: " << dec << transactionHeap.heapSize << endl;
-            for (uint64_t i = 1; i <= transactionHeap.heapSize; ++i)
-                cerr << "INFO: transaction[" << i << "]: " << *transactionHeap.heap[i] << endl;
+            if (transactionHeap->size > 0)
+                cerr << "INFO: Transactions open: " << dec << transactionHeap->size << endl;
+            for (uint64_t i = 1; i <= transactionHeap->size; ++i)
+                cerr << "INFO: transaction[" << i << "]: " << *transactionHeap->at(i) << endl;
         }
     }
 
@@ -2240,7 +2311,7 @@ namespace OpenLogReplicator {
                     if ((trace2 & TRACE2_SQL) != 0)
                         cerr << "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl;
                     stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-                    stmt2.stmt->setInt(1, objn);
+                    stmt2.stmt->setUInt(1, objn);
                     stmt2.executeQuery();
 
                     while (stmt2.rset->next()) {
@@ -2259,7 +2330,7 @@ namespace OpenLogReplicator {
                         cerr << "SQL: " << SQL_GET_COLUMN_LIST << endl;
                     stmt2.createStatement(SQL_GET_COLUMN_LIST);
                 }
-                stmt2.stmt->setInt(1, objn);
+                stmt2.stmt->setUInt(1, objn);
                 stmt2.executeQuery();
 
                 while (stmt2.rset->next()) {
@@ -2287,10 +2358,7 @@ namespace OpenLogReplicator {
 
                     //check character set for char and varchar2
                     if (typeNo == 1 || typeNo == 96) {
-                        if (charmapId != ORA_CHARSET_CODE_UTF8 &&
-                                charmapId != ORA_CHARSET_CODE_AL32UTF8 &&
-                                charmapId != ORA_CHARSET_CODE_AL16UTF16 &&
-                                commandBuffer->characterMapName[charmapId] == nullptr) {
+                        if (commandBuffer->characterMap[charmapId] == nullptr) {
                             cerr << "ERROR: Table " << owner << "." << objectName << " - unsupported character set id: " << dec << charmapId <<
                                     " for column: " << columnName << endl;
                             cerr << "HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;" << endl;
@@ -2407,6 +2475,7 @@ namespace OpenLogReplicator {
         reader->status = READER_STATUS_UPDATE;
         readerCond.notify_all();
         sleepingCond.notify_all();
+
         while (reader->status == READER_STATUS_UPDATE) {
             if (shutdown)
                 break;
@@ -2427,6 +2496,7 @@ namespace OpenLogReplicator {
             readerCond.notify_all();
             sleepingCond.notify_all();
             analyserCond.notify_all();
+            memoryCond.notify_all();
         }
     }
 
@@ -2573,6 +2643,67 @@ namespace OpenLogReplicator {
         if (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B)
             cerr << " OPFLAGS: " << hex << redoLogRecord2->opFlags;
         cerr << " " << msg << endl;
+    }
+
+    uint8_t *OracleAnalyser::getMemoryChunk(const char *module, bool supp) {
+        if ((trace2 & TRACE2_MEMORY) != 0)
+            cerr << "MEMORY: " << module << " - get at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated << endl;
+
+        {
+            unique_lock<mutex> lck(mtx);
+
+            if (memoryChunksFree == 0) {
+                if (memoryChunksAllocated == memoryChunksMax) {
+                    if (memoryChunksSupplemental > 0 && waitingForKafkaWriter) {
+                        cerr << "WARNING: out of memory, sleeping until Kafka buffers are free and release some" << endl;
+                        memoryCond.wait(lck);
+                    }
+                    if (memoryChunksAllocated == memoryChunksMax) {
+                        cerr << "ERROR: used all memory up to: memory-max-mb parameter, restart with higher value" << endl;
+                        throw RuntimeException("error during free memory chunk");
+                    }
+                }
+
+                memoryChunks[0] = new uint8_t[MEMORY_CHUNK_SIZE];
+                if (memoryChunks[0] == nullptr)
+                    throw MemoryException("OracleAnalyser::getMemoryChunk", MEMORY_CHUNK_SIZE);
+                ++memoryChunksFree;
+                ++memoryChunksAllocated;
+
+                if (memoryChunksAllocated > memoryChunksHWM)
+                    memoryChunksHWM = memoryChunksAllocated;
+            }
+
+            --memoryChunksFree;
+            if (supp)
+                ++memoryChunksSupplemental;
+            return memoryChunks[memoryChunksFree];
+        }
+    }
+
+    void OracleAnalyser::freeMemoryChunk(const char *module, uint8_t *chunk, bool supp) {
+        if ((trace2 & TRACE2_MEMORY) != 0)
+            cerr << "MEMORY: " << module << " - free at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated << endl;
+
+        {
+            unique_lock<mutex> lck(mtx);
+
+            if (memoryChunksFree == memoryChunksAllocated) {
+                cerr << "ERROR: trying to free unknown memory block" << endl;
+                throw RuntimeException("error during free memory chunk");
+            }
+
+            //keep 25% reserved
+            if (memoryChunksAllocated > memoryChunksMin && memoryChunksFree > memoryChunksAllocated / 4) {
+                delete[] chunk;
+                --memoryChunksAllocated;
+            } else {
+                memoryChunks[memoryChunksFree] = chunk;
+                ++memoryChunksFree;
+            }
+            if (supp)
+                --memoryChunksSupplemental;
+        }
     }
 
     bool OracleAnalyserRedoLogCompare::operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2) {

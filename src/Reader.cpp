@@ -18,6 +18,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
+#include <thread>
 #include <string.h>
 #include <unistd.h>
 
@@ -312,10 +313,14 @@ namespace OpenLogReplicator {
 
     void *Reader::run(void) {
         uint64_t curStatus;
+        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: READER (" << hex << this_thread::get_id() << ") START" << endl;
+
         while (!shutdown) {
             {
                 unique_lock<mutex> lck(oracleAnalyser->mtx);
                 oracleAnalyser->analyserCond.notify_all();
+
                 if (status == READER_STATUS_SLEEPING && !shutdown) {
                     oracleAnalyser->sleepingCond.wait(lck);
                 } else if (status == READER_STATUS_READ && bufferStart + DISK_BUFFER_SIZE == bufferEnd && !shutdown) {
@@ -520,6 +525,8 @@ namespace OpenLogReplicator {
         }
 
         redoClose();
+        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
+            cerr << "THREAD: READER (" << hex << this_thread::get_id() << ") STOP" << endl;
         return 0;
     }
 }

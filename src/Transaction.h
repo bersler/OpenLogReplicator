@@ -45,11 +45,11 @@ namespace OpenLogReplicator {
 
     class Transaction {
     protected:
+        OracleAnalyser *oracleAnalyser;
         uint8_t *splitBlockList;
 
-        void mergeSplitBlocksToBuffer(OracleAnalyser *oracleAnalyser, uint8_t *buffer, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void mergeSplitBlocks(OracleAnalyser *oracleAnalyser, RedoLogRecord *headRedoLogRecord1, RedoLogRecord *midRedoLogRecord1, RedoLogRecord *tailRedoLogRecord1,
-                RedoLogRecord *redoLogRecord2);
+        void mergeSplitBlocksToBuffer(uint8_t *buffer, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void mergeSplitBlocks(RedoLogRecord *headRedoLogRecord1, RedoLogRecord *midRedoLogRecord1, RedoLogRecord *tailRedoLogRecord1, RedoLogRecord *redoLogRecord2);
 
     public:
         typexid xid;
@@ -73,13 +73,13 @@ namespace OpenLogReplicator {
         virtual ~Transaction();
 
         void touch(typescn scn, typeseq sequence);
-        void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
-        void addSplitBlock(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void add(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, typeseq sequence, typescn scn);
-        void rollbackLastOp(OracleAnalyser *oracleAnalyser, typescn scn);
-        bool rollbackPartOp(OracleAnalyser *oracleAnalyser, RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2, typescn scn);
-        void flushSplitBlocks(OracleAnalyser *oracleAnalyser);
-        void flush(OracleAnalyser *oracleAnalyser);
+        void addSplitBlock(RedoLogRecord *redoLogRecord);
+        void addSplitBlock(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void add(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, typeseq sequence, typescn scn);
+        void rollbackLastOp(typescn scn);
+        bool rollbackPartOp(RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2, typescn scn);
+        void flushSplitBlocks(void);
+        void flush(void);
         void updateLastRecord(void);
         static bool matchesForRollback(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
                 RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);

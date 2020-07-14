@@ -21,14 +21,32 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <string.h>
 
-#include "MemoryException.h"
+#include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
+#include "RuntimeException.h"
 #include "Transaction.h"
 #include "TransactionMap.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
+
+    TransactionMap::TransactionMap(OracleAnalyser *oracleAnalyser, uint64_t maps) :
+        oracleAnalyser(oracleAnalyser),
+        maps(0),
+        elements(0) {
+
+        for (uint64_t i = 0; i < maps; ++i) {
+            hashMapList[i] = (Transaction **)oracleAnalyser->getMemoryChunk("MAP", false);
+            memset(hashMapList[i], 0, MEMORY_CHUNK_SIZE);
+            ++this->maps;
+        }
+    }
+
+    TransactionMap::~TransactionMap() {
+        while (maps > 0)
+            oracleAnalyser->freeMemoryChunk("MAP", (uint8_t*)hashMapList[--maps], false);
+    }
 
     void TransactionMap::set(Transaction* transaction) {
         if (transaction->lastRedoLogRecord1 == nullptr) {
@@ -39,7 +57,7 @@ namespace OpenLogReplicator {
         uint64_t hashKey = HASHINGFUNCTION(transaction->lastRedoLogRecord1->uba, transaction->lastRedoLogRecord1->slt,
                 transaction->lastRedoLogRecord1->rci);
 
-        Transaction *transactionTmp = hashMap[hashKey];
+        Transaction *transactionTmp = MAP_AT(hashKey);
         while (transactionTmp != nullptr) {
             if (transactionTmp == transaction) {
                 cerr << "ERROR: transaction already present in hash map" << endl;
@@ -48,8 +66,8 @@ namespace OpenLogReplicator {
             transactionTmp = transactionTmp->next;
         }
 
-        transaction->next = hashMap[hashKey];
-        hashMap[hashKey] = transaction;
+        transaction->next = MAP_AT(hashKey);
+        MAP_AT(hashKey) = transaction;
         ++elements;
     }
 
@@ -57,14 +75,14 @@ namespace OpenLogReplicator {
         uint64_t hashKey = HASHINGFUNCTION(transaction->lastRedoLogRecord1->uba, transaction->lastRedoLogRecord1->slt,
                 transaction->lastRedoLogRecord1->rci);
 
-        if (hashMap[hashKey] == nullptr) {
+        if (MAP_AT(hashKey) == nullptr) {
             cerr << "ERROR: transaction does not exists in hash map1" << endl;
             return;
         }
 
-        Transaction *transactionTmp = hashMap[hashKey];
+        Transaction *transactionTmp = MAP_AT(hashKey);
         if (transactionTmp == transaction) {
-            hashMap[hashKey] = transactionTmp->next;
+            MAP_AT(hashKey) = transactionTmp->next;
             transactionTmp->next = nullptr;
             --elements;
             return;
@@ -88,7 +106,7 @@ namespace OpenLogReplicator {
     //typeuba uba, typedba dba, typeslt slt, typerci rci, typescn scn, uint64_t opFlags
     Transaction* TransactionMap::getMatchForRollback(RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2) {
         uint64_t hashKey = HASHINGFUNCTION(rollbackRedoLogRecord1->uba, rollbackRedoLogRecord2->slt, rollbackRedoLogRecord2->rci);
-        Transaction *transactionTmp = hashMap[hashKey];
+        Transaction *transactionTmp = MAP_AT(hashKey);
 
         while (transactionTmp != nullptr) {
             if (Transaction::matchesForRollback(transactionTmp->lastRedoLogRecord1, transactionTmp->lastRedoLogRecord2,
@@ -99,21 +117,5 @@ namespace OpenLogReplicator {
         }
 
         return nullptr;
-    }
-
-    TransactionMap::TransactionMap(uint64_t maxConcurrentTransactions) :
-        elements(0),
-        maxConcurrentTransactions(maxConcurrentTransactions) {
-        hashMap = new Transaction*[maxConcurrentTransactions * 2];
-        if (hashMap == nullptr)
-            throw MemoryException("TransactionMap::TransactionMap.1", sizeof(Transaction*) * maxConcurrentTransactions * 2);
-        memset(hashMap, 0, sizeof(Transaction*) * maxConcurrentTransactions * 2);
-    }
-
-    TransactionMap::~TransactionMap() {
-        if (hashMap != nullptr) {
-            delete[] hashMap;
-            hashMap = nullptr;
-        }
     }
 }

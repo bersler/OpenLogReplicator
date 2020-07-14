@@ -22,22 +22,27 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #ifndef TRANSACTIONMAP_H_
 #define TRANSACTIONMAP_H_
 
-#define HASHINGFUNCTION(uba,slt,rci) (uba^((uint64_t)slt<<9)^((uint64_t)rci<<37))%(maxConcurrentTransactions*2-1)
+#define HASHINGFUNCTION(uba,slt,rci) ((uba^((uint64_t)slt<<9)^((uint64_t)rci<<37))%((maps*MEMORY_CHUNK_SIZE_MB*1024*1024/sizeof(Transaction*))-1))
+#define MAPS_MAX (MAX_TRANSACTIONS_LIMIT*2*sizeof(Transaction*)/(MEMORY_CHUNK_SIZE_MB*1024*1024))
+#define MAPS_IN_CHUNK (1024*1024/sizeof(Transaction*))
+#define MAP_AT(a) hashMapList[(a)/MAPS_IN_CHUNK][(a)%MAPS_IN_CHUNK]
 
 namespace OpenLogReplicator {
-
-    class Transaction;
+    class OracleAnalyser;
     class RedoLogRecord;
+    class Transaction;
 
     class TransactionMap {
     protected:
+        OracleAnalyser *oracleAnalyser;
+        uint64_t maps;
         uint64_t elements;
-        Transaction** hashMap;
-        uint64_t maxConcurrentTransactions;
+        Transaction** hashMapList[MAPS_MAX];
 
     public:
-        TransactionMap(uint64_t maxConcurrentTransactions);
+        TransactionMap(OracleAnalyser *oracleAnalyser, uint64_t maps);
         virtual ~TransactionMap();
+
         void erase(Transaction * transaction);
         void set(Transaction * transaction);
         Transaction* getMatchForRollback(RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);

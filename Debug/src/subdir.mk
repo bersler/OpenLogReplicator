@@ -4,9 +4,24 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/CharacterSet.cpp \
+../src/CharacterSet16bit.cpp \
+../src/CharacterSet7bit.cpp \
+../src/CharacterSet8bit.cpp \
+../src/CharacterSetAL16UTF16.cpp \
+../src/CharacterSetAL32UTF8.cpp \
+../src/CharacterSetJA16EUC.cpp \
+../src/CharacterSetJA16EUCTILDE.cpp \
+../src/CharacterSetJA16SJIS.cpp \
+../src/CharacterSetJA16SJISTILDE.cpp \
+../src/CharacterSetKO16KSCCS.cpp \
+../src/CharacterSetUTF8.cpp \
+../src/CharacterSetZHS16GBK.cpp \
+../src/CharacterSetZHS32GB18030.cpp \
+../src/CharacterSetZHT16HKSCS31.cpp \
+../src/CharacterSetZHT32EUC.cpp \
+../src/CharacterSetZHT32TRIS.cpp \
 ../src/CommandBuffer.cpp \
-../src/CommandBuffer7bit.cpp \
-../src/CommandBuffer8bit.cpp \
 ../src/ConfigurationException.cpp \
 ../src/KafkaWriter.cpp \
 ../src/MemoryException.cpp \
@@ -42,15 +57,29 @@ CPP_SRCS += \
 ../src/Thread.cpp \
 ../src/Transaction.cpp \
 ../src/TransactionBuffer.cpp \
-../src/TransactionChunk.cpp \
 ../src/TransactionHeap.cpp \
 ../src/TransactionMap.cpp \
 ../src/Writer.cpp 
 
 OBJS += \
+./src/CharacterSet.o \
+./src/CharacterSet16bit.o \
+./src/CharacterSet7bit.o \
+./src/CharacterSet8bit.o \
+./src/CharacterSetAL16UTF16.o \
+./src/CharacterSetAL32UTF8.o \
+./src/CharacterSetJA16EUC.o \
+./src/CharacterSetJA16EUCTILDE.o \
+./src/CharacterSetJA16SJIS.o \
+./src/CharacterSetJA16SJISTILDE.o \
+./src/CharacterSetKO16KSCCS.o \
+./src/CharacterSetUTF8.o \
+./src/CharacterSetZHS16GBK.o \
+./src/CharacterSetZHS32GB18030.o \
+./src/CharacterSetZHT16HKSCS31.o \
+./src/CharacterSetZHT32EUC.o \
+./src/CharacterSetZHT32TRIS.o \
 ./src/CommandBuffer.o \
-./src/CommandBuffer7bit.o \
-./src/CommandBuffer8bit.o \
 ./src/ConfigurationException.o \
 ./src/KafkaWriter.o \
 ./src/MemoryException.o \
@@ -86,15 +115,29 @@ OBJS += \
 ./src/Thread.o \
 ./src/Transaction.o \
 ./src/TransactionBuffer.o \
-./src/TransactionChunk.o \
 ./src/TransactionHeap.o \
 ./src/TransactionMap.o \
 ./src/Writer.o 
 
 CPP_DEPS += \
+./src/CharacterSet.d \
+./src/CharacterSet16bit.d \
+./src/CharacterSet7bit.d \
+./src/CharacterSet8bit.d \
+./src/CharacterSetAL16UTF16.d \
+./src/CharacterSetAL32UTF8.d \
+./src/CharacterSetJA16EUC.d \
+./src/CharacterSetJA16EUCTILDE.d \
+./src/CharacterSetJA16SJIS.d \
+./src/CharacterSetJA16SJISTILDE.d \
+./src/CharacterSetKO16KSCCS.d \
+./src/CharacterSetUTF8.d \
+./src/CharacterSetZHS16GBK.d \
+./src/CharacterSetZHS32GB18030.d \
+./src/CharacterSetZHT16HKSCS31.d \
+./src/CharacterSetZHT32EUC.d \
+./src/CharacterSetZHT32TRIS.d \
 ./src/CommandBuffer.d \
-./src/CommandBuffer7bit.d \
-./src/CommandBuffer8bit.d \
 ./src/ConfigurationException.d \
 ./src/KafkaWriter.d \
 ./src/MemoryException.d \
@@ -130,7 +173,6 @@ CPP_DEPS += \
 ./src/Thread.d \
 ./src/Transaction.d \
 ./src/TransactionBuffer.d \
-./src/TransactionChunk.d \
 ./src/TransactionHeap.d \
 ./src/TransactionMap.d \
 ./src/Writer.d 
