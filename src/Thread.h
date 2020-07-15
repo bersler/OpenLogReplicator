@@ -32,6 +32,7 @@ namespace OpenLogReplicator {
     class Thread {
 public:
         volatile bool shutdown;
+        volatile bool started;
         pthread_t pthread;
         string alias;
 

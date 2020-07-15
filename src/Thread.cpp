@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
 
     Thread::Thread(const string alias) :
         shutdown(false),
+        started(false),
         pthread(0),
         alias(alias) {
     }
@@ -39,6 +40,7 @@ namespace OpenLogReplicator {
 
     void *Thread::runStatic(void *context){
         void *ret = ((Thread *) context)->run();
+        ((Thread *) context)->started = true;
         return ret;
     }
 

@@ -420,21 +420,19 @@ int main(int argc, char **argv) {
         cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
     }
 
-    if (oracleAnalyser != nullptr) {
-        delete oracleAnalyser;
-        oracleAnalyser = nullptr;
-    }
+    if (oracleAnalyser != nullptr)
+        analysers.push_back(oracleAnalyser);
 
-    if (kafkaWriter != nullptr) {
-        delete kafkaWriter;
-        kafkaWriter = nullptr;
-    }
+    if (kafkaWriter != nullptr)
+        writers.push_back(kafkaWriter);
 
     //shut down all analysers
     for (OracleAnalyser *analyser : analysers)
         analyser->stop();
-    for (OracleAnalyser *analyser : analysers)
-        pthread_join(analyser->pthread, nullptr);
+    for (OracleAnalyser *analyser : analysers) {
+        if (analyser->started)
+            pthread_join(analyser->pthread, nullptr);
+    }
 
     //shut down writers
     for (KafkaWriter *writer : writers)
@@ -444,7 +442,8 @@ int main(int argc, char **argv) {
         commandBuffer->writersCond.notify_all();
     }
     for (KafkaWriter *writer : writers) {
-        pthread_join(writer->pthread, nullptr);
+        if (writer->started)
+            pthread_join(writer->pthread, nullptr);
         delete writer;
     }
     writers.clear();
