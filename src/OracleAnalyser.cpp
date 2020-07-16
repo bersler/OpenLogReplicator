@@ -65,8 +65,8 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
     string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), DECODE(BITAND(T.PROPERTY, 32), 32, 1, 0), DECODE(BITAND(O.FLAGS, 2), 2, 1, 0), DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 ELSE 1 END FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    string OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT T.OBJ#, T.DATAOBJ# FROM SYS.TABPART$ T where T.BO# = :1 UNION ALL SELECT TSP.OBJ#, TSP.DATAOBJ# FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
     string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT T.OBJ#, T.DATAOBJ# FROM SYS.TABPART$ T where T.BO# = :1 UNION ALL SELECT TSP.OBJ#, TSP.DATAOBJ# FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
     string OracleAnalyser::SQL_GET_PARAMETER("SELECT VALUE FROM SYS.V_$PARAMETER WHERE NAME = :i");
     string OracleAnalyser::SQL_GET_PROPERTY("SELECT PROPERTY_VALUE FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME = :1");
@@ -241,8 +241,10 @@ namespace OpenLogReplicator {
 #ifdef ONLINE_MODEIMPL_OCCI
         try {
             OracleStatement stmt(&conn, env);
-            if ((trace2 & TRACE2_SQL) != 0)
+            if ((trace2 & TRACE2_SQL) != 0) {
                 cerr << "SQL: " << SQL_GET_PARAMETER << endl;
+                cerr << "SQL: PARAM1: " << parameter << endl;
+            }
             stmt.createStatement(SQL_GET_PARAMETER);
             stmt.stmt->setString(1, parameter);
             stmt.executeQuery();
@@ -265,8 +267,10 @@ namespace OpenLogReplicator {
 #ifdef ONLINE_MODEIMPL_OCCI
         try {
             OracleStatement stmt(&conn, env);
-            if ((trace2 & TRACE2_SQL) != 0)
+            if ((trace2 & TRACE2_SQL) != 0) {
                 cerr << "SQL: " << SQL_GET_PROPERTY << endl;
+                cerr << "SQL: PARAM1: " << property << endl;
+            }
             stmt.createStatement(SQL_GET_PROPERTY);
             stmt.stmt->setString(1, property);
             stmt.executeQuery();
@@ -1046,8 +1050,12 @@ namespace OpenLogReplicator {
             cerr << "activation: " << dec << activation << endl;
             try {
                 OracleStatement stmt(&conn, env);
-                if ((trace2 & TRACE2_SQL) != 0)
+                if ((trace2 & TRACE2_SQL) != 0) {
                     cerr << "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl;
+                    cerr << "SQL: PARAM1: " << dec << databaseSequence << endl;
+                    cerr << "SQL: PARAM2: " << dec << resetlogs << endl;
+                    cerr << "SQL: PARAM3: " << dec << activation << endl;
+                }
                 stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
                 stmt.stmt->setUInt(1, databaseSequence);
                 stmt.stmt->setUInt(2, resetlogs);
@@ -2319,8 +2327,10 @@ namespace OpenLogReplicator {
         try {
             OracleStatement stmt(&conn, env);
             OracleStatement stmt2(&conn, env);
-            if ((trace2 & TRACE2_SQL) != 0)
+            if ((trace2 & TRACE2_SQL) != 0) {
                 cerr << "SQL: " << SQL_GET_TABLE_LIST << endl;
+                cerr << "SQL: PARAM1: " << mask << endl;
+            }
             stmt.createStatement(SQL_GET_TABLE_LIST);
             stmt.stmt->setString(1, mask);
 
@@ -2358,15 +2368,14 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                bool partitioned = (((int)stmt.rset->getNumber(10)) != 0);
                 typeobj objd = 0;
-                //null for partitioned tables
-                if (!partitioned)
+                if (!stmt.rset->isNull(1))
                     objd = stmt.rset->getNumber(1);
 
                 bool clustered = (((int)stmt.rset->getNumber(6)) != 0);
                 bool suppLogSchemaPrimary = (((int)stmt.rset->getNumber(8)) != 0);
                 bool suppLogSchemaAll = (((int)stmt.rset->getNumber(9)) != 0);
+                bool partitioned = (((int)stmt.rset->getNumber(10)) != 0);
                 bool rowMovement = (((int)stmt.rset->getNumber(13)) != 0);
                 bool dependencies = (((int)stmt.rset->getNumber(14)) != 0);
 
@@ -2387,8 +2396,11 @@ namespace OpenLogReplicator {
                 ++tabCnt;
 
                 if (partitioned) {
-                    if ((trace2 & TRACE2_SQL) != 0)
+                    if ((trace2 & TRACE2_SQL) != 0) {
                         cerr << "SQL: " << SQL_GET_PARTITION_LIST << endl;
+                        cerr << "SQL: PARAM1: " << dec << objn << endl;
+                        cerr << "SQL: PARAM2: " << dec << objn << endl;
+                    }
                     stmt2.createStatement(SQL_GET_PARTITION_LIST);
                     stmt2.stmt->setUInt(1, objn);
                     stmt2.stmt->setUInt(2, objn);
@@ -2402,8 +2414,10 @@ namespace OpenLogReplicator {
                 }
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
-                    if ((trace2 & TRACE2_SQL) != 0)
+                    if ((trace2 & TRACE2_SQL) != 0) {
                         cerr << "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl;
+                        cerr << "SQL: PARAM1: " << dec << objn << endl;
+                    }
                     stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
                     stmt2.stmt->setUInt(1, objn);
                     stmt2.executeQuery();
@@ -2416,12 +2430,16 @@ namespace OpenLogReplicator {
                 }
 
                 if ((flags & REDO_FLAGS_HIDE_INVISIBLE_COLUMNS) != 0) {
-                    if ((trace2 & TRACE2_SQL) != 0)
+                    if ((trace2 & TRACE2_SQL) != 0) {
                         cerr << "SQL: " << SQL_GET_COLUMN_LIST_INV << endl;
+                        cerr << "SQL: PARAM1: " << dec << objn << endl;
+                    }
                     stmt2.createStatement(SQL_GET_COLUMN_LIST_INV);
                 } else {
-                    if ((trace2 & TRACE2_SQL) != 0)
+                    if ((trace2 & TRACE2_SQL) != 0) {
                         cerr << "SQL: " << SQL_GET_COLUMN_LIST << endl;
+                        cerr << "SQL: PARAM1: " << dec << objn << endl;
+                    }
                     stmt2.createStatement(SQL_GET_COLUMN_LIST);
                 }
                 stmt2.stmt->setUInt(1, objn);
