@@ -118,8 +118,8 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Reader::reloadHeader(void) {
-        int64_t bytes = redoRead(headerBuffer, 0, REDO_PAGE_SIZE_MAX * 2);
-        if (bytes < REDO_PAGE_SIZE_MAX * 2) {
+        int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
+        if (bytes < 512) {
             cerr << "ERROR: unable read file " << path << endl;
             return REDO_ERROR;
         }
@@ -145,6 +145,11 @@ namespace OpenLogReplicator {
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {
             cerr << "ERROR: unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
                     setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]" << endl;
+            return REDO_ERROR;
+        }
+
+        if (bytes < blockSize * 2) {
+            cerr << "ERROR: unable read file " << path << endl;
             return REDO_ERROR;
         }
 

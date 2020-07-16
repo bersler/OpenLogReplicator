@@ -1045,9 +1045,6 @@ namespace OpenLogReplicator {
 #ifdef ONLINE_MODEIMPL_OCCI
             checkConnection(true);
 
-            cerr << "searching for " << dec << databaseSequence << endl;
-            cerr << "resetlogs: " << dec << resetlogs << endl;
-            cerr << "activation: " << dec << activation << endl;
             try {
                 OracleStatement stmt(&conn, env);
                 if ((trace2 & TRACE2_SQL) != 0) {
@@ -1213,7 +1210,7 @@ namespace OpenLogReplicator {
                 }
 
             } else if (logArchiveDest.length() > 0 && logArchiveFormat.length() > 0) {
-                throw RuntimeException("only db_recovery_file_dest location of archvied red logs is supported for offline mode");
+                throw RuntimeException("only db_recovery_file_dest location of archivied red logs is supported for offline mode");
             } else
                 throw RuntimeException("missing location of archived redo logs for offline mode");
         }
@@ -2069,6 +2066,11 @@ namespace OpenLogReplicator {
                 if ((trace2 & TRACE2_REDO) != 0)
                     cerr << "REDO: checking archive redo logs" << endl;
                 archLogGetList();
+
+                if (archiveRedoQueue.empty()) {
+                    cerr << "ERROR: could not find archive log for sequence: " << dec << databaseSequence << endl;
+                    throw RuntimeException("archive log list is empty");
+                }
 
                 while (!archiveRedoQueue.empty() && !shutdown) {
                     OracleAnalyserRedoLog *redoPrev = redo;
