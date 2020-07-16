@@ -29,7 +29,6 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class OracleAnalyser;
     class OracleColumn;
 
     class OracleObject {
@@ -43,8 +42,10 @@ namespace OpenLogReplicator {
         string owner;
         string objectName;
         vector<OracleColumn*> columns;
+        vector<typeobj2> partitions;
 
-        void addColumn(OracleAnalyser *oracleAnalyser, OracleColumn *column);
+        void addColumn(OracleColumn *column);
+        void addPartition(typeobj partitionObjn, typeobj partitionObjd);
 
         OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const string owner, const string objectName);
         virtual ~OracleObject();

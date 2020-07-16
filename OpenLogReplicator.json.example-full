@@ -1,5 +1,5 @@
 {
-  "version": "0.6.5",
+  "version": "0.6.6",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,

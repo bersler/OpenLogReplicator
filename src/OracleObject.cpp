@@ -21,7 +21,6 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #include <string>
 
 #include "ConfigurationException.h"
-#include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
@@ -46,9 +45,10 @@ namespace OpenLogReplicator {
             delete column;
         }
         columns.clear();
+        partitions.clear();
     }
 
-    void OracleObject::addColumn(OracleAnalyser *oracleAnalyser, OracleColumn *column) {
+    void OracleObject::addColumn(OracleColumn *column) {
         if (column->segColNo < columns.size() + 1) {
             cerr << "WARNING: trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
                 ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
@@ -63,6 +63,11 @@ namespace OpenLogReplicator {
             columns.push_back(nullptr);
 
         columns.push_back(column);
+    }
+
+    void OracleObject::addPartition(typeobj partitionObjn, typeobj partitionObjd) {
+        typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
+        partitions.push_back(objx);
     }
 
     ostream& operator<<(ostream& os, const OracleObject& object) {

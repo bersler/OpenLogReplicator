@@ -39,6 +39,7 @@ typedef uint16_t typeslot;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
 typedef uint32_t typeobj;
+typedef uint64_t typeobj2;
 typedef uint32_t typeseq;
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
@@ -53,7 +54,7 @@ typedef uint64_t typeunicode;
 #define ONLINE_MODEIMPL_OCCI
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.5"
+#define PROGRAM_VERSION             "0.6.6"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576

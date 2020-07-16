@@ -74,6 +74,7 @@ namespace OpenLogReplicator {
         static string SQL_GET_TABLE_LIST;
         static string SQL_GET_COLUMN_LIST;
         static string SQL_GET_COLUMN_LIST_INV;
+        static string SQL_GET_PARTITION_LIST;
         static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
         static string SQL_GET_PARAMETER;
         static string SQL_GET_PROPERTY;
@@ -101,6 +102,7 @@ namespace OpenLogReplicator {
         set<OracleAnalyserRedoLog*> onlineRedoSet;
         set<Reader*> readers;
         unordered_map<typeobj, OracleObject*> objectMap;
+        unordered_map<typeobj, OracleObject*> partitionMap;
         bool suppLogDbPrimary, suppLogDbAll;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;

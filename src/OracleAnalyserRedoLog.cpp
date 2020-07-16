@@ -760,6 +760,10 @@ namespace OpenLogReplicator {
         if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
             return;
 
+        //partition move
+        if ((redoLogRecord1->suppLogFb & FB_K) != 0 || (redoLogRecord2->suppLogFb & FB_K) != 0)
+            return;
+
         redoLogRecord2->object = redoLogRecord1->object;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;

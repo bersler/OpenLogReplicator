@@ -63,8 +63,9 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_CON_INFO("SELECT SYS_CONTEXT('USERENV','CON_ID'), SYS_CONTEXT('USERENV','CON_NAME') FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0) FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), DECODE(BITAND(T.PROPERTY, 32), 32, 1, 0), DECODE(BITAND(O.FLAGS, 2), 2, 1, 0), DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 ELSE 1 END FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
+    string OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT T.OBJ#, T.DATAOBJ# FROM SYS.TABPART$ T where T.BO# = :1 UNION ALL SELECT TSP.OBJ#, TSP.DATAOBJ# FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
     string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT C.TYPE# FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
     string OracleAnalyser::SQL_GET_PARAMETER("SELECT VALUE FROM SYS.V_$PARAMETER WHERE NAME = :i");
@@ -180,6 +181,7 @@ namespace OpenLogReplicator {
 
         closeDbConnection();
 
+        partitionMap.clear();
         for (auto it : objectMap) {
             OracleObject *object = it.second;
             delete object;
@@ -985,6 +987,28 @@ namespace OpenLogReplicator {
     void OracleAnalyser::addToDict(OracleObject *object) {
         if (objectMap[object->objn] == nullptr) {
             objectMap[object->objn] = object;
+        } else {
+            cerr << "ERROR: can't add object objn: " << dec << object->objn << ", objd: " << object->objd << endl;
+            throw ConfigurationException("adding another object with the same id");
+        }
+
+        if (partitionMap[object->objn] == nullptr) {
+            partitionMap[object->objn] = object;
+        } else {
+            cerr << "ERROR: can't add object objn: " << dec << object->objn << ", objd: " << object->objn << endl;
+            throw ConfigurationException("adding another object with the same id");
+        }
+
+        for (typeobj2 objx : object->partitions) {
+            typeobj partitionObjn = objx >> 32;
+            typeobj partitionObjd = objx & 0xFFFFFFFF;
+
+            if (partitionMap[partitionObjn] == nullptr) {
+                partitionMap[partitionObjn] = object;
+            } else {
+                cerr << "ERROR: can't add object objn: " << dec << partitionObjn << ", objd: " << partitionObjd << endl;
+                throw ConfigurationException("adding another object with the same id");
+            }
         }
     }
 
@@ -1520,6 +1544,9 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.CON$");
             checkTableForGrants("SYS.OBJ$");
             checkTableForGrants("SYS.TAB$");
+            checkTableForGrants("SYS.TABCOMPART$");
+            checkTableForGrants("SYS.TABPART$");
+            checkTableForGrants("SYS.TABSUBPART$");
             checkTableForGrants("SYS.USER$");
             checkTableForGrants("SYS.V_$ARCHIVED_LOG");
             checkTableForGrants("SYS.V_$DATABASE");
@@ -1686,7 +1713,6 @@ namespace OpenLogReplicator {
             throw ConfigurationException("bad JSON in <database>-schema.json, online-redo should be an array");
 
         for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
-
             const Value& groupJSON = getJSONfield(fileName, onlineRedo[i], "group");
             uint64_t group = groupJSON.GetInt64();
 
@@ -1713,7 +1739,6 @@ namespace OpenLogReplicator {
             throw ConfigurationException("bad JSON in <database>-schema.json, schema should be an array");
 
         for (SizeType i = 0; i < schema.Size(); ++i) {
-
             const Value& objnJSON = getJSONfield(fileName, schema[i], "objn");
             typeobj objn = objnJSON.GetInt64();
 
@@ -1747,7 +1772,6 @@ namespace OpenLogReplicator {
                 throw ConfigurationException("bad JSON in <database>-schema.json, columns should be an array");
 
             for (SizeType j = 0; j < columns.Size(); ++j) {
-
                 const Value& colNoJSON = getJSONfield(fileName, columns[j], "col-no");
                 uint64_t colNo = colNoJSON.GetUint64();
 
@@ -1786,6 +1810,21 @@ namespace OpenLogReplicator {
                     object->columns.push_back(nullptr);
 
                 object->columns.push_back(column);
+            }
+
+            const Value& partitions = getJSONfield(fileName, schema[i], "partitions");
+            if (!columns.IsArray())
+                throw ConfigurationException("bad JSON in <database>-schema.json, partitions should be an array");
+
+            for (SizeType j = 0; j < partitions.Size(); ++j) {
+                const Value& partitionObjnJSON = getJSONfield(fileName, partitions[j], "objn");
+                uint64_t partitionObjn = partitionObjnJSON.GetUint64();
+
+                const Value& partitionObjdJSON = getJSONfield(fileName, partitions[j], "objd");
+                uint64_t partitionObjd = partitionObjdJSON.GetUint64();
+
+                typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
+                object->partitions.push_back(objx);
             }
 
             addToDict(object);
@@ -1882,8 +1921,21 @@ namespace OpenLogReplicator {
                         "\"charset-id\":" << dec << object->columns[i]->charsetId << "," <<
                         "\"nullable\":" << dec << object->columns[i]->nullable << "}";
             }
+            ss << "]";
 
-            ss << "]}";
+            if (object->partitions.size() > 0) {
+                ss << ",\"partitions\":[";
+                for (uint64_t i = 0; i < object->partitions.size(); ++i) {
+                    if (i > 0)
+                        ss << ",";
+                    typeobj partitionObjn = object->partitions[i] >> 32;
+                    typeobj partitionObjd = object->partitions[i] & 0xFFFFFFFF;
+                    ss << "{\"objn\":" << dec << partitionObjn << "," <<
+                            "\"nullable\":" << dec << partitionObjd << "}";
+                }
+                ss << "]";
+            }
+            ss << "}";
         }
 
         ss << "]}";
@@ -2172,7 +2224,7 @@ namespace OpenLogReplicator {
     }
 
     OracleObject *OracleAnalyser::checkDict(typeobj objn, typeobj objd) {
-        OracleObject *object = objectMap[objn];
+        OracleObject *object = partitionMap[objn];
         return object;
     }
 
@@ -2207,8 +2259,10 @@ namespace OpenLogReplicator {
             readerCond.notify_all();
             sleepingCond.notify_all();
         }
-        for (Reader *reader : readers)
-            pthread_join(reader->pthread, nullptr);
+        for (Reader *reader : readers) {
+            if (reader->started)
+                pthread_join(reader->pthread, nullptr);
+        }
         archReader = nullptr;
         readers.clear();
     }
@@ -2275,21 +2329,46 @@ namespace OpenLogReplicator {
                 typeobj objn = stmt.rset->getNumber(2);
                 string owner = stmt.rset->getString(4);
                 string objectName = stmt.rset->getString(5);
-                bool clustered = (((int)stmt.rset->getNumber(6)) != 0);
-                bool iot = (((int)stmt.rset->getNumber(7)) != 0);
-                bool suppLogSchemaPrimary = (((int)stmt.rset->getNumber(8)) != 0);
-                bool suppLogSchemaAll = (((int)stmt.rset->getNumber(9)) != 0);
 
+                bool iot = (((int)stmt.rset->getNumber(7)) != 0);
                 //skip Index Organized Tables (IOT)
                 if (iot) {
                     cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
                     continue;
                 }
 
+                bool temporary = (((int)stmt.rset->getNumber(11)) != 0);
+                //skip temporary tables
+                if (temporary) {
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - temporary table" << endl;
+                    continue;
+                }
+
+                bool nested = (((int)stmt.rset->getNumber(12)) != 0);
+                //skip nested tables
+                if (nested) {
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - nested table" << endl;
+                    continue;
+                }
+
+                bool compressed = (((int)stmt.rset->getNumber(15)) != 0);
+                //skip compressed tables
+                if (nested) {
+                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - compressed table" << endl;
+                    continue;
+                }
+
+                bool partitioned = (((int)stmt.rset->getNumber(10)) != 0);
                 typeobj objd = 0;
                 //null for partitioned tables
-                if (!stmt.rset->isNull(1))
+                if (!partitioned)
                     objd = stmt.rset->getNumber(1);
+
+                bool clustered = (((int)stmt.rset->getNumber(6)) != 0);
+                bool suppLogSchemaPrimary = (((int)stmt.rset->getNumber(8)) != 0);
+                bool suppLogSchemaAll = (((int)stmt.rset->getNumber(9)) != 0);
+                bool rowMovement = (((int)stmt.rset->getNumber(13)) != 0);
+                bool dependencies = (((int)stmt.rset->getNumber(14)) != 0);
 
                 //table already added with another rule
                 if (checkDict(objn, objd) != nullptr) {
@@ -2306,6 +2385,21 @@ namespace OpenLogReplicator {
                 if (object == nullptr)
                     throw MemoryException("OracleAnalyser::addTable.1", sizeof(OracleObject));
                 ++tabCnt;
+
+                if (partitioned) {
+                    if ((trace2 & TRACE2_SQL) != 0)
+                        cerr << "SQL: " << SQL_GET_PARTITION_LIST << endl;
+                    stmt2.createStatement(SQL_GET_PARTITION_LIST);
+                    stmt2.stmt->setUInt(1, objn);
+                    stmt2.stmt->setUInt(2, objn);
+                    stmt2.executeQuery();
+
+                    while (stmt2.rset->next()) {
+                        typeobj partitionObjn = stmt2.rset->getNumber(1);
+                        typeobj partitionObjd = stmt2.rset->getNumber(2);
+                        object->addPartition(partitionObjn, partitionObjd);
+                    }
+                }
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
                     if ((trace2 & TRACE2_SQL) != 0)
@@ -2401,7 +2495,7 @@ namespace OpenLogReplicator {
                     if (segColNo > maxSegCol)
                         maxSegCol = segColNo;
 
-                    object->addColumn(this, column);
+                    object->addColumn(column);
                 }
 
                 //check if table has all listed columns
@@ -2414,7 +2508,13 @@ namespace OpenLogReplicator {
 
                 cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
                 if (clustered)
-                    cout << " part of cluster";
+                    cout << ", part of cluster";
+                if (partitioned)
+                    cout << ", partitioned";
+                if (dependencies)
+                    cout << ", row depdendencies";
+                if (rowMovement)
+                    cout << ", row movement enabled";
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
                     //use default primary key
