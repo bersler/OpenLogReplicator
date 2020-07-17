@@ -1,20 +1,20 @@
 /* Thread writing to Kafka stream
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
-This file is part of Open Log Replicator.
+This file is part of OpenLogReplicator.
 
-Open Log Replicator is free software; you can redistribute it and/or
+OpenLogReplicator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published
 by the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
-Open Log Replicator is distributed in the hope that it will be useful,
+OpenLogReplicator is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE;  If not see
+along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <cstdio>
@@ -100,7 +100,11 @@ namespace OpenLogReplicator {
         if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
             cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") START" << endl;
 
-        cout << "Starting thread: Kafka writer for: " << brokers << " topic: " << topic << endl;
+        cout << "Starting thread: Kafka writer" << endl;
+        if (test >= 1)
+            cerr << " with stdout output mode (" << dec << test << ")" << endl;
+        else
+            cerr << " for: " << brokers << " topic: " << topic << endl;
 
         try {
             for (;;) {

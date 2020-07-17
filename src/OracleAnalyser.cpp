@@ -1,20 +1,20 @@
 /* Thread reading Oracle Redo Logs
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
-This file is part of Open Log Replicator.
+This file is part of OpenLogReplicator.
 
-Open Log Replicator is free software; you can redistribute it and/or
+OpenLogReplicator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published
 by the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
-Open Log Replicator is distributed in the hope that it will be useful,
+OpenLogReplicator is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE;  If not see
+along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <cstdio>
@@ -27,6 +27,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #include <pthread.h>
 #include <unistd.h>
 #include <rapidjson/document.h>
+#include <sys/stat.h>
 
 #include "CommandBuffer.h"
 #include "ConfigurationException.h"
@@ -1087,7 +1088,6 @@ namespace OpenLogReplicator {
 #endif /* ONLINE_MODEIMPL_OCCI */
         } else if (mode == MODE_OFFLINE || mode == MODE_ARCHIVELOG) {
             if (dbRecoveryFileDest.length() > 0) {
-
                 string path = applyMapping(dbRecoveryFileDest + "/" + database + "/archivelog");
 
                 DIR *dir;
@@ -1104,7 +1104,15 @@ namespace OpenLogReplicator {
                 while ((ent = readdir(dir)) != nullptr) {
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                         continue;
-                    if (ent->d_type != DT_DIR)
+
+                    struct stat fileStat;
+                    string subPath = path + "/" + ent->d_name;
+                    if (stat(subPath.c_str(), &fileStat)) {
+                        cerr << "WARNING: can't read file information for: " << subPath << endl;
+                        continue;
+                    }
+
+                    if (!S_ISDIR(fileStat.st_mode))
                         continue;
 
                     //skip earlier days
@@ -1210,7 +1218,7 @@ namespace OpenLogReplicator {
                 }
 
             } else if (logArchiveDest.length() > 0 && logArchiveFormat.length() > 0) {
-                throw RuntimeException("only db_recovery_file_dest location of archivied red logs is supported for offline mode");
+                throw RuntimeException("only db_recovery_file_dest location of archived redo logs is supported for offline mode");
             } else
                 throw RuntimeException("missing location of archived redo logs for offline mode");
         }
@@ -1747,8 +1755,11 @@ namespace OpenLogReplicator {
             const Value& objnJSON = getJSONfield(fileName, schema[i], "objn");
             typeobj objn = objnJSON.GetInt64();
 
-            const Value& objdJSON = getJSONfield(fileName, schema[i], "objd");
-            typeobj objd = objdJSON.GetInt64();
+            typeobj objd = 0;
+            if (schema[i].HasMember("objd")) {
+                const Value& objdJSON = getJSONfield(fileName, schema[i], "objd");
+                objd = objdJSON.GetInt64();
+            }
 
             const Value& cluColsJSON = getJSONfield(fileName, schema[i], "clu-cols");
             uint64_t cluCols = cluColsJSON.GetInt64();
@@ -1817,19 +1828,21 @@ namespace OpenLogReplicator {
                 object->columns.push_back(column);
             }
 
-            const Value& partitions = getJSONfield(fileName, schema[i], "partitions");
-            if (!columns.IsArray())
-                throw ConfigurationException("bad JSON in <database>-schema.json, partitions should be an array");
+            if (schema[i].HasMember("partitions")) {
+                const Value& partitions = getJSONfield(fileName, schema[i], "partitions");
+                if (!columns.IsArray())
+                    throw ConfigurationException("bad JSON in <database>-schema.json, partitions should be an array");
 
-            for (SizeType j = 0; j < partitions.Size(); ++j) {
-                const Value& partitionObjnJSON = getJSONfield(fileName, partitions[j], "objn");
-                uint64_t partitionObjn = partitionObjnJSON.GetUint64();
+                for (SizeType j = 0; j < partitions.Size(); ++j) {
+                    const Value& partitionObjnJSON = getJSONfield(fileName, partitions[j], "objn");
+                    uint64_t partitionObjn = partitionObjnJSON.GetUint64();
 
-                const Value& partitionObjdJSON = getJSONfield(fileName, partitions[j], "objd");
-                uint64_t partitionObjd = partitionObjdJSON.GetUint64();
+                    const Value& partitionObjdJSON = getJSONfield(fileName, partitions[j], "objd");
+                    uint64_t partitionObjd = partitionObjdJSON.GetUint64();
 
-                typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
-                object->partitions.push_back(objx);
+                    typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
+                    object->partitions.push_back(objx);
+                }
             }
 
             addToDict(object);
@@ -1936,7 +1949,7 @@ namespace OpenLogReplicator {
                     typeobj partitionObjn = object->partitions[i] >> 32;
                     typeobj partitionObjd = object->partitions[i] & 0xFFFFFFFF;
                     ss << "{\"objn\":" << dec << partitionObjn << "," <<
-                            "\"nullable\":" << dec << partitionObjd << "}";
+                            "\"objd\":" << dec << partitionObjd << "}";
                 }
                 ss << "]";
             }

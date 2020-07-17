@@ -1,20 +1,20 @@
 /* Base class for process which is reading from redo log
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
-This file is part of Open Log Replicator.
+This file is part of OpenLogReplicator.
 
-Open Log Replicator is free software; you can redistribute it and/or
+OpenLogReplicator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published
 by the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
-Open Log Replicator is distributed in the hope that it will be useful,
+OpenLogReplicator is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE;  If not see
+along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
@@ -220,6 +220,9 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x120A0000) //18.10.0.0
             version = 0x18A00;
         else
+        if (compatVsn == 0x120B0000) //18.11.0.0
+            version = 0x18B00;
+        else
         if (compatVsn == 0x13000000) //19.0.0.0
             version = 0x19000;
         else
@@ -237,6 +240,9 @@ namespace OpenLogReplicator {
         else
         if (compatVsn == 0x13070000) //19.7.0.0
             version = 0x19700;
+        else
+        if (compatVsn == 0x13080000) //19.8.0.0
+            version = 0x19800;
 
         if (oracleAnalyser->version == 0)
             oracleAnalyser->version = version;

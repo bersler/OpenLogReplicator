@@ -1,20 +1,20 @@
 /* Definition of types and macros
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
-This file is part of Open Log Replicator.
+This file is part of OpenLogReplicator.
 
-Open Log Replicator is free software; you can redistribute it and/or
+OpenLogReplicator is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published
 by the Free Software Foundation; either version 3, or (at your option)
 any later version.
 
-Open Log Replicator is distributed in the hope that it will be useful,
+OpenLogReplicator is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Open Log Replicator; see the file LICENSE;  If not see
+along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iomanip>
@@ -25,7 +25,7 @@ along with Open Log Replicator; see the file LICENSE;  If not see
 #ifndef TYPES_H_
 #define TYPES_H_
 
-using namespace std;
+#define ONLINE_MODEIMPL_OCCI
 
 typedef uint16_t typesum;
 typedef uint32_t typeresetlogs;
@@ -51,10 +51,8 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define ONLINE_MODEIMPL_OCCI
-
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.6"
+#define PROGRAM_VERSION             "0.6.7"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -123,6 +121,8 @@ typedef uint64_t typeunicode;
 #define SCN(scn1,scn2)              ((((uint64_t)scn1)<<32)|(scn2))
 #define PRINTSCN48(scn)             "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32)&0xFFFF)<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
 #define PRINTSCN64(scn)             "0x"<<setfill('0')<<setw(16)<<hex<<(scn)
+
+using namespace std;
 
 namespace OpenLogReplicator {
 
