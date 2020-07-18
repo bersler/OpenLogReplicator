@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                             " xid:  " << PRINTXID(itlXid) <<
                             " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 
-                    uint8_t lkc = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 20);
+                    uint8_t lkc = redoLogRecord->data[fieldPos + 20];
                     uint8_t flag = redoLogRecord->data[fieldPos + 19];
                     char flagStr[5] = "----";
                     if ((flag & 0x80) != 0) flagStr[0] = 'C';
@@ -221,8 +221,8 @@ namespace OpenLogReplicator {
                             " xid:  " << PRINTXID(itlXid) <<
                             " uba: " << PRINTUBA(redoLogRecord->uba) << endl;
 
-                    uint8_t lkc = 0;
-                    uint8_t flag = redoLogRecord->data[fieldPos + 25];
+                    uint8_t lkc = redoLogRecord->data[fieldPos + 25];
+                    uint8_t flag = redoLogRecord->data[fieldPos + 24];
                     char flagStr[5] = "----";
                     if ((flag & 0x80) != 0) flagStr[0] = 'C';
                     if ((flag & 0x40) != 0) flagStr[1] = 'B';
@@ -638,7 +638,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 16];
-        redoLogRecord->nrow = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 18);
+        redoLogRecord->nrow = redoLogRecord->data[fieldPos + 18];
         redoLogRecord->slotsDelta = fieldPos + 20;
 
         if (oracleAnalyser->dumpRedoLog >= 1) {
@@ -646,11 +646,11 @@ namespace OpenLogReplicator {
 
             oracleAnalyser->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
                 " lock: " << dec << (uint64_t)lock <<
-                " nrow: " << dec << redoLogRecord->nrow << endl;
+                " nrow: " << dec << (uint64_t)redoLogRecord->nrow << endl;
 
             if (fieldLength < 22 + (uint64_t)redoLogRecord->nrow * 2) {
                 oracleAnalyser->dumpStream << "ERROR: too short field KDO OpCode QMI (2): " << dec << fieldLength << ", " <<
-                        redoLogRecord->nrow << endl;
+                        (uint64_t)redoLogRecord->nrow << endl;
                 return;
             }
         }
@@ -938,7 +938,7 @@ namespace OpenLogReplicator {
                 if (oracleAnalyser->dumpRedoLog >= 1) {
                     uint16_t flg2 = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 24);
                     int16_t buExtIdx = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 26);
-                    typeuba prevCtlUba = oracleAnalyser->read64(redoLogRecord->data + fieldPos + 28);
+                    typeuba prevCtlUba = oracleAnalyser->read56(redoLogRecord->data + fieldPos + 28);
                     typescn prevCtlMaxCmtScn = oracleAnalyser->readSCN(redoLogRecord->data + fieldPos + 36);
                     typescn prevTxCmtScn = oracleAnalyser->readSCN(redoLogRecord->data + fieldPos + 44);
                     typescn txStartScn = oracleAnalyser->readSCN(redoLogRecord->data + fieldPos + 56);

@@ -64,7 +64,18 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_CON_INFO("SELECT SYS_CONTEXT('USERENV','CON_ID'), SYS_CONTEXT('USERENV','CON_NAME') FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), DECODE(BITAND(T.PROPERTY, 32), 32, 1, 0), DECODE(BITAND(O.FLAGS, 2), 2, 1, 0), DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 ELSE 1 END FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
+    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, "
+            "DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), "
+            "DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), "   //IOT overflow segment,
+            "DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), "
+            "DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), "
+            "DECODE(BITAND(T.PROPERTY, 32), 32, 1, 0), "
+            "DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1), " //temporary, secondary, in-memory temp
+            "DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), "                             // nested
+            "DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), "
+            "DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), "
+            "CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 1 ELSE 0 END "
+            "FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
     string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT C.COL#, C.SEGCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$, (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
     string OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT T.OBJ#, T.DATAOBJ# FROM SYS.TABPART$ T where T.BO# = :1 UNION ALL SELECT TSP.OBJ#, TSP.DATAOBJ# FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
@@ -1264,10 +1275,10 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleAnalyser::read56Big(const uint8_t* buf) {
-        return (((uint64_t)buf[0] << 48) | ((uint64_t)buf[1] << 40) |
-                ((uint64_t)buf[2] << 32) | ((uint64_t)buf[3] << 24) |
-                ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 8) |
-                (uint64_t)buf[6]);
+        return (((uint64_t)buf[0] << 24) | ((uint64_t)buf[1] << 16) |
+                ((uint64_t)buf[2] << 8) | ((uint64_t)buf[3]) |
+                ((uint64_t)buf[4] << 40) | ((uint64_t)buf[5] << 32) |
+                ((uint64_t)buf[6] << 48));
     }
 
     uint64_t OracleAnalyser::read64Little(const uint8_t* buf) {
@@ -1301,15 +1312,15 @@ namespace OpenLogReplicator {
     typescn OracleAnalyser::readSCNBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
-        if ((buf[0] & 0x80) == 0x80)
-            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
-                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
+        if ((buf[4] & 0x80) == 0x80)
+            return (uint64_t)buf[3] | ((uint64_t)buf[2] << 8) |
+                ((uint64_t)buf[1] << 16) | ((uint64_t)buf[0] << 24) |
                 ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
-                ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+                ((uint64_t)buf[5] << 48) | ((uint64_t)(buf[4] & 0x7F) << 56);
         else
-            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
-                ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
-                ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
+            return (uint64_t)buf[3] | ((uint64_t)buf[2] << 8) |
+                ((uint64_t)buf[1] << 16) | ((uint64_t)buf[0] << 24) |
+                ((uint64_t)buf[5] << 32) | ((uint64_t)buf[6] << 40);
     }
 
     typescn OracleAnalyser::readSCNrLittle(const uint8_t* buf) {
@@ -1329,7 +1340,7 @@ namespace OpenLogReplicator {
     typescn OracleAnalyser::readSCNrBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
-        if ((buf[1] & 0x80) == 0x80)
+        if ((buf[0] & 0x80) == 0x80)
             return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
                 ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
                 //((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
@@ -1522,12 +1533,12 @@ namespace OpenLogReplicator {
                 }
 
                 //12+
-                string VERSION = stmt.rset->getString(9);
+                string BANNER = stmt.rset->getString(9);
                 if (trace >= TRACE_INFO)
-                    cerr << "INFO: version: " << dec << VERSION << endl;
+                    cerr << "INFO: version: " << dec << BANNER << endl;
 
                 conId = 0;
-                if (VERSION.find("Oracle Database 11g") == string::npos) {
+                if (BANNER.find("Oracle Database 11g") == string::npos) {
                     OracleStatement stmt(&conn, env);
                     if ((trace2 & TRACE2_SQL) != 0)
                         cerr << "SQL: " << SQL_GET_CON_INFO << endl;
@@ -1690,6 +1701,19 @@ namespace OpenLogReplicator {
 
         const Value& bigEndianJSON = getJSONfield(fileName, document, "big-endian");
         isBigEndian = bigEndianJSON.GetUint64();
+        if (isBigEndian) {
+            read16 = read16Big;
+            read32 = read32Big;
+            read56 = read56Big;
+            read64 = read64Big;
+            readSCN = readSCNBig;
+            readSCNr = readSCNrBig;
+            write16 = write16Big;
+            write32 = write32Big;
+            write56 = write56Big;
+            write64 = write64Big;
+            writeSCN = writeSCNBig;
+        }
 
         const Value& resetlogsJSON = getJSONfield(fileName, document, "resetlogs");
         resetlogs = resetlogsJSON.GetUint64();
@@ -1988,7 +2012,7 @@ namespace OpenLogReplicator {
         if ((trace2 & TRACE2_THREADS) != 0)
             cerr << "THREAD: ANALYSER (" << hex << this_thread::get_id() << ") START" << endl;
 
-        cout << "Starting thread: Oracle Analyser for: " << database << " in " << modeStr << " mode" << endl;
+        cerr << "Starting thread: Oracle Analyser for: " << database << " in " << modeStr << " mode" << endl;
         if (mode == MODE_ONLINE)
             checkConnection(true);
 
@@ -2335,7 +2359,7 @@ namespace OpenLogReplicator {
     void OracleAnalyser::addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options) {
 #ifdef ONLINE_MODEIMPL_OCCI
         checkConnection(false);
-        cout << "- reading table schema for: " << mask << endl;
+        cerr << "- reading table schema for: " << mask << endl;
         uint64_t tabCnt = 0;
         OracleObject *object = nullptr;
 
@@ -2358,28 +2382,28 @@ namespace OpenLogReplicator {
                 bool iot = (((int)stmt.rset->getNumber(7)) != 0);
                 //skip Index Organized Tables (IOT)
                 if (iot) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
+                    cerr << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT" << endl;
                     continue;
                 }
 
                 bool temporary = (((int)stmt.rset->getNumber(11)) != 0);
                 //skip temporary tables
                 if (temporary) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - temporary table" << endl;
+                    cerr << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - temporary table" << endl;
                     continue;
                 }
 
                 bool nested = (((int)stmt.rset->getNumber(12)) != 0);
                 //skip nested tables
                 if (nested) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - nested table" << endl;
+                    cerr << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - nested table" << endl;
                     continue;
                 }
 
                 bool compressed = (((int)stmt.rset->getNumber(15)) != 0);
                 //skip compressed tables
-                if (nested) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - compressed table" << endl;
+                if (compressed) {
+                    cerr << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - compressed table" << endl;
                     continue;
                 }
 
@@ -2396,7 +2420,7 @@ namespace OpenLogReplicator {
 
                 //table already added with another rule
                 if (checkDict(objn, objd) != nullptr) {
-                    cout << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - already added" << endl;
+                    cerr << "  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - already added" << endl;
                     continue;
                 }
 
@@ -2518,7 +2542,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (trace >= TRACE_FULL)
-                        cout << "    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ")" << endl;
+                        cerr << "    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ")" << endl;
 
                     OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charmapId, (nullable == 0));
                     if (column == nullptr)
@@ -2539,36 +2563,36 @@ namespace OpenLogReplicator {
                     throw ConfigurationException("column not found");
                 }
 
-                cout << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+                cerr << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
                 if (clustered)
-                    cout << ", part of cluster";
+                    cerr << ", part of cluster";
                 if (partitioned)
-                    cout << ", partitioned";
+                    cerr << ", partitioned";
                 if (dependencies)
-                    cout << ", row depdendencies";
+                    cerr << ", row depdendencies";
                 if (rowMovement)
-                    cout << ", row movement enabled";
+                    cerr << ", row movement enabled";
 
                 if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
                     //use default primary key
                     if (keys.size() == 0) {
                         if (totalPk == 0)
-                            cout << " - primary key missing" << endl;
+                            cerr << " - primary key missing" << endl;
                         else if (!suppLogTablePrimary && !suppLogTableAll &&
                                 !suppLogSchemaPrimary && !suppLogSchemaAll &&
                                 !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
-                            cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;" << endl;
+                            cerr << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;" << endl;
                         else
-                            cout << endl;
+                            cerr << endl;
                     //user defined primary key
                     } else {
                         if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                            cout << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;" << endl;
+                            cerr << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;" << endl;
                         else
-                            cout << endl;
+                            cerr << endl;
                     }
                 } else
-                    cout << endl;
+                    cerr << endl;
 
                 object->maxSegCol = maxSegCol;
                 object->totalPk = totalPk;
@@ -2583,7 +2607,7 @@ namespace OpenLogReplicator {
             cerr << "ERROR: Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage();
             throw RuntimeException("getting table metadata");
         }
-        cout << "  * total: " << dec << tabCnt << " tables" << endl;
+        cerr << "  * total: " << dec << tabCnt << " tables" << endl;
 #else
         throw RuntimeException("online mode is not compiled");
 #endif /* ONLINE_MODEIMPL_OCCI */

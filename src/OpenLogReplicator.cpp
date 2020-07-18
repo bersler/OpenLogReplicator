@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cout << "OpenLogReplicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    cerr << "OpenLogReplicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
     list<OracleAnalyser *> analysers;
     list<KafkaWriter *> writers;
     list<CommandBuffer *> buffers;
@@ -169,13 +169,13 @@ int main(int argc, char **argv) {
                 uint64_t memoryMinMb = memoryMinMbJSON.GetUint64();
                 memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMinMb < MEMORY_CHUNK_MIN_MB)
-                    throw ConfigurationException("bad JSON, memory-min-mb value must be greater than " MEMORY_CHUNK_MIN_MB_CHR);
+                    throw ConfigurationException("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
 
                 const Value& memoryMaxMbJSON = getJSONfield(fileName, source, "memory-max-mb");
                 uint64_t memoryMaxMb = memoryMaxMbJSON.GetUint64();
                 memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMaxMb < memoryMinMb)
-                    throw ConfigurationException("bad JSON, memory-max-mb value must be greater than memory-max-mb value");
+                    throw ConfigurationException("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
 
                 //optional
                 uint64_t redoReadSleep = 10000;
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
                 }
 
                 const Value& name = getJSONfield(fileName, source, "name");
-                cout << "Adding source: " << name.GetString() << endl;
+                cerr << "Adding source: " << name.GetString() << endl;
 
                 CommandBuffer *commandBuffer = new CommandBuffer();
                 buffers.push_back(commandBuffer);
@@ -390,7 +390,7 @@ int main(int argc, char **argv) {
                 if (oracleAnalyser == nullptr)
                     throw ConfigurationException("bad JSON, unknown alias");
 
-                cout << "Adding target: " << alias.GetString() << endl;
+                cerr << "Adding target: " << alias.GetString() << endl;
                 kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser,
                         maxMessageMb, stream, metadata, singleDml, showColumns, test, timestampFormat, charFormat);
                 if (kafkaWriter == nullptr)

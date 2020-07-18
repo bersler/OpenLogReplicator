@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
         if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
             cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") START" << endl;
 
-        cout << "Starting thread: Kafka writer" << endl;
+        cerr << "Starting thread: Kafka writer" << endl;
         if (test >= 1)
             cerr << " with stdout output mode (" << dec << test << ")" << endl;
         else

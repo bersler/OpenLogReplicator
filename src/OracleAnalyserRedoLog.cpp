@@ -296,8 +296,8 @@ namespace OpenLogReplicator {
 
         if ((vld & 0x04) != 0) {
             headerLength = 68;
-            numChk = oracleAnalyser->read32(oracleAnalyser->recordBuffer + 24);
-            numChkMax = oracleAnalyser->read32(oracleAnalyser->recordBuffer + 26);
+            numChk = oracleAnalyser->read16(oracleAnalyser->recordBuffer + 24);
+            numChkMax = oracleAnalyser->read16(oracleAnalyser->recordBuffer + 26);
             recordTimestmap = oracleAnalyser->read32(oracleAnalyser->recordBuffer + 64);
             if (numChk + 1 == numChkMax) {
                 extScn = oracleAnalyser->readSCN(oracleAnalyser->recordBuffer + 40);
@@ -356,9 +356,9 @@ namespace OpenLogReplicator {
 
             if (headerLength == 68) {
                 if (oracleAnalyser->version < 0x12200)
-                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << curSubScn << " " << recordTimestmap << endl;
                 uint32_t nst = 1; //FIXME
                 uint32_t lwnLen = oracleAnalyser->read32(oracleAnalyser->recordBuffer + 28);
 
@@ -378,9 +378,9 @@ namespace OpenLogReplicator {
                         " SCN: " << PRINTSCN64(extScn) << ")" << endl;
             } else {
                 if (oracleAnalyser->version < 0x12200)
-                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN48(curScn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << curSubScn << " " << recordTimestmap << endl;
                 else
-                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN: " << setfill(' ') << setw(2) << dec << curSubScn << " " << recordTimestmap << endl;
+                    oracleAnalyser->dumpStream << "SCN: " << PRINTSCN64(curScn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << curSubScn << " " << recordTimestmap << endl;
             }
         }
 
@@ -394,7 +394,7 @@ namespace OpenLogReplicator {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
             redoLogRecord[vectors].cls = oracleAnalyser->read16(oracleAnalyser->recordBuffer + pos + 2);
-            redoLogRecord[vectors].afn = oracleAnalyser->read16(oracleAnalyser->recordBuffer + pos + 4);
+            redoLogRecord[vectors].afn = oracleAnalyser->read32(oracleAnalyser->recordBuffer + pos + 4) & 0xFFFF;
             redoLogRecord[vectors].dba = oracleAnalyser->read32(oracleAnalyser->recordBuffer + pos + 8);
             redoLogRecord[vectors].scnRecord = oracleAnalyser->readSCN(oracleAnalyser->recordBuffer + pos + 12);
             redoLogRecord[vectors].rbl = 0; //FIXME
@@ -406,7 +406,7 @@ namespace OpenLogReplicator {
             if (oracleAnalyser->version >= 0x12100) {
                 fieldOffset = 32;
                 redoLogRecord[vectors].flgRecord = oracleAnalyser->read16(oracleAnalyser->recordBuffer + pos + 28);
-                redoLogRecord[vectors].conId = oracleAnalyser->read32(oracleAnalyser->recordBuffer + pos + 24);
+                redoLogRecord[vectors].conId = oracleAnalyser->read16(oracleAnalyser->recordBuffer + pos + 24);
             } else {
                 fieldOffset = 24;
                 redoLogRecord[vectors].flgRecord = 0;
@@ -1017,7 +1017,7 @@ namespace OpenLogReplicator {
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyser->dumpRedoLog >= 1) {
                 stringstream name;
-                name << "DUMP-" << sequence << ".trace";
+                name << oracleAnalyser->databaseContext.c_str() << "-" << dec << sequence << ".logdump";
                 oracleAnalyser->dumpStream.open(name.str());
                 if (!oracleAnalyser->dumpStream.is_open()) {
                     cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;

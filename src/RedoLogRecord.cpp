@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
                 " robjn: " << dec << recordObjn <<
                 " robjd: " << dec << recordObjd <<
 //                " scn: " << PRINTSCN64(scn) <<
-                " nrow: " << dec << nrow <<
+                " nrow: " << dec << (uint64_t)nrow <<
                 " afn: " << dec << afn <<
                 " length: " << dec << length <<
                 " dba: 0x" << hex << dba <<

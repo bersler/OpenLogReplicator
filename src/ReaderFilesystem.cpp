@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <fstream>
 #include <iostream>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -54,7 +55,7 @@ namespace OpenLogReplicator {
 
         int ret = stat(path.c_str(), &fileStat);
         if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
-            cerr << "FILE: stat for " << path << " returns " << dec << ret << endl;
+            cerr << "FILE: stat for " << path << " returns " << dec << ret << ", errno = " << errno << endl;
         if (ret != 0) {
             return REDO_ERROR;
         }
@@ -69,7 +70,7 @@ namespace OpenLogReplicator {
 
         fileDes = open(path.c_str(), flags);
         if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
-            cerr << "FILE: open for " << path << " returns " << dec << fileDes << endl;
+            cerr << "FILE: open for " << path << " returns " << dec << fileDes << ", errno = " << errno << endl;
 
         if (fileDes == -1) {
             if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)

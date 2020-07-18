@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
         if (oracleAnalyser->dumpRedoLog >= 1) {
-            uint16_t srt = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6);
+            uint16_t srt = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6);  //probably invalid position
             uint32_t sta = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 12);
 
             oracleAnalyser->dumpStream << "ktucm redo: slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<

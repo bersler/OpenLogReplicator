@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
         uint16_t fieldCnt;
         uint64_t fieldPos;
         uint64_t rowData;
-        uint16_t nrow;
+        uint8_t nrow;
         uint64_t slotsDelta;
         uint64_t rowLenghsDelta;
         uint64_t fieldLengthsDelta;

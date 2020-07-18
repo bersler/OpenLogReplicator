@@ -139,7 +139,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        blockSize = oracleAnalyser->read16(headerBuffer + 20);
+        blockSize = oracleAnalyser->read32(headerBuffer + 20);
         if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
                 (blockSize == 1024 && headerBuffer[1] != 0x22) ||
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {

@@ -288,7 +288,7 @@ namespace OpenLogReplicator {
     }
 
     void CommandBuffer::setNlsCharset(string &nlsCharset, string &nlsNcharCharset) {
-        cout << "- loading character mapping for " << nlsCharset << endl;
+        cerr << "- loading character mapping for " << nlsCharset << endl;
 
         for (auto elem: characterMap) {
             if (strcmp(nlsCharset.c_str(), elem.second->name) == 0) {
@@ -300,7 +300,7 @@ namespace OpenLogReplicator {
         if (defaultCharacterMapId == 0)
             throw RuntimeException("unsupported NLS_CHARACTERSET value");
 
-        cout << "- loading character mapping for " << nlsNcharCharset << endl;
+        cerr << "- loading character mapping for " << nlsNcharCharset << endl;
         for (auto elem: characterMap) {
             if (strcmp(nlsNcharCharset.c_str(), elem.second->name) == 0) {
                 defaultCharacterNcharMapId = elem.first;

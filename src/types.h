@@ -32,7 +32,7 @@ typedef uint32_t typeresetlogs;
 typedef uint32_t typeactivation;
 typedef uint16_t typeop1;
 typedef uint32_t typeop2;
-typedef uint32_t typecon;
+typedef uint16_t typecon;
 typedef uint32_t typeblk;
 typedef uint32_t typedba;
 typedef uint16_t typeslot;
@@ -52,7 +52,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.7"
+#define PROGRAM_VERSION             "0.6.8"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
