@@ -565,7 +565,7 @@ namespace OpenLogReplicator {
             default:
                 opCodes[vectors] = new OpCode(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.18", sizeof(OpCode));
+                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.18  ", sizeof(OpCode));
                 break;
             }
 
@@ -774,6 +774,15 @@ namespace OpenLogReplicator {
         }
 
         switch (opCodeLong) {
+        //array update of rows
+        case 0x05010B13:
+            if (redoLogRecord1->suppLogType != 1) {
+                cerr << "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
+                cerr << "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
+                throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
+            }
+            break;
+
         //insert row piece
         case 0x05010B02:
         //delete row piece

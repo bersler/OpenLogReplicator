@@ -70,7 +70,9 @@ namespace OpenLogReplicator {
 #define OP_DSC                  0x0E
 #define OP_LMN                  0x10
 #define OP_LLB                  0x11
+#define OP__19                  0x13
 #define OP_SHK                  0x14
+#define OP__21                  0x15
 #define OP_CMP                  0x16
 #define OP_DCU                  0x17
 #define OP_MRK                  0x18

@@ -693,6 +693,7 @@ namespace OpenLogReplicator {
                 case OP_CMP: opCode = "CMP"; break;
                 case OP_DCU: opCode = "DCU"; break;
                 case OP_MRK: opCode = "MRK"; break;
+                case OP__21: opCode = " 21"; break;
                 default:
                     opCode = "XXX";
                     if (oracleAnalyser->dumpRedoLog >= 1)

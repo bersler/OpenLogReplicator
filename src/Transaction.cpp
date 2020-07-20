@@ -39,6 +39,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode1801.h"
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
+#include "RuntimeException.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 #include "Writer.h"
@@ -463,6 +464,7 @@ namespace OpenLogReplicator {
                                     " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint64_t)redoLogRecord2->slot <<
                                     " nrid2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->nridBdba << "." << hex << redoLogRecord2->nridSlot <<
                                     " supp: (0x" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->suppLogFb <<
+                                        ", " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord1->suppLogType <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogCC <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<
@@ -508,6 +510,13 @@ namespace OpenLogReplicator {
                         if (type == TRANSACTION_DELETE) {
                             if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
                                 type = TRANSACTION_UPDATE;
+                        }
+
+                        if (redoLogRecord1->suppLogType == 0) {
+                            cerr << "type: " << redoLogRecord1->suppLogType << endl;
+                            cerr << "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
+                            cerr << "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
+                            throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
                         }
 
                         if (first1 == nullptr) {
