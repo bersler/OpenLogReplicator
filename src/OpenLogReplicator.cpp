@@ -164,18 +164,26 @@ int main(int argc, char **argv) {
                     flags = flagsJSON.GetUint64();
                 }
 
-                const Value& memoryMinMbJSON = getJSONfield(fileName, source, "memory-min-mb");
-                uint64_t memoryMinMb = memoryMinMbJSON.GetUint64();
-                memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
-                if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
-                    CONFIG_FAIL("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
+                //optional
+                uint64_t memoryMinMb = 32;
+                if (source.HasMember("memory-min-mb")) {
+                    const Value& memoryMinMbJSON = source["memory-min-mb"];
+                    memoryMinMb = memoryMinMbJSON.GetUint64();
+                    memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
+                    if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
+                        CONFIG_FAIL("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
+                    }
                 }
 
-                const Value& memoryMaxMbJSON = getJSONfield(fileName, source, "memory-max-mb");
-                uint64_t memoryMaxMb = memoryMaxMbJSON.GetUint64();
-                memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
-                if (memoryMaxMb < memoryMinMb) {
-                    CONFIG_FAIL("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
+                //optional
+                uint64_t memoryMaxMb = 1024;
+                if (source.HasMember("memory-max-mb")) {
+                    const Value& memoryMaxMbJSON = source["memory-max-mb"];
+                    uint64_t memoryMaxMb = memoryMaxMbJSON.GetUint64();
+                    memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
+                    if (memoryMaxMb < memoryMinMb) {
+                        CONFIG_FAIL("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
+                    }
                 }
 
                 //optional

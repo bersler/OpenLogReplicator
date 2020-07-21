@@ -106,7 +106,6 @@ typedef uint64_t typeunicode;
 
 #define DISABLE_CHECK_GRANTS            0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG  0x0000002
-#define DISABLE_CHECK_ALTER_TABLE       0x0000004
 
 #define USN(xid)                    ((uint16_t)(((uint64_t)xid)>>48))
 #define SLT(xid)                    ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))
