@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
         }
 
         //optional
-        uint64_t trace = 0;
+        uint64_t trace = 2;
         if (document.HasMember("trace")) {
             const Value& traceJSON = document["trace"];
             trace = traceJSON.GetUint64();
