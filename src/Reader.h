@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <condition_variable>
 #include <mutex>
 #include <string>
+#include <vector>
 #include <pthread.h>
 
 #include "types.h"
@@ -41,14 +42,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_CLOSEDTHREAD       0x1000
 #define REDO_MAXPERFORMANCE     0x2000
 
-#define REDO_OK                     0
-#define REDO_OVERWRITTEN            1
-#define REDO_ERROR                  2
-#define REDO_FINISHED               3
-#define REDO_EMPTY                  4
+#define REDO_OK                 0
+#define REDO_OVERWRITTEN        1
+#define REDO_ERROR              2
+#define REDO_FINISHED           3
+#define REDO_EMPTY              4
 
-#define DISK_BUFFER_SIZE            (4*1024*1024)
-#define REDO_PAGE_SIZE_MAX          4096
+#define DISK_BUFFER_SIZE        MEMORY_CHUNK_SIZE
+#define REDO_PAGE_SIZE_MAX      4096
 
 using namespace std;
 
@@ -72,8 +73,8 @@ namespace OpenLogReplicator {
         uint8_t *headerBuffer;
         int64_t group;
         typeseq sequence;
-        string path;
-        string pathOrig;
+        vector<string> paths;
+        string pathMapped;
         uint64_t blockSize;
         typeblk numBlocks;
         typescn firstScn;

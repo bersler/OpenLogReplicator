@@ -34,13 +34,13 @@ namespace OpenLogReplicator {
 #define TRANSACTION_DELETE 2
 #define TRANSACTION_UPDATE 3
 
-    class CommandBuffer;
+    class OutputBuffer;
     class OracleAnalyser;
     class RedoLogRecord;
 
     class Writer : public Thread {
     protected:
-        CommandBuffer *commandBuffer;
+        OutputBuffer *outputBuffer;
         OracleAnalyser *oracleAnalyser;
         uint64_t stream;            //1 - JSON, 2 - DBZ-JSON
         uint64_t metadata;          //0 - no metadata in output, 1 - metadata in output

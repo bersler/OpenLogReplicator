@@ -49,7 +49,7 @@ using namespace oracle::occi;
 
 namespace OpenLogReplicator {
 
-    class CommandBuffer;
+    class OutputBuffer;
     class OracleObject;
     class OracleAnalyserRedoLog;
     class Reader;
@@ -119,22 +119,23 @@ namespace OpenLogReplicator {
         stringstream& writeEscapeValue(stringstream &ss, string &str);
         string getParameterValue(const char *parameter);
         string getPropertyValue(const char *property);
-        void populateTimeZone();
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint(void);
         void addToDict(OracleObject *object);
         void checkConnection(bool reconnect);
         void archLogGetList(void);
         void updateOnlineLogs(void);
-        bool readerCheckRedoLog(Reader *reader, string path);
+        bool readerCheckRedoLog(Reader *reader);
         void readerDropAll(void);
         void checkTableForGrants(string tableName);
         Reader *readerCreate(int64_t group);
+        void checkOnlineRedoLogs();
+        uint64_t getSequenceFromFileName(const char *file);
 
     public:
-        OracleAnalyser(CommandBuffer *commandBuffer, const string alias, const string database, const string user,
+        OracleAnalyser(OutputBuffer *outputBuffer, const string alias, const string database, const string user,
                 const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
-                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint32_t redoReadSleep, uint64_t checkpointInterval,
+                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval,
                 uint64_t memoryMinMb, uint64_t memoryMaxMb);
         virtual ~OracleAnalyser();
 
@@ -151,7 +152,7 @@ namespace OpenLogReplicator {
         TransactionHeap *transactionHeap;
         TransactionBuffer *transactionBuffer;
         uint8_t recordBuffer[REDO_RECORD_MAX_SIZE];
-        CommandBuffer *commandBuffer;
+        OutputBuffer *outputBuffer;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
@@ -159,7 +160,9 @@ namespace OpenLogReplicator {
         uint64_t mode;
         uint64_t disableChecks;
         vector<string> pathMapping;
-        uint32_t redoReadSleep;
+        vector<string> redoLogsBatch;
+        uint64_t redoReadSleep;
+        uint64_t archReadSleep;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;                   //compatiblity level of redo logs
@@ -169,7 +172,6 @@ namespace OpenLogReplicator {
         typeresetlogs resetlogs;
         typeactivation activation;
         bool isBigEndian;
-        unordered_map<uint16_t, char*> timeZoneMap;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -216,12 +218,12 @@ namespace OpenLogReplicator {
         bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         OracleObject *checkDict(typeobj objn, typeobj objd);
-        void dumpTransactions(void);
         void addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options);
         void checkForCheckpoint(void);
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
         void addPathMapping(const string source, const string target);
+        void addRedoLogsBatch(const string path);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
@@ -232,6 +234,8 @@ namespace OpenLogReplicator {
 
         uint8_t *getMemoryChunk(const char *module, bool supp);
         void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
+
+        friend ostream& operator<<(ostream& os, const OracleAnalyser& oracleAnalyser);
     };
 }
 

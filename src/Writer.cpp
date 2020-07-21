@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <iostream>
 
-#include "CommandBuffer.h"
+#include "OutputBuffer.h"
 #include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     Writer::Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t metadata, uint64_t singleDml,
             uint64_t showColumns, uint64_t test, uint64_t timestampFormat, uint64_t charFormat, uint64_t maxMessageMb) :
         Thread(alias),
-        commandBuffer(oracleAnalyser->commandBuffer),
+        outputBuffer(oracleAnalyser->outputBuffer),
         oracleAnalyser(oracleAnalyser),
         stream(stream),
         metadata(metadata),

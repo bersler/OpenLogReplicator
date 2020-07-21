@@ -53,9 +53,8 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen(void) {
         struct stat fileStat;
 
-        int ret = stat(path.c_str(), &fileStat);
-        if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
-            cerr << "FILE: stat for " << path << " returns " << dec << ret << ", errno = " << errno << endl;
+        int ret = stat(pathMapped.c_str(), &fileStat);
+        TRACE(TRACE2_FILE, "stat for " << pathMapped << " returns " << dec << ret << ", errno = " << errno);
         if (ret != 0) {
             return REDO_ERROR;
         }
@@ -68,21 +67,19 @@ namespace OpenLogReplicator {
         if ((oracleAnalyser->flags & REDO_FLAGS_NOATIME) != 0)
             flags |= O_NOATIME;
 
-        fileDes = open(path.c_str(), flags);
-        if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
-            cerr << "FILE: open for " << path << " returns " << dec << fileDes << ", errno = " << errno << endl;
+        fileDes = open(pathMapped.c_str(), flags);
+        TRACE(TRACE2_FILE, "open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
             if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)
                 return REDO_ERROR;
 
             flags &= (~O_DIRECT);
-            fileDes = open(path.c_str(), flags);
+            fileDes = open(pathMapped.c_str(), flags);
             if (fileDes == -1)
                 return REDO_ERROR;
 
-            if (oracleAnalyser->trace >= TRACE_WARN)
-                cerr << "WARNING: file system does not support direct read for: " << path << endl;
+            FULL("file system does not support direct read for: " << pathMapped);
         }
 
         return REDO_OK;
@@ -100,8 +97,9 @@ namespace OpenLogReplicator {
             bytes = pread(fileDes, buf, size, pos);
 
             //display warning only if this helped
-            if (oracleAnalyser->trace >= TRACE_INFO && bytes > 0)
-                cerr << "INFO: disabling direct read for: " << path << endl;
+            if (bytes > 0) {
+                FULL("disabling direct read for: " << pathMapped);
+            }
         }
 
         return bytes;

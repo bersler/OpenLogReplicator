@@ -52,7 +52,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.9"
+#define PROGRAM_VERSION             "0.6.10"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -66,14 +66,15 @@ typedef uint64_t typeunicode;
 #define STREAM_DBZ_JSON             2
 
 #define MODE_ONLINE                 1
-#define MODE_OFFLINE                2
-#define MODE_ARCHIVELOG             3
+#define MODE_ONLINE_ARCH            2
+#define MODE_OFFLINE                3
+#define MODE_OFFLINE_ARCH           4
+#define MODE_BATCH                  5
 
-#define TRACE_NO                    0
-#define TRACE_WARN                  1
+#define TRACE_SILENT                0
+#define TRACE_WARNING               1
 #define TRACE_INFO                  2
-#define TRACE_DETAIL                3
-#define TRACE_FULL                  4
+#define TRACE_FULL                  3
 
 #define TRACE2_THREADS              0x0000001
 #define TRACE2_SQL                  0x0000002
@@ -85,12 +86,12 @@ typedef uint64_t typeunicode;
 #define TRACE2_TRANSACTION          0x0000080
 #define TRACE2_COMMIT_ROLLBACK      0x0000100
 #define TRACE2_REDO                 0x0000200
-#define TRACE2_JSON                 0x0000400
-#define TRACE2_CHECKPOINT_FLUSH     0x0000800
-#define TRACE2_DML                  0x0001000
-#define TRACE2_TYPES                0x0002000
-#define TRACE2_SPLIT                0x0004000
-#define TRACE2_ARCHIVE_LIST         0x0008000
+#define TRACE2_CHECKPOINT_FLUSH     0x0000400
+#define TRACE2_DML                  0x0000800
+#define TRACE2_SPLIT                0x0001000
+#define TRACE2_ARCHIVE_LIST         0x0002000
+#define TRACE2_ROLLBACK             0x0004000
+#define TRACE2_DUMP                 0x0008000
 
 #define REDO_RECORD_MAX_SIZE            1048576
 
@@ -121,6 +122,20 @@ typedef uint64_t typeunicode;
 #define SCN(scn1,scn2)              ((((uint64_t)scn1)<<32)|(scn2))
 #define PRINTSCN48(scn)             "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32)&0xFFFF)<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
 #define PRINTSCN64(scn)             "0x"<<setfill('0')<<setw(16)<<hex<<(scn)
+
+#define DUMP(x) {stringstream s; s << x << endl; cerr << s.str(); }
+#define ERROR(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); }
+#define OUT(x) {cerr << x; }
+
+#define WARNING(x) {if (oracleAnalyser->trace >= TRACE_INFO){stringstream s; s << "WARNING: " << x << endl; cerr << s.str();} }
+#define INFO(x) {if (oracleAnalyser->trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
+#define FULL(x) {if (oracleAnalyser->trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
+#define TRACE(t,x) {if ((oracleAnalyser->trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
+
+#define WARNING_(x) {if (trace >= TRACE_INFO){stringstream s; s << "WARNING: " << x << endl; cerr << s.str();} }
+#define INFO_(x) {if (trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
+#define FULL_(x) {if (trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
+#define TRACE_(t,x) {if ((trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
 
 using namespace std;
 

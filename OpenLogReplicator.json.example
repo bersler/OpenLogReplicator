@@ -1,5 +1,5 @@
 {
-  "version": "0.6.9",
+  "version": "0.6.10",
   "sources": [
     {
       "type": "ORACLE",
@@ -19,8 +19,8 @@
   "targets": [
     {
       "type": "KAFKA",
-      "format": {"stream": "JSON", "topic": "O112A"},
       "alias": "T2",
+      "format": {"stream": "JSON", "topic": "O112A"},
       "brokers": "localhost:9092",
       "source": "S1"
     }

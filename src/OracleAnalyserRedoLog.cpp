@@ -28,7 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <signal.h>
 #include <string.h>
 
-#include "MemoryException.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
 #include "OpCode0504.h"
@@ -302,22 +301,11 @@ namespace OpenLogReplicator {
             if (numChk + 1 == numChkMax) {
                 extScn = oracleAnalyser->readSCN(oracleAnalyser->recordBuffer + 40);
             }
-            if (oracleAnalyser->trace >= TRACE_FULL) {
-                if (oracleAnalyser->version < 0x12200)
-                    cerr << "FULL: C scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
-                    PRINTSCN48(extScn) << endl;
-                else
-                    cerr << "FULL: C scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
-                    PRINTSCN64(extScn) << endl;
-            }
+            TRACE(TRACE2_DUMP, "C scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << " CHECKPOINT at " <<
+                    PRINTSCN64(extScn));
         } else {
             headerLength = 24;
-            if (oracleAnalyser->trace >= TRACE_FULL) {
-                if (oracleAnalyser->version < 0x12200)
-                    cerr << "FULL:   scn: " << PRINTSCN48(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
-                else
-                    cerr << "FULL:   scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn << endl;
-            }
+            TRACE(TRACE2_DUMP, "  scn: " << PRINTSCN64(curScn) << "." << setfill('0') << setw(4) << hex << curSubScn);
         }
 
         if (oracleAnalyser->dumpRedoLog >= 1) {
@@ -386,7 +374,7 @@ namespace OpenLogReplicator {
 
         if (headerLength > recordLength) {
             dumpRedoVector();
-            throw RedoLogException("too small log record");
+            REDOLOG_FAIL("too small log record, header length: " << dec << headerLength << ", field length: " << recordLength);
         }
 
         uint64_t pos = headerLength;
@@ -415,7 +403,7 @@ namespace OpenLogReplicator {
 
             if (pos + fieldOffset + 1 >= recordLength) {
                 dumpRedoVector();
-                throw RedoLogException("position of field list outside of record");
+                REDOLOG_FAIL("position of field list (" << dec << (pos + fieldOffset + 1) << ") outside of record, length: " << recordLength);
             }
 
             uint8_t *fieldList = oracleAnalyser->recordBuffer + pos + fieldOffset;
@@ -437,21 +425,20 @@ namespace OpenLogReplicator {
                 fieldPos += (oracleAnalyser->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
                 if (pos + redoLogRecord[vectors].length > recordLength) {
-                    cerr << "ERROR: position of field list outside of record (" <<
+                    dumpRedoVector();
+                    REDOLOG_FAIL("position of field list outside of record (" <<
                             "i: " << dec << i <<
                             " c: " << dec << redoLogRecord[vectors].fieldCnt << " " <<
                             " o: " << dec << fieldOffset <<
                             " p: " << dec << pos <<
                             " l: " << dec << redoLogRecord[vectors].length <<
-                            " r: " << dec << recordLength << ")" << endl;
-                    dumpRedoVector();
-                    throw RedoLogException("position of field list outside of record");
+                            " r: " << dec << recordLength << ")");
                 }
             }
 
             if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
                 dumpRedoVector();
-                throw RedoLogException("incomplete record");
+                REDOLOG_FAIL("incomplete record, pos: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
             }
 
             redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
@@ -462,110 +449,128 @@ namespace OpenLogReplicator {
             switch (redoLogRecord[vectors].opCode) {
             case 0x0501: //Undo
                 opCodes[vectors] = new OpCode0501(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.1", sizeof(OpCode0501));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0501) << " bytes memory for (reason: OP 5.1)");
+                }
                 break;
 
             case 0x0502: //Begin transaction
                 opCodes[vectors] = new OpCode0502(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.2", sizeof(OpCode0502));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0502) << " bytes memory for (reason: OP 5.2)");
+                }
                 break;
 
             case 0x0504: //Commit/rollback transaction
                 opCodes[vectors] = new OpCode0504(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.3", sizeof(OpCode0504));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0504) << " bytes memory for (reason: OP 5.4)");
+                }
                 break;
 
             case 0x0506: //Partial rollback
                 opCodes[vectors] = new OpCode0506(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.4", sizeof(OpCode0506));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0506) << " bytes memory for (reason: OP 5.6)");
+                }
                 break;
 
             case 0x050B:
                 opCodes[vectors] = new OpCode050B(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.5", sizeof(OpCode050B));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode050B) << " bytes memory for (reason: OP 5.11)");
+                }
                 break;
 
             case 0x0513: //Session information
                 opCodes[vectors] = new OpCode0513(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.6", sizeof(OpCode0513));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0513) << " bytes memory for (reason: OP 5.19)");
+                }
                 break;
 
             case 0x0514: //Session information
                 opCodes[vectors] = new OpCode0514(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.7", sizeof(OpCode0514));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0514) << " bytes memory for (reason: OP 5.20)");
+                }
                 break;
 
             case 0x0B02: //REDO: Insert row piece
                 opCodes[vectors] = new OpCode0B02(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.8", sizeof(OpCode0B02));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B02) << " bytes memory for (reason: OP 11.2)");
+                }
                 break;
 
             case 0x0B03: //REDO: Delete row piece
                 opCodes[vectors] = new OpCode0B03(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.9", sizeof(OpCode0B03));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B03) << " bytes memory for (reason: OP 11.3)");
+                }
                 break;
 
             case 0x0B04: //REDO: Lock row piece
                 opCodes[vectors] = new OpCode0B04(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.10", sizeof(OpCode0B04));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B04) << " bytes memory for (reason: OP 11.4)");
+                }
                 break;
 
             case 0x0B05: //REDO: Update row piece
                 opCodes[vectors] = new OpCode0B05(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.11", sizeof(OpCode0B05));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B05) << " bytes memory for (reason: OP 11.5)");
+                }
                 break;
 
             case 0x0B06: //REDO: Overwrite row piece
                 opCodes[vectors] = new OpCode0B06(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.12", sizeof(OpCode0B06));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B06) << " bytes memory for (reason: OP 11.6)");
+                }
                 break;
 
             case 0x0B08: //REDO: Change forwarding address
                 opCodes[vectors] = new OpCode0B08(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.13", sizeof(OpCode0B08));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B08) << " bytes memory for (reason: OP 11.8)");
+                }
                 break;
 
             case 0x0B0B: //REDO: Insert multiple rows
                 opCodes[vectors] = new OpCode0B0B(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.14", sizeof(OpCode0B0B));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B0B) << " bytes memory for (reason: OP 11.11)");
+                }
                 break;
 
             case 0x0B0C: //REDO: Delete multiple rows
                 opCodes[vectors] = new OpCode0B0C(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.15", sizeof(OpCode0B0C));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B0C) << " bytes memory for (reason: OP 11.12)");
+                }
                 break;
 
             case 0x0B10: //REDO: Supplemental log for update
                 opCodes[vectors] = new OpCode0B10(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.16", sizeof(OpCode0B10));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B10) << " bytes memory for (reason: OP 11.16)");
+                }
                 break;
 
             case 0x1801: //DDL
                 opCodes[vectors] = new OpCode1801(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.17", sizeof(OpCode1801));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode1801) << " bytes memory for (reason: OP 24.1)");
+                }
                 break;
 
             default:
                 opCodes[vectors] = new OpCode(oracleAnalyser, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::analyzeRecord.18  ", sizeof(OpCode));
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode) << " bytes memory for (reason: OP)");
+                }
                 break;
             }
 
@@ -634,11 +639,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyserRedoLog::appendToTransaction(RedoLogRecord *redoLogRecord) {
-        if (oracleAnalyser->trace >= TRACE_FULL) {
-            cerr << "FULL: ";
-            redoLogRecord->dump(oracleAnalyser);
-            cerr << endl;
-        }
+        TRACE(TRACE2_DUMP, *redoLogRecord);
 
         //DDL
         if (redoLogRecord->opCode == 0x1801) {
@@ -657,8 +658,9 @@ namespace OpenLogReplicator {
             Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
             if (transaction == nullptr) {
                 transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
-                if (transaction == nullptr)
-                    throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.1", sizeof(Transaction));
+                if (transaction == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#1)");
+                }
                 oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
 
                 transaction->add(redoLogRecord, &zero, sequence, curScn);
@@ -688,8 +690,9 @@ namespace OpenLogReplicator {
         Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord->xid];
         if (transaction == nullptr) {
             transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
-            if (transaction == nullptr)
-                throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.2", sizeof(Transaction));
+            if (transaction == nullptr) {
+                RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#2)");
+            }
             oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
 
             transaction->touch(curScn, sequence);
@@ -716,14 +719,8 @@ namespace OpenLogReplicator {
 
     void OracleAnalyserRedoLog::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         bool shutdown = false;
-        if (oracleAnalyser->trace >= TRACE_FULL) {
-            cerr << "FULL: ";
-            redoLogRecord1->dump(oracleAnalyser);
-            cerr << " (1)" << endl;
-            cerr << "FULL: ";
-            redoLogRecord2->dump(oracleAnalyser);
-            cerr << " (2)" << endl;
-        }
+        TRACE(TRACE2_DUMP, *redoLogRecord1);
+        TRACE(TRACE2_DUMP, *redoLogRecord2);
 
         //skip other PDB vectors
         if (oracleAnalyser->conId > 0 && redoLogRecord2->conId != oracleAnalyser->conId && redoLogRecord1->opCode == 0x0501)
@@ -746,10 +743,9 @@ namespace OpenLogReplicator {
         }
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
-            cerr << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
             if (oracleAnalyser->dumpRedoLog >= 1)
                 oracleAnalyser->dumpStream << "ERROR: BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")!" << endl;
-            throw RedoLogException("BDBA does not match");
+            REDOLOG_FAIL("BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
         }
 
         redoLogRecord1->object = oracleAnalyser->checkDict(objn, objd);
@@ -768,20 +764,11 @@ namespace OpenLogReplicator {
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
-            if (oracleAnalyser->trace >= TRACE_DETAIL)
-                cerr << "INFO: found shutdown command in events table" << endl;
+            INFO("found shutdown command in events table");
             shutdown = true;
         }
 
         switch (opCodeLong) {
-        //array update of rows
-        case 0x05010B13:
-            if (redoLogRecord1->suppLogType != 1) {
-                cerr << "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
-                cerr << "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
-                throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
-            }
-            break;
 
         //insert row piece
         case 0x05010B02:
@@ -801,21 +788,21 @@ namespace OpenLogReplicator {
         case 0x05010B10:
             {
                 if (oracleAnalyser->onRollbackList(redoLogRecord1, redoLogRecord2)) {
-                    if (oracleAnalyser->trace >= TRACE_FULL)
-                        cerr << "FULL: rolling transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
+                    TRACE(TRACE2_ROLLBACK, "rolling transaction part UBA: " << PRINTUBA(redoLogRecord1->uba) <<
                                 " DBA: 0x" << hex << redoLogRecord1->dba <<
                                 " SLT: " << dec << (uint64_t)redoLogRecord1->slt <<
                                 " RCI: " << dec << (uint64_t)redoLogRecord1->rci <<
                                 " SCN: " << PRINTSCN64(redoLogRecord1->scnRecord) <<
-                                " OPFLAGS: " << hex << redoLogRecord2->opFlags << endl;
+                                " OPFLAGS: " << hex << redoLogRecord2->opFlags);
                     break;
                 }
 
                 Transaction *transaction = oracleAnalyser->xidTransactionMap[redoLogRecord1->xid];
                 if (transaction == nullptr) {
                     transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid);
-                    if (transaction == nullptr)
-                        throw MemoryException("OracleAnalyserRedoLog::appendToTransaction.4", sizeof(Transaction));
+                    if (transaction == nullptr) {
+                        RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#3)");
+                    }
                     oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
 
                     //process split block
@@ -906,40 +893,36 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyserRedoLog::dumpRedoVector(void) {
-        if (oracleAnalyser->trace >= TRACE_WARN) {
-            cerr << "WARNING: Dumping redo Vector" << endl;
-            cerr << "WARNING: ##: " << dec << recordLength4;
+
+        if (oracleAnalyser->trace >= TRACE_WARNING) {
+            stringstream ss;
+            ss << "WARNING: Dumping redo Vector" << endl;
+            ss << "WARNING: ##: " << dec << recordLength4;
             for (uint64_t j = 0; j < recordLength4; ++j) {
                 if ((j & 0x0F) == 0)
-                    cerr << endl << "WARNING: ##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                    ss << endl << "WARNING: ##  " << setfill(' ') << setw(2) << hex << j << ": ";
                 if ((j & 0x07) == 0)
-                    cerr << " ";
-                cerr << setfill('0') << setw(2) << hex << (uint64_t)oracleAnalyser->recordBuffer[j] << " ";
+                    ss << " ";
+                ss << setfill('0') << setw(2) << hex << (uint64_t)oracleAnalyser->recordBuffer[j] << " ";
             }
-            cerr << endl;
+            ss << endl;
+            OUT(ss.str());
         }
     }
 
     void OracleAnalyserRedoLog::flushTransactions(typescn checkpointScn) {
         bool shutdownInstructed = false;
         Transaction *transaction = oracleAnalyser->transactionHeap->top();
-        if ((oracleAnalyser->trace2 & TRACE2_CHECKPOINT_FLUSH) != 0) {
-            cerr << "FLUSH" << endl;
-            oracleAnalyser->dumpTransactions();
-        }
+        TRACE(TRACE2_CHECKPOINT_FLUSH, "flush:" << endl << *oracleAnalyser);
 
         while (transaction != nullptr) {
-            if (oracleAnalyser->trace >= TRACE_FULL)
-                cerr << "FULL: " << *transaction << endl;
+            TRACE(TRACE2_DUMP, *transaction);
 
             if (transaction->lastScn <= checkpointScn && transaction->isCommit) {
                 if (transaction->lastScn > oracleAnalyser->databaseScn) {
                     if (!transaction->isBegin)  {
-                        if (oracleAnalyser->trace >= TRACE_INFO) {
-                            cerr << "INFO: skipping transaction with no begin: " << *transaction << endl;
-                            if (oracleAnalyser->trace >= TRACE_FULL)
-                                oracleAnalyser->dumpTransactions();
-                        }
+                        INFO("skipping transaction with no begin: " << *transaction);
+                        FULL(*oracleAnalyser);
                     }
 
                     if (transaction->isBegin || (oracleAnalyser->flags & REDO_FLAGS_INCOMPLETE_TRANSACTIONS) != 0) {
@@ -950,8 +933,7 @@ namespace OpenLogReplicator {
                         }
                     }
                 } else {
-                    if (oracleAnalyser->trace >= TRACE_INFO)
-                        cerr << "INFO: skipping transaction already committed: " << *transaction << endl;
+                    INFO("skipping transaction already committed: " << *transaction);
                 }
 
                 oracleAnalyser->transactionHeap->pop();
@@ -967,12 +949,7 @@ namespace OpenLogReplicator {
         }
 
         if (checkpointScn > oracleAnalyser->databaseScn) {
-            if (oracleAnalyser->trace >= TRACE_FULL) {
-                if (oracleAnalyser->version >= 0x12200)
-                    cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN64(checkpointScn) << endl;
-                else
-                    cerr << "INFO: Updating checkpoint SCN to: " << PRINTSCN48(checkpointScn) << endl;
-            }
+            FULL("updating checkpoint SCN to: " << PRINTSCN64(checkpointScn));
             oracleAnalyser->databaseScn = checkpointScn;
         }
         lastCheckpointScn = checkpointScn;
@@ -1019,7 +996,7 @@ namespace OpenLogReplicator {
             firstScn = reader->firstScn;
             nextScn = reader->nextScn;
         }
-        cerr << "Processing log: " << *this << endl;
+        INFO("processing redo log: " << *this);
         uint64_t blockPos = 16, bufferPos = 0;
         uint64_t curBufferStart = 0, curBufferEnd = 0, curRet, curStatus;
 
@@ -1029,7 +1006,7 @@ namespace OpenLogReplicator {
                 name << oracleAnalyser->databaseContext.c_str() << "-" << dec << sequence << ".logdump";
                 oracleAnalyser->dumpStream.open(name.str());
                 if (!oracleAnalyser->dumpStream.is_open()) {
-                    cerr << "ERORR: can't open " << name.str() << " for write. Aborting log dump." << endl;
+                    WARNING("can't open " << name.str() << " for write. Aborting log dump.");
                     oracleAnalyser->dumpRedoLog = 0;
                 }
                 printHeaderInfo();
@@ -1050,9 +1027,8 @@ namespace OpenLogReplicator {
         while (!oracleAnalyser->shutdown) {
             //there is some work to do
             while (curBufferStart < curBufferEnd) {
-                if ((oracleAnalyser->trace2 & TRACE2_VECTOR) != 0)
-                    cerr << "VECTOR: block " << dec << (curBufferStart / reader->blockSize) << " left: " << dec << recordLeftToCopy << ", last length: "
-                            << recordLength4 << endl;
+                TRACE(TRACE2_VECTOR, "block " << dec << (curBufferStart / reader->blockSize) << " left: " << dec << recordLeftToCopy << ", last length: "
+                            << recordLength4);
 
                 blockPos = 16;
                 while (blockPos < reader->blockSize) {
@@ -1065,8 +1041,7 @@ namespace OpenLogReplicator {
                         recordLeftToCopy = recordLength4;
                         if (recordLength4 > REDO_RECORD_MAX_SIZE) {
                             dumpRedoVector();
-                            cerr << "WARNING: too big log record: " << dec << recordLeftToCopy << " bytes" << endl;
-                            throw RedoLogException("too big log record");
+                            REDOLOG_FAIL("too big log record: " << dec << recordLeftToCopy << " bytes");
                         }
 
                         recordPos = 0;
@@ -1090,18 +1065,15 @@ namespace OpenLogReplicator {
                     recordPos += toCopy;
 
                     if (recordLeftToCopy == 0) {
-                        if ((oracleAnalyser->trace2 & TRACE2_VECTOR) != 0)
-                            cerr << "VECTOR: * block: " << dec << recordBeginBlock << " pos: " << dec << recordBeginPos << ", length: " << recordLength4 << endl;
+                        TRACE(TRACE2_VECTOR, "* block: " << dec << recordBeginBlock << " pos: " << dec << recordBeginPos << ", length: " << recordLength4);
 
                         try {
                             analyzeRecord();
                         } catch(RedoLogException &ex) {
-                            if ((oracleAnalyser->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0)
-                                throw RuntimeException(ex.msg);
-                            else
-                                if (oracleAnalyser->trace >= TRACE_WARN)
-                                    cerr << "WARNING: " << ex.msg << " forced to continue working" << endl;
-
+                            if ((oracleAnalyser->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
+                                RUNTIME_FAIL("runtime error, aborting further redo log processing");
+                            } else
+                                WARNING("forced to continue working in spite of error");
                         }
                     }
                 }
@@ -1155,13 +1127,12 @@ namespace OpenLogReplicator {
             flushTransactions(curScn);
         }
 
-        if ((oracleAnalyser->trace2 & TRACE2_PERFORMANCE) != 0) {
-            clock_t cEnd = clock();
-            double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
-            if (myTime > 0)
-                mySpeed = (uint64_t)blockNumber * reader->blockSize / 1024 / 1024 / myTime * 1000;
-            cerr << "PERFORMANCE: Redo processing time: " << myTime << " ms Speed: " << fixed << setprecision(2) << mySpeed << " MB/s" << endl;
-        }
+        clock_t cEnd = clock();
+        double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
+        if (myTime > 0)
+            mySpeed = (uint64_t)blockNumber * reader->blockSize / 1024 / 1024 / myTime * 1000;
+
+        TRACE(TRACE2_PERFORMANCE, "redo processing time: " << myTime << " ms Speed: " << fixed << setprecision(2) << mySpeed << " MB/s");
 
         if (oracleAnalyser->dumpRedoLog >= 1 && oracleAnalyser->dumpStream.is_open())
             oracleAnalyser->dumpStream.close();
@@ -1170,8 +1141,8 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors) {
-        os << "(" << dec << ors.group << ", " << ors.firstScn << ", " <<
-                ((ors.nextScn != ZERO_SCN) ? ors.nextScn : 0) << ", " << ors.sequence << ", \"" << ors.path << "\")";
+        os << "group: " << dec << ors.group << " scn: " << ors.firstScn << " to " <<
+                ((ors.nextScn != ZERO_SCN) ? ors.nextScn : 0) << " sequence: " << ors.sequence << " path: " << ors.path;
         return os;
     }
 }

@@ -34,10 +34,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 #include <rapidjson/document.h>
 
-#include "CommandBuffer.h"
+#include "OutputBuffer.h"
 #include "ConfigurationException.h"
 #include "KafkaWriter.h"
-#include "MemoryException.h"
 #include "OracleAnalyser.h"
 #include "RuntimeException.h"
 
@@ -47,16 +46,14 @@ using namespace OpenLogReplicator;
 
 const Value& getJSONfield(string &fileName, const Value& value, const char* field) {
     if (!value.HasMember(field)) {
-        cerr << "ERROR: parsing " << fileName << ", field " << field << " not found" << endl;
-        throw ConfigurationException("JSON format error");
+        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
     return value[field];
 }
 
 const Value& getJSONfield(string &fileName, const Document& document, const char* field) {
     if (!document.HasMember(field)) {
-        cerr << "ERROR: parsing " << fileName << ", field " << field << " not found" << endl;
-        throw ConfigurationException("JSON format error");
+        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
     return document[field];
 }
@@ -69,8 +66,7 @@ uint64_t trace2 = 0;
 void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
 
-    if ((trace2 & TRACE2_THREADS) != 0)
-        cerr << "THREAD: MAIN (" << hex << this_thread::get_id() << ") STOP ALL" << endl;
+    TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
     mainThread.notify_all();
 }
 
@@ -97,25 +93,28 @@ int main(int argc, char **argv) {
     cerr << "OpenLogReplicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
     list<OracleAnalyser *> analysers;
     list<KafkaWriter *> writers;
-    list<CommandBuffer *> buffers;
+    list<OutputBuffer *> buffers;
     OracleAnalyser *oracleAnalyser = nullptr;
     KafkaWriter *kafkaWriter = nullptr;
 
     try {
         string fileName = "OpenLogReplicator.json";
         ifstream config(fileName, ios::in);
-        if (!config.is_open())
-            throw ConfigurationException("file OpenLogReplicator.json is missing");
+        if (!config.is_open()) {
+            CONFIG_FAIL("file OpenLogReplicator.json is missing");
+        }
 
         string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
         Document document;
 
-        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError())
-            throw ConfigurationException("parsing OpenLogReplicator.json");
+        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError()) {
+            CONFIG_FAIL("parsing OpenLogReplicator.json");
+        }
 
         const Value& version = getJSONfield(fileName, document, "version");
-        if (strcmp(version.GetString(), PROGRAM_VERSION) != 0)
-            throw ConfigurationException("bad JSON, incompatible version");
+        if (strcmp(version.GetString(), PROGRAM_VERSION) != 0) {
+            CONFIG_FAIL("bad JSON, incompatible version");
+        }
 
         //optional
         uint64_t dumpRedoLog = 0;
@@ -136,8 +135,7 @@ int main(int argc, char **argv) {
             const Value& traceJSON = document["trace2"];
             trace2 = traceJSON.GetUint64();
         }
-        if ((trace2 & TRACE2_THREADS) != 0)
-            cerr << "THREAD: MAIN (" << hex << this_thread::get_id() << ") START" << endl;
+        TRACE_(TRACE2_THREADS, "THREAD: MAIN (" << hex << this_thread::get_id() << ") START");
 
         //optional
         uint64_t dumpRawData = 0;
@@ -148,8 +146,9 @@ int main(int argc, char **argv) {
 
         //iterate through sources
         const Value& sources = getJSONfield(fileName, document, "sources");
-        if (!sources.IsArray())
-            throw ConfigurationException("bad JSON, sources should be an array");
+        if (!sources.IsArray()) {
+            CONFIG_FAIL("bad JSON, sources should be an array");
+        }
 
         for (SizeType i = 0; i < sources.Size(); ++i) {
             const Value& source = sources[i];
@@ -168,20 +167,29 @@ int main(int argc, char **argv) {
                 const Value& memoryMinMbJSON = getJSONfield(fileName, source, "memory-min-mb");
                 uint64_t memoryMinMb = memoryMinMbJSON.GetUint64();
                 memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
-                if (memoryMinMb < MEMORY_CHUNK_MIN_MB)
-                    throw ConfigurationException("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
+                if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
+                    CONFIG_FAIL("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
+                }
 
                 const Value& memoryMaxMbJSON = getJSONfield(fileName, source, "memory-max-mb");
                 uint64_t memoryMaxMb = memoryMaxMbJSON.GetUint64();
                 memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
-                if (memoryMaxMb < memoryMinMb)
-                    throw ConfigurationException("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
+                if (memoryMaxMb < memoryMinMb) {
+                    CONFIG_FAIL("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
+                }
 
                 //optional
                 uint64_t redoReadSleep = 10000;
                 if (source.HasMember("redo-read-sleep")) {
                     const Value& redoReadSleepJSON = source["redo-read-sleep"];
                     redoReadSleep = redoReadSleepJSON.GetUint();
+                }
+
+                //optional
+                uint64_t archReadSleep = 10000000;
+                if (source.HasMember("arch-read-sleep")) {
+                    const Value& archReadSleepJSON = source["arch-read-sleep"];
+                    archReadSleep = archReadSleepJSON.GetUint();
                 }
 
                 //optional
@@ -194,15 +202,25 @@ int main(int argc, char **argv) {
                 uint64_t mode = MODE_ONLINE;
                 if (source.HasMember("mode")) {
                     const Value& modeJSON = source["mode"];
-                    if (strncmp(modeJSON.GetString(),"offline", 7) == 0)
+                    if (strcmp(modeJSON.GetString(), "online") == 0)
+                        mode = MODE_ONLINE;
+                    else if (strcmp(modeJSON.GetString(), "online-arch") == 0)
+                        mode = MODE_ONLINE_ARCH;
+                    else if (strcmp(modeJSON.GetString(), "offline") == 0)
                         mode = MODE_OFFLINE;
-                    else if (strncmp(modeJSON.GetString(),"archivelog", 10) == 0)
-                        mode = MODE_ARCHIVELOG;
-                }
+                    else if (strcmp(modeJSON.GetString(), "offline-arch") == 0)
+                        mode = MODE_OFFLINE_ARCH;
+                    else if (strcmp(modeJSON.GetString(), "batch") == 0)
+                         mode = MODE_BATCH;
+                    else {
+                        CONFIG_FAIL("unknown mode value: " << modeJSON.GetString());
+                    }
+                 }
 
 #ifndef ONLINE_MODEIMPL_OCCI
-                if (mode == MODE_ONLINE)
-                    throw ConfigurationException("online mode is not compiled, exiting");
+                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
+                    RUNTIME_FAIL("online mode is not compiled, exiting");
+                }
 #endif /* ONLINE_MODEIMPL_OCCI */
 
                 //optional
@@ -215,36 +233,41 @@ int main(int argc, char **argv) {
                 const Value& name = getJSONfield(fileName, source, "name");
                 cerr << "Adding source: " << name.GetString() << endl;
 
-                CommandBuffer *commandBuffer = new CommandBuffer();
-                buffers.push_back(commandBuffer);
-                if (commandBuffer == nullptr)
-                    throw MemoryException("main.1", sizeof(CommandBuffer));
+                OutputBuffer *outputBuffer = new OutputBuffer();
+                buffers.push_back(outputBuffer);
+                if (outputBuffer == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OutputBuffer) << " bytes memory for (reason: command buffer)");
+                }
 
-                if (mode == MODE_ONLINE) {
+                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
                     const Value& user = getJSONfield(fileName, source, "user");
                     const Value& password = getJSONfield(fileName, source, "password");
                     const Value& server = getJSONfield(fileName, source, "server");
 
-                    oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), user.GetString(), password.GetString(),
-                            server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, checkpointInterval,
-                            memoryMinMb, memoryMaxMb);
-                    if (oracleAnalyser == nullptr)
-                        throw MemoryException("main.2", sizeof(OracleAnalyser));
+                    oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), user.GetString(), password.GetString(),
+                            server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
+                            checkpointInterval, memoryMinMb, memoryMaxMb);
+                    if (oracleAnalyser == nullptr) {
+                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser#1)");
+                    }
                 } else {
-                    oracleAnalyser = new OracleAnalyser(commandBuffer, alias.GetString(), name.GetString(), "", "",
-                            "", trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, checkpointInterval,
-                            memoryMinMb, memoryMaxMb);
-                    if (oracleAnalyser == nullptr)
-                        throw MemoryException("main.3", sizeof(OracleAnalyser));
+                    oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), "", "",
+                            "", trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
+                            checkpointInterval, memoryMinMb, memoryMaxMb);
+                    if (oracleAnalyser == nullptr) {
+                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser#2)");
+                    }
                 }
 
                 //optional
                 if (source.HasMember("path-mapping")) {
                     const Value& pathMapping = source["path-mapping"];
-                    if (!pathMapping.IsArray())
-                        throw ConfigurationException("bad JSON, path-mapping should be array");
-                    if ((pathMapping.Size() % 2) != 0)
-                        throw ConfigurationException("path-mapping should contain pairs of elements");
+                    if (!pathMapping.IsArray()) {
+                        CONFIG_FAIL("bad JSON, path-mapping should be array");
+                    }
+                    if ((pathMapping.Size() % 2) != 0) {
+                        CONFIG_FAIL("path-mapping should contain pairs of elements");
+                    }
 
                     for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
                         const Value& sourceMapping = pathMapping[j * 2];
@@ -253,9 +276,25 @@ int main(int argc, char **argv) {
                     }
                 }
 
-                commandBuffer->initialize(oracleAnalyser);
+                if (mode == MODE_BATCH) {
+                    if (!source.HasMember("redo-logs")) {
+                        CONFIG_FAIL("missing redo-logs element which is required in batch mode");
+                    }
 
-                if (mode == MODE_ONLINE) {
+                    const Value& redoLogsBatch = source["redo-logs"];
+                    if (!redoLogsBatch.IsArray()) {
+                        CONFIG_FAIL("bad JSON, redo-logs should be array");
+                    }
+
+                    for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
+                        const Value& path = redoLogsBatch[j];
+                        oracleAnalyser->addRedoLogsBatch(path.GetString());
+                    }
+                }
+
+                outputBuffer->initialize(oracleAnalyser);
+
+                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
                     oracleAnalyser->initializeOnlineMode();
 
                     string keysStr("");
@@ -266,8 +305,9 @@ int main(int argc, char **argv) {
                     }
 
                     const Value& tables = getJSONfield(fileName, source, "tables");
-                    if (!tables.IsArray())
-                        throw ConfigurationException("bad JSON, tables should be array");
+                    if (!tables.IsArray()) {
+                        CONFIG_FAIL("bad JSON, tables should be array");
+                    }
 
                     for (SizeType j = 0; j < tables.Size(); ++j) {
                         const Value& table = getJSONfield(fileName, tables[j], "table");
@@ -292,12 +332,14 @@ int main(int argc, char **argv) {
 
                     oracleAnalyser->writeSchema();
                 } else {
-                    if (!oracleAnalyser->readSchema())
-                        throw ConfigurationException("can't read schema from <database>-schema.json");
+                    if (!oracleAnalyser->readSchema()) {
+                        CONFIG_FAIL("can't read schema from <database>-schema.json");
+                    }
                 }
 
-                if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser))
-                    throw ConfigurationException("error spawning thread");
+                if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser)) {
+                    RUNTIME_FAIL("error spawning thread - oracle analyser");
+                }
 
                 analysers.push_back(oracleAnalyser);
                 oracleAnalyser = nullptr;
@@ -306,8 +348,9 @@ int main(int argc, char **argv) {
 
         //iterate through targets
         const Value& targets = getJSONfield(fileName, document, "targets");
-        if (!targets.IsArray())
-            throw ConfigurationException("bad JSON, targets should be array");
+        if (!targets.IsArray()) {
+            CONFIG_FAIL("bad JSON, targets should be array");
+        }
         for (SizeType i = 0; i < targets.Size(); ++i) {
             const Value& target = targets[i];
             const Value& type = getJSONfield(fileName, target, "type");
@@ -324,8 +367,9 @@ int main(int argc, char **argv) {
                     stream = STREAM_JSON;
                 else if (strcmp("DBZ-JSON", streamJSON.GetString()) == 0)
                     stream = STREAM_DBZ_JSON;
-                else
-                    throw ConfigurationException("bad JSON, invalid stream type");
+                else {
+                    CONFIG_FAIL("bad JSON, invalid stream type");
+                }
 
                 const Value& topic = getJSONfield(fileName, format, "topic");
 
@@ -387,19 +431,22 @@ int main(int argc, char **argv) {
                 for (OracleAnalyser *analyser : analysers)
                     if (analyser->alias.compare(source.GetString()) == 0)
                         oracleAnalyser = (OracleAnalyser*)analyser;
-                if (oracleAnalyser == nullptr)
-                    throw ConfigurationException("bad JSON, unknown alias");
+                if (oracleAnalyser == nullptr) {
+                    CONFIG_FAIL("bad JSON, unknown alias");
+                }
 
                 cerr << "Adding target: " << alias.GetString() << endl;
                 kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser,
                         maxMessageMb, stream, metadata, singleDml, showColumns, test, timestampFormat, charFormat);
-                if (kafkaWriter == nullptr)
-                    throw MemoryException("main.4", sizeof(KafkaWriter));
+                if (kafkaWriter == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(KafkaWriter) << " bytes memory for (reason: kafka writer)");
+                }
 
-                oracleAnalyser->commandBuffer->setParameters(test, timestampFormat, charFormat, kafkaWriter);
+                oracleAnalyser->outputBuffer->setParameters(test, timestampFormat, charFormat, kafkaWriter);
                 kafkaWriter->initialize();
-                if (pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter))
-                    throw ConfigurationException("error spawning thread");
+                if (pthread_create(&kafkaWriter->pthread, nullptr, &KafkaWriter::runStatic, (void*)kafkaWriter)) {
+                    RUNTIME_FAIL("error spawning thread - kafka writer");
+                }
 
                 writers.push_back(kafkaWriter);
                 kafkaWriter = nullptr;
@@ -413,11 +460,7 @@ int main(int argc, char **argv) {
         }
 
     } catch(ConfigurationException &ex) {
-        cerr << "ERROR: configuration error: " << ex.msg << endl;
     } catch(RuntimeException &ex) {
-        cerr << "ERROR: runtime: " << ex.msg << endl;
-    } catch (MemoryException &e) {
-        cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
     }
 
     if (oracleAnalyser != nullptr)
@@ -437,9 +480,9 @@ int main(int argc, char **argv) {
     //shut down writers
     for (KafkaWriter *writer : writers)
         writer->stop();
-    for (CommandBuffer *commandBuffer : buffers) {
-        unique_lock<mutex> lck(commandBuffer->mtx);
-        commandBuffer->writersCond.notify_all();
+    for (OutputBuffer *outputBuffer : buffers) {
+        unique_lock<mutex> lck(outputBuffer->mtx);
+        outputBuffer->writersCond.notify_all();
     }
     for (KafkaWriter *writer : writers) {
         if (writer->started)
@@ -448,15 +491,14 @@ int main(int argc, char **argv) {
     }
     writers.clear();
 
-    for (CommandBuffer *commandBuffer : buffers)
-        delete commandBuffer;
+    for (OutputBuffer *outputBuffer : buffers)
+        delete outputBuffer;
     buffers.clear();
 
     for (OracleAnalyser *analyser : analysers)
         delete analyser;
     analysers.clear();
 
-    if ((trace2 & TRACE2_THREADS) != 0)
-        cerr << "THREAD: MAIN (" << hex << this_thread::get_id() << ") STOP" << endl;
+    TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP");
     return 0;
 }

@@ -23,8 +23,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "OracleAnalyser.h"
-#include "MemoryException.h"
 #include "Reader.h"
+#include "RuntimeException.h"
 
 using namespace std;
 
@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     Reader::Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group) :
         Thread(alias),
         oracleAnalyser(oracleAnalyser),
-        redoBuffer(new uint8_t[DISK_BUFFER_SIZE]),
+        redoBuffer(nullptr),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         group(group),
         sequence(0),
@@ -50,15 +50,15 @@ namespace OpenLogReplicator {
         status(READER_STATUS_SLEEPING),
         bufferStart(0),
         bufferEnd(0) {
-        if (redoBuffer == nullptr)
-            throw MemoryException("Reader::Reader.1", sizeof(uint8_t) * DISK_BUFFER_SIZE);
-        if (headerBuffer == nullptr)
-            throw MemoryException("Reader::Reader.2", sizeof(uint8_t) * 2 * REDO_PAGE_SIZE_MAX);
+        redoBuffer = oracleAnalyser->getMemoryChunk("DISK", false);
+        if (headerBuffer == nullptr) {
+            RUNTIME_FAIL("could not allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory for (reason: read buffer)");
+        }
     }
 
     Reader::~Reader() {
         if (redoBuffer != nullptr) {
-            delete[] redoBuffer;
+            oracleAnalyser->freeMemoryChunk("DISK", redoBuffer, false);
             redoBuffer = nullptr;
         }
 
@@ -75,8 +75,8 @@ namespace OpenLogReplicator {
         if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
                 (blockSize == 1024 && headerBuffer[1] != 0x22) ||
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {
-            cerr << "ERROR: unsupported block size: " << dec << blockSize << ", magic field[1]: [0x" <<
-                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]" << endl;
+            ERROR("unsupported block size: " << dec << blockSize << ", magic field[1]: [0x" <<
+                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]");
             return REDO_ERROR;
         }
 
@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
         }
 
         if (blockNumberHeader != blockNumber) {
-            cerr << "ERROR: header bad block number for " << dec << blockNumber << ", found: " << blockNumberHeader << endl;
+            ERROR("header bad block number for " << dec << blockNumber << ", found: " << blockNumberHeader);
             return REDO_ERROR;
         }
 
@@ -107,9 +107,9 @@ namespace OpenLogReplicator {
             typesum chSum = oracleAnalyser->read16(buffer + 14);
             typesum chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
-                cerr << "ERROR: header sum for block number for block " << dec << blockNumber <<
+                ERROR("header sum for block number for block " << dec << blockNumber <<
                         ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
-                        ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2 << endl;
+                        ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
                 return REDO_ERROR;
             }
         }
@@ -120,22 +120,22 @@ namespace OpenLogReplicator {
     uint64_t Reader::reloadHeader(void) {
         int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
         if (bytes < 512) {
-            cerr << "ERROR: unable read file " << path << endl;
+            ERROR("unable to read file " << pathMapped);
             return REDO_ERROR;
         }
 
         //check file header
         if (headerBuffer[0] != 0) {
-            cerr << "ERROR: block header bad magic field[0]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "]" << endl;
+            ERROR("block header bad magic field[0]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "]");
             return REDO_ERROR;
         }
 
         if ((oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7A || headerBuffer[29] != 0x7B || headerBuffer[30] != 0x7C || headerBuffer[31] != 0x7D))
                 || (!oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A))) {
-            cerr << "ERROR: block header bad magic fields[28-31]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[28] <<
+            ERROR("block header bad magic fields[28-31]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[28] <<
                     ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[29] <<
                     ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[30] <<
-                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "]" << endl;
+                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "]");
             return REDO_ERROR;
         }
 
@@ -143,19 +143,19 @@ namespace OpenLogReplicator {
         if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
                 (blockSize == 1024 && headerBuffer[1] != 0x22) ||
                 (blockSize == 4096 && headerBuffer[1] != 0x82)) {
-            cerr << "ERROR: unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
-                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]" << endl;
+            ERROR("unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
+                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]");
             return REDO_ERROR;
         }
 
         if (bytes < blockSize * 2) {
-            cerr << "ERROR: unable read file " << path << endl;
+            ERROR("unable read file " << pathMapped);
             return REDO_ERROR;
         }
 
         //check first block
         if (bytes < ((int64_t)blockSize * 2)) {
-            cerr << "ERROR: unable to read redo header for " << path << endl;
+            ERROR("unable to read redo header for " << pathMapped);
             return REDO_ERROR;
         }
 
@@ -248,7 +248,7 @@ namespace OpenLogReplicator {
             oracleAnalyser->version = version;
 
         if (version == 0 || version != oracleAnalyser->version) {
-            cerr << "ERROR: Unsupported database version: 0x" << setfill('0') << setw(8) << hex << compatVsn << endl;
+            ERROR("unsupported database version: 0x" << setfill('0') << setw(8) << hex << compatVsn);
             return REDO_ERROR;
         }
 
@@ -258,28 +258,28 @@ namespace OpenLogReplicator {
         nextScnHeader = oracleAnalyser->readSCN(headerBuffer + blockSize + 192);
 
         uint64_t ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
-        if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-            cerr << "DISK: block: 1 check: " << ret << endl;
+        TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
         if (ret != REDO_OK)
             return ret;
 
         if (resetlogsRead != oracleAnalyser->resetlogs) {
-            if (group == 0)
-                cerr << "ERROR: resetlogs id (" << dec << resetlogsRead << ") for archived redo log does not match database information (" <<
-                        oracleAnalyser->resetlogs << "): " << path << endl;
-            else
-                cerr << "ERROR: resetlogs id (" << dec << resetlogsRead << ") for online redo log does not match database information (" <<
-                        oracleAnalyser->resetlogs << "): " << path << endl;
-            return REDO_ERROR;
+            if (group == 0) {
+                ERROR("resetlogs id (" << dec << resetlogsRead << ") for archived redo log does not match database information (" <<
+                        oracleAnalyser->resetlogs << "): " << pathMapped);
+            } else {
+                ERROR("resetlogs id (" << dec << resetlogsRead << ") for online redo log does not match database information (" <<
+                        oracleAnalyser->resetlogs << "): " << pathMapped);
+            } return REDO_ERROR;
         }
 
         if (activationRead != oracleAnalyser->activation) {
-            if (group == 0)
-                cerr << "ERROR: activation id (" << dec << activationRead << ") for archived redo log does not match database information (" <<
-                        oracleAnalyser->activation << "): " << path << endl;
-            else
-                cerr << "ERROR: activation id (" << dec << activationRead << ") for online redo log does not match database information (" <<
-                        oracleAnalyser->activation << "): " << path << endl;
+            if (group == 0) {
+                ERROR("activation id (" << dec << activationRead << ") for archived redo log does not match database information (" <<
+                        oracleAnalyser->activation << "): " << pathMapped);
+            } else {
+                ERROR("activation id (" << dec << activationRead << ") for online redo log does not match database information (" <<
+                        oracleAnalyser->activation << "): " << pathMapped);
+            }
             return REDO_ERROR;
         }
 
@@ -288,21 +288,19 @@ namespace OpenLogReplicator {
             nextScn = nextScnHeader;
         } else {
             if (firstScnHeader != firstScn) {
-                cerr << "ERROR: first SCN (" << dec << firstScnHeader << ") for redo log does not match database information (" <<
-                        firstScn << "): " << path << endl;
+                ERROR("first SCN (" << dec << firstScnHeader << ") for redo log does not match database information (" <<
+                        firstScn << "): " << pathMapped);
                 return REDO_ERROR;
             }
         }
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            if (oracleAnalyser->trace >= TRACE_FULL)
-                cerr << "FULL: updating next SCN to: " << dec << nextScnHeader << endl;
+            TRACE(TRACE_FULL, "updating next SCN to: " << dec << nextScnHeader);
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
-            cerr << "ERROR: next SCN (" << nextScn << ") does not match database information (" <<
-                    nextScnHeader << "): " << path << endl;
+            ERROR("next SCN (" << nextScn << ") does not match database information (" << nextScnHeader << "): " << pathMapped);
             return REDO_ERROR;
         }
 
@@ -324,8 +322,7 @@ namespace OpenLogReplicator {
 
     void *Reader::run(void) {
         uint64_t curStatus;
-        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
-            cerr << "THREAD: READER (" << hex << this_thread::get_id() << ") START" << endl;
+        TRACE(TRACE2_THREADS, "READER (" << hex << this_thread::get_id() << ") START");
 
         while (!shutdown) {
             {
@@ -344,8 +341,7 @@ namespace OpenLogReplicator {
                 break;
 
             if (curStatus == READER_STATUS_CHECK) {
-                if ((oracleAnalyser->trace2 & TRACE2_FILE) != 0)
-                    cerr << "FILE: trying to open: " << path << endl;
+                TRACE(TRACE2_FILE, "trying to open: " << pathMapped);
                 redoClose();
                 uint64_t curRet = redoOpen();
                 {
@@ -376,8 +372,7 @@ namespace OpenLogReplicator {
                     curBufferStart = bufferStart;
                 }
 
-                if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                    cerr << "DISK: reading " << path << " at (" << dec << curBufferStart << "/" << bufferEnd << ") at size: " << fileSize << endl;
+                TRACE(TRACE2_DISK, "reading " << pathMapped << " at (" << dec << curBufferStart << "/" << bufferEnd << ") at size: " << fileSize);
                 uint64_t lastRead = blockSize;
                 while (!shutdown && status == READER_STATUS_READ && curBufferStart + DISK_BUFFER_SIZE > bufferEnd) {
                     uint64_t toRead = lastRead;
@@ -398,13 +393,10 @@ namespace OpenLogReplicator {
                     if (bufferPos + toRead > DISK_BUFFER_SIZE)
                         toRead = DISK_BUFFER_SIZE - bufferPos;
 
-                    if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                        cerr << "DISK: reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " bytes: " << dec << toRead << endl;
+                    TRACE(TRACE2_DISK, "reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " bytes: " << dec << toRead);
                     int64_t actualRead = redoRead(redoBuffer + bufferPos, bufferEnd, toRead);
 
-                    if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                        cerr << "DISK: reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead << endl;
-
+                    TRACE(TRACE2_DISK, "reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead);
                     if (actualRead < 0) {
                         unique_lock<mutex> lck(oracleAnalyser->mtx);
                         status = READER_STATUS_SLEEPING;
@@ -422,8 +414,7 @@ namespace OpenLogReplicator {
 
                     for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                         curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock, false);
-                        if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                            cerr << "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet << endl;
+                        TRACE(TRACE2_DISK, "block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet);
 
                         if (curRet == REDO_OVERWRITTEN) {
                             unique_lock<mutex> lck(oracleAnalyser->mtx);
@@ -448,8 +439,7 @@ namespace OpenLogReplicator {
                         actualRead = redoRead(redoBuffer + bufferPos, bufferEnd, goodBlocks * blockSize);
                         reachedZero = false;
 
-                        if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                            cerr << "DISK: second reading " << path << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead << endl;
+                        TRACE(TRACE2_DISK, "second reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ")" << " got: " << dec << actualRead);
 
                         if (actualRead < 0) {
                             unique_lock<mutex> lck(oracleAnalyser->mtx);
@@ -465,8 +455,7 @@ namespace OpenLogReplicator {
 
                         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                             curRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock, true);
-                            if ((oracleAnalyser->trace2 & TRACE2_DISK) != 0)
-                                cerr << "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet << endl;
+                            TRACE(TRACE2_DISK, "block: " << dec << (bufferEndBlock + numBlock) << " check: " << curRet);
 
                             if (curRet == REDO_OVERWRITTEN) {
                                 unique_lock<mutex> lck(oracleAnalyser->mtx);
@@ -536,8 +525,7 @@ namespace OpenLogReplicator {
         }
 
         redoClose();
-        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
-            cerr << "THREAD: READER (" << hex << this_thread::get_id() << ") STOP" << endl;
+        TRACE(TRACE2_THREADS, "READER (" << hex << this_thread::get_id() << ") STOP");
         return 0;
     }
 }

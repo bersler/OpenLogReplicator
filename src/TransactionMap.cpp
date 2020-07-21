@@ -50,8 +50,7 @@ namespace OpenLogReplicator {
 
     void TransactionMap::set(Transaction* transaction) {
         if (transaction->lastRedoLogRecord1 == nullptr) {
-            cerr << "ERROR: trying to set empty last record in transaction map" << endl;
-            return;
+            RUNTIME_FAIL("trying to set empty last record in transaction map");
         }
 
         uint64_t hashKey = HASHINGFUNCTION(transaction->lastRedoLogRecord1->uba, transaction->lastRedoLogRecord1->slt,
@@ -60,8 +59,7 @@ namespace OpenLogReplicator {
         Transaction *transactionTmp = MAP_AT(hashKey);
         while (transactionTmp != nullptr) {
             if (transactionTmp == transaction) {
-                cerr << "ERROR: transaction already present in hash map" << endl;
-                return;
+                RUNTIME_FAIL("transaction already present in hash map");
             }
             transactionTmp = transactionTmp->next;
         }
@@ -76,8 +74,7 @@ namespace OpenLogReplicator {
                 transaction->lastRedoLogRecord1->rci);
 
         if (MAP_AT(hashKey) == nullptr) {
-            cerr << "ERROR: transaction does not exists in hash map1" << endl;
-            return;
+            RUNTIME_FAIL("transaction does not exists in hash map1");
         }
 
         Transaction *transactionTmp = MAP_AT(hashKey);
@@ -99,8 +96,7 @@ namespace OpenLogReplicator {
             transactionTmpNext = transactionTmp->next;
         }
 
-        cerr << "ERROR: transaction does not exists in hash map2" << endl;
-        return;
+        RUNTIME_FAIL("transaction does not exists in hash map2");
     }
 
     //typeuba uba, typedba dba, typeslt slt, typerci rci, typescn scn, uint64_t opFlags

@@ -23,6 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
+#include "RuntimeException.h"
 
 using namespace std;
 
@@ -50,14 +51,14 @@ namespace OpenLogReplicator {
 
     void OracleObject::addColumn(OracleColumn *column) {
         if (column->segColNo < columns.size() + 1) {
-            cerr << "WARNING: trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
+            CONFIG_FAIL("trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
                 ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
-                ") on position " << (columns.size() + 1) << endl;
-            throw ConfigurationException("too low segColNo value, metadata error");
+                ") on position " << (columns.size() + 1));
         }
 
-        if (column->segColNo > 1000)
-            throw ConfigurationException("invalid segColNo value, metadata error");
+        if (column->segColNo > 1000) {
+            CONFIG_FAIL("invalid segColNo value (" << dec << column->segColNo << "), metadata error");
+        }
 
         while (column->segColNo > columns.size() + 1)
             columns.push_back(nullptr);

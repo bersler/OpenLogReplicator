@@ -43,8 +43,7 @@ namespace OpenLogReplicator {
 
     TransactionBuffer::~TransactionBuffer() {
         if (partiallyFullChunks.size() > 0) {
-            cerr << "ERROR: non free blocks in transaction buffer: " << dec << partiallyFullChunks.size() << endl;
-            throw RuntimeException("transaction buffer deallocation");
+            RUNTIME_FAIL("non free blocks in transaction buffer: " << dec << partiallyFullChunks.size());
         }
     }
 
@@ -101,10 +100,8 @@ namespace OpenLogReplicator {
     void TransactionBuffer::addTransactionChunk(Transaction *transaction, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
 
         if (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > DATA_BUFFER_SIZE) {
-            cerr << "ERROR: block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL)
-                    << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter" << endl;
-            oracleAnalyser->dumpTransactions();
-            throw RuntimeException("too big block");
+            RUNTIME_FAIL(*oracleAnalyser <<  "block size (" << dec << (redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL)
+                    << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter");
         }
 
         //empty list
@@ -127,9 +124,7 @@ namespace OpenLogReplicator {
 
                 while (true) {
                     if (pos < prevSize) {
-                        cerr << "ERROR: trying move pos " << dec << pos << " back " << prevSize << endl;
-                        oracleAnalyser->dumpTransactions();
-                        return;
+                        RUNTIME_FAIL(*oracleAnalyser << "trying move pos " << dec << pos << " back " << prevSize);
                     }
                     pos -= prevSize;
                     ++elementsSkipped;
@@ -142,9 +137,7 @@ namespace OpenLogReplicator {
                         elementsSkipped = 0;
                     }
                     if (elementsSkipped > tc->elements || pos < ROW_HEADER_TOTAL) {
-                        cerr << "ERROR: bad data during finding SCN out of order" << endl;
-                        oracleAnalyser->dumpTransactions();
-                        return;
+                        RUNTIME_FAIL(*oracleAnalyser << "bad data during finding SCN out of order");
                     }
 
                     prevSize = *((uint64_t *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
@@ -240,9 +233,7 @@ namespace OpenLogReplicator {
     bool TransactionBuffer::deleteTransactionPart(Transaction *transaction, RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2) {
         TransactionChunk *tc = transaction->lastTc;
         if (tc == nullptr || tc->size < ROW_HEADER_TOTAL || tc->elements == 0) {
-            cerr << "ERROR: trying to remove from empty buffer size1: " << dec << transaction->lastTc->size << " elements: " << dec << transaction->lastTc->elements << endl;
-            oracleAnalyser->dumpTransactions();
-            return false;
+            RUNTIME_FAIL(*oracleAnalyser << "trying to remove from empty buffer size1: " << dec << transaction->lastTc->size << " elements: " << dec << transaction->lastTc->elements);
         }
 
         while (tc != nullptr) {
@@ -251,9 +242,7 @@ namespace OpenLogReplicator {
 
             while (pos > 0) {
                 if (pos < ROW_HEADER_TOTAL || left <= 0) {
-                    cerr << "ERROR: error while deleting transaction part" << endl;
-                    oracleAnalyser->dumpTransactions();
-                    return false;
+                    RUNTIME_FAIL(*oracleAnalyser << "error while deleting transaction part");
                 }
 
                 uint64_t lastSize = *((uint64_t *)(tc->buffer + pos - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
@@ -295,10 +284,8 @@ namespace OpenLogReplicator {
             return;
 
         if (transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0) {
-            cerr << "ERROR: trying to remove from empty buffer size2: " << dec << transaction->lastTc->size << " elements: " <<
-                    dec << transaction->lastTc->elements << endl;
-            oracleAnalyser->dumpTransactions();
-            return;
+            RUNTIME_FAIL(*oracleAnalyser << "trying to remove from empty buffer size2: " << dec << transaction->lastTc->size << " elements: " <<
+                    dec << transaction->lastTc->elements);
         }
 
         uint64_t lastSize = *((uint64_t *)(transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));

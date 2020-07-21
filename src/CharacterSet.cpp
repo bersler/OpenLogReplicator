@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
+#include <sstream>
 
 #include "CharacterSet.h"
 
@@ -33,47 +34,47 @@ namespace OpenLogReplicator {
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 << " in character set " << name << endl;
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 << " in character set " << name << endl;
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
+                ",0x" << setfill('0') << setw(2) << hex << byte2 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte2 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte3 << " in character set " << name << endl;
+                ",0x" << setfill('0') << setw(2) << hex << byte3 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte2 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte3 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte4 << " in character set " << name << endl;
+                ",0x" << setfill('0') << setw(2) << hex << byte4 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte2 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte3 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte4 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte5 << " in character set " << name << endl;
+                ",0x" << setfill('0') << setw(2) << hex << byte5 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5, uint64_t byte6) {
-        cerr << "WARNING: can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
+        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte2 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte3 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte4 <<
                 ",0x" << setfill('0') << setw(2) << hex << byte5 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte6 << " in character set " << name << endl;
+                ",0x" << setfill('0') << setw(2) << hex << byte6 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 }

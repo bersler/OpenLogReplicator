@@ -18,8 +18,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iostream>
+#include <sstream>
 
 #include "OracleStatement.h"
+#include "RuntimeException.h"
 
 namespace OpenLogReplicator {
 
@@ -53,8 +55,6 @@ namespace OpenLogReplicator {
         try {
             stmt = (*conn)->createStatement(sql);
         } catch(SQLException &ex) {
-            cerr << "ERROR: " << ex.getErrorCode() << ": " << ex.getMessage();
-
             //close dropped connection
             if (ex.getErrorCode() == 3114) {
                 if (conn != nullptr) {
@@ -62,6 +62,8 @@ namespace OpenLogReplicator {
                     *conn = nullptr;
                 }
             }
+
+            RUNTIME_FAIL("Oracle: " << ex.getErrorCode() << ": " << ex.getMessage());
         }
 #endif /* ONLINE_MODEIMPL_OCCI */
     }

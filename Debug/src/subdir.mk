@@ -21,10 +21,8 @@ CPP_SRCS += \
 ../src/CharacterSetZHT16HKSCS31.cpp \
 ../src/CharacterSetZHT32EUC.cpp \
 ../src/CharacterSetZHT32TRIS.cpp \
-../src/CommandBuffer.cpp \
 ../src/ConfigurationException.cpp \
 ../src/KafkaWriter.cpp \
-../src/MemoryException.cpp \
 ../src/OpCode.cpp \
 ../src/OpCode0501.cpp \
 ../src/OpCode0502.cpp \
@@ -49,6 +47,7 @@ CPP_SRCS += \
 ../src/OracleColumn.cpp \
 ../src/OracleObject.cpp \
 ../src/OracleStatement.cpp \
+../src/OutputBuffer.cpp \
 ../src/Reader.cpp \
 ../src/ReaderFilesystem.cpp \
 ../src/RedoLogException.cpp \
@@ -79,10 +78,8 @@ OBJS += \
 ./src/CharacterSetZHT16HKSCS31.o \
 ./src/CharacterSetZHT32EUC.o \
 ./src/CharacterSetZHT32TRIS.o \
-./src/CommandBuffer.o \
 ./src/ConfigurationException.o \
 ./src/KafkaWriter.o \
-./src/MemoryException.o \
 ./src/OpCode.o \
 ./src/OpCode0501.o \
 ./src/OpCode0502.o \
@@ -107,6 +104,7 @@ OBJS += \
 ./src/OracleColumn.o \
 ./src/OracleObject.o \
 ./src/OracleStatement.o \
+./src/OutputBuffer.o \
 ./src/Reader.o \
 ./src/ReaderFilesystem.o \
 ./src/RedoLogException.o \
@@ -137,10 +135,8 @@ CPP_DEPS += \
 ./src/CharacterSetZHT16HKSCS31.d \
 ./src/CharacterSetZHT32EUC.d \
 ./src/CharacterSetZHT32TRIS.d \
-./src/CommandBuffer.d \
 ./src/ConfigurationException.d \
 ./src/KafkaWriter.d \
-./src/MemoryException.d \
 ./src/OpCode.d \
 ./src/OpCode0501.d \
 ./src/OpCode0502.d \
@@ -165,6 +161,7 @@ CPP_DEPS += \
 ./src/OracleColumn.d \
 ./src/OracleObject.d \
 ./src/OracleStatement.d \
+./src/OutputBuffer.d \
 ./src/Reader.d \
 ./src/ReaderFilesystem.d \
 ./src/RedoLogException.d \

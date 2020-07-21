@@ -49,8 +49,7 @@ namespace OpenLogReplicator {
 
     void TransactionHeap::pop(uint64_t pos) {
         if (pos > size) {
-            cerr << "ERROR: trying to pop element from heap: " << dec << pos << " with size: " << dec << size << endl;
-            throw RuntimeException("out of range heap pop");
+            RUNTIME_FAIL("trying to pop element from heap: " << dec << pos << " with size: " << dec << size);
         }
 
         while ((pos << 1) < size) {
@@ -102,8 +101,7 @@ namespace OpenLogReplicator {
         if (size + 1 == HEAP_IN_CHUNK * heaps) {
             //resize heap
             if (heaps == HEAPS_MAX) {
-                cerr << "ERROR: reached maximum number of open transactions = " << dec << MAX_TRANSACTIONS_LIMIT << endl;
-                throw RuntimeException("transaction heap exhausted");
+                RUNTIME_FAIL("reached maximum number of open transactions = " << dec << MAX_TRANSACTIONS_LIMIT);
             }
 
             heapsList[heaps++] = (Transaction **)oracleAnalyser->getMemoryChunk("HEAP", false);
@@ -124,8 +122,7 @@ namespace OpenLogReplicator {
 
     void TransactionHeap::update(uint64_t pos) {
         if (pos > size) {
-            cerr << "ERROR: trying to update element from heap: " << dec << pos << " with size: " << dec << size << endl;
-            throw RuntimeException("out of range heap update");
+            RUNTIME_FAIL("trying to update element from heap: " << dec << pos << " with size: " << dec << size);
         }
 
         Transaction *transaction = HEAP_AT(pos);

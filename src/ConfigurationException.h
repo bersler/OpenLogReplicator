@@ -19,9 +19,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <exception>
 #include <iostream>
+#include <sstream>
 
 #ifndef CONFIGURATIONEXCEPTION_H_
 #define CONFIGURATIONEXCEPTION_H_
+
+#define CONFIG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw RuntimeException("error");}
 
 using namespace std;
 

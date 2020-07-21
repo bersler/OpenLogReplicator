@@ -166,7 +166,7 @@ namespace OpenLogReplicator {
         uint64_t opFlags;
 
         void dumpHex(ostream &str, OracleAnalyser *oracleAnalyser);
-        void dump(OracleAnalyser *oracleAnalyser);
+        friend ostream& operator<<(ostream& os, const RedoLogRecord& redo);
     };
 }
 

@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
     void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleAnalyser->dumpRedoLog >= 1) {
             if (fieldLength < 4) {
-                cerr << "ERROR: too short session number: " << dec << fieldLength << endl;
+                WARNING("too short session number: " << dec << fieldLength);
                 return;
             }
 
@@ -141,7 +141,7 @@ namespace OpenLogReplicator {
                 sessionNumber = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 0);
             else {
                 if (fieldLength < 8) {
-                    cerr << "ERROR: too short session number: " << dec << fieldLength << endl;
+                    WARNING("too short session number: " << dec << fieldLength);
                     return;
                 }
                 sessionNumber = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);

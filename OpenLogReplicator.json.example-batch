@@ -7,7 +7,8 @@
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
       "name": "O112A",
-      "mode": "offline"
+      "mode": "batch",
+      "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
   ],
   "targets": [
     {

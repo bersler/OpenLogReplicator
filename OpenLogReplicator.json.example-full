@@ -1,5 +1,5 @@
 {
-  "version": "0.6.9",
+  "version": "0.6.10",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -12,6 +12,7 @@
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
       "redo-read-sleep": 10000,
+      "arch-read-sleep": 10000000,
       "checkpoint-interval": 10,
       "disable-checks": 0,
       "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
@@ -29,9 +30,9 @@
   "targets": [
     {
       "type": "KAFKA",
+      "alias": "T2",
       "max-message-mb": 100,
       "format": {"stream": "JSON", "topic": "O112A", "metadata": 0, "single-dml": 0, "show-columns": 0, "test": 0, "timestamp-format": 0, "char-format": 0},
-      "alias": "T2",
       "brokers": "localhost:9092",
       "source": "S1"
     }

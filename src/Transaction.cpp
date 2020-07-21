@@ -22,8 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <string>
 #include <string.h>
 
-#include "CommandBuffer.h"
-#include "MemoryException.h"
+#include "OutputBuffer.h"
 #include "OpCode.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
@@ -133,27 +132,23 @@ namespace OpenLogReplicator {
     void Transaction::mergeSplitBlocks(RedoLogRecord *headRedoLogRecord1, RedoLogRecord *midRedoLogRecord1,
             RedoLogRecord *tailRedoLogRecord1, RedoLogRecord *redoLogRecord2) {
         if (headRedoLogRecord1 == nullptr || tailRedoLogRecord1 == nullptr || redoLogRecord2 == nullptr) {
-            cerr << "ERROR: merging of incomplete split UNDO block" << endl;
-            cerr << "head: ";
-            if (headRedoLogRecord1 == nullptr)
-                cerr << "- null";
-            else
-                headRedoLogRecord1->dump(oracleAnalyser);
-            cerr << endl;
-            cerr << "mid: ";
-            if (midRedoLogRecord1 == nullptr)
-                cerr << "- null";
-            else
-                midRedoLogRecord1->dump(oracleAnalyser);
-            cerr << endl;
-            cerr << "tail: ";
-            if (tailRedoLogRecord1 == nullptr)
-                cerr << "- null";
-            else
-                tailRedoLogRecord1->dump(oracleAnalyser);
-            cerr << endl;
+            if (headRedoLogRecord1 == nullptr) {
+                DUMP("- null");
+            } else {
+                DUMP(*headRedoLogRecord1);
+            }
+            if (midRedoLogRecord1 == nullptr) {
+                DUMP("- null");
+            } else {
+                DUMP(*midRedoLogRecord1);
+            }
+            if (tailRedoLogRecord1 == nullptr) {
+                DUMP("- null");
+            } else {
+                DUMP(*tailRedoLogRecord1);
+            }
 
-            return;
+            RUNTIME_FAIL("merging of incomplete split UNDO block");
         }
 
         uint8_t *buffer1 = nullptr, *buffer2 = nullptr;
@@ -162,16 +157,18 @@ namespace OpenLogReplicator {
         if (midRedoLogRecord1 != nullptr) {
             uint64_t size1 = headRedoLogRecord1->length + midRedoLogRecord1->length;
             buffer1 = new uint8_t[size1];
-            if (buffer1 == nullptr)
-                throw MemoryException("Transaction::mergeSplitBlocks.1", size1);
+            if (buffer1 == nullptr) {
+                RUNTIME_FAIL("could not allocate " << dec << size1 << " bytes memory for (reason: merge split blocks #1)");
+            }
             mergeSplitBlocksToBuffer(buffer1, headRedoLogRecord1, midRedoLogRecord1);
         }
 
         //tail
         uint64_t size2 = headRedoLogRecord1->length + tailRedoLogRecord1->length;
         buffer2 = new uint8_t[size2];
-        if (buffer2 == nullptr)
-            throw MemoryException("Transaction::mergeSplitBlocks.2", size2);
+        if (buffer2 == nullptr) {
+            RUNTIME_FAIL("could not allocate " << dec << size2 << " bytes memory for (reason: merge split blocks #2)");
+        }
         mergeSplitBlocksToBuffer(buffer2, headRedoLogRecord1, tailRedoLogRecord1);
 
         uint16_t fieldPos = headRedoLogRecord1->fieldPos;
@@ -183,8 +180,9 @@ namespace OpenLogReplicator {
         oracleAnalyser->write16(headRedoLogRecord1->data + fieldPos + 20, flg);
 
         OpCode0501 *opCode0501 = new OpCode0501(oracleAnalyser, headRedoLogRecord1);
-        if (opCode0501 == nullptr)
-            throw MemoryException("Transaction::mergeSplitBlocks.3", sizeof(OpCode0501));
+        if (opCode0501 == nullptr) {
+            RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0501) << " bytes memory for (reason: merge split blocks #3)");
+        }
 
         opCode0501->process();
 
@@ -214,17 +212,14 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::addSplitBlock(RedoLogRecord *redoLogRecord) {
-        if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0) {
-            cerr << "SPLIT: ";
-            redoLogRecord->dump(oracleAnalyser);
-            cerr << endl;
-        };
+        TRACE(TRACE2_SPLIT, redoLogRecord);
 
         uint64_t size = SPLIT_BLOCK_DATA1 + redoLogRecord->length;
         uint8_t *splitBlock = new uint8_t[size], *prevSplitBlock = nullptr, *tmpSplitBlockList = nullptr;
 
-        if (splitBlock == nullptr)
-            throw MemoryException("Transaction::addSplitBlock.1", size);
+        if (splitBlock == nullptr) {
+            RUNTIME_FAIL("could not allocate " << dec << size << " bytes memory for (reason: add split block #1)");
+        }
         *((uint64_t*) (splitBlock + SPLIT_BLOCK_SIZE)) = size;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP1)) = redoLogRecord->opCode;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP2)) = 0;
@@ -251,19 +246,15 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::addSplitBlock(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0) {
-            cerr << "SPLIT: ";
-            redoLogRecord1->dump(oracleAnalyser);
-            cerr << endl << "SPLIT: ";
-            redoLogRecord2->dump(oracleAnalyser);
-            cerr << endl;
-        };
+        TRACE(TRACE2_SPLIT, redoLogRecord1);
+        TRACE(TRACE2_SPLIT, redoLogRecord2);
 
         uint64_t size = SPLIT_BLOCK_DATA2 + redoLogRecord1->length + redoLogRecord2->length;
         uint8_t *splitBlock = new uint8_t[size], *prevSplitBlock = nullptr, *tmpSplitBlockList = nullptr;
 
-        if (splitBlock == nullptr)
-            throw MemoryException("Transaction::addSplitBlock.2", size);
+        if (splitBlock == nullptr) {
+            RUNTIME_FAIL("could not allocate " << dec << size << " bytes memory for (reason: add split block #2)");
+        }
         *((uint64_t*) (splitBlock + SPLIT_BLOCK_SIZE)) = size;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP1)) = redoLogRecord1->opCode;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP2)) = redoLogRecord2->opCode;
@@ -323,9 +314,7 @@ namespace OpenLogReplicator {
     void Transaction::flushSplitBlocks(void) {
         if (splitBlockList == nullptr)
             return;
-        if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0) {
-            cerr << "SPLIT: merge" << endl;
-        }
+        TRACE(TRACE2_SPLIT, "merge");
 
         uint8_t *headBlock = nullptr, *midBlock = nullptr, *tailBlock = nullptr;
         RedoLogRecord *headRedoLogRecord1 = nullptr, *midRedoLogRecord1 = nullptr, *tailRedoLogRecord1 = nullptr, *redoLogRecord2 = nullptr,
@@ -334,11 +323,7 @@ namespace OpenLogReplicator {
         while (splitBlockList != nullptr) {
             newRedoLogRecord = (RedoLogRecord*)(splitBlockList + SPLIT_BLOCK_RECORD1);
 
-            if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0) {
-                cerr << "SPLIT: next is: ";
-                newRedoLogRecord->dump(oracleAnalyser);
-                cerr << endl;
-            }
+            TRACE(TRACE2_SPLIT, "next is: " << newRedoLogRecord);
 
             if (curRedoLogRecord == nullptr) {
                 curRedoLogRecord = newRedoLogRecord;
@@ -348,8 +333,8 @@ namespace OpenLogReplicator {
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0 && headRedoLogRecord1 != nullptr) ||
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) != 0 && midRedoLogRecord1 != nullptr) ||
                         ((newRedoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0 && tailRedoLogRecord1 != nullptr)) {
-                    if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0)
-                        cerr << "SPLIT: flush" << endl;
+
+                    TRACE(TRACE2_SPLIT, "flush");
 
                     mergeSplitBlocks(headRedoLogRecord1, midRedoLogRecord1, tailRedoLogRecord1, redoLogRecord2);
                     headRedoLogRecord1 = nullptr;
@@ -390,8 +375,7 @@ namespace OpenLogReplicator {
         }
 
         if (curRedoLogRecord != nullptr) {
-            if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0)
-                cerr << "SPLIT: flush last" << endl;
+            TRACE(TRACE2_SPLIT, "flush last");
             mergeSplitBlocks(headRedoLogRecord1, midRedoLogRecord1, tailRedoLogRecord1, redoLogRecord2);
             headRedoLogRecord1 = nullptr;
             midRedoLogRecord1 = nullptr;
@@ -413,9 +397,7 @@ namespace OpenLogReplicator {
 
             curRedoLogRecord = nullptr;
         }
-        if ((oracleAnalyser->trace2 & TRACE2_SPLIT) != 0) {
-            cerr << "SPLIT: merge end" << endl;
-        }
+        TRACE(TRACE2_SPLIT, "merge end");
     }
 
     void Transaction::flush(void) {
@@ -425,11 +407,10 @@ namespace OpenLogReplicator {
         flushSplitBlocks();
 
         if (opCodes > 0 && !isRollback) {
-            if ((oracleAnalyser->trace2 & TRACE2_TRANSACTION) != 0)
-                cerr << endl << "TRANSACTION: " << *this << endl;
+            TRACE(TRACE2_TRANSACTION, *this);
 
             oracleAnalyser->lastOpTransactionMap->erase(this);
-            oracleAnalyser->commandBuffer->writer->beginTran(lastScn, commitTime, xid);
+            oracleAnalyser->outputBuffer->writer->beginTran(lastScn, commitTime, xid);
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
@@ -446,9 +427,7 @@ namespace OpenLogReplicator {
                     redoLogRecord2->data = tc->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
                     typescn scn = *((typescn *)(tc->buffer + pos + ROW_HEADER_SCN + redoLogRecord1->length + redoLogRecord2->length));
 
-                    if (oracleAnalyser->trace >= TRACE_WARN) {
-                        if ((oracleAnalyser->trace2 & TRACE2_TRANSACTION) != 0) {
-                            cerr << "TRANSACTION Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
+                    TRACE(TRACE2_TRANSACTION, "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
@@ -469,13 +448,12 @@ namespace OpenLogReplicator {
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
                                         ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<
                                         ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBdba << "." << hex << redoLogRecord1->suppLogSlot << ") " <<
-                                    " scn: " << PRINTSCN64(scn) << endl;
-                        }
-                        if (prevScn != 0 && prevScn > scn) {
-                            if (oracleAnalyser->trace >= TRACE_WARN)
-                                cerr << "WARNING: SCN swap" << endl;
-                        }
+                                    " scn: " << PRINTSCN64(scn));
+
+                    if (prevScn != 0 && prevScn > scn) {
+                        FULL("SCN swap");
                     }
+
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
                     opFlush = false;
@@ -513,10 +491,9 @@ namespace OpenLogReplicator {
                         }
 
                         if (redoLogRecord1->suppLogType == 0) {
-                            cerr << "type: " << redoLogRecord1->suppLogType << endl;
-                            cerr << "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl;
-                            cerr << "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;" << endl;
-                            throw RuntimeException("SUPPLEMENTAL_LOG_DATA_MIN missing");
+                            RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing" << endl <<
+                                    "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl <<
+                                    "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
                         }
 
                         if (first1 == nullptr) {
@@ -563,14 +540,14 @@ namespace OpenLogReplicator {
                                     }
                                 }
                             } else {
-                                cerr << "ERROR: next BDBA/SLOT does not match" << endl;
+                                RUNTIME_FAIL("next BDBA/SLOT does not match");
                             }
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
                             if (hasPrev)
-                                oracleAnalyser->commandBuffer->writer->next();
-                            oracleAnalyser->commandBuffer->writer->parseDML(first1, first2, type);
+                                oracleAnalyser->outputBuffer->writer->next();
+                            oracleAnalyser->outputBuffer->writer->parseDML(first1, first2, type);
                             opFlush = true;
                         }
                         break;
@@ -578,36 +555,37 @@ namespace OpenLogReplicator {
                     //insert multiple rows
                     case 0x05010B0B:
                         if (hasPrev)
-                            oracleAnalyser->commandBuffer->writer->next();
-                        oracleAnalyser->commandBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2);
+                            oracleAnalyser->outputBuffer->writer->next();
+                        oracleAnalyser->outputBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //delete multiple rows
                     case 0x05010B0C:
                         if (hasPrev)
-                            oracleAnalyser->commandBuffer->writer->next();
-                        oracleAnalyser->commandBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2);
+                            oracleAnalyser->outputBuffer->writer->next();
+                        oracleAnalyser->outputBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //truncate table
                     case 0x18010000:
                         if (hasPrev)
-                            oracleAnalyser->commandBuffer->writer->next();
-                        oracleAnalyser->commandBuffer->writer->parseDDL(redoLogRecord1);
+                            oracleAnalyser->outputBuffer->writer->next();
+                        oracleAnalyser->outputBuffer->writer->parseDDL(redoLogRecord1);
                         opFlush = true;
                         break;
 
+                    //should not happen
                     default:
-                        cerr << "ERROR: Unknown OpCode " << hex << op << endl;
+                        RUNTIME_FAIL("Unknown OpCode " << hex << op);
                     }
 
                     //split very big transactions
-                    if (oracleAnalyser->commandBuffer->currentMessageSize() + DATA_BUFFER_SIZE > oracleAnalyser->commandBuffer->writer->maxMessageMb * 1024 * 1024) {
-                        cerr << "WARNING: Big transaction divided (" << oracleAnalyser->commandBuffer->currentMessageSize() << ")" << endl;
-                        oracleAnalyser->commandBuffer->writer->commitTran();
-                        oracleAnalyser->commandBuffer->writer->beginTran(lastScn, commitTime, xid);
+                    if (oracleAnalyser->outputBuffer->currentMessageSize() + DATA_BUFFER_SIZE > oracleAnalyser->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
+                        WARNING("big transaction divided (forced commit after " << oracleAnalyser->outputBuffer->currentMessageSize() << " bytes)");
+                        oracleAnalyser->outputBuffer->writer->commitTran();
+                        oracleAnalyser->outputBuffer->writer->beginTran(lastScn, commitTime, xid);
                         hasPrev = false;
                     }
 
@@ -646,17 +624,13 @@ namespace OpenLogReplicator {
             lastRedoLogRecord2 = nullptr;
             opCodes = 0;
 
-            oracleAnalyser->commandBuffer->writer->commitTran();
+            oracleAnalyser->outputBuffer->writer->commitTran();
         }
     }
 
     void Transaction::updateLastRecord(void) {
         if (lastTc == nullptr || lastTc->elements == 0) {
-            cerr << "ERROR: updating last element of empty transaction" << endl;
-
-            lastRedoLogRecord1 = nullptr;
-            lastRedoLogRecord2 = nullptr;
-            return;
+            RUNTIME_FAIL("updating last element of empty transaction");
         }
 
         uint64_t lastSize = *((uint64_t *)(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));

@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iomanip>
 #include <iostream>
 
-#include "CommandBuffer.h"
+#include "OutputBuffer.h"
 #include "OpCode0B02.h"
 #include "OracleAnalyser.h"
 #include "OracleColumn.h"

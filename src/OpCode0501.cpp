@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             return;
         //field: 2
         if (fieldLength < 8) {
-            cerr << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+            WARNING("too short field ktub: " << dec << fieldLength);
             return;
         }
 
@@ -105,7 +105,6 @@ namespace OpenLogReplicator {
             }
 
             if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
-                cerr << "DOM fieldNum" << dec << fieldNum << endl;
                 oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
 
                 redoLogRecord->rowData = fieldPos;
@@ -151,7 +150,7 @@ namespace OpenLogReplicator {
 
         } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
             if (nulls == nullptr) {
-                cerr << "ERROR: nulls = null" << endl;
+                WARNING("nulls field is missing");
                 return;
             }
 
@@ -203,7 +202,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            cerr << "ERROR: too short field ktudb: " << dec << fieldLength << endl;
+            WARNING("too short field ktudb: " << dec << fieldLength);
             return;
         }
 
@@ -231,7 +230,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::kteoputrn(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            cerr << "ERROR: too short field kteoputrn: " << dec << fieldLength << endl;
+            WARNING("too short field kteoputrn: " << dec << fieldLength);
             return;
         }
         if (oracleAnalyser->dumpRedoLog >= 2) {
@@ -243,7 +242,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            cerr << "ERROR: too short row dependencies: " << dec << fieldLength << endl;
+            WARNING("too short row dependencies: " << dec << fieldLength);
             return;
         }
 

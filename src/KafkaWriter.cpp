@@ -28,10 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <librdkafka/rdkafkacpp.h>
 #include <sys/stat.h>
 
-#include "CommandBuffer.h"
+#include "OutputBuffer.h"
 #include "ConfigurationException.h"
 #include "KafkaWriter.h"
-#include "MemoryException.h"
 #include "OracleAnalyser.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
@@ -90,21 +89,19 @@ namespace OpenLogReplicator {
             cout << endl;
         } else {
             if (producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr)) {
-                cerr << "ERROR: writing to topic, bytes sent: " << dec << length << endl;
-                throw (RuntimeException("writing to topic"));
+                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length);
             }
         }
     }
 
     void *KafkaWriter::run(void) {
-        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
-            cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") START" << endl;
+        TRACE(TRACE2_THREADS, "WRITER (" << hex << this_thread::get_id() << ") START");
 
-        cerr << "Starting thread: Kafka writer" << endl;
-        if (test >= 1)
-            cerr << " with stdout output mode (" << dec << test << ")" << endl;
-        else
-            cerr << " for: " << brokers << " topic: " << topic << endl;
+        if (test >= 1) {
+            INFO("Kafka Writer with stdout output mode (test: " << dec << test << ") is starting");
+        } else {
+            INFO("Kafka Writer for: " << brokers << " topic: " << topic << " is starting");
+        }
 
         try {
             for (;;) {
@@ -112,16 +109,16 @@ namespace OpenLogReplicator {
 
                 //get new block to read
                 {
-                    unique_lock<mutex> lck(commandBuffer->mtx);
-                    bufferEnd = *((uint64_t*)(commandBuffer->firstBuffer + KAFKA_BUFFER_END));
-                    length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+                    unique_lock<mutex> lck(outputBuffer->mtx);
+                    bufferEnd = *((uint64_t*)(outputBuffer->firstBuffer + KAFKA_BUFFER_END));
+                    length = *((uint64_t*)(outputBuffer->firstBuffer + outputBuffer->firstBufferPos));
 
-                    while ((commandBuffer->firstBufferPos == bufferEnd || length == 0) && !shutdown) {
+                    while ((outputBuffer->firstBufferPos == bufferEnd || length == 0) && !shutdown) {
                         oracleAnalyser->waitingForKafkaWriter = false;
                         oracleAnalyser->memoryCond.notify_all();
-                        commandBuffer->writersCond.wait(lck);
-                        bufferEnd = *((uint64_t*)(commandBuffer->firstBuffer + KAFKA_BUFFER_END));
-                        length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+                        outputBuffer->writersCond.wait(lck);
+                        bufferEnd = *((uint64_t*)(outputBuffer->firstBuffer + KAFKA_BUFFER_END));
+                        length = *((uint64_t*)(outputBuffer->firstBuffer + outputBuffer->firstBufferPos));
 
                         if (!shutdown)
                             oracleAnalyser->waitingForKafkaWriter = true;
@@ -129,22 +126,22 @@ namespace OpenLogReplicator {
                 }
 
                 //all data sent & shutdown command
-                if (commandBuffer->firstBufferPos == bufferEnd && shutdown)
+                if (outputBuffer->firstBufferPos == bufferEnd && shutdown)
                     break;
 
-                while (commandBuffer->firstBufferPos < bufferEnd) {
-                    length = *((uint64_t*)(commandBuffer->firstBuffer + commandBuffer->firstBufferPos));
+                while (outputBuffer->firstBufferPos < bufferEnd) {
+                    length = *((uint64_t*)(outputBuffer->firstBuffer + outputBuffer->firstBufferPos));
 
                     if (length == 0)
                         break;
 
-                    commandBuffer->firstBufferPos += KAFKA_BUFFER_LENGTH_SIZE;
+                    outputBuffer->firstBufferPos += KAFKA_BUFFER_LENGTH_SIZE;
                     uint64_t leftLength = (length + 7) & 0xFFFFFFFFFFFFFFF8;
 
                     //message in one part - send directly from buffer
-                    if (commandBuffer->firstBufferPos + leftLength < MEMORY_CHUNK_SIZE) {
-                        sendMessage(commandBuffer->firstBuffer + commandBuffer->firstBufferPos, length, Producer::RK_MSG_COPY);
-                        commandBuffer->firstBufferPos += leftLength;
+                    if (outputBuffer->firstBufferPos + leftLength < MEMORY_CHUNK_SIZE) {
+                        sendMessage(outputBuffer->firstBuffer + outputBuffer->firstBufferPos, length, Producer::RK_MSG_COPY);
+                        outputBuffer->firstBufferPos += leftLength;
 
                     //message in many parts - copy
                     } else {
@@ -155,8 +152,7 @@ namespace OpenLogReplicator {
                         } else {
                             buffer = (uint8_t*)malloc(leftLength);
                             if (buffer == nullptr) {
-                                cerr << "ERROR: could not allocate temporary buffer for Kafka message for " << dec << leftLength << " bytes" << endl;
-                                throw MemoryException("error allocating memory", leftLength);
+                                RUNTIME_FAIL("could not allocate temporary buffer for Kafka message for " << dec << leftLength << " bytes");
                             }
                             msgflags = Producer::RK_MSG_FREE;
                         }
@@ -164,26 +160,26 @@ namespace OpenLogReplicator {
                         uint64_t targetPos = 0;
 
                         while (leftLength > 0) {
-                            if (commandBuffer->firstBufferPos + leftLength >= MEMORY_CHUNK_SIZE) {
-                                uint64_t tmpLength = (MEMORY_CHUNK_SIZE - commandBuffer->firstBufferPos);
-                                memcpy(buffer + targetPos, commandBuffer->firstBuffer + commandBuffer->firstBufferPos, tmpLength);
+                            if (outputBuffer->firstBufferPos + leftLength >= MEMORY_CHUNK_SIZE) {
+                                uint64_t tmpLength = (MEMORY_CHUNK_SIZE - outputBuffer->firstBufferPos);
+                                memcpy(buffer + targetPos, outputBuffer->firstBuffer + outputBuffer->firstBufferPos, tmpLength);
                                 leftLength -= tmpLength;
                                 targetPos += tmpLength;
 
                                 //switch to next
-                                uint8_t* nextBuffer = *((uint8_t**)(commandBuffer->firstBuffer + KAFKA_BUFFER_NEXT));
-                                oracleAnalyser->freeMemoryChunk("KAFKA", commandBuffer->firstBuffer, true);
-                                commandBuffer->firstBufferPos = KAFKA_BUFFER_DATA;
+                                uint8_t* nextBuffer = *((uint8_t**)(outputBuffer->firstBuffer + KAFKA_BUFFER_NEXT));
+                                oracleAnalyser->freeMemoryChunk("KAFKA", outputBuffer->firstBuffer, true);
+                                outputBuffer->firstBufferPos = KAFKA_BUFFER_DATA;
 
                                 {
-                                    unique_lock<mutex> lck(commandBuffer->mtx);
-                                    --commandBuffer->buffersAllocated;
-                                    commandBuffer->firstBuffer = nextBuffer;
+                                    unique_lock<mutex> lck(outputBuffer->mtx);
+                                    --outputBuffer->buffersAllocated;
+                                    outputBuffer->firstBuffer = nextBuffer;
                                     oracleAnalyser->memoryCond.notify_all();
                                 }
                             } else {
-                                memcpy(buffer + targetPos, commandBuffer->firstBuffer + commandBuffer->firstBufferPos, leftLength);
-                                commandBuffer->firstBufferPos += leftLength;
+                                memcpy(buffer + targetPos, outputBuffer->firstBuffer + outputBuffer->firstBufferPos, leftLength);
+                                outputBuffer->firstBufferPos += leftLength;
                                 leftLength = 0;
                             }
                         }
@@ -195,18 +191,17 @@ namespace OpenLogReplicator {
             }
 
         } catch(ConfigurationException &ex) {
-            cerr << "ERROR: configuration error: " << ex.msg << endl;
             stopMain();
         } catch(RuntimeException &ex) {
-            cerr << "ERROR: runtime: " << ex.msg << endl;
-            stopMain();
-        } catch (MemoryException &e) {
-            cerr << "ERROR: memory allocation error for " << e.msg << " for " << e.bytes << " bytes" << endl;
             stopMain();
         }
 
-        if ((oracleAnalyser->trace2 & TRACE2_THREADS) != 0)
-            cerr << "THREAD: WRITER (" << hex << this_thread::get_id() << ") STOP" << endl;
+        if (test >= 1) {
+            INFO("Kafka Writer with stdout output mode (test: " << dec << test << ") is shutting down");
+        } else {
+            INFO("Kafka Writer for: " << brokers << " topic: " << topic << " is shutting down");
+        }
+        TRACE(TRACE2_THREADS, "WRITER (" << hex << this_thread::get_id() << ") STOP");
         return 0;
     }
 
@@ -222,21 +217,19 @@ namespace OpenLogReplicator {
         if (test == 0) {
             producer = Producer::create(conf, errstr);
             if (producer == nullptr) {
-                std::cerr << "ERROR: Kafka message: " << errstr << endl;
-                throw ConfigurationException("error creating topic");
+                CONFIG_FAIL("Kafka message: " << errstr);
             }
 
             ktopic = Topic::create(producer, topic, tconf, errstr);
             if (ktopic == nullptr) {
-                std::cerr << "ERROR: Kafka message: " << errstr << endl;
-                throw ConfigurationException("error creating topic");
+                CONFIG_FAIL("Kafka message: " << errstr);
             }
         }
     }
 
     void KafkaWriter::beginTran(typescn scn, typetime time, typexid xid) {
         if (stream == STREAM_JSON) {
-            commandBuffer
+            outputBuffer
                     ->beginMessage()
                     ->append('{')
                     ->appendScn(scn)
@@ -254,15 +247,15 @@ namespace OpenLogReplicator {
     void KafkaWriter::next(void) {
         if (stream == STREAM_JSON) {
             if (test <= 1)
-                commandBuffer->append(',');
+                outputBuffer->append(',');
         }
     }
 
     void KafkaWriter::commitTran(void) {
         if (stream == STREAM_JSON) {
             if (test <= 1)
-                commandBuffer->appendChr("]}");
-            commandBuffer->commitMessage();
+                outputBuffer->appendChr("]}");
+            outputBuffer->commitMessage();
         }
     }
 
@@ -298,13 +291,13 @@ namespace OpenLogReplicator {
 
             if (stream == STREAM_JSON) {
                 if (test >= 2)
-                    commandBuffer->append('\n');
-                commandBuffer->append('{');
+                    outputBuffer->append('\n');
+                outputBuffer->append('{');
                 if (test >= 2)
-                    commandBuffer
+                    outputBuffer
                             ->appendScn(lastScn)
                             ->append(',');
-                commandBuffer
+                outputBuffer
                         ->appendOperation("insert")
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
@@ -313,7 +306,7 @@ namespace OpenLogReplicator {
                                 oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2))
                         ->appendChr(",\"after\":{");
             } else if (stream == STREAM_DBZ_JSON) {
-                commandBuffer
+                outputBuffer
                         ->beginMessage()
                         ->appendDbzHead(object)
                         ->appendChr("\"before\":null,\"after\":{");
@@ -342,19 +335,19 @@ namespace OpenLogReplicator {
                     if (isNull) {
                         if (showColumns >= 1 || object->columns[i]->numPk > 0) {
                             if (prevValue)
-                                commandBuffer->append(',');
+                                outputBuffer->append(',');
                             else
                                 prevValue = true;
 
-                            commandBuffer->appendNull(object->columns[i]->columnName);
+                            outputBuffer->appendNull(object->columns[i]->columnName);
                         }
                     } else {
                         if (prevValue)
-                            commandBuffer->append(',');
+                            outputBuffer->append(',');
                         else
                             prevValue = true;
 
-                        commandBuffer->appendValue(object->columns[i]->columnName, redoLogRecord2, object->columns[i]->typeNo,
+                        outputBuffer->appendValue(object->columns[i]->columnName, redoLogRecord2, object->columns[i]->typeNo,
                                 object->columns[i]->charsetId, fieldPos + pos, colLength);
                     }
                 }
@@ -362,11 +355,11 @@ namespace OpenLogReplicator {
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->appendChr("}}");
+                outputBuffer->appendChr("}}");
             } else
             if (stream == STREAM_DBZ_JSON) {
 
-                commandBuffer
+                outputBuffer
                         ->append('}')
                         ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'c', redoLogRecord1->xid)
                         ->commitMessage();
@@ -408,13 +401,13 @@ namespace OpenLogReplicator {
 
             if (stream == STREAM_JSON) {
                 if (test >= 2)
-                    commandBuffer->append('\n');
-                commandBuffer->append('{');
+                    outputBuffer->append('\n');
+                outputBuffer->append('{');
                 if (test >= 2)
-                    commandBuffer
+                    outputBuffer
                             ->appendScn(lastScn)
                             ->append(',');
-                commandBuffer
+                outputBuffer
                         ->appendOperation("delete")
                         ->append(',')
                         ->appendTable(object->owner, object->objectName)
@@ -424,7 +417,7 @@ namespace OpenLogReplicator {
                         ->appendChr(",\"before\":{");
             } else
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer
+                outputBuffer
                         ->beginMessage()
                         ->appendDbzHead(object)
                         ->appendChr("\"before\":{");
@@ -452,19 +445,19 @@ namespace OpenLogReplicator {
                     if (isNull) {
                         if (showColumns >= 1 || object->columns[i]->numPk > 0) {
                             if (prevValue)
-                                commandBuffer->append(',');
+                                outputBuffer->append(',');
                             else
                                 prevValue = true;
 
-                            commandBuffer->appendNull(object->columns[i]->columnName);
+                            outputBuffer->appendNull(object->columns[i]->columnName);
                         }
                     } else {
                         if (prevValue)
-                            commandBuffer->append(',');
+                            outputBuffer->append(',');
                         else
                             prevValue = true;
 
-                        commandBuffer->appendValue(object->columns[i]->columnName, redoLogRecord1, object->columns[i]->typeNo,
+                        outputBuffer->appendValue(object->columns[i]->columnName, redoLogRecord1, object->columns[i]->typeNo,
                                 object->columns[i]->charsetId, fieldPos + pos, colLength);
                     }
                 }
@@ -473,10 +466,10 @@ namespace OpenLogReplicator {
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->appendChr("}}");
+                outputBuffer->appendChr("}}");
             } else
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer
+                outputBuffer
                     ->appendChr("},\"after\":null,")
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, 'd', redoLogRecord1->xid)
                     ->commitMessage();
@@ -495,11 +488,11 @@ namespace OpenLogReplicator {
 
         if (stream == STREAM_JSON) {
             if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer
+                outputBuffer->append('\n');
+            outputBuffer
                     ->append('{');
             if (test >= 2)
-                commandBuffer
+                outputBuffer
                     ->appendScn(lastScn)
                     ->append(',');
         }
@@ -510,7 +503,7 @@ namespace OpenLogReplicator {
 
         if (type == TRANSACTION_INSERT) {
             if (stream == STREAM_JSON) {
-                commandBuffer->appendOperation("insert");
+                outputBuffer->appendOperation("insert");
             }
 
             redoLogRecord2p = redoLogRecord2;
@@ -521,8 +514,7 @@ namespace OpenLogReplicator {
             }
 
             if (redoLogRecord2p == nullptr) {
-                if (oracleAnalyser->trace >= TRACE_WARN)
-                    cerr << "WARNING: could not find correct rowid for INSERT" << endl;
+                WARNING("could not find correct rowid for INSERT");
                 bdba = 0;
                 slot = 0;
             } else {
@@ -532,7 +524,7 @@ namespace OpenLogReplicator {
 
         } else if (type == TRANSACTION_DELETE) {
             if (stream == STREAM_JSON) {
-                commandBuffer->appendOperation("delete");
+                outputBuffer->appendOperation("delete");
             }
 
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
@@ -544,7 +536,7 @@ namespace OpenLogReplicator {
             }
         } else {
             if (stream == STREAM_JSON) {
-                commandBuffer->appendOperation("update");
+                outputBuffer->appendOperation("update");
             }
 
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
@@ -557,7 +549,7 @@ namespace OpenLogReplicator {
         }
 
         if (stream == STREAM_JSON) {
-            commandBuffer
+            outputBuffer
                     ->append(',')
                     ->appendTable(object->owner, object->objectName)
                     ->append(',')
@@ -565,7 +557,7 @@ namespace OpenLogReplicator {
         }
 
         if (stream == STREAM_DBZ_JSON) {
-            commandBuffer
+            outputBuffer
                     ->beginMessage()
                     ->appendDbzHead(object)
                     ->appendChr("\"before\":");
@@ -612,7 +604,7 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc << endl;
+                        WARNING("table: " << object->owner << "." << object->objectName << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
                         break;
                     }
                     if (colNums != nullptr) {
@@ -622,8 +614,8 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->maxSegCol) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
+                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
 
@@ -659,16 +651,15 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC << endl;
-                        break;
+                        RUNTIME_FAIL("table: " << object->owner << "." << object->objectName << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
                     }
 
                     oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
                     if (colNum >= object->maxSegCol) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
+                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
 
@@ -719,7 +710,7 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
-                        cerr << "ERROR: table: " << object->owner << "." << object->objectName << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc << endl;
+                        WARNING("table: " << object->owner << "." << object->objectName << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
                         break;
                     }
 
@@ -732,8 +723,8 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->maxSegCol) {
-                        cerr << "WARNING: table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column" << endl;
+                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                                dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
 
@@ -768,19 +759,16 @@ namespace OpenLogReplicator {
         }
 
         if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
-            cerr << "DML: tab: " << object->owner << "." << object->objectName << " type: " << type << endl;
+            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->objectName << " type: " << type);
             for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 if (object->columns[i] == nullptr)
                     continue;
 
-                cerr << "DML: " << dec << i << ": ";
-                if (beforePos[i] > 0)
-                    cerr << " B(" << beforePos[i] << ", " << dec << beforeLen[i] << ")";
-                if (afterPos[i] > 0)
-                    cerr << " A(" << afterPos[i] << ", " << dec << afterLen[i] << ")";
-                cerr << " pk: " << dec << object->columns[i]->numPk;
-                cerr << " supp: " << dec << (uint64_t)colIsSupp[i];
-                cerr << endl;
+                TRACE(TRACE2_DML, dec << i << ": " <<
+                        " B(" << beforePos[i] << ", " << dec << beforeLen[i] << ")" <<
+                        " A(" << afterPos[i] << ", " << dec << afterLen[i] << ")" <<
+                        " pk: " << dec << object->columns[i]->numPk <<
+                        " supp: " << dec << (uint64_t)colIsSupp[i]);
             }
         }
 
@@ -823,11 +811,11 @@ namespace OpenLogReplicator {
 
         if (type == TRANSACTION_DELETE || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
-                commandBuffer->appendChr(",\"before\":{");
+                outputBuffer->appendChr(",\"before\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer->appendChr("{");
+                outputBuffer->appendChr("{");
             }
 
             prevValue = false;
@@ -839,41 +827,41 @@ namespace OpenLogReplicator {
                 //value present before
                 if (beforePos[i] > 0 && beforeLen[i] > 0) {
                     if (prevValue)
-                        commandBuffer->append(',');
+                        outputBuffer->append(',');
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo,
+                    outputBuffer->appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo,
                             object->columns[i]->charsetId, beforePos[i], beforeLen[i]);
 
                 } else
                 if ((type == TRANSACTION_DELETE && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
                     (type == TRANSACTION_UPDATE && (afterPos[i] > 0 || beforePos[i] > 0))) {
                     if (prevValue)
-                        commandBuffer->append(',');
+                        outputBuffer->append(',');
                     else
                         prevValue = true;
 
-                    commandBuffer->appendNull(object->columns[i]->columnName);
+                    outputBuffer->appendNull(object->columns[i]->columnName);
                 }
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->append('}');
+                outputBuffer->append('}');
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer->append('}');
+                outputBuffer->append('}');
             }
         }
 
         if (type == TRANSACTION_INSERT || type == TRANSACTION_UPDATE) {
             if (stream == STREAM_JSON) {
-                commandBuffer->appendChr(",\"after\":{");
+                outputBuffer->appendChr(",\"after\":{");
             }
 
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer->appendChr(",\"after\":{");
+                outputBuffer->appendChr(",\"after\":{");
             }
 
             prevValue = false;
@@ -884,34 +872,34 @@ namespace OpenLogReplicator {
 
                 if (afterPos[i] > 0 && afterLen[i] > 0) {
                     if (prevValue)
-                        commandBuffer->append(',');
+                        outputBuffer->append(',');
                     else
                         prevValue = true;
 
-                    commandBuffer->appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo,
+                    outputBuffer->appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo,
                             object->columns[i]->charsetId, afterPos[i], afterLen[i]);
                 } else
                 if ((type == TRANSACTION_INSERT && (showColumns >= 1 || object->columns[i]->numPk > 0)) ||
                     (type == TRANSACTION_UPDATE && (afterPos[i] > 0 || beforePos[i] > 0))) {
                     if (prevValue)
-                        commandBuffer->append(',');
+                        outputBuffer->append(',');
                     else
                         prevValue = true;
 
-                    commandBuffer->appendNull(object->columns[i]->columnName);
+                    outputBuffer->appendNull(object->columns[i]->columnName);
                 }
             }
 
             if (stream == STREAM_JSON) {
-                commandBuffer->append('}');
+                outputBuffer->append('}');
             }
             if (stream == STREAM_DBZ_JSON) {
-                commandBuffer->append('}');
+                outputBuffer->append('}');
             }
         }
 
         if (stream == STREAM_JSON) {
-            commandBuffer->append('}');
+            outputBuffer->append('}');
         }
 
         if (stream == STREAM_DBZ_JSON) {
@@ -919,7 +907,7 @@ namespace OpenLogReplicator {
             if (type == TRANSACTION_INSERT) op = 'c';
             else if (type == TRANSACTION_DELETE) op = 'd';
 
-            commandBuffer
+            outputBuffer
                     ->appendDbzTail(object, lastTime.toTime() * 1000, lastScn, op, redoLogRecord1->xid)
                     ->commitMessage();
         }
@@ -970,13 +958,13 @@ namespace OpenLogReplicator {
 
         if (stream == STREAM_JSON) {
             if (test >= 2)
-                commandBuffer->append('\n');
-            commandBuffer->append('{');
+                outputBuffer->append('\n');
+            outputBuffer->append('{');
             if (test >= 2)
-                commandBuffer
+                outputBuffer
                         ->appendScn(lastScn)
                         ->append(',');
-            commandBuffer
+            outputBuffer
                     ->appendTable(object->owner, object->objectName)
                     ->appendChr(",\"type\":")
                     ->appendDec(type)
@@ -985,15 +973,15 @@ namespace OpenLogReplicator {
                     ->append(',');
 
             if (type == 85)
-                commandBuffer->appendOperation("truncate");
+                outputBuffer->appendOperation("truncate");
             else if (type == 12)
-                commandBuffer->appendOperation("drop");
+                outputBuffer->appendOperation("drop");
             else if (type == 15)
-                commandBuffer->appendOperation("alter");
+                outputBuffer->appendOperation("alter");
             else
-                commandBuffer->appendOperation("?");
+                outputBuffer->appendOperation("?");
 
-            commandBuffer
+            outputBuffer
                     ->appendChr(",\"sql\":\"")
                     ->appendEscape(sqlText, sqlLength - 1)
                     ->appendChr("\"}");

@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
@@ -55,46 +56,44 @@ namespace OpenLogReplicator {
         }
     }
 
-
-    void RedoLogRecord::dump(OracleAnalyser *oracleAnalyser) {
-        if (oracleAnalyser->version < 0x12200)
-            cerr << "O scn: " << PRINTSCN48(scnRecord);
-        else
-            cerr << "O scn: " << PRINTSCN64(scnRecord);
-
-        cerr << " xid: " << PRINTXID(xid) <<
-                " op: " << setfill('0') << setw(4) << hex << opCode <<
-                " cls: " << dec << cls <<
-                " rbl: " << dec << rbl <<
-                " seq: " << dec << (uint64_t)seq <<
-                " typ: " << dec << (uint64_t)typ <<
-                " con_id: " << dec << conId <<
-                " flgRecord: " << dec << flgRecord <<
+    ostream& operator<<(ostream& os, const RedoLogRecord& redo) {
+        stringstream ss;
+        ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
+                " xid: " << PRINTXID(redo.xid) <<
+                " op: " << setfill('0') << setw(4) << hex << redo.opCode <<
+                " cls: " << dec << redo.cls <<
+                " rbl: " << dec << redo.rbl <<
+                " seq: " << dec << (uint64_t)redo.seq <<
+                " typ: " << dec << (uint64_t)redo.typ <<
+                " con_id: " << dec << redo.conId <<
+                " flgRecord: " << dec << redo.flgRecord <<
 //                " vectorNo: " << dec << vectorNo <<
-                " robjn: " << dec << recordObjn <<
-                " robjd: " << dec << recordObjd <<
+                " robjn: " << dec << redo.recordObjn <<
+                " robjd: " << dec << redo.recordObjd <<
 //                " scn: " << PRINTSCN64(scn) <<
-                " nrow: " << dec << (uint64_t)nrow <<
-                " afn: " << dec << afn <<
-                " length: " << dec << length <<
-                " dba: 0x" << hex << dba <<
-                " bdba: 0x" << hex << bdba <<
-                " objn: " << dec << objn <<
-                " objd: " << dec << objd <<
-                " tsn: " << dec << tsn <<
-                " undo: " << dec << undo <<
-                " usn: " << dec << usn <<
-                " uba: " << PRINTUBA(uba) <<
-                " slt: " << dec << (uint64_t)slt <<
-                " rci: " << dec << (uint64_t)rci <<
-                " flg: " << dec << (uint64_t)flg <<
-                " opc: 0x" << hex << opc <<
-                " op: " << dec << (uint64_t)op <<
-                " cc: " << dec << (uint64_t)cc <<
+                " nrow: " << dec << (uint64_t)redo.nrow <<
+                " afn: " << dec << redo.afn <<
+                " length: " << dec << redo.length <<
+                " dba: 0x" << hex << redo.dba <<
+                " bdba: 0x" << hex << redo.bdba <<
+                " objn: " << dec << redo.objn <<
+                " objd: " << dec << redo.objd <<
+                " tsn: " << dec << redo.tsn <<
+                " undo: " << dec << redo.undo <<
+                " usn: " << dec << redo.usn <<
+                " uba: " << PRINTUBA(redo.uba) <<
+                " slt: " << dec << (uint64_t)redo.slt <<
+                " rci: " << dec << (uint64_t)redo.rci <<
+                " flg: " << dec << (uint64_t)redo.flg <<
+                " opc: 0x" << hex << redo.opc <<
+                " op: " << dec << (uint64_t)redo.op <<
+                " cc: " << dec << (uint64_t)redo.cc <<
 //                " itli: " << dec << (uint64_t)itli <<
-                " slot: " << dec << slot <<
-                " flags: 0x" << hex << (uint64_t)flags <<
-                " fb: 0x" << hex << (uint64_t)fb <<
-                " nrid: 0x" << hex << nridBdba << "." << dec << nridSlot;
+                " slot: " << dec << redo.slot <<
+                " flags: 0x" << hex << (uint64_t)redo.flags <<
+                " fb: 0x" << hex << (uint64_t)redo.fb <<
+                " nrid: 0x" << hex << redo.nridBdba << "." << dec << redo.nridSlot;
+        os << ss.str();
+        return os;
     }
 }
