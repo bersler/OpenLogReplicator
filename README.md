@@ -13,3 +13,6 @@ https://www.bersler.com/openlogreplicator/installation/
 
 3. Configuration:
 https://www.bersler.com/openlogreplicator/configuration/
+
+4. FAQ
+https://www.bersler.com/openlogreplicator/faq/
