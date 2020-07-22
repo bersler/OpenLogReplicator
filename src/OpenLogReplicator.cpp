@@ -207,6 +207,7 @@ int main(int argc, char **argv) {
                     checkpointInterval = checkpointIntervalJSON.GetUint64();
                 }
 
+                //optional
                 uint64_t mode = MODE_ONLINE;
                 if (source.HasMember("mode")) {
                     const Value& modeJSON = source["mode"];
@@ -247,24 +248,21 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OutputBuffer) << " bytes memory for (reason: command buffer)");
                 }
 
+                string userString(""), passwordString(""), serverString("");
                 if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
                     const Value& user = getJSONfield(fileName, source, "user");
+                    userString = user.GetString();
                     const Value& password = getJSONfield(fileName, source, "password");
+                    passwordString = password.GetString();
                     const Value& server = getJSONfield(fileName, source, "server");
+                    serverString = server.GetString();
+                }
 
-                    oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), user.GetString(), password.GetString(),
-                            server.GetString(), trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
-                            checkpointInterval, memoryMinMb, memoryMaxMb);
-                    if (oracleAnalyser == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser#1)");
-                    }
-                } else {
-                    oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), "", "",
-                            "", trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
-                            checkpointInterval, memoryMinMb, memoryMaxMb);
-                    if (oracleAnalyser == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser#2)");
-                    }
+                oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), userString, passwordString,
+                        serverString, trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
+                        checkpointInterval, memoryMinMb, memoryMaxMb);
+                if (oracleAnalyser == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser)");
                 }
 
                 //optional
@@ -365,7 +363,6 @@ int main(int argc, char **argv) {
 
             if (strcmp("KAFKA", type.GetString()) == 0) {
                 const Value& alias = getJSONfield(fileName, target, "alias");
-                const Value& brokers = getJSONfield(fileName, target, "brokers");
                 const Value& source = getJSONfield(fileName, target, "source");
                 const Value& format = getJSONfield(fileName, target, "format");
 
@@ -379,8 +376,6 @@ int main(int argc, char **argv) {
                     CONFIG_FAIL("bad JSON, invalid stream type");
                 }
 
-                const Value& topic = getJSONfield(fileName, format, "topic");
-
                 //optional
                 uint64_t maxMessageMb = 100;
                 if (format.HasMember("max-message-mb")) {
@@ -390,13 +385,6 @@ int main(int argc, char **argv) {
                         maxMessageMb = 1;
                     if (maxMessageMb > MAX_KAFKA_MESSAGE_MB)
                         maxMessageMb = MAX_KAFKA_MESSAGE_MB;
-                }
-
-                //optional
-                uint64_t metadata = 0;
-                if (format.HasMember("metadata")) {
-                    const Value& metadataJSON = format["metadata"];
-                    metadata = metadataJSON.GetUint64();
                 }
 
                 //optional
@@ -418,6 +406,15 @@ int main(int argc, char **argv) {
                 if (format.HasMember("test")) {
                     const Value& testJSON = format["test"];
                     test = testJSON.GetUint64();
+                }
+
+                string brokersString(""), topicString("");
+                //not required when Kafka connection is not established
+                if (test == 0) {
+                    const Value& brokers = getJSONfield(fileName, target, "brokers");
+                    brokersString = brokers.GetString();
+                    const Value& topic = getJSONfield(fileName, format, "topic");
+                    topicString = topic.GetString();
                 }
 
                 //optional
@@ -444,8 +441,8 @@ int main(int argc, char **argv) {
                 }
 
                 cerr << "Adding target: " << alias.GetString() << endl;
-                kafkaWriter = new KafkaWriter(alias.GetString(), brokers.GetString(), topic.GetString(), oracleAnalyser,
-                        maxMessageMb, stream, metadata, singleDml, showColumns, test, timestampFormat, charFormat);
+                kafkaWriter = new KafkaWriter(alias.GetString(), brokersString, topicString, oracleAnalyser,
+                        maxMessageMb, stream, singleDml, showColumns, test, timestampFormat, charFormat);
                 if (kafkaWriter == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(KafkaWriter) << " bytes memory for (reason: kafka writer)");
                 }
