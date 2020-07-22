@@ -5,17 +5,11 @@ The documentation for the OpenLogReplicator program can be found on https://www.
 
 The currently available chapters are:
 
-1. Quick start (under construction)
+1. Quick start:
 https://www.bersler.com/openlogreplicator/quick-start/
 
-2. Installation: (under construction)
+2. Installation:
 https://www.bersler.com/openlogreplicator/installation/
 
-2.1. Oracle Database Requirements
-https://www.bersler.com/openlogreplicator/installation/oracle-database-requirements/
-
-2.2. Internationalization 
-https://www.bersler.com/openlogreplicator/installation/internationalization/
-
-2.3. Configuration (under construction)
+3. Configuration:
 https://www.bersler.com/openlogreplicator/configuration/
