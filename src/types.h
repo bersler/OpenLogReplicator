@@ -52,7 +52,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.10"
+#define PROGRAM_VERSION             "0.6.11"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -69,7 +69,9 @@ typedef uint64_t typeunicode;
 #define MODE_ONLINE_ARCH            2
 #define MODE_OFFLINE                3
 #define MODE_OFFLINE_ARCH           4
-#define MODE_BATCH                  5
+#define MODE_STANDBY                5
+#define MODE_STANDBY_ARCH           6
+#define MODE_BATCH                  7
 
 #define TRACE_SILENT                0
 #define TRACE_WARNING               1

@@ -1,5 +1,5 @@
 {
-  "version": "0.6.10",
+  "version": "0.6.11",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -8,6 +8,7 @@
     {
       "type": "ORACLE",
       "alias": "S1",
+      "name": "O112A",
       "flags": 0,
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
@@ -16,7 +17,6 @@
       "checkpoint-interval": 10,
       "disable-checks": 0,
       "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
-      "name": "O112A",
       "user": "system",
       "password": "unknPwd4%",
       "server": "//server:4999/O112A.ORADOMAIN",

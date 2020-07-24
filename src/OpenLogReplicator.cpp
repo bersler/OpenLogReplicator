@@ -219,6 +219,10 @@ int main(int argc, char **argv) {
                         mode = MODE_OFFLINE;
                     else if (strcmp(modeJSON.GetString(), "offline-arch") == 0)
                         mode = MODE_OFFLINE_ARCH;
+                    else if (strcmp(modeJSON.GetString(), "standby") == 0)
+                        mode = MODE_STANDBY;
+                    else if (strcmp(modeJSON.GetString(), "standby-arch") == 0)
+                        mode = MODE_STANDBY_ARCH;
                     else if (strcmp(modeJSON.GetString(), "batch") == 0)
                          mode = MODE_BATCH;
                     else {
@@ -249,7 +253,7 @@ int main(int argc, char **argv) {
                 }
 
                 string userString(""), passwordString(""), serverString("");
-                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
+                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH) {
                     const Value& user = getJSONfield(fileName, source, "user");
                     userString = user.GetString();
                     const Value& password = getJSONfield(fileName, source, "password");
@@ -300,7 +304,7 @@ int main(int argc, char **argv) {
 
                 outputBuffer->initialize(oracleAnalyser);
 
-                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
+                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH) {
                     oracleAnalyser->initializeOnlineMode();
 
                     string keysStr("");

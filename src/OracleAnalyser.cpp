@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
     string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT D.LOG_MODE, D.SUPPLEMENTAL_LOG_DATA_MIN, D.SUPPLEMENTAL_LOG_DATA_PK, D.SUPPLEMENTAL_LOG_DATA_ALL, TP.ENDIAN_FORMAT, D.CURRENT_SCN, DI.RESETLOGS_ID, D.ACTIVATION#, VER.BANNER, SYS_CONTEXT('USERENV','DB_NAME') FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
     string OracleAnalyser::SQL_GET_CON_INFO("SELECT SYS_CONTEXT('USERENV','CON_ID'), SYS_CONTEXT('USERENV','CON_NAME') FROM DUAL");
     string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT SEQUENCE# FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
-    string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
+    string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT LF.GROUP#, LF.MEMBER FROM SYS.V_$LOGFILE LF WHERE TYPE = :i ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
     string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT T.DATAOBJ#, T.OBJ#, T.CLUCOLS, U.NAME, O.NAME, "
             "DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), "
             "DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), "   //IOT overflow segment,
@@ -439,7 +439,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::archLogGetList(void) {
-        if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
+        if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH) {
 #ifdef ONLINE_MODEIMPL_OCCI
             checkConnection(true);
 
@@ -462,8 +462,9 @@ namespace OpenLogReplicator {
                     sequence = stmt.rset->getNumber(2);
                     firstScn = stmt.rset->getNumber(3);
                     nextScn = stmt.rset->getNumber(5);
+                    string mappedPath = applyMapping(path);
 
-                    OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, path.c_str());
+                    OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, mappedPath.c_str());
                     if (redo == nullptr) {
                         RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (arch log list#1)");
                     }
@@ -1021,6 +1022,13 @@ namespace OpenLogReplicator {
             OracleStatement stmt(&conn, env);
             TRACE_(TRACE2_SQL, SQL_GET_LOGFILE_LIST);
             stmt.createStatement(SQL_GET_LOGFILE_LIST);
+            if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH)
+                stmt.stmt->setString(1, "ONLINE");
+            else if (mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH)
+                stmt.stmt->setString(1, "STANDBY");
+            else {
+                RUNTIME_FAIL("unsupported log mode when looking for online redo logs");
+            }
             stmt.executeQuery();
 
             Reader *onlineReader = nullptr;
@@ -1042,7 +1050,17 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("Oracle: " << dec << ex.getErrorCode() << ": " << ex.getMessage());
         }
 
-        checkOnlineRedoLogs();
+        if (mode == MODE_ONLINE || mode == MODE_STANDBY) {
+            if (readers.size() == 0) {
+                if (mode == MODE_STANDBY) {
+                    RUNTIME_FAIL("failed to find standby redo log files");
+                }
+                if (mode == MODE_ONLINE) {
+                    RUNTIME_FAIL("failed to find online redo log files");
+                }
+            }
+            checkOnlineRedoLogs();
+        }
         archReader = readerCreate(0);
         readCheckpoint();
 #else
@@ -1135,7 +1153,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH)
+        if (mode == MODE_ONLINE || mode == MODE_OFFLINE || mode == MODE_STANDBY)
             checkOnlineRedoLogs();
         archReader = readerCreate(0);
 
@@ -1393,7 +1411,7 @@ namespace OpenLogReplicator {
         TRACE_(TRACE2_THREADS, "ANALYSER (" << hex << this_thread::get_id() << ") START");
 
         INFO_("Oracle Analyser for " << database << " in " << modeStr << " mode is starting");
-        if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH)
+        if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH)
             checkConnection(true);
 
         uint64_t ret = REDO_OK;
@@ -1407,7 +1425,7 @@ namespace OpenLogReplicator {
                 //
                 //ONLINE REDO LOGS READ
                 //
-                if (mode == MODE_ONLINE || mode == MODE_OFFLINE) {
+                if (mode == MODE_ONLINE || mode == MODE_OFFLINE || mode == MODE_STANDBY) {
                     TRACE_(TRACE2_REDO, "checking online redo logs");
                     updateOnlineLogs();
 
@@ -1760,12 +1778,13 @@ namespace OpenLogReplicator {
             }
 
             if (!foundPath) {
+                uint64_t badGroup = reader->group;
                 for (string path : reader->paths) {
                     string pathMapped = applyMapping(path);
                     ERROR("can't read: " << pathMapped);
                 }
                 readerDropAll();
-                RUNTIME_FAIL("can't read any member of group " << dec << reader->group);
+                RUNTIME_FAIL("can't read any member of group " << dec << badGroup);
             }
         }
     }

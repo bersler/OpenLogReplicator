@@ -1,14 +1,14 @@
 {
-  "version": "0.6.10",
+  "version": "0.6.11",
   "sources": [
     {
       "type": "ORACLE",
       "alias": "S1",
-      "memory-min-mb": 64,
-      "memory-max-mb": 1024,
       "name": "O112A",
       "mode": "batch",
-      "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
+      "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"],
+      "memory-min-mb": 64,
+      "memory-max-mb": 1024
   ],
   "targets": [
     {
