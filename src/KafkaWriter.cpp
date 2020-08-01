@@ -237,7 +237,7 @@ namespace OpenLogReplicator {
                     ->appendMs("timestamp", time.toTime() * 1000)
                     ->append(',')
                     ->appendXid(xid)
-                    ->appendChr(",dml:[");
+                    ->appendChr(",\"dml\":[");
         }
 
         lastTime = time;
