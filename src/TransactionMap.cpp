@@ -74,7 +74,10 @@ namespace OpenLogReplicator {
                 transaction->lastRedoLogRecord1->rci);
 
         if (MAP_AT(hashKey) == nullptr) {
-            RUNTIME_FAIL("transaction does not exists in hash map1");
+            RUNTIME_FAIL("transaction does not exist in hash map1, codes: " << dec << transaction->opCodes <<
+                    ", UBA: " << PRINTUBA(transaction->lastRedoLogRecord1->uba) <<
+                    ", SLT: " << (uint64_t)transaction->lastRedoLogRecord1->slt <<
+                    ", RCI: " << transaction->lastRedoLogRecord1->rci);
         }
 
         Transaction *transactionTmp = MAP_AT(hashKey);
@@ -96,7 +99,10 @@ namespace OpenLogReplicator {
             transactionTmpNext = transactionTmp->next;
         }
 
-        RUNTIME_FAIL("transaction does not exists in hash map2");
+        RUNTIME_FAIL("transaction does not exist in hash map2, codes: " << dec << transaction->opCodes <<
+                ", UBA: " << PRINTUBA(transaction->lastRedoLogRecord1->uba) <<
+                ", SLT: " << (uint64_t)transaction->lastRedoLogRecord1->slt <<
+                ", RCI: " << transaction->lastRedoLogRecord1->rci);
     }
 
     //typeuba uba, typedba dba, typeslt slt, typerci rci, typescn scn, uint64_t opFlags
