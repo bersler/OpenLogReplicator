@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
         void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength);
         void dumpRows(uint8_t *data);
-        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg);
+        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg);
         void processFbFlags(uint8_t fb, char *fbStr);
 
     public:

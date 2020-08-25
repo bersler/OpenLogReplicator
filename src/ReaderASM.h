@@ -35,10 +35,10 @@ namespace OpenLogReplicator {
 
     class ReaderASM : public Reader {
     protected:
-        static string SQL_ASM_CLOSE;
-        static string SQL_ASM_GETFILEATR;
-        static string SQL_ASM_OPEN;
-        static string SQL_ASM_READ;
+        static const char* SQL_ASM_CLOSE;
+        static const char* SQL_ASM_GETFILEATR;
+        static const char* SQL_ASM_OPEN;
+        static const char* SQL_ASM_READ;
 
         int32_t fileDes;
         uint64_t fileType;
@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
 
     public:
-        ReaderASM(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group);
+        ReaderASM(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group);
         virtual ~ReaderASM();
     };
 }

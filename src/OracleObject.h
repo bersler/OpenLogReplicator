@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         void addColumn(OracleColumn *column);
         void addPartition(typeobj partitionObjn, typeobj partitionObjd);
 
-        OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const string owner, const string objectName);
+        OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const char *owner, const char *objectName);
         virtual ~OracleObject();
 
         friend ostream& operator<<(ostream& os, const OracleObject& ors);

@@ -28,7 +28,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Reader::Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead) :
+    Reader::Reader(const char *alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead) :
         Thread(alias),
         oracleAnalyser(oracleAnalyser),
         singleBlockRead(singleBlockRead),

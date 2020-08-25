@@ -26,7 +26,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Thread::Thread(const string alias) :
+    Thread::Thread(const char *alias) :
         shutdown(false),
         started(false),
         pthread(0),

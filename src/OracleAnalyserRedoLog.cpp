@@ -54,7 +54,7 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleAnalyserRedoLog::OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const string path) :
+    OracleAnalyserRedoLog::OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const char *path) :
             oracleAnalyser(oracleAnalyser),
             lastCheckpointScn(0),
             extScn(0),

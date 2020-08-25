@@ -52,13 +52,13 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    string OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT "
+    const char* OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT "
             "NAME, "
             "SEQUENCE#, "
             "FIRST_CHANGE#, "
             "NEXT_CHANGE# "
             "FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :j AND ACTIVATION# = :k AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
-    string OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT "
+    const char* OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT "
             "DECODE(D.LOG_MODE, 'ARCHIVELOG', 1, 0), "
             "DECODE(D.SUPPLEMENTAL_LOG_DATA_MIN, 'YES', 1, 0), "
             "DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0), "
@@ -70,18 +70,18 @@ namespace OpenLogReplicator {
             "VER.BANNER, "
             "SYS_CONTEXT('USERENV','DB_NAME') "
             "FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
-    string OracleAnalyser::SQL_GET_CON_INFO("SELECT "
+    const char* OracleAnalyser::SQL_GET_CON_INFO("SELECT "
             " SYS_CONTEXT('USERENV','CON_ID'), "
             "SYS_CONTEXT('USERENV','CON_NAME') "
             "FROM DUAL");
-    string OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT "
+    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT "
             "SEQUENCE# "
             "FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
-    string OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT "
+    const char* OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT "
             "LF.GROUP#, "
             "LF.MEMBER "
             "FROM SYS.V_$LOGFILE LF WHERE TYPE = :i ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    string OracleAnalyser::SQL_GET_TABLE_LIST("SELECT "
+    const char* OracleAnalyser::SQL_GET_TABLE_LIST("SELECT "
             "T.DATAOBJ#, "
             "T.OBJ#, "
             "T.CLUCOLS, "
@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
             "DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), "
             "CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 1 ELSE 0 END "
             "FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
-    string OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT "
+    const char* OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT "
             "C.COL#, "
             "C.SEGCOL#, "
             "C.NAME, "
@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
             "(SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), "
             "(SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) "
             "FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    string OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT "
+    const char* OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT "
             "C.COL#, "
             "C.SEGCOL#, "
             "C.NAME, "
@@ -126,7 +126,7 @@ namespace OpenLogReplicator {
             "(SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), "
             "(SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) "
             "FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    string OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT "
+    const char* OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT "
             "T.OBJ#, "
             "T.DATAOBJ# "
             "FROM SYS.TABPART$ T where T.BO# = :1 "
@@ -135,20 +135,20 @@ namespace OpenLogReplicator {
             "TSP.OBJ#, "
             "TSP.DATAOBJ# "
             "FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
-    string OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT "
+    const char* OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT "
             "C.TYPE# "
             "FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
-    string OracleAnalyser::SQL_GET_PARAMETER("SELECT "
+    const char* OracleAnalyser::SQL_GET_PARAMETER("SELECT "
             "VALUE "
             "FROM SYS.V_$PARAMETER WHERE NAME = :i");
-    string OracleAnalyser::SQL_GET_PROPERTY("SELECT "
+    const char* OracleAnalyser::SQL_GET_PROPERTY("SELECT "
             "PROPERTY_VALUE "
             "FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME = :1");
 
-    OracleAnalyser::OracleAnalyser(OutputBuffer *outputBuffer, const string alias, const string database, const string user, const string password, const string connectString,
-            const string userASM, const string passwordASM, const string connectStringASM, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            uint64_t flags, uint64_t modeType, uint64_t disableChecks, uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval,
-            uint64_t memoryMinMb, uint64_t memoryMaxMb) :
+    OracleAnalyser::OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
+            const char *connectString, const char *userASM, const char *passwordASM, const char *connectStringASM, uint64_t trace,
+            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t modeType, uint64_t disableChecks,
+            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
         Thread(alias),
         databaseSequence(0),
         user(user),
@@ -345,10 +345,8 @@ namespace OpenLogReplicator {
         stmt.bindString(1, parameter);
         stmt.defineString(1, value, sizeof(value));
 
-        if (stmt.executeQuery()) {
-            string valueString(value);
-            return valueString;
-        }
+        if (stmt.executeQuery())
+            return value;
 
         //no value found
         RUNTIME_FAIL("can't get parameter value for " << parameter);
@@ -362,10 +360,8 @@ namespace OpenLogReplicator {
         stmt.bindString(1, property);
         stmt.defineString(1, value, sizeof(value));
 
-        if (stmt.executeQuery()) {
-            string valueString(value);
-            return valueString;
-        }
+        if (stmt.executeQuery())
+            return value;
 
         //no value found
         RUNTIME_FAIL("can't get proprty value for " << property);
@@ -531,7 +527,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::archLogGetList(void) {
-        if (modeType == MODE_ONLINE || modeType == MODE_ASM || modeType == MODE_STANDBY) {
+        if (modeType == MODE_ONLINE || modeType == MODE_STANDBY) {
             checkConnection(true);
 
             DatabaseStatement stmt(conn);
@@ -648,9 +644,7 @@ namespace OpenLogReplicator {
             }
 
         } else if (modeType == MODE_BATCH) {
-            for (string path1 : redoLogsBatch) {
-                string mappedPath = applyMapping(path1);
-
+            for (string &mappedPath : redoLogsBatch) {
                 TRACE_(TRACE2_ARCHIVE_LIST, "checking path: " << mappedPath);
 
                 struct stat fileStat;
@@ -1239,10 +1233,10 @@ namespace OpenLogReplicator {
             uint64_t maxSegCol = maxSegColJSON.GetInt64();
 
             const Value& ownerJSON = getJSONfield(fileName, schema[i], "owner");
-            string owner = ownerJSON.GetString();
+            const char *owner = ownerJSON.GetString();
 
             const Value& objectNameJSON = getJSONfield(fileName, schema[i], "object-name");
-            string objectName = objectNameJSON.GetString();
+            const char *objectName = objectNameJSON.GetString();
 
             object = new OracleObject(objn, objd, cluCols, options, owner, objectName);
             object->totalPk = totalPk;
@@ -1264,7 +1258,7 @@ namespace OpenLogReplicator {
                 }
 
                 const Value& columnNameJSON = getJSONfield(fileName, columns[j], "column-name");
-                string columnName = columnNameJSON.GetString();
+                const char* columnName = columnNameJSON.GetString();
 
                 const Value& typeNoJSON = getJSONfield(fileName, columns[j], "type-no");
                 uint64_t typeNo = typeNoJSON.GetUint64();
@@ -1367,7 +1361,7 @@ namespace OpenLogReplicator {
 
             hasPrev2 = false;
             ss << "{\"group\":" << reader->group << ",\"path\":[";
-            for (string path : reader->paths) {
+            for (string &path : reader->paths) {
                 if (hasPrev2)
                     ss << ",";
                 else
@@ -1765,13 +1759,13 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::checkTableForGrants(string tableName) {
         try {
-            stringstream query;
-            query << "SELECT 1 FROM " << tableName << " WHERE 0 = 1";
-            string queryString(query.str());
+            stringstream queryStream;
+            queryStream << "SELECT 1 FROM " << tableName << " WHERE 0 = 1";
+            string query(queryStream.str());
 
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, queryString);
-            stmt.createStatement(queryString);
+            TRACE_(TRACE2_SQL, query);
+            stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
             stmt.executeQuery();
         } catch (RuntimeException &ex) {
@@ -1790,9 +1784,9 @@ namespace OpenLogReplicator {
         Reader *reader;
 
         if (modeType == MODE_ASM) {
-            reader = new ReaderASM(alias, this, group);
+            reader = new ReaderASM(alias.c_str(), this, group);
         } else {
-            reader = new ReaderFilesystem(alias, this, group);
+            reader = new ReaderFilesystem(alias.c_str(), this, group);
         }
 
         if (reader == nullptr) {
@@ -1812,11 +1806,11 @@ namespace OpenLogReplicator {
                 continue;
 
             bool foundPath = false;
-            for (string path : reader->paths) {
+            for (string &path : reader->paths) {
                 reader->pathMapped = applyMapping(path);
                 if (readerCheckRedoLog(reader)) {
                     foundPath = true;
-                    OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, reader->group, reader->pathMapped);
+                    OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, reader->group, reader->pathMapped.c_str());
                     if (redo == nullptr) {
                         readerDropAll();
                         RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (online redo logs)");
@@ -1830,7 +1824,7 @@ namespace OpenLogReplicator {
 
             if (!foundPath) {
                 uint64_t badGroup = reader->group;
-                for (string path : reader->paths) {
+                for (string &path : reader->paths) {
                     string pathMapped = applyMapping(path);
                     ERROR("can't read: " << pathMapped);
                 }
@@ -1892,7 +1886,7 @@ namespace OpenLogReplicator {
         return sequence;
     }
 
-    void OracleAnalyser::addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options) {
+    void OracleAnalyser::addTable(const char *mask, vector<string> &keys, string &keysStr, uint64_t options) {
         checkConnection(false);
         INFO_("- reading table schema for: " << mask);
         uint64_t tabCnt = 0;
@@ -1905,8 +1899,8 @@ namespace OpenLogReplicator {
         typeobj objd; stmt.defineUInt32(1, objd);
         typeobj objn; stmt.defineUInt32(2, objn);
         uint64_t cluCols; stmt.defineUInt64(3, cluCols);
-        char ownerStr[129]; stmt.defineString(4, ownerStr, sizeof(ownerStr));
-        char objectNameStr[129]; stmt.defineString(5, objectNameStr, sizeof(objectNameStr));
+        char owner[129]; stmt.defineString(4, owner, sizeof(owner));
+        char objectName[129]; stmt.defineString(5, objectName, sizeof(objectName));
         uint64_t clustered; stmt.defineUInt64(6, clustered);
         uint64_t iot; stmt.defineUInt64(7, iot);
         uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
@@ -1920,8 +1914,6 @@ namespace OpenLogReplicator {
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
-            string owner(ownerStr), objectName(objectNameStr);
-
             //skip Index Organized Tables (IOT)
             if (iot) {
                 INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT");
@@ -2010,7 +2002,7 @@ namespace OpenLogReplicator {
             stmt2.bindUInt32(1, objn);
             uint64_t colNo; stmt2.defineUInt64(1, colNo);
             uint64_t segColNo; stmt2.defineUInt64(2, segColNo);
-            char columnNameStr[129]; stmt2.defineString(3, columnNameStr, sizeof(columnNameStr));
+            char columnName[129]; stmt2.defineString(3, columnName, sizeof(columnName));
             uint64_t typeNo; stmt2.defineUInt64(4, typeNo);
             uint64_t length; stmt2.defineUInt64(5, length);
             int64_t precision; stmt2.defineInt64(6, precision);
@@ -2023,7 +2015,6 @@ namespace OpenLogReplicator {
             int64_t ret2 = stmt2.executeQuery();
 
             while (ret2) {
-                string columnName(columnNameStr);
                 if (stmt2.isNull(6))
                     precision = -1;
                 if (stmt2.isNull(7))
@@ -2050,7 +2041,7 @@ namespace OpenLogReplicator {
                         numSup = 1;
                     numPk = 0;
                     for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
-                        if (columnName.compare(it->c_str()) == 0) {
+                        if (strcmp(columnName, it->c_str()) == 0) {
                             numPk = 1;
                             ++keysCnt;
                             if (numSup == 0)
@@ -2160,7 +2151,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyser::addPathMapping(const string source, const string target) {
+    void OracleAnalyser::addPathMapping(const char* source, const char* target) {
         TRACE_(TRACE2_FILE, "added mapping [" << source << "] -> [" << target << "]");
         string sourceMaping = source, targetMapping = target;
         pathMapping.push_back(sourceMaping);
@@ -2188,7 +2179,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyser::addRedoLogsBatch(const string path) {
+    void OracleAnalyser::addRedoLogsBatch(string path) {
         redoLogsBatch.push_back(path);
     }
 

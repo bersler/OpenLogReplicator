@@ -42,7 +42,7 @@ public:
         virtual void stop(void);
         uint64_t initialize(void);
 
-        Thread(const string alias);
+        Thread(const char *alias);
         virtual ~Thread();
     };
 }

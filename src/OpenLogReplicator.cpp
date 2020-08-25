@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
             const Value& type = getJSONfield(fileName, source, "type");
 
             if (strcmp("ORACLE", type.GetString()) == 0) {
-                const Value& alias = getJSONfield(fileName, source, "alias");
+                const Value& aliasJSON = getJSONfield(fileName, source, "alias");
 
                 //optional
                 uint64_t flags = 0;
@@ -229,8 +229,8 @@ int main(int argc, char **argv) {
                     disableChecks = disableChecksJSON.GetUint64();
                 }
 
-                const Value& name = getJSONfield(fileName, source, "name");
-                cerr << "Adding source: " << name.GetString() << endl;
+                const Value& nameJSON = getJSONfield(fileName, source, "name");
+                cerr << "Adding source: " << nameJSON.GetString() << endl;
 
                 OutputBuffer *outputBuffer = new OutputBuffer();
                 buffers.push_back(outputBuffer);
@@ -238,33 +238,33 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OutputBuffer) << " bytes memory for (reason: command buffer)");
                 }
 
-                string userString(""), passwordString(""), serverString(""), userASMString(""), passwordASMString(""), serverASMString("");
+                const char *user = "", *password = "", *server = "", *userASM = "", *passwordASM = "", *serverASM = "";
                 if (modeType == MODE_ONLINE || modeType == MODE_ASM || modeType == MODE_STANDBY) {
-                    const Value& user = getJSONfield(fileName, mode, "user");
-                    userString = user.GetString();
-                    const Value& password = getJSONfield(fileName, mode, "password");
-                    passwordString = password.GetString();
-                    const Value& server = getJSONfield(fileName, mode, "server");
-                    serverString = server.GetString();
+                    const Value& userJSON = getJSONfield(fileName, mode, "user");
+                    user = userJSON.GetString();
+                    const Value& passwordJSON = getJSONfield(fileName, mode, "password");
+                    password = passwordJSON.GetString();
+                    const Value& serverJSON = getJSONfield(fileName, mode, "server");
+                    server = serverJSON.GetString();
                 }
                 if (modeType == MODE_ASM) {
-                    const Value& userASM = getJSONfield(fileName, mode, "user-asm");
-                    userASMString = userASM.GetString();
-                    const Value& passwordASM = getJSONfield(fileName, mode, "password-asm");
-                    passwordASMString = passwordASM.GetString();
-                    const Value& serverASM = getJSONfield(fileName, mode, "server-asm");
-                    serverASMString = serverASM.GetString();
+                    const Value& userASMJSON = getJSONfield(fileName, mode, "user-asm");
+                    userASM = userASMJSON.GetString();
+                    const Value& passwordASMJSON = getJSONfield(fileName, mode, "password-asm");
+                    passwordASM = passwordASMJSON.GetString();
+                    const Value& serverASMJSON = getJSONfield(fileName, mode, "server-asm");
+                    serverASM = serverASMJSON.GetString();
                 }
 
-                oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), userString, passwordString, serverString, userASMString,
-                        passwordASMString, serverASMString, trace, trace2, dumpRedoLog, dumpRawData, flags, modeType, disableChecks, redoReadSleep, archReadSleep,
-                        checkpointInterval, memoryMinMb, memoryMaxMb);
+                oracleAnalyser = new OracleAnalyser(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), user, password, server, userASM,
+                        passwordASM, serverASM, trace, trace2, dumpRedoLog, dumpRawData, flags, modeType, disableChecks, redoReadSleep,
+                        archReadSleep, checkpointInterval, memoryMinMb, memoryMaxMb);
                 if (oracleAnalyser == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser)");
                 }
 
                 //optional
-                if (modeType == MODE_ONLINE || modeType == MODE_STANDBY) {
+                if (modeType == MODE_ONLINE || modeType == MODE_OFFLINE || modeType == MODE_STANDBY) {
                     if (mode.HasMember("path-mapping")) {
                         const Value& pathMapping = mode["path-mapping"];
                         if (!pathMapping.IsArray()) {
@@ -310,8 +310,8 @@ int main(int argc, char **argv) {
                     string keysStr("");
                     vector<string> keys;
                     if (source.HasMember("event-table")) {
-                        const Value& eventtable = source["event-table"];
-                        oracleAnalyser->addTable(eventtable.GetString(), keys, keysStr, 1);
+                        const Value& eventtableJSON = source["event-table"];
+                        oracleAnalyser->addTable(eventtableJSON.GetString(), keys, keysStr, 1);
                     }
 
                     const Value& tables = getJSONfield(fileName, source, "tables");
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
                     }
 
                     for (SizeType j = 0; j < tables.Size(); ++j) {
-                        const Value& table = getJSONfield(fileName, tables[j], "table");
+                        const Value& tableJSON = getJSONfield(fileName, tables[j], "table");
 
                         if (tables[j].HasMember("key")) {
                             const Value& key = tables[j]["key"];
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
                             }
                         } else
                             keysStr = "";
-                        oracleAnalyser->addTable(table.GetString(), keys, keysStr, 0);
+                        oracleAnalyser->addTable(tableJSON.GetString(), keys, keysStr, 0);
                         keys.clear();
                     }
 
@@ -362,8 +362,8 @@ int main(int argc, char **argv) {
             const Value& type = getJSONfield(fileName, target, "type");
 
             if (strcmp("KAFKA", type.GetString()) == 0) {
-                const Value& alias = getJSONfield(fileName, target, "alias");
-                const Value& source = getJSONfield(fileName, target, "source");
+                const Value& aliasJSON = getJSONfield(fileName, target, "alias");
+                const Value& sourceJSON = getJSONfield(fileName, target, "source");
                 const Value& format = getJSONfield(fileName, target, "format");
 
                 const Value& streamJSON = getJSONfield(fileName, format, "stream");
@@ -408,13 +408,13 @@ int main(int argc, char **argv) {
                     test = testJSON.GetUint64();
                 }
 
-                string brokersString(""), topicString("");
+                const char *brokers = "", *topic = "";
                 //not required when Kafka connection is not established
                 if (test == 0) {
-                    const Value& brokers = getJSONfield(fileName, target, "brokers");
-                    brokersString = brokers.GetString();
-                    const Value& topic = getJSONfield(fileName, format, "topic");
-                    topicString = topic.GetString();
+                    const Value& brokersJSON = getJSONfield(fileName, target, "brokers");
+                    brokers = brokersJSON.GetString();
+                    const Value& topicJSON = getJSONfield(fileName, format, "topic");
+                    topic = topicJSON.GetString();
                 }
 
                 //optional
@@ -434,14 +434,14 @@ int main(int argc, char **argv) {
                 OracleAnalyser *oracleAnalyser = nullptr;
 
                 for (OracleAnalyser *analyser : analysers)
-                    if (analyser->alias.compare(source.GetString()) == 0)
+                    if (analyser->alias.compare(sourceJSON.GetString()) == 0)
                         oracleAnalyser = (OracleAnalyser*)analyser;
                 if (oracleAnalyser == nullptr) {
                     CONFIG_FAIL("bad JSON, unknown alias");
                 }
 
-                cerr << "Adding target: " << alias.GetString() << endl;
-                kafkaWriter = new KafkaWriter(alias.GetString(), brokersString, topicString, oracleAnalyser,
+                cerr << "Adding target: " << aliasJSON.GetString() << endl;
+                kafkaWriter = new KafkaWriter(aliasJSON.GetString(), brokers, topic, oracleAnalyser,
                         maxMessageMb, stream, singleDml, showColumns, test, timestampFormat, charFormat);
                 if (kafkaWriter == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(KafkaWriter) << " bytes memory for (reason: kafka writer)");

@@ -1126,7 +1126,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg) {
+    void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg) {
         if (oracleAnalyser->dumpRedoLog >= 1) {
             oracleAnalyser->dumpStream << msg;
             for (uint64_t i = 0; i < fieldLength; ++i)

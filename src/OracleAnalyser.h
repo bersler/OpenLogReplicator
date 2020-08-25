@@ -61,18 +61,18 @@ namespace OpenLogReplicator {
 
     class OracleAnalyser : public Thread {
     protected:
-        static string SQL_GET_ARCHIVE_LOG_LIST;
-        static string SQL_GET_DATABASE_INFORMATION;
-        static string SQL_GET_CON_INFO;
-        static string SQL_GET_CURRENT_SEQUENCE;
-        static string SQL_GET_LOGFILE_LIST;
-        static string SQL_GET_TABLE_LIST;
-        static string SQL_GET_COLUMN_LIST;
-        static string SQL_GET_COLUMN_LIST_INV;
-        static string SQL_GET_PARTITION_LIST;
-        static string SQL_GET_SUPPLEMNTAL_LOG_TABLE;
-        static string SQL_GET_PARAMETER;
-        static string SQL_GET_PROPERTY;
+        static const char* SQL_GET_ARCHIVE_LOG_LIST;
+        static const char* SQL_GET_DATABASE_INFORMATION;
+        static const char* SQL_GET_CON_INFO;
+        static const char* SQL_GET_CURRENT_SEQUENCE;
+        static const char* SQL_GET_LOGFILE_LIST;
+        static const char* SQL_GET_TABLE_LIST;
+        static const char* SQL_GET_COLUMN_LIST;
+        static const char* SQL_GET_COLUMN_LIST_INV;
+        static const char* SQL_GET_PARTITION_LIST;
+        static const char* SQL_GET_SUPPLEMNTAL_LOG_TABLE;
+        static const char* SQL_GET_PARAMETER;
+        static const char* SQL_GET_PROPERTY;
 
         typeseq databaseSequence;
         string user;
@@ -127,10 +127,10 @@ namespace OpenLogReplicator {
         uint64_t getSequenceFromFileName(const char *file);
 
     public:
-        OracleAnalyser(OutputBuffer *outputBuffer, const string alias, const string database, const string user, const string passwd, const string connectString,
-                const string userASM, const string passwdASM, const string connectStringASM, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
-                uint64_t flags, uint64_t modeType, uint64_t disableChecks, uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval,
-                uint64_t memoryMinMb, uint64_t memoryMaxMb);
+        OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
+                const char *connectString, const char *userASM, const char *passwdASM, const char *connectStringASM, uint64_t trace,
+                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t modeType, uint64_t disableChecks,
+                uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb);
         virtual ~OracleAnalyser();
 
         DatabaseEnvironment *env;
@@ -215,12 +215,12 @@ namespace OpenLogReplicator {
         bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         OracleObject *checkDict(typeobj objn, typeobj objd);
-        void addTable(string mask, vector<string> &keys, string &keysStr, uint64_t options);
+        void addTable(const char *mask, vector<string> &keys, string &keysStr, uint64_t options);
         void checkForCheckpoint(void);
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
-        void addPathMapping(const string source, const string target);
-        void addRedoLogsBatch(const string path);
+        void addPathMapping(const char* source, const char* target);
+        void addRedoLogsBatch(string path);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);

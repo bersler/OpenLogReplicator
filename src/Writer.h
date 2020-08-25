@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
         virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;
         virtual void parseDDL(RedoLogRecord *redoLogRecord1) = 0;
 
-        Writer(const string alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t singleDml, uint64_t showColumns,
+        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t singleDml, uint64_t showColumns,
                 uint64_t test, uint64_t timestampFormat, uint64_t charFormat, uint64_t maxMessageMb);
         virtual ~Writer();
     };

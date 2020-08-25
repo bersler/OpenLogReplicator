@@ -28,12 +28,12 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    string ReaderASM::SQL_ASM_CLOSE("BEGIN dbms_diskgroup.close(:i); END;");
-    string ReaderASM::SQL_ASM_GETFILEATR("BEGIN dbms_diskgroup.getfileattr(:i, :j, :k, :l); END;");
-    string ReaderASM::SQL_ASM_OPEN("BEGIN dbms_diskgroup.open(:i, 'r', :j, :k, :l, :m, :n); END;");
-    string ReaderASM::SQL_ASM_READ("BEGIN dbms_diskgroup.read(:i, :j, :k, :l); END;");
+    const char* ReaderASM::SQL_ASM_CLOSE("BEGIN dbms_diskgroup.close(:i); END;");
+    const char* ReaderASM::SQL_ASM_GETFILEATR("BEGIN dbms_diskgroup.getfileattr(:i, :j, :k, :l); END;");
+    const char* ReaderASM::SQL_ASM_OPEN("BEGIN dbms_diskgroup.open(:i, 'r', :j, :k, :l, :m, :n); END;");
+    const char* ReaderASM::SQL_ASM_READ("BEGIN dbms_diskgroup.read(:i, :j, :k, :l); END;");
 
-    ReaderASM::ReaderASM(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
+    ReaderASM::ReaderASM(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
         Reader(alias, oracleAnalyser, group, 1),
         fileDes(-1),
         fileType(0),

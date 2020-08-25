@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         DatabaseStatement(DatabaseConnection *conn);
         virtual ~DatabaseStatement();
 
-        void createStatement(string &sql);
+        void createStatement(const char *sql);
         void unbindAll(void);
         int64_t executeQuery(void);
         int64_t next(void);

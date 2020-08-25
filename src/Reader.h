@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
         volatile uint64_t bufferStart;
         volatile uint64_t bufferEnd;
 
-        Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead);
+        Reader(const char *alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead);
         virtual ~Reader();
 
         void *run(void);

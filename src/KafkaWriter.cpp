@@ -36,7 +36,7 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    KafkaWriter::KafkaWriter(string alias, string brokers, string topic, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb, uint64_t stream,
+    KafkaWriter::KafkaWriter(const char *alias, const char *brokers, const char *topic, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb, uint64_t stream,
             uint64_t singleDml, uint64_t showColumns, uint64_t test, uint64_t timestampFormat, uint64_t charFormat) :
         Writer(alias, oracleAnalyser, stream, singleDml, showColumns, test, timestampFormat, charFormat, maxMessageMb),
         msgBuffer(nullptr),

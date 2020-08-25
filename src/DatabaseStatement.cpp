@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
 #endif /* ONLINE_MODEIMPL_OCI */
     }
 
-    void DatabaseStatement::createStatement(string &sql) {
+    void DatabaseStatement::createStatement(const char *sql) {
 #ifdef ONLINE_MODEIMPL_OCI
         unbindAll();
 
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
             isExecuted = false;
         }
 
-        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, (const OraText*)sql.c_str(), sql.length(),
+        conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, (const OraText*)sql, strlen(sql),
                 nullptr, 0, OCI_NTV_SYNTAX, OCI_DEFAULT));
 #endif /* ONLINE_MODEIMPL_OCI */
     }

@@ -28,7 +28,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    ReaderFilesystem::ReaderFilesystem(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
+    ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
         Reader(alias, oracleAnalyser, group, 0),
         fileDes(0),
         flags(0) {
