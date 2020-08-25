@@ -35,23 +35,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionHeap.h"
 #include "TransactionMap.h"
 
-#ifdef ONLINE_MODEIMPL_OCCI
-#include <occi.h>
-#endif /* ONLINE_MODEIMPL_OCCI */
-
 #ifndef ORACLEANALYSER_H_
 #define ORACLEANALYSER_H_
 
 using namespace std;
-#ifdef ONLINE_MODEIMPL_OCCI
-using namespace oracle::occi;
-#endif /* ONLINE_MODEIMPL_OCCI */
 
 namespace OpenLogReplicator {
 
-    class OutputBuffer;
+    class DatabaseConnection;
+    class DatabaseEnvironment;
     class OracleObject;
     class OracleAnalyserRedoLog;
+    class OutputBuffer;
     class Reader;
     class RedoLogRecord;
     class Transaction;
@@ -79,15 +74,13 @@ namespace OpenLogReplicator {
         static string SQL_GET_PARAMETER;
         static string SQL_GET_PROPERTY;
 
-#ifdef ONLINE_MODEIMPL_OCCI
-        Environment *env;
-        Connection *conn;
-#endif /* ONLINE_MODEIMPL_OCCI */
-
         typeseq databaseSequence;
         string user;
-        string passwd;
+        string password;
         string connectString;
+        string userASM;
+        string passwordASM;
+        string connectStringASM;
         string database;
         string nlsCharacterSet;
         string nlsNcharCharacterSet;
@@ -103,7 +96,7 @@ namespace OpenLogReplicator {
         set<Reader*> readers;
         unordered_map<typeobj, OracleObject*> objectMap;
         unordered_map<typeobj, OracleObject*> partitionMap;
-        bool suppLogDbPrimary, suppLogDbAll;
+        uint64_t suppLogDbPrimary, suppLogDbAll;
         clock_t previousCheckpoint;
         uint64_t checkpointInterval;
         uint64_t memoryMinMb;
@@ -115,6 +108,7 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksMax;
         uint64_t memoryChunksHWM;
         uint64_t memoryChunksSupplemental;
+        OracleObject *object;
 
         stringstream& writeEscapeValue(stringstream &ss, string &str);
         string getParameterValue(const char *parameter);
@@ -133,12 +127,15 @@ namespace OpenLogReplicator {
         uint64_t getSequenceFromFileName(const char *file);
 
     public:
-        OracleAnalyser(OutputBuffer *outputBuffer, const string alias, const string database, const string user,
-                const string passwd, const string connectString, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
-                uint64_t flags, uint64_t mode, uint64_t disableChecks, uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval,
+        OracleAnalyser(OutputBuffer *outputBuffer, const string alias, const string database, const string user, const string passwd, const string connectString,
+                const string userASM, const string passwdASM, const string connectStringASM, uint64_t trace, uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData,
+                uint64_t flags, uint64_t modeType, uint64_t disableChecks, uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval,
                 uint64_t memoryMinMb, uint64_t memoryMaxMb);
         virtual ~OracleAnalyser();
 
+        DatabaseEnvironment *env;
+        DatabaseConnection *conn;
+        DatabaseConnection *connASM;
         bool waitingForKafkaWriter;
         mutex mtx;
         condition_variable readerCond;
@@ -157,7 +154,7 @@ namespace OpenLogReplicator {
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t flags;
-        uint64_t mode;
+        uint64_t modeType;
         uint64_t disableChecks;
         vector<string> pathMapping;
         vector<string> redoLogsBatch;
@@ -165,13 +162,14 @@ namespace OpenLogReplicator {
         uint64_t archReadSleep;
         uint64_t trace;
         uint64_t trace2;
-        uint64_t version;                   //compatiblity level of redo logs
+        uint64_t version;                   //compatibility level of redo logs
         typecon conId;
         string conName;
         string lastCheckedDay;
         typeresetlogs resetlogs;
         typeactivation activation;
-        bool isBigEndian;
+        uint64_t isBigEndian;
+        uint64_t suppLogSize;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -212,7 +210,6 @@ namespace OpenLogReplicator {
         void initializeOnlineMode(void);
         bool readSchema(void);
         void writeSchema(void);
-        void closeDbConnection(void);
         void *run(void);
         void freeRollbackList(void);
         bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);

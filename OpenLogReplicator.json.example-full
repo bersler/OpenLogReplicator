@@ -1,5 +1,5 @@
 {
-  "version": "0.6.12",
+  "version": "0.7.0",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -9,22 +9,26 @@
       "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
+      "mode": {
+        "type": "online", 
+        "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
+        "user": "system",
+        "password": "unknPwd4%",
+        "server": "//server:4999/O112A.ORADOMAIN",
+        "disable-checks": 0
+      },
       "flags": 0,
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
       "redo-read-sleep": 10000,
       "arch-read-sleep": 10000000,
       "checkpoint-interval": 10,
-      "disable-checks": 0,
-      "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
-      "user": "system",
-      "password": "unknPwd4%",
-      "server": "//server:4999/O112A.ORADOMAIN",
       "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
         {"table": "OWNER1.TABLENAME2"},
-        {"table": "OWNER2.TAB%"}]
+        {"table": "OWNER2.TAB%"}
+      ]
     }
   ],
   "targets": [

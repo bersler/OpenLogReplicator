@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         RedoLogRecord *beforeRecord[MAX_NO_COLUMNS];
         RedoLogRecord *afterRecord[MAX_NO_COLUMNS];
 
-        void sendMessage(uint8_t *buffer, uint64_t length, int msgflags);
+        void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
 
     public:
         virtual void *run(void);

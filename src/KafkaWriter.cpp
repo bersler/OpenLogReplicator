@@ -17,16 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <string>
 #include <thread>
-#include <unistd.h>
-#include <string.h>
 #include <librdkafka/rdkafkacpp.h>
-#include <sys/stat.h>
 
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
@@ -57,6 +49,8 @@ namespace OpenLogReplicator {
         lastScn(0) {
 
         msgBuffer = oracleAnalyser->getMemoryChunk("KAFKATMP", false);
+        conf = Conf::create(Conf::CONF_GLOBAL);
+        tconf = Conf::create(Conf::CONF_TOPIC);
     }
 
     KafkaWriter::~KafkaWriter() {
@@ -83,12 +77,21 @@ namespace OpenLogReplicator {
         }
     }
 
-    void KafkaWriter::sendMessage(uint8_t *buffer, uint64_t length, int msgflags) {
+    void KafkaWriter::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
         if (test >= 1) {
             cout.write((const char*)buffer, length);
             cout << endl;
+            if (dealloc)
+                free(buffer);
         } else {
+            int msgflags = Producer::RK_MSG_COPY;
+            if (dealloc)
+                msgflags = Producer::RK_MSG_FREE;
+
             if (producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr)) {
+                //on error, memory is not released by librdkafka
+                if (dealloc)
+                    free(buffer);
                 RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length);
             }
         }
@@ -140,21 +143,21 @@ namespace OpenLogReplicator {
 
                     //message in one part - send directly from buffer
                     if (outputBuffer->firstBufferPos + leftLength < MEMORY_CHUNK_SIZE) {
-                        sendMessage(outputBuffer->firstBuffer + outputBuffer->firstBufferPos, length, Producer::RK_MSG_COPY);
+                        sendMessage(outputBuffer->firstBuffer + outputBuffer->firstBufferPos, length, false);
                         outputBuffer->firstBufferPos += leftLength;
 
                     //message in many parts - copy
                     } else {
                         uint8_t *buffer;
-                        int msgflags = Producer::RK_MSG_COPY;
-                        if (leftLength <= MEMORY_CHUNK_SIZE) {
+                        bool dealloc = false;
+                       if (leftLength <= MEMORY_CHUNK_SIZE) {
                             buffer = msgBuffer;
                         } else {
                             buffer = (uint8_t*)malloc(leftLength);
                             if (buffer == nullptr) {
                                 RUNTIME_FAIL("could not allocate temporary buffer for Kafka message for " << dec << leftLength << " bytes");
                             }
-                            msgflags = Producer::RK_MSG_FREE;
+                            dealloc = true;
                         }
 
                         uint64_t targetPos = 0;
@@ -184,7 +187,7 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                        sendMessage(buffer, length, msgflags);
+                        sendMessage(buffer, length, dealloc);
                         break;
                     }
                 }
@@ -207,8 +210,6 @@ namespace OpenLogReplicator {
 
     void KafkaWriter::initialize(void) {
         string errstr;
-        Conf *conf = Conf::create(Conf::CONF_GLOBAL);
-        Conf *tconf = Conf::create(Conf::CONF_TOPIC);
         conf->set("metadata.broker.list", brokers, errstr);
         conf->set("client.id", "OpenLogReplicator", errstr);
         string maxMessageMbStr = to_string(maxMessageMb * 1024 * 1024);

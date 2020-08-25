@@ -53,7 +53,6 @@ namespace OpenLogReplicator {
         void dumpRows(uint8_t *data);
         void dumpVal(uint64_t fieldPos, uint64_t fieldLength, string msg);
         void processFbFlags(uint8_t fb, char *fbStr);
-        void suppLog(uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
 
     public:
         OpCode(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);

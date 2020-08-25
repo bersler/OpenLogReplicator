@@ -17,15 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <cstdlib>
-#include <iomanip>
-#include <iostream>
-#include <unordered_map>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <unistd.h>
 
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"

@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -locci -lrdkafka++ -lpthread -lnnz11 -lclntsh
+LIBS := -lclntshcore -lrdkafka++ -lpthread -lnnz19 -lclntsh
 

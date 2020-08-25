@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iomanip>
-#include <iostream>
-#include <string>
 #include <string.h>
 
 #include "OutputBuffer.h"
@@ -185,7 +182,6 @@ namespace OpenLogReplicator {
         }
 
         opCode0501->process();
-
 
         if (oracleAnalyser->onRollbackList(headRedoLogRecord1, redoLogRecord2)) {
             oracleAnalyser->printRollbackInfo(headRedoLogRecord1, redoLogRecord2, this, "merged, rolled back");

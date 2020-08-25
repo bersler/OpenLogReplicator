@@ -18,14 +18,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <iomanip>
+#include <iostream>
 #include <ostream>
+#include <sstream>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
 
 #ifndef TYPES_H_
 #define TYPES_H_
 
-#define ONLINE_MODEIMPL_OCCI
+#define ONLINE_MODEIMPL_OCI
 
 typedef uint16_t typesum;
 typedef uint32_t typeresetlogs;
@@ -52,7 +55,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.6.12"
+#define PROGRAM_VERSION             "0.7.0"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -66,12 +69,10 @@ typedef uint64_t typeunicode;
 #define STREAM_DBZ_JSON             2
 
 #define MODE_ONLINE                 1
-#define MODE_ONLINE_ARCH            2
-#define MODE_OFFLINE                3
-#define MODE_OFFLINE_ARCH           4
-#define MODE_STANDBY                5
-#define MODE_STANDBY_ARCH           6
-#define MODE_BATCH                  7
+#define MODE_OFFLINE                2
+#define MODE_ASM                    3
+#define MODE_STANDBY                4
+#define MODE_BATCH                  5
 
 #define TRACE_SILENT                0
 #define TRACE_WARNING               1
@@ -97,14 +98,15 @@ typedef uint64_t typeunicode;
 
 #define REDO_RECORD_MAX_SIZE            1048576
 
-#define REDO_FLAGS_DIRECT               0x0000001
-#define REDO_FLAGS_NOATIME              0x0000002
-#define REDO_FLAGS_ON_ERROR_CONTINUE    0x0000004
-#define REDO_FLAGS_TRACK_DDL            0x0000008
-#define REDO_FLAGS_DISABLE_READ_VERIFICATION 0x0000010
-#define REDO_FLAGS_BLOCK_CHECK_SUM      0x0000020
-#define REDO_FLAGS_HIDE_INVISIBLE_COLUMNS 0x0000040
-#define REDO_FLAGS_INCOMPLETE_TRANSACTIONS 0x0000080
+#define REDO_FLAGS_ARCH_ONLY                0x0000001
+#define REDO_FLAGS_DIRECT                   0x0000002
+#define REDO_FLAGS_NOATIME                  0x0000004
+#define REDO_FLAGS_ON_ERROR_CONTINUE        0x0000008
+#define REDO_FLAGS_TRACK_DDL                0x0000010
+#define REDO_FLAGS_DISABLE_READ_VERIFICATION 0x0000020
+#define REDO_FLAGS_BLOCK_CHECK_SUM          0x0000040
+#define REDO_FLAGS_HIDE_INVISIBLE_COLUMNS   0x0000080
+#define REDO_FLAGS_INCOMPLETE_TRANSACTIONS  0x0000100
 
 #define DISABLE_CHECK_GRANTS            0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG  0x0000002
@@ -145,12 +147,12 @@ namespace OpenLogReplicator {
     class typetime {
         uint32_t val;
     public:
-        typetime(void) {
-            this->val = 0;
+        typetime(void) :
+            val(0) {
         }
 
-        typetime(uint32_t val) {
-            this->val = val;
+        typetime(uint32_t val) :
+            val(val) {
         }
 
         uint32_t getVal(void) {
@@ -163,7 +165,8 @@ namespace OpenLogReplicator {
         }
 
         time_t toTime(void) {
-            struct tm epochtime;
+            struct tm epochtime = {0};
+            memset((void*)&epochtime, 0, sizeof(epochtime));
             uint64_t rest = val;
             epochtime.tm_sec = rest % 60; rest /= 60;
             epochtime.tm_min = rest % 60; rest /= 60;

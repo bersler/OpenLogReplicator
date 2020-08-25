@@ -22,6 +22,9 @@ CPP_SRCS += \
 ../src/CharacterSetZHT32EUC.cpp \
 ../src/CharacterSetZHT32TRIS.cpp \
 ../src/ConfigurationException.cpp \
+../src/DatabaseConnection.cpp \
+../src/DatabaseEnvironment.cpp \
+../src/DatabaseStatement.cpp \
 ../src/KafkaWriter.cpp \
 ../src/OpCode.cpp \
 ../src/OpCode0501.cpp \
@@ -46,9 +49,9 @@ CPP_SRCS += \
 ../src/OracleAnalyserRedoLog.cpp \
 ../src/OracleColumn.cpp \
 ../src/OracleObject.cpp \
-../src/OracleStatement.cpp \
 ../src/OutputBuffer.cpp \
 ../src/Reader.cpp \
+../src/ReaderASM.cpp \
 ../src/ReaderFilesystem.cpp \
 ../src/RedoLogException.cpp \
 ../src/RedoLogRecord.cpp \
@@ -79,6 +82,9 @@ OBJS += \
 ./src/CharacterSetZHT32EUC.o \
 ./src/CharacterSetZHT32TRIS.o \
 ./src/ConfigurationException.o \
+./src/DatabaseConnection.o \
+./src/DatabaseEnvironment.o \
+./src/DatabaseStatement.o \
 ./src/KafkaWriter.o \
 ./src/OpCode.o \
 ./src/OpCode0501.o \
@@ -103,9 +109,9 @@ OBJS += \
 ./src/OracleAnalyserRedoLog.o \
 ./src/OracleColumn.o \
 ./src/OracleObject.o \
-./src/OracleStatement.o \
 ./src/OutputBuffer.o \
 ./src/Reader.o \
+./src/ReaderASM.o \
 ./src/ReaderFilesystem.o \
 ./src/RedoLogException.o \
 ./src/RedoLogRecord.o \
@@ -136,6 +142,9 @@ CPP_DEPS += \
 ./src/CharacterSetZHT32EUC.d \
 ./src/CharacterSetZHT32TRIS.d \
 ./src/ConfigurationException.d \
+./src/DatabaseConnection.d \
+./src/DatabaseEnvironment.d \
+./src/DatabaseStatement.d \
 ./src/KafkaWriter.d \
 ./src/OpCode.d \
 ./src/OpCode0501.d \
@@ -160,9 +169,9 @@ CPP_DEPS += \
 ./src/OracleAnalyserRedoLog.d \
 ./src/OracleColumn.d \
 ./src/OracleObject.d \
-./src/OracleStatement.d \
 ./src/OutputBuffer.d \
 ./src/Reader.d \
+./src/ReaderASM.d \
 ./src/ReaderFilesystem.d \
 ./src/RedoLogException.d \
 ./src/RedoLogRecord.d \
@@ -179,7 +188,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -std=c++0x -I/opt/instantclient_11_2/sdk/include -I/opt/rapidjson/include -O3 -pedantic -pedantic-errors -w -Wall -Wextra -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++0x -I/opt/instantclient_19_8/sdk/include -I/opt/rapidjson/include -O3 -pedantic -pedantic-errors -w -Wall -Wextra -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

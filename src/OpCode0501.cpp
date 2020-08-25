@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iomanip>
-#include <iostream>
-
 #include "OpCode0501.h"
 #include "OracleAnalyser.h"
 #include "RedoLogRecord.h"
@@ -253,5 +250,71 @@ namespace OpenLogReplicator {
             else
                 oracleAnalyser->dumpStream << "dscn: " << PRINTSCN64(dscn) << endl;
         }
+    }
+
+    void OpCode0501::suppLog(uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+        uint64_t suppLogSize = 0;
+        uint64_t suppLogFieldCnt = 0;
+        oracleAnalyser->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
+
+        if (fieldLength < 20) {
+            oracleAnalyser->dumpStream << "ERROR: too short supplemental log: " << dec << fieldLength << endl;
+            return;
+        }
+
+        ++suppLogFieldCnt;
+        suppLogSize += (fieldLength + 3) & 0xFFFC;
+        redoLogRecord->suppLogType = redoLogRecord->data[fieldPos + 0];
+        redoLogRecord->suppLogFb = redoLogRecord->data[fieldPos + 1];
+        redoLogRecord->suppLogCC = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 2);
+        redoLogRecord->suppLogBefore = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6);
+        redoLogRecord->suppLogAfter = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 8);
+
+        if (oracleAnalyser->dumpRedoLog >= 2) {
+            oracleAnalyser->dumpStream <<
+                    "supp log type: " << dec << (uint64_t)redoLogRecord->suppLogType <<
+                    " fb: " << dec << (uint64_t)redoLogRecord->suppLogFb <<
+                    " cc: " << dec << redoLogRecord->suppLogCC <<
+                    " before: " << dec << redoLogRecord->suppLogBefore <<
+                    " after: " << dec << redoLogRecord->suppLogAfter << endl;
+        }
+
+        if (fieldLength >= 26) {
+            redoLogRecord->suppLogBdba = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 20);
+            redoLogRecord->suppLogSlot = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 24);
+            oracleAnalyser->dumpStream <<
+                    "supp log bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->suppLogBdba <<
+                    "." << hex << redoLogRecord->suppLogSlot << endl;
+        } else {
+            redoLogRecord->suppLogBdba = redoLogRecord->bdba;
+            redoLogRecord->suppLogSlot = redoLogRecord->slot;
+        }
+
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+            return;
+
+        redoLogRecord->suppLogNumsDelta = fieldPos;
+        uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
+
+        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        ++suppLogFieldCnt;
+        suppLogSize += (fieldLength + 3) & 0xFFFC;
+        redoLogRecord->suppLogLenDelta = fieldPos;
+        redoLogRecord->suppLogRowData = fieldNum + 1;
+
+        for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
+            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+
+            ++suppLogFieldCnt;
+            suppLogSize += (fieldLength + 3) & 0xFFFC;
+            if (oracleAnalyser->dumpRedoLog >= 2)
+                dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNumsSupp), fieldLength, 0);
+            colNumsSupp += 2;
+        }
+
+        suppLogSize += (redoLogRecord->fieldCnt * 2 + 2 & 0xFFFC) - ((redoLogRecord->fieldCnt - suppLogFieldCnt) * 2 + 2 & 0xFFFC);
+        oracleAnalyser->suppLogSize += suppLogSize;
     }
 }

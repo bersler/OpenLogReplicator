@@ -1,4 +1,4 @@
-/* Base class for source and target thread
+/* Header for DatabaseEnvironment class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,32 +17,34 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "RedoLogRecord.h"
-#include "Thread.h"
+#include "types.h"
+
+#ifdef ONLINE_MODEIMPL_OCI
+#include <oci.h>
+#endif /* ONLINE_MODEIMPL_OCI */
+
+#ifndef DATABASEENVIRONMENT_H_
+#define DATABASEENVIRONMENT_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    Thread::Thread(const string alias) :
-        shutdown(false),
-        started(false),
-        pthread(0),
-        alias(alias) {
-    }
+    class DatabaseStatement;
 
-    Thread::~Thread() {
-    }
+    class DatabaseEnvironment {
+    public:
+#ifdef ONLINE_MODEIMPL_OCI
+        OCIEnv *envhp;
+#endif /* ONLINE_MODEIMPL_OCI */
 
-    void *Thread::runStatic(void *context){
-        ((Thread *) context)->started = true;
-        void *ret = ((Thread *) context)->run();
-        return ret;
-    }
+        DatabaseEnvironment();
+        virtual ~DatabaseEnvironment();
 
-    void Thread::stop(void) {
-        shutdown = true;
-    }
+#ifdef ONLINE_MODEIMPL_OCI
+        void checkErr(OCIError *errhp, sword status);
+#endif /* ONLINE_MODEIMPL_OCI */
+    };
 }
+
+#endif

@@ -1,4 +1,4 @@
-/* Base class for source and target thread
+/* Header for Database connection class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,32 +17,36 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "RedoLogRecord.h"
-#include "Thread.h"
+#include "types.h"
+
+#ifdef ONLINE_MODEIMPL_OCI
+#include <oci.h>
+#endif /* ONLINE_MODEIMPL_OCI */
+
+#ifndef DATABASEECONNECTION_H_
+#define DATABASEECONNECTION_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    Thread::Thread(const string alias) :
-        shutdown(false),
-        started(false),
-        pthread(0),
-        alias(alias) {
-    }
+    class DatabaseEnvironment;
 
-    Thread::~Thread() {
-    }
+    class DatabaseConnection {
+    protected:
 
-    void *Thread::runStatic(void *context){
-        ((Thread *) context)->started = true;
-        void *ret = ((Thread *) context)->run();
-        return ret;
-    }
+    public:
+        DatabaseEnvironment *env;
+#ifdef ONLINE_MODEIMPL_OCI
+        OCIError *errhp;
+        OCIServer *srvhp;
+        OCISvcCtx *svchp;
+        OCISession *authp;
+#endif /* ONLINE_MODEIMPL_OCI */
 
-    void Thread::stop(void) {
-        shutdown = true;
-    }
+        DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM);
+        virtual ~DatabaseConnection();
+    };
 }
+
+#endif

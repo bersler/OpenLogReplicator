@@ -23,10 +23,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-ConfigurationException::~ConfigurationException() {
+    ConfigurationException::~ConfigurationException() {
     }
 
-ConfigurationException::ConfigurationException(const char* msg) :
+    ConfigurationException::ConfigurationException(const char* msg) :
             exception(),
             msg(msg) {
     }

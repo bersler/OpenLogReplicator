@@ -44,7 +44,7 @@ all: OpenLogReplicator
 OpenLogReplicator: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
-	g++ -L/opt/instantclient_11_2 -fsanitize=address -o "OpenLogReplicator" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L/opt/instantclient_19_8 -fsanitize=address -o "OpenLogReplicator" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

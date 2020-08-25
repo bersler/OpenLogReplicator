@@ -17,13 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <cstdio>
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <list>
-#include <sstream>
-#include <string>
 #include <thread>
 #include <signal.h>
 #include <string.h>
@@ -997,8 +990,9 @@ namespace OpenLogReplicator {
             nextScn = reader->nextScn;
         }
         INFO("processing redo log: " << *this);
-        uint64_t blockPos = 16, bufferPos = 0;
+        uint64_t blockPos = 16, bufferPos = 0, blockNumberStart = blockNumber;
         uint64_t curBufferStart = 0, curBufferEnd = 0, curRet, curStatus;
+        oracleAnalyser->suppLogSize = 0;
 
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyser->dumpRedoLog >= 1) {
@@ -1128,11 +1122,17 @@ namespace OpenLogReplicator {
         }
 
         clock_t cEnd = clock();
-        double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC;
+        double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC, suppLogPercent = 0.0;
+        if (blockNumber != blockNumberStart)
+            suppLogPercent = 100.0 * oracleAnalyser->suppLogSize / ((blockNumber - blockNumberStart)* reader->blockSize);
         if (myTime > 0)
-            mySpeed = (uint64_t)blockNumber * reader->blockSize / 1024 / 1024 / myTime * 1000;
+            mySpeed = (blockNumber - blockNumberStart) * reader->blockSize / 1024 / 1024 / myTime * 1000;
 
-        TRACE(TRACE2_PERFORMANCE, "redo processing time: " << myTime << " ms Speed: " << fixed << setprecision(2) << mySpeed << " MB/s");
+        TRACE(TRACE2_PERFORMANCE, "redo processing time: " << myTime << " ms, " <<
+                "Speed: " << fixed << setprecision(2) << mySpeed << " MB/s, " <<
+                "Redo log size: " << dec << ((blockNumber - blockNumberStart) * reader->blockSize / 1024) << " kB, " <<
+                "Supplemental redo log size: " << dec << oracleAnalyser->suppLogSize << " bytes " <<
+                "(" << fixed << setprecision(2) << suppLogPercent << " %)");
 
         if (oracleAnalyser->dumpRedoLog >= 1 && oracleAnalyser->dumpStream.is_open())
             oracleAnalyser->dumpStream.close();

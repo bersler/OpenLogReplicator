@@ -6,8 +6,13 @@
       "alias": "S1",
       "name": "O112A",
       "mode": {
-        "type": "batch",
-        "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
+        "type": "asm",
+        "user": "system",
+        "password": "unknPwd4%",
+        "server": "//server:4999/O112A.ORADOMAIN"
+        "user-asm": "system",
+        "password-asm": "unknPwd4%",
+        "server-asm": "//server:4999/O112A.ORADOMAIN"
       },
       "memory-min-mb": 64,
       "memory-max-mb": 1024,

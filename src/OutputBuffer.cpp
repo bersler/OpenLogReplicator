@@ -17,9 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
-#include <sstream>
-#include <thread>
 #include <string.h>
 
 #include "CharacterSet16bit.h"
@@ -801,6 +798,11 @@ namespace OpenLogReplicator {
     }
 
     OutputBuffer::~OutputBuffer() {
+        for (auto it : characterMap) {
+            CharacterSet *cs = it.second;
+            delete cs;
+        }
+        characterMap.clear();
         timeZoneMap.clear();
 
         while (firstBuffer != nullptr) {

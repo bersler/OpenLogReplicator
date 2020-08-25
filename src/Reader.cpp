@@ -17,9 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
 #include <thread>
-#include <string.h>
 #include <unistd.h>
 
 #include "OracleAnalyser.h"
@@ -30,9 +28,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Reader::Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group) :
+    Reader::Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead) :
         Thread(alias),
         oracleAnalyser(oracleAnalyser),
+        singleBlockRead(singleBlockRead),
         redoBuffer(nullptr),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         group(group),
@@ -72,11 +71,11 @@ namespace OpenLogReplicator {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
-        if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
-                (blockSize == 1024 && headerBuffer[1] != 0x22) ||
-                (blockSize == 4096 && headerBuffer[1] != 0x82)) {
+        if ((blockSize == 512 && buffer[1] != 0x22) ||
+                (blockSize == 1024 && buffer[1] != 0x22) ||
+                (blockSize == 4096 && buffer[1] != 0x82)) {
             ERROR("unsupported block size: " << dec << blockSize << ", magic field[1]: [0x" <<
-                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]");
+                    setfill('0') << setw(2) << hex << (uint64_t)buffer[1] << "]");
             return REDO_ERROR;
         }
 
@@ -118,51 +117,60 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Reader::reloadHeader(void) {
-        int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
-        if (bytes < 512) {
-            ERROR("unable to read file " << pathMapped);
-            return REDO_ERROR;
-        }
+        int64_t bytes = 0;
+        if (singleBlockRead) {
+            bytes = redoRead(headerBuffer + blockSize, blockSize, blockSize);
+            if (bytes != blockSize) {
+                ERROR("unable to read file " << pathMapped);
+                return REDO_ERROR;
+            }
+        } else {
+            bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
+            if (bytes < 512) {
+                ERROR("unable to read file " << pathMapped);
+                return REDO_ERROR;
+            }
 
-        //check file header
-        if (headerBuffer[0] != 0) {
-            ERROR("block header bad magic field[0]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "]");
-            return REDO_ERROR;
-        }
+            //check file header
+            if (headerBuffer[0] != 0) {
+                ERROR("block header bad magic field[0]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "]");
+                return REDO_ERROR;
+            }
 
-        if ((oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7A || headerBuffer[29] != 0x7B || headerBuffer[30] != 0x7C || headerBuffer[31] != 0x7D))
-                || (!oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A))) {
-            ERROR("block header bad magic fields[28-31]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[28] <<
-                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[29] <<
-                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[30] <<
-                    ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "]");
-            return REDO_ERROR;
-        }
+            if ((oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7A || headerBuffer[29] != 0x7B || headerBuffer[30] != 0x7C || headerBuffer[31] != 0x7D))
+                    || (!oracleAnalyser->isBigEndian && (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A))) {
+                ERROR("block header bad magic fields[28-31]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[28] <<
+                        ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[29] <<
+                        ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[30] <<
+                        ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "]");
+                return REDO_ERROR;
+            }
 
-        blockSize = oracleAnalyser->read32(headerBuffer + 20);
-        if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
-                (blockSize == 1024 && headerBuffer[1] != 0x22) ||
-                (blockSize == 4096 && headerBuffer[1] != 0x82)) {
-            ERROR("unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
-                    setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]");
-            return REDO_ERROR;
-        }
+            blockSize = oracleAnalyser->read32(headerBuffer + 20);
+            if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
+                    (blockSize == 1024 && headerBuffer[1] != 0x22) ||
+                    (blockSize == 4096 && headerBuffer[1] != 0x82)) {
+                ERROR("unsupported block size: " << blockSize << ", magic field[1]: [0x" <<
+                        setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "]");
+                return REDO_ERROR;
+            }
 
-        if (bytes < blockSize * 2) {
-            ERROR("unable read file " << pathMapped);
-            return REDO_ERROR;
-        }
+            if (bytes < blockSize * 2) {
+                ERROR("unable read file " << pathMapped);
+                return REDO_ERROR;
+            }
 
-        //check first block
-        if (bytes < ((int64_t)blockSize * 2)) {
-            ERROR("unable to read redo header for " << pathMapped);
-            return REDO_ERROR;
+            //check first block
+            if (bytes < ((int64_t)blockSize * 2)) {
+                ERROR("unable to read redo header for " << pathMapped);
+                return REDO_ERROR;
+            }
+
+            numBlocks = oracleAnalyser->read32(headerBuffer + 24);
         }
 
         uint64_t version = 0;
-        numBlocks = oracleAnalyser->read32(headerBuffer + 24);
         compatVsn = oracleAnalyser->read32(headerBuffer + blockSize + 20);
-
         if (compatVsn == 0x0B200000) //11.2.0.0
             version = 0x11200;
         else
@@ -375,9 +383,16 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_DISK, "reading " << pathMapped << " at (" << dec << curBufferStart << "/" << bufferEnd << ") at size: " << fileSize);
                 uint64_t lastRead = blockSize;
                 while (!shutdown && status == READER_STATUS_READ && curBufferStart + DISK_BUFFER_SIZE > bufferEnd) {
-                    uint64_t toRead = lastRead;
-                    if (bufferEnd + toRead - bufferStart > DISK_BUFFER_SIZE)
-                        toRead = DISK_BUFFER_SIZE - bufferEnd + bufferStart;
+                    uint64_t toRead = 0;
+
+                    if (singleBlockRead) {
+                        toRead = blockSize;
+                    } else {
+                        toRead = lastRead;
+                        if (bufferEnd + toRead - bufferStart > DISK_BUFFER_SIZE)
+                            toRead = DISK_BUFFER_SIZE - bufferEnd + bufferStart;
+                    }
+
                     if (bufferEnd + toRead > fileSize)
                         toRead = fileSize - bufferEnd;
 

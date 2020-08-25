@@ -1,4 +1,4 @@
-/* Header for OracleStatement class
+/* Header for ReaderASM class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,44 +17,41 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <pthread.h>
 #include <string>
 
 #include "types.h"
+#include "Reader.h"
 
-#ifdef ONLINE_MODEIMPL_OCCI
-#include <occi.h>
-#endif /* ONLINE_MODEIMPL_OCCI */
-
-#ifndef ORACLESTATEMENT_H_
-#define ORACLESTATEMENT_H_
+#ifndef READERASM_H_
+#define READERASM_H_
 
 using namespace std;
-#ifdef ONLINE_MODEIMPL_OCCI
-using namespace oracle::occi;
-#endif /* ONLINE_MODEIMPL_OCCI */
 
 namespace OpenLogReplicator {
 
-    class OracleStatement {
-#ifdef ONLINE_MODEIMPL_OCCI
-        Connection **conn;
-        Environment *env;
-#endif /* ONLINE_MODEIMPL_OCCI */
+    class DatabaseStatement;
+    class OracleAnalyser;
+
+    class ReaderASM : public Reader {
+    protected:
+        static string SQL_ASM_CLOSE;
+        static string SQL_ASM_GETFILEATR;
+        static string SQL_ASM_OPEN;
+        static string SQL_ASM_READ;
+
+        int32_t fileDes;
+        uint64_t fileType;
+        uint64_t physicalBlockSize;
+        DatabaseStatement *stmtRead;
+
+        virtual void redoClose(void);
+        virtual uint64_t redoOpen(void);
+        virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
+
     public:
-#ifdef ONLINE_MODEIMPL_OCCI
-        Statement *stmt;
-        ResultSet *rset;
-#endif /* ONLINE_MODEIMPL_OCCI */
-
-        OracleStatement(
-#ifdef ONLINE_MODEIMPL_OCCI
-            Connection **conn, Environment *env
-#endif /* ONLINE_MODEIMPL_OCCI */
-        );
-
-        void createStatement(string sql);
-        void executeQuery(void);
-        virtual ~OracleStatement();
+        ReaderASM(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group);
+        virtual ~ReaderASM();
     };
 }
 

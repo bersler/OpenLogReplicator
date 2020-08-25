@@ -60,6 +60,7 @@ namespace OpenLogReplicator {
     class Reader : public Thread {
     protected:
         OracleAnalyser *oracleAnalyser;
+        bool singleBlockRead;
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
@@ -91,7 +92,7 @@ namespace OpenLogReplicator {
         volatile uint64_t bufferStart;
         volatile uint64_t bufferEnd;
 
-        Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group);
+        Reader(const string alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead);
         virtual ~Reader();
 
         void *run(void);

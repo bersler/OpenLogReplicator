@@ -1,13 +1,14 @@
 {
-  "version": "0.6.12",
+  "version": "0.7.0",
   "sources": [
     {
       "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
-      "mode": "offline",
+      "mode": {type: "offline"},
       "memory-min-mb": 64,
       "memory-max-mb": 1024
+    }
   ],
   "targets": [
     {

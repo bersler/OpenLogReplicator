@@ -17,16 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <fstream>
-#include <iostream>
-#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 
 #include "OracleAnalyser.h"
-#include "Reader.h"
 #include "ReaderFilesystem.h"
 
 using namespace std;
@@ -34,7 +29,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     ReaderFilesystem::ReaderFilesystem(const string alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
-        Reader(alias, oracleAnalyser, group),
+        Reader(alias, oracleAnalyser, group, 0),
         fileDes(0),
         flags(0) {
     }
@@ -93,7 +88,7 @@ namespace OpenLogReplicator {
             flags &= ~O_DIRECT;
             fcntl(fileDes, F_SETFL, flags);
 
-            //disable direc read and re-try the read
+            //disable direct read and re-try the read
             bytes = pread(fileDes, buf, size, pos);
 
             //display warning only if this helped

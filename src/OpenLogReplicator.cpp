@@ -18,18 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <algorithm>
-#include <cstdio>
-#include <fstream>
-#include <iostream>
-#include <list>
-#include <mutex>
-#include <sstream>
-#include <streambuf>
-#include <string>
 #include <thread>
-#include <vector>
 #include <execinfo.h>
-#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 #include <rapidjson/document.h>
@@ -113,7 +103,7 @@ int main(int argc, char **argv) {
 
         const Value& version = getJSONfield(fileName, document, "version");
         if (strcmp(version.GetString(), PROGRAM_VERSION) != 0) {
-            CONFIG_FAIL("bad JSON, incompatible version");
+            CONFIG_FAIL("bad JSON, incompatible \"version\" value, " << PROGRAM_VERSION << " expected");
         }
 
         //optional
@@ -147,7 +137,7 @@ int main(int argc, char **argv) {
         //iterate through sources
         const Value& sources = getJSONfield(fileName, document, "sources");
         if (!sources.IsArray()) {
-            CONFIG_FAIL("bad JSON, sources should be an array");
+            CONFIG_FAIL("bad JSON, \"sources\" should be an array");
         }
 
         for (SizeType i = 0; i < sources.Size(); ++i) {
@@ -171,7 +161,7 @@ int main(int argc, char **argv) {
                     memoryMinMb = memoryMinMbJSON.GetUint64();
                     memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                     if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
-                        CONFIG_FAIL("bad JSON, memory-min-mb value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
+                        CONFIG_FAIL("bad JSON, \"memory-min-mb\" value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
                     }
                 }
 
@@ -179,10 +169,10 @@ int main(int argc, char **argv) {
                 uint64_t memoryMaxMb = 1024;
                 if (source.HasMember("memory-max-mb")) {
                     const Value& memoryMaxMbJSON = source["memory-max-mb"];
-                    uint64_t memoryMaxMb = memoryMaxMbJSON.GetUint64();
+                    memoryMaxMb = memoryMaxMbJSON.GetUint64();
                     memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                     if (memoryMaxMb < memoryMinMb) {
-                        CONFIG_FAIL("bad JSON, memory-min-mb can't be greater than memory-max-mb value");
+                        CONFIG_FAIL("bad JSON, \"memory-min-mb\" can't be greater than \"memory-max-mb\" value");
                     }
                 }
 
@@ -207,39 +197,35 @@ int main(int argc, char **argv) {
                     checkpointInterval = checkpointIntervalJSON.GetUint64();
                 }
 
-                //optional
-                uint64_t mode = MODE_ONLINE;
-                if (source.HasMember("mode")) {
-                    const Value& modeJSON = source["mode"];
-                    if (strcmp(modeJSON.GetString(), "online") == 0)
-                        mode = MODE_ONLINE;
-                    else if (strcmp(modeJSON.GetString(), "online-arch") == 0)
-                        mode = MODE_ONLINE_ARCH;
-                    else if (strcmp(modeJSON.GetString(), "offline") == 0)
-                        mode = MODE_OFFLINE;
-                    else if (strcmp(modeJSON.GetString(), "offline-arch") == 0)
-                        mode = MODE_OFFLINE_ARCH;
-                    else if (strcmp(modeJSON.GetString(), "standby") == 0)
-                        mode = MODE_STANDBY;
-                    else if (strcmp(modeJSON.GetString(), "standby-arch") == 0)
-                        mode = MODE_STANDBY_ARCH;
-                    else if (strcmp(modeJSON.GetString(), "batch") == 0)
-                         mode = MODE_BATCH;
-                    else {
-                        CONFIG_FAIL("unknown mode value: " << modeJSON.GetString());
-                    }
-                 }
+                const Value& mode = getJSONfield(fileName, source, "mode");
+                const Value& modeTypeJSON = getJSONfield(fileName, mode, "type");
 
-#ifndef ONLINE_MODEIMPL_OCCI
-                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH) {
-                    RUNTIME_FAIL("online mode is not compiled, exiting");
+                uint64_t modeType = MODE_ONLINE;
+                if (strcmp(modeTypeJSON.GetString(), "online") == 0)
+                    modeType = MODE_ONLINE;
+                else if (strcmp(modeTypeJSON.GetString(), "offline") == 0)
+                    modeType = MODE_OFFLINE;
+                else if (strcmp(modeTypeJSON.GetString(), "asm") == 0)
+                    modeType = MODE_ASM;
+                else if (strcmp(modeTypeJSON.GetString(), "standby") == 0)
+                    modeType = MODE_STANDBY;
+                else if (strcmp(modeTypeJSON.GetString(), "batch") == 0) {
+                     modeType = MODE_BATCH;
+                     flags |= REDO_FLAGS_ARCH_ONLY;
+                } else {
+                    CONFIG_FAIL("unknown \"type\" value: " << modeTypeJSON.GetString());
                 }
-#endif /* ONLINE_MODEIMPL_OCCI */
+
+#ifndef ONLINE_MODEIMPL_OCI
+                if (modeType == MODE_ONLINE || modeType == MODE_ASM) {
+                    RUNTIME_FAIL("mode types \"online\", \"asm\" are not compiled, exiting");
+                }
+#endif /*ONLINE_MODEIMPL_OCI*/
 
                 //optional
                 uint64_t disableChecks = 0;
-                if (source.HasMember("disable-checks")) {
-                    const Value& disableChecksJSON = source["disable-checks"];
+                if (mode.HasMember("disable-checks")) {
+                    const Value& disableChecksJSON = mode["disable-checks"];
                     disableChecks = disableChecksJSON.GetUint64();
                 }
 
@@ -252,48 +238,58 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OutputBuffer) << " bytes memory for (reason: command buffer)");
                 }
 
-                string userString(""), passwordString(""), serverString("");
-                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH) {
-                    const Value& user = getJSONfield(fileName, source, "user");
+                string userString(""), passwordString(""), serverString(""), userASMString(""), passwordASMString(""), serverASMString("");
+                if (modeType == MODE_ONLINE || modeType == MODE_ASM || modeType == MODE_STANDBY) {
+                    const Value& user = getJSONfield(fileName, mode, "user");
                     userString = user.GetString();
-                    const Value& password = getJSONfield(fileName, source, "password");
+                    const Value& password = getJSONfield(fileName, mode, "password");
                     passwordString = password.GetString();
-                    const Value& server = getJSONfield(fileName, source, "server");
+                    const Value& server = getJSONfield(fileName, mode, "server");
                     serverString = server.GetString();
                 }
+                if (modeType == MODE_ASM) {
+                    const Value& userASM = getJSONfield(fileName, mode, "user-asm");
+                    userASMString = userASM.GetString();
+                    const Value& passwordASM = getJSONfield(fileName, mode, "password-asm");
+                    passwordASMString = passwordASM.GetString();
+                    const Value& serverASM = getJSONfield(fileName, mode, "server-asm");
+                    serverASMString = serverASM.GetString();
+                }
 
-                oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), userString, passwordString,
-                        serverString, trace, trace2, dumpRedoLog, dumpRawData, flags, mode, disableChecks, redoReadSleep, archReadSleep,
+                oracleAnalyser = new OracleAnalyser(outputBuffer, alias.GetString(), name.GetString(), userString, passwordString, serverString, userASMString,
+                        passwordASMString, serverASMString, trace, trace2, dumpRedoLog, dumpRawData, flags, modeType, disableChecks, redoReadSleep, archReadSleep,
                         checkpointInterval, memoryMinMb, memoryMaxMb);
                 if (oracleAnalyser == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser)");
                 }
 
                 //optional
-                if (source.HasMember("path-mapping")) {
-                    const Value& pathMapping = source["path-mapping"];
-                    if (!pathMapping.IsArray()) {
-                        CONFIG_FAIL("bad JSON, path-mapping should be array");
-                    }
-                    if ((pathMapping.Size() % 2) != 0) {
-                        CONFIG_FAIL("path-mapping should contain pairs of elements");
-                    }
+                if (modeType == MODE_ONLINE || modeType == MODE_STANDBY) {
+                    if (mode.HasMember("path-mapping")) {
+                        const Value& pathMapping = mode["path-mapping"];
+                        if (!pathMapping.IsArray()) {
+                            CONFIG_FAIL("bad JSON, path-mapping should be array");
+                        }
+                        if ((pathMapping.Size() % 2) != 0) {
+                            CONFIG_FAIL("path-mapping should contain pairs of elements");
+                        }
 
-                    for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
-                        const Value& sourceMapping = pathMapping[j * 2];
-                        const Value& targetMapping = pathMapping[j * 2 + 1];
-                        oracleAnalyser->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                        for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
+                            const Value& sourceMapping = pathMapping[j * 2];
+                            const Value& targetMapping = pathMapping[j * 2 + 1];
+                            oracleAnalyser->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                        }
                     }
                 }
 
-                if (mode == MODE_BATCH) {
-                    if (!source.HasMember("redo-logs")) {
-                        CONFIG_FAIL("missing redo-logs element which is required in batch mode");
+                if (modeType == MODE_BATCH) {
+                    if (!mode.HasMember("redo-logs")) {
+                        CONFIG_FAIL("missing \"redo-logs\" element which is required in \"batch\" mode type");
                     }
 
-                    const Value& redoLogsBatch = source["redo-logs"];
+                    const Value& redoLogsBatch = mode["redo-logs"];
                     if (!redoLogsBatch.IsArray()) {
-                        CONFIG_FAIL("bad JSON, redo-logs should be array");
+                        CONFIG_FAIL("bad JSON, \"redo-logs\" should be array");
                     }
 
                     for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
@@ -304,7 +300,11 @@ int main(int argc, char **argv) {
 
                 outputBuffer->initialize(oracleAnalyser);
 
-                if (mode == MODE_ONLINE || mode == MODE_ONLINE_ARCH || mode == MODE_STANDBY || mode == MODE_STANDBY_ARCH) {
+                if (modeType == MODE_OFFLINE || modeType == MODE_BATCH) {
+                    if (!oracleAnalyser->readSchema()) {
+                        CONFIG_FAIL("can't read schema from <database>-schema.json");
+                    }
+                } else {
                     oracleAnalyser->initializeOnlineMode();
 
                     string keysStr("");
@@ -341,10 +341,6 @@ int main(int argc, char **argv) {
                     }
 
                     oracleAnalyser->writeSchema();
-                } else {
-                    if (!oracleAnalyser->readSchema()) {
-                        CONFIG_FAIL("can't read schema from <database>-schema.json");
-                    }
                 }
 
                 if (pthread_create(&oracleAnalyser->pthread, nullptr, &OracleAnalyser::runStatic, (void*)oracleAnalyser)) {
