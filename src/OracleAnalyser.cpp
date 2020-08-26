@@ -368,6 +368,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::writeCheckpoint(bool atShutdown) {
+        //ignore checkpoint file for batch mode
+        if (modeType == MODE_BATCH)
+            return;
+
         clock_t now = clock();
         typeseq minSequence = 0xFFFFFFFF;
         Transaction *transaction;
@@ -418,6 +422,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::readCheckpoint(void) {
+        //ignore checkpoint file for batch mode
+        if (modeType == MODE_BATCH)
+            return;
+
         ifstream infile;
         string fileName = database + "-chkpt.json";
         infile.open(fileName.c_str(), ios::in);

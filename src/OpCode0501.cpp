@@ -292,8 +292,10 @@ namespace OpenLogReplicator {
             redoLogRecord->suppLogSlot = redoLogRecord->slot;
         }
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength)) {
+            oracleAnalyser->suppLogSize += suppLogSize;
             return;
+        }
 
         redoLogRecord->suppLogNumsDelta = fieldPos;
         uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;

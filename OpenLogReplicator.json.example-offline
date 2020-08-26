@@ -1,11 +1,14 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "sources": [
     {
       "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
-      "mode": {type: "offline"},
+      "mode": {
+        "type": "offline",
+        "path-mapping": ["/db/fra", "/opt/fast-recovery-area"]
+      },
       "memory-min-mb": 64,
       "memory-max-mb": 1024
     }
