@@ -1898,12 +1898,10 @@ namespace OpenLogReplicator {
         checkConnection(false);
         INFO_("- reading table schema for: " << mask);
         uint64_t tabCnt = 0;
-        DatabaseStatement stmt(conn);
-        DatabaseStatement stmt2(conn);
+        DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
 
         TRACE_(TRACE2_SQL, SQL_GET_TABLE_LIST << endl << "PARAM1: " << mask);
         stmt.createStatement(SQL_GET_TABLE_LIST);
-        stmt.bindString(1, mask);
         typeobj objd; stmt.defineUInt32(1, objd);
         typeobj objn; stmt.defineUInt32(2, objn);
         uint64_t cluCols; stmt.defineUInt64(3, cluCols);
@@ -1919,6 +1917,41 @@ namespace OpenLogReplicator {
         uint64_t rowMovement; stmt.defineUInt64(13, rowMovement);
         uint64_t dependencies; stmt.defineUInt64(14, dependencies);
         uint64_t compressed; stmt.defineUInt64(15, compressed);
+
+        if ((flags & REDO_FLAGS_HIDE_INVISIBLE_COLUMNS) != 0) {
+            TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST_INV << endl << "PARAM1: " << dec << objn);
+            stmtCol.createStatement(SQL_GET_COLUMN_LIST_INV);
+        } else {
+            TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST << endl << "PARAM1: " << dec << objn);
+            stmtCol.createStatement(SQL_GET_COLUMN_LIST);
+        }
+        uint64_t colNo; stmtCol.defineUInt64(1, colNo);
+        uint64_t segColNo; stmtCol.defineUInt64(2, segColNo);
+        char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
+        uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
+        uint64_t length; stmtCol.defineUInt64(5, length);
+        int64_t precision; stmtCol.defineInt64(6, precision);
+        int64_t scale; stmtCol.defineInt64(7, scale);
+        uint64_t charsetForm; stmtCol.defineUInt64(8, charsetForm);
+        uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
+        int64_t nullable; stmtCol.defineInt64(10, nullable);
+        uint64_t numPk; stmtCol.defineUInt64(11, numPk);
+        uint64_t numSup; stmtCol.defineUInt64(12, numSup);
+        stmtCol.bindUInt32(1, objn);
+
+        TRACE_(TRACE2_SQL, SQL_GET_PARTITION_LIST << endl << "PARAM1: " << dec << objn << endl << "PARAM2: " << dec << objn);
+        stmtPart.createStatement(SQL_GET_PARTITION_LIST);
+        typeobj partitionObjn; stmtPart.defineUInt32(1, partitionObjn);
+        typeobj partitionObjd; stmtPart.defineUInt32(2, partitionObjd);
+        stmtPart.bindUInt32(1, objn);
+        stmtPart.bindUInt32(2, objn);
+
+        TRACE_(TRACE2_SQL, SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl << "PARAM1: " << dec << objn);
+        stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
+        uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
+        stmtSupp.bindUInt32(1, objn);
+
+        stmt.bindString(1, mask);
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
@@ -1972,60 +2005,30 @@ namespace OpenLogReplicator {
             ++tabCnt;
 
             if (partitioned) {
-                TRACE_(TRACE2_SQL, SQL_GET_PARTITION_LIST << endl << "PARAM1: " << dec << objn << endl << "PARAM2: " << dec << objn);
-                stmt2.createStatement(SQL_GET_PARTITION_LIST);
-                stmt2.bindUInt32(1, objn);
-                stmt2.bindUInt32(2, objn);
-                typeobj partitionObjn; stmt2.defineUInt32(1, partitionObjn);
-                typeobj partitionObjd; stmt2.defineUInt32(2, partitionObjd);
-                int64_t ret2 = stmt2.executeQuery();
+                int64_t ret2 = stmtPart.executeQuery();
 
                 while (ret2) {
                     object->addPartition(partitionObjn, partitionObjd);
-                    ret2 = stmt2.next();
+                    ret2 = stmtPart.next();
                 }
             }
 
             if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
-                TRACE_(TRACE2_SQL, SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl << "PARAM1: " << dec << objn);
-                stmt2.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-                stmt2.bindUInt32(1, objn);
-                uint64_t typeNo2; stmt2.defineUInt64(1, typeNo2);
-                int64_t ret2 = stmt2.executeQuery();
+                int64_t ret2 = stmtSupp.executeQuery();
 
                 while (ret2) {
                     if (typeNo2 == 14) suppLogTablePrimary = true;
                     else if (typeNo2 == 17) suppLogTableAll = true;
-                    ret2 = stmt2.next();
+                    ret2 = stmtSupp.next();
                 }
             }
 
-            if ((flags & REDO_FLAGS_HIDE_INVISIBLE_COLUMNS) != 0) {
-                TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST_INV << endl << "PARAM1: " << dec << objn);
-                stmt2.createStatement(SQL_GET_COLUMN_LIST_INV);
-            } else {
-                TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST << endl << "PARAM1: " << dec << objn);
-                stmt2.createStatement(SQL_GET_COLUMN_LIST);
-            }
-            stmt2.bindUInt32(1, objn);
-            uint64_t colNo; stmt2.defineUInt64(1, colNo);
-            uint64_t segColNo; stmt2.defineUInt64(2, segColNo);
-            char columnName[129]; stmt2.defineString(3, columnName, sizeof(columnName));
-            uint64_t typeNo; stmt2.defineUInt64(4, typeNo);
-            uint64_t length; stmt2.defineUInt64(5, length);
-            int64_t precision; stmt2.defineInt64(6, precision);
-            int64_t scale;stmt2.defineInt64(7, scale);
-            uint64_t charsetForm; stmt2.defineUInt64(8, charsetForm);
-            uint64_t charmapId; stmt2.defineUInt64(9, charmapId);
-            int64_t nullable; stmt2.defineInt64(10, nullable);
-            uint64_t numPk; stmt2.defineUInt64(11, numPk);
-            uint64_t numSup; stmt2.defineUInt64(12, numSup);
-            int64_t ret2 = stmt2.executeQuery();
+            int64_t ret2 = stmtCol.executeQuery();
 
             while (ret2) {
-                if (stmt2.isNull(6))
+                if (stmtCol.isNull(6))
                     precision = -1;
-                if (stmt2.isNull(7))
+                if (stmtCol.isNull(7))
                     scale = -1;
 
                 if (charsetForm == 1)
@@ -2074,7 +2077,7 @@ namespace OpenLogReplicator {
                     maxSegCol = segColNo;
 
                 object->addColumn(column);
-                ret2 = stmt2.next();
+                ret2 = stmtCol.next();
             }
 
             //check if table has all listed columns
@@ -2114,6 +2117,7 @@ namespace OpenLogReplicator {
             object->totalPk = totalPk;
             addToDict(object);
             object = nullptr;
+
             ret = stmt.next();
         }
         INFO_("  * total: " << dec << tabCnt << " tables");
