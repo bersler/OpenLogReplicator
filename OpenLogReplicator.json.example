@@ -1,16 +1,18 @@
 {
-  "version": "0.7.1",
+  "version": "0.7.3",
   "sources": [
     {
-      "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
-      "mode": {
-        "type": "batch",
-        "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
+      "reader": {
+        "type": "online", 
+        "user": "system",
+        "password": "unknPwd4%",
+        "server": "//server:4999/O112A.ORADOMAIN"
       },
-      "memory-min-mb": 64,
-      "memory-max-mb": 1024,
+      "format": {
+        "type": "json"
+      },
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
         {"table": "OWNER1.TABLENAME2"},
@@ -20,11 +22,13 @@
   ],
   "targets": [
     {
-      "type": "KAFKA",
-      "alias": "T2",
-      "format": {"stream": "JSON", "topic": "O112A"},
-      "brokers": "localhost:9092",
-      "source": "S1"
+      "alias": "K1", 
+      "source": "S1",
+      "writer": {
+        "type": "kafka",
+        "topic": "O112A",
+        "brokers": "localhost:9092"
+      }
     }
   ]
 }
