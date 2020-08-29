@@ -1,4 +1,4 @@
-/* Header for Thread class
+/* Thread writing to stdout
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,35 +17,37 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
-#include <pthread.h>
+#include <thread>
 
-#include "types.h"
-
-#ifndef THREAD_H_
-#define THREAD_H_
+#include "OutputBuffer.h"
+#include "ConfigurationException.h"
+#include "OracleAnalyser.h"
+#include "OracleColumn.h"
+#include "OracleObject.h"
+#include "RedoLogRecord.h"
+#include "RuntimeException.h"
+#include "WriterFile.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class Thread {
-    protected:
-        virtual void *run(void) = 0;
+    WriterFile::WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage) :
+        Writer(alias, oracleAnalyser, shortMessage, 0) {
+    }
 
-    public:
-        volatile bool shutdown;
-        volatile bool started;
-        pthread_t pthread;
-        string alias;
+    WriterFile::~WriterFile() {
 
-        static void *runStatic(void *context);
+    }
 
-        virtual void stop(void);
+    void WriterFile::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
+        cout.write((const char*)buffer, length);
+        cout << endl;
+        if (dealloc)
+            free(buffer);
+    }
 
-        Thread(const char *alias);
-        virtual ~Thread();
-    };
+    string WriterFile::getName() {
+        return "stdout";
+    }
 }
-
-#endif

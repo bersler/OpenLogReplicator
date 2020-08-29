@@ -1,4 +1,4 @@
-/* Header for Thread class
+/* Header for WriterFile class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,34 +17,31 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
-#include <pthread.h>
+#include <queue>
+#include <set>
+#include <stdint.h>
 
 #include "types.h"
+#include "Writer.h"
 
-#ifndef THREAD_H_
-#define THREAD_H_
+#ifndef KAFKAWRITER_H_
+#define KAFKAWRITER_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class Thread {
+    class RedoLogRecord;
+    class OracleAnalyser;
+
+    class WriterFile : public Writer {
     protected:
-        virtual void *run(void) = 0;
+        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
+        virtual string getName();
 
     public:
-        volatile bool shutdown;
-        volatile bool started;
-        pthread_t pthread;
-        string alias;
-
-        static void *runStatic(void *context);
-
-        virtual void stop(void);
-
-        Thread(const char *alias);
-        virtual ~Thread();
+        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage);
+        virtual ~WriterFile();
     };
 }
 

@@ -25,7 +25,6 @@ CPP_SRCS += \
 ../src/DatabaseConnection.cpp \
 ../src/DatabaseEnvironment.cpp \
 ../src/DatabaseStatement.cpp \
-../src/KafkaWriter.cpp \
 ../src/OpCode.cpp \
 ../src/OpCode0501.cpp \
 ../src/OpCode0502.cpp \
@@ -50,6 +49,9 @@ CPP_SRCS += \
 ../src/OracleColumn.cpp \
 ../src/OracleObject.cpp \
 ../src/OutputBuffer.cpp \
+../src/OutputBufferJson.cpp \
+../src/OutputBufferJsonDbz.cpp \
+../src/OutputBufferJsonTest.cpp \
 ../src/Reader.cpp \
 ../src/ReaderASM.cpp \
 ../src/ReaderFilesystem.cpp \
@@ -61,7 +63,9 @@ CPP_SRCS += \
 ../src/TransactionBuffer.cpp \
 ../src/TransactionHeap.cpp \
 ../src/TransactionMap.cpp \
-../src/Writer.cpp 
+../src/Writer.cpp \
+../src/WriterFile.cpp \
+../src/WriterKafka.cpp 
 
 OBJS += \
 ./src/CharacterSet.o \
@@ -85,7 +89,6 @@ OBJS += \
 ./src/DatabaseConnection.o \
 ./src/DatabaseEnvironment.o \
 ./src/DatabaseStatement.o \
-./src/KafkaWriter.o \
 ./src/OpCode.o \
 ./src/OpCode0501.o \
 ./src/OpCode0502.o \
@@ -110,6 +113,9 @@ OBJS += \
 ./src/OracleColumn.o \
 ./src/OracleObject.o \
 ./src/OutputBuffer.o \
+./src/OutputBufferJson.o \
+./src/OutputBufferJsonDbz.o \
+./src/OutputBufferJsonTest.o \
 ./src/Reader.o \
 ./src/ReaderASM.o \
 ./src/ReaderFilesystem.o \
@@ -121,7 +127,9 @@ OBJS += \
 ./src/TransactionBuffer.o \
 ./src/TransactionHeap.o \
 ./src/TransactionMap.o \
-./src/Writer.o 
+./src/Writer.o \
+./src/WriterFile.o \
+./src/WriterKafka.o 
 
 CPP_DEPS += \
 ./src/CharacterSet.d \
@@ -145,7 +153,6 @@ CPP_DEPS += \
 ./src/DatabaseConnection.d \
 ./src/DatabaseEnvironment.d \
 ./src/DatabaseStatement.d \
-./src/KafkaWriter.d \
 ./src/OpCode.d \
 ./src/OpCode0501.d \
 ./src/OpCode0502.d \
@@ -170,6 +177,9 @@ CPP_DEPS += \
 ./src/OracleColumn.d \
 ./src/OracleObject.d \
 ./src/OutputBuffer.d \
+./src/OutputBufferJson.d \
+./src/OutputBufferJsonDbz.d \
+./src/OutputBufferJsonTest.d \
 ./src/Reader.d \
 ./src/ReaderASM.d \
 ./src/ReaderFilesystem.d \
@@ -181,7 +191,9 @@ CPP_DEPS += \
 ./src/TransactionBuffer.d \
 ./src/TransactionHeap.d \
 ./src/TransactionMap.d \
-./src/Writer.d 
+./src/Writer.d \
+./src/WriterFile.d \
+./src/WriterKafka.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

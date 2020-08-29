@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
 
     OracleAnalyser::OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
             const char *connectString, const char *userASM, const char *passwordASM, const char *connectStringASM, uint64_t trace,
-            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t modeType, uint64_t disableChecks,
+            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t readerType, uint64_t disableChecks,
             uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
         Thread(alias),
         databaseSequence(0),
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
         env(nullptr),
         conn(nullptr),
         connASM(nullptr),
-        waitingForKafkaWriter(false),
+        waitingForWriter(false),
         databaseContext(""),
         databaseScn(0),
         lastOpTransactionMap(nullptr),
@@ -188,7 +188,7 @@ namespace OpenLogReplicator {
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
         flags(flags),
-        modeType(modeType),
+        readerType(readerType),
         disableChecks(disableChecks),
         redoReadSleep(redoReadSleep),
         archReadSleep(archReadSleep),
@@ -369,7 +369,7 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::writeCheckpoint(bool atShutdown) {
         //ignore checkpoint file for batch mode
-        if (modeType == MODE_BATCH)
+        if (readerType == READER_BATCH)
             return;
 
         clock_t now = clock();
@@ -423,7 +423,7 @@ namespace OpenLogReplicator {
 
     void OracleAnalyser::readCheckpoint(void) {
         //ignore checkpoint file for batch mode
-        if (modeType == MODE_BATCH)
+        if (readerType == READER_BATCH)
             return;
 
         ifstream infile;
@@ -513,7 +513,7 @@ namespace OpenLogReplicator {
             sleep(5);
         }
 
-        if (modeType == MODE_ASM) {
+        if (readerType == READER_ASM) {
             while (!shutdown) {
                 if (connASM == nullptr) {
                     INFO_("connecting to ASM instance of " << database << " to " << connectStringASM);
@@ -535,7 +535,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::archLogGetList(void) {
-        if (modeType == MODE_ONLINE || modeType == MODE_STANDBY) {
+        if (readerType == READER_ONLINE || readerType == READER_STANDBY) {
             checkConnection(true);
 
             DatabaseStatement stmt(conn);
@@ -566,7 +566,7 @@ namespace OpenLogReplicator {
                 archiveRedoQueue.push(redo);
                 ret = stmt.next();
             }
-        } else if (modeType == MODE_OFFLINE) {
+        } else if (readerType == READER_OFFLINE) {
             if (dbRecoveryFileDest.length() == 0) {
                 if (logArchiveDest.length() > 0 && logArchiveFormat.length() > 0) {
                     RUNTIME_FAIL("only db_recovery_file_dest location of archived redo logs is supported for offline mode");
@@ -651,7 +651,7 @@ namespace OpenLogReplicator {
                 lastCheckedDay = newLastCheckedDay;
             }
 
-        } else if (modeType == MODE_BATCH) {
+        } else if (readerType == READER_BATCH) {
             for (string &mappedPath : redoLogsBatch) {
                 TRACE_(TRACE2_ARCHIVE_LIST, "checking path: " << mappedPath);
 
@@ -1081,11 +1081,11 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("getting database sequence or current SCN");
         }
 
-        TRACE_(TRACE2_SQL, SQL_GET_LOGFILE_LIST << endl << "PARAM1: " << modeType);
+        TRACE_(TRACE2_SQL, SQL_GET_LOGFILE_LIST << endl << "PARAM1: " << readerType);
         stmt.createStatement(SQL_GET_LOGFILE_LIST);
-        if (modeType == MODE_ONLINE || modeType == MODE_ASM)
+        if (readerType == READER_ONLINE || readerType == READER_ASM)
             stmt.bindString(1, "ONLINE");
-        else if (modeType == MODE_STANDBY)
+        else if (readerType == READER_STANDBY)
             stmt.bindString(1, "STANDBY");
         else {
             RUNTIME_FAIL("unsupported log mode when looking for online redo logs");
@@ -1108,9 +1108,9 @@ namespace OpenLogReplicator {
             ret = stmt.next();
         }
 
-        if (modeType == MODE_ONLINE || modeType == MODE_ASM || modeType == MODE_STANDBY) {
+        if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY) {
             if (readers.size() == 0) {
-                if (modeType == MODE_STANDBY) {
+                if (readerType == READER_STANDBY) {
                     RUNTIME_FAIL("failed to find standby redo log files");
                 } else {
                     RUNTIME_FAIL("failed to find online redo log files");
@@ -1443,21 +1443,21 @@ namespace OpenLogReplicator {
 
     void *OracleAnalyser::run(void) {
         const char* modeStr;
-        if (modeType == MODE_ONLINE)
+        if (readerType == READER_ONLINE)
             modeStr = "online";
-        else if (modeType == MODE_ASM)
+        else if (readerType == READER_ASM)
             modeStr = "asm";
-        else if (modeType == MODE_OFFLINE)
+        else if (readerType == READER_OFFLINE)
             modeStr = "offline";
-        else if (modeType == MODE_STANDBY)
+        else if (readerType == READER_STANDBY)
             modeStr = "sandby";
-        else if (modeType == MODE_BATCH)
+        else if (readerType == READER_BATCH)
             modeStr = "batch";
 
         TRACE_(TRACE2_THREADS, "ANALYSER (" << hex << this_thread::get_id() << ") START");
 
         INFO_("Oracle Analyser for " << database << " in " << modeStr << " mode is starting");
-        if (modeType == MODE_ONLINE || modeType == MODE_ASM || modeType == MODE_STANDBY)
+        if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY)
             checkConnection(true);
 
         uint64_t ret = REDO_OK;
@@ -1614,7 +1614,7 @@ namespace OpenLogReplicator {
                 if (shutdown)
                     break;
 
-                if (modeType == MODE_BATCH) {
+                if (readerType == READER_BATCH) {
                     INFO_("finished batch processing, exiting");
                     stopMain();
                     break;
@@ -1791,7 +1791,7 @@ namespace OpenLogReplicator {
     Reader *OracleAnalyser::readerCreate(int64_t group) {
         Reader *reader;
 
-        if (modeType == MODE_ASM) {
+        if (readerType == READER_ASM) {
             reader = new ReaderASM(alias.c_str(), this, group);
         } else {
             reader = new ReaderFilesystem(alias.c_str(), this, group);
@@ -2294,8 +2294,8 @@ namespace OpenLogReplicator {
 
             if (memoryChunksFree == 0) {
                 if (memoryChunksAllocated == memoryChunksMax) {
-                    if (memoryChunksSupplemental > 0 && waitingForKafkaWriter) {
-                        WARNING_("out of memory, sleeping until Kafka buffers are free and release some");
+                    if (memoryChunksSupplemental > 0 && waitingForWriter) {
+                        WARNING_("out of memory, sleeping until writer buffers are free and release some");
                         memoryCond.wait(lck);
                     }
                     if (memoryChunksAllocated == memoryChunksMax) {

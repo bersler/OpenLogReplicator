@@ -1,4 +1,4 @@
-/* Memory buffer for handling JSON data
+/* Memory buffer for handling output data
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -44,12 +44,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    OutputBuffer::OutputBuffer() :
+    const char OutputBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    OutputBuffer::OutputBuffer(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns) :
             oracleAnalyser(nullptr),
-            test(0),
-            timestampFormat(0),
-            charFormat(0),
+            timestampFormat(timestampFormat),
+            charFormat(charFormat),
+            scnFormat(scnFormat),
+            unknownFormat(unknownFormat),
+            showColumns(showColumns),
             messageLength(0),
+            lastTime(0),
+            lastScn(0),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
             writer(nullptr),
@@ -806,8 +812,8 @@ namespace OpenLogReplicator {
         timeZoneMap.clear();
 
         while (firstBuffer != nullptr) {
-            uint8_t* nextBuffer = *((uint8_t**)(firstBuffer + KAFKA_BUFFER_NEXT));
-            oracleAnalyser->freeMemoryChunk("KAFKA", firstBuffer, true);
+            uint8_t* nextBuffer = *((uint8_t**)(firstBuffer + OUTPUT_BUFFER_NEXT));
+            oracleAnalyser->freeMemoryChunk("BUFFER", firstBuffer, true);
             firstBuffer = nextBuffer;
             --buffersAllocated;
         }
@@ -817,12 +823,12 @@ namespace OpenLogReplicator {
         this->oracleAnalyser = oracleAnalyser;
 
         buffersAllocated = 1;
-        firstBuffer = oracleAnalyser->getMemoryChunk("KAFKA", false);
-        *((uint8_t**)(firstBuffer + KAFKA_BUFFER_NEXT)) = nullptr;
-        *((uint64_t*)(firstBuffer + KAFKA_BUFFER_END)) = KAFKA_BUFFER_DATA;
-        firstBufferPos = KAFKA_BUFFER_DATA;
+        firstBuffer = oracleAnalyser->getMemoryChunk("BUFFER", false);
+        *((uint8_t**)(firstBuffer + OUTPUT_BUFFER_NEXT)) = nullptr;
+        *((uint64_t*)(firstBuffer + OUTPUT_BUFFER_END)) = OUTPUT_BUFFER_DATA;
+        firstBufferPos = OUTPUT_BUFFER_DATA;
         lastBuffer = firstBuffer;
-        lastBufferPos = KAFKA_BUFFER_DATA;
+        lastBufferPos = OUTPUT_BUFFER_DATA;
     }
 
     void OutputBuffer::bufferAppend(uint8_t character) {
@@ -835,31 +841,29 @@ namespace OpenLogReplicator {
         lastBufferPos += bytes;
 
         if (lastBufferPos >= MEMORY_CHUNK_SIZE) {
-            uint8_t *nextBuffer = oracleAnalyser->getMemoryChunk("KAFKA", true);
-            *((uint8_t**)(nextBuffer + KAFKA_BUFFER_NEXT)) = nullptr;
-            *((uint64_t*)(nextBuffer + KAFKA_BUFFER_END)) = KAFKA_BUFFER_DATA;
+            uint8_t *nextBuffer = oracleAnalyser->getMemoryChunk("BUFFER", true);
+            *((uint8_t**)(nextBuffer + OUTPUT_BUFFER_NEXT)) = nullptr;
+            *((uint64_t*)(nextBuffer + OUTPUT_BUFFER_END)) = OUTPUT_BUFFER_DATA;
             {
                 unique_lock<mutex> lck(mtx);
-                *((uint8_t**)(lastBuffer + KAFKA_BUFFER_NEXT)) = nextBuffer;
-                *((uint64_t*)(lastBuffer + KAFKA_BUFFER_END)) = MEMORY_CHUNK_SIZE;
+                *((uint8_t**)(lastBuffer + OUTPUT_BUFFER_NEXT)) = nextBuffer;
+                *((uint64_t*)(lastBuffer + OUTPUT_BUFFER_END)) = MEMORY_CHUNK_SIZE;
                 ++buffersAllocated;
                 lastBuffer = nextBuffer;
-                lastBufferPos = KAFKA_BUFFER_DATA;
+                lastBufferPos = OUTPUT_BUFFER_DATA;
             }
         }
     }
 
-    OutputBuffer* OutputBuffer::beginMessage(void) {
+    void OutputBuffer::beginMessage(void) {
         curBuffer = lastBuffer;
         curBufferPos = lastBufferPos;
         messageLength = 0;
         *((uint64_t*)(lastBuffer + lastBufferPos)) = 0;
-        bufferShift(KAFKA_BUFFER_LENGTH_SIZE);
-
-        return this;
+        bufferShift(OUTPUT_BUFFER_LENGTH_SIZE);
     }
 
-    OutputBuffer* OutputBuffer::commitMessage(void) {
+    void OutputBuffer::commitMessage(void) {
         if (messageLength == 0) {
             WARNING("JSON buffer - commit of empty transaction");
         }
@@ -869,21 +873,17 @@ namespace OpenLogReplicator {
             unique_lock<mutex> lck(mtx);
             *((uint64_t*)(curBuffer + curBufferPos)) = messageLength;
             if (curBuffer != lastBuffer)
-                *((uint64_t*)(curBuffer + KAFKA_BUFFER_END)) = MEMORY_CHUNK_SIZE;
-            *((uint64_t*)(lastBuffer + KAFKA_BUFFER_END)) = lastBufferPos;
+                *((uint64_t*)(curBuffer + OUTPUT_BUFFER_END)) = MEMORY_CHUNK_SIZE;
+            *((uint64_t*)(lastBuffer + OUTPUT_BUFFER_END)) = lastBufferPos;
             writersCond.notify_all();
         }
-        return this;
     }
 
     uint64_t OutputBuffer::currentMessageSize(void) {
-        return messageLength + KAFKA_BUFFER_LENGTH_SIZE;
+        return messageLength + OUTPUT_BUFFER_LENGTH_SIZE;
     }
 
-    void OutputBuffer::setParameters(uint64_t test, uint64_t timestampFormat, uint64_t charFormat, Writer *writer) {
-        this->test = test;
-        this->timestampFormat = timestampFormat;
-        this->charFormat = charFormat;
+    void OutputBuffer::setWriter(Writer *writer) {
         this->writer = writer;
     }
 
@@ -914,121 +914,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    OutputBuffer* OutputBuffer::appendEscape(const uint8_t *str, uint64_t length) {
-        while (length > 0) {
-            if (*str == '\t') {
-                bufferAppend('\\');
-                bufferAppend('t');
-            } else if (*str == '\r') {
-                bufferAppend('\\');
-                bufferAppend('r');
-            } else if (*str == '\n') {
-                bufferAppend('\\');
-                bufferAppend('n');
-            } else if (*str == '\f') {
-                bufferAppend('\\');
-                bufferAppend('f');
-            } else if (*str == '\b') {
-                bufferAppend('\\');
-                bufferAppend('b');
-            } else {
-                if (*str == '"' || *str == '\\' || *str == '/')
-                    bufferAppend('\\');
-                bufferAppend(*(str++));
-            }
-            --length;
-        }
-
-        return this;
-    }
-
-OutputBuffer* OutputBuffer::appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId) {
-        bool isNext = false;
-
-        CharacterSet *characterSet = characterMap[charsetId];
-        if (characterSet == nullptr && (charFormat & 1 == 0)) {
-            RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
-        }
-
-        while (length > 0) {
-            typeunicode unicodeCharacter;
-            uint64_t unicodeCharacterLength;
-
-            if ((charFormat & 1) == 0) {
-                unicodeCharacter = characterSet->decode(str, length);
-                unicodeCharacterLength = 8;
-            } else {
-                unicodeCharacter = *str++;
-                --length;
-                unicodeCharacterLength = 2;
-            }
-
-            if ((charFormat & 2) == 2) {
-                if (isNext)
-                    bufferAppend(',');
-                else
-                    isNext = true;
-                bufferAppend('0');
-                bufferAppend('x');
-                appendHex(unicodeCharacter, unicodeCharacterLength);
-            } else
-            if (unicodeCharacter == '\t') {
-                bufferAppend('\\');
-                bufferAppend('t');
-            } else if (unicodeCharacter == '\r') {
-                bufferAppend('\\');
-                bufferAppend('r');
-            } else if (unicodeCharacter == '\n') {
-                bufferAppend('\\');
-                bufferAppend('n');
-            } else if (unicodeCharacter == '\f') {
-                bufferAppend('\\');
-                bufferAppend('f');
-            } else if (unicodeCharacter == '\b') {
-                bufferAppend('\\');
-                bufferAppend('b');
-            } else if (unicodeCharacter == '"') {
-                bufferAppend('\\');
-                bufferAppend('"');
-            } else if (unicodeCharacter == '\\') {
-                bufferAppend('\\');
-                bufferAppend('\\');
-            } else if (unicodeCharacter == '/') {
-                bufferAppend('\\');
-                bufferAppend('/');
-            } else {
-                //0xxxxxxx
-                if (unicodeCharacter <= 0x7F) {
-                    bufferAppend(unicodeCharacter);
-
-                //110xxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x7FF) {
-                    bufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //1110xxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0xFFFF) {
-                    bufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x10FFFF) {
-                    bufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                } else {
-                    RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
-                }
-            }
-        }
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendHex(uint64_t val, uint64_t length) {
+    void OutputBuffer::appendHex(uint64_t val, uint64_t length) {
         static const char* digits = "0123456789abcdef";
 
         uint64_t j = (length - 1) * 4;
@@ -1036,11 +922,9 @@ OutputBuffer* OutputBuffer::appendEscapeMap(const uint8_t *str, uint64_t length,
             bufferAppend(digits[(val >> j) & 0xF]);
             j -= 4;
         };
-
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendDec(uint64_t val) {
+    void OutputBuffer::appendDec(uint64_t val) {
         char buffer[21];
         uint64_t length = 0;
 
@@ -1057,72 +941,9 @@ OutputBuffer* OutputBuffer::appendEscapeMap(const uint8_t *str, uint64_t length,
 
         for (uint64_t i = 0; i < length; ++i)
             bufferAppend(buffer[length - i - 1]);
-
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendScn(typescn scn) {
-        if (test >= 2) {
-            appendChr("\"scn\":\"0x");
-            appendHex(scn, 16);
-            append('"');
-        } else {
-            appendChr("\"scn\":");
-            string scnStr = to_string(scn);
-            appendStr(scnStr);
-        }
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendOperation(char *operation) {
-        appendChr("\"operation\":\"");
-        appendChr(operation);
-        append('"');
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendTable(string &owner, string &table) {
-        appendChr("\"table\":\"");
-        appendStr(owner);
-        append('.');
-        appendStr(table);
-        append('"');
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendNull(string &columnName) {
-        append('"');
-        appendStr(columnName);
-        appendChr("\":null");
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendMs(char *name, uint64_t time) {
-        append('"');
-        appendChr(name);
-        appendChr("\":");
-        appendDec(time);
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendXid(typexid xid) {
-        appendChr("\"xid\":\"");
-        appendDec(USN(xid));
-        append('.');
-        appendDec(SLT(xid));
-        append('.');
-        appendDec(SQN(xid));
-        append('"');
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendTimestamp(const uint8_t *data, uint64_t length) {
+    void OutputBuffer::appendTimestamp(const uint8_t *data, uint64_t length) {
         if (timestampFormat == 0 || timestampFormat == 1) {
             //2012-04-23T18:25:43.511Z - ISO 8601 format
             uint64_t val1 = data[0],
@@ -1223,463 +1044,76 @@ OutputBuffer* OutputBuffer::appendEscapeMap(const uint8_t *str, uint64_t length,
                 }
             }
         }
-
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
-        appendChr("\"?\"");
-        stringstream ss;
-        for (uint64_t j = 0; j < fieldLength; ++j)
-            ss << " " << hex << setfill('0') << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
-        WARNING("unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - " << ss.str());
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength) {
-        uint64_t j, jMax;
-        uint8_t digits;
-
-        if (redoLogRecord->length == 0) {
-            RUNTIME_FAIL("ERROR, trying to output null data for column: " << columnName);
-        }
-
-        append('"');
-        appendStr(columnName);
-        appendChr("\":");
-
-        switch(typeNo) {
-        case 1: //varchar2/nvarchar2
-        case 96: //char/nchar
-            append('"');
-            appendEscapeMap(redoLogRecord->data + fieldPos, fieldLength, charsetId);
-            append('"');
-            break;
-
-        case 2: //number/float
-            digits = redoLogRecord->data[fieldPos + 0];
-            //just zero
-            if (digits == 0x80) {
-                append('0');
-                break;
-            }
-
-            j = 1;
-            jMax = fieldLength - 1;
-
-            //positive number
-            if (digits > 0x80 && jMax >= 1) {
-                uint64_t val, zeros = 0;
-                //part of the total
-                if (digits <= 0xC0) {
-                    append('0');
-                    zeros = 0xC0 - digits;
-                } else {
-                    digits -= 0xC0;
-                    //part of the total - omitting first zero for first digit
-                    val = redoLogRecord->data[fieldPos + j] - 1;
-                    if (val < 10)
-                        append('0' + val);
-                    else {
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                    }
-
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        val = redoLogRecord->data[fieldPos + j] - 1;
-                        if (j <= jMax) {
-                            append('0' + (val / 10));
-                            append('0' + (val % 10));
-                            ++j;
-                        } else {
-                            append('0');
-                            append('0');
-                        }
-                        --digits;
-                    }
-                }
-
-                //fraction part
-                if (j <= jMax) {
-                    append('.');
-
-                    while (zeros > 0) {
-                        append('0');
-                        append('0');
-                        --zeros;
-                    }
-
-                    while (j <= jMax - 1) {
-                        val = redoLogRecord->data[fieldPos + j] - 1;
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                        ++j;
-                    }
-
-                    //last digit - omitting 0 at the end
-                    val = redoLogRecord->data[fieldPos + j] - 1;
-                    append('0' + (val / 10));
-                    if ((val % 10) != 0)
-                        append('0' + (val % 10));
-                }
-            //negative number
-            } else if (digits < 0x80 && jMax >= 1) {
-                uint64_t val, zeros = 0;
-                append('-');
-
-                if (redoLogRecord->data[fieldPos + jMax] == 0x66)
-                    --jMax;
-
-                //part of the total
-                if (digits >= 0x3F) {
-                    append('0');
-                    zeros = digits - 0x3F;
-                } else {
-                    digits = 0x3F - digits;
-
-                    val = 101 - redoLogRecord->data[fieldPos + j];
-                    if (val < 10)
-                        append('0' + val);
-                    else {
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                    }
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        if (j <= jMax) {
-                            val = 101 - redoLogRecord->data[fieldPos + j];
-                            append('0' + (val / 10));
-                            append('0' + (val % 10));
-                            ++j;
-                        } else {
-                            append('0');
-                            append('0');
-                        }
-                        --digits;
-                    }
-                }
-
-                if (j <= jMax) {
-                    append('.');
-
-                    while (zeros > 0) {
-                        append('0');
-                        append('0');
-                        --zeros;
-                    }
-
-                    while (j <= jMax - 1) {
-                        val = 101 - redoLogRecord->data[fieldPos + j];
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                        ++j;
-                    }
-
-                    val = 101 - redoLogRecord->data[fieldPos + j];
-                    append('0' + (val / 10));
-                    if ((val % 10) != 0)
-                        append('0' + (val % 10));
-                }
-            } else
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            break;
-
-        case 12:  //date
-        case 180: //timestamp
-            if (fieldLength != 7 && fieldLength != 11)
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            else {
-                append('"');
-                appendTimestamp(redoLogRecord->data + fieldPos, fieldLength);
-                append('"');
-            }
-            break;
-
-        case 23: //raw
-            append('"');
-            for (uint64_t j = 0; j < fieldLength; ++j)
-                appendHex(*(redoLogRecord->data + fieldPos + j), 2);
-            append('"');
-            break;
-
-        case 100: //binary_float
-            if (fieldLength == 4) {
-                stringstream valStringStream;
-                float *valFloat = (float *)redoLogRecord->data + fieldPos;
-                valStringStream << *valFloat;
-                string valString = valStringStream.str();
-                appendStr(valString);
-            } else
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            break;
-
-        case 101: //binary_double
-            if (fieldLength == 8) {
-                stringstream valStringStream;
-                double *valDouble = (double *)redoLogRecord->data + fieldPos;
-                valStringStream << *valDouble;
-                string valString = valStringStream.str();
-                appendStr(valString);
-            } else
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            break;
-
-        //case 231: //timestamp with local time zone
-        case 181: //timestamp with time zone
-            if (fieldLength != 13) {
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            } else {
-                append('"');
-                appendTimestamp(redoLogRecord->data + fieldPos, fieldLength - 2);
-
-                //append time zone information, but leave time in UTC
-                if (timestampFormat == 1) {
-                    if (redoLogRecord->data[fieldPos + 11] >= 5 && redoLogRecord->data[fieldPos + 11] <= 36) {
-                        append(' ');
-                        if (redoLogRecord->data[fieldPos + 11] < 20 ||
-                                (redoLogRecord->data[fieldPos + 11] == 20 && redoLogRecord->data[fieldPos + 12] < 60))
-                            append('-');
-                        else
-                            append('+');
-
-                        if (redoLogRecord->data[fieldPos + 11] < 20) {
-                            if (20 - redoLogRecord->data[fieldPos + 11] < 10)
-                                append('0');
-                            appendDec(20 - redoLogRecord->data[fieldPos + 11]);
-                        } else {
-                            if (redoLogRecord->data[fieldPos + 11] - 20 < 10)
-                                append('0');
-                            appendDec(redoLogRecord->data[fieldPos + 11] - 20);
-                        }
-
-                        append(':');
-
-                        if (redoLogRecord->data[fieldPos + 12] < 60) {
-                            if (60 - redoLogRecord->data[fieldPos + 12] < 10)
-                                append('0');
-                            appendDec(60 - redoLogRecord->data[fieldPos + 12]);
-                        } else {
-                            if (redoLogRecord->data[fieldPos + 12] - 60 < 10)
-                                append('0');
-                            appendDec(redoLogRecord->data[fieldPos + 12] - 60);
-                        }
-                    } else {
-                        append(' ');
-
-                        uint16_t tzkey = (redoLogRecord->data[fieldPos + 11] << 8) | redoLogRecord->data[fieldPos + 12];
-                        char *tz = timeZoneMap[tzkey];
-                        if (tz == nullptr)
-                            appendChr("TZ?");
-                        else
-                            appendChr(tz);
-                    }
-                }
-
-                append('"');
-            }
-            break;
-
-        default:
-            if (test >= 3)
-                appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
-            else
-                appendChr("\"?\"");
-        }
-
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::appendStr(string &str) {
+    void OutputBuffer::appendStr(string &str) {
         const char *charstr = str.c_str();
         uint64_t length = str.length();
         for (uint i = 0; i < length; ++i)
             bufferAppend(*charstr++);
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendChr(const char *str) {
+    void OutputBuffer::appendChr(const char *str) {
         char character = *str++;
         while (character != 0) {
             bufferAppend(character);
             character = *str++;
         }
-        return this;
     }
 
-    char OutputBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-    OutputBuffer* OutputBuffer::appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) {
-        uint32_t afn =  bdba >> 22;
-        bdba &= 0x003FFFFF;
-        appendChr("\"rowid\":\"");
-        append(translationMap[(objd >> 30) & 0x3F]);
-        append(translationMap[(objd >> 24) & 0x3F]);
-        append(translationMap[(objd >> 18) & 0x3F]);
-        append(translationMap[(objd >> 12) & 0x3F]);
-        append(translationMap[(objd >> 6) & 0x3F]);
-        append(translationMap[objd & 0x3F]);
-        append(translationMap[(afn >> 12) & 0x3F]);
-        append(translationMap[(afn >> 6) & 0x3F]);
-        append(translationMap[afn & 0x3F]);
-        append(translationMap[(bdba >> 30) & 0x3F]);
-        append(translationMap[(bdba >> 24) & 0x3F]);
-        append(translationMap[(bdba >> 18) & 0x3F]);
-        append(translationMap[(bdba >> 12) & 0x3F]);
-        append(translationMap[(bdba >> 6) & 0x3F]);
-        append(translationMap[bdba & 0x3F]);
-        append(translationMap[(slot >> 12) & 0x3F]);
-        append(translationMap[(slot >> 6) & 0x3F]);
-        append(translationMap[slot & 0x3F]);
-        append('"');
-        return this;
-    }
-
-    OutputBuffer* OutputBuffer::append(char chr) {
+    void OutputBuffer::append(char chr) {
         bufferAppend(chr);
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendDbzCols(OracleObject *object) {
-        for (uint64_t i = 0; i < object->columns.size(); ++i) {
-            bool microTimestamp = false;
+    void OutputBuffer::beginTran(typescn scn, typetime time, typexid xid) {
+        beginMessage();
+        lastTime = time;
+        lastScn = scn;
+    }
 
-            if (object->columns[i] == nullptr)
-                continue;
+    void OutputBuffer::appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        if (showColumns <= 1) {
+            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
 
-            if (i > 0)
-                append(',');
-
-            appendChr("{\"type\":\"");
-            switch(object->columns[i]->typeNo) {
-            case 1: //varchar(2)
-            case 96: //char
-                appendChr("string");
-                break;
-
-            case 2: //numeric
-                if (object->columns[i]->scale > 0)
-                    appendChr("Decimal");
-                else {
-                    uint64_t digits = object->columns[i]->precision - object->columns[i]->scale;
-                    if (digits < 3)
-                        appendChr("int8");
-                    else if (digits < 5)
-                        appendChr("int16");
-                    else if (digits < 10)
-                        appendChr("int32");
-                    else if (digits < 19)
-                        appendChr("int64");
-                    else
-                        appendChr("Decimal");
+                //remove unchanged column values - only for tables with defined primary key
+                if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
+                    if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
+                        beforePos[i] = 0;
+                        afterPos[i] = 0;
+                        beforeLen[i] = 0;
+                        afterLen[i] = 0;
+                    }
                 }
-                break;
 
-            case 12:
-            case 180:
-                if (timestampFormat == 0 || timestampFormat == 1)
-                    appendChr("datetime");
-                else if (timestampFormat == 2) {
-                    appendChr("int64");
-                    microTimestamp = true;
+                //remove columns additionally present, but not modified
+                if (beforePos[i] > 0 && beforeLen[i] == 0 && afterPos[i] == 0) {
+                    if (object->columns[i]->numPk == 0) {
+                        beforePos[i] = 0;
+                    } else {
+                        afterPos[i] = beforePos[i];
+                        afterLen[i] = beforeLen[i];
+                        afterRecord[i] = beforeRecord[i];
+                    }
                 }
-                break;
+                if (afterPos[i] > 0 && afterLen[i] == 0 && beforePos[i] == 0) {
+                    if (object->columns[i]->numPk == 0) {
+                        afterPos[i] = 0;
+                    } else {
+                        beforePos[i] = afterPos[i];
+                        beforeLen[i] = afterLen[i];
+                        beforeRecord[i] = afterRecord[i];
+                    }
+                }
             }
-            appendChr("\",\"optional\":");
-            if (object->columns[i]->nullable)
-                appendChr("true");
-            else
-                appendChr("false");
-
-            if (microTimestamp)
-                appendChr(",\"name\":\"io.debezium.time.MicroTimestamp\",\"version\":1");
-            appendChr(",\"field\":\"");
-            appendStr(object->columns[i]->columnName);
-            appendChr("\"}");
         }
-        return this;
     }
 
-    OutputBuffer* OutputBuffer::appendDbzHead(OracleObject *object) {
-        appendChr("{\"schema\":{\"type\":\"struct\",\"fields\":[");
-        appendChr("{\"type\":\"struct\",\"fields\":[");
-        appendDbzCols(object);
-        appendChr("],\"optional\":true,\"name\":\"");
-        appendStr(oracleAnalyser->alias);
-        append('.');
-        appendStr(object->owner);
-        append('.');
-        appendStr(object->objectName);
-        appendChr(".Value\",\"field\":\"before\"},");
-        appendChr("{\"type\":\"struct\",\"fields\":[");
-        appendDbzCols(object);
-        appendChr("],\"optional\":true,\"name\":\"");
-        appendStr(oracleAnalyser->alias);
-        append('.');
-        appendStr(object->owner);
-        append('.');
-        appendStr(object->objectName);
-        appendChr(".Value\",\"field\":\"after\"},"
-                "{\"type\":\"struct\",\"fields\":["
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"version\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"connector\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"name\"},"
-                "{\"type\":\"int64\",\"optional\":false,\"field\":\"ts_ms\"},"
-                "{\"type\":\"string\",\"optional\":true,\"name\":\"io.debezium.data.Enum\",\"version\":1,\"parameters\":{\"allowed\":\"true,last,false\"},\"default\":\"false\",\"field\":\"snapshot\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"db\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"schema\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"table\"},"
-                "{\"type\":\"string\",\"optional\":true,\"field\":\"txId\"},"
-                "{\"type\":\"int64\",\"optional\":true,\"field\":\"scn\"},"
-                "{\"type\":\"string\",\"optional\":true,\"field\":\"lcr_position\"}],"
-                "\"optional\":false,\"name\":\"io.debezium.connector.oracle.Source\",\"field\":\"source\"},"
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"op\"},"
-                "{\"type\":\"int64\",\"optional\":true,\"field\":\"ts_ms\"},"
-                "{\"type\":\"struct\",\"fields\":["
-                "{\"type\":\"string\",\"optional\":false,\"field\":\"id\"},"
-                "{\"type\":\"int64\",\"optional\":false,\"field\":\"total_order\"},"
-                "{\"type\":\"int64\",\"optional\":false,\"field\":\"data_collection_order\"}],\"optional\":true,\"field\":\"transaction\"},"
-                "{\"type\":\"string\",\"optional\":true,\"field\":\"messagetopic\"},"
-                "{\"type\":\"string\",\"optional\":true,\"field\":\"messagesource\"}],\"optional\":false,\"name\":\"asgard.DEBEZIUM.CUSTOMERS.Envelope\"},\"payload\":{");
-        return this;
+    void OutputBuffer::next(void) {
     }
 
-    OutputBuffer* OutputBuffer::appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid) {
-        appendChr(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
-        appendStr(oracleAnalyser->alias);
-        appendChr("\",");
-        appendMs("ts_ms", time);
-        appendChr(",\"snapshot\":\"false\",\"db\":\"");
-        appendStr(oracleAnalyser->databaseContext);
-        appendChr("\",\"schema\":\"");
-        appendStr(object->owner);
-        appendChr("\",\"table\":\"");
-        appendStr(object->objectName);
-        appendChr("\",\"txId\":\"");
-        appendDec(USN(xid));
-        append('.');
-        appendDec(SLT(xid));
-        append('.');
-        appendDec(SQN(xid));
-        appendChr("\",");
-        appendScn(scn);
-        appendChr(",\"lcr_position\":null},\"op\":\"");
-        append(op);
-        appendChr("\",");
-        appendMs("ts_ms", time);
-        appendChr(",\"transaction\":null,\"messagetopic\":\"");
-        appendStr(oracleAnalyser->alias);
-        append('.');
-        appendStr(object->owner);
-        append('.');
-        appendStr(object->objectName);
-        appendChr("\",\"messagesource\":\"OpenLogReplicator from Oracle on ");
-        appendStr(oracleAnalyser->alias);
-        appendChr("\"}}");
-        return this;
+    void OutputBuffer::commitTran(void) {
+        commitMessage();
     }
 }

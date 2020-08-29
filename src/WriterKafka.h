@@ -1,4 +1,4 @@
-/* Header for Thread class
+/* Header for WriterKafka class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,34 +17,43 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
-#include <pthread.h>
+#include <queue>
+#include <set>
+#include <stdint.h>
+#include <librdkafka/rdkafkacpp.h>
 
 #include "types.h"
+#include "Writer.h"
 
-#ifndef THREAD_H_
-#define THREAD_H_
+#ifndef WRITERKAFKA_H_
+#define WRITERKAFKA_H_
+
+#define MAX_KAFKA_MESSAGE_MB        953
 
 using namespace std;
+using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    class Thread {
+    class RedoLogRecord;
+    class OracleAnalyser;
+
+    class WriterKafka : public Writer {
     protected:
-        virtual void *run(void) = 0;
+        Conf *conf;
+        Conf *tconf;
+        string brokers;
+        string topic;
+        Producer *producer;
+        Topic *ktopic;
+
+        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
+        virtual string getName();
 
     public:
-        volatile bool shutdown;
-        volatile bool started;
-        pthread_t pthread;
-        string alias;
-
-        static void *runStatic(void *context);
-
-        virtual void stop(void);
-
-        Thread(const char *alias);
-        virtual ~Thread();
+        WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage,
+                    const char *brokers, const char *topic, uint64_t maxMessageKb);
+        virtual ~WriterKafka();
     };
 }
 

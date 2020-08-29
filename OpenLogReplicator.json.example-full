@@ -1,21 +1,29 @@
 {
-  "version": "0.7.2",
+  "version": "0.7.3",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
   "trace2": 0,
   "sources": [
     {
-      "type": "ORACLE",
       "alias": "S1",
       "name": "O112A",
-      "mode": {
+      "reader": {
         "type": "online", 
         "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
         "user": "system",
         "password": "unknPwd4%",
         "server": "//server:4999/O112A.ORADOMAIN",
         "disable-checks": 0
+      },
+      "format": {
+        "type": "json",
+        "timestamp-format": 0, 
+        "char-format": 0,
+        "scn-format": 0,
+        "unknown-format": 0,
+        "metadata": 0,
+        "show-columns": 0
       },
       "flags": 0,
       "memory-min-mb": 64,
@@ -33,12 +41,15 @@
   ],
   "targets": [
     {
-      "type": "KAFKA",
-      "alias": "T2",
-      "max-message-mb": 100,
-      "format": {"stream": "JSON", "topic": "O112A", "metadata": 0, "single-dml": 0, "show-columns": 0, "test": 0, "timestamp-format": 0, "char-format": 0},
-      "brokers": "localhost:9092",
-      "source": "S1"
+      "alias": "K1", 
+      "source": "S1",
+      "writer": {
+        "type": "kafka",
+        "topic": "O112A",
+        "brokers": "localhost:9092",
+        "short-message": 0,
+        "max-message-mb": 500
+      }
     }
   ]
 }

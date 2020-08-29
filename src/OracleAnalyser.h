@@ -129,14 +129,14 @@ namespace OpenLogReplicator {
     public:
         OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
                 const char *connectString, const char *userASM, const char *passwdASM, const char *connectStringASM, uint64_t trace,
-                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t modeType, uint64_t disableChecks,
+                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t readerType, uint64_t disableChecks,
                 uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb);
         virtual ~OracleAnalyser();
 
         DatabaseEnvironment *env;
         DatabaseConnection *conn;
         DatabaseConnection *connASM;
-        bool waitingForKafkaWriter;
+        bool waitingForWriter;
         mutex mtx;
         condition_variable readerCond;
         condition_variable sleepingCond;
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t flags;
-        uint64_t modeType;
+        uint64_t readerType;
         uint64_t disableChecks;
         vector<string> pathMapping;
         vector<string> redoLogsBatch;

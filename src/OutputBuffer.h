@@ -28,13 +28,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
 
-#define MAX_KAFKA_MESSAGE_MB        953
-
-#define KAFKA_BUFFER_NEXT           0
-#define KAFKA_BUFFER_END            (sizeof(uint8_t*))
-#define KAFKA_BUFFER_DATA           (sizeof(uint8_t*)+sizeof(uint64_t))
-#define KAFKA_BUFFER_LENGTH_SIZE    (sizeof(uint64_t))
-
+#define OUTPUT_BUFFER_NEXT          0
+#define OUTPUT_BUFFER_END           (sizeof(uint8_t*))
+#define OUTPUT_BUFFER_DATA          (sizeof(uint8_t*)+sizeof(uint64_t))
+#define OUTPUT_BUFFER_LENGTH_SIZE   (sizeof(uint64_t))
 
 using namespace std;
 
@@ -49,18 +46,29 @@ namespace OpenLogReplicator {
     class OutputBuffer {
     protected:
         OracleAnalyser *oracleAnalyser;
-        static char translationMap[65];
-        uint64_t test;
+        static const char translationMap[65];
         uint64_t timestampFormat;
         uint64_t charFormat;
+        uint64_t scnFormat;
+        uint64_t unknownFormat;
+        uint64_t showColumns;
         uint64_t messageLength;
-        unordered_map<uint16_t, char*> timeZoneMap;
+        unordered_map<uint16_t, const char*> timeZoneMap;
+        typetime lastTime;
+        typescn lastScn;
 
         void bufferAppend(uint8_t character);
         void bufferShift(uint64_t bytes);
+        void beginMessage(void);
+        void commitMessage(void);
+        void appendChr(const char* str);
+        void appendStr(string &str);
+        void append(char chr);
+        void appendHex(uint64_t val, uint64_t length);
+        void appendDec(uint64_t val);
+        void appendTimestamp(const uint8_t *data, uint64_t length);
 
     public:
-        //uint64_t outputBufferSize;
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
         unordered_map<uint64_t, CharacterSet*> characterMap;
@@ -77,35 +85,29 @@ namespace OpenLogReplicator {
         uint8_t *lastBuffer;
         uint64_t lastBufferPos;
 
-        OutputBuffer();
+        uint64_t afterPos[MAX_NO_COLUMNS];
+        uint64_t beforePos[MAX_NO_COLUMNS];
+        uint16_t afterLen[MAX_NO_COLUMNS];
+        uint16_t beforeLen[MAX_NO_COLUMNS];
+        uint8_t colIsSupp[MAX_NO_COLUMNS];
+        RedoLogRecord *beforeRecord[MAX_NO_COLUMNS];
+        RedoLogRecord *afterRecord[MAX_NO_COLUMNS];
+
+        OutputBuffer(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns);
         virtual ~OutputBuffer();
 
         void initialize(OracleAnalyser *oracleAnalyser);
-        OutputBuffer* beginMessage(void);
-        OutputBuffer* commitMessage(void);
         uint64_t currentMessageSize(void);
-        void setParameters(uint64_t test, uint64_t timestampFormat, uint64_t charFormat, Writer *writer);
+        void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
-        OutputBuffer* appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
-        OutputBuffer* appendEscape(const uint8_t *str, uint64_t length);
-        OutputBuffer* appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId);
-        OutputBuffer* appendChr(const char* str);
-        OutputBuffer* appendStr(string &str);
-        OutputBuffer* append(char chr);
-        OutputBuffer* appendHex(uint64_t val, uint64_t length);
-        OutputBuffer* appendDec(uint64_t val);
-        OutputBuffer* appendScn(typescn scn);
-        OutputBuffer* appendOperation(char *operation);
-        OutputBuffer* appendTable(string &owner, string &table);
-        OutputBuffer* appendTimestamp(const uint8_t *data, uint64_t length);
-        OutputBuffer* appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
-        OutputBuffer* appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength);
-        OutputBuffer* appendNull(string &columnName);
-        OutputBuffer* appendMs(char *name, uint64_t time);
-        OutputBuffer* appendXid(typexid xid);
-        OutputBuffer* appendDbzCols(OracleObject *object);
-        OutputBuffer* appendDbzHead(OracleObject *object);
-        OutputBuffer* appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid);
+
+        virtual void appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
+        virtual void appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
+        virtual void appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) = 0;
+        virtual void next(void);
+        virtual void beginTran(typescn scn, typetime time, typexid xid);
+        virtual void commitTran(void);
     };
 }
 

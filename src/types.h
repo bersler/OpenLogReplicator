@@ -55,7 +55,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.7.2"
+#define PROGRAM_VERSION             "0.7.3"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -65,14 +65,36 @@ typedef uint64_t typeunicode;
 #define MEMORY_CHUNK_MIN_MB         16
 #define MEMORY_CHUNK_MIN_MB_CHR     "16"
 
-#define STREAM_JSON                 1
-#define STREAM_DBZ_JSON             2
+#define READER_ONLINE               1
+#define READER_OFFLINE              2
+#define READER_ASM                  3
+#define READER_STANDBY              4
+#define READER_BATCH                5
 
-#define MODE_ONLINE                 1
-#define MODE_OFFLINE                2
-#define MODE_ASM                    3
-#define MODE_STANDBY                4
-#define MODE_BATCH                  5
+#define WRITER_KAFKA                1
+#define WRITER_FILE                 2
+#define WRITER_SERVICE              3
+
+//default, only changed columns for update, or PK
+#define COLUMNS_ONLY_CHANGED        0
+//show full nulls from insert & delete
+#define COLUMNS_FULL_INSERT_DELETE  1
+//show all from redo
+#define COLUMNS_ALL                 2
+
+#define TIMESTAMP_FORMAT_ISO8601    0
+#define TIMESTAMP_FORMAT_UNIX       1
+
+#define CHAR_FORMAT_UTF8            0
+#define CHAR_FORMAT_NOMAPPING       1
+#define CHAR_FORMAT_UTF8_HEX        2
+#define CHAR_FORMAT_NOMAPPING_HEX   3
+
+#define SCN_FORMAT_NUMERIC          0
+#define SCN_FORMAT_HEX              1
+
+#define UNKNOWN_FORMAT_QUESTION     0
+#define UNKNOWN_FORMAT_DUMP         1
 
 #define TRACE_SILENT                0
 #define TRACE_WARNING               1

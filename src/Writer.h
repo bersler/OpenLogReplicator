@@ -42,28 +42,22 @@ namespace OpenLogReplicator {
     protected:
         OutputBuffer *outputBuffer;
         OracleAnalyser *oracleAnalyser;
-        uint64_t stream;            //1 - JSON, 2 - DBZ-JSON
-        uint64_t singleDml;         //0 - transactions grouped, 1 - every dml is a single transaction
-        uint64_t showColumns;       //0 - default, only changed columns for update, or PK, 1 - show full nulls from insert & delete, 2 - show all from redo
-        uint64_t test;              //0 - normal work, 1 - don't connect to Kafka, stream output to log, 2 - like but produce simplified JSON
-        uint64_t timestampFormat;   //0 - timestamp in ISO 8601 format, 1 - timestamp in Unix epoch format
-        uint64_t charFormat;        //0 - with mapping to UTF-8, 1 - without mapping applied, 2 - hex in UTF-8, 3 - hex without mapping applied
+        uint64_t shortMessage;
+        uint8_t *msgBuffer;
+
+        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) = 0;
+        virtual string getName() = 0;
+        virtual void *run(void);
 
     public:
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
 
-        virtual void *run(void) = 0;
-        uint64_t initialize(void);
-        virtual void beginTran(typescn scn, typetime time, typexid xid) = 0;
-        virtual void next(void) = 0;
-        virtual void commitTran(void) = 0;
-        virtual void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
-        virtual void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) = 0;
-        virtual void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) = 0;
-        virtual void parseDDL(RedoLogRecord *redoLogRecord1) = 0;
+        void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
+        void parseDDL(RedoLogRecord *redoLogRecord1);
 
-        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t stream, uint64_t singleDml, uint64_t showColumns,
-                uint64_t test, uint64_t timestampFormat, uint64_t charFormat, uint64_t maxMessageMb);
+        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage, uint64_t maxMessageMb);
         virtual ~Writer();
     };
 }
