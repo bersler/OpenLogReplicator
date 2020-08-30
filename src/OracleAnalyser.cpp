@@ -77,6 +77,9 @@ namespace OpenLogReplicator {
     const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT "
             "SEQUENCE# "
             "FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
+    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE_STANDBY("SELECT "
+            "SEQUENCE# "
+            "FROM SYS.V_$STANDBY_LOG WHERE STATUS = 'ACTIVE'");
     const char* OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT "
             "LF.GROUP#, "
             "LF.MEMBER "
@@ -146,7 +149,7 @@ namespace OpenLogReplicator {
             "FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME = :1");
 
     OracleAnalyser::OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
-            const char *connectString, const char *userASM, const char *passwordASM, const char *connectStringASM, uint64_t trace,
+            const char *connectString, const char *userASM, const char *passwordASM, const char *connectStringASM, uint64_t arch, uint64_t trace,
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t readerType, uint64_t disableChecks,
             uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
         Thread(alias),
@@ -192,6 +195,7 @@ namespace OpenLogReplicator {
         disableChecks(disableChecks),
         redoReadSleep(redoReadSleep),
         archReadSleep(archReadSleep),
+        arch(arch),
         trace(trace),
         trace2(trace2),
         version(0),
@@ -306,10 +310,7 @@ namespace OpenLogReplicator {
             memoryChunks = nullptr;
         }
 
-        if (conn != nullptr) {
-            delete conn;
-            conn = nullptr;
-        }
+        closeConnection();
 
         if (connASM != nullptr) {
             delete connASM;
@@ -494,7 +495,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyser::checkConnection(bool reconnect) {
+    void OracleAnalyser::checkConnection(void) {
         while (!shutdown) {
             if (conn == nullptr) {
                 INFO_("connecting to Oracle instance of " << database << " to " << connectString);
@@ -506,7 +507,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (conn != nullptr || !reconnect)
+            if (conn != nullptr)
                 break;
 
             WARNING_("cannot connect to database, retry in 5 sec.");
@@ -525,7 +526,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (connASM != nullptr || !reconnect)
+                if (connASM != nullptr)
                     break;
 
                 WARNING_("cannot connect to ASM, retry in 5 sec.");
@@ -534,9 +535,16 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OracleAnalyser::closeConnection(void) {
+        if (conn != nullptr) {
+            delete conn;
+            conn = nullptr;
+        }
+    }
+
     void OracleAnalyser::archLogGetList(void) {
-        if (readerType == READER_ONLINE || readerType == READER_STANDBY) {
-            checkConnection(true);
+        if (arch == ARCH_LOG_ONLINE || arch == ARCH_LOG_ONLINE_KEEP) {
+            checkConnection();
 
             DatabaseStatement stmt(conn);
             TRACE_(TRACE2_SQL, SQL_GET_ARCHIVE_LOG_LIST << endl << "PARAM1: " << dec << databaseSequence << endl << "PARAM2: " << dec << resetlogs << endl << "PARAM3: " << dec << activation);
@@ -566,7 +574,10 @@ namespace OpenLogReplicator {
                 archiveRedoQueue.push(redo);
                 ret = stmt.next();
             }
-        } else if (readerType == READER_OFFLINE) {
+
+            if (arch != ARCH_LOG_ONLINE_KEEP)
+                closeConnection();
+        } else if (arch == ARCH_LOG_PATH) {
             if (dbRecoveryFileDest.length() == 0) {
                 if (logArchiveDest.length() > 0 && logArchiveFormat.length() > 0) {
                     RUNTIME_FAIL("only db_recovery_file_dest location of archived redo logs is supported for offline mode");
@@ -651,7 +662,7 @@ namespace OpenLogReplicator {
                 lastCheckedDay = newLastCheckedDay;
             }
 
-        } else if (readerType == READER_BATCH) {
+        } else if (arch == ARCH_LOG_LIST) {
             for (string &mappedPath : redoLogsBatch) {
                 TRACE_(TRACE2_ARCHIVE_LIST, "checking path: " << mappedPath);
 
@@ -949,10 +960,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::initializeOnlineMode(void) {
-        checkConnection(false);
-        if (conn == nullptr) {
-            RUNTIME_FAIL("connecting to the database");
-        }
+        checkConnection();
 
         typescn currentDatabaseScn;
         typeresetlogs currentResetlogs;
@@ -1047,6 +1055,7 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.V_$DATABASE");
             checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
             checkTableForGrants("SYS.V_$LOG");
+            checkTableForGrants("SYS.V_$STANDBY_LOG");
             checkTableForGrants("SYS.V_$LOGFILE");
             checkTableForGrants("SYS.V_$PARAMETER");
             checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
@@ -1061,8 +1070,13 @@ namespace OpenLogReplicator {
 
         if (databaseSequence == 0 || databaseScn == 0) {
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, SQL_GET_CURRENT_SEQUENCE);
-            stmt.createStatement(SQL_GET_CURRENT_SEQUENCE);
+            if (readerType == READER_STANDBY) {
+                TRACE_(TRACE2_SQL, SQL_GET_CURRENT_SEQUENCE_STANDBY);
+                stmt.createStatement(SQL_GET_CURRENT_SEQUENCE_STANDBY);
+            } else {
+                TRACE_(TRACE2_SQL, SQL_GET_CURRENT_SEQUENCE);
+                stmt.createStatement(SQL_GET_CURRENT_SEQUENCE);
+            }
             stmt.defineUInt32(1, databaseSequence);
 
             if (stmt.executeQuery())
@@ -1120,6 +1134,9 @@ namespace OpenLogReplicator {
         }
         archReader = readerCreate(0);
         readCheckpoint();
+
+        if (arch == ARCH_LOG_ONLINE_KEEP)
+            closeConnection();
     }
 
     bool OracleAnalyser::readSchema(void) {
@@ -1458,7 +1475,7 @@ namespace OpenLogReplicator {
 
         INFO_("Oracle Analyser for " << database << " in " << modeStr << " mode is starting");
         if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY)
-            checkConnection(true);
+            checkConnection();
 
         uint64_t ret = REDO_OK;
         OracleAnalyserRedoLog *redo = nullptr;
@@ -1895,7 +1912,6 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyser::addTable(const char *mask, vector<string> &keys, string &keysStr, uint64_t options) {
-        checkConnection(false);
         INFO_("- reading table schema for: " << mask);
         uint64_t tabCnt = 0;
         DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);

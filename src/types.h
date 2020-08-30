@@ -55,7 +55,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.7.3"
+#define PROGRAM_VERSION             "0.7.4"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576
@@ -74,6 +74,11 @@ typedef uint64_t typeunicode;
 #define WRITER_KAFKA                1
 #define WRITER_FILE                 2
 #define WRITER_SERVICE              3
+
+#define ARCH_LOG_PATH               0
+#define ARCH_LOG_ONLINE             1
+#define ARCH_LOG_ONLINE_KEEP        2
+#define ARCH_LOG_LIST               3
 
 //default, only changed columns for update, or PK
 #define COLUMNS_ONLY_CHANGED        0

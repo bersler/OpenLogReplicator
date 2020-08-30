@@ -82,6 +82,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
         int64_t bytes = pread(fileDes, buf, size, pos);
+        TRACE(TRACE2_FILE, "read " << pathMapped << ", " << dec << pos << ", " << dec << size << " returns " << dec << bytes);
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {

@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 
         const Value& versionJSON = getJSONfield(fileName, document, "version");
         if (strcmp(versionJSON.GetString(), PROGRAM_VERSION) != 0) {
-            CONFIG_FAIL("bad JSON, incompatible \"version\" value, " << PROGRAM_VERSION << " expected, got: " << versionJSON.GetString());
+            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PROGRAM_VERSION << ", got: " << versionJSON.GetString());
         }
 
         //optional
@@ -200,6 +200,7 @@ int main(int argc, char **argv) {
                 checkpointInterval = checkpointIntervalJSON.GetUint64();
             }
 
+            uint64_t arch = ARCH_LOG_PATH;
             const Value& readerJSON = getJSONfield(fileName, sourceJSON, "reader");
             const Value& readerTypeJSON = getJSONfield(fileName, readerJSON, "type");
             uint64_t readerType = READER_ONLINE;
@@ -214,6 +215,7 @@ int main(int argc, char **argv) {
             else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
                  readerType = READER_BATCH;
                  flags |= REDO_FLAGS_ARCH_ONLY;
+                 arch = ARCH_LOG_LIST;
             } else {
                 CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());
             }
@@ -223,6 +225,30 @@ int main(int argc, char **argv) {
                 RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
             }
 #endif /*ONLINE_MODEIMPL_OCI*/
+
+            //optional
+            if (sourceJSON.HasMember("arch")) {
+                const Value& archJSON = sourceJSON["arch"];
+                if (strcmp(archJSON.GetString(), "path") == 0)
+                    arch = ARCH_LOG_PATH;
+                else {
+                    if (readerType == READER_BATCH) {
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", only \"disk\" can be used here");
+                    }
+
+                    if (strcmp(archJSON.GetString(), "online") == 0)
+                        arch = ARCH_LOG_ONLINE;
+                    else if (strcmp(archJSON.GetString(), "online-keep") == 0)
+                        arch = ARCH_LOG_ONLINE_KEEP;
+                    if (strcmp(archJSON.GetString(), "list") == 0) {
+                        if (readerType != READER_OFFLINE) {
+                            CONFIG_FAIL("bad JSON, invalid \"arch\" value: \"list\" mode is only valid for \"offline\" reader");
+                        }
+                    } else{
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString());
+                    }
+                }
+            }
 
             //optional
             uint64_t disableChecks = 0;
@@ -308,7 +334,7 @@ int main(int argc, char **argv) {
             buffers.push_back(outputBuffer);
 
             oracleAnalyser = new OracleAnalyser(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), user, password, server, userASM,
-                    passwordASM, serverASM, trace, trace2, dumpRedoLog, dumpRawData, flags, readerType, disableChecks, redoReadSleep,
+                    passwordASM, serverASM, arch, trace, trace2, dumpRedoLog, dumpRawData, flags, readerType, disableChecks, redoReadSleep,
                     archReadSleep, checkpointInterval, memoryMinMb, memoryMaxMb);
             if (oracleAnalyser == nullptr) {
                 RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser)");

@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
             } return REDO_ERROR;
         }
 
-        if (activationRead != oracleAnalyser->activation) {
+        if (activationRead != 0 && activationRead != oracleAnalyser->activation) {
             if (group == 0) {
                 ERROR("activation id (" << dec << activationRead << ") for archived redo log does not match database information (" <<
                         oracleAnalyser->activation << "): " << pathMapped);

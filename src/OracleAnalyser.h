@@ -65,6 +65,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_DATABASE_INFORMATION;
         static const char* SQL_GET_CON_INFO;
         static const char* SQL_GET_CURRENT_SEQUENCE;
+        static const char* SQL_GET_CURRENT_SEQUENCE_STANDBY;
         static const char* SQL_GET_LOGFILE_LIST;
         static const char* SQL_GET_TABLE_LIST;
         static const char* SQL_GET_COLUMN_LIST;
@@ -116,7 +117,8 @@ namespace OpenLogReplicator {
         void writeCheckpoint(bool atShutdown);
         void readCheckpoint(void);
         void addToDict(OracleObject *object);
-        void checkConnection(bool reconnect);
+        void checkConnection(void);
+        void closeConnection(void);
         void archLogGetList(void);
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader *reader);
@@ -128,7 +130,7 @@ namespace OpenLogReplicator {
 
     public:
         OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
-                const char *connectString, const char *userASM, const char *passwdASM, const char *connectStringASM, uint64_t trace,
+                const char *connectString, const char *userASM, const char *passwdASM, const char *connectStringASM, uint64_t arch, uint64_t trace,
                 uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t readerType, uint64_t disableChecks,
                 uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb);
         virtual ~OracleAnalyser();
@@ -160,6 +162,7 @@ namespace OpenLogReplicator {
         vector<string> redoLogsBatch;
         uint64_t redoReadSleep;
         uint64_t archReadSleep;
+        uint64_t arch;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;                   //compatibility level of redo logs
