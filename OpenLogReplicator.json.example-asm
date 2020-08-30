@@ -1,17 +1,17 @@
 {
-  "version": "0.7.3",
+  "version": "0.7.4",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
         "type": "asm",
-        "user": "system",
-        "password": "unknPwd4%",
-        "server": "//server:4999/O112A.ORADOMAIN"
-        "user-asm": "system",
-        "password-asm": "unknPwd4%",
-        "server-asm": "//server:4999/O112A.ORADOMAIN"
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
+        "user-asm": "sysasm",
+        "password-asm": "Password1",
+        "server-asm": "//host:1521/+ASM"
       },
       "format": {
         "type": "json"

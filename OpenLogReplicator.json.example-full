@@ -1,5 +1,5 @@
 {
-  "version": "0.7.3",
+  "version": "0.7.4",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -11,9 +11,9 @@
       "reader": {
         "type": "online", 
         "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
-        "user": "system",
-        "password": "unknPwd4%",
-        "server": "//server:4999/O112A.ORADOMAIN",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE",
         "disable-checks": 0
       },
       "format": {
@@ -25,6 +25,7 @@
         "metadata": 0,
         "show-columns": 0
       },
+      "arch": "online",
       "flags": 0,
       "memory-min-mb": 64,
       "memory-max-mb": 1024,

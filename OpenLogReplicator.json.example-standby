@@ -5,14 +5,21 @@
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "offline",
-        "path-mapping": ["/db/fra", "/opt/fast-recovery-area"]
+        "type": "standby",
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
       },
       "format": {
         "type": "json"
       },
       "memory-min-mb": 64,
-      "memory-max-mb": 1024
+      "memory-max-mb": 1024,
+      "tables": [
+        {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
+        {"table": "OWNER1.TABLENAME2"},
+        {"table": "OWNER2.TAB%"}
+      ]
     }
   ],
   "targets": [
