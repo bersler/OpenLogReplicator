@@ -1,18 +1,20 @@
 {
-  "version": "0.7.3",
+  "version": "0.7.5",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
         "type": "online", 
-        "user": "system",
-        "password": "unknPwd4%",
-        "server": "//server:4999/O112A.ORADOMAIN"
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
       },
       "format": {
         "type": "json"
       },
+      "memory-min-mb": 64,
+      "memory-max-mb": 1024,
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
         {"table": "OWNER1.TABLENAME2"},

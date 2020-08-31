@@ -475,8 +475,8 @@ int main(int argc, char **argv) {
                         maxMessageMb = MAX_KAFKA_MESSAGE_MB;
                 }
 
-                const Value& brokersJSON = getJSONfield(fileName, targetJSON, "brokers");
-                const Value& topicJSON = getJSONfield(fileName, targetJSON, "topic");
+                const Value& brokersJSON = getJSONfield(fileName, writerJSON, "brokers");
+                const Value& topicJSON = getJSONfield(fileName, writerJSON, "topic");
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, shortMessage, brokersJSON.GetString(),
                         topicJSON.GetString(), maxMessageMb);
