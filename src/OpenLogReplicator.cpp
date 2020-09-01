@@ -470,7 +470,6 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterFile) << " bytes memory for (reason: file writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
-                //KAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
                     const Value& maxMessageMbJSON = writerJSON["max-message-mb"];
@@ -481,11 +480,21 @@ int main(int argc, char **argv) {
                         maxMessageMb = MAX_KAFKA_MESSAGE_MB;
                 }
 
+                uint64_t maxMessages = 100000;
+                if (writerJSON.HasMember("max-messages")) {
+                    const Value& maxMessagesJSON = writerJSON["max-messages"];
+                    maxMessages = maxMessagesJSON.GetUint64();
+                    if (maxMessages < 1)
+                        maxMessages = 1;
+                    if (maxMessages > MAX_KAFKA_MAX_MESSAGES)
+                        maxMessages = MAX_KAFKA_MAX_MESSAGES;
+                }
+
                 const Value& brokersJSON = getJSONfield(fileName, writerJSON, "brokers");
                 const Value& topicJSON = getJSONfield(fileName, writerJSON, "topic");
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, shortMessage, brokersJSON.GetString(),
-                        topicJSON.GetString(), maxMessageMb);
+                        topicJSON.GetString(), maxMessageMb, maxMessages);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterKafka) << " bytes memory for (reason: kafka writer)");
                 }

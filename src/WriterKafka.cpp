@@ -35,14 +35,15 @@ using namespace RdKafka;
 namespace OpenLogReplicator {
 
     WriterKafka::WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage,
-            const char *brokers, const char *topic, uint64_t maxMessageKb) :
+            const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages) :
         Writer(alias, oracleAnalyser, shortMessage, maxMessageMb),
         conf(nullptr),
         tconf(nullptr),
         brokers(brokers),
         topic(topic),
         producer(nullptr),
-        ktopic(nullptr) {
+        ktopic(nullptr),
+        maxMessages(maxMessages) {
 
         conf = Conf::create(Conf::CONF_GLOBAL);
         tconf = Conf::create(Conf::CONF_TOPIC);
@@ -52,6 +53,8 @@ namespace OpenLogReplicator {
         conf->set("client.id", "OpenLogReplicator", errstr);
         string maxMessageMbStr = to_string(maxMessageMb * 1024 * 1024);
         conf->set("message.max.bytes", maxMessageMbStr.c_str(), errstr);
+        string maxMessagesStr = to_string(maxMessages);
+        conf->set("queue.buffering.max.messages", maxMessagesStr.c_str(), errstr);
 
         producer = Producer::create(conf, errstr);
         if (producer == nullptr) {
@@ -88,11 +91,22 @@ namespace OpenLogReplicator {
         if (dealloc)
             msgflags = Producer::RK_MSG_FREE;
 
-        if (producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr)) {
+        ErrorCode error = producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr);
+        if (error != ERR_NO_ERROR) {
             //on error, memory is not released by librdkafka
             if (dealloc)
                 free(buffer);
-            RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length);
+            if (error == ERR__QUEUE_FULL) {
+                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", maximum number of outstanding messages has been reached (" <<
+                        dec << maxMessages << "), increase \"max-messages\" parameter value");
+            } else if (error == ERR_MSG_SIZE_TOO_LARGE) {
+                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", message is larger than configured max size (" <<
+                        dec << maxMessageMb << " MB), increase \"max-message-mb\" parameter value");
+            } else if (error == ERR__UNKNOWN_PARTITION) {
+                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", requested partition is unknown in the Kafka cluster");
+            } else if (error == ERR__UNKNOWN_TOPIC) {
+                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", topic is unknown in the Kafka cluster");
+            }
         }
     }
 
