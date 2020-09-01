@@ -1,12 +1,12 @@
 {
-  "version": "0.7.5",
+  "version": "0.7.6",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "offline",
-        "path-mapping": ["/db/fra", "/opt/fast-recovery-area"]
+        "type": "batch",
+        "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
       },
       "format": {
         "type": "json"

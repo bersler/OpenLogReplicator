@@ -459,10 +459,16 @@ int main(int argc, char **argv) {
             }
 
             if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
-               writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, shortMessage);
-               if (writer == nullptr) {
-                   RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterFile) << " bytes memory for (reason: file writer)");
-               }
+                const char *name = "";
+                if (writerJSON.HasMember("name")) {
+                    const Value& nameJSON = writerJSON["name"];
+                    name = nameJSON.GetString();
+                }
+
+                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, name, shortMessage);
+                if (writer == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterFile) << " bytes memory for (reason: file writer)");
+                }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
                 //KAFKA
                 uint64_t maxMessageMb = 100;

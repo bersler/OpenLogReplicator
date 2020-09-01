@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <ostream>
 #include <queue>
 #include <set>
 #include <stdint.h>
@@ -36,11 +37,14 @@ namespace OpenLogReplicator {
 
     class WriterFile : public Writer {
     protected:
+        string name;
+        ostream *output;
+        bool fileOpen;
         virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
         virtual string getName();
 
     public:
-        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage);
+        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name, uint64_t shortMessage);
         virtual ~WriterFile();
     };
 }

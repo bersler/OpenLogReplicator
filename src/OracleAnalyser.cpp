@@ -1083,14 +1083,6 @@ namespace OpenLogReplicator {
                 databaseScn = currentDatabaseScn;
         }
 
-        INFO_("starting with:" <<
-                    " scn: " << dec << databaseScn <<
-                    " sequence: " << dec << databaseSequence <<
-                    " resetlogs: " << dec << resetlogs <<
-                    " activation: " << dec << activation <<
-                    " con_id: " << dec << conId <<
-                    " con_name: " << conName);
-
         if (databaseSequence == 0 || databaseScn == 0) {
             RUNTIME_FAIL("getting database sequence or current SCN");
         }
@@ -1134,6 +1126,14 @@ namespace OpenLogReplicator {
         }
         archReader = readerCreate(0);
         readCheckpoint();
+
+        INFO_("starting with:" <<
+                    " scn: " << dec << databaseScn <<
+                    " sequence: " << dec << databaseSequence <<
+                    " resetlogs: " << dec << resetlogs <<
+                    " activation: " << dec << activation <<
+                    " con_id: " << dec << conId <<
+                    " con_name: " << conName);
 
         if (arch == ARCH_LOG_ONLINE_KEEP)
             closeConnection();

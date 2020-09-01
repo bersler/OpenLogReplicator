@@ -1,5 +1,5 @@
 {
-  "version": "0.7.5",
+  "version": "0.7.6",
   "sources": [
     {
       "alias": "S1",
@@ -27,9 +27,8 @@
       "alias": "K1", 
       "source": "S1",
       "writer": {
-        "type": "kafka",
-        "topic": "O112A",
-        "brokers": "localhost:9092"
+        "type": "file",
+        "name": "transactions.json"
       }
     }
   ]
