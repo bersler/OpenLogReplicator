@@ -30,21 +30,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterKafka.h"
 
 using namespace std;
+#ifdef LINK_LIBRARY_LIBRDKAFKA
 using namespace RdKafka;
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
 namespace OpenLogReplicator {
 
     WriterKafka::WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage,
             const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages) :
         Writer(alias, oracleAnalyser, shortMessage, maxMessageMb),
-        conf(nullptr),
-        tconf(nullptr),
         brokers(brokers),
         topic(topic),
+        maxMessages(maxMessages),
+        conf(nullptr),
+        tconf(nullptr),
         producer(nullptr),
-        ktopic(nullptr),
-        maxMessages(maxMessages) {
+        ktopic(nullptr) {
 
+#ifdef LINK_LIBRARY_LIBRDKAFKA
         conf = Conf::create(Conf::CONF_GLOBAL);
         tconf = Conf::create(Conf::CONF_TOPIC);
 
@@ -65,9 +68,13 @@ namespace OpenLogReplicator {
         if (ktopic == nullptr) {
             CONFIG_FAIL("Kafka message: " << errstr);
         }
+#else
+        RUNTIME_FAIL("Kafka writer is not compiled, exiting");
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
     WriterKafka::~WriterKafka() {
+#ifdef LINK_LIBRARY_LIBRDKAFKA
         if (ktopic != nullptr) {
             delete ktopic;
             ktopic = nullptr;
@@ -84,9 +91,11 @@ namespace OpenLogReplicator {
             delete conf;
             conf = nullptr;
         }
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
     void WriterKafka::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
+#ifdef LINK_LIBRARY_LIBRDKAFKA
         int msgflags = Producer::RK_MSG_COPY;
         if (dealloc)
             msgflags = Producer::RK_MSG_FREE;
@@ -108,6 +117,7 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", topic is unknown in the Kafka cluster");
             }
         }
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
     string WriterKafka::getName() {

@@ -27,23 +27,23 @@ using namespace std;
 namespace OpenLogReplicator {
 
     DatabaseEnvironment::DatabaseEnvironment()
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         : envhp(nullptr)
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     {
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     }
 
     DatabaseEnvironment::~DatabaseEnvironment() {
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCIHandleFree(envhp, OCI_HTYPE_ENV);
         OCITerminate(OCI_DEFAULT);
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     }
 
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
     void DatabaseEnvironment::checkErr(OCIError *errhp, sword status) {
         sb4 errcode = 0;
         uint64_t len;
@@ -109,5 +109,5 @@ namespace OpenLogReplicator {
                 break;
         }
     }
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 }

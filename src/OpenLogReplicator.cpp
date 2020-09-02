@@ -220,11 +220,11 @@ int main(int argc, char **argv) {
                 CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());
             }
 
-#ifndef ONLINE_MODEIMPL_OCI
+#ifndef LINK_LIBRARY_OCI
             if (readerType == READER_ONLINE || readerType == READER_ASM) {
                 RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
             }
-#endif /*ONLINE_MODEIMPL_OCI*/
+#endif /*LINK_LIBRARY_OCI*/
 
             //optional
             if (sourceJSON.HasMember("arch")) {

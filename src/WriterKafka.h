@@ -20,10 +20,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <queue>
 #include <set>
 #include <stdint.h>
-#include <librdkafka/rdkafkacpp.h>
 
 #include "types.h"
 #include "Writer.h"
+
+#ifdef LINK_LIBRARY_LIBRDKAFKA
+#include <librdkafka/rdkafkacpp.h>
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
 #ifndef WRITERKAFKA_H_
 #define WRITERKAFKA_H_
@@ -41,13 +44,15 @@ namespace OpenLogReplicator {
 
     class WriterKafka : public Writer {
     protected:
-        Conf *conf;
-        Conf *tconf;
         string brokers;
         string topic;
+        uint64_t maxMessages;
+#ifdef LINK_LIBRARY_LIBRDKAFKA
+        Conf *conf;
+        Conf *tconf;
         Producer *producer;
         Topic *ktopic;
-        uint64_t maxMessages;
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
         virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
         virtual string getName();

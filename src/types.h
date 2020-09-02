@@ -28,7 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPES_H_
 #define TYPES_H_
 
-#define ONLINE_MODEIMPL_OCI
+#define LINK_LIBRARY_OCI
+#define LINK_LIBRARY_LIBRDKAFKA
+#define LINK_LIBRARY_PROTOBUF
 
 typedef uint16_t typesum;
 typedef uint32_t typeresetlogs;
@@ -55,7 +57,7 @@ typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
 #define ZERO_SCN                    ((typescn)0xFFFFFFFFFFFFFFFF)
-#define PROGRAM_VERSION             "0.7.7"
+#define PROGRAM_VERSION             "0.7.8"
 #define MAX_PATH_LENGTH             2048
 #define MAX_NO_COLUMNS              1000
 #define MAX_TRANSACTIONS_LIMIT      1048576

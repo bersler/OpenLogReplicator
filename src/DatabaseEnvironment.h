@@ -19,9 +19,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
 #include <oci.h>
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 
 #ifndef DATABASEENVIRONMENT_H_
 #define DATABASEENVIRONMENT_H_
@@ -34,16 +34,16 @@ namespace OpenLogReplicator {
 
     class DatabaseEnvironment {
     public:
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCIEnv *envhp;
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 
         DatabaseEnvironment();
         virtual ~DatabaseEnvironment();
 
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         void checkErr(OCIError *errhp, sword status);
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     };
 }
 

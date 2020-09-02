@@ -22,9 +22,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
 #include <oci.h>
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 
 #ifndef DATABASESTATEMENT_H_
 #define DATABASESTATEMENT_H_
@@ -39,11 +39,11 @@ namespace OpenLogReplicator {
     protected:
         DatabaseConnection *conn;
         bool isExecuted;
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCIStmt *stmthp;
         vector<OCIBind *> binds;
         vector<OCIDefine *> defines;
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 
     public:
         DatabaseStatement(DatabaseConnection *conn);

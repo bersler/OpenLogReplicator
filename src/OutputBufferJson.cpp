@@ -527,7 +527,7 @@ namespace OpenLogReplicator {
         appendTable(object->owner, object->objectName);
         append(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        appendChr("{");
+        appendChr(",\"before\":{");
 
         bool prevValue = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {

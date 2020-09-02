@@ -29,14 +29,14 @@ namespace OpenLogReplicator {
 
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM) :
             env(env)
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
             ,errhp(nullptr),
             srvhp(nullptr),
             svchp(nullptr),
             authp(nullptr)
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     {
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&errhp, OCI_HTYPE_ERROR, 0, nullptr);
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&srvhp, OCI_HTYPE_SERVER, 0, nullptr);
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&svchp, OCI_HTYPE_SVCCTX, 0, nullptr);
@@ -53,12 +53,12 @@ namespace OpenLogReplicator {
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_DEFAULT));
 
         env->checkErr(errhp, OCIAttrSet((dvoid*)svchp, OCI_HTYPE_SVCCTX, (dvoid*)authp, 0, OCI_ATTR_SESSION, errhp));
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
 
     }
 
     DatabaseConnection::~DatabaseConnection() {
-#ifdef ONLINE_MODEIMPL_OCI
+#ifdef LINK_LIBRARY_OCI
         OCISessionEnd(svchp, errhp, authp, OCI_DEFAULT);
 
         OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
@@ -87,6 +87,6 @@ namespace OpenLogReplicator {
             OCIHandleFree((dvoid*)errhp, OCI_HTYPE_ERROR);
             errhp = nullptr;
         }
-#endif /* ONLINE_MODEIMPL_OCI */
+#endif /* LINK_LIBRARY_OCI */
     }
 }
