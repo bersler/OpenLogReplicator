@@ -160,6 +160,6 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJsonTest::commitTran(void) {
-        OutputBuffer::commitMessage();
+        commitMessage();
     }
 }

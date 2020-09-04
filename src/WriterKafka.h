@@ -35,7 +35,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define MAX_KAFKA_MAX_MESSAGES      10000000
 
 using namespace std;
+#ifdef LINK_LIBRARY_LIBRDKAFKA
 using namespace RdKafka;
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
 namespace OpenLogReplicator {
 

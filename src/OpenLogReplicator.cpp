@@ -18,8 +18,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <algorithm>
+#include <list>
 #include <thread>
 #include <execinfo.h>
+#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
 #include <rapidjson/document.h>
@@ -30,6 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OutputBufferJson.h"
 #include "OutputBufferJsonDbz.h"
 #include "OutputBufferJsonTest.h"
+#include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
 #include "WriterKafka.h"
 #include "WriterFile.h"
@@ -85,7 +88,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cerr << "OpenLogReplicator v." PROGRAM_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
     list<OracleAnalyser *> analysers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
@@ -107,8 +110,8 @@ int main(int argc, char **argv) {
         }
 
         const Value& versionJSON = getJSONfield(fileName, document, "version");
-        if (strcmp(versionJSON.GetString(), PROGRAM_VERSION) != 0) {
-            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PROGRAM_VERSION << ", got: " << versionJSON.GetString());
+        if (strcmp(versionJSON.GetString(), PACKAGE_VERSION) != 0) {
+            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PACKAGE_VERSION << ", got: " << versionJSON.GetString());
         }
 
         //optional
@@ -324,6 +327,8 @@ int main(int argc, char **argv) {
                 outputBuffer = new OutputBufferJsonDbz(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
             } else if (strcmp("json-test", formatTypeJSON.GetString()) == 0) {
                 outputBuffer = new OutputBufferJsonTest(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
+            } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
+                outputBuffer = new OutputBufferProtobuf(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
             } else {
                 CONFIG_FAIL("bad JSON, invalid \"type\" value: " << formatTypeJSON.GetString());
             }

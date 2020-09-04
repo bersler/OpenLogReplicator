@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         void appendOperation(const char *operation);
         void appendTable(string &owner, string &table);
         void appendNull(string &columnName, bool &prevValue);
-        void appendMs(char *name, uint64_t time);
+        void appendMs(const char *name, uint64_t time);
         void appendXid(typexid xid);
         void appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         void appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength, bool &prevValue);

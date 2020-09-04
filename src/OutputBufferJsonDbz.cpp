@@ -139,7 +139,7 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJsonDbz::appendDbzTail(OracleObject *object, uint64_t time, typescn scn, char op, typexid xid) {
-        appendChr(",\"source\":{\"version\":\"" PROGRAM_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
+        appendChr(",\"source\":{\"version\":\"" PACKAGE_VERSION "\",\"connector\":\"oracle\",\"name\":\"");
         appendStr(oracleAnalyser->alias);
         appendChr("\",");
         appendMs("ts_ms", time);

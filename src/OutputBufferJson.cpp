@@ -182,7 +182,7 @@ namespace OpenLogReplicator {
         appendChr("\":null");
     }
 
-    void OutputBufferJson::appendMs(char *name, uint64_t time) {
+    void OutputBufferJson::appendMs(const char *name, uint64_t time) {
         append('"');
         appendChr(name);
         appendChr("\":");
@@ -619,6 +619,6 @@ namespace OpenLogReplicator {
 
     void OutputBufferJson::commitTran(void) {
         appendChr("]}");
-        OutputBuffer::commitMessage();
+        commitMessage();
     }
 }

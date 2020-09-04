@@ -41,11 +41,14 @@ namespace OpenLogReplicator {
         Writer(alias, oracleAnalyser, shortMessage, maxMessageMb),
         brokers(brokers),
         topic(topic),
-        maxMessages(maxMessages),
-        conf(nullptr),
+        maxMessages(maxMessages)
+#ifdef LINK_LIBRARY_LIBRDKAFKA
+    	,conf(nullptr),
         tconf(nullptr),
         producer(nullptr),
-        ktopic(nullptr) {
+        ktopic(nullptr)
+#endif /* LINK_LIBRARY_LIBRDKAFKA */
+    {
 
 #ifdef LINK_LIBRARY_LIBRDKAFKA
         conf = Conf::create(Conf::CONF_GLOBAL);
