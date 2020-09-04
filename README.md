@@ -3,13 +3,13 @@ Open Source logbased replictor of Oracle Database to Kafka
 
 Compilation for Debug:
 1. git clone https://github.com/bersler/OpenLogReplicator
-2  cd OpenLogReplicator
+2. cd OpenLogReplicator
 3. ./configure CXXFLAGS='-g -O0 -fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8
 4. make
 
 Compilation for Release:
 1. git clone https://github.com/bersler/OpenLogReplicator
-2  cd OpenLogReplicator
+2. cd OpenLogReplicator
 3. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8
 4. make
 
