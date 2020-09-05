@@ -81,8 +81,12 @@ target_triplet = @target@
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/config.h.in AUTHORS COPYING config.guess config.sub \
-	depcomp install-sh missing ltmain.sh
+	$(srcdir)/config.h.in AUTHORS config.guess config/config.guess \
+	config.sub config/config.sub config/depcomp install-sh \
+	config/install-sh config/missing config/ltmain.sh \
+	$(top_srcdir)/config/config.guess \
+	$(top_srcdir)/config/config.sub \
+	$(top_srcdir)/config/install-sh $(top_srcdir)/config/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -291,6 +295,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
