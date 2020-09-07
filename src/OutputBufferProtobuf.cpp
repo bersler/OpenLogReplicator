@@ -26,6 +26,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "Writer.h"
 
+#ifdef LINK_LIBRARY_PROTOBUF
+#include "OraProtoBuf.pb.h"
+using namespace oraprotobuf;
+#endif /* LINK_LIBRARY_PROTOBUF */
+
 namespace OpenLogReplicator {
 
     OutputBufferProtobuf::OutputBufferProtobuf(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns) :

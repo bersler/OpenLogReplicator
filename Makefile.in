@@ -13,6 +13,24 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+#   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
+#
+#This file is part of OpenLogReplicator.
+#
+#OpenLogReplicator is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License as published
+#by the Free Software Foundation; either version 3, or (at your option)
+#any later version.
+#
+#OpenLogReplicator is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+#Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with OpenLogReplicator; see the file LICENSE;  If not see
+#<http://www.gnu.org/licenses/>.
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -81,8 +99,8 @@ subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
 	$(srcdir)/config.h.in AUTHORS config.guess config/config.guess \
-	config/config.sub config/depcomp config/install-sh \
-	config/missing config/ltmain.sh \
+	config.sub config/config.sub config/depcomp install-sh \
+	config/install-sh config/missing config/ltmain.sh \
 	$(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.sub \
 	$(top_srcdir)/config/install-sh $(top_srcdir)/config/ltmain.sh \

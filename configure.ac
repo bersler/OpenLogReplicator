@@ -1,4 +1,3 @@
-# Class to handle different character sets
 #   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 #
 #This file is part of OpenLogReplicator.
@@ -18,7 +17,8 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.7.9],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.7.10],[aleszczynski@bersler.com])
+AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
@@ -27,7 +27,6 @@ AM_INIT_AUTOMAKE()
 LT_INIT()
 AC_PROG_CXX
 AC_LANG([C++])
-AC_USE_SYSTEM_EXTENSIONS
 AC_FUNC_STRNLEN
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h unistd.h])
@@ -57,7 +56,7 @@ AC_ARG_WITH([rapidjson],
 
 AC_ARG_WITH([grpc],
   [AS_HELP_STRING([--with-grpc=PATH], [grpc directory])],
-  [CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 -lprotobuf -lgrpc++ -lgrpc $LDFLAGS"],
+  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 -lprotobuf -lgrpc++ -lgrpc $LDFLAGS"],
   [])
 
 AC_ARG_WITH([instantclient],
@@ -67,6 +66,7 @@ AC_ARG_WITH([instantclient],
 
 CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmessage-length=0"
 LDFLAGS="$LDFLAGS -lpthread"
+AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
 
 AC_CONFIG_FILES([
   Makefile 

@@ -1,0 +1,64 @@
+/* Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
+
+This file is part of OpenLogReplicator.
+
+OpenLogReplicator is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License as published
+by the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+OpenLogReplicator is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with OpenLogReplicator; see the file LICENSE;  If not see
+<http://www.gnu.org/licenses/>.  */
+
+syntax = "proto3";
+package oraprotobuf;
+
+option java_package="io.debezium.connector.oracle.proto";
+option java_outer_classname = "OraProtoBuf";
+option optimize_for = SPEED;
+
+enum Op {
+    UNKNOWN = 0;
+    INSERT = 1;
+    UPDATE = 2;
+    DELETE = 3;
+    BEGIN  = 4;
+    COMMIT = 5;
+    DDL = 6;
+    CHEKCPOINT = 7;
+}
+
+message DatumMessage {
+    optional string column_name = 1;
+    optional int64 column_type = 2;
+    oneof datum {
+      sint32 datum_int32 = 3;
+      sint64 datum_int64 = 4;
+      float datum_float = 5;
+      double datum_double = 6;
+      bool datum_bool = 7;
+      string datum_string = 8;
+      bytes datum_bytes = 9;
+    }
+}
+
+message TypeInfo {
+    string modifier = 1;
+    bool value_optional = 2;
+}
+
+message RowMessage {
+    optional fixed64 transaction_id = 1;
+    optional uint64 commit_time = 2;
+    optional string table = 3;
+    optional Op op = 4;
+    repeated DatumMessage new_tuple = 5;
+    repeated DatumMessage old_tuple = 6;
+    repeated TypeInfo new_typeinfo = 7;
+}
