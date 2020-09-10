@@ -17,48 +17,89 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 syntax = "proto3";
-package oraprotobuf;
+package OpenLogReplicator.pb;
 
 option java_package="io.debezium.connector.oracle.proto";
-option java_outer_classname = "OraProtoBuf";
+option java_outer_classname = "OpenLogReplicator";
+option cc_enable_arenas = true;
 option optimize_for = SPEED;
 
 enum Op {
-    UNKNOWN = 0;
-    INSERT = 1;
-    UPDATE = 2;
-    DELETE = 3;
-    BEGIN  = 4;
-    COMMIT = 5;
-    DDL = 6;
-    CHEKCPOINT = 7;
+    BEGIN  = 0; //b
+    COMMIT = 1; //f
+    INSERT = 2; //c 
+    UPDATE = 3; //u
+    DELETE = 4; //d
+    DDL = 5;    //ddl
 }
 
-message DatumMessage {
-    optional string column_name = 1;
-    optional int64 column_type = 2;
+message RequestSchema {
+    string mask = 1;
+    string filter = 2;  
+}
+
+message Request {
+    uint64 scn = 1;
+    uint64 version = 2;
+    string database_name = 3;
+    repeated RequestSchema schema = 4;
+}
+
+message Value {
+    string column_name = 1;
+    int64 column_type = 2;
     oneof datum {
-      sint32 datum_int32 = 3;
-      sint64 datum_int64 = 4;
-      float datum_float = 5;
-      double datum_double = 6;
-      bool datum_bool = 7;
-      string datum_string = 8;
-      bytes datum_bytes = 9;
+        int32 value_int32 = 3;
+        int64 value_int64 = 4;
+        float value_float = 5;
+        double value_double = 6;
+        bool value_bool = 7;
+        string value_string = 8;
+        bytes value_bytes = 9;
     }
 }
 
-message TypeInfo {
-    string modifier = 1;
-    bool value_optional = 2;
+message Column {
+    string column_name = 1;
+    string column_type = 2;
+    int32 length = 3;
+    int32 precision = 4;
+    int32 scale = 5;
+    bool nullable = 6;
 }
 
-message RowMessage {
-    optional fixed64 transaction_id = 1;
-    optional uint64 commit_time = 2;
-    optional string table = 3;
-    optional Op op = 4;
-    repeated DatumMessage new_tuple = 5;
-    repeated DatumMessage old_tuple = 6;
-    repeated TypeInfo new_typeinfo = 7;
+message Schema {
+    string owner = 1;
+    string table = 2;
+    uint32 objn = 3;
+    oneof tm_val {
+        uint64 tm = 4;
+        string tms = 5;
+    }
+    repeated Column column = 6;
+}
+
+message Payload {
+    Op op = 1;
+    Schema schema = 2;
+    string rowid = 3;
+    Value before = 4;
+    Value after = 5;
+    string ddl = 6;
+}
+
+message Redo {
+    oneof scn_val {
+        uint64 scn = 1;
+        string scns = 2;
+    }
+    oneof tm_val {
+        uint64 tm = 3;
+        string tms = 4;
+    }
+    oneof xid_val {
+        string xid = 5;
+        uint64 xidn = 6;
+    }
+    repeated Payload payload = 7;
 }
