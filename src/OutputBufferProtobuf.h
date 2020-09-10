@@ -19,6 +19,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OutputBuffer.h"
 
+#ifdef LINK_LIBRARY_PROTOBUF
+#include "OraProtoBuf.pb.h"
+#endif /* LINK_LIBRARY_PROTOBUF */
+
 #ifndef OUTPUTBUFFERPROTOBUF_H_
 #define OUTPUTBUFFERPROTOBUF_H_
 
@@ -27,17 +31,17 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class OutputBufferProtobuf : public OutputBuffer {
-    public:
-        OutputBufferProtobuf(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns);
+public:
+        OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBufferProtobuf();
 
-        virtual void appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength);
-        virtual void next(void);
-        virtual void beginTran(typescn scn, typetime time, typexid xid);
-        virtual void commitTran(void);
+        virtual void processBegin(typescn scn, typetime time, typexid xid);
+        virtual void processCommit(void);
+        virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength);
     };
 }
 

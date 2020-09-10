@@ -30,8 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "OracleAnalyser.h"
 #include "OutputBufferJson.h"
-#include "OutputBufferJsonDbz.h"
-#include "OutputBufferJsonTest.h"
 #include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
 #include "WriterKafka.h"
@@ -283,52 +281,94 @@ int main(int argc, char **argv) {
             //format
             const Value& formatJSON = getJSONfield(fileName, sourceJSON, "format");
 
+
             //optional
-            uint64_t timestampFormat = 0;
-            if (formatJSON.HasMember("timestamp-format")) {
-                const Value& timestampFormatJSON = formatJSON["timestamp-format"];
+            uint64_t messageFormat = 0;
+            if (formatJSON.HasMember("message")) {
+                const Value& messageFormatJSON = formatJSON["message"];
+                messageFormat = messageFormatJSON.GetUint64();
+                if (messageFormat > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << messageFormatJSON.GetString() << ", expected one of: {0, 1}");
+                }
+            }
+
+            //optional
+            uint64_t xidFormat = XID_FORMAT_TEXT;
+            if (formatJSON.HasMember("xid")) {
+                const Value& xidFormatJSON = formatJSON["xid"];
+                xidFormat = xidFormatJSON.GetUint64();
+                if (xidFormat > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << xidFormatJSON.GetString() << ", expected one of: {0, 1}");
+                }
+            }
+
+            //optional
+            uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
+            if (formatJSON.HasMember("timestamp")) {
+                const Value& timestampFormatJSON = formatJSON["timestamp"];
                 timestampFormat = timestampFormatJSON.GetUint64();
+                if (timestampFormat > 3) {
+                    CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << timestampFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                }
             }
 
             //optional
-            uint64_t charFormat = 0;
-            if (formatJSON.HasMember("char-format")) {
-                const Value& charFormatJSON = formatJSON["char-format"];
+            uint64_t charFormat = CHAR_FORMAT_UTF8;
+            if (formatJSON.HasMember("char")) {
+                const Value& charFormatJSON = formatJSON["char"];
                 charFormat = charFormatJSON.GetUint64();
+                if (charFormat > 3) {
+                    CONFIG_FAIL("bad JSON, invalid \"char\" value: " << charFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                }
             }
 
             //optional
-            uint64_t scnFormat = 0;
-            if (formatJSON.HasMember("scn-format")) {
-                const Value& scnFormatJSON = formatJSON["scn-format"];
+            uint64_t scnFormat = SCN_FORMAT_NUMERIC;
+            if (formatJSON.HasMember("scn")) {
+                const Value& scnFormatJSON = formatJSON["scn"];
                 scnFormat = scnFormatJSON.GetUint64();
+                if (scnFormat > 3) {
+                    CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << scnFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                }
             }
 
             //optional
-            uint64_t unknownFormat = 0;
-            if (formatJSON.HasMember("unknown-format")) {
-                const Value& unknownFormatJSON = formatJSON["unknown-format"];
+            uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION;
+            if (formatJSON.HasMember("unknown")) {
+                const Value& unknownFormatJSON = formatJSON["unknown"];
                 unknownFormat = unknownFormatJSON.GetUint64();
+                if (unknownFormat > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << unknownFormatJSON.GetString() << ", expected one of: {0, 1}");
+                }
             }
 
             //optional
-            uint64_t showColumns = 0;
-            if (formatJSON.HasMember("show-columns")) {
-                const Value& showColumnsJSON = formatJSON["show-columns"];
-                showColumns = showColumnsJSON.GetUint64();
+            uint64_t schemaFormat = SCHEMA_FORMAT_NAME;
+            if (formatJSON.HasMember("schema")) {
+                const Value& schemaFormatJSON = formatJSON["schema"];
+                schemaFormat = schemaFormatJSON.GetUint64();
+                if (schemaFormat > 7) {
+                    CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << schemaFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3, 4, 5, 6, 7}");
+                }
+            }
+
+            //optional
+            uint64_t columnFormat = COLUMN_FORMAT_CHANGED;
+            if (formatJSON.HasMember("column")) {
+                const Value& columnFormatJSON = formatJSON["column"];
+                columnFormat = columnFormatJSON.GetUint64();
+                if (columnFormat > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << columnFormatJSON.GetString() << ", expected one of: {0, 1}");
+                }
             }
 
             const Value& formatTypeJSON = getJSONfield(fileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferJson(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
-            } else if (strcmp("json-dbz", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferJsonDbz(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
-            } else if (strcmp("json-test", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferJsonTest(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
+                outputBuffer = new OutputBufferJson(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
             } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferProtobuf(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns);
+                outputBuffer = new OutputBufferProtobuf(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
             } else {
                 CONFIG_FAIL("bad JSON, invalid \"type\" value: " << formatTypeJSON.GetString());
             }
@@ -456,13 +496,6 @@ int main(int argc, char **argv) {
             const Value& writerJSON = getJSONfield(fileName, targetJSON, "writer");
             const Value& writerTypeJSON = getJSONfield(fileName, writerJSON, "type");
 
-            //optional
-            uint64_t shortMessage = 0;
-            if (writerJSON.HasMember("short-message")) {
-                const Value& shortMessageJSON = writerJSON["short-message"];
-                shortMessage = shortMessageJSON.GetUint64();
-            }
-
             if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
                 const char *name = "";
                 if (writerJSON.HasMember("name")) {
@@ -470,7 +503,7 @@ int main(int argc, char **argv) {
                     name = nameJSON.GetString();
                 }
 
-                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, name, shortMessage);
+                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, name);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterFile) << " bytes memory for (reason: file writer)");
                 }
@@ -498,7 +531,7 @@ int main(int argc, char **argv) {
                 const Value& brokersJSON = getJSONfield(fileName, writerJSON, "brokers");
                 const Value& topicJSON = getJSONfield(fileName, writerJSON, "topic");
 
-                writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, shortMessage, brokersJSON.GetString(),
+                writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, brokersJSON.GetString(),
                         topicJSON.GetString(), maxMessageMb, maxMessages);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterKafka) << " bytes memory for (reason: kafka writer)");

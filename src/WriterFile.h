@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         virtual string getName();
 
     public:
-        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name, uint64_t shortMessage);
+        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name);
         virtual ~WriterFile();
     };
 }

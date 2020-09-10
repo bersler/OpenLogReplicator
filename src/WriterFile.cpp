@@ -29,8 +29,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    WriterFile::WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name, uint64_t shortMessage) :
-        Writer(alias, oracleAnalyser, shortMessage, 0),
+    WriterFile::WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name) :
+        Writer(alias, oracleAnalyser, 0),
         name(name),
         fileOpen(false) {
         if (this->name.length() == 0) {

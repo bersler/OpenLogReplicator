@@ -48,46 +48,63 @@ struct TableStruct_OraProtoBuf_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxiliaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[3]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[7]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
   static const ::PROTOBUF_NAMESPACE_ID::uint32 offsets[];
 };
 extern const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto;
-namespace oraprotobuf {
-class DatumMessage;
-class DatumMessageDefaultTypeInternal;
-extern DatumMessageDefaultTypeInternal _DatumMessage_default_instance_;
-class RowMessage;
-class RowMessageDefaultTypeInternal;
-extern RowMessageDefaultTypeInternal _RowMessage_default_instance_;
-class TypeInfo;
-class TypeInfoDefaultTypeInternal;
-extern TypeInfoDefaultTypeInternal _TypeInfo_default_instance_;
-}  // namespace oraprotobuf
+namespace OpenLogReplicator {
+namespace pb {
+class Column;
+class ColumnDefaultTypeInternal;
+extern ColumnDefaultTypeInternal _Column_default_instance_;
+class Payload;
+class PayloadDefaultTypeInternal;
+extern PayloadDefaultTypeInternal _Payload_default_instance_;
+class Redo;
+class RedoDefaultTypeInternal;
+extern RedoDefaultTypeInternal _Redo_default_instance_;
+class Request;
+class RequestDefaultTypeInternal;
+extern RequestDefaultTypeInternal _Request_default_instance_;
+class RequestSchema;
+class RequestSchemaDefaultTypeInternal;
+extern RequestSchemaDefaultTypeInternal _RequestSchema_default_instance_;
+class Schema;
+class SchemaDefaultTypeInternal;
+extern SchemaDefaultTypeInternal _Schema_default_instance_;
+class Value;
+class ValueDefaultTypeInternal;
+extern ValueDefaultTypeInternal _Value_default_instance_;
+}  // namespace pb
+}  // namespace OpenLogReplicator
 PROTOBUF_NAMESPACE_OPEN
-template<> ::oraprotobuf::DatumMessage* Arena::CreateMaybeMessage<::oraprotobuf::DatumMessage>(Arena*);
-template<> ::oraprotobuf::RowMessage* Arena::CreateMaybeMessage<::oraprotobuf::RowMessage>(Arena*);
-template<> ::oraprotobuf::TypeInfo* Arena::CreateMaybeMessage<::oraprotobuf::TypeInfo>(Arena*);
+template<> ::OpenLogReplicator::pb::Column* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Column>(Arena*);
+template<> ::OpenLogReplicator::pb::Payload* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Payload>(Arena*);
+template<> ::OpenLogReplicator::pb::Redo* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Redo>(Arena*);
+template<> ::OpenLogReplicator::pb::Request* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Request>(Arena*);
+template<> ::OpenLogReplicator::pb::RequestSchema* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::RequestSchema>(Arena*);
+template<> ::OpenLogReplicator::pb::Schema* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Schema>(Arena*);
+template<> ::OpenLogReplicator::pb::Value* Arena::CreateMaybeMessage<::OpenLogReplicator::pb::Value>(Arena*);
 PROTOBUF_NAMESPACE_CLOSE
-namespace oraprotobuf {
+namespace OpenLogReplicator {
+namespace pb {
 
 enum Op : int {
-  UNKNOWN = 0,
-  INSERT = 1,
-  UPDATE = 2,
-  DELETE = 3,
-  BEGIN = 4,
-  COMMIT = 5,
-  DDL = 6,
-  CHEKCPOINT = 7,
+  BEGIN = 0,
+  COMMIT = 1,
+  INSERT = 2,
+  UPDATE = 3,
+  DELETE = 4,
+  DDL = 5,
   Op_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   Op_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool Op_IsValid(int value);
-constexpr Op Op_MIN = UNKNOWN;
-constexpr Op Op_MAX = CHEKCPOINT;
+constexpr Op Op_MIN = BEGIN;
+constexpr Op Op_MAX = DDL;
 constexpr int Op_ARRAYSIZE = Op_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Op_descriptor();
@@ -106,23 +123,23 @@ inline bool Op_Parse(
 }
 // ===================================================================
 
-class DatumMessage PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:oraprotobuf.DatumMessage) */ {
+class RequestSchema PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.RequestSchema) */ {
  public:
-  inline DatumMessage() : DatumMessage(nullptr) {}
-  virtual ~DatumMessage();
+  inline RequestSchema() : RequestSchema(nullptr) {}
+  virtual ~RequestSchema();
 
-  DatumMessage(const DatumMessage& from);
-  DatumMessage(DatumMessage&& from) noexcept
-    : DatumMessage() {
+  RequestSchema(const RequestSchema& from);
+  RequestSchema(RequestSchema&& from) noexcept
+    : RequestSchema() {
     *this = ::std::move(from);
   }
 
-  inline DatumMessage& operator=(const DatumMessage& from) {
+  inline RequestSchema& operator=(const RequestSchema& from) {
     CopyFrom(from);
     return *this;
   }
-  inline DatumMessage& operator=(DatumMessage&& from) noexcept {
+  inline RequestSchema& operator=(RequestSchema&& from) noexcept {
     if (GetArena() == from.GetArena()) {
       if (this != &from) InternalSwap(&from);
     } else {
@@ -140,31 +157,20 @@ class DatumMessage PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return GetMetadataStatic().reflection;
   }
-  static const DatumMessage& default_instance();
-
-  enum DatumCase {
-    kDatumInt32 = 3,
-    kDatumInt64 = 4,
-    kDatumFloat = 5,
-    kDatumDouble = 6,
-    kDatumBool = 7,
-    kDatumString = 8,
-    kDatumBytes = 9,
-    DATUM_NOT_SET = 0,
-  };
+  static const RequestSchema& default_instance();
 
   static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
-  static inline const DatumMessage* internal_default_instance() {
-    return reinterpret_cast<const DatumMessage*>(
-               &_DatumMessage_default_instance_);
+  static inline const RequestSchema* internal_default_instance() {
+    return reinterpret_cast<const RequestSchema*>(
+               &_RequestSchema_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     0;
 
-  friend void swap(DatumMessage& a, DatumMessage& b) {
+  friend void swap(RequestSchema& a, RequestSchema& b) {
     a.Swap(&b);
   }
-  inline void Swap(DatumMessage* other) {
+  inline void Swap(RequestSchema* other) {
     if (other == this) return;
     if (GetArena() == other->GetArena()) {
       InternalSwap(other);
@@ -172,7 +178,7 @@ class DatumMessage PROTOBUF_FINAL :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(DatumMessage* other) {
+  void UnsafeArenaSwap(RequestSchema* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -180,17 +186,17 @@ class DatumMessage PROTOBUF_FINAL :
 
   // implements Message ----------------------------------------------
 
-  inline DatumMessage* New() const final {
-    return CreateMaybeMessage<DatumMessage>(nullptr);
+  inline RequestSchema* New() const final {
+    return CreateMaybeMessage<RequestSchema>(nullptr);
   }
 
-  DatumMessage* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<DatumMessage>(arena);
+  RequestSchema* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<RequestSchema>(arena);
   }
   void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
   void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const DatumMessage& from);
-  void MergeFrom(const DatumMessage& from);
+  void CopyFrom(const RequestSchema& from);
+  void MergeFrom(const RequestSchema& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -204,13 +210,372 @@ class DatumMessage PROTOBUF_FINAL :
   inline void SharedCtor();
   inline void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(DatumMessage* other);
+  void InternalSwap(RequestSchema* other);
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "oraprotobuf.DatumMessage";
+    return "OpenLogReplicator.pb.RequestSchema";
   }
   protected:
-  explicit DatumMessage(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit RequestSchema(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_OraProtoBuf_2eproto);
+    return ::descriptor_table_OraProtoBuf_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kMaskFieldNumber = 1,
+    kFilterFieldNumber = 2,
+  };
+  // string mask = 1;
+  void clear_mask();
+  const std::string& mask() const;
+  void set_mask(const std::string& value);
+  void set_mask(std::string&& value);
+  void set_mask(const char* value);
+  void set_mask(const char* value, size_t size);
+  std::string* mutable_mask();
+  std::string* release_mask();
+  void set_allocated_mask(std::string* mask);
+  private:
+  const std::string& _internal_mask() const;
+  void _internal_set_mask(const std::string& value);
+  std::string* _internal_mutable_mask();
+  public:
+
+  // string filter = 2;
+  void clear_filter();
+  const std::string& filter() const;
+  void set_filter(const std::string& value);
+  void set_filter(std::string&& value);
+  void set_filter(const char* value);
+  void set_filter(const char* value, size_t size);
+  std::string* mutable_filter();
+  std::string* release_filter();
+  void set_allocated_filter(std::string* filter);
+  private:
+  const std::string& _internal_filter() const;
+  void _internal_set_filter(const std::string& value);
+  std::string* _internal_mutable_filter();
+  public:
+
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.RequestSchema)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr mask_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr filter_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_OraProtoBuf_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Request PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Request) */ {
+ public:
+  inline Request() : Request(nullptr) {}
+  virtual ~Request();
+
+  Request(const Request& from);
+  Request(Request&& from) noexcept
+    : Request() {
+    *this = ::std::move(from);
+  }
+
+  inline Request& operator=(const Request& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Request& operator=(Request&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const Request& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const Request* internal_default_instance() {
+    return reinterpret_cast<const Request*>(
+               &_Request_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    1;
+
+  friend void swap(Request& a, Request& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Request* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Request* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline Request* New() const final {
+    return CreateMaybeMessage<Request>(nullptr);
+  }
+
+  Request* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Request>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const Request& from);
+  void MergeFrom(const Request& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Request* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "OpenLogReplicator.pb.Request";
+  }
+  protected:
+  explicit Request(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_OraProtoBuf_2eproto);
+    return ::descriptor_table_OraProtoBuf_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSchemaFieldNumber = 4,
+    kDatabaseNameFieldNumber = 3,
+    kScnFieldNumber = 1,
+    kVersionFieldNumber = 2,
+  };
+  // repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+  int schema_size() const;
+  private:
+  int _internal_schema_size() const;
+  public:
+  void clear_schema();
+  ::OpenLogReplicator::pb::RequestSchema* mutable_schema(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema >*
+      mutable_schema();
+  private:
+  const ::OpenLogReplicator::pb::RequestSchema& _internal_schema(int index) const;
+  ::OpenLogReplicator::pb::RequestSchema* _internal_add_schema();
+  public:
+  const ::OpenLogReplicator::pb::RequestSchema& schema(int index) const;
+  ::OpenLogReplicator::pb::RequestSchema* add_schema();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema >&
+      schema() const;
+
+  // string database_name = 3;
+  void clear_database_name();
+  const std::string& database_name() const;
+  void set_database_name(const std::string& value);
+  void set_database_name(std::string&& value);
+  void set_database_name(const char* value);
+  void set_database_name(const char* value, size_t size);
+  std::string* mutable_database_name();
+  std::string* release_database_name();
+  void set_allocated_database_name(std::string* database_name);
+  private:
+  const std::string& _internal_database_name() const;
+  void _internal_set_database_name(const std::string& value);
+  std::string* _internal_mutable_database_name();
+  public:
+
+  // uint64 scn = 1;
+  void clear_scn();
+  ::PROTOBUF_NAMESPACE_ID::uint64 scn() const;
+  void set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_scn() const;
+  void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 version = 2;
+  void clear_version();
+  ::PROTOBUF_NAMESPACE_ID::uint64 version() const;
+  void set_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_version() const;
+  void _internal_set_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Request)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema > schema_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr database_name_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 version_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_OraProtoBuf_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Value PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Value) */ {
+ public:
+  inline Value() : Value(nullptr) {}
+  virtual ~Value();
+
+  Value(const Value& from);
+  Value(Value&& from) noexcept
+    : Value() {
+    *this = ::std::move(from);
+  }
+
+  inline Value& operator=(const Value& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Value& operator=(Value&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const Value& default_instance();
+
+  enum DatumCase {
+    kValueInt32 = 3,
+    kValueInt64 = 4,
+    kValueFloat = 5,
+    kValueDouble = 6,
+    kValueBool = 7,
+    kValueString = 8,
+    kValueBytes = 9,
+    DATUM_NOT_SET = 0,
+  };
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const Value* internal_default_instance() {
+    return reinterpret_cast<const Value*>(
+               &_Value_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    2;
+
+  friend void swap(Value& a, Value& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Value* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Value* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline Value* New() const final {
+    return CreateMaybeMessage<Value>(nullptr);
+  }
+
+  Value* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Value>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const Value& from);
+  void MergeFrom(const Value& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Value* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "OpenLogReplicator.pb.Value";
+  }
+  protected:
+  explicit Value(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   private:
   static void ArenaDtor(void* object);
   inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
@@ -232,19 +597,15 @@ class DatumMessage PROTOBUF_FINAL :
   enum : int {
     kColumnNameFieldNumber = 1,
     kColumnTypeFieldNumber = 2,
-    kDatumInt32FieldNumber = 3,
-    kDatumInt64FieldNumber = 4,
-    kDatumFloatFieldNumber = 5,
-    kDatumDoubleFieldNumber = 6,
-    kDatumBoolFieldNumber = 7,
-    kDatumStringFieldNumber = 8,
-    kDatumBytesFieldNumber = 9,
+    kValueInt32FieldNumber = 3,
+    kValueInt64FieldNumber = 4,
+    kValueFloatFieldNumber = 5,
+    kValueDoubleFieldNumber = 6,
+    kValueBoolFieldNumber = 7,
+    kValueStringFieldNumber = 8,
+    kValueBytesFieldNumber = 9,
   };
   // string column_name = 1;
-  bool has_column_name() const;
-  private:
-  bool _internal_has_column_name() const;
-  public:
   void clear_column_name();
   const std::string& column_name() const;
   void set_column_name(const std::string& value);
@@ -261,10 +622,6 @@ class DatumMessage PROTOBUF_FINAL :
   public:
 
   // int64 column_type = 2;
-  bool has_column_type() const;
-  private:
-  bool _internal_has_column_type() const;
-  public:
   void clear_column_type();
   ::PROTOBUF_NAMESPACE_ID::int64 column_type() const;
   void set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value);
@@ -273,116 +630,116 @@ class DatumMessage PROTOBUF_FINAL :
   void _internal_set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value);
   public:
 
-  // sint32 datum_int32 = 3;
+  // int32 value_int32 = 3;
   private:
-  bool _internal_has_datum_int32() const;
+  bool _internal_has_value_int32() const;
   public:
-  void clear_datum_int32();
-  ::PROTOBUF_NAMESPACE_ID::int32 datum_int32() const;
-  void set_datum_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
+  void clear_value_int32();
+  ::PROTOBUF_NAMESPACE_ID::int32 value_int32() const;
+  void set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::int32 _internal_datum_int32() const;
-  void _internal_set_datum_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
-  public:
-
-  // sint64 datum_int64 = 4;
-  private:
-  bool _internal_has_datum_int64() const;
-  public:
-  void clear_datum_int64();
-  ::PROTOBUF_NAMESPACE_ID::int64 datum_int64() const;
-  void set_datum_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::int64 _internal_datum_int64() const;
-  void _internal_set_datum_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_value_int32() const;
+  void _internal_set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
   public:
 
-  // float datum_float = 5;
+  // int64 value_int64 = 4;
   private:
-  bool _internal_has_datum_float() const;
+  bool _internal_has_value_int64() const;
   public:
-  void clear_datum_float();
-  float datum_float() const;
-  void set_datum_float(float value);
+  void clear_value_int64();
+  ::PROTOBUF_NAMESPACE_ID::int64 value_int64() const;
+  void set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
   private:
-  float _internal_datum_float() const;
-  void _internal_set_datum_float(float value);
-  public:
-
-  // double datum_double = 6;
-  private:
-  bool _internal_has_datum_double() const;
-  public:
-  void clear_datum_double();
-  double datum_double() const;
-  void set_datum_double(double value);
-  private:
-  double _internal_datum_double() const;
-  void _internal_set_datum_double(double value);
+  ::PROTOBUF_NAMESPACE_ID::int64 _internal_value_int64() const;
+  void _internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
   public:
 
-  // bool datum_bool = 7;
+  // float value_float = 5;
   private:
-  bool _internal_has_datum_bool() const;
+  bool _internal_has_value_float() const;
   public:
-  void clear_datum_bool();
-  bool datum_bool() const;
-  void set_datum_bool(bool value);
+  void clear_value_float();
+  float value_float() const;
+  void set_value_float(float value);
   private:
-  bool _internal_datum_bool() const;
-  void _internal_set_datum_bool(bool value);
-  public:
-
-  // string datum_string = 8;
-  private:
-  bool _internal_has_datum_string() const;
-  public:
-  void clear_datum_string();
-  const std::string& datum_string() const;
-  void set_datum_string(const std::string& value);
-  void set_datum_string(std::string&& value);
-  void set_datum_string(const char* value);
-  void set_datum_string(const char* value, size_t size);
-  std::string* mutable_datum_string();
-  std::string* release_datum_string();
-  void set_allocated_datum_string(std::string* datum_string);
-  private:
-  const std::string& _internal_datum_string() const;
-  void _internal_set_datum_string(const std::string& value);
-  std::string* _internal_mutable_datum_string();
+  float _internal_value_float() const;
+  void _internal_set_value_float(float value);
   public:
 
-  // bytes datum_bytes = 9;
+  // double value_double = 6;
   private:
-  bool _internal_has_datum_bytes() const;
+  bool _internal_has_value_double() const;
   public:
-  void clear_datum_bytes();
-  const std::string& datum_bytes() const;
-  void set_datum_bytes(const std::string& value);
-  void set_datum_bytes(std::string&& value);
-  void set_datum_bytes(const char* value);
-  void set_datum_bytes(const void* value, size_t size);
-  std::string* mutable_datum_bytes();
-  std::string* release_datum_bytes();
-  void set_allocated_datum_bytes(std::string* datum_bytes);
+  void clear_value_double();
+  double value_double() const;
+  void set_value_double(double value);
   private:
-  const std::string& _internal_datum_bytes() const;
-  void _internal_set_datum_bytes(const std::string& value);
-  std::string* _internal_mutable_datum_bytes();
+  double _internal_value_double() const;
+  void _internal_set_value_double(double value);
+  public:
+
+  // bool value_bool = 7;
+  private:
+  bool _internal_has_value_bool() const;
+  public:
+  void clear_value_bool();
+  bool value_bool() const;
+  void set_value_bool(bool value);
+  private:
+  bool _internal_value_bool() const;
+  void _internal_set_value_bool(bool value);
+  public:
+
+  // string value_string = 8;
+  private:
+  bool _internal_has_value_string() const;
+  public:
+  void clear_value_string();
+  const std::string& value_string() const;
+  void set_value_string(const std::string& value);
+  void set_value_string(std::string&& value);
+  void set_value_string(const char* value);
+  void set_value_string(const char* value, size_t size);
+  std::string* mutable_value_string();
+  std::string* release_value_string();
+  void set_allocated_value_string(std::string* value_string);
+  private:
+  const std::string& _internal_value_string() const;
+  void _internal_set_value_string(const std::string& value);
+  std::string* _internal_mutable_value_string();
+  public:
+
+  // bytes value_bytes = 9;
+  private:
+  bool _internal_has_value_bytes() const;
+  public:
+  void clear_value_bytes();
+  const std::string& value_bytes() const;
+  void set_value_bytes(const std::string& value);
+  void set_value_bytes(std::string&& value);
+  void set_value_bytes(const char* value);
+  void set_value_bytes(const void* value, size_t size);
+  std::string* mutable_value_bytes();
+  std::string* release_value_bytes();
+  void set_allocated_value_bytes(std::string* value_bytes);
+  private:
+  const std::string& _internal_value_bytes() const;
+  void _internal_set_value_bytes(const std::string& value);
+  std::string* _internal_mutable_value_bytes();
   public:
 
   void clear_datum();
   DatumCase datum_case() const;
-  // @@protoc_insertion_point(class_scope:oraprotobuf.DatumMessage)
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Value)
  private:
   class _Internal;
-  void set_has_datum_int32();
-  void set_has_datum_int64();
-  void set_has_datum_float();
-  void set_has_datum_double();
-  void set_has_datum_bool();
-  void set_has_datum_string();
-  void set_has_datum_bytes();
+  void set_has_value_int32();
+  void set_has_value_int64();
+  void set_has_value_float();
+  void set_has_value_double();
+  void set_has_value_bool();
+  void set_has_value_string();
+  void set_has_value_bytes();
 
   inline bool has_datum() const;
   inline void clear_has_datum();
@@ -390,43 +747,42 @@ class DatumMessage PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
   ::PROTOBUF_NAMESPACE_ID::int64 column_type_;
   union DatumUnion {
     DatumUnion() {}
-    ::PROTOBUF_NAMESPACE_ID::int32 datum_int32_;
-    ::PROTOBUF_NAMESPACE_ID::int64 datum_int64_;
-    float datum_float_;
-    double datum_double_;
-    bool datum_bool_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr datum_string_;
-    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr datum_bytes_;
+    ::PROTOBUF_NAMESPACE_ID::int32 value_int32_;
+    ::PROTOBUF_NAMESPACE_ID::int64 value_int64_;
+    float value_float_;
+    double value_double_;
+    bool value_bool_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_string_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_bytes_;
   } datum_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
 
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
 // -------------------------------------------------------------------
 
-class TypeInfo PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:oraprotobuf.TypeInfo) */ {
+class Column PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Column) */ {
  public:
-  inline TypeInfo() : TypeInfo(nullptr) {}
-  virtual ~TypeInfo();
+  inline Column() : Column(nullptr) {}
+  virtual ~Column();
 
-  TypeInfo(const TypeInfo& from);
-  TypeInfo(TypeInfo&& from) noexcept
-    : TypeInfo() {
+  Column(const Column& from);
+  Column(Column&& from) noexcept
+    : Column() {
     *this = ::std::move(from);
   }
 
-  inline TypeInfo& operator=(const TypeInfo& from) {
+  inline Column& operator=(const Column& from) {
     CopyFrom(from);
     return *this;
   }
-  inline TypeInfo& operator=(TypeInfo&& from) noexcept {
+  inline Column& operator=(Column&& from) noexcept {
     if (GetArena() == from.GetArena()) {
       if (this != &from) InternalSwap(&from);
     } else {
@@ -444,20 +800,20 @@ class TypeInfo PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return GetMetadataStatic().reflection;
   }
-  static const TypeInfo& default_instance();
+  static const Column& default_instance();
 
   static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
-  static inline const TypeInfo* internal_default_instance() {
-    return reinterpret_cast<const TypeInfo*>(
-               &_TypeInfo_default_instance_);
+  static inline const Column* internal_default_instance() {
+    return reinterpret_cast<const Column*>(
+               &_Column_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    1;
+    3;
 
-  friend void swap(TypeInfo& a, TypeInfo& b) {
+  friend void swap(Column& a, Column& b) {
     a.Swap(&b);
   }
-  inline void Swap(TypeInfo* other) {
+  inline void Swap(Column* other) {
     if (other == this) return;
     if (GetArena() == other->GetArena()) {
       InternalSwap(other);
@@ -465,7 +821,7 @@ class TypeInfo PROTOBUF_FINAL :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(TypeInfo* other) {
+  void UnsafeArenaSwap(Column* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -473,17 +829,17 @@ class TypeInfo PROTOBUF_FINAL :
 
   // implements Message ----------------------------------------------
 
-  inline TypeInfo* New() const final {
-    return CreateMaybeMessage<TypeInfo>(nullptr);
+  inline Column* New() const final {
+    return CreateMaybeMessage<Column>(nullptr);
   }
 
-  TypeInfo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<TypeInfo>(arena);
+  Column* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Column>(arena);
   }
   void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
   void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const TypeInfo& from);
-  void MergeFrom(const TypeInfo& from);
+  void CopyFrom(const Column& from);
+  void MergeFrom(const Column& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -497,13 +853,13 @@ class TypeInfo PROTOBUF_FINAL :
   inline void SharedCtor();
   inline void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(TypeInfo* other);
+  void InternalSwap(Column* other);
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "oraprotobuf.TypeInfo";
+    return "OpenLogReplicator.pb.Column";
   }
   protected:
-  explicit TypeInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit Column(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   private:
   static void ArenaDtor(void* object);
   inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
@@ -523,65 +879,116 @@ class TypeInfo PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kModifierFieldNumber = 1,
-    kValueOptionalFieldNumber = 2,
+    kColumnNameFieldNumber = 1,
+    kColumnTypeFieldNumber = 2,
+    kLengthFieldNumber = 3,
+    kPrecisionFieldNumber = 4,
+    kScaleFieldNumber = 5,
+    kNullableFieldNumber = 6,
   };
-  // string modifier = 1;
-  void clear_modifier();
-  const std::string& modifier() const;
-  void set_modifier(const std::string& value);
-  void set_modifier(std::string&& value);
-  void set_modifier(const char* value);
-  void set_modifier(const char* value, size_t size);
-  std::string* mutable_modifier();
-  std::string* release_modifier();
-  void set_allocated_modifier(std::string* modifier);
+  // string column_name = 1;
+  void clear_column_name();
+  const std::string& column_name() const;
+  void set_column_name(const std::string& value);
+  void set_column_name(std::string&& value);
+  void set_column_name(const char* value);
+  void set_column_name(const char* value, size_t size);
+  std::string* mutable_column_name();
+  std::string* release_column_name();
+  void set_allocated_column_name(std::string* column_name);
   private:
-  const std::string& _internal_modifier() const;
-  void _internal_set_modifier(const std::string& value);
-  std::string* _internal_mutable_modifier();
+  const std::string& _internal_column_name() const;
+  void _internal_set_column_name(const std::string& value);
+  std::string* _internal_mutable_column_name();
   public:
 
-  // bool value_optional = 2;
-  void clear_value_optional();
-  bool value_optional() const;
-  void set_value_optional(bool value);
+  // string column_type = 2;
+  void clear_column_type();
+  const std::string& column_type() const;
+  void set_column_type(const std::string& value);
+  void set_column_type(std::string&& value);
+  void set_column_type(const char* value);
+  void set_column_type(const char* value, size_t size);
+  std::string* mutable_column_type();
+  std::string* release_column_type();
+  void set_allocated_column_type(std::string* column_type);
   private:
-  bool _internal_value_optional() const;
-  void _internal_set_value_optional(bool value);
+  const std::string& _internal_column_type() const;
+  void _internal_set_column_type(const std::string& value);
+  std::string* _internal_mutable_column_type();
   public:
 
-  // @@protoc_insertion_point(class_scope:oraprotobuf.TypeInfo)
+  // int32 length = 3;
+  void clear_length();
+  ::PROTOBUF_NAMESPACE_ID::int32 length() const;
+  void set_length(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_length() const;
+  void _internal_set_length(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 precision = 4;
+  void clear_precision();
+  ::PROTOBUF_NAMESPACE_ID::int32 precision() const;
+  void set_precision(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_precision() const;
+  void _internal_set_precision(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // int32 scale = 5;
+  void clear_scale();
+  ::PROTOBUF_NAMESPACE_ID::int32 scale() const;
+  void set_scale(::PROTOBUF_NAMESPACE_ID::int32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::int32 _internal_scale() const;
+  void _internal_set_scale(::PROTOBUF_NAMESPACE_ID::int32 value);
+  public:
+
+  // bool nullable = 6;
+  void clear_nullable();
+  bool nullable() const;
+  void set_nullable(bool value);
+  private:
+  bool _internal_nullable() const;
+  void _internal_set_nullable(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Column)
  private:
   class _Internal;
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr modifier_;
-  bool value_optional_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_type_;
+  ::PROTOBUF_NAMESPACE_ID::int32 length_;
+  ::PROTOBUF_NAMESPACE_ID::int32 precision_;
+  ::PROTOBUF_NAMESPACE_ID::int32 scale_;
+  bool nullable_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
 // -------------------------------------------------------------------
 
-class RowMessage PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:oraprotobuf.RowMessage) */ {
+class Schema PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Schema) */ {
  public:
-  inline RowMessage() : RowMessage(nullptr) {}
-  virtual ~RowMessage();
+  inline Schema() : Schema(nullptr) {}
+  virtual ~Schema();
 
-  RowMessage(const RowMessage& from);
-  RowMessage(RowMessage&& from) noexcept
-    : RowMessage() {
+  Schema(const Schema& from);
+  Schema(Schema&& from) noexcept
+    : Schema() {
     *this = ::std::move(from);
   }
 
-  inline RowMessage& operator=(const RowMessage& from) {
+  inline Schema& operator=(const Schema& from) {
     CopyFrom(from);
     return *this;
   }
-  inline RowMessage& operator=(RowMessage&& from) noexcept {
+  inline Schema& operator=(Schema&& from) noexcept {
     if (GetArena() == from.GetArena()) {
       if (this != &from) InternalSwap(&from);
     } else {
@@ -599,20 +1006,26 @@ class RowMessage PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return GetMetadataStatic().reflection;
   }
-  static const RowMessage& default_instance();
+  static const Schema& default_instance();
+
+  enum TmValCase {
+    kTm = 4,
+    kTms = 5,
+    TM_VAL_NOT_SET = 0,
+  };
 
   static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
-  static inline const RowMessage* internal_default_instance() {
-    return reinterpret_cast<const RowMessage*>(
-               &_RowMessage_default_instance_);
+  static inline const Schema* internal_default_instance() {
+    return reinterpret_cast<const Schema*>(
+               &_Schema_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    2;
+    4;
 
-  friend void swap(RowMessage& a, RowMessage& b) {
+  friend void swap(Schema& a, Schema& b) {
     a.Swap(&b);
   }
-  inline void Swap(RowMessage* other) {
+  inline void Swap(Schema* other) {
     if (other == this) return;
     if (GetArena() == other->GetArena()) {
       InternalSwap(other);
@@ -620,7 +1033,7 @@ class RowMessage PROTOBUF_FINAL :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(RowMessage* other) {
+  void UnsafeArenaSwap(Schema* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -628,17 +1041,17 @@ class RowMessage PROTOBUF_FINAL :
 
   // implements Message ----------------------------------------------
 
-  inline RowMessage* New() const final {
-    return CreateMaybeMessage<RowMessage>(nullptr);
+  inline Schema* New() const final {
+    return CreateMaybeMessage<Schema>(nullptr);
   }
 
-  RowMessage* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<RowMessage>(arena);
+  Schema* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Schema>(arena);
   }
   void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
   void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const RowMessage& from);
-  void MergeFrom(const RowMessage& from);
+  void CopyFrom(const Schema& from);
+  void MergeFrom(const Schema& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -652,13 +1065,13 @@ class RowMessage PROTOBUF_FINAL :
   inline void SharedCtor();
   inline void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(RowMessage* other);
+  void InternalSwap(Schema* other);
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "oraprotobuf.RowMessage";
+    return "OpenLogReplicator.pb.Schema";
   }
   protected:
-  explicit RowMessage(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit Schema(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   private:
   static void ArenaDtor(void* object);
   inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
@@ -678,73 +1091,48 @@ class RowMessage PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kNewTupleFieldNumber = 5,
-    kOldTupleFieldNumber = 6,
-    kNewTypeinfoFieldNumber = 7,
-    kTableFieldNumber = 3,
-    kTransactionIdFieldNumber = 1,
-    kCommitTimeFieldNumber = 2,
-    kOpFieldNumber = 4,
+    kColumnFieldNumber = 6,
+    kOwnerFieldNumber = 1,
+    kTableFieldNumber = 2,
+    kObjnFieldNumber = 3,
+    kTmFieldNumber = 4,
+    kTmsFieldNumber = 5,
   };
-  // repeated .oraprotobuf.DatumMessage new_tuple = 5;
-  int new_tuple_size() const;
+  // repeated .OpenLogReplicator.pb.Column column = 6;
+  int column_size() const;
   private:
-  int _internal_new_tuple_size() const;
+  int _internal_column_size() const;
   public:
-  void clear_new_tuple();
-  ::oraprotobuf::DatumMessage* mutable_new_tuple(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >*
-      mutable_new_tuple();
+  void clear_column();
+  ::OpenLogReplicator::pb::Column* mutable_column(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column >*
+      mutable_column();
   private:
-  const ::oraprotobuf::DatumMessage& _internal_new_tuple(int index) const;
-  ::oraprotobuf::DatumMessage* _internal_add_new_tuple();
+  const ::OpenLogReplicator::pb::Column& _internal_column(int index) const;
+  ::OpenLogReplicator::pb::Column* _internal_add_column();
   public:
-  const ::oraprotobuf::DatumMessage& new_tuple(int index) const;
-  ::oraprotobuf::DatumMessage* add_new_tuple();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >&
-      new_tuple() const;
+  const ::OpenLogReplicator::pb::Column& column(int index) const;
+  ::OpenLogReplicator::pb::Column* add_column();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column >&
+      column() const;
 
-  // repeated .oraprotobuf.DatumMessage old_tuple = 6;
-  int old_tuple_size() const;
+  // string owner = 1;
+  void clear_owner();
+  const std::string& owner() const;
+  void set_owner(const std::string& value);
+  void set_owner(std::string&& value);
+  void set_owner(const char* value);
+  void set_owner(const char* value, size_t size);
+  std::string* mutable_owner();
+  std::string* release_owner();
+  void set_allocated_owner(std::string* owner);
   private:
-  int _internal_old_tuple_size() const;
+  const std::string& _internal_owner() const;
+  void _internal_set_owner(const std::string& value);
+  std::string* _internal_mutable_owner();
   public:
-  void clear_old_tuple();
-  ::oraprotobuf::DatumMessage* mutable_old_tuple(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >*
-      mutable_old_tuple();
-  private:
-  const ::oraprotobuf::DatumMessage& _internal_old_tuple(int index) const;
-  ::oraprotobuf::DatumMessage* _internal_add_old_tuple();
-  public:
-  const ::oraprotobuf::DatumMessage& old_tuple(int index) const;
-  ::oraprotobuf::DatumMessage* add_old_tuple();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >&
-      old_tuple() const;
 
-  // repeated .oraprotobuf.TypeInfo new_typeinfo = 7;
-  int new_typeinfo_size() const;
-  private:
-  int _internal_new_typeinfo_size() const;
-  public:
-  void clear_new_typeinfo();
-  ::oraprotobuf::TypeInfo* mutable_new_typeinfo(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::TypeInfo >*
-      mutable_new_typeinfo();
-  private:
-  const ::oraprotobuf::TypeInfo& _internal_new_typeinfo(int index) const;
-  ::oraprotobuf::TypeInfo* _internal_add_new_typeinfo();
-  public:
-  const ::oraprotobuf::TypeInfo& new_typeinfo(int index) const;
-  ::oraprotobuf::TypeInfo* add_new_typeinfo();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::TypeInfo >&
-      new_typeinfo() const;
-
-  // string table = 3;
-  bool has_table() const;
-  private:
-  bool _internal_has_table() const;
-  public:
+  // string table = 2;
   void clear_table();
   const std::string& table() const;
   void set_table(const std::string& value);
@@ -760,61 +1148,606 @@ class RowMessage PROTOBUF_FINAL :
   std::string* _internal_mutable_table();
   public:
 
-  // fixed64 transaction_id = 1;
-  bool has_transaction_id() const;
+  // uint32 objn = 3;
+  void clear_objn();
+  ::PROTOBUF_NAMESPACE_ID::uint32 objn() const;
+  void set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value);
   private:
-  bool _internal_has_transaction_id() const;
-  public:
-  void clear_transaction_id();
-  ::PROTOBUF_NAMESPACE_ID::uint64 transaction_id() const;
-  void set_transaction_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_transaction_id() const;
-  void _internal_set_transaction_id(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_objn() const;
+  void _internal_set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value);
   public:
 
-  // uint64 commit_time = 2;
-  bool has_commit_time() const;
+  // uint64 tm = 4;
   private:
-  bool _internal_has_commit_time() const;
+  bool _internal_has_tm() const;
   public:
-  void clear_commit_time();
-  ::PROTOBUF_NAMESPACE_ID::uint64 commit_time() const;
-  void set_commit_time(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  void clear_tm();
+  ::PROTOBUF_NAMESPACE_ID::uint64 tm() const;
+  void set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_commit_time() const;
-  void _internal_set_commit_time(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_tm() const;
+  void _internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // .oraprotobuf.Op op = 4;
-  bool has_op() const;
+  // string tms = 5;
   private:
-  bool _internal_has_op() const;
+  bool _internal_has_tms() const;
   public:
+  void clear_tms();
+  const std::string& tms() const;
+  void set_tms(const std::string& value);
+  void set_tms(std::string&& value);
+  void set_tms(const char* value);
+  void set_tms(const char* value, size_t size);
+  std::string* mutable_tms();
+  std::string* release_tms();
+  void set_allocated_tms(std::string* tms);
+  private:
+  const std::string& _internal_tms() const;
+  void _internal_set_tms(const std::string& value);
+  std::string* _internal_mutable_tms();
+  public:
+
+  void clear_tm_val();
+  TmValCase tm_val_case() const;
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Schema)
+ private:
+  class _Internal;
+  void set_has_tm();
+  void set_has_tms();
+
+  inline bool has_tm_val() const;
+  inline void clear_has_tm_val();
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column > column_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr owner_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 objn_;
+  union TmValUnion {
+    TmValUnion() {}
+    ::PROTOBUF_NAMESPACE_ID::uint64 tm_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tms_;
+  } tm_val_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
+
+  friend struct ::TableStruct_OraProtoBuf_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Payload PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Payload) */ {
+ public:
+  inline Payload() : Payload(nullptr) {}
+  virtual ~Payload();
+
+  Payload(const Payload& from);
+  Payload(Payload&& from) noexcept
+    : Payload() {
+    *this = ::std::move(from);
+  }
+
+  inline Payload& operator=(const Payload& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Payload& operator=(Payload&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const Payload& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const Payload* internal_default_instance() {
+    return reinterpret_cast<const Payload*>(
+               &_Payload_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    5;
+
+  friend void swap(Payload& a, Payload& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Payload* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Payload* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline Payload* New() const final {
+    return CreateMaybeMessage<Payload>(nullptr);
+  }
+
+  Payload* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Payload>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const Payload& from);
+  void MergeFrom(const Payload& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Payload* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "OpenLogReplicator.pb.Payload";
+  }
+  protected:
+  explicit Payload(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_OraProtoBuf_2eproto);
+    return ::descriptor_table_OraProtoBuf_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kRowidFieldNumber = 3,
+    kDdlFieldNumber = 6,
+    kSchemaFieldNumber = 2,
+    kBeforeFieldNumber = 4,
+    kAfterFieldNumber = 5,
+    kOpFieldNumber = 1,
+  };
+  // string rowid = 3;
+  void clear_rowid();
+  const std::string& rowid() const;
+  void set_rowid(const std::string& value);
+  void set_rowid(std::string&& value);
+  void set_rowid(const char* value);
+  void set_rowid(const char* value, size_t size);
+  std::string* mutable_rowid();
+  std::string* release_rowid();
+  void set_allocated_rowid(std::string* rowid);
+  private:
+  const std::string& _internal_rowid() const;
+  void _internal_set_rowid(const std::string& value);
+  std::string* _internal_mutable_rowid();
+  public:
+
+  // string ddl = 6;
+  void clear_ddl();
+  const std::string& ddl() const;
+  void set_ddl(const std::string& value);
+  void set_ddl(std::string&& value);
+  void set_ddl(const char* value);
+  void set_ddl(const char* value, size_t size);
+  std::string* mutable_ddl();
+  std::string* release_ddl();
+  void set_allocated_ddl(std::string* ddl);
+  private:
+  const std::string& _internal_ddl() const;
+  void _internal_set_ddl(const std::string& value);
+  std::string* _internal_mutable_ddl();
+  public:
+
+  // .OpenLogReplicator.pb.Schema schema = 2;
+  bool has_schema() const;
+  private:
+  bool _internal_has_schema() const;
+  public:
+  void clear_schema();
+  const ::OpenLogReplicator::pb::Schema& schema() const;
+  ::OpenLogReplicator::pb::Schema* release_schema();
+  ::OpenLogReplicator::pb::Schema* mutable_schema();
+  void set_allocated_schema(::OpenLogReplicator::pb::Schema* schema);
+  private:
+  const ::OpenLogReplicator::pb::Schema& _internal_schema() const;
+  ::OpenLogReplicator::pb::Schema* _internal_mutable_schema();
+  public:
+  void unsafe_arena_set_allocated_schema(
+      ::OpenLogReplicator::pb::Schema* schema);
+  ::OpenLogReplicator::pb::Schema* unsafe_arena_release_schema();
+
+  // .OpenLogReplicator.pb.Value before = 4;
+  bool has_before() const;
+  private:
+  bool _internal_has_before() const;
+  public:
+  void clear_before();
+  const ::OpenLogReplicator::pb::Value& before() const;
+  ::OpenLogReplicator::pb::Value* release_before();
+  ::OpenLogReplicator::pb::Value* mutable_before();
+  void set_allocated_before(::OpenLogReplicator::pb::Value* before);
+  private:
+  const ::OpenLogReplicator::pb::Value& _internal_before() const;
+  ::OpenLogReplicator::pb::Value* _internal_mutable_before();
+  public:
+  void unsafe_arena_set_allocated_before(
+      ::OpenLogReplicator::pb::Value* before);
+  ::OpenLogReplicator::pb::Value* unsafe_arena_release_before();
+
+  // .OpenLogReplicator.pb.Value after = 5;
+  bool has_after() const;
+  private:
+  bool _internal_has_after() const;
+  public:
+  void clear_after();
+  const ::OpenLogReplicator::pb::Value& after() const;
+  ::OpenLogReplicator::pb::Value* release_after();
+  ::OpenLogReplicator::pb::Value* mutable_after();
+  void set_allocated_after(::OpenLogReplicator::pb::Value* after);
+  private:
+  const ::OpenLogReplicator::pb::Value& _internal_after() const;
+  ::OpenLogReplicator::pb::Value* _internal_mutable_after();
+  public:
+  void unsafe_arena_set_allocated_after(
+      ::OpenLogReplicator::pb::Value* after);
+  ::OpenLogReplicator::pb::Value* unsafe_arena_release_after();
+
+  // .OpenLogReplicator.pb.Op op = 1;
   void clear_op();
-  ::oraprotobuf::Op op() const;
-  void set_op(::oraprotobuf::Op value);
+  ::OpenLogReplicator::pb::Op op() const;
+  void set_op(::OpenLogReplicator::pb::Op value);
   private:
-  ::oraprotobuf::Op _internal_op() const;
-  void _internal_set_op(::oraprotobuf::Op value);
+  ::OpenLogReplicator::pb::Op _internal_op() const;
+  void _internal_set_op(::OpenLogReplicator::pb::Op value);
   public:
 
-  // @@protoc_insertion_point(class_scope:oraprotobuf.RowMessage)
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Payload)
  private:
   class _Internal;
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage > new_tuple_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage > old_tuple_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::TypeInfo > new_typeinfo_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 transaction_id_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 commit_time_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rowid_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr ddl_;
+  ::OpenLogReplicator::pb::Schema* schema_;
+  ::OpenLogReplicator::pb::Value* before_;
+  ::OpenLogReplicator::pb::Value* after_;
   int op_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_OraProtoBuf_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Redo PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:OpenLogReplicator.pb.Redo) */ {
+ public:
+  inline Redo() : Redo(nullptr) {}
+  virtual ~Redo();
+
+  Redo(const Redo& from);
+  Redo(Redo&& from) noexcept
+    : Redo() {
+    *this = ::std::move(from);
+  }
+
+  inline Redo& operator=(const Redo& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Redo& operator=(Redo&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const Redo& default_instance();
+
+  enum ScnValCase {
+    kScn = 1,
+    kScns = 2,
+    SCN_VAL_NOT_SET = 0,
+  };
+
+  enum TmValCase {
+    kTm = 3,
+    kTms = 4,
+    TM_VAL_NOT_SET = 0,
+  };
+
+  enum XidValCase {
+    kXid = 5,
+    kXidn = 6,
+    XID_VAL_NOT_SET = 0,
+  };
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const Redo* internal_default_instance() {
+    return reinterpret_cast<const Redo*>(
+               &_Redo_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    6;
+
+  friend void swap(Redo& a, Redo& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Redo* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Redo* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline Redo* New() const final {
+    return CreateMaybeMessage<Redo>(nullptr);
+  }
+
+  Redo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<Redo>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const Redo& from);
+  void MergeFrom(const Redo& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Redo* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "OpenLogReplicator.pb.Redo";
+  }
+  protected:
+  explicit Redo(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_OraProtoBuf_2eproto);
+    return ::descriptor_table_OraProtoBuf_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kPayloadFieldNumber = 7,
+    kScnFieldNumber = 1,
+    kScnsFieldNumber = 2,
+    kTmFieldNumber = 3,
+    kTmsFieldNumber = 4,
+    kXidFieldNumber = 5,
+    kXidnFieldNumber = 6,
+  };
+  // repeated .OpenLogReplicator.pb.Payload payload = 7;
+  int payload_size() const;
+  private:
+  int _internal_payload_size() const;
+  public:
+  void clear_payload();
+  ::OpenLogReplicator::pb::Payload* mutable_payload(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >*
+      mutable_payload();
+  private:
+  const ::OpenLogReplicator::pb::Payload& _internal_payload(int index) const;
+  ::OpenLogReplicator::pb::Payload* _internal_add_payload();
+  public:
+  const ::OpenLogReplicator::pb::Payload& payload(int index) const;
+  ::OpenLogReplicator::pb::Payload* add_payload();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >&
+      payload() const;
+
+  // uint64 scn = 1;
+  private:
+  bool _internal_has_scn() const;
+  public:
+  void clear_scn();
+  ::PROTOBUF_NAMESPACE_ID::uint64 scn() const;
+  void set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_scn() const;
+  void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // string scns = 2;
+  private:
+  bool _internal_has_scns() const;
+  public:
+  void clear_scns();
+  const std::string& scns() const;
+  void set_scns(const std::string& value);
+  void set_scns(std::string&& value);
+  void set_scns(const char* value);
+  void set_scns(const char* value, size_t size);
+  std::string* mutable_scns();
+  std::string* release_scns();
+  void set_allocated_scns(std::string* scns);
+  private:
+  const std::string& _internal_scns() const;
+  void _internal_set_scns(const std::string& value);
+  std::string* _internal_mutable_scns();
+  public:
+
+  // uint64 tm = 3;
+  private:
+  bool _internal_has_tm() const;
+  public:
+  void clear_tm();
+  ::PROTOBUF_NAMESPACE_ID::uint64 tm() const;
+  void set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_tm() const;
+  void _internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // string tms = 4;
+  private:
+  bool _internal_has_tms() const;
+  public:
+  void clear_tms();
+  const std::string& tms() const;
+  void set_tms(const std::string& value);
+  void set_tms(std::string&& value);
+  void set_tms(const char* value);
+  void set_tms(const char* value, size_t size);
+  std::string* mutable_tms();
+  std::string* release_tms();
+  void set_allocated_tms(std::string* tms);
+  private:
+  const std::string& _internal_tms() const;
+  void _internal_set_tms(const std::string& value);
+  std::string* _internal_mutable_tms();
+  public:
+
+  // string xid = 5;
+  private:
+  bool _internal_has_xid() const;
+  public:
+  void clear_xid();
+  const std::string& xid() const;
+  void set_xid(const std::string& value);
+  void set_xid(std::string&& value);
+  void set_xid(const char* value);
+  void set_xid(const char* value, size_t size);
+  std::string* mutable_xid();
+  std::string* release_xid();
+  void set_allocated_xid(std::string* xid);
+  private:
+  const std::string& _internal_xid() const;
+  void _internal_set_xid(const std::string& value);
+  std::string* _internal_mutable_xid();
+  public:
+
+  // uint64 xidn = 6;
+  private:
+  bool _internal_has_xidn() const;
+  public:
+  void clear_xidn();
+  ::PROTOBUF_NAMESPACE_ID::uint64 xidn() const;
+  void set_xidn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_xidn() const;
+  void _internal_set_xidn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  void clear_scn_val();
+  ScnValCase scn_val_case() const;
+  void clear_tm_val();
+  TmValCase tm_val_case() const;
+  void clear_xid_val();
+  XidValCase xid_val_case() const;
+  // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Redo)
+ private:
+  class _Internal;
+  void set_has_scn();
+  void set_has_scns();
+  void set_has_tm();
+  void set_has_tms();
+  void set_has_xid();
+  void set_has_xidn();
+
+  inline bool has_scn_val() const;
+  inline void clear_has_scn_val();
+
+  inline bool has_tm_val() const;
+  inline void clear_has_tm_val();
+
+  inline bool has_xid_val() const;
+  inline void clear_has_xid_val();
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload > payload_;
+  union ScnValUnion {
+    ScnValUnion() {}
+    ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr scns_;
+  } scn_val_;
+  union TmValUnion {
+    TmValUnion() {}
+    ::PROTOBUF_NAMESPACE_ID::uint64 tm_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tms_;
+  } tm_val_;
+  union XidValUnion {
+    XidValUnion() {}
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr xid_;
+    ::PROTOBUF_NAMESPACE_ID::uint64 xidn_;
+  } xid_val_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[3];
+
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
 // ===================================================================
@@ -826,871 +1759,2194 @@ class RowMessage PROTOBUF_FINAL :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
-// DatumMessage
+// RequestSchema
+
+// string mask = 1;
+inline void RequestSchema::clear_mask() {
+  mask_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& RequestSchema::mask() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RequestSchema.mask)
+  return _internal_mask();
+}
+inline void RequestSchema::set_mask(const std::string& value) {
+  _internal_set_mask(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RequestSchema.mask)
+}
+inline std::string* RequestSchema::mutable_mask() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.RequestSchema.mask)
+  return _internal_mutable_mask();
+}
+inline const std::string& RequestSchema::_internal_mask() const {
+  return mask_.Get();
+}
+inline void RequestSchema::_internal_set_mask(const std::string& value) {
+  
+  mask_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void RequestSchema::set_mask(std::string&& value) {
+  
+  mask_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.RequestSchema.mask)
+}
+inline void RequestSchema::set_mask(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  mask_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.RequestSchema.mask)
+}
+inline void RequestSchema::set_mask(const char* value,
+    size_t size) {
+  
+  mask_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.RequestSchema.mask)
+}
+inline std::string* RequestSchema::_internal_mutable_mask() {
+  
+  return mask_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* RequestSchema::release_mask() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.RequestSchema.mask)
+  return mask_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void RequestSchema::set_allocated_mask(std::string* mask) {
+  if (mask != nullptr) {
+    
+  } else {
+    
+  }
+  mask_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), mask,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.RequestSchema.mask)
+}
+
+// string filter = 2;
+inline void RequestSchema::clear_filter() {
+  filter_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& RequestSchema::filter() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RequestSchema.filter)
+  return _internal_filter();
+}
+inline void RequestSchema::set_filter(const std::string& value) {
+  _internal_set_filter(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RequestSchema.filter)
+}
+inline std::string* RequestSchema::mutable_filter() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.RequestSchema.filter)
+  return _internal_mutable_filter();
+}
+inline const std::string& RequestSchema::_internal_filter() const {
+  return filter_.Get();
+}
+inline void RequestSchema::_internal_set_filter(const std::string& value) {
+  
+  filter_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void RequestSchema::set_filter(std::string&& value) {
+  
+  filter_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.RequestSchema.filter)
+}
+inline void RequestSchema::set_filter(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  filter_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.RequestSchema.filter)
+}
+inline void RequestSchema::set_filter(const char* value,
+    size_t size) {
+  
+  filter_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.RequestSchema.filter)
+}
+inline std::string* RequestSchema::_internal_mutable_filter() {
+  
+  return filter_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* RequestSchema::release_filter() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.RequestSchema.filter)
+  return filter_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void RequestSchema::set_allocated_filter(std::string* filter) {
+  if (filter != nullptr) {
+    
+  } else {
+    
+  }
+  filter_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), filter,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.RequestSchema.filter)
+}
+
+// -------------------------------------------------------------------
+
+// Request
+
+// uint64 scn = 1;
+inline void Request::clear_scn() {
+  scn_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::_internal_scn() const {
+  return scn_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::scn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.scn)
+  return _internal_scn();
+}
+inline void Request::_internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  scn_ = value;
+}
+inline void Request::set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_scn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.scn)
+}
+
+// uint64 version = 2;
+inline void Request::clear_version() {
+  version_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::_internal_version() const {
+  return version_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::version() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.version)
+  return _internal_version();
+}
+inline void Request::_internal_set_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  version_ = value;
+}
+inline void Request::set_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_version(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.version)
+}
+
+// string database_name = 3;
+inline void Request::clear_database_name() {
+  database_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& Request::database_name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.database_name)
+  return _internal_database_name();
+}
+inline void Request::set_database_name(const std::string& value) {
+  _internal_set_database_name(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.database_name)
+}
+inline std::string* Request::mutable_database_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Request.database_name)
+  return _internal_mutable_database_name();
+}
+inline const std::string& Request::_internal_database_name() const {
+  return database_name_.Get();
+}
+inline void Request::_internal_set_database_name(const std::string& value) {
+  
+  database_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Request::set_database_name(std::string&& value) {
+  
+  database_name_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Request.database_name)
+}
+inline void Request::set_database_name(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  database_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Request.database_name)
+}
+inline void Request::set_database_name(const char* value,
+    size_t size) {
+  
+  database_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Request.database_name)
+}
+inline std::string* Request::_internal_mutable_database_name() {
+  
+  return database_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Request::release_database_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Request.database_name)
+  return database_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void Request::set_allocated_database_name(std::string* database_name) {
+  if (database_name != nullptr) {
+    
+  } else {
+    
+  }
+  database_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), database_name,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Request.database_name)
+}
+
+// repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+inline int Request::_internal_schema_size() const {
+  return schema_.size();
+}
+inline int Request::schema_size() const {
+  return _internal_schema_size();
+}
+inline void Request::clear_schema() {
+  schema_.Clear();
+}
+inline ::OpenLogReplicator::pb::RequestSchema* Request::mutable_schema(int index) {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Request.schema)
+  return schema_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema >*
+Request::mutable_schema() {
+  // @@protoc_insertion_point(field_mutable_list:OpenLogReplicator.pb.Request.schema)
+  return &schema_;
+}
+inline const ::OpenLogReplicator::pb::RequestSchema& Request::_internal_schema(int index) const {
+  return schema_.Get(index);
+}
+inline const ::OpenLogReplicator::pb::RequestSchema& Request::schema(int index) const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.schema)
+  return _internal_schema(index);
+}
+inline ::OpenLogReplicator::pb::RequestSchema* Request::_internal_add_schema() {
+  return schema_.Add();
+}
+inline ::OpenLogReplicator::pb::RequestSchema* Request::add_schema() {
+  // @@protoc_insertion_point(field_add:OpenLogReplicator.pb.Request.schema)
+  return _internal_add_schema();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema >&
+Request::schema() const {
+  // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.Request.schema)
+  return schema_;
+}
+
+// -------------------------------------------------------------------
+
+// Value
 
 // string column_name = 1;
-inline bool DatumMessage::_internal_has_column_name() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline bool DatumMessage::has_column_name() const {
-  return _internal_has_column_name();
-}
-inline void DatumMessage::clear_column_name() {
+inline void Value::clear_column_name() {
   column_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  _has_bits_[0] &= ~0x00000001u;
 }
-inline const std::string& DatumMessage::column_name() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.column_name)
+inline const std::string& Value::column_name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.column_name)
   return _internal_column_name();
 }
-inline void DatumMessage::set_column_name(const std::string& value) {
+inline void Value::set_column_name(const std::string& value) {
   _internal_set_column_name(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.column_name)
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.column_name)
 }
-inline std::string* DatumMessage::mutable_column_name() {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.DatumMessage.column_name)
+inline std::string* Value::mutable_column_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Value.column_name)
   return _internal_mutable_column_name();
 }
-inline const std::string& DatumMessage::_internal_column_name() const {
+inline const std::string& Value::_internal_column_name() const {
   return column_name_.Get();
 }
-inline void DatumMessage::_internal_set_column_name(const std::string& value) {
-  _has_bits_[0] |= 0x00000001u;
+inline void Value::_internal_set_column_name(const std::string& value) {
+  
   column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void DatumMessage::set_column_name(std::string&& value) {
-  _has_bits_[0] |= 0x00000001u;
+inline void Value::set_column_name(std::string&& value) {
+  
   column_name_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:oraprotobuf.DatumMessage.column_name)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Value.column_name)
 }
-inline void DatumMessage::set_column_name(const char* value) {
+inline void Value::set_column_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _has_bits_[0] |= 0x00000001u;
+  
   column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:oraprotobuf.DatumMessage.column_name)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Value.column_name)
 }
-inline void DatumMessage::set_column_name(const char* value,
+inline void Value::set_column_name(const char* value,
     size_t size) {
-  _has_bits_[0] |= 0x00000001u;
+  
   column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:oraprotobuf.DatumMessage.column_name)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Value.column_name)
 }
-inline std::string* DatumMessage::_internal_mutable_column_name() {
-  _has_bits_[0] |= 0x00000001u;
+inline std::string* Value::_internal_mutable_column_name() {
+  
   return column_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* DatumMessage::release_column_name() {
-  // @@protoc_insertion_point(field_release:oraprotobuf.DatumMessage.column_name)
-  if (!_internal_has_column_name()) {
-    return nullptr;
-  }
-  _has_bits_[0] &= ~0x00000001u;
-  return column_name_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Value::release_column_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Value.column_name)
+  return column_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void DatumMessage::set_allocated_column_name(std::string* column_name) {
+inline void Value::set_allocated_column_name(std::string* column_name) {
   if (column_name != nullptr) {
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   column_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:oraprotobuf.DatumMessage.column_name)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.column_name)
 }
 
 // int64 column_type = 2;
-inline bool DatumMessage::_internal_has_column_type() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline bool DatumMessage::has_column_type() const {
-  return _internal_has_column_type();
-}
-inline void DatumMessage::clear_column_type() {
+inline void Value::clear_column_type() {
   column_type_ = PROTOBUF_LONGLONG(0);
-  _has_bits_[0] &= ~0x00000002u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 DatumMessage::_internal_column_type() const {
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::_internal_column_type() const {
   return column_type_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 DatumMessage::column_type() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.column_type)
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::column_type() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.column_type)
   return _internal_column_type();
 }
-inline void DatumMessage::_internal_set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  _has_bits_[0] |= 0x00000002u;
+inline void Value::_internal_set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  
   column_type_ = value;
 }
-inline void DatumMessage::set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
+inline void Value::set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
   _internal_set_column_type(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.column_type)
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.column_type)
 }
 
-// sint32 datum_int32 = 3;
-inline bool DatumMessage::_internal_has_datum_int32() const {
-  return datum_case() == kDatumInt32;
+// int32 value_int32 = 3;
+inline bool Value::_internal_has_value_int32() const {
+  return datum_case() == kValueInt32;
 }
-inline void DatumMessage::set_has_datum_int32() {
-  _oneof_case_[0] = kDatumInt32;
+inline void Value::set_has_value_int32() {
+  _oneof_case_[0] = kValueInt32;
 }
-inline void DatumMessage::clear_datum_int32() {
-  if (_internal_has_datum_int32()) {
-    datum_.datum_int32_ = 0;
+inline void Value::clear_value_int32() {
+  if (_internal_has_value_int32()) {
+    datum_.value_int32_ = 0;
     clear_has_datum();
   }
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 DatumMessage::_internal_datum_int32() const {
-  if (_internal_has_datum_int32()) {
-    return datum_.datum_int32_;
+inline ::PROTOBUF_NAMESPACE_ID::int32 Value::_internal_value_int32() const {
+  if (_internal_has_value_int32()) {
+    return datum_.value_int32_;
   }
   return 0;
 }
-inline void DatumMessage::_internal_set_datum_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  if (!_internal_has_datum_int32()) {
+inline void Value::_internal_set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  if (!_internal_has_value_int32()) {
     clear_datum();
-    set_has_datum_int32();
+    set_has_value_int32();
   }
-  datum_.datum_int32_ = value;
+  datum_.value_int32_ = value;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 DatumMessage::datum_int32() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_int32)
-  return _internal_datum_int32();
+inline ::PROTOBUF_NAMESPACE_ID::int32 Value::value_int32() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_int32)
+  return _internal_value_int32();
 }
-inline void DatumMessage::set_datum_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _internal_set_datum_int32(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_int32)
+inline void Value::set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_value_int32(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int32)
 }
 
-// sint64 datum_int64 = 4;
-inline bool DatumMessage::_internal_has_datum_int64() const {
-  return datum_case() == kDatumInt64;
+// int64 value_int64 = 4;
+inline bool Value::_internal_has_value_int64() const {
+  return datum_case() == kValueInt64;
 }
-inline void DatumMessage::set_has_datum_int64() {
-  _oneof_case_[0] = kDatumInt64;
+inline void Value::set_has_value_int64() {
+  _oneof_case_[0] = kValueInt64;
 }
-inline void DatumMessage::clear_datum_int64() {
-  if (_internal_has_datum_int64()) {
-    datum_.datum_int64_ = PROTOBUF_LONGLONG(0);
+inline void Value::clear_value_int64() {
+  if (_internal_has_value_int64()) {
+    datum_.value_int64_ = PROTOBUF_LONGLONG(0);
     clear_has_datum();
   }
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 DatumMessage::_internal_datum_int64() const {
-  if (_internal_has_datum_int64()) {
-    return datum_.datum_int64_;
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::_internal_value_int64() const {
+  if (_internal_has_value_int64()) {
+    return datum_.value_int64_;
   }
   return PROTOBUF_LONGLONG(0);
 }
-inline void DatumMessage::_internal_set_datum_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  if (!_internal_has_datum_int64()) {
+inline void Value::_internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  if (!_internal_has_value_int64()) {
     clear_datum();
-    set_has_datum_int64();
+    set_has_value_int64();
   }
-  datum_.datum_int64_ = value;
+  datum_.value_int64_ = value;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 DatumMessage::datum_int64() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_int64)
-  return _internal_datum_int64();
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::value_int64() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_int64)
+  return _internal_value_int64();
 }
-inline void DatumMessage::set_datum_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  _internal_set_datum_int64(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_int64)
+inline void Value::set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  _internal_set_value_int64(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int64)
 }
 
-// float datum_float = 5;
-inline bool DatumMessage::_internal_has_datum_float() const {
-  return datum_case() == kDatumFloat;
+// float value_float = 5;
+inline bool Value::_internal_has_value_float() const {
+  return datum_case() == kValueFloat;
 }
-inline void DatumMessage::set_has_datum_float() {
-  _oneof_case_[0] = kDatumFloat;
+inline void Value::set_has_value_float() {
+  _oneof_case_[0] = kValueFloat;
 }
-inline void DatumMessage::clear_datum_float() {
-  if (_internal_has_datum_float()) {
-    datum_.datum_float_ = 0;
+inline void Value::clear_value_float() {
+  if (_internal_has_value_float()) {
+    datum_.value_float_ = 0;
     clear_has_datum();
   }
 }
-inline float DatumMessage::_internal_datum_float() const {
-  if (_internal_has_datum_float()) {
-    return datum_.datum_float_;
+inline float Value::_internal_value_float() const {
+  if (_internal_has_value_float()) {
+    return datum_.value_float_;
   }
   return 0;
 }
-inline void DatumMessage::_internal_set_datum_float(float value) {
-  if (!_internal_has_datum_float()) {
+inline void Value::_internal_set_value_float(float value) {
+  if (!_internal_has_value_float()) {
     clear_datum();
-    set_has_datum_float();
+    set_has_value_float();
   }
-  datum_.datum_float_ = value;
+  datum_.value_float_ = value;
 }
-inline float DatumMessage::datum_float() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_float)
-  return _internal_datum_float();
+inline float Value::value_float() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_float)
+  return _internal_value_float();
 }
-inline void DatumMessage::set_datum_float(float value) {
-  _internal_set_datum_float(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_float)
+inline void Value::set_value_float(float value) {
+  _internal_set_value_float(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_float)
 }
 
-// double datum_double = 6;
-inline bool DatumMessage::_internal_has_datum_double() const {
-  return datum_case() == kDatumDouble;
+// double value_double = 6;
+inline bool Value::_internal_has_value_double() const {
+  return datum_case() == kValueDouble;
 }
-inline void DatumMessage::set_has_datum_double() {
-  _oneof_case_[0] = kDatumDouble;
+inline void Value::set_has_value_double() {
+  _oneof_case_[0] = kValueDouble;
 }
-inline void DatumMessage::clear_datum_double() {
-  if (_internal_has_datum_double()) {
-    datum_.datum_double_ = 0;
+inline void Value::clear_value_double() {
+  if (_internal_has_value_double()) {
+    datum_.value_double_ = 0;
     clear_has_datum();
   }
 }
-inline double DatumMessage::_internal_datum_double() const {
-  if (_internal_has_datum_double()) {
-    return datum_.datum_double_;
+inline double Value::_internal_value_double() const {
+  if (_internal_has_value_double()) {
+    return datum_.value_double_;
   }
   return 0;
 }
-inline void DatumMessage::_internal_set_datum_double(double value) {
-  if (!_internal_has_datum_double()) {
+inline void Value::_internal_set_value_double(double value) {
+  if (!_internal_has_value_double()) {
     clear_datum();
-    set_has_datum_double();
+    set_has_value_double();
   }
-  datum_.datum_double_ = value;
+  datum_.value_double_ = value;
 }
-inline double DatumMessage::datum_double() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_double)
-  return _internal_datum_double();
+inline double Value::value_double() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_double)
+  return _internal_value_double();
 }
-inline void DatumMessage::set_datum_double(double value) {
-  _internal_set_datum_double(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_double)
+inline void Value::set_value_double(double value) {
+  _internal_set_value_double(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_double)
 }
 
-// bool datum_bool = 7;
-inline bool DatumMessage::_internal_has_datum_bool() const {
-  return datum_case() == kDatumBool;
+// bool value_bool = 7;
+inline bool Value::_internal_has_value_bool() const {
+  return datum_case() == kValueBool;
 }
-inline void DatumMessage::set_has_datum_bool() {
-  _oneof_case_[0] = kDatumBool;
+inline void Value::set_has_value_bool() {
+  _oneof_case_[0] = kValueBool;
 }
-inline void DatumMessage::clear_datum_bool() {
-  if (_internal_has_datum_bool()) {
-    datum_.datum_bool_ = false;
+inline void Value::clear_value_bool() {
+  if (_internal_has_value_bool()) {
+    datum_.value_bool_ = false;
     clear_has_datum();
   }
 }
-inline bool DatumMessage::_internal_datum_bool() const {
-  if (_internal_has_datum_bool()) {
-    return datum_.datum_bool_;
+inline bool Value::_internal_value_bool() const {
+  if (_internal_has_value_bool()) {
+    return datum_.value_bool_;
   }
   return false;
 }
-inline void DatumMessage::_internal_set_datum_bool(bool value) {
-  if (!_internal_has_datum_bool()) {
+inline void Value::_internal_set_value_bool(bool value) {
+  if (!_internal_has_value_bool()) {
     clear_datum();
-    set_has_datum_bool();
+    set_has_value_bool();
   }
-  datum_.datum_bool_ = value;
+  datum_.value_bool_ = value;
 }
-inline bool DatumMessage::datum_bool() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_bool)
-  return _internal_datum_bool();
+inline bool Value::value_bool() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_bool)
+  return _internal_value_bool();
 }
-inline void DatumMessage::set_datum_bool(bool value) {
-  _internal_set_datum_bool(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_bool)
+inline void Value::set_value_bool(bool value) {
+  _internal_set_value_bool(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_bool)
 }
 
-// string datum_string = 8;
-inline bool DatumMessage::_internal_has_datum_string() const {
-  return datum_case() == kDatumString;
+// string value_string = 8;
+inline bool Value::_internal_has_value_string() const {
+  return datum_case() == kValueString;
 }
-inline void DatumMessage::set_has_datum_string() {
-  _oneof_case_[0] = kDatumString;
+inline void Value::set_has_value_string() {
+  _oneof_case_[0] = kValueString;
 }
-inline void DatumMessage::clear_datum_string() {
-  if (_internal_has_datum_string()) {
-    datum_.datum_string_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline void Value::clear_value_string() {
+  if (_internal_has_value_string()) {
+    datum_.value_string_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
     clear_has_datum();
   }
 }
-inline const std::string& DatumMessage::datum_string() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_string)
-  return _internal_datum_string();
+inline const std::string& Value::value_string() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_string)
+  return _internal_value_string();
 }
-inline void DatumMessage::set_datum_string(const std::string& value) {
-  _internal_set_datum_string(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_string)
+inline void Value::set_value_string(const std::string& value) {
+  _internal_set_value_string(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_string)
 }
-inline std::string* DatumMessage::mutable_datum_string() {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.DatumMessage.datum_string)
-  return _internal_mutable_datum_string();
+inline std::string* Value::mutable_value_string() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Value.value_string)
+  return _internal_mutable_value_string();
 }
-inline const std::string& DatumMessage::_internal_datum_string() const {
-  if (_internal_has_datum_string()) {
-    return datum_.datum_string_.Get();
+inline const std::string& Value::_internal_value_string() const {
+  if (_internal_has_value_string()) {
+    return datum_.value_string_.Get();
   }
   return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
 }
-inline void DatumMessage::_internal_set_datum_string(const std::string& value) {
-  if (!_internal_has_datum_string()) {
+inline void Value::_internal_set_value_string(const std::string& value) {
+  if (!_internal_has_value_string()) {
     clear_datum();
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_string_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  datum_.value_string_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void DatumMessage::set_datum_string(std::string&& value) {
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_string)
-  if (!_internal_has_datum_string()) {
+inline void Value::set_value_string(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_string)
+  if (!_internal_has_value_string()) {
     clear_datum();
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_string_.Set(
+  datum_.value_string_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:oraprotobuf.DatumMessage.datum_string)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Value.value_string)
 }
-inline void DatumMessage::set_datum_string(const char* value) {
+inline void Value::set_value_string(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  if (!_internal_has_datum_string()) {
+  if (!_internal_has_value_string()) {
     clear_datum();
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_string_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+  datum_.value_string_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:oraprotobuf.DatumMessage.datum_string)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Value.value_string)
 }
-inline void DatumMessage::set_datum_string(const char* value,
+inline void Value::set_value_string(const char* value,
                              size_t size) {
-  if (!_internal_has_datum_string()) {
+  if (!_internal_has_value_string()) {
     clear_datum();
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_string_.Set(
+  datum_.value_string_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size),
       GetArena());
-  // @@protoc_insertion_point(field_set_pointer:oraprotobuf.DatumMessage.datum_string)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Value.value_string)
 }
-inline std::string* DatumMessage::_internal_mutable_datum_string() {
-  if (!_internal_has_datum_string()) {
+inline std::string* Value::_internal_mutable_value_string() {
+  if (!_internal_has_value_string()) {
     clear_datum();
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  return datum_.datum_string_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return datum_.value_string_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* DatumMessage::release_datum_string() {
-  // @@protoc_insertion_point(field_release:oraprotobuf.DatumMessage.datum_string)
-  if (_internal_has_datum_string()) {
+inline std::string* Value::release_value_string() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Value.value_string)
+  if (_internal_has_value_string()) {
     clear_has_datum();
-    return datum_.datum_string_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    return datum_.value_string_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   } else {
     return nullptr;
   }
 }
-inline void DatumMessage::set_allocated_datum_string(std::string* datum_string) {
+inline void Value::set_allocated_value_string(std::string* value_string) {
   if (has_datum()) {
     clear_datum();
   }
-  if (datum_string != nullptr) {
-    set_has_datum_string();
-    datum_.datum_string_.UnsafeSetDefault(datum_string);
+  if (value_string != nullptr) {
+    set_has_value_string();
+    datum_.value_string_.UnsafeSetDefault(value_string);
     ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
     if (arena != nullptr) {
-      arena->Own(datum_string);
+      arena->Own(value_string);
     }
   }
-  // @@protoc_insertion_point(field_set_allocated:oraprotobuf.DatumMessage.datum_string)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.value_string)
 }
 
-// bytes datum_bytes = 9;
-inline bool DatumMessage::_internal_has_datum_bytes() const {
-  return datum_case() == kDatumBytes;
+// bytes value_bytes = 9;
+inline bool Value::_internal_has_value_bytes() const {
+  return datum_case() == kValueBytes;
 }
-inline void DatumMessage::set_has_datum_bytes() {
-  _oneof_case_[0] = kDatumBytes;
+inline void Value::set_has_value_bytes() {
+  _oneof_case_[0] = kValueBytes;
 }
-inline void DatumMessage::clear_datum_bytes() {
-  if (_internal_has_datum_bytes()) {
-    datum_.datum_bytes_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline void Value::clear_value_bytes() {
+  if (_internal_has_value_bytes()) {
+    datum_.value_bytes_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
     clear_has_datum();
   }
 }
-inline const std::string& DatumMessage::datum_bytes() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.DatumMessage.datum_bytes)
-  return _internal_datum_bytes();
+inline const std::string& Value::value_bytes() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_bytes)
+  return _internal_value_bytes();
 }
-inline void DatumMessage::set_datum_bytes(const std::string& value) {
-  _internal_set_datum_bytes(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_bytes)
+inline void Value::set_value_bytes(const std::string& value) {
+  _internal_set_value_bytes(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_bytes)
 }
-inline std::string* DatumMessage::mutable_datum_bytes() {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.DatumMessage.datum_bytes)
-  return _internal_mutable_datum_bytes();
+inline std::string* Value::mutable_value_bytes() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Value.value_bytes)
+  return _internal_mutable_value_bytes();
 }
-inline const std::string& DatumMessage::_internal_datum_bytes() const {
-  if (_internal_has_datum_bytes()) {
-    return datum_.datum_bytes_.Get();
+inline const std::string& Value::_internal_value_bytes() const {
+  if (_internal_has_value_bytes()) {
+    return datum_.value_bytes_.Get();
   }
   return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
 }
-inline void DatumMessage::_internal_set_datum_bytes(const std::string& value) {
-  if (!_internal_has_datum_bytes()) {
+inline void Value::_internal_set_value_bytes(const std::string& value) {
+  if (!_internal_has_value_bytes()) {
     clear_datum();
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_bytes_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  datum_.value_bytes_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void DatumMessage::set_datum_bytes(std::string&& value) {
-  // @@protoc_insertion_point(field_set:oraprotobuf.DatumMessage.datum_bytes)
-  if (!_internal_has_datum_bytes()) {
+inline void Value::set_value_bytes(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_bytes)
+  if (!_internal_has_value_bytes()) {
     clear_datum();
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_bytes_.Set(
+  datum_.value_bytes_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:oraprotobuf.DatumMessage.datum_bytes)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Value.value_bytes)
 }
-inline void DatumMessage::set_datum_bytes(const char* value) {
+inline void Value::set_value_bytes(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  if (!_internal_has_datum_bytes()) {
+  if (!_internal_has_value_bytes()) {
     clear_datum();
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_bytes_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+  datum_.value_bytes_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::string(value), GetArena());
-  // @@protoc_insertion_point(field_set_char:oraprotobuf.DatumMessage.datum_bytes)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Value.value_bytes)
 }
-inline void DatumMessage::set_datum_bytes(const void* value,
+inline void Value::set_value_bytes(const void* value,
                              size_t size) {
-  if (!_internal_has_datum_bytes()) {
+  if (!_internal_has_value_bytes()) {
     clear_datum();
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  datum_.datum_bytes_.Set(
+  datum_.value_bytes_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size),
       GetArena());
-  // @@protoc_insertion_point(field_set_pointer:oraprotobuf.DatumMessage.datum_bytes)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Value.value_bytes)
 }
-inline std::string* DatumMessage::_internal_mutable_datum_bytes() {
-  if (!_internal_has_datum_bytes()) {
+inline std::string* Value::_internal_mutable_value_bytes() {
+  if (!_internal_has_value_bytes()) {
     clear_datum();
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   }
-  return datum_.datum_bytes_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return datum_.value_bytes_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* DatumMessage::release_datum_bytes() {
-  // @@protoc_insertion_point(field_release:oraprotobuf.DatumMessage.datum_bytes)
-  if (_internal_has_datum_bytes()) {
+inline std::string* Value::release_value_bytes() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Value.value_bytes)
+  if (_internal_has_value_bytes()) {
     clear_has_datum();
-    return datum_.datum_bytes_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    return datum_.value_bytes_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   } else {
     return nullptr;
   }
 }
-inline void DatumMessage::set_allocated_datum_bytes(std::string* datum_bytes) {
+inline void Value::set_allocated_value_bytes(std::string* value_bytes) {
   if (has_datum()) {
     clear_datum();
   }
-  if (datum_bytes != nullptr) {
-    set_has_datum_bytes();
-    datum_.datum_bytes_.UnsafeSetDefault(datum_bytes);
+  if (value_bytes != nullptr) {
+    set_has_value_bytes();
+    datum_.value_bytes_.UnsafeSetDefault(value_bytes);
     ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
     if (arena != nullptr) {
-      arena->Own(datum_bytes);
+      arena->Own(value_bytes);
     }
   }
-  // @@protoc_insertion_point(field_set_allocated:oraprotobuf.DatumMessage.datum_bytes)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.value_bytes)
 }
 
-inline bool DatumMessage::has_datum() const {
+inline bool Value::has_datum() const {
   return datum_case() != DATUM_NOT_SET;
 }
-inline void DatumMessage::clear_has_datum() {
+inline void Value::clear_has_datum() {
   _oneof_case_[0] = DATUM_NOT_SET;
 }
-inline DatumMessage::DatumCase DatumMessage::datum_case() const {
-  return DatumMessage::DatumCase(_oneof_case_[0]);
+inline Value::DatumCase Value::datum_case() const {
+  return Value::DatumCase(_oneof_case_[0]);
 }
 // -------------------------------------------------------------------
 
-// TypeInfo
+// Column
 
-// string modifier = 1;
-inline void TypeInfo::clear_modifier() {
-  modifier_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// string column_name = 1;
+inline void Column::clear_column_name() {
+  column_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline const std::string& TypeInfo::modifier() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.TypeInfo.modifier)
-  return _internal_modifier();
+inline const std::string& Column::column_name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.column_name)
+  return _internal_column_name();
 }
-inline void TypeInfo::set_modifier(const std::string& value) {
-  _internal_set_modifier(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.TypeInfo.modifier)
+inline void Column::set_column_name(const std::string& value) {
+  _internal_set_column_name(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.column_name)
 }
-inline std::string* TypeInfo::mutable_modifier() {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.TypeInfo.modifier)
-  return _internal_mutable_modifier();
+inline std::string* Column::mutable_column_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Column.column_name)
+  return _internal_mutable_column_name();
 }
-inline const std::string& TypeInfo::_internal_modifier() const {
-  return modifier_.Get();
+inline const std::string& Column::_internal_column_name() const {
+  return column_name_.Get();
 }
-inline void TypeInfo::_internal_set_modifier(const std::string& value) {
+inline void Column::_internal_set_column_name(const std::string& value) {
   
-  modifier_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void TypeInfo::set_modifier(std::string&& value) {
+inline void Column::set_column_name(std::string&& value) {
   
-  modifier_.Set(
+  column_name_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:oraprotobuf.TypeInfo.modifier)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Column.column_name)
 }
-inline void TypeInfo::set_modifier(const char* value) {
+inline void Column::set_column_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  modifier_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:oraprotobuf.TypeInfo.modifier)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Column.column_name)
 }
-inline void TypeInfo::set_modifier(const char* value,
+inline void Column::set_column_name(const char* value,
     size_t size) {
   
-  modifier_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:oraprotobuf.TypeInfo.modifier)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Column.column_name)
 }
-inline std::string* TypeInfo::_internal_mutable_modifier() {
+inline std::string* Column::_internal_mutable_column_name() {
   
-  return modifier_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return column_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* TypeInfo::release_modifier() {
-  // @@protoc_insertion_point(field_release:oraprotobuf.TypeInfo.modifier)
-  return modifier_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Column::release_column_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Column.column_name)
+  return column_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void TypeInfo::set_allocated_modifier(std::string* modifier) {
-  if (modifier != nullptr) {
+inline void Column::set_allocated_column_name(std::string* column_name) {
+  if (column_name != nullptr) {
     
   } else {
     
   }
-  modifier_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), modifier,
+  column_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:oraprotobuf.TypeInfo.modifier)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Column.column_name)
 }
 
-// bool value_optional = 2;
-inline void TypeInfo::clear_value_optional() {
-  value_optional_ = false;
+// string column_type = 2;
+inline void Column::clear_column_type() {
+  column_type_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline bool TypeInfo::_internal_value_optional() const {
-  return value_optional_;
+inline const std::string& Column::column_type() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.column_type)
+  return _internal_column_type();
 }
-inline bool TypeInfo::value_optional() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.TypeInfo.value_optional)
-  return _internal_value_optional();
+inline void Column::set_column_type(const std::string& value) {
+  _internal_set_column_type(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.column_type)
 }
-inline void TypeInfo::_internal_set_value_optional(bool value) {
+inline std::string* Column::mutable_column_type() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Column.column_type)
+  return _internal_mutable_column_type();
+}
+inline const std::string& Column::_internal_column_type() const {
+  return column_type_.Get();
+}
+inline void Column::_internal_set_column_type(const std::string& value) {
   
-  value_optional_ = value;
+  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void TypeInfo::set_value_optional(bool value) {
-  _internal_set_value_optional(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.TypeInfo.value_optional)
+inline void Column::set_column_type(std::string&& value) {
+  
+  column_type_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Column.column_type)
+}
+inline void Column::set_column_type(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Column.column_type)
+}
+inline void Column::set_column_type(const char* value,
+    size_t size) {
+  
+  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Column.column_type)
+}
+inline std::string* Column::_internal_mutable_column_type() {
+  
+  return column_type_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Column::release_column_type() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Column.column_type)
+  return column_type_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void Column::set_allocated_column_type(std::string* column_type) {
+  if (column_type != nullptr) {
+    
+  } else {
+    
+  }
+  column_type_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_type,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Column.column_type)
+}
+
+// int32 length = 3;
+inline void Column::clear_length() {
+  length_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::_internal_length() const {
+  return length_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::length() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.length)
+  return _internal_length();
+}
+inline void Column::_internal_set_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  length_ = value;
+}
+inline void Column::set_length(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_length(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.length)
+}
+
+// int32 precision = 4;
+inline void Column::clear_precision() {
+  precision_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::_internal_precision() const {
+  return precision_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::precision() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.precision)
+  return _internal_precision();
+}
+inline void Column::_internal_set_precision(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  precision_ = value;
+}
+inline void Column::set_precision(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_precision(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.precision)
+}
+
+// int32 scale = 5;
+inline void Column::clear_scale() {
+  scale_ = 0;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::_internal_scale() const {
+  return scale_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int32 Column::scale() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.scale)
+  return _internal_scale();
+}
+inline void Column::_internal_set_scale(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  
+  scale_ = value;
+}
+inline void Column::set_scale(::PROTOBUF_NAMESPACE_ID::int32 value) {
+  _internal_set_scale(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.scale)
+}
+
+// bool nullable = 6;
+inline void Column::clear_nullable() {
+  nullable_ = false;
+}
+inline bool Column::_internal_nullable() const {
+  return nullable_;
+}
+inline bool Column::nullable() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.nullable)
+  return _internal_nullable();
+}
+inline void Column::_internal_set_nullable(bool value) {
+  
+  nullable_ = value;
+}
+inline void Column::set_nullable(bool value) {
+  _internal_set_nullable(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.nullable)
 }
 
 // -------------------------------------------------------------------
 
-// RowMessage
+// Schema
 
-// fixed64 transaction_id = 1;
-inline bool RowMessage::_internal_has_transaction_id() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
-  return value;
+// string owner = 1;
+inline void Schema::clear_owner() {
+  owner_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline bool RowMessage::has_transaction_id() const {
-  return _internal_has_transaction_id();
+inline const std::string& Schema::owner() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.owner)
+  return _internal_owner();
 }
-inline void RowMessage::clear_transaction_id() {
-  transaction_id_ = PROTOBUF_ULONGLONG(0);
-  _has_bits_[0] &= ~0x00000002u;
+inline void Schema::set_owner(const std::string& value) {
+  _internal_set_owner(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.owner)
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RowMessage::_internal_transaction_id() const {
-  return transaction_id_;
+inline std::string* Schema::mutable_owner() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.owner)
+  return _internal_mutable_owner();
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RowMessage::transaction_id() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.transaction_id)
-  return _internal_transaction_id();
+inline const std::string& Schema::_internal_owner() const {
+  return owner_.Get();
 }
-inline void RowMessage::_internal_set_transaction_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _has_bits_[0] |= 0x00000002u;
-  transaction_id_ = value;
+inline void Schema::_internal_set_owner(const std::string& value) {
+  
+  owner_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void RowMessage::set_transaction_id(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_transaction_id(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.RowMessage.transaction_id)
+inline void Schema::set_owner(std::string&& value) {
+  
+  owner_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Schema.owner)
+}
+inline void Schema::set_owner(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  owner_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Schema.owner)
+}
+inline void Schema::set_owner(const char* value,
+    size_t size) {
+  
+  owner_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Schema.owner)
+}
+inline std::string* Schema::_internal_mutable_owner() {
+  
+  return owner_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Schema::release_owner() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Schema.owner)
+  return owner_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void Schema::set_allocated_owner(std::string* owner) {
+  if (owner != nullptr) {
+    
+  } else {
+    
+  }
+  owner_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), owner,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.owner)
 }
 
-// uint64 commit_time = 2;
-inline bool RowMessage::_internal_has_commit_time() const {
-  bool value = (_has_bits_[0] & 0x00000004u) != 0;
-  return value;
-}
-inline bool RowMessage::has_commit_time() const {
-  return _internal_has_commit_time();
-}
-inline void RowMessage::clear_commit_time() {
-  commit_time_ = PROTOBUF_ULONGLONG(0);
-  _has_bits_[0] &= ~0x00000004u;
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RowMessage::_internal_commit_time() const {
-  return commit_time_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RowMessage::commit_time() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.commit_time)
-  return _internal_commit_time();
-}
-inline void RowMessage::_internal_set_commit_time(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _has_bits_[0] |= 0x00000004u;
-  commit_time_ = value;
-}
-inline void RowMessage::set_commit_time(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_commit_time(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.RowMessage.commit_time)
-}
-
-// string table = 3;
-inline bool RowMessage::_internal_has_table() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline bool RowMessage::has_table() const {
-  return _internal_has_table();
-}
-inline void RowMessage::clear_table() {
+// string table = 2;
+inline void Schema::clear_table() {
   table_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  _has_bits_[0] &= ~0x00000001u;
 }
-inline const std::string& RowMessage::table() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.table)
+inline const std::string& Schema::table() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.table)
   return _internal_table();
 }
-inline void RowMessage::set_table(const std::string& value) {
+inline void Schema::set_table(const std::string& value) {
   _internal_set_table(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.RowMessage.table)
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.table)
 }
-inline std::string* RowMessage::mutable_table() {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.RowMessage.table)
+inline std::string* Schema::mutable_table() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.table)
   return _internal_mutable_table();
 }
-inline const std::string& RowMessage::_internal_table() const {
+inline const std::string& Schema::_internal_table() const {
   return table_.Get();
 }
-inline void RowMessage::_internal_set_table(const std::string& value) {
-  _has_bits_[0] |= 0x00000001u;
+inline void Schema::_internal_set_table(const std::string& value) {
+  
   table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void RowMessage::set_table(std::string&& value) {
-  _has_bits_[0] |= 0x00000001u;
+inline void Schema::set_table(std::string&& value) {
+  
   table_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:oraprotobuf.RowMessage.table)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Schema.table)
 }
-inline void RowMessage::set_table(const char* value) {
+inline void Schema::set_table(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
-  _has_bits_[0] |= 0x00000001u;
+  
   table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:oraprotobuf.RowMessage.table)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Schema.table)
 }
-inline void RowMessage::set_table(const char* value,
+inline void Schema::set_table(const char* value,
     size_t size) {
-  _has_bits_[0] |= 0x00000001u;
+  
   table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:oraprotobuf.RowMessage.table)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Schema.table)
 }
-inline std::string* RowMessage::_internal_mutable_table() {
-  _has_bits_[0] |= 0x00000001u;
+inline std::string* Schema::_internal_mutable_table() {
+  
   return table_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* RowMessage::release_table() {
-  // @@protoc_insertion_point(field_release:oraprotobuf.RowMessage.table)
-  if (!_internal_has_table()) {
-    return nullptr;
-  }
-  _has_bits_[0] &= ~0x00000001u;
-  return table_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Schema::release_table() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Schema.table)
+  return table_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void RowMessage::set_allocated_table(std::string* table) {
+inline void Schema::set_allocated_table(std::string* table) {
   if (table != nullptr) {
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   table_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), table,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:oraprotobuf.RowMessage.table)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.table)
 }
 
-// .oraprotobuf.Op op = 4;
-inline bool RowMessage::_internal_has_op() const {
-  bool value = (_has_bits_[0] & 0x00000008u) != 0;
-  return value;
+// uint32 objn = 3;
+inline void Schema::clear_objn() {
+  objn_ = 0u;
 }
-inline bool RowMessage::has_op() const {
-  return _internal_has_op();
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::_internal_objn() const {
+  return objn_;
 }
-inline void RowMessage::clear_op() {
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::objn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.objn)
+  return _internal_objn();
+}
+inline void Schema::_internal_set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  objn_ = value;
+}
+inline void Schema::set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_objn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.objn)
+}
+
+// uint64 tm = 4;
+inline bool Schema::_internal_has_tm() const {
+  return tm_val_case() == kTm;
+}
+inline void Schema::set_has_tm() {
+  _oneof_case_[0] = kTm;
+}
+inline void Schema::clear_tm() {
+  if (_internal_has_tm()) {
+    tm_val_.tm_ = PROTOBUF_ULONGLONG(0);
+    clear_has_tm_val();
+  }
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Schema::_internal_tm() const {
+  if (_internal_has_tm()) {
+    return tm_val_.tm_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Schema::_internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_tm()) {
+    clear_tm_val();
+    set_has_tm();
+  }
+  tm_val_.tm_ = value;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Schema::tm() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.tm)
+  return _internal_tm();
+}
+inline void Schema::set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_tm(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.tm)
+}
+
+// string tms = 5;
+inline bool Schema::_internal_has_tms() const {
+  return tm_val_case() == kTms;
+}
+inline void Schema::set_has_tms() {
+  _oneof_case_[0] = kTms;
+}
+inline void Schema::clear_tms() {
+  if (_internal_has_tms()) {
+    tm_val_.tms_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    clear_has_tm_val();
+  }
+}
+inline const std::string& Schema::tms() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.tms)
+  return _internal_tms();
+}
+inline void Schema::set_tms(const std::string& value) {
+  _internal_set_tms(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.tms)
+}
+inline std::string* Schema::mutable_tms() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.tms)
+  return _internal_mutable_tms();
+}
+inline const std::string& Schema::_internal_tms() const {
+  if (_internal_has_tms()) {
+    return tm_val_.tms_.Get();
+  }
+  return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void Schema::_internal_set_tms(const std::string& value) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Schema::set_tms(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.tms)
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Schema.tms)
+}
+inline void Schema::set_tms(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Schema.tms)
+}
+inline void Schema::set_tms(const char* value,
+                             size_t size) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size),
+      GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Schema.tms)
+}
+inline std::string* Schema::_internal_mutable_tms() {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  return tm_val_.tms_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Schema::release_tms() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Schema.tms)
+  if (_internal_has_tms()) {
+    clear_has_tm_val();
+    return tm_val_.tms_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  } else {
+    return nullptr;
+  }
+}
+inline void Schema::set_allocated_tms(std::string* tms) {
+  if (has_tm_val()) {
+    clear_tm_val();
+  }
+  if (tms != nullptr) {
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(tms);
+    ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
+    if (arena != nullptr) {
+      arena->Own(tms);
+    }
+  }
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.tms)
+}
+
+// repeated .OpenLogReplicator.pb.Column column = 6;
+inline int Schema::_internal_column_size() const {
+  return column_.size();
+}
+inline int Schema::column_size() const {
+  return _internal_column_size();
+}
+inline void Schema::clear_column() {
+  column_.Clear();
+}
+inline ::OpenLogReplicator::pb::Column* Schema::mutable_column(int index) {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.column)
+  return column_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column >*
+Schema::mutable_column() {
+  // @@protoc_insertion_point(field_mutable_list:OpenLogReplicator.pb.Schema.column)
+  return &column_;
+}
+inline const ::OpenLogReplicator::pb::Column& Schema::_internal_column(int index) const {
+  return column_.Get(index);
+}
+inline const ::OpenLogReplicator::pb::Column& Schema::column(int index) const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.column)
+  return _internal_column(index);
+}
+inline ::OpenLogReplicator::pb::Column* Schema::_internal_add_column() {
+  return column_.Add();
+}
+inline ::OpenLogReplicator::pb::Column* Schema::add_column() {
+  // @@protoc_insertion_point(field_add:OpenLogReplicator.pb.Schema.column)
+  return _internal_add_column();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column >&
+Schema::column() const {
+  // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.Schema.column)
+  return column_;
+}
+
+inline bool Schema::has_tm_val() const {
+  return tm_val_case() != TM_VAL_NOT_SET;
+}
+inline void Schema::clear_has_tm_val() {
+  _oneof_case_[0] = TM_VAL_NOT_SET;
+}
+inline Schema::TmValCase Schema::tm_val_case() const {
+  return Schema::TmValCase(_oneof_case_[0]);
+}
+// -------------------------------------------------------------------
+
+// Payload
+
+// .OpenLogReplicator.pb.Op op = 1;
+inline void Payload::clear_op() {
   op_ = 0;
-  _has_bits_[0] &= ~0x00000008u;
 }
-inline ::oraprotobuf::Op RowMessage::_internal_op() const {
-  return static_cast< ::oraprotobuf::Op >(op_);
+inline ::OpenLogReplicator::pb::Op Payload::_internal_op() const {
+  return static_cast< ::OpenLogReplicator::pb::Op >(op_);
 }
-inline ::oraprotobuf::Op RowMessage::op() const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.op)
+inline ::OpenLogReplicator::pb::Op Payload::op() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.op)
   return _internal_op();
 }
-inline void RowMessage::_internal_set_op(::oraprotobuf::Op value) {
-  _has_bits_[0] |= 0x00000008u;
+inline void Payload::_internal_set_op(::OpenLogReplicator::pb::Op value) {
+  
   op_ = value;
 }
-inline void RowMessage::set_op(::oraprotobuf::Op value) {
+inline void Payload::set_op(::OpenLogReplicator::pb::Op value) {
   _internal_set_op(value);
-  // @@protoc_insertion_point(field_set:oraprotobuf.RowMessage.op)
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.op)
 }
 
-// repeated .oraprotobuf.DatumMessage new_tuple = 5;
-inline int RowMessage::_internal_new_tuple_size() const {
-  return new_tuple_.size();
+// .OpenLogReplicator.pb.Schema schema = 2;
+inline bool Payload::_internal_has_schema() const {
+  return this != internal_default_instance() && schema_ != nullptr;
 }
-inline int RowMessage::new_tuple_size() const {
-  return _internal_new_tuple_size();
+inline bool Payload::has_schema() const {
+  return _internal_has_schema();
 }
-inline void RowMessage::clear_new_tuple() {
-  new_tuple_.Clear();
+inline void Payload::clear_schema() {
+  if (GetArena() == nullptr && schema_ != nullptr) {
+    delete schema_;
+  }
+  schema_ = nullptr;
 }
-inline ::oraprotobuf::DatumMessage* RowMessage::mutable_new_tuple(int index) {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.RowMessage.new_tuple)
-  return new_tuple_.Mutable(index);
+inline const ::OpenLogReplicator::pb::Schema& Payload::_internal_schema() const {
+  const ::OpenLogReplicator::pb::Schema* p = schema_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::OpenLogReplicator::pb::Schema*>(
+      &::OpenLogReplicator::pb::_Schema_default_instance_);
 }
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >*
-RowMessage::mutable_new_tuple() {
-  // @@protoc_insertion_point(field_mutable_list:oraprotobuf.RowMessage.new_tuple)
-  return &new_tuple_;
+inline const ::OpenLogReplicator::pb::Schema& Payload::schema() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.schema)
+  return _internal_schema();
 }
-inline const ::oraprotobuf::DatumMessage& RowMessage::_internal_new_tuple(int index) const {
-  return new_tuple_.Get(index);
+inline void Payload::unsafe_arena_set_allocated_schema(
+    ::OpenLogReplicator::pb::Schema* schema) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(schema_);
+  }
+  schema_ = schema;
+  if (schema) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:OpenLogReplicator.pb.Payload.schema)
 }
-inline const ::oraprotobuf::DatumMessage& RowMessage::new_tuple(int index) const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.new_tuple)
-  return _internal_new_tuple(index);
+inline ::OpenLogReplicator::pb::Schema* Payload::release_schema() {
+  
+  ::OpenLogReplicator::pb::Schema* temp = schema_;
+  schema_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
 }
-inline ::oraprotobuf::DatumMessage* RowMessage::_internal_add_new_tuple() {
-  return new_tuple_.Add();
+inline ::OpenLogReplicator::pb::Schema* Payload::unsafe_arena_release_schema() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.schema)
+  
+  ::OpenLogReplicator::pb::Schema* temp = schema_;
+  schema_ = nullptr;
+  return temp;
 }
-inline ::oraprotobuf::DatumMessage* RowMessage::add_new_tuple() {
-  // @@protoc_insertion_point(field_add:oraprotobuf.RowMessage.new_tuple)
-  return _internal_add_new_tuple();
+inline ::OpenLogReplicator::pb::Schema* Payload::_internal_mutable_schema() {
+  
+  if (schema_ == nullptr) {
+    auto* p = CreateMaybeMessage<::OpenLogReplicator::pb::Schema>(GetArena());
+    schema_ = p;
+  }
+  return schema_;
 }
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >&
-RowMessage::new_tuple() const {
-  // @@protoc_insertion_point(field_list:oraprotobuf.RowMessage.new_tuple)
-  return new_tuple_;
+inline ::OpenLogReplicator::pb::Schema* Payload::mutable_schema() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.schema)
+  return _internal_mutable_schema();
 }
-
-// repeated .oraprotobuf.DatumMessage old_tuple = 6;
-inline int RowMessage::_internal_old_tuple_size() const {
-  return old_tuple_.size();
-}
-inline int RowMessage::old_tuple_size() const {
-  return _internal_old_tuple_size();
-}
-inline void RowMessage::clear_old_tuple() {
-  old_tuple_.Clear();
-}
-inline ::oraprotobuf::DatumMessage* RowMessage::mutable_old_tuple(int index) {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.RowMessage.old_tuple)
-  return old_tuple_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >*
-RowMessage::mutable_old_tuple() {
-  // @@protoc_insertion_point(field_mutable_list:oraprotobuf.RowMessage.old_tuple)
-  return &old_tuple_;
-}
-inline const ::oraprotobuf::DatumMessage& RowMessage::_internal_old_tuple(int index) const {
-  return old_tuple_.Get(index);
-}
-inline const ::oraprotobuf::DatumMessage& RowMessage::old_tuple(int index) const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.old_tuple)
-  return _internal_old_tuple(index);
-}
-inline ::oraprotobuf::DatumMessage* RowMessage::_internal_add_old_tuple() {
-  return old_tuple_.Add();
-}
-inline ::oraprotobuf::DatumMessage* RowMessage::add_old_tuple() {
-  // @@protoc_insertion_point(field_add:oraprotobuf.RowMessage.old_tuple)
-  return _internal_add_old_tuple();
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::DatumMessage >&
-RowMessage::old_tuple() const {
-  // @@protoc_insertion_point(field_list:oraprotobuf.RowMessage.old_tuple)
-  return old_tuple_;
-}
-
-// repeated .oraprotobuf.TypeInfo new_typeinfo = 7;
-inline int RowMessage::_internal_new_typeinfo_size() const {
-  return new_typeinfo_.size();
-}
-inline int RowMessage::new_typeinfo_size() const {
-  return _internal_new_typeinfo_size();
-}
-inline void RowMessage::clear_new_typeinfo() {
-  new_typeinfo_.Clear();
-}
-inline ::oraprotobuf::TypeInfo* RowMessage::mutable_new_typeinfo(int index) {
-  // @@protoc_insertion_point(field_mutable:oraprotobuf.RowMessage.new_typeinfo)
-  return new_typeinfo_.Mutable(index);
-}
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::TypeInfo >*
-RowMessage::mutable_new_typeinfo() {
-  // @@protoc_insertion_point(field_mutable_list:oraprotobuf.RowMessage.new_typeinfo)
-  return &new_typeinfo_;
-}
-inline const ::oraprotobuf::TypeInfo& RowMessage::_internal_new_typeinfo(int index) const {
-  return new_typeinfo_.Get(index);
-}
-inline const ::oraprotobuf::TypeInfo& RowMessage::new_typeinfo(int index) const {
-  // @@protoc_insertion_point(field_get:oraprotobuf.RowMessage.new_typeinfo)
-  return _internal_new_typeinfo(index);
-}
-inline ::oraprotobuf::TypeInfo* RowMessage::_internal_add_new_typeinfo() {
-  return new_typeinfo_.Add();
-}
-inline ::oraprotobuf::TypeInfo* RowMessage::add_new_typeinfo() {
-  // @@protoc_insertion_point(field_add:oraprotobuf.RowMessage.new_typeinfo)
-  return _internal_add_new_typeinfo();
-}
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::oraprotobuf::TypeInfo >&
-RowMessage::new_typeinfo() const {
-  // @@protoc_insertion_point(field_list:oraprotobuf.RowMessage.new_typeinfo)
-  return new_typeinfo_;
+inline void Payload::set_allocated_schema(::OpenLogReplicator::pb::Schema* schema) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete schema_;
+  }
+  if (schema) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(schema);
+    if (message_arena != submessage_arena) {
+      schema = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, schema, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  schema_ = schema;
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.schema)
 }
 
+// string rowid = 3;
+inline void Payload::clear_rowid() {
+  rowid_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& Payload::rowid() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.rowid)
+  return _internal_rowid();
+}
+inline void Payload::set_rowid(const std::string& value) {
+  _internal_set_rowid(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.rowid)
+}
+inline std::string* Payload::mutable_rowid() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.rowid)
+  return _internal_mutable_rowid();
+}
+inline const std::string& Payload::_internal_rowid() const {
+  return rowid_.Get();
+}
+inline void Payload::_internal_set_rowid(const std::string& value) {
+  
+  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Payload::set_rowid(std::string&& value) {
+  
+  rowid_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Payload.rowid)
+}
+inline void Payload::set_rowid(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Payload.rowid)
+}
+inline void Payload::set_rowid(const char* value,
+    size_t size) {
+  
+  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Payload.rowid)
+}
+inline std::string* Payload::_internal_mutable_rowid() {
+  
+  return rowid_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Payload::release_rowid() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.rowid)
+  return rowid_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void Payload::set_allocated_rowid(std::string* rowid) {
+  if (rowid != nullptr) {
+    
+  } else {
+    
+  }
+  rowid_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rowid,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.rowid)
+}
+
+// .OpenLogReplicator.pb.Value before = 4;
+inline bool Payload::_internal_has_before() const {
+  return this != internal_default_instance() && before_ != nullptr;
+}
+inline bool Payload::has_before() const {
+  return _internal_has_before();
+}
+inline void Payload::clear_before() {
+  if (GetArena() == nullptr && before_ != nullptr) {
+    delete before_;
+  }
+  before_ = nullptr;
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::_internal_before() const {
+  const ::OpenLogReplicator::pb::Value* p = before_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::OpenLogReplicator::pb::Value*>(
+      &::OpenLogReplicator::pb::_Value_default_instance_);
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::before() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.before)
+  return _internal_before();
+}
+inline void Payload::unsafe_arena_set_allocated_before(
+    ::OpenLogReplicator::pb::Value* before) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(before_);
+  }
+  before_ = before;
+  if (before) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:OpenLogReplicator.pb.Payload.before)
+}
+inline ::OpenLogReplicator::pb::Value* Payload::release_before() {
+  
+  ::OpenLogReplicator::pb::Value* temp = before_;
+  before_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::unsafe_arena_release_before() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.before)
+  
+  ::OpenLogReplicator::pb::Value* temp = before_;
+  before_ = nullptr;
+  return temp;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::_internal_mutable_before() {
+  
+  if (before_ == nullptr) {
+    auto* p = CreateMaybeMessage<::OpenLogReplicator::pb::Value>(GetArena());
+    before_ = p;
+  }
+  return before_;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::mutable_before() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.before)
+  return _internal_mutable_before();
+}
+inline void Payload::set_allocated_before(::OpenLogReplicator::pb::Value* before) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete before_;
+  }
+  if (before) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(before);
+    if (message_arena != submessage_arena) {
+      before = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, before, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  before_ = before;
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.before)
+}
+
+// .OpenLogReplicator.pb.Value after = 5;
+inline bool Payload::_internal_has_after() const {
+  return this != internal_default_instance() && after_ != nullptr;
+}
+inline bool Payload::has_after() const {
+  return _internal_has_after();
+}
+inline void Payload::clear_after() {
+  if (GetArena() == nullptr && after_ != nullptr) {
+    delete after_;
+  }
+  after_ = nullptr;
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::_internal_after() const {
+  const ::OpenLogReplicator::pb::Value* p = after_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::OpenLogReplicator::pb::Value*>(
+      &::OpenLogReplicator::pb::_Value_default_instance_);
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::after() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.after)
+  return _internal_after();
+}
+inline void Payload::unsafe_arena_set_allocated_after(
+    ::OpenLogReplicator::pb::Value* after) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(after_);
+  }
+  after_ = after;
+  if (after) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:OpenLogReplicator.pb.Payload.after)
+}
+inline ::OpenLogReplicator::pb::Value* Payload::release_after() {
+  
+  ::OpenLogReplicator::pb::Value* temp = after_;
+  after_ = nullptr;
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::unsafe_arena_release_after() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.after)
+  
+  ::OpenLogReplicator::pb::Value* temp = after_;
+  after_ = nullptr;
+  return temp;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::_internal_mutable_after() {
+  
+  if (after_ == nullptr) {
+    auto* p = CreateMaybeMessage<::OpenLogReplicator::pb::Value>(GetArena());
+    after_ = p;
+  }
+  return after_;
+}
+inline ::OpenLogReplicator::pb::Value* Payload::mutable_after() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.after)
+  return _internal_mutable_after();
+}
+inline void Payload::set_allocated_after(::OpenLogReplicator::pb::Value* after) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete after_;
+  }
+  if (after) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(after);
+    if (message_arena != submessage_arena) {
+      after = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, after, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  after_ = after;
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.after)
+}
+
+// string ddl = 6;
+inline void Payload::clear_ddl() {
+  ddl_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline const std::string& Payload::ddl() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.ddl)
+  return _internal_ddl();
+}
+inline void Payload::set_ddl(const std::string& value) {
+  _internal_set_ddl(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.ddl)
+}
+inline std::string* Payload::mutable_ddl() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.ddl)
+  return _internal_mutable_ddl();
+}
+inline const std::string& Payload::_internal_ddl() const {
+  return ddl_.Get();
+}
+inline void Payload::_internal_set_ddl(const std::string& value) {
+  
+  ddl_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Payload::set_ddl(std::string&& value) {
+  
+  ddl_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Payload.ddl)
+}
+inline void Payload::set_ddl(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  
+  ddl_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Payload.ddl)
+}
+inline void Payload::set_ddl(const char* value,
+    size_t size) {
+  
+  ddl_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Payload.ddl)
+}
+inline std::string* Payload::_internal_mutable_ddl() {
+  
+  return ddl_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Payload::release_ddl() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.ddl)
+  return ddl_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline void Payload::set_allocated_ddl(std::string* ddl) {
+  if (ddl != nullptr) {
+    
+  } else {
+    
+  }
+  ddl_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ddl,
+      GetArena());
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.ddl)
+}
+
+// -------------------------------------------------------------------
+
+// Redo
+
+// uint64 scn = 1;
+inline bool Redo::_internal_has_scn() const {
+  return scn_val_case() == kScn;
+}
+inline void Redo::set_has_scn() {
+  _oneof_case_[0] = kScn;
+}
+inline void Redo::clear_scn() {
+  if (_internal_has_scn()) {
+    scn_val_.scn_ = PROTOBUF_ULONGLONG(0);
+    clear_has_scn_val();
+  }
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::_internal_scn() const {
+  if (_internal_has_scn()) {
+    return scn_val_.scn_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Redo::_internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_scn()) {
+    clear_scn_val();
+    set_has_scn();
+  }
+  scn_val_.scn_ = value;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::scn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.scn)
+  return _internal_scn();
+}
+inline void Redo::set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_scn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.scn)
+}
+
+// string scns = 2;
+inline bool Redo::_internal_has_scns() const {
+  return scn_val_case() == kScns;
+}
+inline void Redo::set_has_scns() {
+  _oneof_case_[0] = kScns;
+}
+inline void Redo::clear_scns() {
+  if (_internal_has_scns()) {
+    scn_val_.scns_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    clear_has_scn_val();
+  }
+}
+inline const std::string& Redo::scns() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.scns)
+  return _internal_scns();
+}
+inline void Redo::set_scns(const std::string& value) {
+  _internal_set_scns(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.scns)
+}
+inline std::string* Redo::mutable_scns() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Redo.scns)
+  return _internal_mutable_scns();
+}
+inline const std::string& Redo::_internal_scns() const {
+  if (_internal_has_scns()) {
+    return scn_val_.scns_.Get();
+  }
+  return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void Redo::_internal_set_scns(const std::string& value) {
+  if (!_internal_has_scns()) {
+    clear_scn_val();
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  scn_val_.scns_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Redo::set_scns(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.scns)
+  if (!_internal_has_scns()) {
+    clear_scn_val();
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  scn_val_.scns_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Redo.scns)
+}
+inline void Redo::set_scns(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!_internal_has_scns()) {
+    clear_scn_val();
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  scn_val_.scns_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Redo.scns)
+}
+inline void Redo::set_scns(const char* value,
+                             size_t size) {
+  if (!_internal_has_scns()) {
+    clear_scn_val();
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  scn_val_.scns_.Set(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size),
+      GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Redo.scns)
+}
+inline std::string* Redo::_internal_mutable_scns() {
+  if (!_internal_has_scns()) {
+    clear_scn_val();
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  return scn_val_.scns_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Redo::release_scns() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Redo.scns)
+  if (_internal_has_scns()) {
+    clear_has_scn_val();
+    return scn_val_.scns_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  } else {
+    return nullptr;
+  }
+}
+inline void Redo::set_allocated_scns(std::string* scns) {
+  if (has_scn_val()) {
+    clear_scn_val();
+  }
+  if (scns != nullptr) {
+    set_has_scns();
+    scn_val_.scns_.UnsafeSetDefault(scns);
+    ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
+    if (arena != nullptr) {
+      arena->Own(scns);
+    }
+  }
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.scns)
+}
+
+// uint64 tm = 3;
+inline bool Redo::_internal_has_tm() const {
+  return tm_val_case() == kTm;
+}
+inline void Redo::set_has_tm() {
+  _oneof_case_[1] = kTm;
+}
+inline void Redo::clear_tm() {
+  if (_internal_has_tm()) {
+    tm_val_.tm_ = PROTOBUF_ULONGLONG(0);
+    clear_has_tm_val();
+  }
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::_internal_tm() const {
+  if (_internal_has_tm()) {
+    return tm_val_.tm_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Redo::_internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_tm()) {
+    clear_tm_val();
+    set_has_tm();
+  }
+  tm_val_.tm_ = value;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::tm() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.tm)
+  return _internal_tm();
+}
+inline void Redo::set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_tm(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.tm)
+}
+
+// string tms = 4;
+inline bool Redo::_internal_has_tms() const {
+  return tm_val_case() == kTms;
+}
+inline void Redo::set_has_tms() {
+  _oneof_case_[1] = kTms;
+}
+inline void Redo::clear_tms() {
+  if (_internal_has_tms()) {
+    tm_val_.tms_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    clear_has_tm_val();
+  }
+}
+inline const std::string& Redo::tms() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.tms)
+  return _internal_tms();
+}
+inline void Redo::set_tms(const std::string& value) {
+  _internal_set_tms(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.tms)
+}
+inline std::string* Redo::mutable_tms() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Redo.tms)
+  return _internal_mutable_tms();
+}
+inline const std::string& Redo::_internal_tms() const {
+  if (_internal_has_tms()) {
+    return tm_val_.tms_.Get();
+  }
+  return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void Redo::_internal_set_tms(const std::string& value) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Redo::set_tms(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.tms)
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Redo.tms)
+}
+inline void Redo::set_tms(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Redo.tms)
+}
+inline void Redo::set_tms(const char* value,
+                             size_t size) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size),
+      GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Redo.tms)
+}
+inline std::string* Redo::_internal_mutable_tms() {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  return tm_val_.tms_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Redo::release_tms() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Redo.tms)
+  if (_internal_has_tms()) {
+    clear_has_tm_val();
+    return tm_val_.tms_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  } else {
+    return nullptr;
+  }
+}
+inline void Redo::set_allocated_tms(std::string* tms) {
+  if (has_tm_val()) {
+    clear_tm_val();
+  }
+  if (tms != nullptr) {
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(tms);
+    ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
+    if (arena != nullptr) {
+      arena->Own(tms);
+    }
+  }
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.tms)
+}
+
+// string xid = 5;
+inline bool Redo::_internal_has_xid() const {
+  return xid_val_case() == kXid;
+}
+inline void Redo::set_has_xid() {
+  _oneof_case_[2] = kXid;
+}
+inline void Redo::clear_xid() {
+  if (_internal_has_xid()) {
+    xid_val_.xid_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    clear_has_xid_val();
+  }
+}
+inline const std::string& Redo::xid() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.xid)
+  return _internal_xid();
+}
+inline void Redo::set_xid(const std::string& value) {
+  _internal_set_xid(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.xid)
+}
+inline std::string* Redo::mutable_xid() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Redo.xid)
+  return _internal_mutable_xid();
+}
+inline const std::string& Redo::_internal_xid() const {
+  if (_internal_has_xid()) {
+    return xid_val_.xid_.Get();
+  }
+  return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void Redo::_internal_set_xid(const std::string& value) {
+  if (!_internal_has_xid()) {
+    clear_xid_val();
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  xid_val_.xid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Redo::set_xid(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.xid)
+  if (!_internal_has_xid()) {
+    clear_xid_val();
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  xid_val_.xid_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Redo.xid)
+}
+inline void Redo::set_xid(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!_internal_has_xid()) {
+    clear_xid_val();
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  xid_val_.xid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Redo.xid)
+}
+inline void Redo::set_xid(const char* value,
+                             size_t size) {
+  if (!_internal_has_xid()) {
+    clear_xid_val();
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  xid_val_.xid_.Set(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size),
+      GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Redo.xid)
+}
+inline std::string* Redo::_internal_mutable_xid() {
+  if (!_internal_has_xid()) {
+    clear_xid_val();
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  return xid_val_.xid_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Redo::release_xid() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Redo.xid)
+  if (_internal_has_xid()) {
+    clear_has_xid_val();
+    return xid_val_.xid_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  } else {
+    return nullptr;
+  }
+}
+inline void Redo::set_allocated_xid(std::string* xid) {
+  if (has_xid_val()) {
+    clear_xid_val();
+  }
+  if (xid != nullptr) {
+    set_has_xid();
+    xid_val_.xid_.UnsafeSetDefault(xid);
+    ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
+    if (arena != nullptr) {
+      arena->Own(xid);
+    }
+  }
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.xid)
+}
+
+// uint64 xidn = 6;
+inline bool Redo::_internal_has_xidn() const {
+  return xid_val_case() == kXidn;
+}
+inline void Redo::set_has_xidn() {
+  _oneof_case_[2] = kXidn;
+}
+inline void Redo::clear_xidn() {
+  if (_internal_has_xidn()) {
+    xid_val_.xidn_ = PROTOBUF_ULONGLONG(0);
+    clear_has_xid_val();
+  }
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::_internal_xidn() const {
+  if (_internal_has_xidn()) {
+    return xid_val_.xidn_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Redo::_internal_set_xidn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_xidn()) {
+    clear_xid_val();
+    set_has_xidn();
+  }
+  xid_val_.xidn_ = value;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Redo::xidn() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.xidn)
+  return _internal_xidn();
+}
+inline void Redo::set_xidn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_xidn(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.xidn)
+}
+
+// repeated .OpenLogReplicator.pb.Payload payload = 7;
+inline int Redo::_internal_payload_size() const {
+  return payload_.size();
+}
+inline int Redo::payload_size() const {
+  return _internal_payload_size();
+}
+inline void Redo::clear_payload() {
+  payload_.Clear();
+}
+inline ::OpenLogReplicator::pb::Payload* Redo::mutable_payload(int index) {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Redo.payload)
+  return payload_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >*
+Redo::mutable_payload() {
+  // @@protoc_insertion_point(field_mutable_list:OpenLogReplicator.pb.Redo.payload)
+  return &payload_;
+}
+inline const ::OpenLogReplicator::pb::Payload& Redo::_internal_payload(int index) const {
+  return payload_.Get(index);
+}
+inline const ::OpenLogReplicator::pb::Payload& Redo::payload(int index) const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.payload)
+  return _internal_payload(index);
+}
+inline ::OpenLogReplicator::pb::Payload* Redo::_internal_add_payload() {
+  return payload_.Add();
+}
+inline ::OpenLogReplicator::pb::Payload* Redo::add_payload() {
+  // @@protoc_insertion_point(field_add:OpenLogReplicator.pb.Redo.payload)
+  return _internal_add_payload();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >&
+Redo::payload() const {
+  // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.Redo.payload)
+  return payload_;
+}
+
+inline bool Redo::has_scn_val() const {
+  return scn_val_case() != SCN_VAL_NOT_SET;
+}
+inline void Redo::clear_has_scn_val() {
+  _oneof_case_[0] = SCN_VAL_NOT_SET;
+}
+inline bool Redo::has_tm_val() const {
+  return tm_val_case() != TM_VAL_NOT_SET;
+}
+inline void Redo::clear_has_tm_val() {
+  _oneof_case_[1] = TM_VAL_NOT_SET;
+}
+inline bool Redo::has_xid_val() const {
+  return xid_val_case() != XID_VAL_NOT_SET;
+}
+inline void Redo::clear_has_xid_val() {
+  _oneof_case_[2] = XID_VAL_NOT_SET;
+}
+inline Redo::ScnValCase Redo::scn_val_case() const {
+  return Redo::ScnValCase(_oneof_case_[0]);
+}
+inline Redo::TmValCase Redo::tm_val_case() const {
+  return Redo::TmValCase(_oneof_case_[1]);
+}
+inline Redo::XidValCase Redo::xid_val_case() const {
+  return Redo::XidValCase(_oneof_case_[2]);
+}
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
@@ -1698,17 +3954,26 @@ RowMessage::new_typeinfo() const {
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace oraprotobuf
+}  // namespace pb
+}  // namespace OpenLogReplicator
 
 PROTOBUF_NAMESPACE_OPEN
 
-template <> struct is_proto_enum< ::oraprotobuf::Op> : ::std::true_type {};
+template <> struct is_proto_enum< ::OpenLogReplicator::pb::Op> : ::std::true_type {};
 template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::oraprotobuf::Op>() {
-  return ::oraprotobuf::Op_descriptor();
+inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::Op>() {
+  return ::OpenLogReplicator::pb::Op_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

@@ -63,8 +63,6 @@ OracleColumn.cpp \
 OracleObject.cpp \
 OutputBuffer.cpp \
 OutputBufferJson.cpp \
-OutputBufferJsonDbz.cpp \
-OutputBufferJsonTest.cpp \
 OutputBufferProtobuf.cpp \
 ReaderASM.cpp \
 Reader.cpp \

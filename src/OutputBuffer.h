@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <stdint.h>
 
 #include "types.h"
@@ -47,26 +48,29 @@ namespace OpenLogReplicator {
     protected:
         OracleAnalyser *oracleAnalyser;
         static const char translationMap[65];
+        uint64_t messageFormat;
+        uint64_t xidFormat;
         uint64_t timestampFormat;
         uint64_t charFormat;
         uint64_t scnFormat;
         uint64_t unknownFormat;
-        uint64_t showColumns;
+        uint64_t schemaFormat;
+        uint64_t columnFormat;
         uint64_t messageLength;
         unordered_map<uint16_t, const char*> timeZoneMap;
+        unordered_set<OracleObject*> objects;
         typetime lastTime;
         typescn lastScn;
+        typexid lastXid;
 
         void bufferAppend(uint8_t character);
         void bufferShift(uint64_t bytes);
         void beginMessage(void);
         void commitMessage(void);
-        void appendChr(const char* str);
-        void appendStr(string &str);
+        void append(const char* str);
+        void append(string &str);
         void append(char chr);
-        void appendHex(uint64_t val, uint64_t length);
-        void appendDec(uint64_t val);
-        void appendTimestamp(const uint8_t *data, uint64_t length);
+        void checkUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
 
     public:
         uint64_t defaultCharacterMapId;
@@ -93,7 +97,8 @@ namespace OpenLogReplicator {
         RedoLogRecord *beforeRecord[MAX_NO_COLUMNS];
         RedoLogRecord *afterRecord[MAX_NO_COLUMNS];
 
-        OutputBuffer(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns);
+        OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBuffer();
 
         void initialize(OracleAnalyser *oracleAnalyser);
@@ -101,13 +106,14 @@ namespace OpenLogReplicator {
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
 
-        virtual void appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
-        virtual void appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
-        virtual void appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) = 0;
-        virtual void next(void);
-        virtual void beginTran(typescn scn, typetime time, typexid xid);
-        virtual void commitTran(void);
+        virtual void processBegin(typescn scn, typetime time, typexid xid) = 0;
+        virtual void processCommit(void) = 0;
+        virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
+        virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
+        virtual void processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
+        virtual void processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) = 0;
+        //virtual void processCheckpoint(typescn scn, typetime time) = 0;
+        //virtual void processSwitch(typescn scn, typetime time) = 0;
     };
 }
 

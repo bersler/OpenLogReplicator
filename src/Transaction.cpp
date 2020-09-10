@@ -397,7 +397,7 @@ namespace OpenLogReplicator {
     }
 
     void Transaction::flush(void) {
-        bool hasPrev = false, opFlush = false;
+        bool opFlush = false;
         TransactionChunk *deallocTc = nullptr;
 
         flushSplitBlocks();
@@ -406,7 +406,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_TRANSACTION, *this);
 
             oracleAnalyser->lastOpTransactionMap->erase(this);
-            oracleAnalyser->outputBuffer->beginTran(lastScn, commitTime, xid);
+            oracleAnalyser->outputBuffer->processBegin(lastScn, commitTime, xid);
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr;
             typescn prevScn = 0;
@@ -541,8 +541,6 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            if (hasPrev)
-                                oracleAnalyser->outputBuffer->next();
                             oracleAnalyser->outputBuffer->writer->parseDML(first1, first2, type);
                             opFlush = true;
                         }
@@ -550,24 +548,18 @@ namespace OpenLogReplicator {
 
                     //insert multiple rows
                     case 0x05010B0B:
-                        if (hasPrev)
-                            oracleAnalyser->outputBuffer->next();
                         oracleAnalyser->outputBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //delete multiple rows
                     case 0x05010B0C:
-                        if (hasPrev)
-                            oracleAnalyser->outputBuffer->next();
                         oracleAnalyser->outputBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //truncate table
                     case 0x18010000:
-                        if (hasPrev)
-                            oracleAnalyser->outputBuffer->next();
                         oracleAnalyser->outputBuffer->writer->parseDDL(redoLogRecord1);
                         opFlush = true;
                         break;
@@ -581,9 +573,8 @@ namespace OpenLogReplicator {
                     if (oracleAnalyser->outputBuffer->writer->maxMessageMb > 0 &&
                             oracleAnalyser->outputBuffer->currentMessageSize() + DATA_BUFFER_SIZE > oracleAnalyser->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
                         WARNING("big transaction divided (forced commit after " << oracleAnalyser->outputBuffer->currentMessageSize() << " bytes)");
-                        oracleAnalyser->outputBuffer->commitTran();
-                        oracleAnalyser->outputBuffer->beginTran(lastScn, commitTime, xid);
-                        hasPrev = false;
+                        oracleAnalyser->outputBuffer->processCommit();
+                        oracleAnalyser->outputBuffer->processBegin(lastScn, commitTime, xid);
                     }
 
                     if (opFlush) {
@@ -591,7 +582,6 @@ namespace OpenLogReplicator {
                         last1 = nullptr;
                         first2 = nullptr;
                         last2 = nullptr;
-                        hasPrev = true;
                         type = 0;
 
                         while (deallocTc != nullptr) {
@@ -621,7 +611,7 @@ namespace OpenLogReplicator {
             lastRedoLogRecord2 = nullptr;
             opCodes = 0;
 
-            oracleAnalyser->outputBuffer->commitTran();
+            oracleAnalyser->outputBuffer->processCommit();
         }
     }
 

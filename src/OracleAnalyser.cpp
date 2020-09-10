@@ -1260,10 +1260,10 @@ namespace OpenLogReplicator {
             const Value& ownerJSON = getJSONfield(fileName, schema[i], "owner");
             const char *owner = ownerJSON.GetString();
 
-            const Value& objectNameJSON = getJSONfield(fileName, schema[i], "object-name");
-            const char *objectName = objectNameJSON.GetString();
+            const Value& nameJSON = getJSONfield(fileName, schema[i], "name");
+            const char *name = nameJSON.GetString();
 
-            object = new OracleObject(objn, objd, cluCols, options, owner, objectName);
+            object = new OracleObject(objn, objd, cluCols, options, owner, name);
             object->totalPk = totalPk;
             object->maxSegCol = maxSegCol;
 
@@ -1416,7 +1416,7 @@ namespace OpenLogReplicator {
                     "\"options\":" << dec << objectTmp->options << "," <<
                     "\"max-seg-col\":" << dec << objectTmp->maxSegCol << "," <<
                     "\"owner\":\"" << objectTmp->owner << "\"," <<
-                    "\"object-name\":\"" << objectTmp->objectName << "\"," <<
+                    "\"name\":\"" << objectTmp->name << "\"," <<
                     "\"columns\":[";
 
             for (uint64_t i = 0; i < objectTmp->columns.size(); ++i) {
@@ -1922,7 +1922,7 @@ namespace OpenLogReplicator {
         typeobj objn; stmt.defineUInt32(2, objn);
         uint64_t cluCols; stmt.defineUInt64(3, cluCols);
         char owner[129]; stmt.defineString(4, owner, sizeof(owner));
-        char objectName[129]; stmt.defineString(5, objectName, sizeof(objectName));
+        char name[129]; stmt.defineString(5, name, sizeof(name));
         uint64_t clustered; stmt.defineUInt64(6, clustered);
         uint64_t iot; stmt.defineUInt64(7, iot);
         uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
@@ -1973,28 +1973,28 @@ namespace OpenLogReplicator {
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
-                INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - IOT");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - IOT");
                 ret = stmt.next();
                 continue;
             }
 
             //skip temporary tables
             if (temporary) {
-                INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - temporary table");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - temporary table");
                 ret = stmt.next();
                 continue;
             }
 
             //skip nested tables
             if (nested) {
-                INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - nested table");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - nested table");
                 ret = stmt.next();
                 continue;
             }
 
             //skip compressed tables
             if (compressed) {
-                INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - compressed table");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - compressed table");
                 ret = stmt.next();
                 continue;
             }
@@ -2004,7 +2004,7 @@ namespace OpenLogReplicator {
 
             //table already added with another rule
             if (checkDict(objn, objd) != nullptr) {
-                INFO_("  * skipped: " << owner << "." << objectName << " (OBJN: " << dec << objn << ") - already added");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - already added");
                 ret = stmt.next();
                 continue;
             }
@@ -2014,7 +2014,7 @@ namespace OpenLogReplicator {
             if (stmt.isNull(3))
                 cluCols = 0;
 
-            object = new OracleObject(objn, objd, cluCols, options, owner, objectName);
+            object = new OracleObject(objn, objd, cluCols, options, owner, name);
             if (object == nullptr) {
                 RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleObject) << " bytes memory for (object creation)");
             }
@@ -2055,7 +2055,7 @@ namespace OpenLogReplicator {
                 //check character set for char and varchar2
                 if (typeNo == 1 || typeNo == 96) {
                     if (outputBuffer->characterMap[charmapId] == nullptr) {
-                        RUNTIME_FAIL("table " << owner << "." << objectName << " - unsupported character set id: " << dec << charmapId <<
+                        RUNTIME_FAIL("table " << owner << "." << name << " - unsupported character set id: " << dec << charmapId <<
                                 " for column: " << columnName << endl <<
                                 "HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
                     }
@@ -2098,11 +2098,11 @@ namespace OpenLogReplicator {
 
             //check if table has all listed columns
             if (keys.size() != keysCnt) {
-                RUNTIME_FAIL("table " << owner << "." << objectName << " could not find all column set (" << keysStr << ")");
+                RUNTIME_FAIL("table " << owner << "." << name << " could not find all column set (" << keysStr << ")");
             }
 
             stringstream ss;
-            ss << "  * found: " << owner << "." << objectName << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+            ss << "  * found: " << owner << "." << name << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
             if (clustered)
                 ss << ", part of cluster";
             if (partitioned)
@@ -2120,11 +2120,11 @@ namespace OpenLogReplicator {
                     else if (!suppLogTablePrimary && !suppLogTableAll &&
                             !suppLogSchemaPrimary && !suppLogSchemaAll &&
                             !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
+                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
                 //user defined primary key
                 } else {
                     if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << objectName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;";
+                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;";
                 }
             }
             INFO_(ss.str());

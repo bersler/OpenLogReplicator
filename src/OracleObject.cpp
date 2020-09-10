@@ -26,7 +26,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleObject::OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const char *owner, const char *objectName) :
+    OracleObject::OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const char *owner, const char *name) :
         objn(objn),
         objd(objd),
         cluCols(cluCols),
@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         options(options),
         maxSegCol(0),
         owner(owner),
-        objectName(objectName) {
+        name(name) {
     }
 
     OracleObject::~OracleObject() {
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     void OracleObject::addColumn(OracleColumn *column) {
         if (column->segColNo < columns.size() + 1) {
-            CONFIG_FAIL("trying to insert table: " << owner << "." << objectName << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
+            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
                 ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
                 ") on position " << (columns.size() + 1));
         }
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleObject& object) {
-        os << "(\"" << object.owner << "\".\"" << object.objectName << "\", " << dec << object.objn << ", " <<
+        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << dec << object.objn << ", " <<
                 object.objd << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
         for (OracleColumn *column : object.columns)
             os << "     - " << *column << endl;

@@ -1,5 +1,5 @@
 {
-  "version": "0.7.10",
+  "version": "0.7.11",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -18,12 +18,14 @@
       },
       "format": {
         "type": "json",
-        "timestamp-format": 0, 
-        "char-format": 0,
-        "scn-format": 0,
-        "unknown-format": 0,
-        "metadata": 0,
-        "show-columns": 0
+        "message": 0,
+        "xid": 0,
+        "timestamp": 0,
+        "char": 0,
+        "scn": 0,
+        "unknown": 0,
+        "schema": 0,
+        "column": 0
       },
       "arch": "online",
       "flags": 0,
@@ -48,7 +50,6 @@
         "type": "kafka",
         "topic": "O112A",
         "brokers": "localhost:9092",
-        "short-message": 0,
         "max-message-mb": 500,
         "max-messages": 200000
       }

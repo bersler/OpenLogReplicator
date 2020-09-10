@@ -28,29 +28,32 @@ namespace OpenLogReplicator {
 
     class OutputBufferJson : public OutputBuffer {
     protected:
+        bool hasPrevious;
+
+        void appendHex(uint64_t val, uint64_t length);
+        void appendDec(uint64_t val);
+        void appendSDec(int64_t val);
+        void appendTimestamp(const uint8_t *data, uint64_t length);
         void appendEscape(const uint8_t *str, uint64_t length);
         void appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId);
-        void appendScn(typescn scn);
-        void appendOperation(const char *operation);
-        void appendTable(string &owner, string &table);
         void appendNull(string &columnName, bool &prevValue);
-        void appendMs(const char *name, uint64_t time);
-        void appendXid(typexid xid);
         void appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength);
         void appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength, bool &prevValue);
         void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
+        void appendHeader(bool first);
+        void appendSchema(OracleObject *object);
 
     public:
-        OutputBufferJson(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns);
+        OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBufferJson();
 
-        virtual void appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength);
-        virtual void next(void);
-        virtual void beginTran(typescn scn, typetime time, typexid xid);
-        virtual void commitTran(void);
+        virtual void processBegin(typescn scn, typetime time, typexid xid);
+        virtual void processCommit(void);
+        virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        virtual void processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength);
     };
 }
 

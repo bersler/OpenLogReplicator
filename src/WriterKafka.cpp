@@ -36,9 +36,8 @@ using namespace RdKafka;
 
 namespace OpenLogReplicator {
 
-    WriterKafka::WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage,
-            const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages) :
-        Writer(alias, oracleAnalyser, shortMessage, maxMessageMb),
+    WriterKafka::WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages) :
+        Writer(alias, oracleAnalyser, maxMessageMb),
         brokers(brokers),
         topic(topic),
         maxMessages(maxMessages)

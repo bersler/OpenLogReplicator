@@ -42,7 +42,6 @@ namespace OpenLogReplicator {
     protected:
         OutputBuffer *outputBuffer;
         OracleAnalyser *oracleAnalyser;
-        uint64_t shortMessage;
         uint8_t *msgBuffer;
 
         virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) = 0;
@@ -57,7 +56,7 @@ namespace OpenLogReplicator {
         void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         void parseDDL(RedoLogRecord *redoLogRecord1);
 
-        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage, uint64_t maxMessageMb);
+        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb);
         virtual ~Writer();
     };
 }

@@ -34,11 +34,10 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    Writer::Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage, uint64_t maxMessageMb) :
+    Writer::Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb) :
         Thread(alias),
         outputBuffer(oracleAnalyser->outputBuffer),
         oracleAnalyser(oracleAnalyser),
-        shortMessage(shortMessage),
         maxMessageMb(maxMessageMb) {
 
         msgBuffer = oracleAnalyser->getMemoryChunk("WRITER", false);
@@ -168,9 +167,6 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
-            if (r > 0)
-                outputBuffer->next();
-
             pos = 0;
             prevValue = false;
             fieldPos = fieldPosStart;
@@ -211,7 +207,7 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            outputBuffer->appendInsert(object, redoLogRecord2->bdba,
+            outputBuffer->processInsert(object, redoLogRecord2->bdba,
                     oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
@@ -231,9 +227,6 @@ namespace OpenLogReplicator {
         fieldPosStart = fieldPos;
 
         for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
-            if (r > 0)
-                outputBuffer->next();
-
             pos = 0;
             prevValue = false;
             fieldPos = fieldPosStart;
@@ -275,7 +268,7 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            outputBuffer->appendDelete(object, redoLogRecord2->bdba,
+            outputBuffer->processDelete(object, redoLogRecord2->bdba,
                     oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
@@ -362,7 +355,7 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        WARNING("table: " << object->owner << "." << object->objectName << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
+                        WARNING("table: " << object->owner << "." << object->name << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
                         break;
                     }
                     if (colNums != nullptr) {
@@ -372,7 +365,7 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
@@ -409,14 +402,14 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        RUNTIME_FAIL("table: " << object->owner << "." << object->objectName << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
+                        RUNTIME_FAIL("table: " << object->owner << "." << object->name << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
                     }
 
                     oracleAnalyser->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
                     colNum = oracleAnalyser->read16(colNums) - 1;
 
                     if (colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
@@ -468,7 +461,7 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
-                        WARNING("table: " << object->owner << "." << object->objectName << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
+                        WARNING("table: " << object->owner << "." << object->name << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
                         break;
                     }
 
@@ -481,7 +474,7 @@ namespace OpenLogReplicator {
                         colNum = i + colShift;
 
                     if (colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->objectName << ": referring to unknown column id(" <<
+                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
                     }
@@ -517,7 +510,7 @@ namespace OpenLogReplicator {
         }
 
         if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
-            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->objectName << " type: " << type);
+            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
             for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 if (object->columns[i] == nullptr)
                     continue;
@@ -531,11 +524,11 @@ namespace OpenLogReplicator {
         }
 
         if (type == TRANSACTION_UPDATE)
-            outputBuffer->appendUpdate(object, bdba, slot, redoLogRecord1->xid); else
+            outputBuffer->processUpdate(object, bdba, slot, redoLogRecord1->xid); else
         if (type == TRANSACTION_INSERT)
-            outputBuffer->appendInsert(object, bdba, slot, redoLogRecord1->xid); else
+            outputBuffer->processInsert(object, bdba, slot, redoLogRecord1->xid); else
         if (type == TRANSACTION_DELETE)
-            outputBuffer->appendDelete(object, bdba, slot, redoLogRecord1->xid);
+            outputBuffer->processDelete(object, bdba, slot, redoLogRecord1->xid);
     }
 
     //0x18010000
@@ -582,12 +575,12 @@ namespace OpenLogReplicator {
         sqlText = redoLogRecord1->data + fieldPos;
 
         if (type == 85)
-            outputBuffer->appendDDL(object, type, seq, "truncate", sqlText, sqlLength - 1);
+            outputBuffer->processDDL(object, type, seq, "truncate", sqlText, sqlLength - 1);
         else if (type == 12)
-            outputBuffer->appendDDL(object, type, seq, "drop", sqlText, sqlLength - 1);
+            outputBuffer->processDDL(object, type, seq, "drop", sqlText, sqlLength - 1);
         else if (type == 15)
-            outputBuffer->appendDDL(object, type, seq, "alter", sqlText, sqlLength - 1);
+            outputBuffer->processDDL(object, type, seq, "alter", sqlText, sqlLength - 1);
         else
-            outputBuffer->appendDDL(object, type, seq, "?", sqlText, sqlLength - 1);
+            outputBuffer->processDDL(object, type, seq, "?", sqlText, sqlLength - 1);
     }
 }

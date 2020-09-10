@@ -46,16 +46,21 @@ namespace OpenLogReplicator {
 
     const char OutputBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-    OutputBuffer::OutputBuffer(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns) :
+    OutputBuffer::OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+            uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
             oracleAnalyser(nullptr),
+            messageFormat(messageFormat),
+            xidFormat(xidFormat),
             timestampFormat(timestampFormat),
             charFormat(charFormat),
             scnFormat(scnFormat),
             unknownFormat(unknownFormat),
-            showColumns(showColumns),
+            schemaFormat(schemaFormat),
+            columnFormat(columnFormat),
             messageLength(0),
             lastTime(0),
             lastScn(0),
+            lastXid(0),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
             writer(nullptr),
@@ -810,6 +815,7 @@ namespace OpenLogReplicator {
         }
         characterMap.clear();
         timeZoneMap.clear();
+        objects.clear();
 
         while (firstBuffer != nullptr) {
             uint8_t* nextBuffer = *((uint8_t**)(firstBuffer + OUTPUT_BUFFER_NEXT));
@@ -914,146 +920,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::appendHex(uint64_t val, uint64_t length) {
-        static const char* digits = "0123456789abcdef";
-
-        uint64_t j = (length - 1) * 4;
-        for (uint64_t i = 0; i < length; ++i) {
-            bufferAppend(digits[(val >> j) & 0xF]);
-            j -= 4;
-        };
-    }
-
-    void OutputBuffer::appendDec(uint64_t val) {
-        char buffer[21];
-        uint64_t length = 0;
-
-        if (val == 0) {
-            buffer[0] = '0';
-            length = 1;
-        } else {
-            while (val > 0) {
-                buffer[length] = '0' + (val % 10);
-                val /= 10;
-                ++length;
-            }
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            bufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBuffer::appendTimestamp(const uint8_t *data, uint64_t length) {
-        if (timestampFormat == 0 || timestampFormat == 1) {
-            //2012-04-23T18:25:43.511Z - ISO 8601 format
-            uint64_t val1 = data[0],
-                     val2 = data[1];
-            bool bc = false;
-
-            //AD
-            if (val1 >= 100 && val2 >= 100) {
-                val1 -= 100;
-                val2 -= 100;
-            //BC
-            } else {
-                val1 = 100 - val1;
-                val2 = 100 - val2;
-                bc = true;
-            }
-            if (val1 > 0) {
-                if (val1 > 10) {
-                    append('0' + (val1 / 10));
-                    append('0' + (val1 % 10));
-                    append('0' + (val2 / 10));
-                    append('0' + (val2 % 10));
-                } else {
-                    append('0' + val1);
-                    append('0' + (val2 / 10));
-                    append('0' + (val2 % 10));
-                }
-            } else {
-                if (val2 > 10) {
-                    append('0' + (val2 / 10));
-                    append('0' + (val2 % 10));
-                } else
-                    append('0' + val2);
-            }
-
-            if (bc)
-                appendChr("BC");
-
-            append('-');
-            append('0' + (data[2] / 10));
-            append('0' + (data[2] % 10));
-            append('-');
-            append('0' + (data[3] / 10));
-            append('0' + (data[3] % 10));
-            append('T');
-            append('0' + ((data[4] - 1) / 10));
-            append('0' + ((data[4] - 1) % 10));
-            append(':');
-            append('0' + ((data[5] - 1) / 10));
-            append('0' + ((data[5] - 1) % 10));
-            append(':');
-            append('0' + ((data[6] - 1) / 10));
-            append('0' + ((data[6] - 1) % 10));
-
-            if (length == 11) {
-                uint64_t digits = 0;
-                uint8_t buffer[10];
-                uint64_t val = oracleAnalyser->read32Big(data + 7);
-
-                for (int64_t i = 9; i > 0; --i) {
-                    buffer[i] = val % 10;
-                    val /= 10;
-                    if (buffer[i] != 0 && digits == 0)
-                        digits = i;
-                }
-
-                if (digits > 0) {
-                    append('.');
-                    for (uint64_t i = 1; i <= digits; ++i)
-                        append(buffer[i] + '0');
-                }
-            }
-        } else if (timestampFormat == 2) {
-            //unix epoch format
-            struct tm epochtime;
-            uint64_t val1 = data[0],
-                     val2 = data[1];
-
-            //AD
-            if (val1 >= 100 && val2 >= 100) {
-                val1 -= 100;
-                val2 -= 100;
-                uint64_t year;
-                year = val1 * 100 + val2;
-                if (year >= 1900) {
-                    epochtime.tm_sec = data[6] - 1;
-                    epochtime.tm_min = data[5] - 1;
-                    epochtime.tm_hour = data[4] - 1;
-                    epochtime.tm_mday = data[3];
-                    epochtime.tm_mon = data[2] - 1;
-                    epochtime.tm_year = year - 1900;
-
-                    uint64_t fraction = 0;
-                    if (length == 11)
-                        fraction = oracleAnalyser->read32Big(data + 7);
-
-                    appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
-                }
-            }
-        }
-    }
-
-    void OutputBuffer::appendStr(string &str) {
+    void OutputBuffer::append(string &str) {
         const char *charstr = str.c_str();
         uint64_t length = str.length();
         for (uint i = 0; i < length; ++i)
             bufferAppend(*charstr++);
     }
 
-    void OutputBuffer::appendChr(const char *str) {
+    void OutputBuffer::append(const char *str) {
         char character = *str++;
         while (character != 0) {
             bufferAppend(character);
@@ -1065,14 +939,8 @@ namespace OpenLogReplicator {
         bufferAppend(chr);
     }
 
-    void OutputBuffer::beginTran(typescn scn, typetime time, typexid xid) {
-        beginMessage();
-        lastTime = time;
-        lastScn = scn;
-    }
-
-    void OutputBuffer::appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        if (showColumns <= 1) {
+    void OutputBuffer::checkUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        if (columnFormat <= COLUMN_FORMAT_INS_DEC) {
             for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 if (object->columns[i] == nullptr)
                     continue;
@@ -1108,12 +976,5 @@ namespace OpenLogReplicator {
                 }
             }
         }
-    }
-
-    void OutputBuffer::next(void) {
-    }
-
-    void OutputBuffer::commitTran(void) {
-        commitMessage();
     }
 }

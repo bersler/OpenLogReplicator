@@ -26,40 +26,34 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "Writer.h"
 
-#ifdef LINK_LIBRARY_PROTOBUF
-#include "OraProtoBuf.pb.h"
-using namespace oraprotobuf;
-#endif /* LINK_LIBRARY_PROTOBUF */
-
 namespace OpenLogReplicator {
 
-    OutputBufferProtobuf::OutputBufferProtobuf(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns) :
-            OutputBuffer(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns) {
+    OutputBufferProtobuf::OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+            uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
+            OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat) {
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
     OutputBufferProtobuf::~OutputBufferProtobuf() {
+        google::protobuf::ShutdownProtobufLibrary();
     }
 
-    void OutputBufferProtobuf::appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferProtobuf::processBegin(typescn scn, typetime time, typexid xid) {
     }
 
-    void OutputBufferProtobuf::appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferProtobuf::processCommit(void) {
     }
 
-    void OutputBufferProtobuf::appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferProtobuf::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
     }
 
-    void OutputBufferProtobuf::appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) {
+    void OutputBufferProtobuf::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        checkUpdate(object, bdba, slot, xid);
     }
 
-    void OutputBufferProtobuf::next(void) {
+    void OutputBufferProtobuf::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
     }
 
-    void OutputBufferProtobuf::beginTran(typescn scn, typetime time, typexid xid) {
-        OutputBuffer::beginTran(scn, time, xid);
-    }
-
-    void OutputBufferProtobuf::commitTran(void) {
-        commitMessage();
+    void OutputBufferProtobuf::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) {
     }
 }

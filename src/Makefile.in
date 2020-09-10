@@ -131,8 +131,7 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
 	OpCode.cpp OpenLogReplicator.cpp OracleAnalyser.cpp \
 	OracleAnalyserRedoLog.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferJsonDbz.cpp \
-	OutputBufferJsonTest.cpp OutputBufferProtobuf.cpp \
+	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
 	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
 	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
@@ -162,8 +161,7 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OpenLogReplicator.$(OBJEXT) OracleAnalyser.$(OBJEXT) \
 	OracleAnalyserRedoLog.$(OBJEXT) OracleColumn.$(OBJEXT) \
 	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
-	OutputBufferJson.$(OBJEXT) OutputBufferJsonDbz.$(OBJEXT) \
-	OutputBufferJsonTest.$(OBJEXT) OutputBufferProtobuf.$(OBJEXT) \
+	OutputBufferJson.$(OBJEXT) OutputBufferProtobuf.$(OBJEXT) \
 	ReaderASM.$(OBJEXT) Reader.$(OBJEXT) \
 	ReaderFilesystem.$(OBJEXT) RedoLogException.$(OBJEXT) \
 	RedoLogRecord.$(OBJEXT) RuntimeException.$(OBJEXT) \
@@ -374,8 +372,7 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
 	OpenLogReplicator.cpp OracleAnalyser.cpp \
 	OracleAnalyserRedoLog.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferJsonDbz.cpp \
-	OutputBufferJsonTest.cpp OutputBufferProtobuf.cpp \
+	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
 	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
 	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
@@ -522,8 +519,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleObject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBuffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBufferJson.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBufferJsonDbz.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBufferJsonTest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBufferProtobuf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Reader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ReaderASM.Po@am__quote@

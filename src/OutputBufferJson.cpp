@@ -28,11 +28,171 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    OutputBufferJson::OutputBufferJson(uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t showColumns) :
-            OutputBuffer(timestampFormat, charFormat, scnFormat, unknownFormat, showColumns) {
+    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
+            uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
+            OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat),
+            hasPrevious(false) {
     }
 
     OutputBufferJson::~OutputBufferJson() {
+    }
+
+    void OutputBufferJson::appendHex(uint64_t val, uint64_t length) {
+        static const char* digits = "0123456789abcdef";
+
+        uint64_t j = (length - 1) * 4;
+        for (uint64_t i = 0; i < length; ++i) {
+            bufferAppend(digits[(val >> j) & 0xF]);
+            j -= 4;
+        };
+    }
+
+    void OutputBufferJson::appendDec(uint64_t val) {
+        char buffer[21];
+        uint64_t length = 0;
+
+        if (val == 0) {
+            buffer[0] = '0';
+            length = 1;
+        } else {
+            while (val > 0) {
+                buffer[length++] = '0' + (val % 10);
+                val /= 10;
+            }
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            bufferAppend(buffer[length - i - 1]);
+    }
+
+    void OutputBufferJson::appendSDec(int64_t val) {
+        char buffer[22];
+        uint64_t length = 0;
+
+        if (val == 0) {
+            buffer[0] = '0';
+            length = 1;
+        } else {
+            if (val < 0) {
+                val = -val;
+                while (val > 0) {
+                    buffer[length++] = '0' + (val % 10);
+                    val /= 10;
+                }
+                buffer[length++] = '-';
+            } else {
+                while (val > 0) {
+                    buffer[length++] = '0' + (val % 10);
+                    val /= 10;
+                }
+            }
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            bufferAppend(buffer[length - i - 1]);
+    }
+
+    void OutputBufferJson::appendTimestamp(const uint8_t *data, uint64_t length) {
+        if (timestampFormat == 0 || timestampFormat == 1) {
+            //2012-04-23T18:25:43.511Z - ISO 8601 format
+            uint64_t val1 = data[0],
+                     val2 = data[1];
+            bool bc = false;
+
+            //AD
+            if (val1 >= 100 && val2 >= 100) {
+                val1 -= 100;
+                val2 -= 100;
+            //BC
+            } else {
+                val1 = 100 - val1;
+                val2 = 100 - val2;
+                bc = true;
+            }
+            if (val1 > 0) {
+                if (val1 > 10) {
+                    append('0' + (val1 / 10));
+                    append('0' + (val1 % 10));
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                } else {
+                    append('0' + val1);
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                }
+            } else {
+                if (val2 > 10) {
+                    append('0' + (val2 / 10));
+                    append('0' + (val2 % 10));
+                } else
+                    append('0' + val2);
+            }
+
+            if (bc)
+                append("BC");
+
+            append('-');
+            append('0' + (data[2] / 10));
+            append('0' + (data[2] % 10));
+            append('-');
+            append('0' + (data[3] / 10));
+            append('0' + (data[3] % 10));
+            append('T');
+            append('0' + ((data[4] - 1) / 10));
+            append('0' + ((data[4] - 1) % 10));
+            append(':');
+            append('0' + ((data[5] - 1) / 10));
+            append('0' + ((data[5] - 1) % 10));
+            append(':');
+            append('0' + ((data[6] - 1) / 10));
+            append('0' + ((data[6] - 1) % 10));
+
+            if (length == 11) {
+                uint64_t digits = 0;
+                uint8_t buffer[10];
+                uint64_t val = oracleAnalyser->read32Big(data + 7);
+
+                for (int64_t i = 9; i > 0; --i) {
+                    buffer[i] = val % 10;
+                    val /= 10;
+                    if (buffer[i] != 0 && digits == 0)
+                        digits = i;
+                }
+
+                if (digits > 0) {
+                    append('.');
+                    for (uint64_t i = 1; i <= digits; ++i)
+                        append(buffer[i] + '0');
+                }
+            }
+        } else if (timestampFormat == 2) {
+            //unix epoch format
+            struct tm epochtime;
+            uint64_t val1 = data[0],
+                     val2 = data[1];
+
+            //AD
+            if (val1 >= 100 && val2 >= 100) {
+                val1 -= 100;
+                val2 -= 100;
+                uint64_t year;
+                year = val1 * 100 + val2;
+                if (year >= 1900) {
+                    epochtime.tm_sec = data[6] - 1;
+                    epochtime.tm_min = data[5] - 1;
+                    epochtime.tm_hour = data[4] - 1;
+                    epochtime.tm_mday = data[3];
+                    epochtime.tm_mon = data[2] - 1;
+                    epochtime.tm_year = year - 1900;
+
+                    uint64_t fraction = 0;
+                    if (length == 11)
+                        fraction = oracleAnalyser->read32Big(data + 7);
+
+                    appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
+                }
+            }
+        }
     }
 
     void OutputBufferJson::appendEscape(const uint8_t *str, uint64_t length) {
@@ -65,7 +225,7 @@ namespace OpenLogReplicator {
         bool isNext = false;
 
         CharacterSet *characterSet = characterMap[charsetId];
-        if (characterSet == nullptr && (charFormat & 1 == 0)) {
+        if (characterSet == nullptr && (charFormat & 1) == 0) {
             RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
         }
 
@@ -145,32 +305,6 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::appendScn(typescn scn) {
-        if (scnFormat == SCN_FORMAT_HEX) {
-            appendChr("\"scn\":\"0x");
-            appendHex(scn, 16);
-            append('"');
-        } else {
-            appendChr("\"scn\":");
-            string scnStr = to_string(scn);
-            appendStr(scnStr);
-        }
-    }
-
-    void OutputBufferJson::appendOperation(const char *operation) {
-        appendChr("\"operation\":\"");
-        appendChr(operation);
-        append('"');
-    }
-
-    void OutputBufferJson::appendTable(string &owner, string &table) {
-        appendChr("\"table\":\"");
-        appendStr(owner);
-        append('.');
-        appendStr(table);
-        append('"');
-    }
-
     void OutputBufferJson::appendNull(string &columnName, bool &prevValue) {
         if (prevValue)
             append(',');
@@ -178,33 +312,16 @@ namespace OpenLogReplicator {
             prevValue = true;
 
         append('"');
-        appendStr(columnName);
-        appendChr("\":null");
-    }
-
-    void OutputBufferJson::appendMs(const char *name, uint64_t time) {
-        append('"');
-        appendChr(name);
-        appendChr("\":");
-        appendDec(time);
-    }
-
-    void OutputBufferJson::appendXid(typexid xid) {
-        appendChr("\"xid\":\"");
-        appendDec(USN(xid));
-        append('.');
-        appendDec(SLT(xid));
-        append('.');
-        appendDec(SQN(xid));
-        append('"');
+        append(columnName);
+        append("\":null");
     }
 
     void OutputBufferJson::appendUnknown(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t fieldPos, uint64_t fieldLength) {
-        appendChr("\"?\"");
+        append("\"?\"");
         stringstream ss;
         for (uint64_t j = 0; j < fieldLength; ++j)
             ss << " " << hex << setfill('0') << setw(2) << (uint64_t) redoLogRecord->data[fieldPos + j];
-        WARNING("unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->objectName << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - " << ss.str());
+        WARNING("unknown value (table: " << redoLogRecord->object->owner << "." << redoLogRecord->object->name << " column: " << columnName << " type: " << dec << typeNo << "): " << dec << fieldLength << " - " << ss.str());
     }
 
     void OutputBufferJson::appendValue(string &columnName, RedoLogRecord *redoLogRecord, uint64_t typeNo, uint64_t charsetId, uint64_t fieldPos, uint64_t fieldLength, bool &prevValue) {
@@ -221,8 +338,8 @@ namespace OpenLogReplicator {
             prevValue = true;
 
         append('"');
-        appendStr(columnName);
-        appendChr("\":");
+        append(columnName);
+        append("\":");
 
         switch(typeNo) {
         case 1: //varchar2/nvarchar2
@@ -389,7 +506,7 @@ namespace OpenLogReplicator {
                 float *valFloat = (float *)redoLogRecord->data + fieldPos;
                 valStringStream << *valFloat;
                 string valString = valStringStream.str();
-                appendStr(valString);
+                append(valString);
             } else
                 appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
             break;
@@ -400,7 +517,7 @@ namespace OpenLogReplicator {
                 double *valDouble = (double *)redoLogRecord->data + fieldPos;
                 valStringStream << *valDouble;
                 string valString = valStringStream.str();
-                appendStr(valString);
+                append(valString);
             } else
                 appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
             break;
@@ -450,9 +567,9 @@ namespace OpenLogReplicator {
                         uint16_t tzkey = (redoLogRecord->data[fieldPos + 11] << 8) | redoLogRecord->data[fieldPos + 12];
                         const char *tz = timeZoneMap[tzkey];
                         if (tz == nullptr)
-                            appendChr("TZ?");
+                            append("TZ?");
                         else
-                            appendChr(tz);
+                            append(tz);
                     }
                 }
 
@@ -464,14 +581,14 @@ namespace OpenLogReplicator {
             if (unknownFormat == UNKNOWN_FORMAT_DUMP)
                 appendUnknown(columnName, redoLogRecord, typeNo, fieldPos, fieldLength);
             else
-                appendChr("\"?\"");
+                append("\"?\"");
         }
     }
 
     void OutputBufferJson::appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) {
         uint32_t afn =  bdba >> 22;
         bdba &= 0x003FFFFF;
-        appendChr("\"rowid\":\"");
+        append("\"rid\":\"");
         append(translationMap[(objd >> 30) & 0x3F]);
         append(translationMap[(objd >> 24) & 0x3F]);
         append(translationMap[(objd >> 18) & 0x3F]);
@@ -493,14 +610,196 @@ namespace OpenLogReplicator {
         append('"');
     }
 
-    void OutputBufferJson::appendInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferJson::appendHeader(bool first) {
+        if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
+            if ((scnFormat & SCN_FORMAT_HEX) != 0) {
+                append("\"scns\":\"0x");
+                appendHex(lastScn, 16);
+                append("\",");
+            } else {
+                append("\"scn\":");
+                appendDec(lastScn);
+                append(',');
+            }
+        }
+
+        if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
+            if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
+                append("\"tms\":\"");
+                char iso[21];
+                lastTime.toISO8601(iso);
+                append(iso);
+                append("\",");
+            } else {
+                append("\"tm\":");
+                appendDec(lastTime.toTime() * 1000);
+                append(',');
+            }
+        }
+
+        if (xidFormat == XID_FORMAT_TEXT) {
+            append("\"xid\":\"");
+            appendDec(USN(lastXid));
+            append('.');
+            appendDec(SLT(lastXid));
+            append('.');
+            appendDec(SQN(lastXid));
+            append('"');
+        } else {
+            append("\"xidn\":");
+            appendDec(lastXid);
+        }
+    }
+
+    void OutputBufferJson::appendSchema(OracleObject *object) {
+        append("\"schema\":{\"owner\":\"");
+        append(object->owner);
+        append("\",\"table\":\"");
+        append(object->name);
+        append('"');
+
+        if ((schemaFormat & SCHEMA_FORMAT_OBJN) != 0) {
+            append(",\"objn\":");
+            appendDec(object->objn);
+        }
+
+        if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
+            //objects;
+
+            if ((schemaFormat & SCHEMA_FORMAT_REPEATED) == 0) {
+                if (objects.count(object) > 0)
+                    return;
+                else
+                    objects.insert(object);
+            }
+
+            append(",\"columns\":[");
+
+            bool hasPrev = false;
+            for (uint64_t i = 0; i < object->columns.size(); ++i) {
+                if (object->columns[i] == nullptr)
+                    continue;
+
+                if (hasPrev)
+                    append(',');
+                else
+                    hasPrev = true;
+
+                append("{\"name\":\"");
+                append(object->columns[i]->columnName);
+
+                append("\",\"type\":");
+                switch(object->columns[i]->typeNo) {
+                case 1:
+                    append("\"varchar2\",\"length\":");
+                    appendDec(object->columns[i]->length);
+                    break;
+
+                case 2:
+                    append("\"numeric\",\"precision\":");
+                    appendSDec(object->columns[i]->precision);
+                    append(",\"scale\":");
+                    appendSDec(object->columns[i]->scale);
+                    break;
+
+                case 12:
+                    append("\"date\"");
+                    break;
+
+                case 23:
+                    append("\"raw\",\"length\":");
+                    appendDec(object->columns[i]->length);
+                    break;
+
+                case 96:
+                    append("\"char\",\"length\":");
+                    appendDec(object->columns[i]->length);
+                    break;
+
+                case 100:
+                    append("\"binary_float\"");
+                    break;
+
+                case 101:
+                    append("\"binary_double\"");
+                    break;
+
+                case 180:
+                    append("\"timestamp\",\"length\":");
+                    appendDec(object->columns[i]->length);
+                    break;
+
+                case 181:
+                    append("\"timestamp with time zone\",\"length\":");
+                    appendDec(object->columns[i]->length);
+                    break;
+
+                default:
+                    break;
+                }
+
+                append(",\"nullable\":");
+                if (object->columns[i]->nullable)
+                    append('1');
+                else
+                    append('0');
+
+                append("}");
+            }
+            append(']');
+        }
+
+        append('}');
+    }
+
+    void OutputBufferJson::processBegin(typescn scn, typetime time, typexid xid) {
+        lastTime = time;
+        lastScn = scn;
+        lastXid = xid;
+        hasPrevious = false;
+
+        beginMessage();
         append('{');
-        appendOperation("insert");
-        append(',');
-        appendTable(object->owner, object->objectName);
+        appendHeader(true);
+
+        if (messageFormat == MESSAGE_FORMAT_FULL)
+            append(",\"payload\":[");
+        else {
+            append(",\"payload\":[{\"op\":\"begin\"}]}");
+            commitMessage();
+        }
+    }
+
+    void OutputBufferJson::processCommit(void) {
+        if (messageFormat == MESSAGE_FORMAT_FULL)
+            append("]}");
+        else {
+            beginMessage();
+            append('{');
+            appendHeader(false);
+            append(",\"payload\":[{\"op\":\"commit\"}]}");
+        }
+        commitMessage();
+    }
+
+    void OutputBufferJson::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        if (messageFormat == MESSAGE_FORMAT_FULL) {
+            if (hasPrevious)
+                append(',');
+            else
+                hasPrevious = true;
+        } else {
+            beginMessage();
+            append('{');
+            appendHeader(false);
+            append(",\"payload\":[");
+        }
+
+        append("{\"op\":\"c\",");
+        appendSchema(object);
         append(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        appendChr(",\"after\":{");
+        append(",\"after\":{");
 
         bool prevValue = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -511,30 +810,43 @@ namespace OpenLogReplicator {
                 appendValue(object->columns[i]->columnName, afterRecord[i], object->columns[i]->typeNo,
                         object->columns[i]->charsetId, afterPos[i], afterLen[i], prevValue);
             else
-            if (showColumns >= 1 || object->columns[i]->numPk > 0)
+            if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
                 appendNull(object->columns[i]->columnName, prevValue);
         }
+        append("}}");
 
-        appendChr("}}");
+        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+            append("]}");
+            commitMessage();
+        }
     }
 
-    void OutputBufferJson::appendUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        OutputBuffer::appendUpdate(object, bdba, slot, xid);
+    void OutputBufferJson::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        checkUpdate(object, bdba, slot, xid);
 
-        append('{');
-        appendOperation("update");
-        append(',');
-        appendTable(object->owner, object->objectName);
+        if (messageFormat == MESSAGE_FORMAT_FULL) {
+            if (hasPrevious)
+                append(',');
+            else
+                hasPrevious = true;
+        } else {
+            beginMessage();
+            append('{');
+            appendHeader(false);
+            append(",\"payload\":[");
+        }
+
+        append("{\"op\":\"u\",");
+        appendSchema(object);
         append(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        appendChr(",\"before\":{");
+        append(",\"before\":{");
 
         bool prevValue = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
             if (object->columns[i] == nullptr)
                 continue;
 
-            //value present before
             if (beforePos[i] > 0 && beforeLen[i] > 0)
                 appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo,
                         object->columns[i]->charsetId, beforePos[i], beforeLen[i], prevValue);
@@ -543,7 +855,7 @@ namespace OpenLogReplicator {
                 appendNull(object->columns[i]->columnName, prevValue);
         }
 
-        appendChr("},\"after\":{");
+        append("},\"after\":{");
 
         prevValue = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -557,18 +869,32 @@ namespace OpenLogReplicator {
             if (afterPos[i] > 0 || beforePos[i] > 0)
                 appendNull(object->columns[i]->columnName, prevValue);
         }
+        append("}}");
 
-        appendChr("}}");
+        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+            append("]}");
+            commitMessage();
+        }
     }
 
-    void OutputBufferJson::appendDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        append('{');
-        appendOperation("delete");
-        append(',');
-        appendTable(object->owner, object->objectName);
+    void OutputBufferJson::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+        if (messageFormat == MESSAGE_FORMAT_FULL) {
+            if (hasPrevious)
+                append(',');
+            else
+                hasPrevious = true;
+        } else {
+            beginMessage();
+            append('{');
+            appendHeader(false);
+            append(",\"payload\":[");
+        }
+
+        append("{\"op\":\"u\",");
+        appendSchema(object);
         append(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        appendChr(",\"before\":{");
+        append(",\"before\":{");
 
         bool prevValue = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -580,45 +906,39 @@ namespace OpenLogReplicator {
                 appendValue(object->columns[i]->columnName, beforeRecord[i], object->columns[i]->typeNo,
                         object->columns[i]->charsetId, beforePos[i], beforeLen[i], prevValue);
             else
-            if (showColumns >= 1 || object->columns[i]->numPk > 0)
+            if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
                 appendNull(object->columns[i]->columnName, prevValue);
         }
+        append("}}");
 
-        appendChr("}}");
+        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+            append("]}");
+            commitMessage();
+        }
     }
 
-    void OutputBufferJson::appendDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) {
-        append('{');
-        appendTable(object->owner, object->objectName);
-        appendChr(",\"type\":");
-        appendDec(type);
-        appendChr(",\"seq\":");
-        appendDec(seq);
-        append(',');
-        appendOperation(operation);
-        appendChr(",\"sql\":\"");
+    void OutputBufferJson::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const uint8_t *sql, uint64_t sqlLength) {
+        if (messageFormat == MESSAGE_FORMAT_FULL) {
+            if (hasPrevious)
+                append(',');
+            else
+                hasPrevious = true;
+        } else {
+            beginMessage();
+            append('{');
+            appendHeader(false);
+            append(",\"payload\":[");
+        }
+
+        append("{\"op\":\"ddl\",");
+        appendSchema(object);
+        append(",\"sql\":\"");
         appendEscape(sql, sqlLength);
-        appendChr("\"}");
-    }
+        append("\"}");
 
-    void OutputBufferJson::next(void) {
-        append(',');
-    }
-
-    void OutputBufferJson::beginTran(typescn scn, typetime time, typexid xid) {
-        OutputBuffer::beginTran(scn, time, xid);
-
-        append('{');
-        appendScn(scn);
-        append(',');
-        appendMs("timestamp", time.toTime() * 1000);
-        append(',');
-        appendXid(xid);
-        appendChr(",\"dml\":[");
-    }
-
-    void OutputBufferJson::commitTran(void) {
-        appendChr("]}");
-        commitMessage();
+        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+            append("]}");
+            commitMessage();
+        }
     }
 }

@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         virtual string getName();
 
     public:
-        WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t shortMessage,
+        WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser,
                     const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages);
         virtual ~WriterKafka();
     };
