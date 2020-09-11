@@ -31,11 +31,15 @@ namespace OpenLogReplicator {
     OutputBufferProtobuf::OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
             uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
             OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat) {
+#ifdef LINK_LIBRARY_PROTOBUF
         GOOGLE_PROTOBUF_VERIFY_VERSION;
+#endif /* LINK_LIBRARY_PROTOBUF */
     }
 
     OutputBufferProtobuf::~OutputBufferProtobuf() {
+#ifdef LINK_LIBRARY_PROTOBUF
         google::protobuf::ShutdownProtobufLibrary();
+#endif /* LINK_LIBRARY_PROTOBUF */
     }
 
     void OutputBufferProtobuf::processBegin(typescn scn, typetime time, typexid xid) {
