@@ -174,8 +174,8 @@ namespace OpenLogReplicator {
             pos = 3;
 
             memset(outputBuffer->colIsSupp, 0, object->maxSegCol * sizeof(uint8_t));
-            memset(outputBuffer->afterPos, 0, object->maxSegCol * sizeof(uint64_t));
-            memset(outputBuffer->beforePos, 0, object->maxSegCol * sizeof(uint64_t));
+            memset(outputBuffer->afterPos, 0, object->maxSegCol * sizeof(uint8_t*));
+            memset(outputBuffer->beforePos, 0, object->maxSegCol * sizeof(uint8_t*));
 
             if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
                 if (oracleAnalyser->version < 0x12200)
@@ -200,9 +200,8 @@ namespace OpenLogReplicator {
                 }
 
                 if (object->columns[i] != nullptr) {
-                    outputBuffer->afterPos[i] = fieldPos + pos;
+                    outputBuffer->afterPos[i] = redoLogRecord2->data + fieldPos + pos;
                     outputBuffer->afterLen[i] = colLength;
-                    outputBuffer->afterRecord[i] = redoLogRecord2;
                 }
                 pos += colLength;
             }
@@ -260,9 +259,8 @@ namespace OpenLogReplicator {
                 }
 
                 if (object->columns[i] != nullptr) {
-                    outputBuffer->beforePos[i] = fieldPos + pos;
+                    outputBuffer->beforePos[i] = redoLogRecord1->data + fieldPos + pos;
                     outputBuffer->beforeLen[i] = colLength;
-                    outputBuffer->beforeRecord[i] = redoLogRecord1;
                 }
 
                 pos += colLength;
@@ -379,9 +377,8 @@ namespace OpenLogReplicator {
                     }
 
                     if (object->columns[colNum] != nullptr) {
-                        outputBuffer->beforePos[colNum] = fieldPos;
+                        outputBuffer->beforePos[colNum] = redoLogRecord1p->data + fieldPos;
                         outputBuffer->beforeLen[colNum] = colLength;
-                        outputBuffer->beforeRecord[colNum] = redoLogRecord1p;
                     }
 
                     bits <<= 1;
@@ -423,16 +420,14 @@ namespace OpenLogReplicator {
                             colLength = 0;
 
                         //insert, lock, update
-                        if (outputBuffer->afterPos[colNum] == 0 && (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)) {
-                            outputBuffer->afterPos[colNum] = fieldPos;
+                        if (outputBuffer->afterPos[colNum] == nullptr && (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)) {
+                            outputBuffer->afterPos[colNum] = redoLogRecord1p->data + fieldPos;
                             outputBuffer->afterLen[colNum] = colLength;
-                            outputBuffer->afterRecord[colNum] = redoLogRecord1p;
                         }
                         //delete, update, overwrite
-                        if (outputBuffer->beforePos[colNum] == 0 && (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)) {
-                            outputBuffer->beforePos[colNum] = fieldPos;
+                        if (outputBuffer->beforePos[colNum] == nullptr && (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)) {
+                            outputBuffer->beforePos[colNum] = redoLogRecord1p->data + fieldPos;
                             outputBuffer->beforeLen[colNum] = colLength;
-                            outputBuffer->beforeRecord[colNum] = redoLogRecord1p;
                         }
                     }
 
@@ -485,15 +480,13 @@ namespace OpenLogReplicator {
                         else
                             colLength = fieldLength;
 
-                        outputBuffer->afterPos[colNum] = fieldPos;
+                        outputBuffer->afterPos[colNum] = redoLogRecord2p->data + fieldPos;
                         outputBuffer->afterLen[colNum] = colLength;
-                        outputBuffer->afterRecord[colNum] = redoLogRecord2p;
                     } else {
                         //present null value for
                         if (redoLogRecord2p->data[fieldPos] == 1 && fieldLength == 1 && colNum + 1 < object->maxSegCol && object->columns[colNum + 1] != nullptr) {
-                            outputBuffer->afterPos[colNum + 1] = fieldPos;
+                            outputBuffer->afterPos[colNum + 1] = redoLogRecord2p->data + fieldPos;
                             outputBuffer->afterLen[colNum + 1] = 0;
-                            outputBuffer->afterRecord[colNum + 1] = redoLogRecord2p;
                         }
                     }
 
@@ -516,8 +509,8 @@ namespace OpenLogReplicator {
                     continue;
 
                 TRACE(TRACE2_DML, dec << i << ": " <<
-                        " B(" << outputBuffer->beforePos[i] << ", " << dec << outputBuffer->beforeLen[i] << ")" <<
-                        " A(" << outputBuffer->afterPos[i] << ", " << dec << outputBuffer->afterLen[i] << ")" <<
+                        " B(" << dec << outputBuffer->beforeLen[i] << ")" <<
+                        " A(" << dec << outputBuffer->afterLen[i] << ")" <<
                         " pk: " << dec << object->columns[i]->numPk <<
                         " supp: " << dec << (uint64_t)outputBuffer->colIsSupp[i]);
             }
@@ -536,7 +529,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = 0, fieldNum = 0, sqlLength;
         uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
         OracleObject *object = redoLogRecord1->object;
-        uint8_t *sqlText = nullptr;
+        char *sqlText = nullptr;
 
         oracleAnalyser->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 1
@@ -572,7 +565,7 @@ namespace OpenLogReplicator {
             return;
         //field: 8
         sqlLength = fieldLength;
-        sqlText = redoLogRecord1->data + fieldPos;
+        sqlText = (char*)redoLogRecord1->data + fieldPos;
 
         if (type == 85)
             outputBuffer->processDDL(object, type, seq, "truncate", sqlText, sqlLength - 1);

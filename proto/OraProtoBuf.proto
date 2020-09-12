@@ -25,12 +25,34 @@ option cc_enable_arenas = true;
 option optimize_for = SPEED;
 
 enum Op {
-    BEGIN  = 0; //b
-    COMMIT = 1; //f
+    BEGIN  = 0; //begin
+    COMMIT = 1; //commit
     INSERT = 2; //c 
     UPDATE = 3; //u
     DELETE = 4; //d
     DDL = 5;    //ddl
+}
+
+enum ColumnType {
+    UNKNOWN = 0;
+    VARCHAR2 = 1; //1
+    NUMBER = 2; //2, FLOAT
+    LONG = 3;  //8
+    DATE = 4; //12
+    RAW = 5; //23
+    LONG_RAW = 6; //24
+    ROWID = 7; //69
+    CHAR = 8; //96, NCHAR
+    BINARY_FLOAT = 9; //100
+    BINARY_DOUBLE = 10; //101
+    CLOB = 11; //112, NCLOB
+    BLOB = 12; //113
+    TIMESTAMP = 13; //180
+    TIMESTAMP_WITH_TZ = 14; //181
+    INTERVAL_YEAR_TO_MONTH = 15; //182
+    INTERVAL_DAY_TO_SECOND = 16; //183
+    UROWID = 17; //208
+    TIMESTAMP_WITH_LOCAL_TZ = 18; //231
 }
 
 message RequestSchema {
@@ -46,22 +68,20 @@ message Request {
 }
 
 message Value {
-    string column_name = 1;
-    int64 column_type = 2;
+    string name = 1;
     oneof datum {
-        int32 value_int32 = 3;
-        int64 value_int64 = 4;
-        float value_float = 5;
-        double value_double = 6;
-        bool value_bool = 7;
-        string value_string = 8;
-        bytes value_bytes = 9;
+        int64 value_int64 = 2;
+        float value_float = 3;
+        double value_double = 4;
+        bool value_bool = 5;
+        string value_string = 6;
+        bytes value_bytes = 7;
     }
 }
 
 message Column {
-    string column_name = 1;
-    string column_type = 2;
+    string name = 1;
+    ColumnType type = 2;
     int32 length = 3;
     int32 precision = 4;
     int32 scale = 5;
@@ -70,7 +90,7 @@ message Column {
 
 message Schema {
     string owner = 1;
-    string table = 2;
+    string name = 2;
     uint32 objn = 3;
     oneof tm_val {
         uint64 tm = 4;
@@ -82,9 +102,9 @@ message Schema {
 message Payload {
     Op op = 1;
     Schema schema = 2;
-    string rowid = 3;
-    Value before = 4;
-    Value after = 5;
+    string rid = 3;
+    repeated Value before = 4;
+    repeated Value after = 5;
     string ddl = 6;
 }
 

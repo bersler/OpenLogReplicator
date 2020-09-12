@@ -121,6 +121,48 @@ inline bool Op_Parse(
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<Op>(
     Op_descriptor(), name, value);
 }
+enum ColumnType : int {
+  UNKNOWN = 0,
+  VARCHAR2 = 1,
+  NUMBER = 2,
+  LONG = 3,
+  DATE = 4,
+  RAW = 5,
+  LONG_RAW = 6,
+  ROWID = 7,
+  CHAR = 8,
+  BINARY_FLOAT = 9,
+  BINARY_DOUBLE = 10,
+  CLOB = 11,
+  BLOB = 12,
+  TIMESTAMP = 13,
+  TIMESTAMP_WITH_TZ = 14,
+  INTERVAL_YEAR_TO_MONTH = 15,
+  INTERVAL_DAY_TO_SECOND = 16,
+  UROWID = 17,
+  TIMESTAMP_WITH_LOCAL_TZ = 18,
+  ColumnType_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  ColumnType_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+};
+bool ColumnType_IsValid(int value);
+constexpr ColumnType ColumnType_MIN = UNKNOWN;
+constexpr ColumnType ColumnType_MAX = TIMESTAMP_WITH_LOCAL_TZ;
+constexpr int ColumnType_ARRAYSIZE = ColumnType_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ColumnType_descriptor();
+template<typename T>
+inline const std::string& ColumnType_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, ColumnType>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function ColumnType_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    ColumnType_descriptor(), enum_t_value);
+}
+inline bool ColumnType_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, ColumnType* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ColumnType>(
+    ColumnType_descriptor(), name, value);
+}
 // ===================================================================
 
 class RequestSchema PROTOBUF_FINAL :
@@ -508,13 +550,12 @@ class Value PROTOBUF_FINAL :
   static const Value& default_instance();
 
   enum DatumCase {
-    kValueInt32 = 3,
-    kValueInt64 = 4,
-    kValueFloat = 5,
-    kValueDouble = 6,
-    kValueBool = 7,
-    kValueString = 8,
-    kValueBytes = 9,
+    kValueInt64 = 2,
+    kValueFloat = 3,
+    kValueDouble = 4,
+    kValueBool = 5,
+    kValueString = 6,
+    kValueBytes = 7,
     DATUM_NOT_SET = 0,
   };
 
@@ -595,54 +636,31 @@ class Value PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kColumnNameFieldNumber = 1,
-    kColumnTypeFieldNumber = 2,
-    kValueInt32FieldNumber = 3,
-    kValueInt64FieldNumber = 4,
-    kValueFloatFieldNumber = 5,
-    kValueDoubleFieldNumber = 6,
-    kValueBoolFieldNumber = 7,
-    kValueStringFieldNumber = 8,
-    kValueBytesFieldNumber = 9,
+    kNameFieldNumber = 1,
+    kValueInt64FieldNumber = 2,
+    kValueFloatFieldNumber = 3,
+    kValueDoubleFieldNumber = 4,
+    kValueBoolFieldNumber = 5,
+    kValueStringFieldNumber = 6,
+    kValueBytesFieldNumber = 7,
   };
-  // string column_name = 1;
-  void clear_column_name();
-  const std::string& column_name() const;
-  void set_column_name(const std::string& value);
-  void set_column_name(std::string&& value);
-  void set_column_name(const char* value);
-  void set_column_name(const char* value, size_t size);
-  std::string* mutable_column_name();
-  std::string* release_column_name();
-  void set_allocated_column_name(std::string* column_name);
+  // string name = 1;
+  void clear_name();
+  const std::string& name() const;
+  void set_name(const std::string& value);
+  void set_name(std::string&& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  std::string* mutable_name();
+  std::string* release_name();
+  void set_allocated_name(std::string* name);
   private:
-  const std::string& _internal_column_name() const;
-  void _internal_set_column_name(const std::string& value);
-  std::string* _internal_mutable_column_name();
+  const std::string& _internal_name() const;
+  void _internal_set_name(const std::string& value);
+  std::string* _internal_mutable_name();
   public:
 
-  // int64 column_type = 2;
-  void clear_column_type();
-  ::PROTOBUF_NAMESPACE_ID::int64 column_type() const;
-  void set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::int64 _internal_column_type() const;
-  void _internal_set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value);
-  public:
-
-  // int32 value_int32 = 3;
-  private:
-  bool _internal_has_value_int32() const;
-  public:
-  void clear_value_int32();
-  ::PROTOBUF_NAMESPACE_ID::int32 value_int32() const;
-  void set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::int32 _internal_value_int32() const;
-  void _internal_set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value);
-  public:
-
-  // int64 value_int64 = 4;
+  // int64 value_int64 = 2;
   private:
   bool _internal_has_value_int64() const;
   public:
@@ -654,7 +672,7 @@ class Value PROTOBUF_FINAL :
   void _internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
   public:
 
-  // float value_float = 5;
+  // float value_float = 3;
   private:
   bool _internal_has_value_float() const;
   public:
@@ -666,7 +684,7 @@ class Value PROTOBUF_FINAL :
   void _internal_set_value_float(float value);
   public:
 
-  // double value_double = 6;
+  // double value_double = 4;
   private:
   bool _internal_has_value_double() const;
   public:
@@ -678,7 +696,7 @@ class Value PROTOBUF_FINAL :
   void _internal_set_value_double(double value);
   public:
 
-  // bool value_bool = 7;
+  // bool value_bool = 5;
   private:
   bool _internal_has_value_bool() const;
   public:
@@ -690,7 +708,7 @@ class Value PROTOBUF_FINAL :
   void _internal_set_value_bool(bool value);
   public:
 
-  // string value_string = 8;
+  // string value_string = 6;
   private:
   bool _internal_has_value_string() const;
   public:
@@ -709,7 +727,7 @@ class Value PROTOBUF_FINAL :
   std::string* _internal_mutable_value_string();
   public:
 
-  // bytes value_bytes = 9;
+  // bytes value_bytes = 7;
   private:
   bool _internal_has_value_bytes() const;
   public:
@@ -733,7 +751,6 @@ class Value PROTOBUF_FINAL :
   // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Value)
  private:
   class _Internal;
-  void set_has_value_int32();
   void set_has_value_int64();
   void set_has_value_float();
   void set_has_value_double();
@@ -747,11 +764,9 @@ class Value PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
-  ::PROTOBUF_NAMESPACE_ID::int64 column_type_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
   union DatumUnion {
     DatumUnion() {}
-    ::PROTOBUF_NAMESPACE_ID::int32 value_int32_;
     ::PROTOBUF_NAMESPACE_ID::int64 value_int64_;
     float value_float_;
     double value_double_;
@@ -879,43 +894,36 @@ class Column PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kColumnNameFieldNumber = 1,
-    kColumnTypeFieldNumber = 2,
+    kNameFieldNumber = 1,
+    kTypeFieldNumber = 2,
     kLengthFieldNumber = 3,
     kPrecisionFieldNumber = 4,
     kScaleFieldNumber = 5,
     kNullableFieldNumber = 6,
   };
-  // string column_name = 1;
-  void clear_column_name();
-  const std::string& column_name() const;
-  void set_column_name(const std::string& value);
-  void set_column_name(std::string&& value);
-  void set_column_name(const char* value);
-  void set_column_name(const char* value, size_t size);
-  std::string* mutable_column_name();
-  std::string* release_column_name();
-  void set_allocated_column_name(std::string* column_name);
+  // string name = 1;
+  void clear_name();
+  const std::string& name() const;
+  void set_name(const std::string& value);
+  void set_name(std::string&& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  std::string* mutable_name();
+  std::string* release_name();
+  void set_allocated_name(std::string* name);
   private:
-  const std::string& _internal_column_name() const;
-  void _internal_set_column_name(const std::string& value);
-  std::string* _internal_mutable_column_name();
+  const std::string& _internal_name() const;
+  void _internal_set_name(const std::string& value);
+  std::string* _internal_mutable_name();
   public:
 
-  // string column_type = 2;
-  void clear_column_type();
-  const std::string& column_type() const;
-  void set_column_type(const std::string& value);
-  void set_column_type(std::string&& value);
-  void set_column_type(const char* value);
-  void set_column_type(const char* value, size_t size);
-  std::string* mutable_column_type();
-  std::string* release_column_type();
-  void set_allocated_column_type(std::string* column_type);
+  // .OpenLogReplicator.pb.ColumnType type = 2;
+  void clear_type();
+  ::OpenLogReplicator::pb::ColumnType type() const;
+  void set_type(::OpenLogReplicator::pb::ColumnType value);
   private:
-  const std::string& _internal_column_type() const;
-  void _internal_set_column_type(const std::string& value);
-  std::string* _internal_mutable_column_type();
+  ::OpenLogReplicator::pb::ColumnType _internal_type() const;
+  void _internal_set_type(::OpenLogReplicator::pb::ColumnType value);
   public:
 
   // int32 length = 3;
@@ -961,8 +969,8 @@ class Column PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_name_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_type_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
+  int type_;
   ::PROTOBUF_NAMESPACE_ID::int32 length_;
   ::PROTOBUF_NAMESPACE_ID::int32 precision_;
   ::PROTOBUF_NAMESPACE_ID::int32 scale_;
@@ -1093,7 +1101,7 @@ class Schema PROTOBUF_FINAL :
   enum : int {
     kColumnFieldNumber = 6,
     kOwnerFieldNumber = 1,
-    kTableFieldNumber = 2,
+    kNameFieldNumber = 2,
     kObjnFieldNumber = 3,
     kTmFieldNumber = 4,
     kTmsFieldNumber = 5,
@@ -1132,20 +1140,20 @@ class Schema PROTOBUF_FINAL :
   std::string* _internal_mutable_owner();
   public:
 
-  // string table = 2;
-  void clear_table();
-  const std::string& table() const;
-  void set_table(const std::string& value);
-  void set_table(std::string&& value);
-  void set_table(const char* value);
-  void set_table(const char* value, size_t size);
-  std::string* mutable_table();
-  std::string* release_table();
-  void set_allocated_table(std::string* table);
+  // string name = 2;
+  void clear_name();
+  const std::string& name() const;
+  void set_name(const std::string& value);
+  void set_name(std::string&& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  std::string* mutable_name();
+  std::string* release_name();
+  void set_allocated_name(std::string* name);
   private:
-  const std::string& _internal_table() const;
-  void _internal_set_table(const std::string& value);
-  std::string* _internal_mutable_table();
+  const std::string& _internal_name() const;
+  void _internal_set_name(const std::string& value);
+  std::string* _internal_mutable_name();
   public:
 
   // uint32 objn = 3;
@@ -1204,7 +1212,7 @@ class Schema PROTOBUF_FINAL :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column > column_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr owner_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr table_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
   ::PROTOBUF_NAMESPACE_ID::uint32 objn_;
   union TmValUnion {
     TmValUnion() {}
@@ -1331,27 +1339,63 @@ class Payload PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kRowidFieldNumber = 3,
-    kDdlFieldNumber = 6,
-    kSchemaFieldNumber = 2,
     kBeforeFieldNumber = 4,
     kAfterFieldNumber = 5,
+    kRidFieldNumber = 3,
+    kDdlFieldNumber = 6,
+    kSchemaFieldNumber = 2,
     kOpFieldNumber = 1,
   };
-  // string rowid = 3;
-  void clear_rowid();
-  const std::string& rowid() const;
-  void set_rowid(const std::string& value);
-  void set_rowid(std::string&& value);
-  void set_rowid(const char* value);
-  void set_rowid(const char* value, size_t size);
-  std::string* mutable_rowid();
-  std::string* release_rowid();
-  void set_allocated_rowid(std::string* rowid);
+  // repeated .OpenLogReplicator.pb.Value before = 4;
+  int before_size() const;
   private:
-  const std::string& _internal_rowid() const;
-  void _internal_set_rowid(const std::string& value);
-  std::string* _internal_mutable_rowid();
+  int _internal_before_size() const;
+  public:
+  void clear_before();
+  ::OpenLogReplicator::pb::Value* mutable_before(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >*
+      mutable_before();
+  private:
+  const ::OpenLogReplicator::pb::Value& _internal_before(int index) const;
+  ::OpenLogReplicator::pb::Value* _internal_add_before();
+  public:
+  const ::OpenLogReplicator::pb::Value& before(int index) const;
+  ::OpenLogReplicator::pb::Value* add_before();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >&
+      before() const;
+
+  // repeated .OpenLogReplicator.pb.Value after = 5;
+  int after_size() const;
+  private:
+  int _internal_after_size() const;
+  public:
+  void clear_after();
+  ::OpenLogReplicator::pb::Value* mutable_after(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >*
+      mutable_after();
+  private:
+  const ::OpenLogReplicator::pb::Value& _internal_after(int index) const;
+  ::OpenLogReplicator::pb::Value* _internal_add_after();
+  public:
+  const ::OpenLogReplicator::pb::Value& after(int index) const;
+  ::OpenLogReplicator::pb::Value* add_after();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >&
+      after() const;
+
+  // string rid = 3;
+  void clear_rid();
+  const std::string& rid() const;
+  void set_rid(const std::string& value);
+  void set_rid(std::string&& value);
+  void set_rid(const char* value);
+  void set_rid(const char* value, size_t size);
+  std::string* mutable_rid();
+  std::string* release_rid();
+  void set_allocated_rid(std::string* rid);
+  private:
+  const std::string& _internal_rid() const;
+  void _internal_set_rid(const std::string& value);
+  std::string* _internal_mutable_rid();
   public:
 
   // string ddl = 6;
@@ -1388,42 +1432,6 @@ class Payload PROTOBUF_FINAL :
       ::OpenLogReplicator::pb::Schema* schema);
   ::OpenLogReplicator::pb::Schema* unsafe_arena_release_schema();
 
-  // .OpenLogReplicator.pb.Value before = 4;
-  bool has_before() const;
-  private:
-  bool _internal_has_before() const;
-  public:
-  void clear_before();
-  const ::OpenLogReplicator::pb::Value& before() const;
-  ::OpenLogReplicator::pb::Value* release_before();
-  ::OpenLogReplicator::pb::Value* mutable_before();
-  void set_allocated_before(::OpenLogReplicator::pb::Value* before);
-  private:
-  const ::OpenLogReplicator::pb::Value& _internal_before() const;
-  ::OpenLogReplicator::pb::Value* _internal_mutable_before();
-  public:
-  void unsafe_arena_set_allocated_before(
-      ::OpenLogReplicator::pb::Value* before);
-  ::OpenLogReplicator::pb::Value* unsafe_arena_release_before();
-
-  // .OpenLogReplicator.pb.Value after = 5;
-  bool has_after() const;
-  private:
-  bool _internal_has_after() const;
-  public:
-  void clear_after();
-  const ::OpenLogReplicator::pb::Value& after() const;
-  ::OpenLogReplicator::pb::Value* release_after();
-  ::OpenLogReplicator::pb::Value* mutable_after();
-  void set_allocated_after(::OpenLogReplicator::pb::Value* after);
-  private:
-  const ::OpenLogReplicator::pb::Value& _internal_after() const;
-  ::OpenLogReplicator::pb::Value* _internal_mutable_after();
-  public:
-  void unsafe_arena_set_allocated_after(
-      ::OpenLogReplicator::pb::Value* after);
-  ::OpenLogReplicator::pb::Value* unsafe_arena_release_after();
-
   // .OpenLogReplicator.pb.Op op = 1;
   void clear_op();
   ::OpenLogReplicator::pb::Op op() const;
@@ -1440,11 +1448,11 @@ class Payload PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rowid_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value > before_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value > after_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rid_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr ddl_;
   ::OpenLogReplicator::pb::Schema* schema_;
-  ::OpenLogReplicator::pb::Value* before_;
-  ::OpenLogReplicator::pb::Value* after_;
   int op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_OraProtoBuf_2eproto;
@@ -2034,124 +2042,69 @@ Request::schema() const {
 
 // Value
 
-// string column_name = 1;
-inline void Value::clear_column_name() {
-  column_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// string name = 1;
+inline void Value::clear_name() {
+  name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline const std::string& Value::column_name() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.column_name)
-  return _internal_column_name();
+inline const std::string& Value::name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.name)
+  return _internal_name();
 }
-inline void Value::set_column_name(const std::string& value) {
-  _internal_set_column_name(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.column_name)
+inline void Value::set_name(const std::string& value) {
+  _internal_set_name(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.name)
 }
-inline std::string* Value::mutable_column_name() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Value.column_name)
-  return _internal_mutable_column_name();
+inline std::string* Value::mutable_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Value.name)
+  return _internal_mutable_name();
 }
-inline const std::string& Value::_internal_column_name() const {
-  return column_name_.Get();
+inline const std::string& Value::_internal_name() const {
+  return name_.Get();
 }
-inline void Value::_internal_set_column_name(const std::string& value) {
+inline void Value::_internal_set_name(const std::string& value) {
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void Value::set_column_name(std::string&& value) {
+inline void Value::set_name(std::string&& value) {
   
-  column_name_.Set(
+  name_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Value.column_name)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Value.name)
 }
-inline void Value::set_column_name(const char* value) {
+inline void Value::set_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Value.column_name)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Value.name)
 }
-inline void Value::set_column_name(const char* value,
+inline void Value::set_name(const char* value,
     size_t size) {
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Value.column_name)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Value.name)
 }
-inline std::string* Value::_internal_mutable_column_name() {
+inline std::string* Value::_internal_mutable_name() {
   
-  return column_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* Value::release_column_name() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Value.column_name)
-  return column_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Value::release_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Value.name)
+  return name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Value::set_allocated_column_name(std::string* column_name) {
-  if (column_name != nullptr) {
+inline void Value::set_allocated_name(std::string* name) {
+  if (name != nullptr) {
     
   } else {
     
   }
-  column_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_name,
+  name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.column_name)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.name)
 }
 
-// int64 column_type = 2;
-inline void Value::clear_column_type() {
-  column_type_ = PROTOBUF_LONGLONG(0);
-}
-inline ::PROTOBUF_NAMESPACE_ID::int64 Value::_internal_column_type() const {
-  return column_type_;
-}
-inline ::PROTOBUF_NAMESPACE_ID::int64 Value::column_type() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.column_type)
-  return _internal_column_type();
-}
-inline void Value::_internal_set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  
-  column_type_ = value;
-}
-inline void Value::set_column_type(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  _internal_set_column_type(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.column_type)
-}
-
-// int32 value_int32 = 3;
-inline bool Value::_internal_has_value_int32() const {
-  return datum_case() == kValueInt32;
-}
-inline void Value::set_has_value_int32() {
-  _oneof_case_[0] = kValueInt32;
-}
-inline void Value::clear_value_int32() {
-  if (_internal_has_value_int32()) {
-    datum_.value_int32_ = 0;
-    clear_has_datum();
-  }
-}
-inline ::PROTOBUF_NAMESPACE_ID::int32 Value::_internal_value_int32() const {
-  if (_internal_has_value_int32()) {
-    return datum_.value_int32_;
-  }
-  return 0;
-}
-inline void Value::_internal_set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  if (!_internal_has_value_int32()) {
-    clear_datum();
-    set_has_value_int32();
-  }
-  datum_.value_int32_ = value;
-}
-inline ::PROTOBUF_NAMESPACE_ID::int32 Value::value_int32() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_int32)
-  return _internal_value_int32();
-}
-inline void Value::set_value_int32(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _internal_set_value_int32(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int32)
-}
-
-// int64 value_int64 = 4;
+// int64 value_int64 = 2;
 inline bool Value::_internal_has_value_int64() const {
   return datum_case() == kValueInt64;
 }
@@ -2186,7 +2139,7 @@ inline void Value::set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int64)
 }
 
-// float value_float = 5;
+// float value_float = 3;
 inline bool Value::_internal_has_value_float() const {
   return datum_case() == kValueFloat;
 }
@@ -2221,7 +2174,7 @@ inline void Value::set_value_float(float value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_float)
 }
 
-// double value_double = 6;
+// double value_double = 4;
 inline bool Value::_internal_has_value_double() const {
   return datum_case() == kValueDouble;
 }
@@ -2256,7 +2209,7 @@ inline void Value::set_value_double(double value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_double)
 }
 
-// bool value_bool = 7;
+// bool value_bool = 5;
 inline bool Value::_internal_has_value_bool() const {
   return datum_case() == kValueBool;
 }
@@ -2291,7 +2244,7 @@ inline void Value::set_value_bool(bool value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_bool)
 }
 
-// string value_string = 8;
+// string value_string = 6;
 inline bool Value::_internal_has_value_string() const {
   return datum_case() == kValueString;
 }
@@ -2397,7 +2350,7 @@ inline void Value::set_allocated_value_string(std::string* value_string) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.value_string)
 }
 
-// bytes value_bytes = 9;
+// bytes value_bytes = 7;
 inline bool Value::_internal_has_value_bytes() const {
   return datum_case() == kValueBytes;
 }
@@ -2516,128 +2469,86 @@ inline Value::DatumCase Value::datum_case() const {
 
 // Column
 
-// string column_name = 1;
-inline void Column::clear_column_name() {
-  column_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// string name = 1;
+inline void Column::clear_name() {
+  name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline const std::string& Column::column_name() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.column_name)
-  return _internal_column_name();
+inline const std::string& Column::name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.name)
+  return _internal_name();
 }
-inline void Column::set_column_name(const std::string& value) {
-  _internal_set_column_name(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.column_name)
+inline void Column::set_name(const std::string& value) {
+  _internal_set_name(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.name)
 }
-inline std::string* Column::mutable_column_name() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Column.column_name)
-  return _internal_mutable_column_name();
+inline std::string* Column::mutable_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Column.name)
+  return _internal_mutable_name();
 }
-inline const std::string& Column::_internal_column_name() const {
-  return column_name_.Get();
+inline const std::string& Column::_internal_name() const {
+  return name_.Get();
 }
-inline void Column::_internal_set_column_name(const std::string& value) {
+inline void Column::_internal_set_name(const std::string& value) {
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void Column::set_column_name(std::string&& value) {
+inline void Column::set_name(std::string&& value) {
   
-  column_name_.Set(
+  name_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Column.column_name)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Column.name)
 }
-inline void Column::set_column_name(const char* value) {
+inline void Column::set_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Column.column_name)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Column.name)
 }
-inline void Column::set_column_name(const char* value,
+inline void Column::set_name(const char* value,
     size_t size) {
   
-  column_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Column.column_name)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Column.name)
 }
-inline std::string* Column::_internal_mutable_column_name() {
+inline std::string* Column::_internal_mutable_name() {
   
-  return column_name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* Column::release_column_name() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Column.column_name)
-  return column_name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Column::release_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Column.name)
+  return name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Column::set_allocated_column_name(std::string* column_name) {
-  if (column_name != nullptr) {
+inline void Column::set_allocated_name(std::string* name) {
+  if (name != nullptr) {
     
   } else {
     
   }
-  column_name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_name,
+  name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Column.column_name)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Column.name)
 }
 
-// string column_type = 2;
-inline void Column::clear_column_type() {
-  column_type_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// .OpenLogReplicator.pb.ColumnType type = 2;
+inline void Column::clear_type() {
+  type_ = 0;
 }
-inline const std::string& Column::column_type() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.column_type)
-  return _internal_column_type();
+inline ::OpenLogReplicator::pb::ColumnType Column::_internal_type() const {
+  return static_cast< ::OpenLogReplicator::pb::ColumnType >(type_);
 }
-inline void Column::set_column_type(const std::string& value) {
-  _internal_set_column_type(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.column_type)
+inline ::OpenLogReplicator::pb::ColumnType Column::type() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Column.type)
+  return _internal_type();
 }
-inline std::string* Column::mutable_column_type() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Column.column_type)
-  return _internal_mutable_column_type();
-}
-inline const std::string& Column::_internal_column_type() const {
-  return column_type_.Get();
-}
-inline void Column::_internal_set_column_type(const std::string& value) {
+inline void Column::_internal_set_type(::OpenLogReplicator::pb::ColumnType value) {
   
-  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  type_ = value;
 }
-inline void Column::set_column_type(std::string&& value) {
-  
-  column_type_.Set(
-    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Column.column_type)
-}
-inline void Column::set_column_type(const char* value) {
-  GOOGLE_DCHECK(value != nullptr);
-  
-  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
-              GetArena());
-  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Column.column_type)
-}
-inline void Column::set_column_type(const char* value,
-    size_t size) {
-  
-  column_type_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
-      reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Column.column_type)
-}
-inline std::string* Column::_internal_mutable_column_type() {
-  
-  return column_type_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-}
-inline std::string* Column::release_column_type() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Column.column_type)
-  return column_type_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-}
-inline void Column::set_allocated_column_type(std::string* column_type) {
-  if (column_type != nullptr) {
-    
-  } else {
-    
-  }
-  column_type_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), column_type,
-      GetArena());
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Column.column_type)
+inline void Column::set_type(::OpenLogReplicator::pb::ColumnType value) {
+  _internal_set_type(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Column.type)
 }
 
 // int32 length = 3;
@@ -2786,66 +2697,66 @@ inline void Schema::set_allocated_owner(std::string* owner) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.owner)
 }
 
-// string table = 2;
-inline void Schema::clear_table() {
-  table_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// string name = 2;
+inline void Schema::clear_name() {
+  name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline const std::string& Schema::table() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.table)
-  return _internal_table();
+inline const std::string& Schema::name() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.name)
+  return _internal_name();
 }
-inline void Schema::set_table(const std::string& value) {
-  _internal_set_table(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.table)
+inline void Schema::set_name(const std::string& value) {
+  _internal_set_name(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.name)
 }
-inline std::string* Schema::mutable_table() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.table)
-  return _internal_mutable_table();
+inline std::string* Schema::mutable_name() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Schema.name)
+  return _internal_mutable_name();
 }
-inline const std::string& Schema::_internal_table() const {
-  return table_.Get();
+inline const std::string& Schema::_internal_name() const {
+  return name_.Get();
 }
-inline void Schema::_internal_set_table(const std::string& value) {
+inline void Schema::_internal_set_name(const std::string& value) {
   
-  table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void Schema::set_table(std::string&& value) {
+inline void Schema::set_name(std::string&& value) {
   
-  table_.Set(
+  name_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Schema.table)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Schema.name)
 }
-inline void Schema::set_table(const char* value) {
+inline void Schema::set_name(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Schema.table)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Schema.name)
 }
-inline void Schema::set_table(const char* value,
+inline void Schema::set_name(const char* value,
     size_t size) {
   
-  table_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+  name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Schema.table)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Schema.name)
 }
-inline std::string* Schema::_internal_mutable_table() {
+inline std::string* Schema::_internal_mutable_name() {
   
-  return table_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return name_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* Schema::release_table() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Schema.table)
-  return table_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Schema::release_name() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Schema.name)
+  return name_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Schema::set_allocated_table(std::string* table) {
-  if (table != nullptr) {
+inline void Schema::set_allocated_name(std::string* name) {
+  if (name != nullptr) {
     
   } else {
     
   }
-  table_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), table,
+  name_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), name,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.table)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.name)
 }
 
 // uint32 objn = 3;
@@ -3164,232 +3075,144 @@ inline void Payload::set_allocated_schema(::OpenLogReplicator::pb::Schema* schem
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.schema)
 }
 
-// string rowid = 3;
-inline void Payload::clear_rowid() {
-  rowid_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+// string rid = 3;
+inline void Payload::clear_rid() {
+  rid_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline const std::string& Payload::rowid() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.rowid)
-  return _internal_rowid();
+inline const std::string& Payload::rid() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.rid)
+  return _internal_rid();
 }
-inline void Payload::set_rowid(const std::string& value) {
-  _internal_set_rowid(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.rowid)
+inline void Payload::set_rid(const std::string& value) {
+  _internal_set_rid(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.rid)
 }
-inline std::string* Payload::mutable_rowid() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.rowid)
-  return _internal_mutable_rowid();
+inline std::string* Payload::mutable_rid() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.rid)
+  return _internal_mutable_rid();
 }
-inline const std::string& Payload::_internal_rowid() const {
-  return rowid_.Get();
+inline const std::string& Payload::_internal_rid() const {
+  return rid_.Get();
 }
-inline void Payload::_internal_set_rowid(const std::string& value) {
+inline void Payload::_internal_set_rid(const std::string& value) {
   
-  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+  rid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void Payload::set_rowid(std::string&& value) {
+inline void Payload::set_rid(std::string&& value) {
   
-  rowid_.Set(
+  rid_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Payload.rowid)
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Payload.rid)
 }
-inline void Payload::set_rowid(const char* value) {
+inline void Payload::set_rid(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   
-  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+  rid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Payload.rowid)
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Payload.rid)
 }
-inline void Payload::set_rowid(const char* value,
+inline void Payload::set_rid(const char* value,
     size_t size) {
   
-  rowid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+  rid_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Payload.rowid)
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Payload.rid)
 }
-inline std::string* Payload::_internal_mutable_rowid() {
+inline std::string* Payload::_internal_mutable_rid() {
   
-  return rowid_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  return rid_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* Payload::release_rowid() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.rowid)
-  return rowid_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+inline std::string* Payload::release_rid() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.rid)
+  return rid_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Payload::set_allocated_rowid(std::string* rowid) {
-  if (rowid != nullptr) {
+inline void Payload::set_allocated_rid(std::string* rid) {
+  if (rid != nullptr) {
     
   } else {
     
   }
-  rowid_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rowid,
+  rid_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), rid,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.rowid)
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.rid)
 }
 
-// .OpenLogReplicator.pb.Value before = 4;
-inline bool Payload::_internal_has_before() const {
-  return this != internal_default_instance() && before_ != nullptr;
+// repeated .OpenLogReplicator.pb.Value before = 4;
+inline int Payload::_internal_before_size() const {
+  return before_.size();
 }
-inline bool Payload::has_before() const {
-  return _internal_has_before();
+inline int Payload::before_size() const {
+  return _internal_before_size();
 }
 inline void Payload::clear_before() {
-  if (GetArena() == nullptr && before_ != nullptr) {
-    delete before_;
-  }
-  before_ = nullptr;
+  before_.Clear();
 }
-inline const ::OpenLogReplicator::pb::Value& Payload::_internal_before() const {
-  const ::OpenLogReplicator::pb::Value* p = before_;
-  return p != nullptr ? *p : *reinterpret_cast<const ::OpenLogReplicator::pb::Value*>(
-      &::OpenLogReplicator::pb::_Value_default_instance_);
+inline ::OpenLogReplicator::pb::Value* Payload::mutable_before(int index) {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.before)
+  return before_.Mutable(index);
 }
-inline const ::OpenLogReplicator::pb::Value& Payload::before() const {
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >*
+Payload::mutable_before() {
+  // @@protoc_insertion_point(field_mutable_list:OpenLogReplicator.pb.Payload.before)
+  return &before_;
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::_internal_before(int index) const {
+  return before_.Get(index);
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::before(int index) const {
   // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.before)
-  return _internal_before();
+  return _internal_before(index);
 }
-inline void Payload::unsafe_arena_set_allocated_before(
-    ::OpenLogReplicator::pb::Value* before) {
-  if (GetArena() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(before_);
-  }
-  before_ = before;
-  if (before) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:OpenLogReplicator.pb.Payload.before)
+inline ::OpenLogReplicator::pb::Value* Payload::_internal_add_before() {
+  return before_.Add();
 }
-inline ::OpenLogReplicator::pb::Value* Payload::release_before() {
-  
-  ::OpenLogReplicator::pb::Value* temp = before_;
-  before_ = nullptr;
-  if (GetArena() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-  return temp;
+inline ::OpenLogReplicator::pb::Value* Payload::add_before() {
+  // @@protoc_insertion_point(field_add:OpenLogReplicator.pb.Payload.before)
+  return _internal_add_before();
 }
-inline ::OpenLogReplicator::pb::Value* Payload::unsafe_arena_release_before() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.before)
-  
-  ::OpenLogReplicator::pb::Value* temp = before_;
-  before_ = nullptr;
-  return temp;
-}
-inline ::OpenLogReplicator::pb::Value* Payload::_internal_mutable_before() {
-  
-  if (before_ == nullptr) {
-    auto* p = CreateMaybeMessage<::OpenLogReplicator::pb::Value>(GetArena());
-    before_ = p;
-  }
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >&
+Payload::before() const {
+  // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.Payload.before)
   return before_;
 }
-inline ::OpenLogReplicator::pb::Value* Payload::mutable_before() {
-  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.before)
-  return _internal_mutable_before();
-}
-inline void Payload::set_allocated_before(::OpenLogReplicator::pb::Value* before) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
-  if (message_arena == nullptr) {
-    delete before_;
-  }
-  if (before) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(before);
-    if (message_arena != submessage_arena) {
-      before = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, before, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  before_ = before;
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.before)
-}
 
-// .OpenLogReplicator.pb.Value after = 5;
-inline bool Payload::_internal_has_after() const {
-  return this != internal_default_instance() && after_ != nullptr;
+// repeated .OpenLogReplicator.pb.Value after = 5;
+inline int Payload::_internal_after_size() const {
+  return after_.size();
 }
-inline bool Payload::has_after() const {
-  return _internal_has_after();
+inline int Payload::after_size() const {
+  return _internal_after_size();
 }
 inline void Payload::clear_after() {
-  if (GetArena() == nullptr && after_ != nullptr) {
-    delete after_;
-  }
-  after_ = nullptr;
+  after_.Clear();
 }
-inline const ::OpenLogReplicator::pb::Value& Payload::_internal_after() const {
-  const ::OpenLogReplicator::pb::Value* p = after_;
-  return p != nullptr ? *p : *reinterpret_cast<const ::OpenLogReplicator::pb::Value*>(
-      &::OpenLogReplicator::pb::_Value_default_instance_);
-}
-inline const ::OpenLogReplicator::pb::Value& Payload::after() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.after)
-  return _internal_after();
-}
-inline void Payload::unsafe_arena_set_allocated_after(
-    ::OpenLogReplicator::pb::Value* after) {
-  if (GetArena() == nullptr) {
-    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(after_);
-  }
-  after_ = after;
-  if (after) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:OpenLogReplicator.pb.Payload.after)
-}
-inline ::OpenLogReplicator::pb::Value* Payload::release_after() {
-  
-  ::OpenLogReplicator::pb::Value* temp = after_;
-  after_ = nullptr;
-  if (GetArena() != nullptr) {
-    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
-  }
-  return temp;
-}
-inline ::OpenLogReplicator::pb::Value* Payload::unsafe_arena_release_after() {
-  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Payload.after)
-  
-  ::OpenLogReplicator::pb::Value* temp = after_;
-  after_ = nullptr;
-  return temp;
-}
-inline ::OpenLogReplicator::pb::Value* Payload::_internal_mutable_after() {
-  
-  if (after_ == nullptr) {
-    auto* p = CreateMaybeMessage<::OpenLogReplicator::pb::Value>(GetArena());
-    after_ = p;
-  }
-  return after_;
-}
-inline ::OpenLogReplicator::pb::Value* Payload::mutable_after() {
+inline ::OpenLogReplicator::pb::Value* Payload::mutable_after(int index) {
   // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Payload.after)
-  return _internal_mutable_after();
+  return after_.Mutable(index);
 }
-inline void Payload::set_allocated_after(::OpenLogReplicator::pb::Value* after) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
-  if (message_arena == nullptr) {
-    delete after_;
-  }
-  if (after) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(after);
-    if (message_arena != submessage_arena) {
-      after = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, after, submessage_arena);
-    }
-    
-  } else {
-    
-  }
-  after_ = after;
-  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.after)
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >*
+Payload::mutable_after() {
+  // @@protoc_insertion_point(field_mutable_list:OpenLogReplicator.pb.Payload.after)
+  return &after_;
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::_internal_after(int index) const {
+  return after_.Get(index);
+}
+inline const ::OpenLogReplicator::pb::Value& Payload::after(int index) const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.after)
+  return _internal_after(index);
+}
+inline ::OpenLogReplicator::pb::Value* Payload::_internal_add_after() {
+  return after_.Add();
+}
+inline ::OpenLogReplicator::pb::Value* Payload::add_after() {
+  // @@protoc_insertion_point(field_add:OpenLogReplicator.pb.Payload.after)
+  return _internal_add_after();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value >&
+Payload::after() const {
+  // @@protoc_insertion_point(field_list:OpenLogReplicator.pb.Payload.after)
+  return after_;
 }
 
 // string ddl = 6;
@@ -3974,6 +3797,11 @@ template <> struct is_proto_enum< ::OpenLogReplicator::pb::Op> : ::std::true_typ
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::Op>() {
   return ::OpenLogReplicator::pb::Op_descriptor();
+}
+template <> struct is_proto_enum< ::OpenLogReplicator::pb::ColumnType> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::ColumnType>() {
+  return ::OpenLogReplicator::pb::ColumnType_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE

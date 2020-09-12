@@ -44,7 +44,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    const char OutputBuffer::translationMap[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const char OutputBuffer::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const char OutputBuffer::map16[17] = "0123456789abcdef";
 
     OutputBuffer::OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
             uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
@@ -946,35 +947,180 @@ namespace OpenLogReplicator {
                     continue;
 
                 //remove unchanged column values - only for tables with defined primary key
-                if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] > 0 && beforeLen[i] == afterLen[i]) {
-                    if (beforeLen[i] == 0 || memcmp(beforeRecord[i]->data + beforePos[i], afterRecord[i]->data + afterPos[i], beforeLen[i]) == 0) {
-                        beforePos[i] = 0;
-                        afterPos[i] = 0;
+                if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] != nullptr && beforeLen[i] == afterLen[i]) {
+                    if (beforeLen[i] == 0 || memcmp(beforePos[i], afterPos[i], beforeLen[i]) == 0) {
+                        beforePos[i] = nullptr;
+                        afterPos[i] = nullptr;
                         beforeLen[i] = 0;
                         afterLen[i] = 0;
                     }
                 }
 
                 //remove columns additionally present, but not modified
-                if (beforePos[i] > 0 && beforeLen[i] == 0 && afterPos[i] == 0) {
+                if (beforePos[i] != nullptr && beforeLen[i] == 0 && afterPos[i] == nullptr) {
                     if (object->columns[i]->numPk == 0) {
                         beforePos[i] = 0;
                     } else {
                         afterPos[i] = beforePos[i];
                         afterLen[i] = beforeLen[i];
-                        afterRecord[i] = beforeRecord[i];
                     }
                 }
-                if (afterPos[i] > 0 && afterLen[i] == 0 && beforePos[i] == 0) {
+                if (afterPos[i] != nullptr && afterLen[i] == 0 && beforePos[i] == nullptr) {
                     if (object->columns[i]->numPk == 0) {
                         afterPos[i] = 0;
                     } else {
                         beforePos[i] = afterPos[i];
                         beforeLen[i] = afterLen[i];
-                        beforeRecord[i] = afterRecord[i];
                     }
                 }
             }
+        }
+    }
+
+    void OutputBuffer::processValue(string &columnName, uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+        if (length == 0) {
+            RUNTIME_FAIL("ERROR, trying to output null data for column: " << columnName);
+        }
+
+        switch(typeNo) {
+        case 1: //varchar2/nvarchar2
+        case 96: //char/nchar
+            appendString(columnName, data, length, charsetId);
+            break;
+
+        case 2: //number/float
+            appendNumber(columnName, data, length);
+            break;
+
+        case 12:  //date
+        case 180: //timestamp
+            if (length != 7 && length != 11)
+                appendUnknown(columnName, data, length);
+            else {
+                struct tm epochtime;
+                epochtime.tm_sec = data[6] - 1; //0..59
+                epochtime.tm_min = data[5] - 1; //0..59
+                epochtime.tm_hour = data[4] - 1; //0..23
+                epochtime.tm_mday = data[3]; //1..31
+                epochtime.tm_mon = data[2]; //1..12
+
+                int64_t val1 = data[0],
+                        val2 = data[1];
+                //AD
+                if (val1 >= 100 && val2 >= 100) {
+                    val1 -= 100;
+                    val2 -= 100;
+                    epochtime.tm_year = val1 * 100 + val2;
+
+                } else {
+                    val1 = 100 - val1;
+                    val2 = 100 - val2;
+                    epochtime.tm_year = - (val1 * 100 + val2);
+                }
+
+                uint64_t fraction = 0;
+                if (length == 11)
+                    fraction = oracleAnalyser->read32Big(data + 7);
+
+                appendTimestamp(columnName, epochtime, fraction, nullptr);
+            }
+            break;
+
+        case 23: //raw
+            appendRaw(columnName, data, length);
+            break;
+
+        case 100: //binary_float
+            if (length == 4) {
+                appendFloat(columnName, *((float *)data));
+            } else
+                appendUnknown(columnName, data, length);
+            break;
+
+        case 101: //binary_double
+            if (length == 8) {
+                appendDouble(columnName, *((double *)data));
+            } else
+                appendUnknown(columnName, data, length);
+            break;
+
+        //case 231: //timestamp with local time zone
+        case 181: //timestamp with time zone
+            if (length != 9 && length != 13) {
+                appendUnknown(columnName, data, length);
+            } else {
+                struct tm epochtime;
+                epochtime.tm_sec = data[6] - 1; //0..59
+                epochtime.tm_min = data[5] - 1; //0..59
+                epochtime.tm_hour = data[4] - 1; //0..23
+                epochtime.tm_mday = data[3]; //1..31
+                epochtime.tm_mon = data[2]; //1..12
+
+                int64_t val1 = data[0],
+                         val2 = data[1];
+                //AD
+                if (val1 >= 100 && val2 >= 100) {
+                    val1 -= 100;
+                    val2 -= 100;
+                    epochtime.tm_year = val1 * 100 + val2;
+
+                } else {
+                    val1 = 100 - val1;
+                    val2 = 100 - val2;
+                    epochtime.tm_year = - (val1 * 100 + val2);
+                }
+
+                uint64_t fraction = 0;
+                if (length == 13)
+                    fraction = oracleAnalyser->read32Big(data + 7);
+
+                const char *tz = nullptr;
+                char tz2[7];
+
+                if (data[11] >= 5 && data[11] <= 36) {
+                    if (data[11] < 20 ||
+                            (data[11] == 20 && data[12] < 60))
+                        tz2[0] = '-';
+                    else
+                        tz2[0] = '+';
+
+                    if (data[11] < 20) {
+                        if (20 - data[11] < 10)
+                            tz2[1] = '0';
+                        tz2[2] = '0' + (20 - data[11]);
+                    } else {
+                        if (data[11] - 20 < 10)
+                            tz2[1] = '0';
+                        tz2[2] = '0' + (data[11] - 20);
+                    }
+
+                    tz2[3] = ':';
+
+                    if (data[12] < 60) {
+                        if (60 - data[12] < 10)
+                            tz2[4] = '0';
+                        tz2[5] = '0' + (60 - data[12]);
+                    } else {
+                        if (data[12] - 60 < 10)
+                            tz2[4] = '0';
+                        tz2[5] = '0' + (data[12] - 60);
+                    }
+                    tz2[6] = 0;
+                    tz = tz2;
+                } else {
+                    uint16_t tzkey = (data[11] << 8) | data[12];
+                    tz = timeZoneMap[tzkey];
+
+                    if (tz == nullptr)
+                        tz = "TZ?";
+                }
+
+                appendTimestamp(columnName, epochtime, fraction, tz);
+            }
+            break;
+
+        default:
+            appendUnknown(columnName, data, length);
         }
     }
 }
