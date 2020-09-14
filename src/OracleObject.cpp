@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
     void OracleObject::addColumn(OracleColumn *column) {
         if (column->segColNo < columns.size() + 1) {
             CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
-                ") column: " << column->columnName << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
+                ") column: " << column->name << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
                 ") on position " << (columns.size() + 1));
         }
 

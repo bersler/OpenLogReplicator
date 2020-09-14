@@ -550,12 +550,11 @@ class Value PROTOBUF_FINAL :
   static const Value& default_instance();
 
   enum DatumCase {
-    kValueInt64 = 2,
+    kValueInt = 2,
     kValueFloat = 3,
     kValueDouble = 4,
-    kValueBool = 5,
-    kValueString = 6,
-    kValueBytes = 7,
+    kValueString = 5,
+    kValueBytes = 6,
     DATUM_NOT_SET = 0,
   };
 
@@ -637,12 +636,11 @@ class Value PROTOBUF_FINAL :
 
   enum : int {
     kNameFieldNumber = 1,
-    kValueInt64FieldNumber = 2,
+    kValueIntFieldNumber = 2,
     kValueFloatFieldNumber = 3,
     kValueDoubleFieldNumber = 4,
-    kValueBoolFieldNumber = 5,
-    kValueStringFieldNumber = 6,
-    kValueBytesFieldNumber = 7,
+    kValueStringFieldNumber = 5,
+    kValueBytesFieldNumber = 6,
   };
   // string name = 1;
   void clear_name();
@@ -660,16 +658,16 @@ class Value PROTOBUF_FINAL :
   std::string* _internal_mutable_name();
   public:
 
-  // int64 value_int64 = 2;
+  // int64 value_int = 2;
   private:
-  bool _internal_has_value_int64() const;
+  bool _internal_has_value_int() const;
   public:
-  void clear_value_int64();
-  ::PROTOBUF_NAMESPACE_ID::int64 value_int64() const;
-  void set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
+  void clear_value_int();
+  ::PROTOBUF_NAMESPACE_ID::int64 value_int() const;
+  void set_value_int(::PROTOBUF_NAMESPACE_ID::int64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::int64 _internal_value_int64() const;
-  void _internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value);
+  ::PROTOBUF_NAMESPACE_ID::int64 _internal_value_int() const;
+  void _internal_set_value_int(::PROTOBUF_NAMESPACE_ID::int64 value);
   public:
 
   // float value_float = 3;
@@ -696,19 +694,7 @@ class Value PROTOBUF_FINAL :
   void _internal_set_value_double(double value);
   public:
 
-  // bool value_bool = 5;
-  private:
-  bool _internal_has_value_bool() const;
-  public:
-  void clear_value_bool();
-  bool value_bool() const;
-  void set_value_bool(bool value);
-  private:
-  bool _internal_value_bool() const;
-  void _internal_set_value_bool(bool value);
-  public:
-
-  // string value_string = 6;
+  // string value_string = 5;
   private:
   bool _internal_has_value_string() const;
   public:
@@ -727,7 +713,7 @@ class Value PROTOBUF_FINAL :
   std::string* _internal_mutable_value_string();
   public:
 
-  // bytes value_bytes = 7;
+  // bytes value_bytes = 6;
   private:
   bool _internal_has_value_bytes() const;
   public:
@@ -751,10 +737,9 @@ class Value PROTOBUF_FINAL :
   // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Value)
  private:
   class _Internal;
-  void set_has_value_int64();
+  void set_has_value_int();
   void set_has_value_float();
   void set_has_value_double();
-  void set_has_value_bool();
   void set_has_value_string();
   void set_has_value_bytes();
 
@@ -767,10 +752,9 @@ class Value PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
   union DatumUnion {
     DatumUnion() {}
-    ::PROTOBUF_NAMESPACE_ID::int64 value_int64_;
+    ::PROTOBUF_NAMESPACE_ID::int64 value_int_;
     float value_float_;
     double value_double_;
-    bool value_bool_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_string_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_bytes_;
   } datum_;
@@ -2104,39 +2088,39 @@ inline void Value::set_allocated_name(std::string* name) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.name)
 }
 
-// int64 value_int64 = 2;
-inline bool Value::_internal_has_value_int64() const {
-  return datum_case() == kValueInt64;
+// int64 value_int = 2;
+inline bool Value::_internal_has_value_int() const {
+  return datum_case() == kValueInt;
 }
-inline void Value::set_has_value_int64() {
-  _oneof_case_[0] = kValueInt64;
+inline void Value::set_has_value_int() {
+  _oneof_case_[0] = kValueInt;
 }
-inline void Value::clear_value_int64() {
-  if (_internal_has_value_int64()) {
-    datum_.value_int64_ = PROTOBUF_LONGLONG(0);
+inline void Value::clear_value_int() {
+  if (_internal_has_value_int()) {
+    datum_.value_int_ = PROTOBUF_LONGLONG(0);
     clear_has_datum();
   }
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 Value::_internal_value_int64() const {
-  if (_internal_has_value_int64()) {
-    return datum_.value_int64_;
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::_internal_value_int() const {
+  if (_internal_has_value_int()) {
+    return datum_.value_int_;
   }
   return PROTOBUF_LONGLONG(0);
 }
-inline void Value::_internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  if (!_internal_has_value_int64()) {
+inline void Value::_internal_set_value_int(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  if (!_internal_has_value_int()) {
     clear_datum();
-    set_has_value_int64();
+    set_has_value_int();
   }
-  datum_.value_int64_ = value;
+  datum_.value_int_ = value;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int64 Value::value_int64() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_int64)
-  return _internal_value_int64();
+inline ::PROTOBUF_NAMESPACE_ID::int64 Value::value_int() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_int)
+  return _internal_value_int();
 }
-inline void Value::set_value_int64(::PROTOBUF_NAMESPACE_ID::int64 value) {
-  _internal_set_value_int64(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int64)
+inline void Value::set_value_int(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  _internal_set_value_int(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_int)
 }
 
 // float value_float = 3;
@@ -2209,42 +2193,7 @@ inline void Value::set_value_double(double value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_double)
 }
 
-// bool value_bool = 5;
-inline bool Value::_internal_has_value_bool() const {
-  return datum_case() == kValueBool;
-}
-inline void Value::set_has_value_bool() {
-  _oneof_case_[0] = kValueBool;
-}
-inline void Value::clear_value_bool() {
-  if (_internal_has_value_bool()) {
-    datum_.value_bool_ = false;
-    clear_has_datum();
-  }
-}
-inline bool Value::_internal_value_bool() const {
-  if (_internal_has_value_bool()) {
-    return datum_.value_bool_;
-  }
-  return false;
-}
-inline void Value::_internal_set_value_bool(bool value) {
-  if (!_internal_has_value_bool()) {
-    clear_datum();
-    set_has_value_bool();
-  }
-  datum_.value_bool_ = value;
-}
-inline bool Value::value_bool() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Value.value_bool)
-  return _internal_value_bool();
-}
-inline void Value::set_value_bool(bool value) {
-  _internal_set_value_bool(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Value.value_bool)
-}
-
-// string value_string = 6;
+// string value_string = 5;
 inline bool Value::_internal_has_value_string() const {
   return datum_case() == kValueString;
 }
@@ -2350,7 +2299,7 @@ inline void Value::set_allocated_value_string(std::string* value_string) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Value.value_string)
 }
 
-// bytes value_bytes = 7;
+// bytes value_bytes = 6;
 inline bool Value::_internal_has_value_bytes() const {
   return datum_case() == kValueBytes;
 }

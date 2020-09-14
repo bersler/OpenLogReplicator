@@ -56,6 +56,7 @@ typedef uint64_t typeunicode;
 
 #define ZERO_SCN                                ((typescn)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
+#define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MEMORY_CHUNK_SIZE_MB                    1
@@ -88,8 +89,7 @@ typedef uint64_t typeunicode;
 
 #define CHAR_FORMAT_UTF8                        0
 #define CHAR_FORMAT_NOMAPPING                   1
-#define CHAR_FORMAT_UTF8_HEX                    2
-#define CHAR_FORMAT_NOMAPPING_HEX               3
+#define CHAR_FORMAT_HEX                         2
 
 #define SCN_FORMAT_NUMERIC                      0
 #define SCN_FORMAT_HEX                          1

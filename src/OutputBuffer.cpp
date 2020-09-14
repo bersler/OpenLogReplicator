@@ -59,6 +59,7 @@ namespace OpenLogReplicator {
             schemaFormat(schemaFormat),
             columnFormat(columnFormat),
             messageLength(0),
+            valueLength(0),
             lastTime(0),
             lastScn(0),
             lastXid(0),
@@ -826,25 +827,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::initialize(OracleAnalyser *oracleAnalyser) {
-        this->oracleAnalyser = oracleAnalyser;
-
-        buffersAllocated = 1;
-        firstBuffer = oracleAnalyser->getMemoryChunk("BUFFER", false);
-        *((uint8_t**)(firstBuffer + OUTPUT_BUFFER_NEXT)) = nullptr;
-        *((uint64_t*)(firstBuffer + OUTPUT_BUFFER_END)) = OUTPUT_BUFFER_DATA;
-        firstBufferPos = OUTPUT_BUFFER_DATA;
-        lastBuffer = firstBuffer;
-        lastBufferPos = OUTPUT_BUFFER_DATA;
-    }
-
-    void OutputBuffer::bufferAppend(uint8_t character) {
-        lastBuffer[lastBufferPos] = character;
-        ++messageLength;
-        bufferShift(1);
-    }
-
-    void OutputBuffer::bufferShift(uint64_t bytes) {
+    void OutputBuffer::outputBufferShift(uint64_t bytes) {
         lastBufferPos += bytes;
 
         if (lastBufferPos >= MEMORY_CHUNK_SIZE) {
@@ -862,20 +845,20 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::beginMessage(void) {
+    void OutputBuffer::outputBufferBegin(void) {
         curBuffer = lastBuffer;
         curBufferPos = lastBufferPos;
         messageLength = 0;
         *((uint64_t*)(lastBuffer + lastBufferPos)) = 0;
-        bufferShift(OUTPUT_BUFFER_LENGTH_SIZE);
+        outputBufferShift(OUTPUT_BUFFER_LENGTH_SIZE);
     }
 
-    void OutputBuffer::commitMessage(void) {
+    void OutputBuffer::outputBufferCommit(void) {
         if (messageLength == 0) {
             WARNING("JSON buffer - commit of empty transaction");
         }
 
-        bufferShift((8 - (messageLength & 7)) & 7);
+        outputBufferShift((8 - (messageLength & 7)) & 7);
         {
             unique_lock<mutex> lck(mtx);
             *((uint64_t*)(curBuffer + curBufferPos)) = messageLength;
@@ -886,61 +869,63 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t OutputBuffer::currentMessageSize(void) {
-        return messageLength + OUTPUT_BUFFER_LENGTH_SIZE;
+    void OutputBuffer::outputBufferAppend(char character) {
+        lastBuffer[lastBufferPos] = character;
+        ++messageLength;
+        outputBufferShift(1);
     }
 
-    void OutputBuffer::setWriter(Writer *writer) {
-        this->writer = writer;
-    }
-
-    void OutputBuffer::setNlsCharset(string &nlsCharset, string &nlsNcharCharset) {
-        INFO("loading character mapping for " << nlsCharset);
-
-        for (auto elem: characterMap) {
-            if (strcmp(nlsCharset.c_str(), elem.second->name) == 0) {
-                defaultCharacterMapId = elem.first;
-                break;
-            }
-        }
-
-        if (defaultCharacterMapId == 0) {
-            RUNTIME_FAIL("unsupported NLS_CHARACTERSET value");
-        }
-
-        INFO("loading character mapping for " << nlsNcharCharset);
-        for (auto elem: characterMap) {
-            if (strcmp(nlsNcharCharset.c_str(), elem.second->name) == 0) {
-                defaultCharacterNcharMapId = elem.first;
-                break;
-            }
-        }
-
-        if (defaultCharacterNcharMapId == 0) {
-            RUNTIME_FAIL("unsupported NLS_NCHAR_CHARACTERSET value");
-        }
-    }
-
-    void OutputBuffer::append(string &str) {
+    void OutputBuffer::outputBufferAppend(string &str) {
         const char *charstr = str.c_str();
         uint64_t length = str.length();
         for (uint i = 0; i < length; ++i)
-            bufferAppend(*charstr++);
+            outputBufferAppend(*charstr++);
     }
 
-    void OutputBuffer::append(const char *str) {
+    void OutputBuffer::outputBufferAppend(const char *str) {
         char character = *str++;
         while (character != 0) {
-            bufferAppend(character);
+            outputBufferAppend(character);
             character = *str++;
         }
     }
 
-    void OutputBuffer::append(char chr) {
-        bufferAppend(chr);
+    void OutputBuffer::outputBufferAppend(const char *str, uint64_t length) {
+        for (uint i = 0; i < length; ++i)
+            outputBufferAppend(*str++);
     }
 
-    void OutputBuffer::checkUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBuffer::columnUnknown(string &columnName, const uint8_t *data, uint64_t length) {
+        valueBuffer[0] = '?';
+        valueLength = 1;
+        columnString(columnName);
+        if (unknownFormat == UNKNOWN_FORMAT_DUMP) {
+            stringstream ss;
+            for (uint64_t j = 0; j < length; ++j)
+                ss << " " << hex << setfill('0') << setw(2) << (uint64_t) data[j];
+            WARNING("unknown value (column: " << columnName << "): " << dec << length << " - " << ss.str());
+        }
+    }
+
+    void OutputBuffer::valueBufferAppend(uint8_t value) {
+        if (valueLength >= MAX_FIELD_LENGTH) {
+            RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
+        }
+        valueBuffer[valueLength++] = value;
+    }
+
+    void OutputBuffer::valueBufferAppendHex(typeunicode value, uint64_t length) {
+        uint64_t j = (length - 1) * 4;
+        for (uint64_t i = 0; i < length; ++i) {
+            if (valueLength >= MAX_FIELD_LENGTH) {
+                RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
+            }
+            valueBuffer[valueLength++] = map16[(value >> j) & 0xF];
+            j -= 4;
+        };
+    }
+
+    void OutputBuffer::compactUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (columnFormat <= COLUMN_FORMAT_INS_DEC) {
             for (uint64_t i = 0; i < object->maxSegCol; ++i) {
                 if (object->columns[i] == nullptr)
@@ -977,25 +962,208 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::processValue(string &columnName, uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+    void OutputBuffer::processValue(OracleColumn *column, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+        uint8_t digits;
+        CharacterSet *characterSet = nullptr;
         if (length == 0) {
-            RUNTIME_FAIL("ERROR, trying to output null data for column: " << columnName);
+            RUNTIME_FAIL("ERROR, trying to output null data for column: " << column->name);
         }
 
         switch(typeNo) {
         case 1: //varchar2/nvarchar2
         case 96: //char/nchar
-            appendString(columnName, data, length, charsetId);
+            characterSet = characterMap[charsetId];
+            if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
+                RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
+            }
+            valueLength = 0;
+
+            while (length > 0) {
+                typeunicode unicodeCharacter;
+                uint64_t unicodeCharacterLength;
+
+                if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
+                    unicodeCharacter = characterSet->decode(data, length);
+                    unicodeCharacterLength = 8;
+                } else {
+                    unicodeCharacter = *data++;
+                    --length;
+                    unicodeCharacterLength = 2;
+                }
+
+                if ((charFormat & CHAR_FORMAT_HEX) != 0) {
+                    valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
+                } else {
+                    //0xxxxxxx
+                    if (unicodeCharacter <= 0x7F) {
+                        valueBufferAppend(unicodeCharacter);
+
+                    //110xxxxx 10xxxxxx
+                    } else if (unicodeCharacter <= 0x7FF) {
+                        valueBufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
+                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
+
+                    //1110xxxx 10xxxxxx 10xxxxxx
+                    } else if (unicodeCharacter <= 0xFFFF) {
+                        valueBufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
+                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
+
+                    //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                    } else if (unicodeCharacter <= 0x10FFFF) {
+                        valueBufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
+                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
+                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
+
+                    } else {
+                        RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
+                    }
+                }
+            }
+            columnString(column->name);
             break;
 
         case 2: //number/float
-            appendNumber(columnName, data, length);
+            valueLength = 0;
+
+            digits = data[0];
+            //just zero
+            if (digits == 0x80) {
+                valueBufferAppend('0');
+            } else {
+                uint64_t j = 1, jMax = length - 1;
+
+                //positive number
+                if (digits > 0x80 && jMax >= 1) {
+                    uint64_t value, zeros = 0;
+                    //part of the total
+                    if (digits <= 0xC0) {
+                        valueBufferAppend('0');
+                        zeros = 0xC0 - digits;
+                    } else {
+                        digits -= 0xC0;
+                        //part of the total - omitting first zero for first digit
+                        value = data[j] - 1;
+                        if (value < 10)
+                            valueBufferAppend('0' + value);
+                        else {
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                        }
+
+                        ++j;
+                        --digits;
+
+                        while (digits > 0) {
+                            value = data[j] - 1;
+                            if (j <= jMax) {
+                                valueBufferAppend('0' + (value / 10));
+                                valueBufferAppend('0' + (value % 10));
+                                ++j;
+                            } else {
+                                valueBufferAppend('0');
+                                valueBufferAppend('0');
+                            }
+                            --digits;
+                        }
+                    }
+
+                    //fraction part
+                    if (j <= jMax) {
+                        valueBufferAppend('.');
+
+                        while (zeros > 0) {
+                            valueBufferAppend('0');
+                            valueBufferAppend('0');
+                            --zeros;
+                        }
+
+                        while (j <= jMax - 1) {
+                            value = data[j] - 1;
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                            ++j;
+                        }
+
+                        //last digit - omitting 0 at the end
+                        value = data[j] - 1;
+                        valueBufferAppend('0' + (value / 10));
+                        if ((value % 10) != 0)
+                            valueBufferAppend('0' + (value % 10));
+                    }
+                //negative number
+                } else if (digits < 0x80 && jMax >= 1) {
+                    uint64_t value, zeros = 0;
+                    valueBufferAppend('-');
+
+                    if (data[jMax] == 0x66)
+                        --jMax;
+
+                    //part of the total
+                    if (digits >= 0x3F) {
+                        valueBufferAppend('0');
+                        zeros = digits - 0x3F;
+                    } else {
+                        digits = 0x3F - digits;
+
+                        value = 101 - data[j];
+                        if (value < 10)
+                            valueBufferAppend('0' + value);
+                        else {
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                        }
+                        ++j;
+                        --digits;
+
+                        while (digits > 0) {
+                            if (j <= jMax) {
+                                value = 101 - data[j];
+                                valueBufferAppend('0' + (value / 10));
+                                valueBufferAppend('0' + (value % 10));
+                                ++j;
+                            } else {
+                                valueBufferAppend('0');
+                                valueBufferAppend('0');
+                            }
+                            --digits;
+                        }
+                    }
+
+                    if (j <= jMax) {
+                        valueBufferAppend('.');
+
+                        while (zeros > 0) {
+                            valueBufferAppend('0');
+                            valueBufferAppend('0');
+                            --zeros;
+                        }
+
+                        while (j <= jMax - 1) {
+                            value = 101 - data[j];
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                            ++j;
+                        }
+
+                        value = 101 - data[j];
+                        valueBufferAppend('0' + (value / 10));
+                        if ((value % 10) != 0)
+                            valueBufferAppend('0' + (value % 10));
+                    }
+                } else {
+                    columnUnknown(column->name, data, length);
+                    break;
+                }
+            }
+            columnNumber(column->name, column->precision, column->scale);
             break;
 
         case 12:  //date
         case 180: //timestamp
             if (length != 7 && length != 11)
-                appendUnknown(columnName, data, length);
+                columnUnknown(column->name, data, length);
             else {
                 struct tm epochtime;
                 epochtime.tm_sec = data[6] - 1; //0..59
@@ -1022,32 +1190,32 @@ namespace OpenLogReplicator {
                 if (length == 11)
                     fraction = oracleAnalyser->read32Big(data + 7);
 
-                appendTimestamp(columnName, epochtime, fraction, nullptr);
+                columnTimestamp(column->name, epochtime, fraction, nullptr);
             }
             break;
 
         case 23: //raw
-            appendRaw(columnName, data, length);
+            columnRaw(column->name, data, length);
             break;
 
         case 100: //binary_float
             if (length == 4) {
-                appendFloat(columnName, *((float *)data));
+                columnFloat(column->name, *((float *)data));
             } else
-                appendUnknown(columnName, data, length);
+                columnUnknown(column->name, data, length);
             break;
 
         case 101: //binary_double
             if (length == 8) {
-                appendDouble(columnName, *((double *)data));
+                columnDouble(column->name, *((double *)data));
             } else
-                appendUnknown(columnName, data, length);
+                columnUnknown(column->name, data, length);
             break;
 
         //case 231: //timestamp with local time zone
         case 181: //timestamp with time zone
             if (length != 9 && length != 13) {
-                appendUnknown(columnName, data, length);
+                columnUnknown(column->name, data, length);
             } else {
                 struct tm epochtime;
                 epochtime.tm_sec = data[6] - 1; //0..59
@@ -1115,12 +1283,59 @@ namespace OpenLogReplicator {
                         tz = "TZ?";
                 }
 
-                appendTimestamp(columnName, epochtime, fraction, tz);
+                columnTimestamp(column->name, epochtime, fraction, tz);
             }
             break;
 
         default:
-            appendUnknown(columnName, data, length);
+            columnUnknown(column->name, data, length);
+        }
+    }
+
+    void OutputBuffer::initialize(OracleAnalyser *oracleAnalyser) {
+        this->oracleAnalyser = oracleAnalyser;
+
+        buffersAllocated = 1;
+        firstBuffer = oracleAnalyser->getMemoryChunk("BUFFER", false);
+        *((uint8_t**)(firstBuffer + OUTPUT_BUFFER_NEXT)) = nullptr;
+        *((uint64_t*)(firstBuffer + OUTPUT_BUFFER_END)) = OUTPUT_BUFFER_DATA;
+        firstBufferPos = OUTPUT_BUFFER_DATA;
+        lastBuffer = firstBuffer;
+        lastBufferPos = OUTPUT_BUFFER_DATA;
+    }
+
+    uint64_t OutputBuffer::outputBufferSize(void) {
+        return messageLength + OUTPUT_BUFFER_LENGTH_SIZE;
+    }
+
+    void OutputBuffer::setWriter(Writer *writer) {
+        this->writer = writer;
+    }
+
+    void OutputBuffer::setNlsCharset(string &nlsCharset, string &nlsNcharCharset) {
+        INFO("loading character mapping for " << nlsCharset);
+
+        for (auto elem: characterMap) {
+            if (strcmp(nlsCharset.c_str(), elem.second->name) == 0) {
+                defaultCharacterMapId = elem.first;
+                break;
+            }
+        }
+
+        if (defaultCharacterMapId == 0) {
+            RUNTIME_FAIL("unsupported NLS_CHARACTERSET value");
+        }
+
+        INFO("loading character mapping for " << nlsNcharCharset);
+        for (auto elem: characterMap) {
+            if (strcmp(nlsNcharCharset.c_str(), elem.second->name) == 0) {
+                defaultCharacterNcharMapId = elem.first;
+                break;
+            }
+        }
+
+        if (defaultCharacterNcharMapId == 0) {
+            RUNTIME_FAIL("unsupported NLS_NCHAR_CHARACTERSET value");
         }
     }
 }

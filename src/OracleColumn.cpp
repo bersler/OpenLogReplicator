@@ -21,11 +21,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    OracleColumn::OracleColumn(uint64_t colNo, uint64_t segColNo, const char* columnName, uint64_t typeNo, uint64_t length, int64_t precision,
+    OracleColumn::OracleColumn(uint64_t colNo, uint64_t segColNo, const char* name, uint64_t typeNo, uint64_t length, int64_t precision,
             int64_t scale, uint64_t numPk, uint64_t charsetId, bool nullable) :
             colNo(colNo),
             segColNo(segColNo),
-            columnName(columnName),
+            name(name),
             typeNo(typeNo),
             length(length),
             precision(precision),
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleColumn& column) {
-        os << column.segColNo << ": (" << column.colNo << ", \"" << column.columnName << "\", " << column.typeNo << ", " << column.length << ")";
+        os << column.segColNo << ": (" << column.colNo << ", \"" << column.name << "\", " << column.typeNo << ", " << column.length << ")";
         return os;
     }
 }

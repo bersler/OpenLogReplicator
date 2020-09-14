@@ -32,10 +32,9 @@ class RequestDefaultTypeInternal {
 class ValueDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Value> _instance;
-  ::PROTOBUF_NAMESPACE_ID::int64 value_int64_;
+  ::PROTOBUF_NAMESPACE_ID::int64 value_int_;
   float value_float_;
   double value_double_;
-  bool value_bool_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_string_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_bytes_;
 } _Value_default_instance_;
@@ -195,10 +194,9 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Value, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Value, name_),
-  offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_int64_),
+  offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_int_),
   offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_float_),
   offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_double_),
-  offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_bool_),
   offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_string_),
   offsetof(::OpenLogReplicator::pb::ValueDefaultTypeInternal, value_bytes_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Value, datum_),
@@ -256,10 +254,10 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 0, -1, sizeof(::OpenLogReplicator::pb::RequestSchema)},
   { 7, -1, sizeof(::OpenLogReplicator::pb::Request)},
   { 16, -1, sizeof(::OpenLogReplicator::pb::Value)},
-  { 29, -1, sizeof(::OpenLogReplicator::pb::Column)},
-  { 40, -1, sizeof(::OpenLogReplicator::pb::Schema)},
-  { 52, -1, sizeof(::OpenLogReplicator::pb::Payload)},
-  { 63, -1, sizeof(::OpenLogReplicator::pb::Redo)},
+  { 28, -1, sizeof(::OpenLogReplicator::pb::Column)},
+  { 39, -1, sizeof(::OpenLogReplicator::pb::Schema)},
+  { 51, -1, sizeof(::OpenLogReplicator::pb::Payload)},
+  { 62, -1, sizeof(::OpenLogReplicator::pb::Redo)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -278,39 +276,38 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "er\030\002 \001(\t\"s\n\007Request\022\013\n\003scn\030\001 \001(\004\022\017\n\007vers"
   "ion\030\002 \001(\004\022\025\n\rdatabase_name\030\003 \001(\t\0223\n\006sche"
   "ma\030\004 \003(\0132#.OpenLogReplicator.pb.RequestS"
-  "chema\"\251\001\n\005Value\022\014\n\004name\030\001 \001(\t\022\025\n\013value_i"
-  "nt64\030\002 \001(\003H\000\022\025\n\013value_float\030\003 \001(\002H\000\022\026\n\014v"
-  "alue_double\030\004 \001(\001H\000\022\024\n\nvalue_bool\030\005 \001(\010H"
-  "\000\022\026\n\014value_string\030\006 \001(\tH\000\022\025\n\013value_bytes"
-  "\030\007 \001(\014H\000B\007\n\005datum\"\212\001\n\006Column\022\014\n\004name\030\001 \001"
-  "(\t\022.\n\004type\030\002 \001(\0162 .OpenLogReplicator.pb."
-  "ColumnType\022\016\n\006length\030\003 \001(\005\022\021\n\tprecision\030"
-  "\004 \001(\005\022\r\n\005scale\030\005 \001(\005\022\020\n\010nullable\030\006 \001(\010\"\210"
-  "\001\n\006Schema\022\r\n\005owner\030\001 \001(\t\022\014\n\004name\030\002 \001(\t\022\014"
-  "\n\004objn\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004H\000\022\r\n\003tms\030\005 \001(\tH"
-  "\000\022,\n\006column\030\006 \003(\0132\034.OpenLogReplicator.pb"
-  ".ColumnB\010\n\006tm_val\"\320\001\n\007Payload\022$\n\002op\030\001 \001("
-  "\0162\030.OpenLogReplicator.pb.Op\022,\n\006schema\030\002 "
-  "\001(\0132\034.OpenLogReplicator.pb.Schema\022\013\n\003rid"
-  "\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033.OpenLogReplicat"
-  "or.pb.Value\022*\n\005after\030\005 \003(\0132\033.OpenLogRepl"
-  "icator.pb.Value\022\013\n\003ddl\030\006 \001(\t\"\261\001\n\004Redo\022\r\n"
-  "\003scn\030\001 \001(\004H\000\022\016\n\004scns\030\002 \001(\tH\000\022\014\n\002tm\030\003 \001(\004"
-  "H\001\022\r\n\003tms\030\004 \001(\tH\001\022\r\n\003xid\030\005 \001(\tH\002\022\016\n\004xidn"
-  "\030\006 \001(\004H\002\022.\n\007payload\030\007 \003(\0132\035.OpenLogRepli"
-  "cator.pb.PayloadB\t\n\007scn_valB\010\n\006tm_valB\t\n"
-  "\007xid_val*H\n\002Op\022\t\n\005BEGIN\020\000\022\n\n\006COMMIT\020\001\022\n\n"
-  "\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n\006DELETE\020\004\022\007\n\003DDL"
-  "\020\005*\263\002\n\nColumnType\022\013\n\007UNKNOWN\020\000\022\014\n\010VARCHA"
-  "R2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG\020\003\022\010\n\004DATE\020\004\022\007\n\003"
-  "RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005ROWID\020\007\022\010\n\004CHAR\020\010"
-  "\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBINARY_DOUBLE\020\n\022\010\n"
-  "\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIMESTAMP\020\r\022\025\n\021TIME"
-  "STAMP_WITH_TZ\020\016\022\032\n\026INTERVAL_YEAR_TO_MONT"
-  "H\020\017\022\032\n\026INTERVAL_DAY_TO_SECOND\020\020\022\n\n\006UROWI"
-  "D\020\021\022\033\n\027TIMESTAMP_WITH_LOCAL_TZ\020\022B<\n\"io.d"
-  "ebezium.connector.oracle.protoB\021OpenLogR"
-  "eplicatorH\001\370\001\001b\006proto3"
+  "chema\"\221\001\n\005Value\022\014\n\004name\030\001 \001(\t\022\023\n\tvalue_i"
+  "nt\030\002 \001(\003H\000\022\025\n\013value_float\030\003 \001(\002H\000\022\026\n\014val"
+  "ue_double\030\004 \001(\001H\000\022\026\n\014value_string\030\005 \001(\tH"
+  "\000\022\025\n\013value_bytes\030\006 \001(\014H\000B\007\n\005datum\"\212\001\n\006Co"
+  "lumn\022\014\n\004name\030\001 \001(\t\022.\n\004type\030\002 \001(\0162 .OpenL"
+  "ogReplicator.pb.ColumnType\022\016\n\006length\030\003 \001"
+  "(\005\022\021\n\tprecision\030\004 \001(\005\022\r\n\005scale\030\005 \001(\005\022\020\n\010"
+  "nullable\030\006 \001(\010\"\210\001\n\006Schema\022\r\n\005owner\030\001 \001(\t"
+  "\022\014\n\004name\030\002 \001(\t\022\014\n\004objn\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004"
+  "H\000\022\r\n\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.Open"
+  "LogReplicator.pb.ColumnB\010\n\006tm_val\"\320\001\n\007Pa"
+  "yload\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb"
+  ".Op\022,\n\006schema\030\002 \001(\0132\034.OpenLogReplicator."
+  "pb.Schema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033"
+  ".OpenLogReplicator.pb.Value\022*\n\005after\030\005 \003"
+  "(\0132\033.OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006"
+  " \001(\t\"\261\001\n\004Redo\022\r\n\003scn\030\001 \001(\004H\000\022\016\n\004scns\030\002 \001"
+  "(\tH\000\022\014\n\002tm\030\003 \001(\004H\001\022\r\n\003tms\030\004 \001(\tH\001\022\r\n\003xid"
+  "\030\005 \001(\tH\002\022\016\n\004xidn\030\006 \001(\004H\002\022.\n\007payload\030\007 \003("
+  "\0132\035.OpenLogReplicator.pb.PayloadB\t\n\007scn_"
+  "valB\010\n\006tm_valB\t\n\007xid_val*H\n\002Op\022\t\n\005BEGIN\020"
+  "\000\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n"
+  "\006DELETE\020\004\022\007\n\003DDL\020\005*\263\002\n\nColumnType\022\013\n\007UNK"
+  "NOWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG"
+  "\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005R"
+  "OWID\020\007\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBI"
+  "NARY_DOUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIM"
+  "ESTAMP\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTER"
+  "VAL_YEAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_S"
+  "ECOND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LO"
+  "CAL_TZ\020\022B<\n\"io.debezium.connector.oracle"
+  ".protoB\021OpenLogReplicatorH\001\370\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -325,7 +322,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1502,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1478,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -937,10 +934,9 @@ void Request::InternalSwap(Request* other) {
 // ===================================================================
 
 void Value::InitAsDefaultInstance() {
-  ::OpenLogReplicator::pb::_Value_default_instance_.value_int64_ = PROTOBUF_LONGLONG(0);
+  ::OpenLogReplicator::pb::_Value_default_instance_.value_int_ = PROTOBUF_LONGLONG(0);
   ::OpenLogReplicator::pb::_Value_default_instance_.value_float_ = 0;
   ::OpenLogReplicator::pb::_Value_default_instance_.value_double_ = 0;
-  ::OpenLogReplicator::pb::_Value_default_instance_.value_bool_ = false;
   ::OpenLogReplicator::pb::_Value_default_instance_.value_string_.UnsafeSetDefault(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::OpenLogReplicator::pb::_Value_default_instance_.value_bytes_.UnsafeSetDefault(
@@ -966,8 +962,8 @@ Value::Value(const Value& from)
   }
   clear_has_datum();
   switch (from.datum_case()) {
-    case kValueInt64: {
-      _internal_set_value_int64(from._internal_value_int64());
+    case kValueInt: {
+      _internal_set_value_int(from._internal_value_int());
       break;
     }
     case kValueFloat: {
@@ -976,10 +972,6 @@ Value::Value(const Value& from)
     }
     case kValueDouble: {
       _internal_set_value_double(from._internal_value_double());
-      break;
-    }
-    case kValueBool: {
-      _internal_set_value_bool(from._internal_value_bool());
       break;
     }
     case kValueString: {
@@ -1035,7 +1027,7 @@ const Value& Value::default_instance() {
 void Value::clear_datum() {
 // @@protoc_insertion_point(one_of_clear_start:OpenLogReplicator.pb.Value)
   switch (datum_case()) {
-    case kValueInt64: {
+    case kValueInt: {
       // No need to clear
       break;
     }
@@ -1044,10 +1036,6 @@ void Value::clear_datum() {
       break;
     }
     case kValueDouble: {
-      // No need to clear
-      break;
-    }
-    case kValueBool: {
       // No need to clear
       break;
     }
@@ -1095,10 +1083,10 @@ const char* Value::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::inte
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // int64 value_int64 = 2;
+      // int64 value_int = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
-          _internal_set_value_int64(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          _internal_set_value_int(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1116,25 +1104,18 @@ const char* Value::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::inte
           ptr += sizeof(double);
         } else goto handle_unusual;
         continue;
-      // bool value_bool = 5;
+      // string value_string = 5;
       case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 40)) {
-          _internal_set_value_bool(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // string value_string = 6;
-      case 6:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           auto str = _internal_mutable_value_string();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Value.value_string"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // bytes value_bytes = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
+      // bytes value_bytes = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
           auto str = _internal_mutable_value_bytes();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(ptr);
@@ -1178,10 +1159,10 @@ failure:
         1, this->_internal_name(), target);
   }
 
-  // int64 value_int64 = 2;
-  if (_internal_has_value_int64()) {
+  // int64 value_int = 2;
+  if (_internal_has_value_int()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt64ToArray(2, this->_internal_value_int64(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt64ToArray(2, this->_internal_value_int(), target);
   }
 
   // float value_float = 3;
@@ -1196,26 +1177,20 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteDoubleToArray(4, this->_internal_value_double(), target);
   }
 
-  // bool value_bool = 5;
-  if (_internal_has_value_bool()) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(5, this->_internal_value_bool(), target);
-  }
-
-  // string value_string = 6;
+  // string value_string = 5;
   if (_internal_has_value_string()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_value_string().data(), static_cast<int>(this->_internal_value_string().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "OpenLogReplicator.pb.Value.value_string");
     target = stream->WriteStringMaybeAliased(
-        6, this->_internal_value_string(), target);
+        5, this->_internal_value_string(), target);
   }
 
-  // bytes value_bytes = 7;
+  // bytes value_bytes = 6;
   if (_internal_has_value_bytes()) {
     target = stream->WriteBytesMaybeAliased(
-        7, this->_internal_value_bytes(), target);
+        6, this->_internal_value_bytes(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1242,11 +1217,11 @@ size_t Value::ByteSizeLong() const {
   }
 
   switch (datum_case()) {
-    // int64 value_int64 = 2;
-    case kValueInt64: {
+    // int64 value_int = 2;
+    case kValueInt: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int64Size(
-          this->_internal_value_int64());
+          this->_internal_value_int());
       break;
     }
     // float value_float = 3;
@@ -1259,19 +1234,14 @@ size_t Value::ByteSizeLong() const {
       total_size += 1 + 8;
       break;
     }
-    // bool value_bool = 5;
-    case kValueBool: {
-      total_size += 1 + 1;
-      break;
-    }
-    // string value_string = 6;
+    // string value_string = 5;
     case kValueString: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
           this->_internal_value_string());
       break;
     }
-    // bytes value_bytes = 7;
+    // bytes value_bytes = 6;
     case kValueBytes: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
@@ -1317,8 +1287,8 @@ void Value::MergeFrom(const Value& from) {
     _internal_set_name(from._internal_name());
   }
   switch (from.datum_case()) {
-    case kValueInt64: {
-      _internal_set_value_int64(from._internal_value_int64());
+    case kValueInt: {
+      _internal_set_value_int(from._internal_value_int());
       break;
     }
     case kValueFloat: {
@@ -1327,10 +1297,6 @@ void Value::MergeFrom(const Value& from) {
     }
     case kValueDouble: {
       _internal_set_value_double(from._internal_value_double());
-      break;
-    }
-    case kValueBool: {
-      _internal_set_value_bool(from._internal_value_bool());
       break;
     }
     case kValueString: {

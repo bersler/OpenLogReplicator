@@ -70,12 +70,11 @@ message Request {
 message Value {
     string name = 1;
     oneof datum {
-        int64 value_int64 = 2;
+        int64 value_int = 2;
         float value_float = 3;
         double value_double = 4;
-        bool value_bool = 5;
-        string value_string = 6;
-        bytes value_bytes = 7;
+        string value_string = 5;
+        bytes value_bytes = 6;
     }
 }
 

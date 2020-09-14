@@ -41,6 +41,7 @@ namespace OpenLogReplicator {
     class CharacterSet;
     class OracleAnalyser;
     class OracleObject;
+    class OracleColumn;
     class RedoLogRecord;
     class Writer;
 
@@ -58,21 +59,36 @@ namespace OpenLogReplicator {
         uint64_t schemaFormat;
         uint64_t columnFormat;
         uint64_t messageLength;
+        char valueBuffer[MAX_FIELD_LENGTH];
+        uint64_t valueLength;
         unordered_map<uint16_t, const char*> timeZoneMap;
         unordered_set<OracleObject*> objects;
         typetime lastTime;
         typescn lastScn;
         typexid lastXid;
 
-        void bufferAppend(uint8_t character);
-        void bufferShift(uint64_t bytes);
-        void beginMessage(void);
-        void commitMessage(void);
-        void append(const char* str);
-        void append(string &str);
-        void append(char chr);
-        void checkUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        void processValue(string &columnName, uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
+        void outputBufferShift(uint64_t bytes);
+        void outputBufferBegin(void);
+        void outputBufferCommit(void);
+        void outputBufferAppend(char character);
+        void outputBufferAppend(const char* str, uint64_t length);
+        void outputBufferAppend(const char* str);
+        void outputBufferAppend(string &str);
+        void columnUnknown(string &columnName, const uint8_t *data, uint64_t length);
+        virtual void columnNull(OracleColumn *column) = 0;
+        virtual void columnFloat(string &columnName, float value) = 0;
+        virtual void columnDouble(string &columnName, double value) = 0;
+        virtual void columnString(string &columnName) = 0;
+        virtual void columnNumber(string &columnName, uint64_t precision, uint64_t scale) = 0;
+        virtual void columnRaw(string &columnName, const uint8_t *data, uint64_t length) = 0;
+        virtual void columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) = 0;
+        void valueBufferAppend(uint8_t value);
+        void valueBufferAppendHex(typeunicode value, uint64_t length);
+        void compactUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
+        void processValue(OracleColumn *column, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
+        virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) = 0;
+        virtual void appendHeader(bool first) = 0;
+        virtual void appendSchema(OracleObject *object) = 0;
 
     public:
         uint64_t defaultCharacterMapId;
@@ -102,21 +118,10 @@ namespace OpenLogReplicator {
         virtual ~OutputBuffer();
 
         void initialize(OracleAnalyser *oracleAnalyser);
-        uint64_t currentMessageSize(void);
+        uint64_t outputBufferSize(void);
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
 
-        virtual void appendNull(string &columnName) = 0;
-        virtual void appendUnknown(string &columnName, const uint8_t *data, uint64_t length) = 0;
-        virtual void appendNumber(string &columnName, const uint8_t *data, uint64_t length) = 0;
-        virtual void appendFloat(string &columnName, float val) = 0;
-        virtual void appendDouble(string &columnName, double val) = 0;
-        virtual void appendString(string &columnName, const uint8_t *data, uint64_t length, uint64_t charsetId) = 0;
-        virtual void appendTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) = 0;
-        virtual void appendRaw(string &columnName, const uint8_t *data, uint64_t length) = 0;
-        virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) = 0;
-        virtual void appendHeader(bool first) = 0;
-        virtual void appendSchema(OracleObject *object) = 0;
         virtual void processBegin(typescn scn, typetime time, typexid xid) = 0;
         virtual void processCommit(void) = 0;
         virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;

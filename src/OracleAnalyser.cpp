@@ -1282,7 +1282,7 @@ namespace OpenLogReplicator {
                     CONFIG_FAIL("bad JSON in <database>-schema.json, invalid seg-col-no value");
                 }
 
-                const Value& columnNameJSON = getJSONfield(fileName, columns[j], "column-name");
+                const Value& columnNameJSON = getJSONfield(fileName, columns[j], "name");
                 const char* columnName = columnNameJSON.GetString();
 
                 const Value& typeNoJSON = getJSONfield(fileName, columns[j], "type-no");
@@ -1427,7 +1427,7 @@ namespace OpenLogReplicator {
                     ss << ",";
                 ss << "{\"col-no\":" << dec << objectTmp->columns[i]->colNo << "," <<
                         "\"seg-col-no\":" << dec << objectTmp->columns[i]->segColNo << "," <<
-                        "\"column-name\":\"" << objectTmp->columns[i]->columnName << "\"," <<
+                        "\"name\":\"" << objectTmp->columns[i]->name << "\"," <<
                         "\"type-no\":" << dec << objectTmp->columns[i]->typeNo << "," <<
                         "\"length\":" << dec << objectTmp->columns[i]->length << "," <<
                         "\"precision\":" << dec << objectTmp->columns[i]->precision << "," <<

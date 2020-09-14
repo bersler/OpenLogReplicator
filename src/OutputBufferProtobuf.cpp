@@ -31,10 +31,10 @@ namespace OpenLogReplicator {
             uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
             OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat)
 #ifdef LINK_LIBRARY_PROTOBUF
-            ,redo(nullptr),
-            value(nullptr),
-            payload(nullptr),
-            schema(nullptr)
+            ,redoPB(nullptr),
+            valuePB(nullptr),
+            payloadPB(nullptr),
+            schemaPB(nullptr)
 
 #endif /* LINK_LIBRARY_PROTOBUF */
     {
@@ -45,72 +45,74 @@ namespace OpenLogReplicator {
 
     OutputBufferProtobuf::~OutputBufferProtobuf() {
 #ifdef LINK_LIBRARY_PROTOBUF
-        if (redo != nullptr)
-            delete redo;
-            redo = nullptr;
+        if (redoPB != nullptr)
+            delete redoPB;
+            redoPB = nullptr;
         google::protobuf::ShutdownProtobufLibrary();
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::numToString(uint64_t val, char *buf, uint64_t length) {
-        uint64_t j = (length - 1) * 4;
-        for (uint64_t i = 0; i < length; ++i) {
-            buf[i] = map16[(val >> j) & 0xF];
-            j -= 4;
-        };
-        buf[length] = 0;
-    }
-
-    void OutputBufferProtobuf::appendNull(string &columnName) {
+    void OutputBufferProtobuf::columnNull(OracleColumn *column) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(column->name);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendUnknown(string &columnName, const uint8_t *data, uint64_t length) {
+    void OutputBufferProtobuf::columnFloat(string &columnName, float value) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
-        //append("\"?\"");
-        stringstream ss;
-        for (uint64_t j = 0; j < length; ++j)
-            ss << " " << hex << setfill('0') << setw(2) << (uint64_t) data[j];
-        WARNING("unknown value (column: " << columnName << "): " << dec << length << " - " << ss.str());
+        valuePB->set_name(columnName);
+        valuePB->set_value_float(value);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendNumber(string &columnName, const uint8_t *data, uint64_t length) {
+    void OutputBufferProtobuf::columnDouble(string &columnName, double value) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(columnName);
+        valuePB->set_value_double(value);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendFloat(string &columnName, float val) {
+    void OutputBufferProtobuf::columnString(string &columnName) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(columnName);
+        valuePB->set_value_string(valueBuffer, valueLength);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendDouble(string &columnName, double val) {
+    void OutputBufferProtobuf::columnNumber(string &columnName, uint64_t precision, uint64_t scale) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(columnName);
+        valueBuffer[valueLength] = 0;
+        char *retPtr;
+
+        if (scale == 0 && precision <= 17) {
+            int64_t value = strtol(valueBuffer, &retPtr, 10);
+            valuePB->set_value_int(value);
+        } else
+        if (precision <= 6 && scale < 38)
+        {
+            float value = strtol(valueBuffer, &retPtr, 10);
+            valuePB->set_value_float(value);
+        } else
+        if (precision <= 15 && scale <= 307)
+        {
+            double value = strtol(valueBuffer, &retPtr, 10);
+            valuePB->set_value_double(value);
+        } else {
+            valuePB->set_value_string(valueBuffer, valueLength);
+        }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendString(string &columnName, const uint8_t *data, uint64_t length, uint64_t charsetId) {
+    void OutputBufferProtobuf::columnRaw(string &columnName, const uint8_t *data, uint64_t length) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(columnName);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
-    void OutputBufferProtobuf::appendTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) {
+    void OutputBufferProtobuf::columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
-#endif /* LINK_LIBRARY_PROTOBUF */
-    }
-
-    void OutputBufferProtobuf::appendRaw(string &columnName, const uint8_t *data, uint64_t length) {
-#ifdef LINK_LIBRARY_PROTOBUF
-        value->set_name(columnName);
+        valuePB->set_name(columnName);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
@@ -138,7 +140,7 @@ namespace OpenLogReplicator {
         rid[15] = map64[(slot >> 12) & 0x3F];
         rid[16] = map64[(slot >> 6) & 0x3F];
         rid[17] = map64[slot & 0x3F];
-        payload->set_rid(rid, 18);
+        payloadPB->set_rid(rid, 18);
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
@@ -148,9 +150,9 @@ namespace OpenLogReplicator {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
                 char buf[17];
                 numToString(lastScn, buf, 16);
-                redo->set_scns(buf);
+                redoPB->set_scns(buf);
             } else {
-                redo->set_scn(lastScn);
+                redoPB->set_scn(lastScn);
             }
         }
 
@@ -159,9 +161,9 @@ namespace OpenLogReplicator {
                 char iso[21];
                 lastTime.toISO8601(iso);
                 string isoStr(iso);
-                redo->set_tms(isoStr);
+                redoPB->set_tms(isoStr);
             } else {
-                redo->set_tm(lastTime.toTime() * 1000);
+                redoPB->set_tm(lastTime.toTime() * 1000);
             }
         }
 
@@ -172,20 +174,20 @@ namespace OpenLogReplicator {
             sb << (uint64_t)SLT(lastXid);
             sb << '.';
             sb << (uint64_t)SQN(lastXid);
-            redo->set_xid(sb.str());
+            redoPB->set_xid(sb.str());
         } else {
-            redo->set_xidn(lastXid);
+            redoPB->set_xidn(lastXid);
         }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
     void OutputBufferProtobuf::appendSchema(OracleObject *object) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        schema->set_owner(object->owner);
-        schema->set_name(object->name);
+        schemaPB->set_owner(object->owner);
+        schemaPB->set_name(object->name);
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJN) != 0)
-            schema->set_objn(object->objn);
+            schemaPB->set_objn(object->objn);
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
             if ((schemaFormat & SCHEMA_FORMAT_REPEATED) == 0) {
@@ -195,14 +197,14 @@ namespace OpenLogReplicator {
                     objects.insert(object);
             }
 
-            schema->add_column();
-            pb::Column *column = schema->mutable_column(schema->column_size() - 1);
+            schemaPB->add_column();
+            pb::Column *column = schemaPB->mutable_column(schemaPB->column_size() - 1);
 
             for (uint64_t i = 0; i < object->columns.size(); ++i) {
                 if (object->columns[i] == nullptr)
                     continue;
 
-                column->set_name(object->columns[i]->columnName);
+                column->set_name(object->columns[i]->name);
 
                 switch(object->columns[i]->typeNo) {
                 case 1: //varchar2(n), nvarchar2(n)
@@ -299,34 +301,43 @@ namespace OpenLogReplicator {
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
+    void OutputBufferProtobuf::numToString(uint64_t value, char *buf, uint64_t length) {
+        uint64_t j = (length - 1) * 4;
+        for (uint64_t i = 0; i < length; ++i) {
+            buf[i] = map16[(value >> j) & 0xF];
+            j -= 4;
+        };
+        buf[length] = 0;
+    }
+
     void OutputBufferProtobuf::processBegin(typescn scn, typetime time, typexid xid) {
 #ifdef LINK_LIBRARY_PROTOBUF
         lastTime = time;
         lastScn = scn;
         lastXid = xid;
-        beginMessage();
+        outputBufferBegin();
 
-        if (redo != nullptr) {
+        if (redoPB != nullptr) {
             RUNTIME_FAIL("ERROR, PB begin processing failed, message already exists, internal error");
         }
-        redo = new pb::Redo;
+        redoPB = new pb::Redo;
         appendHeader(true);
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            redo->add_payload();
-            payload = redo->mutable_payload(redo->payload_size() - 1);
-            payload->set_op(pb::BEGIN);
+            redoPB->add_payload();
+            payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+            payloadPB->set_op(pb::BEGIN);
 
             string output;
-            bool ret = redo->SerializeToString(&output);
-            delete redo;
-            redo = nullptr;
+            bool ret = redoPB->SerializeToString(&output);
+            delete redoPB;
+            redoPB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB begin processing failed, error serializing to string");
             }
-            append(output);
-            commitMessage();
+            outputBufferAppend(output);
+            outputBufferCommit();
         }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
@@ -334,54 +345,54 @@ namespace OpenLogReplicator {
     void OutputBufferProtobuf::processCommit(void) {
 #ifdef LINK_LIBRARY_PROTOBUF
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (redo == nullptr) {
+            if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (redo != nullptr) {
+            if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message already exists, internal error");
             }
-            redo = new pb::Redo;
+            redoPB = new pb::Redo;
             appendHeader(true);
 
-            redo->add_payload();
-            payload = redo->mutable_payload(redo->payload_size() - 1);
-            payload->set_op(pb::COMMIT);
+            redoPB->add_payload();
+            payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+            payloadPB->set_op(pb::COMMIT);
         }
 
         string output;
-        bool ret = redo->SerializeToString(&output);
-        delete redo;
-        redo = nullptr;
+        bool ret = redoPB->SerializeToString(&output);
+        delete redoPB;
+        redoPB = nullptr;
 
         if (!ret) {
             RUNTIME_FAIL("ERROR, PB commit processing failed, error serializing to string");
         }
-        append(output);
-        commitMessage();
+        outputBufferAppend(output);
+        outputBufferCommit();
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
     void OutputBufferProtobuf::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
 #ifdef LINK_LIBRARY_PROTOBUF
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (redo == nullptr) {
+            if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, message missing, internal error");
             }
         } else {
-            if (redo != nullptr) {
+            if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, message already exists, internal error");
             }
-            beginMessage();
-            redo = new pb::Redo;
+            outputBufferBegin();
+            redoPB = new pb::Redo;
             appendHeader(true);
         }
 
-        redo->add_payload();
-        payload = redo->mutable_payload(redo->payload_size() - 1);
-        payload->set_op(pb::INSERT);
+        redoPB->add_payload();
+        payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+        payloadPB->set_op(pb::INSERT);
 
-        schema = payload->mutable_schema();
+        schemaPB = payloadPB->mutable_schema();
         appendSchema(object);
 
         appendRowid(object->objn, object->objd, bdba, slot);
@@ -391,54 +402,54 @@ namespace OpenLogReplicator {
                 continue;
 
             if (afterPos[i] != nullptr && afterLen[i] > 0) {
-                payload->add_after();
-                value = payload->mutable_after(payload->after_size() - 1);
-                processValue(object->columns[i]->columnName, afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                payloadPB->add_after();
+                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
-                payload->add_after();
-                value = payload->mutable_after(payload->after_size() - 1);
-                appendNull(object->columns[i]->columnName);
+                payloadPB->add_after();
+                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                columnNull(object->columns[i]);
             }
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = redo->SerializeToString(&output);
-            delete redo;
-            redo = nullptr;
+            bool ret = redoPB->SerializeToString(&output);
+            delete redoPB;
+            redoPB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, error serializing to string");
             }
-            append(output);
-            commitMessage();
+            outputBufferAppend(output);
+            outputBufferCommit();
         }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 
     void OutputBufferProtobuf::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        checkUpdate(object, bdba, slot, xid);
+        compactUpdate(object, bdba, slot, xid);
 
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (redo == nullptr) {
+            if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message missing, internal error");
             }
         } else {
-            if (redo != nullptr) {
+            if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message already exists, internal error");
             }
-            beginMessage();
-            redo = new pb::Redo;
+            outputBufferBegin();
+            redoPB = new pb::Redo;
             appendHeader(true);
         }
 
-        redo->add_payload();
-        payload = redo->mutable_payload(redo->payload_size() - 1);
-        payload->set_op(pb::UPDATE);
+        redoPB->add_payload();
+        payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+        payloadPB->set_op(pb::UPDATE);
 
-        schema = payload->mutable_schema();
+        schemaPB = payloadPB->mutable_schema();
         appendSchema(object);
 
         appendRowid(object->objn, object->objd, bdba, slot);
@@ -448,14 +459,14 @@ namespace OpenLogReplicator {
                 continue;
 
             if (beforePos[i] != nullptr && beforeLen[i] > 0) {
-                payload->add_before();
-                value = payload->mutable_after(payload->before_size() - 1);
-                processValue(object->columns[i]->columnName, beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                payloadPB->add_before();
+                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (afterPos[i] != nullptr || beforePos[i] > 0) {
-                payload->add_before();
-                value = payload->mutable_after(payload->before_size() - 1);
-                appendNull(object->columns[i]->columnName);
+                payloadPB->add_before();
+                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                columnNull(object->columns[i]);
             }
         }
 
@@ -464,28 +475,28 @@ namespace OpenLogReplicator {
                 continue;
 
             if (afterPos[i] != nullptr && afterLen[i] > 0) {
-                payload->add_after();
-                value = payload->mutable_after(payload->after_size() - 1);
-                processValue(object->columns[i]->columnName, afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                payloadPB->add_after();
+                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (afterPos[i] > 0 || beforePos[i] > 0) {
-                payload->add_after();
-                value = payload->mutable_after(payload->after_size() - 1);
-                appendNull(object->columns[i]->columnName);
+                payloadPB->add_after();
+                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                columnNull(object->columns[i]);
             }
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = redo->SerializeToString(&output);
-            delete redo;
-            redo = nullptr;
+            bool ret = redoPB->SerializeToString(&output);
+            delete redoPB;
+            redoPB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, error serializing to string");
             }
-            append(output);
-            commitMessage();
+            outputBufferAppend(output);
+            outputBufferCommit();
         }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
@@ -493,23 +504,23 @@ namespace OpenLogReplicator {
     void OutputBufferProtobuf::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
 #ifdef LINK_LIBRARY_PROTOBUF
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (redo == nullptr) {
+            if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, message missing, internal error");
             }
         } else {
-            if (redo != nullptr) {
+            if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, message already exists, internal error");
             }
-            beginMessage();
-            redo = new pb::Redo;
+            outputBufferBegin();
+            redoPB = new pb::Redo;
             appendHeader(true);
         }
 
-        redo->add_payload();
-        payload = redo->mutable_payload(redo->payload_size() - 1);
-        payload->set_op(pb::DELETE);
+        redoPB->add_payload();
+        payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+        payloadPB->set_op(pb::DELETE);
 
-        schema = payload->mutable_schema();
+        schemaPB = payloadPB->mutable_schema();
         appendSchema(object);
 
         appendRowid(object->objn, object->objd, bdba, slot);
@@ -520,28 +531,28 @@ namespace OpenLogReplicator {
 
             //value present before
             if (beforePos[i] != nullptr && beforeLen[i] > 0) {
-                payload->add_before();
-                value = payload->mutable_after(payload->before_size() - 1);
-                processValue(object->columns[i]->columnName, beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                payloadPB->add_before();
+                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
-                payload->add_before();
-                value = payload->mutable_after(payload->before_size() - 1);
-                appendNull(object->columns[i]->columnName);
+                payloadPB->add_before();
+                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                columnNull(object->columns[i]);
             }
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = redo->SerializeToString(&output);
-            delete redo;
-            redo = nullptr;
+            bool ret = redoPB->SerializeToString(&output);
+            delete redoPB;
+            redoPB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, error serializing to string");
             }
-            append(output);
-            commitMessage();
+            outputBufferAppend(output);
+            outputBufferCommit();
         }
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
@@ -549,34 +560,34 @@ namespace OpenLogReplicator {
     void OutputBufferProtobuf::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
 #ifdef LINK_LIBRARY_PROTOBUF
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (redo == nullptr) {
+            if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (redo != nullptr) {
+            if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message already exists, internal error");
             }
-            redo = new pb::Redo;
+            redoPB = new pb::Redo;
             appendHeader(true);
 
-            redo->add_payload();
-            payload = redo->mutable_payload(redo->payload_size() - 1);
-            payload->set_op(pb::DDL);
-            payload->set_ddl(sql, sqlLength);
+            redoPB->add_payload();
+            payloadPB = redoPB->mutable_payload(redoPB->payload_size() - 1);
+            payloadPB->set_op(pb::DDL);
+            payloadPB->set_ddl(sql, sqlLength);
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = redo->SerializeToString(&output);
-            delete redo;
-            redo = nullptr;
+            bool ret = redoPB->SerializeToString(&output);
+            delete redoPB;
+            redoPB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, error serializing to string");
             }
-            append(output);
+            outputBufferAppend(output);
         }
-        commitMessage();
+        outputBufferCommit();
 #endif /* LINK_LIBRARY_PROTOBUF */
     }
 }

@@ -571,8 +571,8 @@ namespace OpenLogReplicator {
 
                     //split very big transactions
                     if (oracleAnalyser->outputBuffer->writer->maxMessageMb > 0 &&
-                            oracleAnalyser->outputBuffer->currentMessageSize() + DATA_BUFFER_SIZE > oracleAnalyser->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
-                        WARNING("big transaction divided (forced commit after " << oracleAnalyser->outputBuffer->currentMessageSize() << " bytes)");
+                            oracleAnalyser->outputBuffer->outputBufferSize() + DATA_BUFFER_SIZE > oracleAnalyser->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
+                        WARNING("big transaction divided (forced commit after " << oracleAnalyser->outputBuffer->outputBufferSize() << " bytes)");
                         oracleAnalyser->outputBuffer->processCommit();
                         oracleAnalyser->outputBuffer->processBegin(lastScn, commitTime, xid);
                     }

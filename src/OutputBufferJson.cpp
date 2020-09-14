@@ -38,527 +38,210 @@ namespace OpenLogReplicator {
     OutputBufferJson::~OutputBufferJson() {
     }
 
-    void OutputBufferJson::appendHex(uint64_t val, uint64_t length) {
-        uint64_t j = (length - 1) * 4;
-        for (uint64_t i = 0; i < length; ++i) {
-            bufferAppend(map16[(val >> j) & 0xF]);
-            j -= 4;
-        };
-    }
-
-    void OutputBufferJson::appendDec(uint64_t val, uint64_t length) {
-        char buffer[21];
-
-        for (uint i = 0; i < length; ++i) {
-            buffer[i] = '0' + (val % 10);
-            val /= 10;
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            bufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendDec(uint64_t val) {
-        char buffer[21];
-        uint64_t length = 0;
-
-        if (val == 0) {
-            buffer[0] = '0';
-            length = 1;
-        } else {
-            while (val > 0) {
-                buffer[length++] = '0' + (val % 10);
-                val /= 10;
-            }
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            bufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendSDec(int64_t val) {
-        char buffer[22];
-        uint64_t length = 0;
-
-        if (val == 0) {
-            buffer[0] = '0';
-            length = 1;
-        } else {
-            if (val < 0) {
-                val = -val;
-                while (val > 0) {
-                    buffer[length++] = '0' + (val % 10);
-                    val /= 10;
-                }
-                buffer[length++] = '-';
-            } else {
-                while (val > 0) {
-                    buffer[length++] = '0' + (val % 10);
-                    val /= 10;
-                }
-            }
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            bufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendEscape(const char *str, uint64_t length) {
-        while (length > 0) {
-            if (*str == '\t') {
-                bufferAppend('\\');
-                bufferAppend('t');
-            } else if (*str == '\r') {
-                bufferAppend('\\');
-                bufferAppend('r');
-            } else if (*str == '\n') {
-                bufferAppend('\\');
-                bufferAppend('n');
-            } else if (*str == '\f') {
-                bufferAppend('\\');
-                bufferAppend('f');
-            } else if (*str == '\b') {
-                bufferAppend('\\');
-                bufferAppend('b');
-            } else {
-                if (*str == '"' || *str == '\\' || *str == '/')
-                    bufferAppend('\\');
-                bufferAppend(*(str++));
-            }
-            --length;
-        }
-    }
-
-    void OutputBufferJson::appendEscapeMap(const uint8_t *str, uint64_t length, uint64_t charsetId) {
-        bool isNext = false;
-
-        CharacterSet *characterSet = characterMap[charsetId];
-        if (characterSet == nullptr && (charFormat & 1) == 0) {
-            RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
-        }
-
-        while (length > 0) {
-            typeunicode unicodeCharacter;
-            uint64_t unicodeCharacterLength;
-
-            if ((charFormat & 1) == 0) {
-                unicodeCharacter = characterSet->decode(str, length);
-                unicodeCharacterLength = 8;
-            } else {
-                unicodeCharacter = *str++;
-                --length;
-                unicodeCharacterLength = 2;
-            }
-
-            if ((charFormat & 2) == 2) {
-                if (isNext)
-                    bufferAppend(',');
-                else
-                    isNext = true;
-                bufferAppend('0');
-                bufferAppend('x');
-                appendHex(unicodeCharacter, unicodeCharacterLength);
-            } else
-            if (unicodeCharacter == '\t') {
-                bufferAppend('\\');
-                bufferAppend('t');
-            } else if (unicodeCharacter == '\r') {
-                bufferAppend('\\');
-                bufferAppend('r');
-            } else if (unicodeCharacter == '\n') {
-                bufferAppend('\\');
-                bufferAppend('n');
-            } else if (unicodeCharacter == '\f') {
-                bufferAppend('\\');
-                bufferAppend('f');
-            } else if (unicodeCharacter == '\b') {
-                bufferAppend('\\');
-                bufferAppend('b');
-            } else if (unicodeCharacter == '"') {
-                bufferAppend('\\');
-                bufferAppend('"');
-            } else if (unicodeCharacter == '\\') {
-                bufferAppend('\\');
-                bufferAppend('\\');
-            } else if (unicodeCharacter == '/') {
-                bufferAppend('\\');
-                bufferAppend('/');
-            } else {
-                //0xxxxxxx
-                if (unicodeCharacter <= 0x7F) {
-                    bufferAppend(unicodeCharacter);
-
-                //110xxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x7FF) {
-                    bufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //1110xxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0xFFFF) {
-                    bufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x10FFFF) {
-                    bufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    bufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                } else {
-                    RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
-                }
-            }
-        }
-    }
-
-    void OutputBufferJson::appendNull(string &columnName) {
+    void OutputBufferJson::columnNull(OracleColumn *column) {
         if (hasPreviousColumn)
-            append(',');
+            outputBufferAppend(',');
         else
             hasPreviousColumn = true;
 
-        append('"');
-        append(columnName);
-        append("\":null");
+        outputBufferAppend('"');
+        outputBufferAppend(column->name);
+        outputBufferAppend("\":null");
     }
 
-    void OutputBufferJson::appendUnknown(string &columnName, const uint8_t *data, uint64_t length) {
-        append("\"?\"");
-        if (unknownFormat == UNKNOWN_FORMAT_DUMP) {
-            stringstream ss;
-            for (uint64_t j = 0; j < length; ++j)
-                ss << " " << hex << setfill('0') << setw(2) << (uint64_t) data[j];
-            WARNING("unknown value (column: " << columnName << "): " << dec << length << " - " << ss.str());
-        }
-    }
-
-    void OutputBufferJson::appendString(string &columnName, const uint8_t *data, uint64_t length, uint64_t charsetId) {
+    void OutputBufferJson::columnFloat(string &columnName, float value) {
         if (hasPreviousColumn)
-            append(',');
+            outputBufferAppend(',');
         else
             hasPreviousColumn = true;
 
-        append('"');
-        append(columnName);
-        append("\":\"");
-        appendEscapeMap(data, length, charsetId);
-        append('"');
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":");
+
+        stringstream valStringStream;
+        valStringStream << value;
+        string valString = valStringStream.str();
+        outputBufferAppend(valString);
     }
 
-    void OutputBufferJson::appendTimestamp(string &columnName, struct tm &epochtime, uint64_t fraction, const char *tz) {
+    void OutputBufferJson::columnDouble(string &columnName, double value) {
         if (hasPreviousColumn)
-            append(',');
+            outputBufferAppend(',');
         else
             hasPreviousColumn = true;
 
-        append('"');
-        append(columnName);
-        append("\":");
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":");
+
+        stringstream valStringStream;
+        valStringStream << value;
+        string valString = valStringStream.str();
+        outputBufferAppend(valString);
+    }
+
+    void OutputBufferJson::columnString(string &columnName) {
+        if (hasPreviousColumn)
+            outputBufferAppend(',');
+        else
+            hasPreviousColumn = true;
+
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":\"");
+        appendEscape(valueBuffer, valueLength);
+        outputBufferAppend('"');
+    }
+
+    void OutputBufferJson::columnNumber(string &columnName, uint64_t precision, uint64_t scale) {
+        if (hasPreviousColumn)
+            outputBufferAppend(',');
+        else
+            hasPreviousColumn = true;
+
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":");
+        outputBufferAppend(valueBuffer, valueLength);
+    }
+
+    void OutputBufferJson::columnRaw(string &columnName, const uint8_t *data, uint64_t length) {
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":\"");
+        for (uint64_t j = 0; j < length; ++j)
+            appendHex(*(data + j), 2);
+        outputBufferAppend('"');
+    }
+
+    void OutputBufferJson::columnTimestamp(string &columnName, struct tm &epochtime, uint64_t fraction, const char *tz) {
+        if (hasPreviousColumn)
+            outputBufferAppend(',');
+        else
+            hasPreviousColumn = true;
+
+        outputBufferAppend('"');
+        outputBufferAppend(columnName);
+        outputBufferAppend("\":");
 
         if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
             //2012-04-23T18:25:43.511Z - ISO 8601 format
-            append('"');
+            outputBufferAppend('"');
             if (epochtime.tm_year > 0) {
                 appendDec((uint64_t)epochtime.tm_year);
             } else {
                 appendDec((uint64_t)(-epochtime.tm_year));
-                append("BC");
+                outputBufferAppend("BC");
             }
-            append('-');
+            outputBufferAppend('-');
             appendDec(epochtime.tm_mon, 2);
-            append('-');
+            outputBufferAppend('-');
             appendDec(epochtime.tm_mday, 2);
-            append('T');
+            outputBufferAppend('T');
             appendDec(epochtime.tm_hour, 2);
-            append(':');
+            outputBufferAppend(':');
             appendDec(epochtime.tm_min, 2);
-            append(':');
+            outputBufferAppend(':');
             appendDec(epochtime.tm_sec, 2);
 
             if (fraction > 0) {
-                append('.');
+                outputBufferAppend('.');
                 appendDec(fraction, 9);
             }
 
             if (tz != nullptr) {
-                append(' ');
-                append(tz);
+                outputBufferAppend(' ');
+                outputBufferAppend(tz);
             }
-            append('"');
+            outputBufferAppend('"');
         } else {
             //unix epoch format
 
             if (epochtime.tm_year >= 1900) {
                 --epochtime.tm_mon;
                 epochtime.tm_year -= 1900;
-                appendDec(mktime(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
+                appendDec(tmToEpoch(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
             } else
                 appendDec(0);
         }
     }
 
-    void OutputBufferJson::appendNumber(string &columnName, const uint8_t *data, uint64_t length) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
-        append('"');
-        append(columnName);
-        append("\":");
-
-        uint8_t digits = data[0];
-        //just zero
-        if (digits == 0x80) {
-            append('0');
-            return;
-        }
-
-        uint64_t j = 1, jMax = length - 1;
-
-        //positive number
-        if (digits > 0x80 && jMax >= 1) {
-            uint64_t val, zeros = 0;
-            //part of the total
-            if (digits <= 0xC0) {
-                append('0');
-                zeros = 0xC0 - digits;
-            } else {
-                digits -= 0xC0;
-                //part of the total - omitting first zero for first digit
-                val = data[j] - 1;
-                if (val < 10)
-                    append('0' + val);
-                else {
-                    append('0' + (val / 10));
-                    append('0' + (val % 10));
-                }
-
-                ++j;
-                --digits;
-
-                while (digits > 0) {
-                    val = data[j] - 1;
-                    if (j <= jMax) {
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                        ++j;
-                    } else {
-                        append('0');
-                        append('0');
-                    }
-                    --digits;
-                }
-            }
-
-            //fraction part
-            if (j <= jMax) {
-                append('.');
-
-                while (zeros > 0) {
-                    append('0');
-                    append('0');
-                    --zeros;
-                }
-
-                while (j <= jMax - 1) {
-                    val = data[j] - 1;
-                    append('0' + (val / 10));
-                    append('0' + (val % 10));
-                    ++j;
-                }
-
-                //last digit - omitting 0 at the end
-                val = data[j] - 1;
-                append('0' + (val / 10));
-                if ((val % 10) != 0)
-                    append('0' + (val % 10));
-            }
-        //negative number
-        } else if (digits < 0x80 && jMax >= 1) {
-            uint64_t val, zeros = 0;
-            append('-');
-
-            if (data[jMax] == 0x66)
-                --jMax;
-
-            //part of the total
-            if (digits >= 0x3F) {
-                append('0');
-                zeros = digits - 0x3F;
-            } else {
-                digits = 0x3F - digits;
-
-                val = 101 - data[j];
-                if (val < 10)
-                    append('0' + val);
-                else {
-                    append('0' + (val / 10));
-                    append('0' + (val % 10));
-                }
-                ++j;
-                --digits;
-
-                while (digits > 0) {
-                    if (j <= jMax) {
-                        val = 101 - data[j];
-                        append('0' + (val / 10));
-                        append('0' + (val % 10));
-                        ++j;
-                    } else {
-                        append('0');
-                        append('0');
-                    }
-                    --digits;
-                }
-            }
-
-            if (j <= jMax) {
-                append('.');
-
-                while (zeros > 0) {
-                    append('0');
-                    append('0');
-                    --zeros;
-                }
-
-                while (j <= jMax - 1) {
-                    val = 101 - data[j];
-                    append('0' + (val / 10));
-                    append('0' + (val % 10));
-                    ++j;
-                }
-
-                val = 101 - data[j];
-                append('0' + (val / 10));
-                if ((val % 10) != 0)
-                    append('0' + (val % 10));
-            }
-        } else
-            appendUnknown(columnName, data, length);
-    }
-
-    void OutputBufferJson::appendFloat(string &columnName, float val) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
-        append('"');
-        append(columnName);
-        append("\":");
-
-        stringstream valStringStream;
-        valStringStream << val;
-        string valString = valStringStream.str();
-        append(valString);
-    }
-
-    void OutputBufferJson::appendDouble(string &columnName, double val) {
-        if (hasPreviousColumn)
-            append(',');
-        else
-            hasPreviousColumn = true;
-
-        append('"');
-        append(columnName);
-        append("\":");
-
-        stringstream valStringStream;
-        valStringStream << val;
-        string valString = valStringStream.str();
-        append(valString);
-    }
-
-
-
-    void OutputBufferJson::appendRaw(string &columnName, const uint8_t *data, uint64_t length) {
-        append('"');
-        append(columnName);
-        append("\":\"");
-        for (uint64_t j = 0; j < length; ++j)
-            appendHex(*(data + j), 2);
-        append('"');
-    }
-
-
     void OutputBufferJson::appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) {
         uint32_t afn = bdba >> 22;
         bdba &= 0x003FFFFF;
-        append("\"rid\":\"");
-        append(map64[(objd >> 30) & 0x3F]);
-        append(map64[(objd >> 24) & 0x3F]);
-        append(map64[(objd >> 18) & 0x3F]);
-        append(map64[(objd >> 12) & 0x3F]);
-        append(map64[(objd >> 6) & 0x3F]);
-        append(map64[objd & 0x3F]);
-        append(map64[(afn >> 12) & 0x3F]);
-        append(map64[(afn >> 6) & 0x3F]);
-        append(map64[afn & 0x3F]);
-        append(map64[(bdba >> 30) & 0x3F]);
-        append(map64[(bdba >> 24) & 0x3F]);
-        append(map64[(bdba >> 18) & 0x3F]);
-        append(map64[(bdba >> 12) & 0x3F]);
-        append(map64[(bdba >> 6) & 0x3F]);
-        append(map64[bdba & 0x3F]);
-        append(map64[(slot >> 12) & 0x3F]);
-        append(map64[(slot >> 6) & 0x3F]);
-        append(map64[slot & 0x3F]);
-        append('"');
+        outputBufferAppend("\"rid\":\"");
+        outputBufferAppend(map64[(objd >> 30) & 0x3F]);
+        outputBufferAppend(map64[(objd >> 24) & 0x3F]);
+        outputBufferAppend(map64[(objd >> 18) & 0x3F]);
+        outputBufferAppend(map64[(objd >> 12) & 0x3F]);
+        outputBufferAppend(map64[(objd >> 6) & 0x3F]);
+        outputBufferAppend(map64[objd & 0x3F]);
+        outputBufferAppend(map64[(afn >> 12) & 0x3F]);
+        outputBufferAppend(map64[(afn >> 6) & 0x3F]);
+        outputBufferAppend(map64[afn & 0x3F]);
+        outputBufferAppend(map64[(bdba >> 30) & 0x3F]);
+        outputBufferAppend(map64[(bdba >> 24) & 0x3F]);
+        outputBufferAppend(map64[(bdba >> 18) & 0x3F]);
+        outputBufferAppend(map64[(bdba >> 12) & 0x3F]);
+        outputBufferAppend(map64[(bdba >> 6) & 0x3F]);
+        outputBufferAppend(map64[bdba & 0x3F]);
+        outputBufferAppend(map64[(slot >> 12) & 0x3F]);
+        outputBufferAppend(map64[(slot >> 6) & 0x3F]);
+        outputBufferAppend(map64[slot & 0x3F]);
+        outputBufferAppend('"');
     }
 
     void OutputBufferJson::appendHeader(bool first) {
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
-                append("\"scns\":\"0x");
+                outputBufferAppend("\"scns\":\"0x");
                 appendHex(lastScn, 16);
-                append("\",");
+                outputBufferAppend("\",");
             } else {
-                append("\"scn\":");
+                outputBufferAppend("\"scn\":");
                 appendDec(lastScn);
-                append(',');
+                outputBufferAppend(',');
             }
         }
 
         if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-                append("\"tms\":\"");
+                outputBufferAppend("\"tms\":\"");
                 char iso[21];
                 lastTime.toISO8601(iso);
-                append(iso);
-                append("\",");
+                outputBufferAppend(iso);
+                outputBufferAppend("\",");
             } else {
-                append("\"tm\":");
+                outputBufferAppend("\"tm\":");
                 appendDec(lastTime.toTime() * 1000);
-                append(',');
+                outputBufferAppend(',');
             }
         }
 
         if (xidFormat == XID_FORMAT_TEXT) {
-            append("\"xid\":\"");
+            outputBufferAppend("\"xid\":\"");
             appendDec(USN(lastXid));
-            append('.');
+            outputBufferAppend('.');
             appendDec(SLT(lastXid));
-            append('.');
+            outputBufferAppend('.');
             appendDec(SQN(lastXid));
-            append('"');
+            outputBufferAppend('"');
         } else {
-            append("\"xidn\":");
+            outputBufferAppend("\"xidn\":");
             appendDec(lastXid);
         }
     }
 
     void OutputBufferJson::appendSchema(OracleObject *object) {
-        append("\"schema\":{\"owner\":\"");
-        append(object->owner);
-        append("\",\"table\":\"");
-        append(object->name);
-        append('"');
+        outputBufferAppend("\"schema\":{\"owner\":\"");
+        outputBufferAppend(object->owner);
+        outputBufferAppend("\",\"table\":\"");
+        outputBufferAppend(object->name);
+        outputBufferAppend('"');
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJN) != 0) {
-            append(",\"objn\":");
+            outputBufferAppend(",\"objn\":");
             appendDec(object->objn);
         }
 
@@ -570,7 +253,7 @@ namespace OpenLogReplicator {
                     objects.insert(object);
             }
 
-            append(",\"columns\":[");
+            outputBufferAppend(",\"columns\":[");
 
             bool hasPrev = false;
             for (uint64_t i = 0; i < object->columns.size(); ++i) {
@@ -578,116 +261,230 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (hasPrev)
-                    append(',');
+                    outputBufferAppend(',');
                 else
                     hasPrev = true;
 
-                append("{\"name\":\"");
-                append(object->columns[i]->columnName);
+                outputBufferAppend("{\"name\":\"");
+                outputBufferAppend(object->columns[i]->name);
 
-                append("\",\"type\":");
+                outputBufferAppend("\",\"type\":");
                 switch(object->columns[i]->typeNo) {
                 case 1: //varchar2(n), nvarchar(n)
-                    append("\"varchar2\",\"length\":");
+                    outputBufferAppend("\"varchar2\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 2: //number(p, s), float(p)
-                    append("\"number\",\"precision\":");
+                    outputBufferAppend("\"number\",\"precision\":");
                     appendSDec(object->columns[i]->precision);
-                    append(",\"scale\":");
+                    outputBufferAppend(",\"scale\":");
                     appendSDec(object->columns[i]->scale);
                     break;
 
                 case 8: //long, not supported
-                    append("\"long\"");
+                    outputBufferAppend("\"long\"");
                     break;
 
                 case 12: //date
-                    append("\"date\"");
+                    outputBufferAppend("\"date\"");
                     break;
 
                 case 23: //raw(n)
-                    append("\"raw\",\"length\":");
+                    outputBufferAppend("\"raw\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 24: //long raw, not supported
-                    append("\"long raw\"");
+                    outputBufferAppend("\"long raw\"");
                     break;
 
                 case 69: //rowid, not supported
-                    append("\"rowid\"");
+                    outputBufferAppend("\"rowid\"");
                     break;
 
                 case 96: //char(n), nchar(n)
-                    append("\"char\",\"length\":");
+                    outputBufferAppend("\"char\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 100: //binary_float
-                    append("\"binary_float\"");
+                    outputBufferAppend("\"binary_float\"");
                     break;
 
                 case 101: //binary_double
-                    append("\"binary_double\"");
+                    outputBufferAppend("\"binary_double\"");
                     break;
 
                 case 112: //clob, nclob, not supported
-                    append("\"clob\"");
+                    outputBufferAppend("\"clob\"");
                     break;
 
                 case 113: //blob, not supported
-                    append("\"blob\"");
+                    outputBufferAppend("\"blob\"");
                     break;
 
                 case 180: //timestamp(n)
-                    append("\"timestamp\",\"length\":");
+                    outputBufferAppend("\"timestamp\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 181: //timestamp with time zone(n)
-                    append("\"timestamp with time zone\",\"length\":");
+                    outputBufferAppend("\"timestamp with time zone\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 182: //interval year to month(n)
-                    append("\"interval year to month\",\"length\":");
+                    outputBufferAppend("\"interval year to month\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 183: //interval day to second(n)
-                    append("\"interval day to second\",\"length\":");
+                    outputBufferAppend("\"interval day to second\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 208: //urawid(n)
-                    append("\"urawid\",\"length\":");
+                    outputBufferAppend("\"urawid\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 case 231: //timestamp with local time zone(n), not supported
-                    append("\"timestamp with local time zone\",\"length\":");
+                    outputBufferAppend("\"timestamp with local time zone\",\"length\":");
                     appendDec(object->columns[i]->length);
                     break;
 
                 default:
-                    append("\"unknown\"");
+                    outputBufferAppend("\"unknown\"");
                     break;
                 }
 
-                append(",\"nullable\":");
+                outputBufferAppend(",\"nullable\":");
                 if (object->columns[i]->nullable)
-                    append('1');
+                    outputBufferAppend('1');
                 else
-                    append('0');
+                    outputBufferAppend('0');
 
-                append("}");
+                outputBufferAppend("}");
             }
-            append(']');
+            outputBufferAppend(']');
         }
 
-        append('}');
+        outputBufferAppend('}');
+    }
+
+    void OutputBufferJson::appendHex(uint64_t value, uint64_t length) {
+        uint64_t j = (length - 1) * 4;
+        for (uint64_t i = 0; i < length; ++i) {
+            outputBufferAppend(map16[(value >> j) & 0xF]);
+            j -= 4;
+        };
+    }
+
+    void OutputBufferJson::appendDec(uint64_t value, uint64_t length) {
+        char buffer[21];
+
+        for (uint i = 0; i < length; ++i) {
+            buffer[i] = '0' + (value % 10);
+            value /= 10;
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            outputBufferAppend(buffer[length - i - 1]);
+    }
+
+    void OutputBufferJson::appendDec(uint64_t value) {
+        char buffer[21];
+        uint64_t length = 0;
+
+        if (value == 0) {
+            buffer[0] = '0';
+            length = 1;
+        } else {
+            while (value > 0) {
+                buffer[length++] = '0' + (value % 10);
+                value /= 10;
+            }
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            outputBufferAppend(buffer[length - i - 1]);
+    }
+
+    void OutputBufferJson::appendSDec(int64_t value) {
+        char buffer[22];
+        uint64_t length = 0;
+
+        if (value == 0) {
+            buffer[0] = '0';
+            length = 1;
+        } else {
+            if (value < 0) {
+                value = -value;
+                while (value > 0) {
+                    buffer[length++] = '0' + (value % 10);
+                    value /= 10;
+                }
+                buffer[length++] = '-';
+            } else {
+                while (value > 0) {
+                    buffer[length++] = '0' + (value % 10);
+                    value /= 10;
+                }
+            }
+        }
+
+        for (uint64_t i = 0; i < length; ++i)
+            outputBufferAppend(buffer[length - i - 1]);
+    }
+
+    void OutputBufferJson::appendEscape(const char *str, uint64_t length) {
+        while (length > 0) {
+            if (*str == '\t') {
+                outputBufferAppend('\\');
+                outputBufferAppend('t');
+            } else if (*str == '\r') {
+                outputBufferAppend('\\');
+                outputBufferAppend('r');
+            } else if (*str == '\n') {
+                outputBufferAppend('\\');
+                outputBufferAppend('n');
+            } else if (*str == '\f') {
+                outputBufferAppend('\\');
+                outputBufferAppend('f');
+            } else if (*str == '\b') {
+                outputBufferAppend('\\');
+                outputBufferAppend('b');
+            } else {
+                if (*str == '"' || *str == '\\' || *str == '/')
+                    outputBufferAppend('\\');
+                outputBufferAppend(*(str++));
+            }
+            --length;
+        }
+    }
+
+    time_t OutputBufferJson::tmToEpoch(struct tm *epoch) {
+        static const int cumdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+        uint64_t year;
+        time_t result;
+
+        year = 1900 + epoch->tm_year + epoch->tm_mon / 12;
+        result = (year - 1970) * 365 + cumdays[epoch->tm_mon % 12];
+        result += (year - 1968) / 4;
+        result -= (year - 1900) / 100;
+        result += (year - 1600) / 400;
+        if ((year % 4) == 0 && ((year % 100) != 0 || (year % 400) == 0) &&
+            (epoch->tm_mon % 12) < 2)
+            result--;
+        result += epoch->tm_mday - 1;
+        result *= 24;
+        result += epoch->tm_hour;
+        result *= 60;
+        result += epoch->tm_min;
+        result *= 60;
+        result += epoch->tm_sec;
+        return result;
     }
 
     void OutputBufferJson::processBegin(typescn scn, typetime time, typexid xid) {
@@ -696,48 +493,48 @@ namespace OpenLogReplicator {
         lastXid = xid;
         hasPreviousRedo = false;
 
-        beginMessage();
-        append('{');
+        outputBufferBegin();
+        outputBufferAppend('{');
         appendHeader(true);
 
         if (messageFormat == MESSAGE_FORMAT_FULL)
-            append(",\"payload\":[");
+            outputBufferAppend(",\"payload\":[");
         else {
-            append(",\"payload\":[{\"op\":\"begin\"}]}");
-            commitMessage();
+            outputBufferAppend(",\"payload\":[{\"op\":\"begin\"}]}");
+            outputBufferCommit();
         }
     }
 
     void OutputBufferJson::processCommit(void) {
         if (messageFormat == MESSAGE_FORMAT_FULL)
-            append("]}");
+            outputBufferAppend("]}");
         else {
-            beginMessage();
-            append('{');
+            outputBufferBegin();
+            outputBufferAppend('{');
             appendHeader(false);
-            append(",\"payload\":[{\"op\":\"commit\"}]}");
+            outputBufferAppend(",\"payload\":[{\"op\":\"commit\"}]}");
         }
-        commitMessage();
+        outputBufferCommit();
     }
 
     void OutputBufferJson::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
-                append(',');
+                outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            beginMessage();
-            append('{');
+            outputBufferBegin();
+            outputBufferAppend('{');
             appendHeader(false);
-            append(",\"payload\":[");
+            outputBufferAppend(",\"payload\":[");
         }
 
-        append("{\"op\":\"c\",");
+        outputBufferAppend("{\"op\":\"c\",");
         appendSchema(object);
-        append(',');
+        outputBufferAppend(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        append(",\"after\":{");
+        outputBufferAppend(",\"after\":{");
 
         hasPreviousColumn = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -745,39 +542,39 @@ namespace OpenLogReplicator {
                 continue;
 
             if (afterPos[i] != nullptr && afterLen[i] > 0)
-                processValue(object->columns[i]->columnName, afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
-                appendNull(object->columns[i]->columnName);
+                columnNull(object->columns[i]);
         }
-        append("}}");
+        outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            append("]}");
-            commitMessage();
+            outputBufferAppend("]}");
+            outputBufferCommit();
         }
     }
 
     void OutputBufferJson::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        checkUpdate(object, bdba, slot, xid);
+        compactUpdate(object, bdba, slot, xid);
 
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
-                append(',');
+                outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            beginMessage();
-            append('{');
+            outputBufferBegin();
+            outputBufferAppend('{');
             appendHeader(false);
-            append(",\"payload\":[");
+            outputBufferAppend(",\"payload\":[");
         }
 
-        append("{\"op\":\"u\",");
+        outputBufferAppend("{\"op\":\"u\",");
         appendSchema(object);
-        append(',');
+        outputBufferAppend(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        append(",\"before\":{");
+        outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -785,13 +582,13 @@ namespace OpenLogReplicator {
                 continue;
 
             if (beforePos[i] != nullptr && beforeLen[i] > 0)
-                processValue(object->columns[i]->columnName, beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (afterPos[i] > 0 || beforePos[i] > 0)
-                appendNull(object->columns[i]->columnName);
+                columnNull(object->columns[i]);
         }
 
-        append("},\"after\":{");
+        outputBufferAppend("},\"after\":{");
 
         hasPreviousColumn = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -799,37 +596,37 @@ namespace OpenLogReplicator {
                 continue;
 
             if (afterPos[i] != nullptr && afterLen[i] > 0)
-                processValue(object->columns[i]->columnName, afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (afterPos[i] > 0 || beforePos[i] > 0)
-                appendNull(object->columns[i]->columnName);
+                columnNull(object->columns[i]);
         }
-        append("}}");
+        outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            append("]}");
-            commitMessage();
+            outputBufferAppend("]}");
+            outputBufferCommit();
         }
     }
 
     void OutputBufferJson::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
-                append(',');
+                outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            beginMessage();
-            append('{');
+            outputBufferBegin();
+            outputBufferAppend('{');
             appendHeader(false);
-            append(",\"payload\":[");
+            outputBufferAppend(",\"payload\":[");
         }
 
-        append("{\"op\":\"u\",");
+        outputBufferAppend("{\"op\":\"d\",");
         appendSchema(object);
-        append(',');
+        outputBufferAppend(',');
         appendRowid(object->objn, object->objd, bdba, slot);
-        append(",\"before\":{");
+        outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
         for (uint64_t i = 0; i < object->maxSegCol; ++i) {
@@ -838,41 +635,41 @@ namespace OpenLogReplicator {
 
             //value present before
             if (beforePos[i] != nullptr && beforeLen[i] > 0)
-                processValue(object->columns[i]->columnName, beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
-                appendNull(object->columns[i]->columnName);
+                columnNull(object->columns[i]);
         }
-        append("}}");
+        outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            append("]}");
-            commitMessage();
+            outputBufferAppend("]}");
+            outputBufferCommit();
         }
     }
 
     void OutputBufferJson::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
-                append(',');
+                outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            beginMessage();
-            append('{');
+            outputBufferBegin();
+            outputBufferAppend('{');
             appendHeader(false);
-            append(",\"payload\":[");
+            outputBufferAppend(",\"payload\":[");
         }
 
-        append("{\"op\":\"ddl\",");
+        outputBufferAppend("{\"op\":\"ddl\",");
         appendSchema(object);
-        append(",\"sql\":\"");
+        outputBufferAppend(",\"sql\":\"");
         appendEscape(sql, sqlLength);
-        append("\"}");
+        outputBufferAppend("\"}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            append("]}");
-            commitMessage();
+            outputBufferAppend("]}");
+            outputBufferCommit();
         }
     }
 }

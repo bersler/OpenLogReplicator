@@ -33,28 +33,27 @@ namespace OpenLogReplicator {
     class OutputBufferProtobuf : public OutputBuffer {
 protected:
 #ifdef LINK_LIBRARY_PROTOBUF
-        pb::Redo *redo;
-        pb::Value *value;
-        pb::Payload *payload;
-        pb::Schema *schema;
+        pb::Redo *redoPB;
+        pb::Value *valuePB;
+        pb::Payload *payloadPB;
+        pb::Schema *schemaPB;
 #endif /* LINK_LIBRARY_PROTOBUF */
-        void numToString(uint64_t val, char *buf, uint64_t length);
+        virtual void columnNull(OracleColumn *column);
+        virtual void columnFloat(string &columnName, float value);
+        virtual void columnDouble(string &columnName, double value);
+        virtual void columnString(string &columnName);
+        virtual void columnNumber(string &columnName, uint64_t precision, uint64_t scale);
+        virtual void columnRaw(string &columnName, const uint8_t *data, uint64_t length);
+        virtual void columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz);
+        virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
+        virtual void appendHeader(bool first);
+        virtual void appendSchema(OracleObject *object);
+        void numToString(uint64_t value, char *buf, uint64_t length);
 public:
         OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBufferProtobuf();
 
-        virtual void appendNull(string &columnName);
-        virtual void appendUnknown(string &columnName, const uint8_t *data, uint64_t length);
-        virtual void appendNumber(string &columnName, const uint8_t *data, uint64_t length);
-        virtual void appendFloat(string &columnName, float val);
-        virtual void appendDouble(string &columnName, double val);
-        virtual void appendString(string &columnName, const uint8_t *data, uint64_t length, uint64_t charsetId);
-        virtual void appendTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz);
-        virtual void appendRaw(string &columnName, const uint8_t *data, uint64_t length);
-        virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
-        virtual void appendHeader(bool first);
-        virtual void appendSchema(OracleObject *object);
         virtual void processBegin(typescn scn, typetime time, typexid xid);
         virtual void processCommit(void);
         virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
