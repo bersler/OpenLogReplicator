@@ -1,4 +1,4 @@
-/* Thread writing to stdout
+/* Thread writing to file (or stdout)
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -68,6 +68,6 @@ namespace OpenLogReplicator {
     }
 
     string WriterFile::getName() {
-        return name;
+        return "File:" + name;
     }
 }

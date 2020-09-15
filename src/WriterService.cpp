@@ -1,4 +1,4 @@
-/* Header for WriterFile class
+/* Thread writing to GRPC
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,36 +17,25 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <ostream>
-#include <queue>
-#include <set>
-#include <stdint.h>
-
-#include "types.h"
-#include "Writer.h"
-
-#ifndef WRITERFILE_H_
-#define WRITERFILE_H_
+#include "WriterService.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class RedoLogRecord;
-    class OracleAnalyser;
+    WriterService::WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *host, uint64_t port) :
+        Writer(alias, oracleAnalyser, 0),
+        host(host),
+        port(port) {
+    }
 
-    class WriterFile : public Writer {
-    protected:
-        string name;
-        ostream *output;
-        bool fileOpen;
-        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
-        virtual string getName();
+    WriterService::~WriterService() {
+    }
 
-    public:
-        WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name);
-        virtual ~WriterFile();
-    };
+    void WriterService::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
+    }
+
+    string WriterService::getName() {
+        return "Service:" + host + ":" + to_string(port);
+    }
 }
-
-#endif

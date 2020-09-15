@@ -77,7 +77,8 @@ TransactionHeap.cpp \
 TransactionMap.cpp \
 Writer.cpp \
 WriterFile.cpp \
-WriterKafka.cpp
+WriterKafka.cpp \
+WriterService.cpp
 
 if PROTOBUF_COMPILE
 OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp

@@ -136,7 +136,8 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
 	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
 	TransactionHeap.cpp TransactionMap.cpp Writer.cpp \
-	WriterFile.cpp WriterKafka.cpp OraProtoBuf.pb.cpp
+	WriterFile.cpp WriterKafka.cpp WriterService.cpp \
+	OraProtoBuf.pb.cpp
 @PROTOBUF_COMPILE_TRUE@am__objects_1 = OraProtoBuf.pb.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSet7bit.$(OBJEXT) CharacterSet8bit.$(OBJEXT) \
@@ -168,7 +169,7 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	Thread.$(OBJEXT) TransactionBuffer.$(OBJEXT) \
 	Transaction.$(OBJEXT) TransactionHeap.$(OBJEXT) \
 	TransactionMap.$(OBJEXT) Writer.$(OBJEXT) WriterFile.$(OBJEXT) \
-	WriterKafka.$(OBJEXT) $(am__objects_1)
+	WriterKafka.$(OBJEXT) WriterService.$(OBJEXT) $(am__objects_1)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -377,7 +378,8 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
 	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
 	TransactionHeap.cpp TransactionMap.cpp Writer.cpp \
-	WriterFile.cpp WriterKafka.cpp $(am__append_1)
+	WriterFile.cpp WriterKafka.cpp WriterService.cpp \
+	$(am__append_1)
 all: all-am
 
 .SUFFIXES:
@@ -534,6 +536,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Writer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterKafka.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterService.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

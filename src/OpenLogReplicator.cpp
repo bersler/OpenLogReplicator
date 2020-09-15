@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <signal.h>
 #include <unistd.h>
 #include <rapidjson/document.h>
+#include <WriterService.h>
 
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
@@ -32,8 +33,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OutputBufferJson.h"
 #include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
-#include "WriterKafka.h"
 #include "WriterFile.h"
+#include "WriterKafka.h"
+#include "WriterService.h"
 #include "Writer.h"
 
 using namespace std;
@@ -537,7 +539,13 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterKafka) << " bytes memory for (reason: kafka writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
-                CONFIG_FAIL("bad JSON: service writer module not yet implemented");
+                const Value& hostJSON = getJSONfield(fileName, writerJSON, "host");
+                const Value& portJSON = getJSONfield(fileName, writerJSON, "port");
+
+                writer = new WriterService(aliasJSON.GetString(), oracleAnalyser, hostJSON.GetString(), portJSON.GetUint64());
+                if (writer == nullptr) {
+                    RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterService) << " bytes memory for (reason: service writer)");
+                }
             } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
             }

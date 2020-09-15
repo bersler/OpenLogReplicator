@@ -144,7 +144,6 @@ namespace OpenLogReplicator {
                 if (pos < tc->size) {
                     //does the block need to be divided
                     if (tc->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > DATA_BUFFER_SIZE) {
-
                         TransactionChunk *tmpTc = newTransactionChunk();
 
                         tmpTc->elements = elementsSkipped;
@@ -156,7 +155,6 @@ namespace OpenLogReplicator {
                         if (tc->next != nullptr)
                             tc->next->prev = tmpTc;
                         tc->next = tmpTc;
-
                         tc->elements -= elementsSkipped;
                         tc->size = pos;
 
@@ -165,6 +163,7 @@ namespace OpenLogReplicator {
                             transaction->updateLastRecord();
                         }
                     } else {
+                        //copy to the middle of the block
                         uint64_t oldSize = tc->size - pos;
                         memcpy(buffer, tc->buffer + pos, oldSize);
                         tc->size = pos;
@@ -197,8 +196,6 @@ namespace OpenLogReplicator {
         if (transaction->lastTc->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL > DATA_BUFFER_SIZE) {
             TransactionChunk *tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
-            tcNew->elements = 0;
-            tcNew->size = 0;
             transaction->lastTc->next = tcNew;
             transaction->lastTc = tcNew;
         }
@@ -257,6 +254,8 @@ namespace OpenLogReplicator {
                             transaction->firstTc = tc->next;
                         deleteTransactionChunk(tc);
                     }
+                    if (tc == transaction->lastTc)
+                        transaction->updateLastRecord();
 
                     return true;
                 }
