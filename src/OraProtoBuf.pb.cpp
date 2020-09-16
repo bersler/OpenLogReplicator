@@ -306,8 +306,11 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "ESTAMP\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTER"
   "VAL_YEAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_S"
   "ECOND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LO"
-  "CAL_TZ\020\022B<\n\"io.debezium.connector.oracle"
-  ".protoB\021OpenLogReplicatorH\001\370\001\001b\006proto3"
+  "CAL_TZ\020\0222Z\n\013RedoService\022K\n\nredoStream\022\035."
+  "OpenLogReplicator.pb.Request\032\032.OpenLogRe"
+  "plicator.pb.Redo\"\0000\001B<\n\"io.debezium.conn"
+  "ector.oracle.protoB\021OpenLogReplicatorH\001\370"
+  "\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -322,7 +325,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1478,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1570,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,

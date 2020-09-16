@@ -541,26 +541,26 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            oracleAnalyser->outputBuffer->writer->parseDML(first1, first2, type);
+                            oracleAnalyser->outputBuffer->processDML(first1, first2, type);
                             opFlush = true;
                         }
                         break;
 
                     //insert multiple rows
                     case 0x05010B0B:
-                        oracleAnalyser->outputBuffer->writer->parseInsertMultiple(redoLogRecord1, redoLogRecord2);
+                        oracleAnalyser->outputBuffer->processInsertMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //delete multiple rows
                     case 0x05010B0C:
-                        oracleAnalyser->outputBuffer->writer->parseDeleteMultiple(redoLogRecord1, redoLogRecord2);
+                        oracleAnalyser->outputBuffer->processDeleteMultiple(redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     //truncate table
                     case 0x18010000:
-                        oracleAnalyser->outputBuffer->writer->parseDDL(redoLogRecord1);
+                        oracleAnalyser->outputBuffer->processDDLheader(redoLogRecord1);
                         opFlush = true;
                         break;
 

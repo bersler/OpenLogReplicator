@@ -30,10 +30,6 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-#define TRANSACTION_INSERT 1
-#define TRANSACTION_DELETE 2
-#define TRANSACTION_UPDATE 3
-
     class OutputBuffer;
     class OracleAnalyser;
     class RedoLogRecord;
@@ -50,12 +46,6 @@ namespace OpenLogReplicator {
 
     public:
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
-
-        void parseInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void parseDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void parseDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
-        void parseDDL(RedoLogRecord *redoLogRecord1);
-
         Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb);
         virtual ~Writer();
     };

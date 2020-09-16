@@ -29,6 +29,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
 
+#define TRANSACTION_INSERT 1
+#define TRANSACTION_DELETE 2
+#define TRANSACTION_UPDATE 3
+
 #define OUTPUT_BUFFER_NEXT          0
 #define OUTPUT_BUFFER_END           (sizeof(uint8_t*))
 #define OUTPUT_BUFFER_DATA          (sizeof(uint8_t*)+sizeof(uint64_t))
@@ -66,6 +70,11 @@ namespace OpenLogReplicator {
         typetime lastTime;
         typescn lastScn;
         typexid lastXid;
+        uint8_t *afterPos[MAX_NO_COLUMNS];
+        uint8_t *beforePos[MAX_NO_COLUMNS];
+        uint16_t afterLen[MAX_NO_COLUMNS];
+        uint16_t beforeLen[MAX_NO_COLUMNS];
+        uint8_t colIsSupp[MAX_NO_COLUMNS];
 
         void outputBufferShift(uint64_t bytes);
         void outputBufferBegin(void);
@@ -96,7 +105,6 @@ namespace OpenLogReplicator {
         unordered_map<uint64_t, CharacterSet*> characterMap;
         Writer *writer;
         mutex mtx;
-        condition_variable analysersCond;
         condition_variable writersCond;
 
         uint64_t buffersAllocated;
@@ -106,12 +114,6 @@ namespace OpenLogReplicator {
         uint64_t curBufferPos;
         uint8_t *lastBuffer;
         uint64_t lastBufferPos;
-
-        uint8_t *afterPos[MAX_NO_COLUMNS];
-        uint8_t *beforePos[MAX_NO_COLUMNS];
-        uint16_t afterLen[MAX_NO_COLUMNS];
-        uint16_t beforeLen[MAX_NO_COLUMNS];
-        uint8_t colIsSupp[MAX_NO_COLUMNS];
 
         OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
@@ -128,6 +130,10 @@ namespace OpenLogReplicator {
         virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
         virtual void processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
         virtual void processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) = 0;
+        void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
+        void processDDLheader(RedoLogRecord *redoLogRecord1);
         //virtual void processCheckpoint(typescn scn, typetime time) = 0;
         //virtual void processSwitch(typescn scn, typetime time) = 0;
     };

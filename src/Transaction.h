@@ -83,7 +83,6 @@ namespace OpenLogReplicator {
         void updateLastRecord(void);
         static bool matchesForRollback(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2,
                 RedoLogRecord *rollbackRedoLogRecord1, RedoLogRecord *rollbackRedoLogRecord2);
-
         bool operator< (Transaction &p);
         friend ostream& operator<<(ostream& os, const Transaction& tran);
     };

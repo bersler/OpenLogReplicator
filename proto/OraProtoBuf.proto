@@ -55,6 +55,10 @@ enum ColumnType {
     TIMESTAMP_WITH_LOCAL_TZ = 18; //231
 }
 
+service RedoService {
+  rpc redoStream(Request) returns (stream Redo) {}
+}
+
 message RequestSchema {
     string mask = 1;
     string filter = 2;  
