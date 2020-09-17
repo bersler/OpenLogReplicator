@@ -28,6 +28,9 @@ class RequestSchemaDefaultTypeInternal {
 class RequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Request> _instance;
+  ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 tm_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tms_;
 } _Request_default_instance_;
 class ValueDefaultTypeInternal {
  public:
@@ -168,7 +171,7 @@ static void InitDefaultsscc_info_Value_OraProtoBuf_2eproto() {
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_Value_OraProtoBuf_2eproto}, {}};
 
 static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_OraProtoBuf_2eproto[7];
-static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_OraProtoBuf_2eproto[2];
+static const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* file_level_enum_descriptors_OraProtoBuf_2eproto[4];
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_OraProtoBuf_2eproto = nullptr;
 
 const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -182,12 +185,17 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, _internal_metadata_),
   ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, scn_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, connector_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, message_),
+  offsetof(::OpenLogReplicator::pb::RequestDefaultTypeInternal, scn_),
+  offsetof(::OpenLogReplicator::pb::RequestDefaultTypeInternal, tm_),
+  offsetof(::OpenLogReplicator::pb::RequestDefaultTypeInternal, tms_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, version_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, database_name_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, schema_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Request, tm_val_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Value, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -239,6 +247,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   ~0u,  // no _extensions_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Redo, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Redo, ret_),
   offsetof(::OpenLogReplicator::pb::RedoDefaultTypeInternal, scn_),
   offsetof(::OpenLogReplicator::pb::RedoDefaultTypeInternal, scns_),
   offsetof(::OpenLogReplicator::pb::RedoDefaultTypeInternal, tm_),
@@ -253,11 +262,11 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, sizeof(::OpenLogReplicator::pb::RequestSchema)},
   { 7, -1, sizeof(::OpenLogReplicator::pb::Request)},
-  { 16, -1, sizeof(::OpenLogReplicator::pb::Value)},
-  { 28, -1, sizeof(::OpenLogReplicator::pb::Column)},
-  { 39, -1, sizeof(::OpenLogReplicator::pb::Schema)},
-  { 51, -1, sizeof(::OpenLogReplicator::pb::Payload)},
-  { 62, -1, sizeof(::OpenLogReplicator::pb::Redo)},
+  { 21, -1, sizeof(::OpenLogReplicator::pb::Value)},
+  { 33, -1, sizeof(::OpenLogReplicator::pb::Column)},
+  { 44, -1, sizeof(::OpenLogReplicator::pb::Schema)},
+  { 56, -1, sizeof(::OpenLogReplicator::pb::Payload)},
+  { 67, -1, sizeof(::OpenLogReplicator::pb::Redo)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -273,44 +282,50 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
   "\n\021OraProtoBuf.proto\022\024OpenLogReplicator.p"
   "b\"-\n\rRequestSchema\022\014\n\004mask\030\001 \001(\t\022\016\n\006filt"
-  "er\030\002 \001(\t\"s\n\007Request\022\013\n\003scn\030\001 \001(\004\022\017\n\007vers"
-  "ion\030\002 \001(\004\022\025\n\rdatabase_name\030\003 \001(\t\0223\n\006sche"
-  "ma\030\004 \003(\0132#.OpenLogReplicator.pb.RequestS"
-  "chema\"\221\001\n\005Value\022\014\n\004name\030\001 \001(\t\022\023\n\tvalue_i"
-  "nt\030\002 \001(\003H\000\022\025\n\013value_float\030\003 \001(\002H\000\022\026\n\014val"
-  "ue_double\030\004 \001(\001H\000\022\026\n\014value_string\030\005 \001(\tH"
-  "\000\022\025\n\013value_bytes\030\006 \001(\014H\000B\007\n\005datum\"\212\001\n\006Co"
-  "lumn\022\014\n\004name\030\001 \001(\t\022.\n\004type\030\002 \001(\0162 .OpenL"
-  "ogReplicator.pb.ColumnType\022\016\n\006length\030\003 \001"
-  "(\005\022\021\n\tprecision\030\004 \001(\005\022\r\n\005scale\030\005 \001(\005\022\020\n\010"
-  "nullable\030\006 \001(\010\"\210\001\n\006Schema\022\r\n\005owner\030\001 \001(\t"
-  "\022\014\n\004name\030\002 \001(\t\022\014\n\004objn\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004"
-  "H\000\022\r\n\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.Open"
-  "LogReplicator.pb.ColumnB\010\n\006tm_val\"\320\001\n\007Pa"
-  "yload\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb"
-  ".Op\022,\n\006schema\030\002 \001(\0132\034.OpenLogReplicator."
-  "pb.Schema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033"
-  ".OpenLogReplicator.pb.Value\022*\n\005after\030\005 \003"
-  "(\0132\033.OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006"
-  " \001(\t\"\261\001\n\004Redo\022\r\n\003scn\030\001 \001(\004H\000\022\016\n\004scns\030\002 \001"
-  "(\tH\000\022\014\n\002tm\030\003 \001(\004H\001\022\r\n\003tms\030\004 \001(\tH\001\022\r\n\003xid"
-  "\030\005 \001(\tH\002\022\016\n\004xidn\030\006 \001(\004H\002\022.\n\007payload\030\007 \003("
-  "\0132\035.OpenLogReplicator.pb.PayloadB\t\n\007scn_"
-  "valB\010\n\006tm_valB\t\n\007xid_val*H\n\002Op\022\t\n\005BEGIN\020"
-  "\000\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n"
-  "\006DELETE\020\004\022\007\n\003DDL\020\005*\263\002\n\nColumnType\022\013\n\007UNK"
-  "NOWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG"
-  "\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005R"
-  "OWID\020\007\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBI"
-  "NARY_DOUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIM"
-  "ESTAMP\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTER"
-  "VAL_YEAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_S"
-  "ECOND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LO"
-  "CAL_TZ\020\0222Z\n\013RedoService\022K\n\nredoStream\022\035."
-  "OpenLogReplicator.pb.Request\032\032.OpenLogRe"
-  "plicator.pb.Redo\"\0000\001B<\n\"io.debezium.conn"
-  "ector.oracle.protoB\021OpenLogReplicatorH\001\370"
-  "\001\001b\006proto3"
+  "er\030\002 \001(\t\"\345\001\n\007Request\022\021\n\tconnector\030\001 \001(\003\022"
+  "4\n\007message\030\002 \001(\0162#.OpenLogReplicator.pb."
+  "ClientMessage\022\r\n\003scn\030\003 \001(\004H\000\022\014\n\002tm\030\004 \001(\004"
+  "H\000\022\r\n\003tms\030\005 \001(\tH\000\022\017\n\007version\030\006 \001(\004\022\025\n\rda"
+  "tabase_name\030\007 \001(\t\0223\n\006schema\030\010 \003(\0132#.Open"
+  "LogReplicator.pb.RequestSchemaB\010\n\006tm_val"
+  "\"\221\001\n\005Value\022\014\n\004name\030\001 \001(\t\022\023\n\tvalue_int\030\002 "
+  "\001(\003H\000\022\025\n\013value_float\030\003 \001(\002H\000\022\026\n\014value_do"
+  "uble\030\004 \001(\001H\000\022\026\n\014value_string\030\005 \001(\tH\000\022\025\n\013"
+  "value_bytes\030\006 \001(\014H\000B\007\n\005datum\"\212\001\n\006Column\022"
+  "\014\n\004name\030\001 \001(\t\022.\n\004type\030\002 \001(\0162 .OpenLogRep"
+  "licator.pb.ColumnType\022\016\n\006length\030\003 \001(\005\022\021\n"
+  "\tprecision\030\004 \001(\005\022\r\n\005scale\030\005 \001(\005\022\020\n\010nulla"
+  "ble\030\006 \001(\010\"\210\001\n\006Schema\022\r\n\005owner\030\001 \001(\t\022\014\n\004n"
+  "ame\030\002 \001(\t\022\014\n\004objn\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004H\000\022\r\n"
+  "\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.OpenLogRe"
+  "plicator.pb.ColumnB\010\n\006tm_val\"\320\001\n\007Payload"
+  "\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb.Op\022,"
+  "\n\006schema\030\002 \001(\0132\034.OpenLogReplicator.pb.Sc"
+  "hema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033.Open"
+  "LogReplicator.pb.Value\022*\n\005after\030\005 \003(\0132\033."
+  "OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006 \001(\t\""
+  "\335\001\n\004Redo\022*\n\003ret\030\001 \001(\0162\035.OpenLogReplicato"
+  "r.pb.RetCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004scns\030\003 \001("
+  "\tH\000\022\014\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH\001\022\r\n\003xid\030"
+  "\006 \001(\tH\002\022\016\n\004xidn\030\007 \001(\004H\002\022.\n\007payload\030\010 \003(\013"
+  "2\035.OpenLogReplicator.pb.PayloadB\t\n\007scn_v"
+  "alB\010\n\006tm_valB\t\n\007xid_val*H\n\002Op\022\t\n\005BEGIN\020\000"
+  "\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n\006"
+  "DELETE\020\004\022\007\n\003DDL\020\005*\263\002\n\nColumnType\022\013\n\007UNKN"
+  "OWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG\020"
+  "\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005RO"
+  "WID\020\007\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBIN"
+  "ARY_DOUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIME"
+  "STAMP\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTERV"
+  "AL_YEAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_SE"
+  "COND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LOC"
+  "AL_TZ\020\022**\n\rClientMessage\022\t\n\005START\020\000\022\016\n\nC"
+  "HECKPOINT\020\001*>\n\007RetCode\022\006\n\002OK\020\000\022\024\n\020INVALI"
+  "D_DATABASE\020\001\022\025\n\021INVALID_SCN_RANGE\020\0022Z\n\013R"
+  "edoService\022K\n\nredoStream\022\035.OpenLogReplic"
+  "ator.pb.Request\032\032.OpenLogReplicator.pb.R"
+  "edo\"\0000\001B<\n\"io.debezium.connector.oracle."
+  "protoB\021OpenLogReplicatorH\001\370\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -325,7 +340,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1570,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1837,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -378,6 +393,35 @@ bool ColumnType_IsValid(int value) {
     case 16:
     case 17:
     case 18:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ClientMessage_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_OraProtoBuf_2eproto);
+  return file_level_enum_descriptors_OraProtoBuf_2eproto[2];
+}
+bool ClientMessage_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+      return true;
+    default:
+      return false;
+  }
+}
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RetCode_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_OraProtoBuf_2eproto);
+  return file_level_enum_descriptors_OraProtoBuf_2eproto[3];
+}
+bool RetCode_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
       return true;
     default:
       return false;
@@ -635,6 +679,10 @@ void RequestSchema::InternalSwap(RequestSchema* other) {
 // ===================================================================
 
 void Request::InitAsDefaultInstance() {
+  ::OpenLogReplicator::pb::_Request_default_instance_.scn_ = PROTOBUF_ULONGLONG(0);
+  ::OpenLogReplicator::pb::_Request_default_instance_.tm_ = PROTOBUF_ULONGLONG(0);
+  ::OpenLogReplicator::pb::_Request_default_instance_.tms_.UnsafeSetDefault(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 class Request::_Internal {
  public:
@@ -656,18 +704,37 @@ Request::Request(const Request& from)
     database_name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_database_name(),
       GetArena());
   }
-  ::memcpy(&scn_, &from.scn_,
-    static_cast<size_t>(reinterpret_cast<char*>(&version_) -
-    reinterpret_cast<char*>(&scn_)) + sizeof(version_));
+  ::memcpy(&connector_, &from.connector_,
+    static_cast<size_t>(reinterpret_cast<char*>(&message_) -
+    reinterpret_cast<char*>(&connector_)) + sizeof(message_));
+  clear_has_tm_val();
+  switch (from.tm_val_case()) {
+    case kScn: {
+      _internal_set_scn(from._internal_scn());
+      break;
+    }
+    case kTm: {
+      _internal_set_tm(from._internal_tm());
+      break;
+    }
+    case kTms: {
+      _internal_set_tms(from._internal_tms());
+      break;
+    }
+    case TM_VAL_NOT_SET: {
+      break;
+    }
+  }
   // @@protoc_insertion_point(copy_constructor:OpenLogReplicator.pb.Request)
 }
 
 void Request::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Request_OraProtoBuf_2eproto.base);
   database_name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(&scn_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&version_) -
-      reinterpret_cast<char*>(&scn_)) + sizeof(version_));
+  ::memset(&connector_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&message_) -
+      reinterpret_cast<char*>(&connector_)) + sizeof(message_));
+  clear_has_tm_val();
 }
 
 Request::~Request() {
@@ -679,6 +746,9 @@ Request::~Request() {
 void Request::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
   database_name_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (has_tm_val()) {
+    clear_tm_val();
+  }
 }
 
 void Request::ArenaDtor(void* object) {
@@ -696,6 +766,29 @@ const Request& Request::default_instance() {
 }
 
 
+void Request::clear_tm_val() {
+// @@protoc_insertion_point(one_of_clear_start:OpenLogReplicator.pb.Request)
+  switch (tm_val_case()) {
+    case kScn: {
+      // No need to clear
+      break;
+    }
+    case kTm: {
+      // No need to clear
+      break;
+    }
+    case kTms: {
+      tm_val_.tms_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+      break;
+    }
+    case TM_VAL_NOT_SET: {
+      break;
+    }
+  }
+  _oneof_case_[0] = TM_VAL_NOT_SET;
+}
+
+
 void Request::Clear() {
 // @@protoc_insertion_point(message_clear_start:OpenLogReplicator.pb.Request)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
@@ -704,9 +797,10 @@ void Request::Clear() {
 
   schema_.Clear();
   database_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  ::memset(&scn_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&version_) -
-      reinterpret_cast<char*>(&scn_)) + sizeof(version_));
+  ::memset(&connector_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&message_) -
+      reinterpret_cast<char*>(&connector_)) + sizeof(message_));
+  clear_tm_val();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -718,39 +812,70 @@ const char* Request::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint64 scn = 1;
+      // int64 connector = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          scn_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          connector_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 version = 2;
+      // .OpenLogReplicator.pb.ClientMessage message = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_message(static_cast<::OpenLogReplicator::pb::ClientMessage>(val));
+        } else goto handle_unusual;
+        continue;
+      // uint64 scn = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
+          _internal_set_scn(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 tm = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
+          _internal_set_tm(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string tms = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+          auto str = _internal_mutable_tms();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Request.tms"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // uint64 version = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
           version_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string database_name = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+      // string database_name = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
           auto str = _internal_mutable_database_name();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Request.database_name"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+      // repeated .OpenLogReplicator.pb.RequestSchema schema = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 66)) {
           ptr -= 1;
           do {
             ptr += 1;
             ptr = ctx->ParseMessage(_internal_add_schema(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<66>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -781,34 +906,63 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 scn = 1;
-  if (this->scn() != 0) {
+  // int64 connector = 1;
+  if (this->connector() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_scn(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt64ToArray(1, this->_internal_connector(), target);
   }
 
-  // uint64 version = 2;
+  // .OpenLogReplicator.pb.ClientMessage message = 2;
+  if (this->message() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      2, this->_internal_message(), target);
+  }
+
+  // uint64 scn = 3;
+  if (_internal_has_scn()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(3, this->_internal_scn(), target);
+  }
+
+  // uint64 tm = 4;
+  if (_internal_has_tm()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_tm(), target);
+  }
+
+  // string tms = 5;
+  if (_internal_has_tms()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_tms().data(), static_cast<int>(this->_internal_tms().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "OpenLogReplicator.pb.Request.tms");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_tms(), target);
+  }
+
+  // uint64 version = 6;
   if (this->version() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_version(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_version(), target);
   }
 
-  // string database_name = 3;
+  // string database_name = 7;
   if (this->database_name().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_database_name().data(), static_cast<int>(this->_internal_database_name().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "OpenLogReplicator.pb.Request.database_name");
     target = stream->WriteStringMaybeAliased(
-        3, this->_internal_database_name(), target);
+        7, this->_internal_database_name(), target);
   }
 
-  // repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+  // repeated .OpenLogReplicator.pb.RequestSchema schema = 8;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->_internal_schema_size()); i < n; i++) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(4, this->_internal_schema(i), target, stream);
+      InternalWriteMessage(8, this->_internal_schema(i), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -827,34 +981,66 @@ size_t Request::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+  // repeated .OpenLogReplicator.pb.RequestSchema schema = 8;
   total_size += 1UL * this->_internal_schema_size();
   for (const auto& msg : this->schema_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
-  // string database_name = 3;
+  // string database_name = 7;
   if (this->database_name().size() > 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_database_name());
   }
 
-  // uint64 scn = 1;
-  if (this->scn() != 0) {
+  // int64 connector = 1;
+  if (this->connector() != 0) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
-        this->_internal_scn());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int64Size(
+        this->_internal_connector());
   }
 
-  // uint64 version = 2;
+  // uint64 version = 6;
   if (this->version() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
         this->_internal_version());
   }
 
+  // .OpenLogReplicator.pb.ClientMessage message = 2;
+  if (this->message() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_message());
+  }
+
+  switch (tm_val_case()) {
+    // uint64 scn = 3;
+    case kScn: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+          this->_internal_scn());
+      break;
+    }
+    // uint64 tm = 4;
+    case kTm: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+          this->_internal_tm());
+      break;
+    }
+    // string tms = 5;
+    case kTms: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+          this->_internal_tms());
+      break;
+    }
+    case TM_VAL_NOT_SET: {
+      break;
+    }
+  }
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -890,11 +1076,31 @@ void Request::MergeFrom(const Request& from) {
   if (from.database_name().size() > 0) {
     _internal_set_database_name(from._internal_database_name());
   }
-  if (from.scn() != 0) {
-    _internal_set_scn(from._internal_scn());
+  if (from.connector() != 0) {
+    _internal_set_connector(from._internal_connector());
   }
   if (from.version() != 0) {
     _internal_set_version(from._internal_version());
+  }
+  if (from.message() != 0) {
+    _internal_set_message(from._internal_message());
+  }
+  switch (from.tm_val_case()) {
+    case kScn: {
+      _internal_set_scn(from._internal_scn());
+      break;
+    }
+    case kTm: {
+      _internal_set_tm(from._internal_tm());
+      break;
+    }
+    case kTms: {
+      _internal_set_tms(from._internal_tms());
+      break;
+    }
+    case TM_VAL_NOT_SET: {
+      break;
+    }
   }
 }
 
@@ -922,11 +1128,13 @@ void Request::InternalSwap(Request* other) {
   schema_.InternalSwap(&other->schema_);
   database_name_.Swap(&other->database_name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Request, version_)
-      + sizeof(Request::version_)
-      - PROTOBUF_FIELD_OFFSET(Request, scn_)>(
-          reinterpret_cast<char*>(&scn_),
-          reinterpret_cast<char*>(&other->scn_));
+      PROTOBUF_FIELD_OFFSET(Request, message_)
+      + sizeof(Request::message_)
+      - PROTOBUF_FIELD_OFFSET(Request, connector_)>(
+          reinterpret_cast<char*>(&connector_),
+          reinterpret_cast<char*>(&other->connector_));
+  swap(tm_val_, other->tm_val_);
+  swap(_oneof_case_[0], other->_oneof_case_[0]);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata Request::GetMetadata() const {
@@ -2514,6 +2722,7 @@ Redo::Redo(const Redo& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
       payload_(from.payload_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ret_ = from.ret_;
   clear_has_scn_val();
   switch (from.scn_val_case()) {
     case kScn: {
@@ -2561,6 +2770,7 @@ Redo::Redo(const Redo& from)
 
 void Redo::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Redo_OraProtoBuf_2eproto.base);
+  ret_ = 0;
   clear_has_scn_val();
   clear_has_tm_val();
   clear_has_xid_val();
@@ -2662,6 +2872,7 @@ void Redo::Clear() {
   (void) cached_has_bits;
 
   payload_.Clear();
+  ret_ = 0;
   clear_scn_val();
   clear_tm_val();
   clear_xid_val();
@@ -2676,64 +2887,72 @@ const char* Redo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::inter
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint64 scn = 1;
+      // .OpenLogReplicator.pb.RetCode ret = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          ::PROTOBUF_NAMESPACE_ID::uint64 val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_ret(static_cast<::OpenLogReplicator::pb::RetCode>(val));
+        } else goto handle_unusual;
+        continue;
+      // uint64 scn = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
           _internal_set_scn(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string scns = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+      // string scns = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           auto str = _internal_mutable_scns();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Redo.scns"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 tm = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
+      // uint64 tm = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
           _internal_set_tm(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string tms = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+      // string tms = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           auto str = _internal_mutable_tms();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Redo.tms"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // string xid = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
+      // string xid = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 50)) {
           auto str = _internal_mutable_xid();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "OpenLogReplicator.pb.Redo.xid"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint64 xidn = 6;
-      case 6:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 48)) {
+      // uint64 xidn = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 56)) {
           _internal_set_xidn(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // repeated .OpenLogReplicator.pb.Payload payload = 7;
-      case 7:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 58)) {
+      // repeated .OpenLogReplicator.pb.Payload payload = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 66)) {
           ptr -= 1;
           do {
             ptr += 1;
             ptr = ctx->ParseMessage(_internal_add_payload(), ptr);
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<58>(ptr));
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<66>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -2764,60 +2983,67 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint64 scn = 1;
-  if (_internal_has_scn()) {
+  // .OpenLogReplicator.pb.RetCode ret = 1;
+  if (this->ret() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(1, this->_internal_scn(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_ret(), target);
   }
 
-  // string scns = 2;
+  // uint64 scn = 2;
+  if (_internal_has_scn()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(2, this->_internal_scn(), target);
+  }
+
+  // string scns = 3;
   if (_internal_has_scns()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_scns().data(), static_cast<int>(this->_internal_scns().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "OpenLogReplicator.pb.Redo.scns");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_scns(), target);
+        3, this->_internal_scns(), target);
   }
 
-  // uint64 tm = 3;
+  // uint64 tm = 4;
   if (_internal_has_tm()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(3, this->_internal_tm(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(4, this->_internal_tm(), target);
   }
 
-  // string tms = 4;
+  // string tms = 5;
   if (_internal_has_tms()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_tms().data(), static_cast<int>(this->_internal_tms().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "OpenLogReplicator.pb.Redo.tms");
     target = stream->WriteStringMaybeAliased(
-        4, this->_internal_tms(), target);
+        5, this->_internal_tms(), target);
   }
 
-  // string xid = 5;
+  // string xid = 6;
   if (_internal_has_xid()) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
       this->_internal_xid().data(), static_cast<int>(this->_internal_xid().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
       "OpenLogReplicator.pb.Redo.xid");
     target = stream->WriteStringMaybeAliased(
-        5, this->_internal_xid(), target);
+        6, this->_internal_xid(), target);
   }
 
-  // uint64 xidn = 6;
+  // uint64 xidn = 7;
   if (_internal_has_xidn()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(6, this->_internal_xidn(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(7, this->_internal_xidn(), target);
   }
 
-  // repeated .OpenLogReplicator.pb.Payload payload = 7;
+  // repeated .OpenLogReplicator.pb.Payload payload = 8;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->_internal_payload_size()); i < n; i++) {
     target = stream->EnsureSpace(target);
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(7, this->_internal_payload(i), target, stream);
+      InternalWriteMessage(8, this->_internal_payload(i), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2836,22 +3062,28 @@ size_t Redo::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .OpenLogReplicator.pb.Payload payload = 7;
+  // repeated .OpenLogReplicator.pb.Payload payload = 8;
   total_size += 1UL * this->_internal_payload_size();
   for (const auto& msg : this->payload_) {
     total_size +=
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
+  // .OpenLogReplicator.pb.RetCode ret = 1;
+  if (this->ret() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::EnumSize(this->_internal_ret());
+  }
+
   switch (scn_val_case()) {
-    // uint64 scn = 1;
+    // uint64 scn = 2;
     case kScn: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
           this->_internal_scn());
       break;
     }
-    // string scns = 2;
+    // string scns = 3;
     case kScns: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
@@ -2863,14 +3095,14 @@ size_t Redo::ByteSizeLong() const {
     }
   }
   switch (tm_val_case()) {
-    // uint64 tm = 3;
+    // uint64 tm = 4;
     case kTm: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
           this->_internal_tm());
       break;
     }
-    // string tms = 4;
+    // string tms = 5;
     case kTms: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
@@ -2882,14 +3114,14 @@ size_t Redo::ByteSizeLong() const {
     }
   }
   switch (xid_val_case()) {
-    // string xid = 5;
+    // string xid = 6;
     case kXid: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
           this->_internal_xid());
       break;
     }
-    // uint64 xidn = 6;
+    // uint64 xidn = 7;
     case kXidn: {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
@@ -2932,6 +3164,9 @@ void Redo::MergeFrom(const Redo& from) {
   (void) cached_has_bits;
 
   payload_.MergeFrom(from.payload_);
+  if (from.ret() != 0) {
+    _internal_set_ret(from._internal_ret());
+  }
   switch (from.scn_val_case()) {
     case kScn: {
       _internal_set_scn(from._internal_scn());
@@ -2995,6 +3230,7 @@ void Redo::InternalSwap(Redo* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   payload_.InternalSwap(&other->payload_);
+  swap(ret_, other->ret_);
   swap(scn_val_, other->scn_val_);
   swap(tm_val_, other->tm_val_);
   swap(xid_val_, other->xid_val_);

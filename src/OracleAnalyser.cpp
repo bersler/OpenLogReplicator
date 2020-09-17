@@ -91,16 +91,25 @@ namespace OpenLogReplicator {
             "U.NAME, "
             "O.NAME, "
             "DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), "
-            "DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), "    //IOT overflow segment,
+            "DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), "  //7: IOT overflow segment,
             "DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), "
             "DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), "
-            "DECODE(BITAND(T.PROPERTY, 32), 32, 0, 1), "                                 //nullable
-            "DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1), " //temporary, secondary, in-memory temp
-            "DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), "                             //nested
-            "DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), "
-            "DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), "
-            "CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 1 ELSE 0 END "
-            "FROM SYS.TAB$ T, SYS.OBJ$ O, SYS.USER$ U WHERE T.OBJ# = O.OBJ# AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
+            "CASE WHEN BITAND(T.PROPERTY, 32) = 32 THEN 1 ELSE 1 END, "                 //10: partitioned
+            "DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1), "//11: temporary, secondary, in-memory temp
+            "DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), "                            //12: nested
+            "DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), "                           //13
+            "DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), "                         //14
+            "CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 "
+            "WHEN (BITAND(T.PROPERTY, 17179869184) = 17179869184) THEN DECODE(BITAND(DS.FLAGS_STG, 4), 4, 1, 0) ELSE "
+            "DECODE(BITAND(S.SPARE1, 2048), 2048, 1, 0) END "                           //15: compressed
+            "FROM "
+            "SYS.TAB$ T, "
+            "SYS.OBJ$ O, "
+            "SYS.USER$ U, "
+            "SYS.SEG$ S, "
+            "SYS.DEFERRED_STG$ DS "
+            "WHERE T.OBJ# = O.OBJ# AND T.OBJ# = DS.OBJ# (+) AND T.FILE# = S.FILE# (+) AND T.BLOCK# = S.BLOCK# (+) AND "
+            "T.TS# = S.TS# (+) AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
     const char* OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT "
             "C.COL#, "
             "C.SEGCOL#, "
@@ -1045,7 +1054,9 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.CDEF$");
             checkTableForGrants("SYS.COL$");
             checkTableForGrants("SYS.CON$");
+            checkTableForGrants("SYS.DEFERRED_STG$");
             checkTableForGrants("SYS.OBJ$");
+            checkTableForGrants("SYS.SEG$");
             checkTableForGrants("SYS.TAB$");
             checkTableForGrants("SYS.TABCOMPART$");
             checkTableForGrants("SYS.TABPART$");

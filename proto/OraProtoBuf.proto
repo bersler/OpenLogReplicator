@@ -55,8 +55,19 @@ enum ColumnType {
     TIMESTAMP_WITH_LOCAL_TZ = 18; //231
 }
 
+enum ClientMessage {
+    START = 0;
+    CHECKPOINT = 1;
+}
+
+enum RetCode {
+    OK = 0;
+    INVALID_DATABASE = 1;
+    INVALID_SCN_RANGE = 2;
+}
+
 service RedoService {
-  rpc redoStream(Request) returns (stream Redo) {}
+    rpc redoStream(Request) returns (stream Redo) {}
 }
 
 message RequestSchema {
@@ -65,10 +76,16 @@ message RequestSchema {
 }
 
 message Request {
-    uint64 scn = 1;
-    uint64 version = 2;
-    string database_name = 3;
-    repeated RequestSchema schema = 4;
+    int64 connector = 1;
+    ClientMessage message = 2;
+    oneof tm_val {
+        uint64 scn = 3;
+        uint64 tm = 4;
+        string tms = 5;
+    }
+    uint64 version = 6;
+    string database_name = 7;
+    repeated RequestSchema schema = 8;
 }
 
 message Value {
@@ -112,17 +129,18 @@ message Payload {
 }
 
 message Redo {
+    RetCode ret = 1;
     oneof scn_val {
-        uint64 scn = 1;
-        string scns = 2;
+        uint64 scn = 2;
+        string scns = 3;
     }
     oneof tm_val {
-        uint64 tm = 3;
-        string tms = 4;
+        uint64 tm = 4;
+        string tms = 5;
     }
     oneof xid_val {
-        string xid = 5;
-        uint64 xidn = 6;
+        string xid = 6;
+        uint64 xidn = 7;
     }
-    repeated Payload payload = 7;
+    repeated Payload payload = 8;
 }

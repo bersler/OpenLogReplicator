@@ -163,6 +163,57 @@ inline bool ColumnType_Parse(
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ColumnType>(
     ColumnType_descriptor(), name, value);
 }
+enum ClientMessage : int {
+  START = 0,
+  CHECKPOINT = 1,
+  ClientMessage_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  ClientMessage_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+};
+bool ClientMessage_IsValid(int value);
+constexpr ClientMessage ClientMessage_MIN = START;
+constexpr ClientMessage ClientMessage_MAX = CHECKPOINT;
+constexpr int ClientMessage_ARRAYSIZE = ClientMessage_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ClientMessage_descriptor();
+template<typename T>
+inline const std::string& ClientMessage_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, ClientMessage>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function ClientMessage_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    ClientMessage_descriptor(), enum_t_value);
+}
+inline bool ClientMessage_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, ClientMessage* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<ClientMessage>(
+    ClientMessage_descriptor(), name, value);
+}
+enum RetCode : int {
+  OK = 0,
+  INVALID_DATABASE = 1,
+  INVALID_SCN_RANGE = 2,
+  RetCode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
+  RetCode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+};
+bool RetCode_IsValid(int value);
+constexpr RetCode RetCode_MIN = OK;
+constexpr RetCode RetCode_MAX = INVALID_SCN_RANGE;
+constexpr int RetCode_ARRAYSIZE = RetCode_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RetCode_descriptor();
+template<typename T>
+inline const std::string& RetCode_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, RetCode>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function RetCode_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    RetCode_descriptor(), enum_t_value);
+}
+inline bool RetCode_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, RetCode* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<RetCode>(
+    RetCode_descriptor(), name, value);
+}
 // ===================================================================
 
 class RequestSchema PROTOBUF_FINAL :
@@ -363,6 +414,13 @@ class Request PROTOBUF_FINAL :
   }
   static const Request& default_instance();
 
+  enum TmValCase {
+    kScn = 3,
+    kTm = 4,
+    kTms = 5,
+    TM_VAL_NOT_SET = 0,
+  };
+
   static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
   static inline const Request* internal_default_instance() {
     return reinterpret_cast<const Request*>(
@@ -440,12 +498,16 @@ class Request PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kSchemaFieldNumber = 4,
-    kDatabaseNameFieldNumber = 3,
-    kScnFieldNumber = 1,
-    kVersionFieldNumber = 2,
+    kSchemaFieldNumber = 8,
+    kDatabaseNameFieldNumber = 7,
+    kConnectorFieldNumber = 1,
+    kVersionFieldNumber = 6,
+    kMessageFieldNumber = 2,
+    kScnFieldNumber = 3,
+    kTmFieldNumber = 4,
+    kTmsFieldNumber = 5,
   };
-  // repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+  // repeated .OpenLogReplicator.pb.RequestSchema schema = 8;
   int schema_size() const;
   private:
   int _internal_schema_size() const;
@@ -463,7 +525,7 @@ class Request PROTOBUF_FINAL :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema >&
       schema() const;
 
-  // string database_name = 3;
+  // string database_name = 7;
   void clear_database_name();
   const std::string& database_name() const;
   void set_database_name(const std::string& value);
@@ -479,16 +541,16 @@ class Request PROTOBUF_FINAL :
   std::string* _internal_mutable_database_name();
   public:
 
-  // uint64 scn = 1;
-  void clear_scn();
-  ::PROTOBUF_NAMESPACE_ID::uint64 scn() const;
-  void set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // int64 connector = 1;
+  void clear_connector();
+  ::PROTOBUF_NAMESPACE_ID::int64 connector() const;
+  void set_connector(::PROTOBUF_NAMESPACE_ID::int64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_scn() const;
-  void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::int64 _internal_connector() const;
+  void _internal_set_connector(::PROTOBUF_NAMESPACE_ID::int64 value);
   public:
 
-  // uint64 version = 2;
+  // uint64 version = 6;
   void clear_version();
   ::PROTOBUF_NAMESPACE_ID::uint64 version() const;
   void set_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
@@ -497,18 +559,87 @@ class Request PROTOBUF_FINAL :
   void _internal_set_version(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // .OpenLogReplicator.pb.ClientMessage message = 2;
+  void clear_message();
+  ::OpenLogReplicator::pb::ClientMessage message() const;
+  void set_message(::OpenLogReplicator::pb::ClientMessage value);
+  private:
+  ::OpenLogReplicator::pb::ClientMessage _internal_message() const;
+  void _internal_set_message(::OpenLogReplicator::pb::ClientMessage value);
+  public:
+
+  // uint64 scn = 3;
+  private:
+  bool _internal_has_scn() const;
+  public:
+  void clear_scn();
+  ::PROTOBUF_NAMESPACE_ID::uint64 scn() const;
+  void set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_scn() const;
+  void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // uint64 tm = 4;
+  private:
+  bool _internal_has_tm() const;
+  public:
+  void clear_tm();
+  ::PROTOBUF_NAMESPACE_ID::uint64 tm() const;
+  void set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_tm() const;
+  void _internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // string tms = 5;
+  private:
+  bool _internal_has_tms() const;
+  public:
+  void clear_tms();
+  const std::string& tms() const;
+  void set_tms(const std::string& value);
+  void set_tms(std::string&& value);
+  void set_tms(const char* value);
+  void set_tms(const char* value, size_t size);
+  std::string* mutable_tms();
+  std::string* release_tms();
+  void set_allocated_tms(std::string* tms);
+  private:
+  const std::string& _internal_tms() const;
+  void _internal_set_tms(const std::string& value);
+  std::string* _internal_mutable_tms();
+  public:
+
+  void clear_tm_val();
+  TmValCase tm_val_case() const;
   // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Request)
  private:
   class _Internal;
+  void set_has_scn();
+  void set_has_tm();
+  void set_has_tms();
+
+  inline bool has_tm_val() const;
+  inline void clear_has_tm_val();
 
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::RequestSchema > schema_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr database_name_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
+  ::PROTOBUF_NAMESPACE_ID::int64 connector_;
   ::PROTOBUF_NAMESPACE_ID::uint64 version_;
+  int message_;
+  union TmValUnion {
+    TmValUnion() {}
+    ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
+    ::PROTOBUF_NAMESPACE_ID::uint64 tm_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tms_;
+  } tm_val_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
+
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
 // -------------------------------------------------------------------
@@ -1480,20 +1611,20 @@ class Redo PROTOBUF_FINAL :
   static const Redo& default_instance();
 
   enum ScnValCase {
-    kScn = 1,
-    kScns = 2,
+    kScn = 2,
+    kScns = 3,
     SCN_VAL_NOT_SET = 0,
   };
 
   enum TmValCase {
-    kTm = 3,
-    kTms = 4,
+    kTm = 4,
+    kTms = 5,
     TM_VAL_NOT_SET = 0,
   };
 
   enum XidValCase {
-    kXid = 5,
-    kXidn = 6,
+    kXid = 6,
+    kXidn = 7,
     XID_VAL_NOT_SET = 0,
   };
 
@@ -1574,15 +1705,16 @@ class Redo PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kPayloadFieldNumber = 7,
-    kScnFieldNumber = 1,
-    kScnsFieldNumber = 2,
-    kTmFieldNumber = 3,
-    kTmsFieldNumber = 4,
-    kXidFieldNumber = 5,
-    kXidnFieldNumber = 6,
+    kPayloadFieldNumber = 8,
+    kRetFieldNumber = 1,
+    kScnFieldNumber = 2,
+    kScnsFieldNumber = 3,
+    kTmFieldNumber = 4,
+    kTmsFieldNumber = 5,
+    kXidFieldNumber = 6,
+    kXidnFieldNumber = 7,
   };
-  // repeated .OpenLogReplicator.pb.Payload payload = 7;
+  // repeated .OpenLogReplicator.pb.Payload payload = 8;
   int payload_size() const;
   private:
   int _internal_payload_size() const;
@@ -1600,7 +1732,16 @@ class Redo PROTOBUF_FINAL :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload >&
       payload() const;
 
-  // uint64 scn = 1;
+  // .OpenLogReplicator.pb.RetCode ret = 1;
+  void clear_ret();
+  ::OpenLogReplicator::pb::RetCode ret() const;
+  void set_ret(::OpenLogReplicator::pb::RetCode value);
+  private:
+  ::OpenLogReplicator::pb::RetCode _internal_ret() const;
+  void _internal_set_ret(::OpenLogReplicator::pb::RetCode value);
+  public:
+
+  // uint64 scn = 2;
   private:
   bool _internal_has_scn() const;
   public:
@@ -1612,7 +1753,7 @@ class Redo PROTOBUF_FINAL :
   void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // string scns = 2;
+  // string scns = 3;
   private:
   bool _internal_has_scns() const;
   public:
@@ -1631,7 +1772,7 @@ class Redo PROTOBUF_FINAL :
   std::string* _internal_mutable_scns();
   public:
 
-  // uint64 tm = 3;
+  // uint64 tm = 4;
   private:
   bool _internal_has_tm() const;
   public:
@@ -1643,7 +1784,7 @@ class Redo PROTOBUF_FINAL :
   void _internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // string tms = 4;
+  // string tms = 5;
   private:
   bool _internal_has_tms() const;
   public:
@@ -1662,7 +1803,7 @@ class Redo PROTOBUF_FINAL :
   std::string* _internal_mutable_tms();
   public:
 
-  // string xid = 5;
+  // string xid = 6;
   private:
   bool _internal_has_xid() const;
   public:
@@ -1681,7 +1822,7 @@ class Redo PROTOBUF_FINAL :
   std::string* _internal_mutable_xid();
   public:
 
-  // uint64 xidn = 6;
+  // uint64 xidn = 7;
   private:
   bool _internal_has_xidn() const;
   public:
@@ -1722,6 +1863,7 @@ class Redo PROTOBUF_FINAL :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Payload > payload_;
+  int ret_;
   union ScnValUnion {
     ScnValUnion() {}
     ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
@@ -1881,27 +2023,223 @@ inline void RequestSchema::set_allocated_filter(std::string* filter) {
 
 // Request
 
-// uint64 scn = 1;
+// int64 connector = 1;
+inline void Request::clear_connector() {
+  connector_ = PROTOBUF_LONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 Request::_internal_connector() const {
+  return connector_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::int64 Request::connector() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.connector)
+  return _internal_connector();
+}
+inline void Request::_internal_set_connector(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  
+  connector_ = value;
+}
+inline void Request::set_connector(::PROTOBUF_NAMESPACE_ID::int64 value) {
+  _internal_set_connector(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.connector)
+}
+
+// .OpenLogReplicator.pb.ClientMessage message = 2;
+inline void Request::clear_message() {
+  message_ = 0;
+}
+inline ::OpenLogReplicator::pb::ClientMessage Request::_internal_message() const {
+  return static_cast< ::OpenLogReplicator::pb::ClientMessage >(message_);
+}
+inline ::OpenLogReplicator::pb::ClientMessage Request::message() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.message)
+  return _internal_message();
+}
+inline void Request::_internal_set_message(::OpenLogReplicator::pb::ClientMessage value) {
+  
+  message_ = value;
+}
+inline void Request::set_message(::OpenLogReplicator::pb::ClientMessage value) {
+  _internal_set_message(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.message)
+}
+
+// uint64 scn = 3;
+inline bool Request::_internal_has_scn() const {
+  return tm_val_case() == kScn;
+}
+inline void Request::set_has_scn() {
+  _oneof_case_[0] = kScn;
+}
 inline void Request::clear_scn() {
-  scn_ = PROTOBUF_ULONGLONG(0);
+  if (_internal_has_scn()) {
+    tm_val_.scn_ = PROTOBUF_ULONGLONG(0);
+    clear_has_tm_val();
+  }
 }
 inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::_internal_scn() const {
-  return scn_;
+  if (_internal_has_scn()) {
+    return tm_val_.scn_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Request::_internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_scn()) {
+    clear_tm_val();
+    set_has_scn();
+  }
+  tm_val_.scn_ = value;
 }
 inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::scn() const {
   // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.scn)
   return _internal_scn();
-}
-inline void Request::_internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  
-  scn_ = value;
 }
 inline void Request::set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   _internal_set_scn(value);
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.scn)
 }
 
-// uint64 version = 2;
+// uint64 tm = 4;
+inline bool Request::_internal_has_tm() const {
+  return tm_val_case() == kTm;
+}
+inline void Request::set_has_tm() {
+  _oneof_case_[0] = kTm;
+}
+inline void Request::clear_tm() {
+  if (_internal_has_tm()) {
+    tm_val_.tm_ = PROTOBUF_ULONGLONG(0);
+    clear_has_tm_val();
+  }
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::_internal_tm() const {
+  if (_internal_has_tm()) {
+    return tm_val_.tm_;
+  }
+  return PROTOBUF_ULONGLONG(0);
+}
+inline void Request::_internal_set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  if (!_internal_has_tm()) {
+    clear_tm_val();
+    set_has_tm();
+  }
+  tm_val_.tm_ = value;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Request::tm() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.tm)
+  return _internal_tm();
+}
+inline void Request::set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_tm(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.tm)
+}
+
+// string tms = 5;
+inline bool Request::_internal_has_tms() const {
+  return tm_val_case() == kTms;
+}
+inline void Request::set_has_tms() {
+  _oneof_case_[0] = kTms;
+}
+inline void Request::clear_tms() {
+  if (_internal_has_tms()) {
+    tm_val_.tms_.Destroy(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+    clear_has_tm_val();
+  }
+}
+inline const std::string& Request::tms() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Request.tms)
+  return _internal_tms();
+}
+inline void Request::set_tms(const std::string& value) {
+  _internal_set_tms(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.tms)
+}
+inline std::string* Request::mutable_tms() {
+  // @@protoc_insertion_point(field_mutable:OpenLogReplicator.pb.Request.tms)
+  return _internal_mutable_tms();
+}
+inline const std::string& Request::_internal_tms() const {
+  if (_internal_has_tms()) {
+    return tm_val_.tms_.Get();
+  }
+  return *&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited();
+}
+inline void Request::_internal_set_tms(const std::string& value) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
+}
+inline void Request::set_tms(std::string&& value) {
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.tms)
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+    &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
+  // @@protoc_insertion_point(field_set_rvalue:OpenLogReplicator.pb.Request.tms)
+}
+inline void Request::set_tms(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(value), GetArena());
+  // @@protoc_insertion_point(field_set_char:OpenLogReplicator.pb.Request.tms)
+}
+inline void Request::set_tms(const char* value,
+                             size_t size) {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  tm_val_.tms_.Set(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size),
+      GetArena());
+  // @@protoc_insertion_point(field_set_pointer:OpenLogReplicator.pb.Request.tms)
+}
+inline std::string* Request::_internal_mutable_tms() {
+  if (!_internal_has_tms()) {
+    clear_tm_val();
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  }
+  return tm_val_.tms_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+}
+inline std::string* Request::release_tms() {
+  // @@protoc_insertion_point(field_release:OpenLogReplicator.pb.Request.tms)
+  if (_internal_has_tms()) {
+    clear_has_tm_val();
+    return tm_val_.tms_.Release(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  } else {
+    return nullptr;
+  }
+}
+inline void Request::set_allocated_tms(std::string* tms) {
+  if (has_tm_val()) {
+    clear_tm_val();
+  }
+  if (tms != nullptr) {
+    set_has_tms();
+    tm_val_.tms_.UnsafeSetDefault(tms);
+    ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena();
+    if (arena != nullptr) {
+      arena->Own(tms);
+    }
+  }
+  // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Request.tms)
+}
+
+// uint64 version = 6;
 inline void Request::clear_version() {
   version_ = PROTOBUF_ULONGLONG(0);
 }
@@ -1921,7 +2259,7 @@ inline void Request::set_version(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Request.version)
 }
 
-// string database_name = 3;
+// string database_name = 7;
 inline void Request::clear_database_name() {
   database_name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
@@ -1983,7 +2321,7 @@ inline void Request::set_allocated_database_name(std::string* database_name) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Request.database_name)
 }
 
-// repeated .OpenLogReplicator.pb.RequestSchema schema = 4;
+// repeated .OpenLogReplicator.pb.RequestSchema schema = 8;
 inline int Request::_internal_schema_size() const {
   return schema_.size();
 }
@@ -2022,6 +2360,15 @@ Request::schema() const {
   return schema_;
 }
 
+inline bool Request::has_tm_val() const {
+  return tm_val_case() != TM_VAL_NOT_SET;
+}
+inline void Request::clear_has_tm_val() {
+  _oneof_case_[0] = TM_VAL_NOT_SET;
+}
+inline Request::TmValCase Request::tm_val_case() const {
+  return Request::TmValCase(_oneof_case_[0]);
+}
 // -------------------------------------------------------------------
 
 // Value
@@ -3230,7 +3577,27 @@ inline void Payload::set_allocated_ddl(std::string* ddl) {
 
 // Redo
 
-// uint64 scn = 1;
+// .OpenLogReplicator.pb.RetCode ret = 1;
+inline void Redo::clear_ret() {
+  ret_ = 0;
+}
+inline ::OpenLogReplicator::pb::RetCode Redo::_internal_ret() const {
+  return static_cast< ::OpenLogReplicator::pb::RetCode >(ret_);
+}
+inline ::OpenLogReplicator::pb::RetCode Redo::ret() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Redo.ret)
+  return _internal_ret();
+}
+inline void Redo::_internal_set_ret(::OpenLogReplicator::pb::RetCode value) {
+  
+  ret_ = value;
+}
+inline void Redo::set_ret(::OpenLogReplicator::pb::RetCode value) {
+  _internal_set_ret(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.ret)
+}
+
+// uint64 scn = 2;
 inline bool Redo::_internal_has_scn() const {
   return scn_val_case() == kScn;
 }
@@ -3265,7 +3632,7 @@ inline void Redo::set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.scn)
 }
 
-// string scns = 2;
+// string scns = 3;
 inline bool Redo::_internal_has_scns() const {
   return scn_val_case() == kScns;
 }
@@ -3371,7 +3738,7 @@ inline void Redo::set_allocated_scns(std::string* scns) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.scns)
 }
 
-// uint64 tm = 3;
+// uint64 tm = 4;
 inline bool Redo::_internal_has_tm() const {
   return tm_val_case() == kTm;
 }
@@ -3406,7 +3773,7 @@ inline void Redo::set_tm(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.tm)
 }
 
-// string tms = 4;
+// string tms = 5;
 inline bool Redo::_internal_has_tms() const {
   return tm_val_case() == kTms;
 }
@@ -3512,7 +3879,7 @@ inline void Redo::set_allocated_tms(std::string* tms) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.tms)
 }
 
-// string xid = 5;
+// string xid = 6;
 inline bool Redo::_internal_has_xid() const {
   return xid_val_case() == kXid;
 }
@@ -3618,7 +3985,7 @@ inline void Redo::set_allocated_xid(std::string* xid) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Redo.xid)
 }
 
-// uint64 xidn = 6;
+// uint64 xidn = 7;
 inline bool Redo::_internal_has_xidn() const {
   return xid_val_case() == kXidn;
 }
@@ -3653,7 +4020,7 @@ inline void Redo::set_xidn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Redo.xidn)
 }
 
-// repeated .OpenLogReplicator.pb.Payload payload = 7;
+// repeated .OpenLogReplicator.pb.Payload payload = 8;
 inline int Redo::_internal_payload_size() const {
   return payload_.size();
 }
@@ -3751,6 +4118,16 @@ template <> struct is_proto_enum< ::OpenLogReplicator::pb::ColumnType> : ::std::
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::ColumnType>() {
   return ::OpenLogReplicator::pb::ColumnType_descriptor();
+}
+template <> struct is_proto_enum< ::OpenLogReplicator::pb::ClientMessage> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::ClientMessage>() {
+  return ::OpenLogReplicator::pb::ClientMessage_descriptor();
+}
+template <> struct is_proto_enum< ::OpenLogReplicator::pb::RetCode> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::OpenLogReplicator::pb::RetCode>() {
+  return ::OpenLogReplicator::pb::RetCode_descriptor();
 }
 
 PROTOBUF_NAMESPACE_CLOSE
