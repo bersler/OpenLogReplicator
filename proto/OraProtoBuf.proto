@@ -67,7 +67,7 @@ enum RetCode {
 }
 
 service RedoService {
-    rpc redoStream(Request) returns (stream Redo) {}
+    rpc redoStream(stream Request) returns (stream Redo) {}
 }
 
 message RequestSchema {

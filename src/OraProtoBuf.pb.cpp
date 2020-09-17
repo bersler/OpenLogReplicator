@@ -321,11 +321,11 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "COND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LOC"
   "AL_TZ\020\022**\n\rClientMessage\022\t\n\005START\020\000\022\016\n\nC"
   "HECKPOINT\020\001*>\n\007RetCode\022\006\n\002OK\020\000\022\024\n\020INVALI"
-  "D_DATABASE\020\001\022\025\n\021INVALID_SCN_RANGE\020\0022Z\n\013R"
-  "edoService\022K\n\nredoStream\022\035.OpenLogReplic"
+  "D_DATABASE\020\001\022\025\n\021INVALID_SCN_RANGE\020\0022\\\n\013R"
+  "edoService\022M\n\nredoStream\022\035.OpenLogReplic"
   "ator.pb.Request\032\032.OpenLogReplicator.pb.R"
-  "edo\"\0000\001B<\n\"io.debezium.connector.oracle."
-  "protoB\021OpenLogReplicatorH\001\370\001\001b\006proto3"
+  "edo\"\000(\0010\001B<\n\"io.debezium.connector.oracl"
+  "e.protoB\021OpenLogReplicatorH\001\370\001\001b\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -340,7 +340,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1837,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1839,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
