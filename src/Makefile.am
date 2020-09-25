@@ -81,5 +81,5 @@ WriterKafka.cpp \
 WriterService.cpp
 
 if PROTOBUF_COMPILE
-OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp
+OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
 endif

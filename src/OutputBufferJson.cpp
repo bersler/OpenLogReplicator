@@ -107,6 +107,11 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::columnRaw(string &columnName, const uint8_t *data, uint64_t length) {
+        if (hasPreviousColumn)
+            outputBufferAppend(',');
+        else
+            hasPreviousColumn = true;
+
         outputBufferAppend('"');
         outputBufferAppend(columnName);
         outputBufferAppend("\":\"");
@@ -157,7 +162,6 @@ namespace OpenLogReplicator {
             outputBufferAppend('"');
         } else {
             //unix epoch format
-
             if (epochtime.tm_year >= 1900) {
                 --epochtime.tm_mon;
                 epochtime.tm_year -= 1900;
@@ -537,12 +541,17 @@ namespace OpenLogReplicator {
         outputBufferAppend(",\"after\":{");
 
         hasPreviousColumn = false;
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (afterPos[i] != nullptr && afterLen[i] > 0)
-                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
                 columnNull(object->columns[i]);
@@ -556,8 +565,6 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        compactUpdate(object, bdba, slot, xid);
-
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
@@ -577,28 +584,38 @@ namespace OpenLogReplicator {
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (beforePos[i] != nullptr && beforeLen[i] > 0)
-                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
-            if (afterPos[i] > 0 || beforePos[i] > 0)
+            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
                 columnNull(object->columns[i]);
         }
 
         outputBufferAppend("},\"after\":{");
 
         hasPreviousColumn = false;
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (afterPos[i] != nullptr && afterLen[i] > 0)
-                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
-            if (afterPos[i] > 0 || beforePos[i] > 0)
+            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
                 columnNull(object->columns[i]);
         }
         outputBufferAppend("}}");
@@ -629,13 +646,17 @@ namespace OpenLogReplicator {
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            //value present before
-            if (beforePos[i] != nullptr && beforeLen[i] > 0)
-                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
                 columnNull(object->columns[i]);

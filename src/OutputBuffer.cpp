@@ -63,6 +63,8 @@ namespace OpenLogReplicator {
             lastTime(0),
             lastScn(0),
             lastXid(0),
+            valuesMax(0),
+            mergesMax(0),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
             writer(nullptr),
@@ -811,6 +813,7 @@ namespace OpenLogReplicator {
     }
 
     OutputBuffer::~OutputBuffer() {
+        valuesRelease();
         for (auto it : characterMap) {
             CharacterSet *cs = it.second;
             delete cs;
@@ -824,6 +827,67 @@ namespace OpenLogReplicator {
             oracleAnalyser->freeMemoryChunk("BUFFER", firstBuffer, true);
             firstBuffer = nextBuffer;
             --buffersAllocated;
+        }
+    }
+
+    void OutputBuffer::valuesRelease() {
+        valuesMap.clear();
+        for (uint64_t i = 0; i < mergesMax; ++i)
+            delete[] merges[i];
+        mergesMax = 0;
+        valuesMax = 0;
+    }
+
+    void OutputBuffer::valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb) {
+        ColumnValue *value;
+        auto it = valuesMap.find(column);
+
+        if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
+            stringstream strStr;
+            strStr << "value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
+                    setfill('0') << setw(2) << hex << (uint64_t)fb << " to: ";
+            for (uint64_t i = 0; i < length && i < 10; ++i) {
+                strStr << "0x" << setfill('0') << setw(2) << hex << (uint64_t)data[i] << ", ";
+            }
+            TRACE(TRACE2_DML, strStr.str());
+        }
+
+        //not set yet
+        if (it != valuesMap.end()) {
+            uint16_t valuePos = (*it).second;
+            value = &values[valuePos][type];
+        } else {
+            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
+            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
+            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
+            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
+            value = &values[valuesMax][type];
+            valuesMap[column] = valuesMax++;
+        }
+
+        switch (fb & (FB_P | FB_N)) {
+        case 0:
+            value->length[0] = length;
+            value->data[0] = data;
+            break;
+
+        case FB_N:
+            value->length[1] = length;
+            value->data[1] = data;
+            value->merge = true;
+            break;
+
+        case FB_P | FB_N:
+            value->length[2] = length;
+            value->data[2] = data;
+            value->merge = true;
+            break;
+
+        case FB_P:
+            value->length[3] = length;
+            value->data[3] = data;
+            value->merge = true;
+            break;
         }
     }
 
@@ -923,43 +987,6 @@ namespace OpenLogReplicator {
             valueBuffer[valueLength++] = map16[(value >> j) & 0xF];
             j -= 4;
         };
-    }
-
-    void OutputBuffer::compactUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
-        if (columnFormat <= COLUMN_FORMAT_INS_DEC) {
-            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-                if (object->columns[i] == nullptr)
-                    continue;
-
-                //remove unchanged column values - only for tables with defined primary key
-                if (object->columns[i]->numPk == 0 && beforePos[i] > 0 && afterPos[i] != nullptr && beforeLen[i] == afterLen[i]) {
-                    if (beforeLen[i] == 0 || memcmp(beforePos[i], afterPos[i], beforeLen[i]) == 0) {
-                        beforePos[i] = nullptr;
-                        afterPos[i] = nullptr;
-                        beforeLen[i] = 0;
-                        afterLen[i] = 0;
-                    }
-                }
-
-                //remove columns additionally present, but not modified
-                if (beforePos[i] != nullptr && beforeLen[i] == 0 && afterPos[i] == nullptr) {
-                    if (object->columns[i]->numPk == 0) {
-                        beforePos[i] = 0;
-                    } else {
-                        afterPos[i] = beforePos[i];
-                        afterLen[i] = beforeLen[i];
-                    }
-                }
-                if (afterPos[i] != nullptr && afterLen[i] == 0 && beforePos[i] == nullptr) {
-                    if (object->columns[i]->numPk == 0) {
-                        afterPos[i] = 0;
-                    } else {
-                        beforePos[i] = afterPos[i];
-                        beforeLen[i] = afterLen[i];
-                    }
-                }
-            }
-        }
     }
 
     void OutputBuffer::processValue(OracleColumn *column, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
@@ -1277,9 +1304,10 @@ namespace OpenLogReplicator {
                     tz = tz2;
                 } else {
                     uint16_t tzkey = (data[11] << 8) | data[12];
-                    tz = timeZoneMap[tzkey];
-
-                    if (tz == nullptr)
+                    auto it = timeZoneMap.find(tzkey);
+                    if (it != timeZoneMap.end())
+                        tz = (*it).second;
+                    else
                         tz = "TZ?";
                 }
 
@@ -1358,10 +1386,6 @@ namespace OpenLogReplicator {
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
             pos = 3;
 
-            memset(colIsSupp, 0, object->maxSegCol * sizeof(uint8_t));
-            memset(afterPos, 0, object->maxSegCol * sizeof(uint8_t*));
-            memset(beforePos, 0, object->maxSegCol * sizeof(uint8_t*));
-
             if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
                 if (oracleAnalyser->version < 0x12200)
                     pos += 6;
@@ -1384,15 +1408,13 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (object->columns[i] != nullptr) {
-                    afterPos[i] = redoLogRecord2->data + fieldPos + pos;
-                    afterLen[i] = colLength;
-                }
+                valueSet(VALUE_AFTER, i, redoLogRecord2->data + fieldPos + pos, colLength, 0);
                 pos += colLength;
             }
 
             processInsert(object, redoLogRecord2->bdba,
                     oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
+            valuesRelease();
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
         }
@@ -1417,10 +1439,6 @@ namespace OpenLogReplicator {
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
             pos = 3;
 
-            memset(colIsSupp, 0, object->maxSegCol * sizeof(uint8_t));
-            memset(afterPos, 0, object->maxSegCol * sizeof(uint64_t));
-            memset(beforePos, 0, object->maxSegCol * sizeof(uint64_t));
-
             if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
                 if (oracleAnalyser->version < 0x12200)
                     pos += 6;
@@ -1443,22 +1461,20 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (object->columns[i] != nullptr) {
-                    beforePos[i] = redoLogRecord1->data + fieldPos + pos;
-                    beforeLen[i] = colLength;
-                }
-
+                valueSet(VALUE_BEFORE, i, redoLogRecord1->data + fieldPos + pos, colLength, 0);
                 pos += colLength;
             }
 
             processDelete(object, redoLogRecord2->bdba,
                     oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
+            valuesRelease();
 
             fieldPosStart += oracleAnalyser->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
         }
     }
 
     void OutputBuffer::processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
+        uint8_t fb;
         typedba bdba;
         typeslot slot;
         RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
@@ -1502,10 +1518,6 @@ namespace OpenLogReplicator {
         uint16_t fieldLength, colLength;
         uint8_t *nulls, bits, *colNums;
 
-        memset(colIsSupp, 0, object->maxSegCol * sizeof(uint8_t));
-        memset(afterPos, 0, object->maxSegCol * sizeof(uint64_t));
-        memset(beforePos, 0, object->maxSegCol * sizeof(uint64_t));
-
         //data in UNDO
         redoLogRecord1p = redoLogRecord1;
         redoLogRecord2p = redoLogRecord2;
@@ -1547,6 +1559,12 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
+                    fb = 0;
+                    if (i == 0 && (redoLogRecord1p->fb & FB_P) != 0)
+                        fb |= FB_P;
+                    if (i == redoLogRecord1p->cc - 1 && (redoLogRecord1p->fb & FB_N) != 0)
+                        fb |= FB_N;
+
                     if (colNum >= object->maxSegCol) {
                         WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
@@ -1561,10 +1579,7 @@ namespace OpenLogReplicator {
                         colLength = fieldLength;
                     }
 
-                    if (object->columns[colNum] != nullptr) {
-                        beforePos[colNum] = redoLogRecord1p->data + fieldPos;
-                        beforeLen[colNum] = colLength;
-                    }
+                    valueSet(VALUE_BEFORE, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1599,22 +1614,22 @@ namespace OpenLogReplicator {
                     colNums += 2;
                     colLength = oracleAnalyser->read16(colSizes);
 
-                    if (object->columns[colNum] != nullptr) {
-                        colIsSupp[colNum] = 1;
-                        if (colLength == 0xFFFF)
-                            colLength = 0;
+                    if (colLength == 0xFFFF)
+                        colLength = 0;
 
-                        //insert, lock, update
-                        if (afterPos[colNum] == nullptr && (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)) {
-                            afterPos[colNum] = redoLogRecord1p->data + fieldPos;
-                            afterLen[colNum] = colLength;
-                        }
-                        //delete, update, overwrite
-                        if (beforePos[colNum] == nullptr && (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)) {
-                            beforePos[colNum] = redoLogRecord1p->data + fieldPos;
-                            beforeLen[colNum] = colLength;
-                        }
-                    }
+                    fb = 0;
+                    if (i == 0 && (redoLogRecord1p->suppLogFb & FB_P) != 0)
+                        fb |= FB_P;
+                    if (i == redoLogRecord1p->suppLogCC - 1 && (redoLogRecord1p->suppLogFb & FB_N) != 0)
+                        fb |= FB_N;
+
+                    //insert, lock, update, supplemental log data
+                    if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)
+                        valueSet(VALUE_AFTER_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
+
+                    //delete, update, overwrite, supplemental log data
+                    if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)
+                        valueSet(VALUE_BEFORE_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
 
                     colSizes += 2;
                 }
@@ -1645,6 +1660,12 @@ namespace OpenLogReplicator {
                         break;
                     }
 
+                    fb = 0;
+                    if (i == 0 && (redoLogRecord2p->fb & FB_P) != 0)
+                        fb |= FB_P;
+                    if (i == redoLogRecord2p->cc - 1 && (redoLogRecord2p->fb & FB_N) != 0)
+                        fb |= FB_N;
+
                     oracleAnalyser->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
 
                     if (colNums != nullptr) {
@@ -1659,21 +1680,12 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    if (object->columns[colNum] != nullptr) {
-                        if ((*nulls & bits) != 0)
-                            colLength = 0;
-                        else
-                            colLength = fieldLength;
+                    if ((*nulls & bits) != 0)
+                        colLength = 0;
+                    else
+                        colLength = fieldLength;
 
-                        afterPos[colNum] = redoLogRecord2p->data + fieldPos;
-                        afterLen[colNum] = colLength;
-                    } else {
-                        //present null value for
-                        if (redoLogRecord2p->data[fieldPos] == 1 && fieldLength == 1 && colNum + 1 < object->maxSegCol && object->columns[colNum + 1] != nullptr) {
-                            afterPos[colNum + 1] = redoLogRecord2p->data + fieldPos;
-                            afterLen[colNum + 1] = 0;
-                        }
-                    }
+                    valueSet(VALUE_AFTER, colNum, redoLogRecord2p->data + fieldPos, colLength, fb);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -1687,26 +1699,174 @@ namespace OpenLogReplicator {
             redoLogRecord2p = redoLogRecord2p->next;
         }
 
-        if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
-            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
-            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-                if (object->columns[i] == nullptr)
-                    continue;
+        int16_t guardPos = -1;
+        if (object->guardSegNo != -1) {
+            auto it = valuesMap.find(object->guardSegNo);
+            if (it != valuesMap.end())
+                guardPos = (*it).second;
+        }
 
-                TRACE(TRACE2_DML, dec << i << ": " <<
-                        " B(" << dec << beforeLen[i] << ")" <<
-                        " A(" << dec << afterLen[i] << ")" <<
-                        " pk: " << dec << object->columns[i]->numPk <<
-                        " supp: " << dec << (uint64_t)colIsSupp[i]);
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            for (uint64_t j = 0; j < 4; ++j) {
+                if (values[pos][j].merge) {
+                    uint64_t length = 0;
+
+                    if (values[pos][j].data[1] != nullptr)
+                        length += values[pos][j].length[1];
+                    if (values[pos][j].data[2] != nullptr)
+                        length += values[pos][j].length[2];
+                    if (values[pos][j].data[3] != nullptr)
+                        length += values[pos][j].length[3];
+
+                    if (values[pos][j].data[0] != nullptr) {
+                        RUNTIME_FAIL("value for " << j << " is already set when merging");
+                    }
+
+                    uint8_t *buffer = new uint8_t[length];
+                    if (buffer == nullptr) {
+                        RUNTIME_FAIL("could not allocate " << dec << (length) << " bytes memory for (reason: big before image)");
+                    }
+                    merges[mergesMax++] = buffer;
+
+                    values[pos][j].data[0] = buffer;
+                    values[pos][j].length[0] = length;
+
+                    if (values[pos][j].data[1] != nullptr) {
+                        memcpy(buffer, values[pos][j].data[1], values[pos][j].length[1]);
+                        buffer += values[pos][j].length[1];
+                    }
+                    if (values[pos][j].data[2] != nullptr) {
+                        memcpy(buffer, values[pos][j].data[2], values[pos][j].length[2]);
+                        buffer += values[pos][j].length[2];
+                    }
+                    if (values[pos][j].data[3] != nullptr) {
+                        memcpy(buffer, values[pos][j].data[3], values[pos][j].length[3]);
+                        buffer += values[pos][j].length[3];
+                    }
+                }
+            }
+
+            if (values[pos][VALUE_BEFORE].data[0] == nullptr) {
+                bool guardPresent = false;
+                if (object->columns[i]->guardSegNo != -1 && guardPos != -1) {
+                    uint8_t *guardData = values[guardPos][VALUE_BEFORE].data[0];
+                    if (guardData != nullptr) {
+                        guardPresent = true;
+                        uint64_t guardLength = values[guardPos][VALUE_BEFORE].length[0];
+                        uint64_t guardPos = i / 8;
+                        if (guardPos < guardLength && (values[guardPos][VALUE_BEFORE].data[0][guardPos] & (1 << (i & 7))) != 0) {
+                            values[pos][VALUE_BEFORE].data[0] = (uint8_t*)1;
+                            values[pos][VALUE_BEFORE].length[0] = 0;
+                        }
+                    }
+                }
+
+                if (!guardPresent && values[pos][VALUE_BEFORE_SUPP].data[0] != nullptr) {
+                    values[pos][VALUE_BEFORE].data[0] = values[pos][VALUE_BEFORE_SUPP].data[0];
+                    values[pos][VALUE_BEFORE].length[0] = values[pos][VALUE_BEFORE_SUPP].length[0];
+                }
+            }
+
+            if (values[pos][VALUE_AFTER].data[0] == nullptr) {
+                bool guardPresent = false;
+                if (object->columns[i]->guardSegNo != -1 && guardPos != -1) {
+                    uint8_t *guardData = values[guardPos][VALUE_AFTER].data[0];
+                    if (guardData != nullptr) {
+                        guardPresent = true;
+                        uint64_t guardLength = values[guardPos][VALUE_AFTER].length[0];
+                        uint64_t guardPos = i / 8;
+                        if (guardPos < guardLength && (values[guardPos][VALUE_AFTER].data[0][guardPos] & (1 << (i & 7))) != 0) {
+                            values[pos][VALUE_AFTER].data[0] = (uint8_t*)1;
+                            values[pos][VALUE_AFTER].length[0] = 0;
+                        }
+                    }
+                }
+
+                if (!guardPresent && values[pos][VALUE_AFTER_SUPP].data[0] != nullptr) {
+                    values[pos][VALUE_AFTER].data[0] = values[pos][VALUE_AFTER_SUPP].data[0];
+                    values[pos][VALUE_AFTER].length[0] = values[pos][VALUE_AFTER_SUPP].length[0];
+                }
             }
         }
 
-        if (type == TRANSACTION_UPDATE)
-            processUpdate(object, bdba, slot, redoLogRecord1->xid); else
-        if (type == TRANSACTION_INSERT)
-            processInsert(object, bdba, slot, redoLogRecord1->xid); else
-        if (type == TRANSACTION_DELETE)
-            processDelete(object, bdba, slot, redoLogRecord1->xid);
+        if ((oracleAnalyser->trace2 & TRACE2_DML) != 0) {
+            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
+
+            for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+                uint16_t i = (*it).first;
+                uint16_t pos = (*it).second;
+
+                TRACE(TRACE2_DML, dec << i << ": " <<
+                        " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
+                        " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
+                        " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
+                        " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")" <<
+                        " pk: " << dec << object->columns[i]->numPk);
+            }
+        }
+
+        if (type == TRANSACTION_UPDATE) {
+            if (columnFormat < COLUMN_FORMAT_FULL) {
+                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ) {
+                    uint16_t i = (*it).first;
+                    uint16_t pos = (*it).second;
+
+                    //remove unchanged column values - only for tables with defined primary key
+                    if (object->columns[i]->numPk == 0 && values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] == values[pos][VALUE_AFTER].length[0]) {
+                        if (values[pos][VALUE_BEFORE].length[0] == 0 || memcmp(values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_BEFORE].length[0]) == 0) {
+                            it = valuesMap.erase(it);
+                            continue;
+                        }
+                    }
+
+                    //remove columns additionally present, but not modified
+                    if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] == 0 && values[pos][VALUE_AFTER].data[0] == nullptr) {
+                        if (object->columns[i]->numPk == 0) {
+                            values[pos][VALUE_BEFORE].data[0] = nullptr;
+                        } else {
+                            values[pos][VALUE_AFTER].data[0] = values[pos][VALUE_BEFORE].data[0];
+                            values[pos][VALUE_AFTER].length[0] = values[pos][VALUE_BEFORE].length[0];
+                        }
+                    }
+
+                    if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] == 0 && values[pos][VALUE_BEFORE].data[0] == nullptr) {
+                        if (object->columns[i]->numPk == 0) {
+                            values[pos][VALUE_AFTER].data[0] = nullptr;
+                        } else {
+                            values[pos][VALUE_BEFORE].data[0] = values[pos][VALUE_AFTER].data[0];
+                            values[pos][VALUE_BEFORE].length[0] = values[pos][VALUE_AFTER].length[0];
+                        }
+                    }
+                    ++it;
+                }
+            }
+
+            processUpdate(object, bdba, slot, redoLogRecord1->xid);
+        } else {
+            //assume null values for missing columns
+            for (uint16_t i: object->pk ) {
+                auto it = valuesMap.find(i);
+                if (it == valuesMap.end()) {
+                    memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
+                    memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
+                    memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
+                    memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
+                    values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
+                    values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
+                    valuesMap[i] = valuesMax++;
+                }
+            }
+
+            if (type == TRANSACTION_INSERT)
+                processInsert(object, bdba, slot, redoLogRecord1->xid);
+            else if (type == TRANSACTION_DELETE)
+                processDelete(object, bdba, slot, redoLogRecord1->xid);
+        }
+
+        valuesRelease();
     }
 
     //0x18010000

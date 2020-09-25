@@ -41,6 +41,7 @@ typedef uint32_t typedba;
 typedef uint16_t typeslot;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
+typedef int64_t typecol;
 typedef uint32_t typeobj;
 typedef uint64_t typeobj2;
 typedef uint32_t typeseq;
@@ -144,8 +145,9 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_TRACK_DDL                    0x0000010
 #define REDO_FLAGS_DISABLE_READ_VERIFICATION    0x0000020
 #define REDO_FLAGS_BLOCK_CHECK_SUM              0x0000040
-#define REDO_FLAGS_HIDE_INVISIBLE_COLUMNS       0x0000080
-#define REDO_FLAGS_INCOMPLETE_TRANSACTIONS      0x0000100
+#define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x0000080
+#define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x0000100
+#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x0000200
 
 #define DISABLE_CHECK_GRANTS                    0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x0000002

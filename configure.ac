@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.7.15],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.7.16],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -56,7 +56,7 @@ AC_ARG_WITH([rapidjson],
 
 AC_ARG_WITH([grpc],
   [AS_HELP_STRING([--with-grpc=PATH], [grpc directory])],
-  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 -lprotobuf -lgrpc++ -lgrpc $LDFLAGS"],
+  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 `export PKG_CONFIG_PATH=$withval/lib/pkgconfig:$withval/lib64/pkgconfig; pkg-config --libs protobuf grpc++` $LDFLAGS"],
   [])
 
 AC_ARG_WITH([instantclient],
@@ -65,7 +65,7 @@ AC_ARG_WITH([instantclient],
   [])
 
 CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmessage-length=0"
-LDFLAGS="$LDFLAGS -lpthread"
+LDFLAGS="$LDFLAGS -pthread"
 AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
 
 AC_CONFIG_FILES([

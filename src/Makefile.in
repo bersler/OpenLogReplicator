@@ -97,7 +97,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = OpenLogReplicator$(EXEEXT)
-@PROTOBUF_COMPILE_TRUE@am__append_1 = OraProtoBuf.pb.cpp
+@PROTOBUF_COMPILE_TRUE@am__append_1 = OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/config/depcomp
@@ -137,8 +137,9 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
 	TransactionHeap.cpp TransactionMap.cpp Writer.cpp \
 	WriterFile.cpp WriterKafka.cpp WriterService.cpp \
-	OraProtoBuf.pb.cpp
-@PROTOBUF_COMPILE_TRUE@am__objects_1 = OraProtoBuf.pb.$(OBJEXT)
+	OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+@PROTOBUF_COMPILE_TRUE@am__objects_1 = OraProtoBuf.pb.$(OBJEXT) \
+@PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSet7bit.$(OBJEXT) CharacterSet8bit.$(OBJEXT) \
 	CharacterSetAL16UTF16.$(OBJEXT) CharacterSetAL32UTF8.$(OBJEXT) \
@@ -514,6 +515,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode0B10.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode1801.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpenLogReplicator.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OraProtoBuf.grpc.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OraProtoBuf.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyserRedoLog.Po@am__quote@

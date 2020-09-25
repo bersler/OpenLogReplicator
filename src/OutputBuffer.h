@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <condition_variable>
 #include <mutex>
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -29,14 +30,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
 
-#define TRANSACTION_INSERT 1
-#define TRANSACTION_DELETE 2
-#define TRANSACTION_UPDATE 3
+#define TRANSACTION_INSERT          1
+#define TRANSACTION_DELETE          2
+#define TRANSACTION_UPDATE          3
 
 #define OUTPUT_BUFFER_NEXT          0
 #define OUTPUT_BUFFER_END           (sizeof(uint8_t*))
 #define OUTPUT_BUFFER_DATA          (sizeof(uint8_t*)+sizeof(uint64_t))
 #define OUTPUT_BUFFER_LENGTH_SIZE   (sizeof(uint64_t))
+
+#define VALUE_BEFORE                0
+#define VALUE_AFTER                 1
+#define VALUE_BEFORE_SUPP           2
+#define VALUE_AFTER_SUPP            3
 
 using namespace std;
 
@@ -48,6 +54,12 @@ namespace OpenLogReplicator {
     class OracleColumn;
     class RedoLogRecord;
     class Writer;
+
+    struct ColumnValue {
+        uint16_t length[4];
+        uint8_t *data[4];
+        bool merge;
+    };
 
     class OutputBuffer {
     protected:
@@ -70,12 +82,14 @@ namespace OpenLogReplicator {
         typetime lastTime;
         typescn lastScn;
         typexid lastXid;
-        uint8_t *afterPos[MAX_NO_COLUMNS];
-        uint8_t *beforePos[MAX_NO_COLUMNS];
-        uint16_t afterLen[MAX_NO_COLUMNS];
-        uint16_t beforeLen[MAX_NO_COLUMNS];
-        uint8_t colIsSupp[MAX_NO_COLUMNS];
+        map<uint16_t, uint16_t> valuesMap;
+        ColumnValue values[MAX_NO_COLUMNS][4];
+        uint8_t *merges[MAX_NO_COLUMNS*4];
+        uint64_t valuesMax;
+        uint64_t mergesMax;
 
+        void valuesRelease();
+        void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb);
         void outputBufferShift(uint64_t bytes);
         void outputBufferBegin(void);
         void outputBufferCommit(void);
@@ -93,7 +107,6 @@ namespace OpenLogReplicator {
         virtual void columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) = 0;
         void valueBufferAppend(uint8_t value);
         void valueBufferAppendHex(typeunicode value, uint64_t length);
-        void compactUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
         void processValue(OracleColumn *column, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
         virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) = 0;
         virtual void appendHeader(bool first) = 0;

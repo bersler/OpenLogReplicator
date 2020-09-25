@@ -359,8 +359,8 @@ int main(int argc, char **argv) {
             if (formatJSON.HasMember("column")) {
                 const Value& columnFormatJSON = formatJSON["column"];
                 columnFormat = columnFormatJSON.GetUint64();
-                if (columnFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << columnFormatJSON.GetString() << ", expected one of: {0, 1}");
+                if (columnFormat > 2) {
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << columnFormatJSON.GetString() << ", expected one of: {0, 1, 2}");
                 }
             }
 
@@ -539,10 +539,9 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterKafka) << " bytes memory for (reason: kafka writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
-                const Value& hostJSON = getJSONfield(fileName, writerJSON, "host");
-                const Value& portJSON = getJSONfield(fileName, writerJSON, "port");
+                const Value& uriJSON = getJSONfield(fileName, writerJSON, "uri");
 
-                writer = new WriterService(aliasJSON.GetString(), oracleAnalyser, hostJSON.GetString(), portJSON.GetUint64());
+                writer = new WriterService(aliasJSON.GetString(), oracleAnalyser, uriJSON.GetString());
                 if (writer == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterService) << " bytes memory for (reason: service writer)");
                 }

@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_LOGFILE_LIST;
         static const char* SQL_GET_TABLE_LIST;
         static const char* SQL_GET_COLUMN_LIST;
-        static const char* SQL_GET_COLUMN_LIST_INV;
+        static const char* SQL_GET_COLUMN_LIST11;
         static const char* SQL_GET_PARTITION_LIST;
         static const char* SQL_GET_SUPPLEMNTAL_LOG_TABLE;
         static const char* SQL_GET_PARAMETER;
@@ -173,6 +173,7 @@ namespace OpenLogReplicator {
         typeactivation activation;
         uint64_t isBigEndian;
         uint64_t suppLogSize;
+        bool version12;
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);

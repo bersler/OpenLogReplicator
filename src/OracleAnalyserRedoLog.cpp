@@ -918,7 +918,7 @@ namespace OpenLogReplicator {
                         FULL(*oracleAnalyser);
                     }
 
-                    if (transaction->isBegin || (oracleAnalyser->flags & REDO_FLAGS_INCOMPLETE_TRANSACTIONS) != 0) {
+                    if (transaction->isBegin || (oracleAnalyser->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) != 0) {
                         if (transaction->shutdown) {
                             shutdownInstructed = true;
                         } else {

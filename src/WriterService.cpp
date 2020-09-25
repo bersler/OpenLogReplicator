@@ -23,10 +23,9 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    WriterService::WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *host, uint64_t port) :
+    WriterService::WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *uri) :
         Writer(alias, oracleAnalyser, 0),
-        host(host),
-        port(port) {
+        uri(uri) {
     }
 
     WriterService::~WriterService() {
@@ -36,6 +35,6 @@ namespace OpenLogReplicator {
     }
 
     string WriterService::getName() {
-        return "Service:" + host + ":" + to_string(port);
+        return "Service:" + uri;
     }
 }

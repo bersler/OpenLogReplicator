@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
         totalPk(0),
         options(options),
         maxSegCol(0),
+        guardSegNo(-1),
         owner(owner),
         name(name) {
     }
@@ -41,6 +42,7 @@ namespace OpenLogReplicator {
         for (OracleColumn *column: columns) {
             delete column;
         }
+        pk.clear();
         columns.clear();
         partitions.clear();
     }
@@ -56,8 +58,10 @@ namespace OpenLogReplicator {
             CONFIG_FAIL("invalid segColNo value (" << dec << column->segColNo << "), metadata error");
         }
 
-        while (column->segColNo > columns.size() + 1)
-            columns.push_back(nullptr);
+        if (column->guard) {
+            cerr << "guard found as: " << dec << column->segColNo << endl;
+            guardSegNo = column->segColNo - 1;
+        }
 
         columns.push_back(column);
     }
@@ -65,6 +69,15 @@ namespace OpenLogReplicator {
     void OracleObject::addPartition(typeobj partitionObjn, typeobj partitionObjd) {
         typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
         partitions.push_back(objx);
+    }
+
+    void OracleObject::updatePK(void) {
+        for (typecol i = 0; i < maxSegCol; ++i) {
+            if (columns[i] == nullptr)
+                continue;
+            if (columns[i]->numPk > 0)
+                pk.push_back(i);
+        }
     }
 
     ostream& operator<<(ostream& os, const OracleObject& object) {

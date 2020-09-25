@@ -21,8 +21,8 @@ package OpenLogReplicator.pb;
 
 option java_package="io.debezium.connector.oracle.proto";
 option java_outer_classname = "OpenLogReplicator";
-option cc_enable_arenas = true;
-option optimize_for = SPEED;
+// option cc_enable_arenas = true;
+// option optimize_for = SPEED;
 
 enum Op {
     BEGIN  = 0; //begin
@@ -66,7 +66,7 @@ enum RetCode {
     INVALID_SCN_RANGE = 2;
 }
 
-service RedoService {
+service RedoStream {
     rpc redoStream(stream Request) returns (stream Redo) {}
 }
 

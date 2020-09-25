@@ -52,110 +52,230 @@ void stopMain();
 
 namespace OpenLogReplicator {
 
-    const char* OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST("SELECT "
-            "NAME, "
-            "SEQUENCE#, "
-            "FIRST_CHANGE#, "
-            "NEXT_CHANGE# "
-            "FROM SYS.V_$ARCHIVED_LOG WHERE SEQUENCE# >= :i AND RESETLOGS_ID = :j AND ACTIVATION# = :k AND NAME IS NOT NULL ORDER BY SEQUENCE#, DEST_ID");
-    const char* OracleAnalyser::SQL_GET_DATABASE_INFORMATION("SELECT "
-            "DECODE(D.LOG_MODE, 'ARCHIVELOG', 1, 0), "
-            "DECODE(D.SUPPLEMENTAL_LOG_DATA_MIN, 'YES', 1, 0), "
-            "DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0), "
-            "DECODE(D.SUPPLEMENTAL_LOG_DATA_ALL, 'YES', 1, 0), "
-            "DECODE(TP.ENDIAN_FORMAT, 'Big', 1, 0), "
-            "D.CURRENT_SCN, "
-            "DI.RESETLOGS_ID, "
-            "D.ACTIVATION#, "
-            "VER.BANNER, "
-            "SYS_CONTEXT('USERENV','DB_NAME') "
-            "FROM SYS.V_$DATABASE D JOIN SYS.V_$TRANSPORTABLE_PLATFORM TP ON TP.PLATFORM_NAME = D.PLATFORM_NAME JOIN SYS.V_$VERSION VER ON VER.BANNER LIKE '%Oracle Database%' JOIN SYS.V_$DATABASE_INCARNATION DI ON DI.STATUS = 'CURRENT'");
-    const char* OracleAnalyser::SQL_GET_CON_INFO("SELECT "
-            " SYS_CONTEXT('USERENV','CON_ID'), "
-            "SYS_CONTEXT('USERENV','CON_NAME') "
-            "FROM DUAL");
-    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE("SELECT "
-            "SEQUENCE# "
-            "FROM SYS.V_$LOG WHERE STATUS = 'CURRENT'");
-    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE_STANDBY("SELECT "
-            "SEQUENCE# "
-            "FROM SYS.V_$STANDBY_LOG WHERE STATUS = 'ACTIVE'");
-    const char* OracleAnalyser::SQL_GET_LOGFILE_LIST("SELECT "
-            "LF.GROUP#, "
-            "LF.MEMBER "
-            "FROM SYS.V_$LOGFILE LF WHERE TYPE = :i ORDER BY LF.GROUP# ASC, LF.IS_RECOVERY_DEST_FILE DESC, LF.MEMBER ASC");
-    const char* OracleAnalyser::SQL_GET_TABLE_LIST("SELECT "
-            "T.DATAOBJ#, "
-            "T.OBJ#, "
-            "T.CLUCOLS, "
-            "U.NAME, "
-            "O.NAME, "
-            "DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1), "
-            "DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1), "  //7: IOT overflow segment,
-            "DECODE(BITAND(U.SPARE1, 1), 1, 1, 0), "
-            "DECODE(BITAND(U.SPARE1, 8), 8, 1, 0), "
-            "CASE WHEN BITAND(T.PROPERTY, 32) = 32 THEN 1 ELSE 1 END, "                 //10: partitioned
-            "DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1), "//11: temporary, secondary, in-memory temp
-            "DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0), "                            //12: nested
-            "DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0), "                           //13
-            "DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0), "                         //14
-            "CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 "
-            "WHEN (BITAND(T.PROPERTY, 17179869184) = 17179869184) THEN DECODE(BITAND(DS.FLAGS_STG, 4), 4, 1, 0) ELSE "
-            "DECODE(BITAND(S.SPARE1, 2048), 2048, 1, 0) END "                           //15: compressed
-            "FROM "
-            "SYS.TAB$ T, "
-            "SYS.OBJ$ O, "
-            "SYS.USER$ U, "
-            "SYS.SEG$ S, "
-            "SYS.DEFERRED_STG$ DS "
-            "WHERE T.OBJ# = O.OBJ# AND T.OBJ# = DS.OBJ# (+) AND T.FILE# = S.FILE# (+) AND T.BLOCK# = S.BLOCK# (+) AND "
-            "T.TS# = S.TS# (+) AND BITAND(O.flags, 128) = 0 AND O.OWNER# = U.USER# AND U.NAME || '.' || O.NAME LIKE UPPER(:i) ORDER BY 4,5");
-    const char* OracleAnalyser::SQL_GET_COLUMN_LIST("SELECT "
-            "C.COL#, "
-            "C.SEGCOL#, "
-            "C.NAME, "
-            "C.TYPE#, "
-            "C.LENGTH, "
-            "C.PRECISION#, "
-            "C.SCALE, "
-            "C.CHARSETFORM, "
-            "C.CHARSETID, "
-            "C.NULL$, "
-            "(SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), "
-            "(SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) "
-            "FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    const char* OracleAnalyser::SQL_GET_COLUMN_LIST_INV("SELECT "
-            "C.COL#, "
-            "C.SEGCOL#, "
-            "C.NAME, "
-            "C.TYPE#, "
-            "C.LENGTH, "
-            "C.PRECISION#, "
-            "C.SCALE, "
-            "C.CHARSETFORM, "
-            "C.CHARSETID, "
-            "C.NULL$, "
-            "(SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#), "
-            "(SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0) "
-            "FROM SYS.COL$ C WHERE C.SEGCOL# > 0 AND C.OBJ# = :i AND DECODE(BITAND(C.PROPERTY, 256), 0, 0, 1) = 0 AND DECODE(BITAND(C.PROPERTY, 32), 0, 0, 1) = 0 ORDER BY C.SEGCOL#");
-    const char* OracleAnalyser::SQL_GET_PARTITION_LIST("SELECT "
-            "T.OBJ#, "
-            "T.DATAOBJ# "
-            "FROM SYS.TABPART$ T where T.BO# = :1 "
-            "UNION ALL "
-            "SELECT "
-            "TSP.OBJ#, "
-            "TSP.DATAOBJ# "
-            "FROM SYS.TABSUBPART$ TSP JOIN SYS.TABCOMPART$ TCP ON TCP.OBJ# = TSP.POBJ# WHERE TCP.BO# = :1");
-    const char* OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE("SELECT "
-            "C.TYPE# "
-            "FROM SYS.CON$ OC, SYS.CDEF$ C WHERE OC.CON# = C.CON# AND (C.TYPE# = 14 OR C.TYPE# = 17) AND C.OBJ# = :i");
-    const char* OracleAnalyser::SQL_GET_PARAMETER("SELECT "
-            "VALUE "
-            "FROM SYS.V_$PARAMETER WHERE NAME = :i");
-    const char* OracleAnalyser::SQL_GET_PROPERTY("SELECT "
-            "PROPERTY_VALUE "
-            "FROM DATABASE_PROPERTIES WHERE PROPERTY_NAME = :1");
+    const char* OracleAnalyser::SQL_GET_ARCHIVE_LOG_LIST(
+            "SELECT"
+            "   NAME"
+            ",  SEQUENCE#"
+            ",  FIRST_CHANGE#"
+            "   NEXT_CHANGE#"
+            " FROM"
+            "   SYS.V_$ARCHIVED_LOG"
+            " WHERE"
+            "   SEQUENCE# >= :i"
+            "   AND RESETLOGS_ID = :j"
+            "   AND ACTIVATION# = :k"
+            "   AND NAME IS NOT NULL"
+            " ORDER BY"
+            "   SEQUENCE#"
+            ",  DEST_ID");
+    const char* OracleAnalyser::SQL_GET_DATABASE_INFORMATION(
+            "SELECT"
+            "   DECODE(D.LOG_MODE, 'ARCHIVELOG', 1, 0)"
+            ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_MIN, 'YES', 1, 0)"
+            ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0)"
+            ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_ALL, 'YES', 1, 0)"
+            ",  DECODE(TP.ENDIAN_FORMAT, 'Big', 1, 0)"
+            ",  D.CURRENT_SCN"
+            ",  DI.RESETLOGS_ID"
+            ",  D.ACTIVATION#"
+            ",  VER.BANNER"
+            ",  SYS_CONTEXT('USERENV','DB_NAME')"
+            " FROM"
+            "   SYS.V_$DATABASE D"
+            " JOIN"
+            "   SYS.V_$TRANSPORTABLE_PLATFORM TP ON"
+            "     TP.PLATFORM_NAME = D.PLATFORM_NAME"
+            " JOIN"
+            "   SYS.V_$VERSION VER ON"
+            "     VER.BANNER LIKE '%Oracle Database%'"
+            " JOIN"
+            "   SYS.V_$DATABASE_INCARNATION DI ON"
+            "     DI.STATUS = 'CURRENT'");
+    const char* OracleAnalyser::SQL_GET_CON_INFO(
+            "SELECT"
+            "   SYS_CONTEXT('USERENV','CON_ID')"
+            ",  SYS_CONTEXT('USERENV','CON_NAME')"
+            " FROM"
+            "   DUAL");
+    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE(
+            "SELECT"
+            "   SEQUENCE#"
+            " FROM"
+            "   SYS.V_$LOG"
+            " WHERE"
+            "   STATUS = 'CURRENT'");
+    const char* OracleAnalyser::SQL_GET_CURRENT_SEQUENCE_STANDBY(
+            "SELECT"
+            "   SEQUENCE#"
+            " FROM"
+            "   SYS.V_$STANDBY_LOG"
+            " WHERE"
+            "   STATUS = 'ACTIVE'");
+    const char* OracleAnalyser::SQL_GET_LOGFILE_LIST(
+            "SELECT"
+            "   LF.GROUP#"
+            ",  LF.MEMBER"
+            " FROM"
+            "   SYS.V_$LOGFILE LF"
+            " WHERE"
+            "   TYPE = :i"
+            " ORDER BY"
+            "   LF.GROUP# ASC"
+            ",  LF.IS_RECOVERY_DEST_FILE DESC"
+            ",  LF.MEMBER ASC");
+    const char* OracleAnalyser::SQL_GET_TABLE_LIST(
+            "SELECT"
+            "   T.DATAOBJ#"
+            ",  T.OBJ#"
+            ",  T.CLUCOLS"
+            ",  U.NAME"
+            ",  O.NAME"
+            ",  DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1)"
+            //7: IOT overflow segment
+            ",  DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1)"
+            ",  DECODE(BITAND(U.SPARE1, 1), 1, 1, 0)"
+            ",  DECODE(BITAND(U.SPARE1, 8), 8, 1, 0)"
+            //10: partitioned
+            ",  CASE WHEN BITAND(T.PROPERTY, 32) = 32 THEN 1 ELSE 0 END"
+            //11: temporary, secondary, in-memory temp
+            ",  DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1)"
+            //12: nested
+            ",  DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0)"
+            ",  DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0)"
+            ",  DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0)"
+            //15: compressed
+            ",  CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 WHEN (BITAND(T.PROPERTY, 17179869184) = 17179869184) THEN DECODE(BITAND(DS.FLAGS_STG, 4), 4, 1, 0) ELSE DECODE(BITAND(S.SPARE1, 2048), 2048, 1, 0) END "
+            " FROM"
+            "   SYS.OBJ$ O"
+            " JOIN"
+            "   SYS.TAB$ T ON"
+            "     T.OBJ# = O.OBJ#"
+            " JOIN"
+            "   SYS.USER$ U ON"
+            "     O.OWNER# = U.USER#"
+            " LEFT OUTER JOIN"
+            "   SYS.SEG$ S ON "
+            "     T.FILE# = S.FILE# AND T.BLOCK# = S.BLOCK# AND T.TS# = S.TS#"
+            " LEFT OUTER JOIN"
+            "   SYS.DEFERRED_STG$ DS ON"
+            "     T.OBJ# = DS.OBJ#"
+            " WHERE"
+            "   BITAND(O.flags, 128) = 0"
+            "   AND U.NAME || '.' || O.NAME LIKE UPPER(:i)"
+            " ORDER BY"
+            "   4,5");
+    const char* OracleAnalyser::SQL_GET_COLUMN_LIST(
+            "SELECT"
+            "   C.COL#"
+            ",  C.SEGCOL#"
+            ",  C.NAME"
+            ",  C.TYPE#"
+            ",  C.LENGTH"
+            ",  C.PRECISION#"
+            ",  C.SCALE"
+            ",  C.CHARSETFORM"
+            ",  C.CHARSETID"
+            ",  C.NULL$"
+            //11: invisible
+            ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
+            //12: constraint
+            ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
+            //13: added column
+            ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
+            //14: guard column
+            ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
+            ",  E.GUARD_ID"
+            //16: number of primary key constraints
+            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
+            //17: number of supplementary columns
+            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
+            " FROM"
+            "   SYS.COL$ C"
+            " LEFT OUTER JOIN"
+            "   SYS.ECOL$ E ON"
+            "     E.TABOBJ# = C.OBJ#"
+            "     AND E.COLNUM = C.SEGCOL#"
+            " WHERE"
+            "   C.SEGCOL# > 0"
+            "   AND C.OBJ# = :i"
+            " ORDER BY"
+            "   2");
+    const char* OracleAnalyser::SQL_GET_COLUMN_LIST11(
+            "SELECT"
+            "   C.COL#"
+            ",  C.SEGCOL#"
+            ",  C.NAME"
+            ",  C.TYPE#"
+            ",  C.LENGTH"
+            ",  C.PRECISION#"
+            ",  C.SCALE"
+            ",  C.CHARSETFORM"
+            ",  C.CHARSETID"
+            ",  C.NULL$"
+            //11: invisible
+            ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
+            //12: constraint
+            ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
+            //13: added column
+            ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
+            //14: guard column
+            ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
+            ",  (SELECT COUNT(*) FROM SYS.COL$ C2 WHERE C2.SEGCOL# > 0 AND C2.SEGCOL# < C.SEGCOL# AND C2.OBJ# = C.OBJ# AND DECODE(BITAND(C2.PROPERTY, 1073741824), 1073741824, 1, 0) = 1)"
+            //16: number of primary key constraints
+            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
+            //17: number of supplementary columns
+            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
+            " FROM"
+            "   SYS.COL$ C"
+            " WHERE"
+            "   C.SEGCOL# > 0"
+            "   AND C.OBJ# = :i"
+            " ORDER BY"
+            "   2");
+    const char* OracleAnalyser::SQL_GET_PARTITION_LIST(
+            "SELECT"
+            "   T.OBJ#"
+            ",  T.DATAOBJ#"
+            " FROM"
+            "   SYS.TABPART$ T"
+            " WHERE"
+            "   T.BO# = :1"
+            " UNION ALL"
+            " SELECT"
+            "   TSP.OBJ#"
+            ",  TSP.DATAOBJ#"
+            " FROM"
+            "   SYS.TABSUBPART$ TSP"
+            " JOIN"
+            "   SYS.TABCOMPART$ TCP ON"
+            "     TCP.OBJ# = TSP.POBJ#"
+            " WHERE"
+            "   TCP.BO# = :1");
+    const char* OracleAnalyser::SQL_GET_SUPPLEMNTAL_LOG_TABLE(
+            "SELECT"
+            "   C.TYPE#"
+            " FROM"
+            "   SYS.CON$ OC"
+            " JOIN"
+            "   SYS.CDEF$ C ON"
+            "     OC.CON# = C.CON#"
+            " WHERE"
+            "   C.OBJ# = :i"
+            "   AND (C.TYPE# = 14 OR C.TYPE# = 17)");
+    const char* OracleAnalyser::SQL_GET_PARAMETER(
+            "SELECT"
+            "   VALUE"
+            " FROM"
+            "   SYS.V_$PARAMETER"
+            " WHERE"
+            "   NAME = :i");
+    const char* OracleAnalyser::SQL_GET_PROPERTY(
+            "SELECT"
+            "   PROPERTY_VALUE"
+            " FROM"
+            "   DATABASE_PROPERTIES"
+            " WHERE"
+            "   PROPERTY_NAME = :1");
 
     OracleAnalyser::OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
             const char *connectString, const char *userASM, const char *passwordASM, const char *connectStringASM, uint64_t arch, uint64_t trace,
@@ -213,6 +333,7 @@ namespace OpenLogReplicator {
         activation(0),
         isBigEndian(false),
         suppLogSize(0),
+        version12(false),
         read16(read16Little),
         read32(read32Little),
         read56(read56Little),
@@ -1035,6 +1156,7 @@ namespace OpenLogReplicator {
             //12+
             conId = 0;
             if (memcmp(bannerStr, "Oracle Database 11g", 19) != 0) {
+                version12 = true;
                 DatabaseStatement stmt2(conn);
                 TRACE_(TRACE2_SQL, SQL_GET_CON_INFO);
                 stmt2.createStatement(SQL_GET_CON_INFO);
@@ -1055,6 +1177,9 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.COL$");
             checkTableForGrants("SYS.CON$");
             checkTableForGrants("SYS.DEFERRED_STG$");
+            checkTableForGrants("SYS.ECOL$");
+            checkTableForGrants("SYS.ICOL$");
+            checkTableForGrants("SYS.IND$");
             checkTableForGrants("SYS.OBJ$");
             checkTableForGrants("SYS.SEG$");
             checkTableForGrants("SYS.TAB$");
@@ -1266,7 +1391,7 @@ namespace OpenLogReplicator {
             uint64_t options = optionsJSON.GetInt64();
 
             const Value& maxSegColJSON = getJSONfield(fileName, schema[i], "max-seg-col");
-            uint64_t maxSegCol = maxSegColJSON.GetInt64();
+            typecol maxSegCol = maxSegColJSON.GetInt64();
 
             const Value& ownerJSON = getJSONfield(fileName, schema[i], "owner");
             const char *owner = ownerJSON.GetString();
@@ -1285,10 +1410,13 @@ namespace OpenLogReplicator {
 
             for (SizeType j = 0; j < columns.Size(); ++j) {
                 const Value& colNoJSON = getJSONfield(fileName, columns[j], "col-no");
-                uint64_t colNo = colNoJSON.GetUint64();
+                typecol colNo = colNoJSON.GetInt64();
+
+                const Value& guardSegNoJSON = getJSONfield(fileName, columns[j], "guard-seg-no");
+                typecol guardSegNo = guardSegNoJSON.GetInt64();
 
                 const Value& segColNoJSON = getJSONfield(fileName, columns[j], "seg-col-no");
-                uint64_t segColNo = segColNoJSON.GetUint64();
+                typecol segColNo = segColNoJSON.GetInt64();
                 if (segColNo > 1000) {
                     CONFIG_FAIL("bad JSON in <database>-schema.json, invalid seg-col-no value");
                 }
@@ -1317,10 +1445,24 @@ namespace OpenLogReplicator {
                 const Value& nullableJSON = getJSONfield(fileName, columns[j], "nullable");
                 bool nullable = nullableJSON.GetUint64();
 
-                OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId, nullable);
+                const Value& invisibleJSON = getJSONfield(fileName, columns[j], "invisible");
+                bool invisible = invisibleJSON.GetUint64();
 
-                while (segColNo > object->columns.size() + 1)
-                    object->columns.push_back(nullptr);
+                const Value& constraintJSON = getJSONfield(fileName, columns[j], "constraint");
+                bool constraint = constraintJSON.GetUint64();
+
+                const Value& addedJSON = getJSONfield(fileName, columns[j], "added");
+                bool added = addedJSON.GetUint64();
+
+                const Value& guardJSON = getJSONfield(fileName, columns[j], "guard");
+                bool guard = guardJSON.GetUint64();
+
+                OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
+                        nullable, invisible, constraint, added, guard);
+
+                cerr << "guard found as: " << dec << column->segColNo << endl;
+                if (column->guard)
+                    object->guardSegNo = column->segColNo - 1;
 
                 object->columns.push_back(column);
             }
@@ -1343,6 +1485,7 @@ namespace OpenLogReplicator {
                 }
             }
 
+            object->updatePK();
             addToDict(object);
             object = nullptr;
         }
@@ -1437,6 +1580,7 @@ namespace OpenLogReplicator {
                 if (i > 0)
                     ss << ",";
                 ss << "{\"col-no\":" << dec << objectTmp->columns[i]->colNo << "," <<
+                        "\"guard-seg-no\":" << dec << objectTmp->columns[i]->guardSegNo << "," <<
                         "\"seg-col-no\":" << dec << objectTmp->columns[i]->segColNo << "," <<
                         "\"name\":\"" << objectTmp->columns[i]->name << "\"," <<
                         "\"type-no\":" << dec << objectTmp->columns[i]->typeNo << "," <<
@@ -1445,7 +1589,11 @@ namespace OpenLogReplicator {
                         "\"scale\":" << dec << objectTmp->columns[i]->scale << "," <<
                         "\"num-pk\":" << dec << objectTmp->columns[i]->numPk << "," <<
                         "\"charset-id\":" << dec << objectTmp->columns[i]->charsetId << "," <<
-                        "\"nullable\":" << dec << objectTmp->columns[i]->nullable << "}";
+                        "\"nullable\":" << dec << objectTmp->columns[i]->nullable << "," <<
+                        "\"invisible\":" << dec << objectTmp->columns[i]->invisible << "," <<
+                        "\"constraint\":" << dec << objectTmp->columns[i]->constraint << "," <<
+                        "\"added\":" << dec << objectTmp->columns[i]->added << "," <<
+                        "\"guard\":" << dec << objectTmp->columns[i]->guard << "}";
             }
             ss << "]";
 
@@ -1483,8 +1631,12 @@ namespace OpenLogReplicator {
             modeStr = "batch";
 
         TRACE_(TRACE2_THREADS, "ANALYSER (" << hex << this_thread::get_id() << ") START");
+        string flagsStr("");
+        if (flags) {
+            flagsStr = " (flags: " + to_string(flags) + ")";
+        }
 
-        INFO_("Oracle Analyser for " << database << " in " << modeStr << " mode is starting");
+        INFO_("Oracle Analyser for " << database << " in " << modeStr << " mode is starting" << flagsStr);
         if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY)
             checkConnection();
 
@@ -1751,8 +1903,10 @@ namespace OpenLogReplicator {
     }
 
     OracleObject *OracleAnalyser::checkDict(typeobj objn, typeobj objd) {
-        OracleObject *objectTmp = partitionMap[objn];
-        return objectTmp;
+        auto it = partitionMap.find(objn);
+        if (it == partitionMap.end())
+            return nullptr;
+        return (*it).second;
     }
 
     bool OracleAnalyser::readerCheckRedoLog(Reader *reader) {
@@ -1945,15 +2099,15 @@ namespace OpenLogReplicator {
         uint64_t dependencies; stmt.defineUInt64(14, dependencies);
         uint64_t compressed; stmt.defineUInt64(15, compressed);
 
-        if ((flags & REDO_FLAGS_HIDE_INVISIBLE_COLUMNS) != 0) {
-            TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST_INV << endl << "PARAM1: " << dec << objn);
-            stmtCol.createStatement(SQL_GET_COLUMN_LIST_INV);
-        } else {
+        if (version12) {
             TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST << endl << "PARAM1: " << dec << objn);
             stmtCol.createStatement(SQL_GET_COLUMN_LIST);
+        } else {
+            TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST11 << endl << "PARAM1: " << dec << objn);
+            stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
         }
-        uint64_t colNo; stmtCol.defineUInt64(1, colNo);
-        uint64_t segColNo; stmtCol.defineUInt64(2, segColNo);
+        typecol colNo; stmtCol.defineInt64(1, colNo);
+        typecol segColNo; stmtCol.defineInt64(2, segColNo);
         char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
         uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
         uint64_t length; stmtCol.defineUInt64(5, length);
@@ -1962,8 +2116,13 @@ namespace OpenLogReplicator {
         uint64_t charsetForm; stmtCol.defineUInt64(8, charsetForm);
         uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
         int64_t nullable; stmtCol.defineInt64(10, nullable);
-        uint64_t numPk; stmtCol.defineUInt64(11, numPk);
-        uint64_t numSup; stmtCol.defineUInt64(12, numSup);
+        int64_t invisible; stmtCol.defineInt64(11, invisible);
+        int64_t constraint; stmtCol.defineInt64(12, constraint);
+        int64_t added; stmtCol.defineInt64(13, added);
+        int64_t guard; stmtCol.defineInt64(14, guard);
+        typecol guardSegNo; stmtCol.defineInt64(15, guardSegNo);
+        uint64_t numPk; stmtCol.defineUInt64(16, numPk);
+        uint64_t numSup; stmtCol.defineUInt64(17, numSup);
         stmtCol.bindUInt32(1, objn);
 
         TRACE_(TRACE2_SQL, SQL_GET_PARTITION_LIST << endl << "PARAM1: " << dec << objn << endl << "PARAM2: " << dec << objn);
@@ -1979,12 +2138,16 @@ namespace OpenLogReplicator {
         stmtSupp.bindUInt32(1, objn);
 
         stmt.bindString(1, mask);
+        cluCols = 0;
+        objd = 0;
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
                 INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - IOT");
+                cluCols = 0;
+                objd = 0;
                 ret = stmt.next();
                 continue;
             }
@@ -1992,6 +2155,8 @@ namespace OpenLogReplicator {
             //skip temporary tables
             if (temporary) {
                 INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - temporary table");
+                cluCols = 0;
+                objd = 0;
                 ret = stmt.next();
                 continue;
             }
@@ -1999,6 +2164,8 @@ namespace OpenLogReplicator {
             //skip nested tables
             if (nested) {
                 INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - nested table");
+                cluCols = 0;
+                objd = 0;
                 ret = stmt.next();
                 continue;
             }
@@ -2006,24 +2173,23 @@ namespace OpenLogReplicator {
             //skip compressed tables
             if (compressed) {
                 INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - compressed table");
+                objd = 0;
+                cluCols = 0;
                 ret = stmt.next();
                 continue;
             }
 
-            if (stmt.isNull(1))
-                objd = 0;
-
             //table already added with another rule
             if (checkDict(objn, objd) != nullptr) {
                 INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - already added");
+                objd = 0;
+                cluCols = 0;
                 ret = stmt.next();
                 continue;
             }
 
             uint64_t totalPk = 0, maxSegCol = 0, keysCnt = 0;
             bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
-            if (stmt.isNull(3))
-                cluCols = 0;
 
             object = new OracleObject(objn, objd, cluCols, options, owner, name);
             if (object == nullptr) {
@@ -2050,14 +2216,12 @@ namespace OpenLogReplicator {
                 }
             }
 
+            precision = -1;
+            scale = -1;
+            guardSegNo = -1;
             int64_t ret2 = stmtCol.executeQuery();
 
             while (ret2) {
-                if (stmtCol.isNull(6))
-                    precision = -1;
-                if (stmtCol.isNull(7))
-                    scale = -1;
-
                 if (charsetForm == 1)
                     charmapId = outputBuffer->defaultCharacterMapId;
                 else if (charsetForm == 2)
@@ -2065,7 +2229,8 @@ namespace OpenLogReplicator {
 
                 //check character set for char and varchar2
                 if (typeNo == 1 || typeNo == 96) {
-                    if (outputBuffer->characterMap[charmapId] == nullptr) {
+                    auto it = outputBuffer->characterMap.find(charmapId);
+                    if (it == outputBuffer->characterMap.end()) {
                         RUNTIME_FAIL("table " << owner << "." << name << " - unsupported character set id: " << dec << charmapId <<
                                 " for column: " << columnName << endl <<
                                 "HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
@@ -2092,9 +2257,10 @@ namespace OpenLogReplicator {
                         supLogColMissing = true;
                 }
 
-                FULL_("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ")");
+                FULL_("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", G: " << dec << guardSegNo << ")");
 
-                OracleColumn *column = new OracleColumn(colNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charmapId, nullable);
+                OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
+                        charmapId, nullable, invisible, constraint, added, guard);
                 if (column == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleColumn) << " bytes memory for (column creation)");
                 }
@@ -2104,6 +2270,10 @@ namespace OpenLogReplicator {
                     maxSegCol = segColNo;
 
                 object->addColumn(column);
+
+                precision = -1;
+                scale = -1;
+                guardSegNo = -1;
                 ret2 = stmtCol.next();
             }
 
@@ -2142,9 +2312,12 @@ namespace OpenLogReplicator {
 
             object->maxSegCol = maxSegCol;
             object->totalPk = totalPk;
+            object->updatePK();
             addToDict(object);
             object = nullptr;
 
+            objd = 0;
+            cluCols = 0;
             ret = stmt.next();
         }
         INFO_("  * total: " << dec << tabCnt << " tables");

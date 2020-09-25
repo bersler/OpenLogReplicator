@@ -397,14 +397,19 @@ namespace OpenLogReplicator {
 
         appendRowid(object->objn, object->objd, bdba, slot);
 
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (afterPos[i] != nullptr && afterLen[i] > 0) {
+            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
                 payloadPB->add_after();
                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
                 payloadPB->add_after();
@@ -430,8 +435,6 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
 #ifdef LINK_LIBRARY_PROTOBUF
-        compactUpdate(object, bdba, slot, xid);
-
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoPB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message missing, internal error");
@@ -454,32 +457,42 @@ namespace OpenLogReplicator {
 
         appendRowid(object->objn, object->objd, bdba, slot);
 
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (beforePos[i] != nullptr && beforeLen[i] > 0) {
+            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
                 payloadPB->add_before();
                 valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
-                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
-            if (afterPos[i] != nullptr || beforePos[i] > 0) {
+            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] > 0) {
                 payloadPB->add_before();
                 valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
                 columnNull(object->columns[i]);
             }
         }
 
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            if (afterPos[i] != nullptr && afterLen[i] > 0) {
+            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
                 payloadPB->add_after();
                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                processValue(object->columns[i], afterPos[i], afterLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
-            if (afterPos[i] > 0 || beforePos[i] > 0) {
+            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
                 payloadPB->add_after();
                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                 columnNull(object->columns[i]);
@@ -525,15 +538,19 @@ namespace OpenLogReplicator {
 
         appendRowid(object->objn, object->objd, bdba, slot);
 
-        for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-            if (object->columns[i] == nullptr)
+        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+            uint16_t i = (*it).first;
+            uint16_t pos = (*it).second;
+
+            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                continue;
+            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
-            //value present before
-            if (beforePos[i] != nullptr && beforeLen[i] > 0) {
+            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
                 payloadPB->add_before();
                 valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
-                processValue(object->columns[i], beforePos[i], beforeLen[i], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
                 payloadPB->add_before();

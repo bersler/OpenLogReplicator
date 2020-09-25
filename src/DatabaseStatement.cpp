@@ -249,9 +249,9 @@ namespace OpenLogReplicator {
 #ifdef LINK_LIBRARY_OCI
         OCIParam *paramdp;
         conn->env->checkErr(conn->errhp, OCIParamGet(stmthp, OCI_HTYPE_STMT, conn->errhp, (void **)&paramdp, col));
-        uint32_t fieldLength;
+        uint32_t fieldLength = 0;
         conn->env->checkErr(conn->errhp, OCIAttrGet(paramdp, OCI_DTYPE_PARAM, (dvoid *)&fieldLength, nullptr, OCI_ATTR_DATA_SIZE, conn->errhp));
-        return (fieldLength > 0);
+        return (fieldLength == 0);
 #endif /* LINK_LIBRARY_OCI */
     }
 }
