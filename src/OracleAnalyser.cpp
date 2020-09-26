@@ -178,16 +178,18 @@ namespace OpenLogReplicator {
             ",  C.NULL$"
             //11: invisible
             ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
-            //12: constraint
+            //12: stored as lob
+            ",  DECODE(BITAND(C.PROPERTY, 128), 128, 1, 0)"
+            //13: constraint
             ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
-            //13: added column
+            //14: added column
             ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
-            //14: guard column
+            //15: guard column
             ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
             ",  E.GUARD_ID"
-            //16: number of primary key constraints
+            //17: number of primary key constraints
             ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
-            //17: number of supplementary columns
+            //18: number of supplementary columns
             ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
             " FROM"
             "   SYS.COL$ C"
@@ -214,16 +216,18 @@ namespace OpenLogReplicator {
             ",  C.NULL$"
             //11: invisible
             ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
-            //12: constraint
+            //12: stored as lob
+            ",  DECODE(BITAND(C.PROPERTY, 128), 128, 1, 0)"
+            //13: constraint
             ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
-            //13: added column
+            //14: added column
             ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
-            //14: guard column
+            //15: guard column
             ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
             ",  (SELECT COUNT(*) FROM SYS.COL$ C2 WHERE C2.SEGCOL# > 0 AND C2.SEGCOL# < C.SEGCOL# AND C2.OBJ# = C.OBJ# AND DECODE(BITAND(C2.PROPERTY, 1073741824), 1073741824, 1, 0) = 1)"
-            //16: number of primary key constraints
+            //17: number of primary key constraints
             ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
-            //17: number of supplementary columns
+            //18: number of supplementary columns
             ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
             " FROM"
             "   SYS.COL$ C"
@@ -1448,6 +1452,9 @@ namespace OpenLogReplicator {
                 const Value& invisibleJSON = getJSONfield(fileName, columns[j], "invisible");
                 bool invisible = invisibleJSON.GetUint64();
 
+                const Value& storedAsLobJSON = getJSONfield(fileName, columns[j], "stored-as-lob");
+                bool storedAsLob = storedAsLobJSON.GetUint64();
+
                 const Value& constraintJSON = getJSONfield(fileName, columns[j], "constraint");
                 bool constraint = constraintJSON.GetUint64();
 
@@ -1458,7 +1465,7 @@ namespace OpenLogReplicator {
                 bool guard = guardJSON.GetUint64();
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
-                        nullable, invisible, constraint, added, guard);
+                        nullable, invisible, storedAsLob, constraint, added, guard);
 
                 cerr << "guard found as: " << dec << column->segColNo << endl;
                 if (column->guard)
@@ -1591,6 +1598,7 @@ namespace OpenLogReplicator {
                         "\"charset-id\":" << dec << objectTmp->columns[i]->charsetId << "," <<
                         "\"nullable\":" << dec << objectTmp->columns[i]->nullable << "," <<
                         "\"invisible\":" << dec << objectTmp->columns[i]->invisible << "," <<
+                        "\"stored-as-lob\":" << dec << objectTmp->columns[i]->storedAsLob << "," <<
                         "\"constraint\":" << dec << objectTmp->columns[i]->constraint << "," <<
                         "\"added\":" << dec << objectTmp->columns[i]->added << "," <<
                         "\"guard\":" << dec << objectTmp->columns[i]->guard << "}";
@@ -2117,12 +2125,13 @@ namespace OpenLogReplicator {
         uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
         int64_t nullable; stmtCol.defineInt64(10, nullable);
         int64_t invisible; stmtCol.defineInt64(11, invisible);
-        int64_t constraint; stmtCol.defineInt64(12, constraint);
-        int64_t added; stmtCol.defineInt64(13, added);
-        int64_t guard; stmtCol.defineInt64(14, guard);
-        typecol guardSegNo; stmtCol.defineInt64(15, guardSegNo);
-        uint64_t numPk; stmtCol.defineUInt64(16, numPk);
-        uint64_t numSup; stmtCol.defineUInt64(17, numSup);
+        int64_t storedAsLob; stmtCol.defineInt64(12, storedAsLob);
+        int64_t constraint; stmtCol.defineInt64(13, constraint);
+        int64_t added; stmtCol.defineInt64(14, added);
+        int64_t guard; stmtCol.defineInt64(15, guard);
+        typecol guardSegNo; stmtCol.defineInt64(16, guardSegNo);
+        uint64_t numPk; stmtCol.defineUInt64(17, numPk);
+        uint64_t numSup; stmtCol.defineUInt64(18, numSup);
         stmtCol.bindUInt32(1, objn);
 
         TRACE_(TRACE2_SQL, SQL_GET_PARTITION_LIST << endl << "PARAM1: " << dec << objn << endl << "PARAM2: " << dec << objn);
@@ -2260,7 +2269,7 @@ namespace OpenLogReplicator {
                 FULL_("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", G: " << dec << guardSegNo << ")");
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
-                        charmapId, nullable, invisible, constraint, added, guard);
+                        charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
                 if (column == nullptr) {
                     RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleColumn) << " bytes memory for (column creation)");
                 }

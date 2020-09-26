@@ -996,6 +996,15 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("ERROR, trying to output null data for column: " << column->name);
         }
 
+        if (column->storedAsLob) {
+            //varchar2 stored as clob
+            if (typeNo == 1)
+                typeNo = 112;
+            //raw stored as blob
+            else if (typeNo == 23)
+                typeNo = 113;
+        }
+
         switch(typeNo) {
         case 1: //varchar2/nvarchar2
         case 96: //char/nchar

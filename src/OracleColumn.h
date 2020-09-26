@@ -42,12 +42,13 @@ namespace OpenLogReplicator {
         uint64_t charsetId;
         bool nullable;
         bool invisible;
+        bool storedAsLob;
         bool constraint;
         bool added;
         bool guard;
 
         OracleColumn(typecol colNo, typecol guardSegNo, typecol segColNo, const char *name, uint64_t typeNo, uint64_t length, int64_t precision,
-                int64_t scale, uint64_t numPk, uint64_t charsetId, bool nullable, bool invisible, bool constraint,
+                int64_t scale, uint64_t numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint,
                 bool added, bool guard);
         virtual ~OracleColumn();
 

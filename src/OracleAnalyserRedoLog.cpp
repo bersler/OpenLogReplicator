@@ -87,7 +87,6 @@ namespace OpenLogReplicator {
         }
     }
 
-
     void OracleAnalyserRedoLog::printHeaderInfo(void) {
 
         if (oracleAnalyser->dumpRedoLog >= 1) {
