@@ -1467,7 +1467,6 @@ namespace OpenLogReplicator {
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
                         nullable, invisible, storedAsLob, constraint, added, guard);
 
-                cerr << "guard found as: " << dec << column->segColNo << endl;
                 if (column->guard)
                     object->guardSegNo = column->segColNo - 1;
 

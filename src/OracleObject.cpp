@@ -58,10 +58,8 @@ namespace OpenLogReplicator {
             CONFIG_FAIL("invalid segColNo value (" << dec << column->segColNo << "), metadata error");
         }
 
-        if (column->guard) {
-            cerr << "guard found as: " << dec << column->segColNo << endl;
+        if (column->guard)
             guardSegNo = column->segColNo - 1;
-        }
 
         columns.push_back(column);
     }
