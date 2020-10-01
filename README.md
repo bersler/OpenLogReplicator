@@ -36,3 +36,5 @@ The currently available chapters are:
 5. FAQ: https://www.bersler.com/openlogreplicator/faq/
 6. Support: https://www.bersler.com/openlogreplicator/support/
 7. Contribution: https://www.bersler.com/openlogreplicator/contribution/
+
+I have also opened a gitter chat at https://gitter.im/bersler/OpenLogReplicator
