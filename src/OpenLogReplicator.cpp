@@ -24,6 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/file.h>
+#include <sys/stat.h>
 #include <rapidjson/document.h>
 #include <WriterService.h>
 
@@ -89,27 +91,50 @@ int main(int argc, char **argv) {
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
     cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+
     list<OracleAnalyser *> analysers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
     OracleAnalyser *oracleAnalyser = nullptr;
     Writer *writer = nullptr;
+    int fid = -1;
+    char *configFileBuffer = nullptr;
 
     try {
-        string fileName = "OpenLogReplicator.json";
-        ifstream config(fileName, ios::in);
-        if (!config.is_open()) {
-            CONFIG_FAIL("file OpenLogReplicator.json is missing");
+        struct stat fileStat;
+        string configFileName = "OpenLogReplicator.json";
+        fid = open(configFileName.c_str(), O_RDONLY);
+        if (fid == -1) {
+            CONFIG_FAIL("can't open file " << configFileName);
         }
 
-        string configJSON((istreambuf_iterator<char>(config)), istreambuf_iterator<char>());
-        Document document;
+        if (flock(fid, LOCK_EX | LOCK_NB)) {
+            CONFIG_FAIL("can't lock file " << configFileName << ", another process may be running");
+        }
 
-        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError()) {
+        int ret = stat(configFileName.c_str(), &fileStat);
+        if (ret != 0) {
+            CONFIG_FAIL("can't check file size of " << configFileName);
+        }
+        if (fileStat.st_size == 0) {
+            CONFIG_FAIL("file " << configFileName << " is empty");
+        }
+
+        configFileBuffer = new char[fileStat.st_size + 1];
+        if (configFileBuffer == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << (fileStat.st_size + 1) << " bytes memory (for: reading " << configFileName << ")");
+        }
+        if (read(fid, configFileBuffer, fileStat.st_size) != fileStat.st_size) {
+            CONFIG_FAIL("can't read file " << configFileName);
+        }
+        configFileBuffer[fileStat.st_size] = 0;
+
+        Document document;
+        if (document.Parse(configFileBuffer).HasParseError()) {
             CONFIG_FAIL("parsing OpenLogReplicator.json");
         }
 
-        const Value& versionJSON = getJSONfield(fileName, document, "version");
+        const Value& versionJSON = getJSONfield(configFileName, document, "version");
         if (strcmp(versionJSON.GetString(), PACKAGE_VERSION) != 0) {
             CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PACKAGE_VERSION << ", got: " << versionJSON.GetString());
         }
@@ -143,14 +168,14 @@ int main(int argc, char **argv) {
         }
 
         //iterate through sources
-        const Value& sourcesJSON = getJSONfield(fileName, document, "sources");
+        const Value& sourcesJSON = getJSONfield(configFileName, document, "sources");
         if (!sourcesJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, \"sources\" should be an array");
         }
 
         for (SizeType i = 0; i < sourcesJSON.Size(); ++i) {
             const Value& sourceJSON = sourcesJSON[i];
-            const Value& aliasJSON = getJSONfield(fileName, sourceJSON, "alias");
+            const Value& aliasJSON = getJSONfield(configFileName, sourceJSON, "alias");
             cerr << "Adding source: " << aliasJSON.GetString() << endl;
 
             //optional
@@ -204,8 +229,8 @@ int main(int argc, char **argv) {
             }
 
             uint64_t arch = ARCH_LOG_PATH;
-            const Value& readerJSON = getJSONfield(fileName, sourceJSON, "reader");
-            const Value& readerTypeJSON = getJSONfield(fileName, readerJSON, "type");
+            const Value& readerJSON = getJSONfield(configFileName, sourceJSON, "reader");
+            const Value& readerTypeJSON = getJSONfield(configFileName, readerJSON, "type");
             uint64_t readerType = READER_ONLINE;
             if (strcmp(readerTypeJSON.GetString(), "online") == 0)
                 readerType = READER_ONLINE;
@@ -260,28 +285,28 @@ int main(int argc, char **argv) {
                 disableChecks = disableChecksJSON.GetUint64();
             }
 
-            const Value& nameJSON = getJSONfield(fileName, sourceJSON, "name");
+            const Value& nameJSON = getJSONfield(configFileName, sourceJSON, "name");
 
             const char *user = "", *password = "", *server = "", *userASM = "", *passwordASM = "", *serverASM = "";
             if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY) {
-                const Value& userJSON = getJSONfield(fileName, readerJSON, "user");
+                const Value& userJSON = getJSONfield(configFileName, readerJSON, "user");
                 user = userJSON.GetString();
-                const Value& passwordJSON = getJSONfield(fileName, readerJSON, "password");
+                const Value& passwordJSON = getJSONfield(configFileName, readerJSON, "password");
                 password = passwordJSON.GetString();
-                const Value& serverJSON = getJSONfield(fileName, readerJSON, "server");
+                const Value& serverJSON = getJSONfield(configFileName, readerJSON, "server");
                 server = serverJSON.GetString();
             }
             if (readerType == READER_ASM) {
-                const Value& userASMJSON = getJSONfield(fileName, readerJSON, "user-asm");
+                const Value& userASMJSON = getJSONfield(configFileName, readerJSON, "user-asm");
                 userASM = userASMJSON.GetString();
-                const Value& passwordASMJSON = getJSONfield(fileName, readerJSON, "password-asm");
+                const Value& passwordASMJSON = getJSONfield(configFileName, readerJSON, "password-asm");
                 passwordASM = passwordASMJSON.GetString();
-                const Value& serverASMJSON = getJSONfield(fileName, readerJSON, "server-asm");
+                const Value& serverASMJSON = getJSONfield(configFileName, readerJSON, "server-asm");
                 serverASM = serverASMJSON.GetString();
             }
 
             //format
-            const Value& formatJSON = getJSONfield(fileName, sourceJSON, "format");
+            const Value& formatJSON = getJSONfield(configFileName, sourceJSON, "format");
 
 
             //optional
@@ -364,7 +389,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            const Value& formatTypeJSON = getJSONfield(fileName, formatJSON, "type");
+            const Value& formatTypeJSON = getJSONfield(configFileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
@@ -376,7 +401,7 @@ int main(int argc, char **argv) {
             }
 
             if (outputBuffer == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << sizeof(OutputBuffer) << " bytes memory for (reason: command buffer)");
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OutputBuffer) << " bytes memory (for: command buffer)");
             }
             buffers.push_back(outputBuffer);
 
@@ -384,7 +409,7 @@ int main(int argc, char **argv) {
                     passwordASM, serverASM, arch, trace, trace2, dumpRedoLog, dumpRawData, flags, readerType, disableChecks, redoReadSleep,
                     archReadSleep, checkpointInterval, memoryMinMb, memoryMaxMb);
             if (oracleAnalyser == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyser) << " bytes memory for (reason: oracle analyser)");
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyser) << " bytes memory (for: oracle analyser)");
             }
 
             //optional
@@ -438,13 +463,13 @@ int main(int argc, char **argv) {
                     oracleAnalyser->addTable(eventtableJSON.GetString(), keys, keysStr, 1);
                 }
 
-                const Value& tablesJSON = getJSONfield(fileName, sourceJSON, "tables");
+                const Value& tablesJSON = getJSONfield(configFileName, sourceJSON, "tables");
                 if (!tablesJSON.IsArray()) {
                     CONFIG_FAIL("bad JSON, field \"tables\" should be array");
                 }
 
                 for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
-                    const Value& tableJSON = getJSONfield(fileName, tablesJSON[j], "table");
+                    const Value& tableJSON = getJSONfield(configFileName, tablesJSON[j], "table");
 
                     if (tablesJSON[j].HasMember("key")) {
                         const Value& key = tablesJSON[j]["key"];
@@ -476,27 +501,27 @@ int main(int argc, char **argv) {
         }
 
         //iterate through targets
-        const Value& targetsJSON = getJSONfield(fileName, document, "targets");
+        const Value& targetsJSON = getJSONfield(configFileName, document, "targets");
         if (!targetsJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, field \"targets\" should be array");
         }
         for (SizeType i = 0; i < targetsJSON.Size(); ++i) {
             const Value& targetJSON = targetsJSON[i];
-            const Value& aliasJSON = getJSONfield(fileName, targetJSON, "alias");
+            const Value& aliasJSON = getJSONfield(configFileName, targetJSON, "alias");
             cerr << "Adding target: " << aliasJSON.GetString() << endl;
 
-            const Value& sourceJSON = getJSONfield(fileName, targetJSON, "source");
+            const Value& sourceJSON = getJSONfield(configFileName, targetJSON, "source");
             OracleAnalyser *oracleAnalyser = nullptr;
             for (OracleAnalyser *analyser : analysers)
                 if (analyser->alias.compare(sourceJSON.GetString()) == 0)
                     oracleAnalyser = (OracleAnalyser*)analyser;
             if (oracleAnalyser == nullptr) {
-                CONFIG_FAIL("bad JSON, could not find reader for \"source\" value: " << sourceJSON.GetString());
+                CONFIG_FAIL("bad JSON, couldn't find reader for \"source\" value: " << sourceJSON.GetString());
             }
 
             //writer
-            const Value& writerJSON = getJSONfield(fileName, targetJSON, "writer");
-            const Value& writerTypeJSON = getJSONfield(fileName, writerJSON, "type");
+            const Value& writerJSON = getJSONfield(configFileName, targetJSON, "writer");
+            const Value& writerTypeJSON = getJSONfield(configFileName, writerJSON, "type");
 
             if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
                 const char *name = "";
@@ -507,7 +532,7 @@ int main(int argc, char **argv) {
 
                 writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, name);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterFile) << " bytes memory for (reason: file writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
                 uint64_t maxMessageMb = 100;
@@ -530,20 +555,20 @@ int main(int argc, char **argv) {
                         maxMessages = MAX_KAFKA_MAX_MESSAGES;
                 }
 
-                const Value& brokersJSON = getJSONfield(fileName, writerJSON, "brokers");
-                const Value& topicJSON = getJSONfield(fileName, writerJSON, "topic");
+                const Value& brokersJSON = getJSONfield(configFileName, writerJSON, "brokers");
+                const Value& topicJSON = getJSONfield(configFileName, writerJSON, "topic");
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, brokersJSON.GetString(),
                         topicJSON.GetString(), maxMessageMb, maxMessages);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterKafka) << " bytes memory for (reason: kafka writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: kafka writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
-                const Value& uriJSON = getJSONfield(fileName, writerJSON, "uri");
+                const Value& uriJSON = getJSONfield(configFileName, writerJSON, "uri");
 
                 writer = new WriterService(aliasJSON.GetString(), oracleAnalyser, uriJSON.GetString());
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(WriterService) << " bytes memory for (reason: service writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterService) << " bytes memory (for: service writer)");
                 }
             } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
@@ -603,6 +628,11 @@ int main(int argc, char **argv) {
     for (OracleAnalyser *analyser : analysers)
         delete analyser;
     analysers.clear();
+
+    if (fid != -1)
+        close(fid);
+    if (configFileBuffer != nullptr)
+        delete[] configFileBuffer;
 
     TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP");
     return 0;
