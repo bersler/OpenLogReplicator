@@ -1498,7 +1498,7 @@ namespace OpenLogReplicator {
             }
 
             if (redoLogRecord2p == nullptr) {
-                WARNING("could not find correct rowid for INSERT");
+                WARNING("couldn't find correct rowid for INSERT");
                 bdba = 0;
                 slot = 0;
             } else {
@@ -1736,7 +1736,7 @@ namespace OpenLogReplicator {
 
                     uint8_t *buffer = new uint8_t[length];
                     if (buffer == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << (length) << " bytes memory for (reason: big before image)");
+                        RUNTIME_FAIL("couldn't allocate " << dec << (length) << " bytes memory (for: big before image)");
                     }
                     merges[mergesMax++] = buffer;
 

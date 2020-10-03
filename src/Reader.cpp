@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         bufferEnd(0) {
         redoBuffer = oracleAnalyser->getMemoryChunk("DISK", false);
         if (headerBuffer == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory for (reason: read buffer)");
+            RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read buffer)");
         }
     }
 

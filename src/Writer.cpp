@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
                         } else {
                             buffer = (uint8_t*)malloc(leftLength);
                             if (buffer == nullptr) {
-                                RUNTIME_FAIL("could not allocate temporary buffer for JSON message for " << dec << leftLength << " bytes");
+                                RUNTIME_FAIL("couldn't allocate " << leftLength << " bytes memory (for: temporary buffer for JSON message)");
                             }
                             dealloc = true;
                         }

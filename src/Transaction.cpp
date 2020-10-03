@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
             uint64_t size1 = headRedoLogRecord1->length + midRedoLogRecord1->length;
             buffer1 = new uint8_t[size1];
             if (buffer1 == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << size1 << " bytes memory for (reason: merge split blocks #1)");
+                RUNTIME_FAIL("couldn't allocate " << dec << size1 << " bytes memory (for: merge split blocks #1)");
             }
             mergeSplitBlocksToBuffer(buffer1, headRedoLogRecord1, midRedoLogRecord1);
         }
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
         uint64_t size2 = headRedoLogRecord1->length + tailRedoLogRecord1->length;
         buffer2 = new uint8_t[size2];
         if (buffer2 == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << size2 << " bytes memory for (reason: merge split blocks #2)");
+            RUNTIME_FAIL("couldn't allocate " << dec << size2 << " bytes memory (for: merge split blocks #2)");
         }
         mergeSplitBlocksToBuffer(buffer2, headRedoLogRecord1, tailRedoLogRecord1);
 
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
 
         OpCode0501 *opCode0501 = new OpCode0501(oracleAnalyser, headRedoLogRecord1);
         if (opCode0501 == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0501) << " bytes memory for (reason: merge split blocks #3)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3)");
         }
 
         opCode0501->process();
@@ -214,7 +214,7 @@ namespace OpenLogReplicator {
         uint8_t *splitBlock = new uint8_t[size], *prevSplitBlock = nullptr, *tmpSplitBlockList = nullptr;
 
         if (splitBlock == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << size << " bytes memory for (reason: add split block #1)");
+            RUNTIME_FAIL("couldn't allocate " << dec << size << " bytes memory (for: add split block #1)");
         }
         *((uint64_t*) (splitBlock + SPLIT_BLOCK_SIZE)) = size;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP1)) = redoLogRecord->opCode;
@@ -249,7 +249,7 @@ namespace OpenLogReplicator {
         uint8_t *splitBlock = new uint8_t[size], *prevSplitBlock = nullptr, *tmpSplitBlockList = nullptr;
 
         if (splitBlock == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << size << " bytes memory for (reason: add split block #2)");
+            RUNTIME_FAIL("couldn't allocate " << dec << size << " bytes memory (for: add split block #2)");
         }
         *((uint64_t*) (splitBlock + SPLIT_BLOCK_SIZE)) = size;
         *((typeop1*) (splitBlock + SPLIT_BLOCK_OP1)) = redoLogRecord1->opCode;

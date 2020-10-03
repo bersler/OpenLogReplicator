@@ -442,126 +442,126 @@ namespace OpenLogReplicator {
             case 0x0501: //Undo
                 opCodes[vectors] = new OpCode0501(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0501) << " bytes memory for (reason: OP 5.1)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0501) << " bytes memory (for: OP 5.1)");
                 }
                 break;
 
             case 0x0502: //Begin transaction
                 opCodes[vectors] = new OpCode0502(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0502) << " bytes memory for (reason: OP 5.2)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0502) << " bytes memory (for: OP 5.2)");
                 }
                 break;
 
             case 0x0504: //Commit/rollback transaction
                 opCodes[vectors] = new OpCode0504(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0504) << " bytes memory for (reason: OP 5.4)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0504) << " bytes memory (for: OP 5.4)");
                 }
                 break;
 
             case 0x0506: //Partial rollback
                 opCodes[vectors] = new OpCode0506(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0506) << " bytes memory for (reason: OP 5.6)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0506) << " bytes memory (for: OP 5.6)");
                 }
                 break;
 
             case 0x050B:
                 opCodes[vectors] = new OpCode050B(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode050B) << " bytes memory for (reason: OP 5.11)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode050B) << " bytes memory (for: OP 5.11)");
                 }
                 break;
 
             case 0x0513: //Session information
                 opCodes[vectors] = new OpCode0513(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0513) << " bytes memory for (reason: OP 5.19)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0513) << " bytes memory (for: OP 5.19)");
                 }
                 break;
 
             case 0x0514: //Session information
                 opCodes[vectors] = new OpCode0514(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0514) << " bytes memory for (reason: OP 5.20)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0514) << " bytes memory (for: OP 5.20)");
                 }
                 break;
 
             case 0x0B02: //REDO: Insert row piece
                 opCodes[vectors] = new OpCode0B02(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B02) << " bytes memory for (reason: OP 11.2)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B02) << " bytes memory (for: OP 11.2)");
                 }
                 break;
 
             case 0x0B03: //REDO: Delete row piece
                 opCodes[vectors] = new OpCode0B03(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B03) << " bytes memory for (reason: OP 11.3)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B03) << " bytes memory (for: OP 11.3)");
                 }
                 break;
 
             case 0x0B04: //REDO: Lock row piece
                 opCodes[vectors] = new OpCode0B04(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B04) << " bytes memory for (reason: OP 11.4)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B04) << " bytes memory (for: OP 11.4)");
                 }
                 break;
 
             case 0x0B05: //REDO: Update row piece
                 opCodes[vectors] = new OpCode0B05(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B05) << " bytes memory for (reason: OP 11.5)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B05) << " bytes memory (for: OP 11.5)");
                 }
                 break;
 
             case 0x0B06: //REDO: Overwrite row piece
                 opCodes[vectors] = new OpCode0B06(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B06) << " bytes memory for (reason: OP 11.6)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B06) << " bytes memory (for: OP 11.6)");
                 }
                 break;
 
             case 0x0B08: //REDO: Change forwarding address
                 opCodes[vectors] = new OpCode0B08(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B08) << " bytes memory for (reason: OP 11.8)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B08) << " bytes memory (for: OP 11.8)");
                 }
                 break;
 
             case 0x0B0B: //REDO: Insert multiple rows
                 opCodes[vectors] = new OpCode0B0B(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B0B) << " bytes memory for (reason: OP 11.11)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B0B) << " bytes memory (for: OP 11.11)");
                 }
                 break;
 
             case 0x0B0C: //REDO: Delete multiple rows
                 opCodes[vectors] = new OpCode0B0C(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B0C) << " bytes memory for (reason: OP 11.12)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B0C) << " bytes memory (for: OP 11.12)");
                 }
                 break;
 
             case 0x0B10: //REDO: Supplemental log for update
                 opCodes[vectors] = new OpCode0B10(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode0B10) << " bytes memory for (reason: OP 11.16)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B10) << " bytes memory (for: OP 11.16)");
                 }
                 break;
 
             case 0x1801: //DDL
                 opCodes[vectors] = new OpCode1801(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode1801) << " bytes memory for (reason: OP 24.1)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode1801) << " bytes memory (for: OP 24.1)");
                 }
                 break;
 
             default:
                 opCodes[vectors] = new OpCode(oracleAnalyser, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OpCode) << " bytes memory for (reason: OP)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode) << " bytes memory (for: OP)");
                 }
                 break;
             }
@@ -651,7 +651,7 @@ namespace OpenLogReplicator {
             if (transaction == nullptr) {
                 transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
                 if (transaction == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#1)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#1)");
                 }
                 oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
 
@@ -683,7 +683,7 @@ namespace OpenLogReplicator {
         if (transaction == nullptr) {
             transaction = new Transaction(oracleAnalyser, redoLogRecord->xid);
             if (transaction == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#2)");
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#2)");
             }
             oracleAnalyser->xidTransactionMap[redoLogRecord->xid] = transaction;
 
@@ -793,7 +793,7 @@ namespace OpenLogReplicator {
                 if (transaction == nullptr) {
                     transaction = new Transaction(oracleAnalyser, redoLogRecord1->xid);
                     if (transaction == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(Transaction) << " bytes memory for (reason: append to transaction#3)");
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#3)");
                     }
                     oracleAnalyser->xidTransactionMap[redoLogRecord1->xid] = transaction;
 

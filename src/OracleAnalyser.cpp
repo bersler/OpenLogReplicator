@@ -352,14 +352,14 @@ namespace OpenLogReplicator {
 
         memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
         if (memoryChunks == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory for (reason: memory chunks#1)");
+            RUNTIME_FAIL("couldn't allocate " << dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#1)");
         }
 
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
             memoryChunks[i] = new uint8_t[MEMORY_CHUNK_SIZE];
 
             if (memoryChunks[i] == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory for (reason: memory chunks#2)");
+                RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
             }
             ++memoryChunksAllocated;
             ++memoryChunksFree;
@@ -371,17 +371,17 @@ namespace OpenLogReplicator {
             maps = MAPS_MAX;
         lastOpTransactionMap = new TransactionMap(this, maps);
         if (lastOpTransactionMap == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(TransactionMap) << " bytes memory for (reason: memory chunks#3)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionMap) << " bytes memory (for: memory chunks#3)");
         }
 
         transactionHeap = new TransactionHeap(this);
         if (transactionHeap == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(TransactionHeap) << " bytes memory for (reason: memory chunks#4)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionHeap) << " bytes memory (for: memory chunks#4)");
         }
 
         transactionBuffer = new TransactionBuffer(this);
         if (transactionBuffer == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(TransactionBuffer) << " bytes memory for (reason: memory chunks#5)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
         }
 
         env = new DatabaseEnvironment();
@@ -699,7 +699,7 @@ namespace OpenLogReplicator {
 
                 OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, mappedPath.c_str());
                 if (redo == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (arch log list#1)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory (arch log list#1)");
                 }
 
                 redo->firstScn = firstScn;
@@ -774,7 +774,7 @@ namespace OpenLogReplicator {
 
                     OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, fileName.c_str());
                     if (redo == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (arch log list#2)");
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory (arch log list#2)");
                     }
 
                     redo->firstScn = ZERO_SCN;
@@ -827,7 +827,7 @@ namespace OpenLogReplicator {
 
                     OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, mappedPath.c_str());
                     if (redo == nullptr) {
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (arch log list#3)");
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory (arch log list#3)");
                     }
 
                     redo->firstScn = ZERO_SCN;
@@ -858,7 +858,7 @@ namespace OpenLogReplicator {
 
                         OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, 0, fileName.c_str());
                         if (redo == nullptr) {
-                            RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (arch log list#4)");
+                            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory (arch log list#4)");
                         }
 
                         redo->firstScn = ZERO_SCN;
@@ -1100,6 +1100,32 @@ namespace OpenLogReplicator {
         typeresetlogs currentResetlogs;
         typeactivation currentActivation;
 
+        if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
+            checkTableForGrants("SYS.CCOL$");
+            checkTableForGrants("SYS.CDEF$");
+            checkTableForGrants("SYS.COL$");
+            checkTableForGrants("SYS.CON$");
+            checkTableForGrants("SYS.DEFERRED_STG$");
+            checkTableForGrants("SYS.ECOL$");
+            checkTableForGrants("SYS.ICOL$");
+            checkTableForGrants("SYS.IND$");
+            checkTableForGrants("SYS.OBJ$");
+            checkTableForGrants("SYS.SEG$");
+            checkTableForGrants("SYS.TAB$");
+            checkTableForGrants("SYS.TABCOMPART$");
+            checkTableForGrants("SYS.TABPART$");
+            checkTableForGrants("SYS.TABSUBPART$");
+            checkTableForGrants("SYS.USER$");
+            checkTableForGrants("SYS.V_$ARCHIVED_LOG");
+            checkTableForGrants("SYS.V_$DATABASE");
+            checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
+            checkTableForGrants("SYS.V_$LOG");
+            checkTableForGrants("SYS.V_$LOGFILE");
+            checkTableForGrants("SYS.V_$PARAMETER");
+            checkTableForGrants("SYS.V_$STANDBY_LOG");
+            checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
+        }
+
         DatabaseStatement stmt(conn);
         TRACE_(TRACE2_SQL, SQL_GET_DATABASE_INFORMATION);
         stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
@@ -1173,32 +1199,6 @@ namespace OpenLogReplicator {
             databaseContext = databaseContextStr;
         } else {
             RUNTIME_FAIL("trying to read SYS.V_$DATABASE");
-        }
-
-        if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
-            checkTableForGrants("SYS.CCOL$");
-            checkTableForGrants("SYS.CDEF$");
-            checkTableForGrants("SYS.COL$");
-            checkTableForGrants("SYS.CON$");
-            checkTableForGrants("SYS.DEFERRED_STG$");
-            checkTableForGrants("SYS.ECOL$");
-            checkTableForGrants("SYS.ICOL$");
-            checkTableForGrants("SYS.IND$");
-            checkTableForGrants("SYS.OBJ$");
-            checkTableForGrants("SYS.SEG$");
-            checkTableForGrants("SYS.TAB$");
-            checkTableForGrants("SYS.TABCOMPART$");
-            checkTableForGrants("SYS.TABPART$");
-            checkTableForGrants("SYS.TABSUBPART$");
-            checkTableForGrants("SYS.USER$");
-            checkTableForGrants("SYS.V_$ARCHIVED_LOG");
-            checkTableForGrants("SYS.V_$DATABASE");
-            checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
-            checkTableForGrants("SYS.V_$LOG");
-            checkTableForGrants("SYS.V_$STANDBY_LOG");
-            checkTableForGrants("SYS.V_$LOGFILE");
-            checkTableForGrants("SYS.V_$PARAMETER");
-            checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
         }
 
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
@@ -1742,7 +1742,7 @@ namespace OpenLogReplicator {
                         TRACE_(TRACE2_ARCHIVE_LIST, "archived redo log missing for sequence: " << dec << databaseSequence << ", sleeping");
                         usleep(archReadSleep);
                     } else {
-                        RUNTIME_FAIL("could not find archive log for sequence: " << dec << databaseSequence);
+                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << databaseSequence);
                     }
                 }
 
@@ -1761,7 +1761,7 @@ namespace OpenLogReplicator {
                         delete redo;
                         continue;
                     } else if (redo->sequence > databaseSequence) {
-                        RUNTIME_FAIL("could not find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead");
+                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead");
                     }
 
                     logsProcessed = true;
@@ -1887,12 +1887,12 @@ namespace OpenLogReplicator {
     void OracleAnalyser::addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         RedoLogRecord *tmpRedoLogRecord1 = new RedoLogRecord();
         if (tmpRedoLogRecord1 == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(RedoLogRecord) << " bytes memory for (rollback list#1)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLogRecord) << " bytes memory (for: rollback list#1)");
         }
 
         RedoLogRecord *tmpRedoLogRecord2 = new RedoLogRecord();
         if (tmpRedoLogRecord2 == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(RedoLogRecord) << " bytes memory for (rollback list#2)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLogRecord) << " bytes memory (for: rollback list#2)");
         }
 
         memcpy(tmpRedoLogRecord1, redoLogRecord1, sizeof(RedoLogRecord));
@@ -1987,7 +1987,7 @@ namespace OpenLogReplicator {
         }
 
         if (reader == nullptr) {
-            RUNTIME_FAIL("could not allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory for (disk reader creation)");
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
         }
 
         readers.insert(reader);
@@ -2010,7 +2010,7 @@ namespace OpenLogReplicator {
                     OracleAnalyserRedoLog* redo = new OracleAnalyserRedoLog(this, reader->group, reader->pathMapped.c_str());
                     if (redo == nullptr) {
                         readerDropAll();
-                        RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory for (online redo logs)");
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyserRedoLog) << " bytes memory (for: online redo logs)");
                     }
 
                     redo->reader = reader;
@@ -2201,7 +2201,7 @@ namespace OpenLogReplicator {
 
             object = new OracleObject(objn, objd, cluCols, options, owner, name);
             if (object == nullptr) {
-                RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleObject) << " bytes memory for (object creation)");
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
             }
             ++tabCnt;
 
@@ -2270,7 +2270,7 @@ namespace OpenLogReplicator {
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
                         charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
                 if (column == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << sizeof(OracleColumn) << " bytes memory for (column creation)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
                 }
 
                 totalPk += numPk;
@@ -2287,7 +2287,7 @@ namespace OpenLogReplicator {
 
             //check if table has all listed columns
             if (keys.size() != keysCnt) {
-                RUNTIME_FAIL("table " << owner << "." << name << " could not find all column set (" << keysStr << ")");
+                RUNTIME_FAIL("table " << owner << "." << name << " couldn't find all column set (" << keysStr << ")");
             }
 
             stringstream ss;
@@ -2513,7 +2513,7 @@ namespace OpenLogReplicator {
 
                 memoryChunks[0] = new uint8_t[MEMORY_CHUNK_SIZE];
                 if (memoryChunks[0] == nullptr) {
-                    RUNTIME_FAIL("could not allocate " << dec << (MEMORY_CHUNK_SIZE_MB) << " bytes memory for (reason: memory chunks#6)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << (MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#6)");
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
