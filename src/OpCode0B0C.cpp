@@ -18,15 +18,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OpCode0B0C.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B0C::OpCode0B0C(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord) {
+    OpCode0B0C::OpCode0B0C(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0B0C::~OpCode0B0C() {
@@ -37,19 +37,19 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
 
-        if (oracleAnalyser->dumpRedoLog >= 1) {
+        if (oracleAnalyzer->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                 for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                    oracleAnalyser->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyser->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
+                    oracleAnalyzer->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
             }
         }
     }

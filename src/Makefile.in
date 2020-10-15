@@ -129,15 +129,15 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OpCode0513.cpp OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp \
 	OpCode0B04.cpp OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp \
 	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
-	OpCode.cpp OpenLogReplicator.cpp OracleAnalyser.cpp \
-	OracleAnalyserRedoLog.cpp OracleColumn.cpp OracleObject.cpp \
+	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
+	OracleAnalyzerBatch.cpp OracleAnalyzerOnline.cpp \
+	OracleAnalyzerOnlineASM.cpp OracleColumn.cpp OracleObject.cpp \
 	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
-	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp \
+	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
-	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
-	TransactionHeap.cpp TransactionMap.cpp Writer.cpp \
-	WriterFile.cpp WriterKafka.cpp WriterService.cpp \
-	OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+	Schema.cpp SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp WriterKafka.cpp \
+	WriterService.cpp OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
 @PROTOBUF_COMPILE_TRUE@am__objects_1 = OraProtoBuf.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
@@ -160,17 +160,19 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OpCode0B04.$(OBJEXT) OpCode0B05.$(OBJEXT) OpCode0B06.$(OBJEXT) \
 	OpCode0B08.$(OBJEXT) OpCode0B0B.$(OBJEXT) OpCode0B0C.$(OBJEXT) \
 	OpCode0B10.$(OBJEXT) OpCode1801.$(OBJEXT) OpCode.$(OBJEXT) \
-	OpenLogReplicator.$(OBJEXT) OracleAnalyser.$(OBJEXT) \
-	OracleAnalyserRedoLog.$(OBJEXT) OracleColumn.$(OBJEXT) \
+	OpenLogReplicator.$(OBJEXT) OracleAnalyzer.$(OBJEXT) \
+	OracleAnalyzerBatch.$(OBJEXT) OracleAnalyzerOnline.$(OBJEXT) \
+	OracleAnalyzerOnlineASM.$(OBJEXT) OracleColumn.$(OBJEXT) \
 	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
 	OutputBufferJson.$(OBJEXT) OutputBufferProtobuf.$(OBJEXT) \
 	ReaderASM.$(OBJEXT) Reader.$(OBJEXT) \
-	ReaderFilesystem.$(OBJEXT) RedoLogException.$(OBJEXT) \
-	RedoLogRecord.$(OBJEXT) RuntimeException.$(OBJEXT) \
-	Thread.$(OBJEXT) TransactionBuffer.$(OBJEXT) \
-	Transaction.$(OBJEXT) TransactionHeap.$(OBJEXT) \
-	TransactionMap.$(OBJEXT) Writer.$(OBJEXT) WriterFile.$(OBJEXT) \
-	WriterKafka.$(OBJEXT) WriterService.$(OBJEXT) $(am__objects_1)
+	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
+	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
+	RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
+	SchemaElement.$(OBJEXT) Thread.$(OBJEXT) \
+	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
+	Writer.$(OBJEXT) WriterFile.$(OBJEXT) WriterKafka.$(OBJEXT) \
+	WriterService.$(OBJEXT) $(am__objects_1)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -372,15 +374,15 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp OpCode0B04.cpp \
 	OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp OpCode0B0B.cpp \
 	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
-	OpenLogReplicator.cpp OracleAnalyser.cpp \
-	OracleAnalyserRedoLog.cpp OracleColumn.cpp OracleObject.cpp \
+	OpenLogReplicator.cpp OracleAnalyzer.cpp \
+	OracleAnalyzerBatch.cpp OracleAnalyzerOnline.cpp \
+	OracleAnalyzerOnlineASM.cpp OracleColumn.cpp OracleObject.cpp \
 	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
-	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp \
+	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
-	Thread.cpp TransactionBuffer.cpp Transaction.cpp \
-	TransactionHeap.cpp TransactionMap.cpp Writer.cpp \
-	WriterFile.cpp WriterKafka.cpp WriterService.cpp \
-	$(am__append_1)
+	Schema.cpp SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp WriterKafka.cpp \
+	WriterService.cpp $(am__append_1)
 all: all-am
 
 .SUFFIXES:
@@ -517,8 +519,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpenLogReplicator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OraProtoBuf.grpc.pb.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OraProtoBuf.pb.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyserRedoLog.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzerBatch.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzerOnline.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzerOnlineASM.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleColumn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleObject.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBuffer.Po@am__quote@
@@ -527,14 +531,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Reader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ReaderASM.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ReaderFilesystem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLogException.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLogRecord.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RuntimeException.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Schema.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SchemaElement.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Transaction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TransactionBuffer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TransactionHeap.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TransactionMap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Writer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterKafka.Po@am__quote@

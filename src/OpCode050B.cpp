@@ -18,26 +18,26 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OpCode050B.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode050B::OpCode050B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord) {
+    OpCode050B::OpCode050B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord) {
 
         if (redoLogRecord->fieldCnt >= 1) {
             uint64_t fieldPos = redoLogRecord->fieldPos;
-            uint16_t fieldLength = oracleAnalyser->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
+            uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
             if (fieldLength < 8) {
-                oracleAnalyser->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+                oracleAnalyzer->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
                 return;
             }
 
-            redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->objd = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->objn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
+            redoLogRecord->objd = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
         }
     }
 
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         ktub(fieldPos, fieldLength);
         redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;

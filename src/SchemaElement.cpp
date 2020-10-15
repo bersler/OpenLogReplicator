@@ -1,4 +1,4 @@
-/* Header for OpCode0B0B class
+/* Base class for handling of schema elements
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,22 +17,16 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
+#include "SchemaElement.h"
 
-#ifndef OPCODE0B0B_H_
-#define OPCODE0B0B_H_
+using namespace std;
 
 namespace OpenLogReplicator {
 
-    class RedoLogRecord;
+    SchemaElement::SchemaElement() :
+        options(0) {
+    }
 
-    class OpCode0B0B: public OpCode {
-    public:
-        OpCode0B0B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
-        virtual ~OpCode0B0B();
-
-        virtual void process(void);
-    };
+    SchemaElement::~SchemaElement() {
+    }
 }
-
-#endif

@@ -23,18 +23,37 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    WriterService::WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *uri) :
-        Writer(alias, oracleAnalyser, 0),
+    WriterService::WriterService(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *uri, uint64_t pollInterval,
+            uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime,
+            uint64_t startTimeRel) :
+        Writer(alias, oracleAnalyzer, 0, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime, startTimeRel),
         uri(uri) {
+
+#ifdef LINK_LIBRARY_GRPC
+        builder.AddListeningPort(uri, InsecureServerCredentials());
+        builder.RegisterService(&service_);
+        cq_ = builder.AddCompletionQueue();
+        server_ = builder.BuildAndStart();
+        cout << "Server listening on " << uri << endl;
+#endif /* LINK_LIBRARY_GRPC */
     }
 
     WriterService::~WriterService() {
+        server_->Shutdown();
+        cq_->Shutdown();
+
+        void* ignored_tag;
+        bool ignored_ok;
+        while (cq_->Next(&ignored_tag, &ignored_ok)) {}
     }
 
-    void WriterService::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
+    void WriterService::sendMessage(OutputBufferMsg *msg) {
     }
 
     string WriterService::getName() {
         return "Service:" + uri;
+    }
+
+    void WriterService::pollQueue(void) {
     }
 }

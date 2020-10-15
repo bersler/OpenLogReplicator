@@ -1,4 +1,4 @@
-/* Header for OracleAnalyser class
+/* Header for OracleAnalyzer class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -32,74 +32,36 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "Thread.h"
 #include "TransactionBuffer.h"
-#include "TransactionHeap.h"
-#include "TransactionMap.h"
 
-#ifndef ORACLEANALYSER_H_
-#define ORACLEANALYSER_H_
+#ifndef ORACLEANALYZER_H_
+#define ORACLEANALYZER_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class DatabaseConnection;
-    class DatabaseEnvironment;
-    class OracleObject;
-    class OracleAnalyserRedoLog;
+    class RedoLog;
     class OutputBuffer;
     class Reader;
     class RedoLogRecord;
+    class Schema;
     class Transaction;
 
-    struct OracleAnalyserRedoLogCompare {
-        bool operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2);
+    struct redoLogCompare {
+        bool operator()(RedoLog* const& p1, RedoLog* const& p2);
     };
 
-    struct OracleAnalyserRedoLogCompareReverse {
-        bool operator()(OracleAnalyserRedoLog* const& p1, OracleAnalyserRedoLog* const& p2);
+    struct redoLogCompareReverse {
+        bool operator()(RedoLog* const& p1, RedoLog* const& p2);
     };
 
-    class OracleAnalyser : public Thread {
+    class OracleAnalyzer : public Thread {
     protected:
-        static const char* SQL_GET_ARCHIVE_LOG_LIST;
-        static const char* SQL_GET_DATABASE_INFORMATION;
-        static const char* SQL_GET_CON_INFO;
-        static const char* SQL_GET_CURRENT_SEQUENCE;
-        static const char* SQL_GET_CURRENT_SEQUENCE_STANDBY;
-        static const char* SQL_GET_LOGFILE_LIST;
-        static const char* SQL_GET_TABLE_LIST;
-        static const char* SQL_GET_COLUMN_LIST;
-        static const char* SQL_GET_COLUMN_LIST11;
-        static const char* SQL_GET_PARTITION_LIST;
-        static const char* SQL_GET_SUPPLEMNTAL_LOG_TABLE;
-        static const char* SQL_GET_PARAMETER;
-        static const char* SQL_GET_PROPERTY;
-
         typeseq databaseSequence;
-        string user;
-        string password;
-        string connectString;
-        string userASM;
-        string passwordASM;
-        string connectStringASM;
-        string database;
-        string nlsCharacterSet;
-        string nlsNcharCharacterSet;
-        string dbRecoveryFileDest;
-        string logArchiveFormat;
-        string logArchiveDest;
-        Reader *archReader;
-        RedoLogRecord *rolledBack1;
-        RedoLogRecord *rolledBack2;
 
-        priority_queue<OracleAnalyserRedoLog*, vector<OracleAnalyserRedoLog*>, OracleAnalyserRedoLogCompare> archiveRedoQueue;
-        set<OracleAnalyserRedoLog*> onlineRedoSet;
-        set<Reader*> readers;
-        unordered_map<typeobj, OracleObject*> objectMap;
-        unordered_map<typeobj, OracleObject*> partitionMap;
+        priority_queue<RedoLog*, vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
+        set<RedoLog*> onlineRedoSet;
         uint64_t suppLogDbPrimary, suppLogDbAll;
-        clock_t previousCheckpoint;
-        uint64_t checkpointInterval;
         uint64_t memoryMinMb;
         uint64_t memoryMaxMb;
         uint8_t **memoryChunks;
@@ -109,60 +71,56 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksMax;
         uint64_t memoryChunksHWM;
         uint64_t memoryChunksSupplemental;
-        OracleObject *object;
 
-        stringstream& writeEscapeValue(stringstream &ss, string &str);
-        string getParameterValue(const char *parameter);
-        string getPropertyValue(const char *property);
-        void writeCheckpoint(bool atShutdown);
-        void readCheckpoint(void);
-        void addToDict(OracleObject *object);
-        void checkConnection(void);
-        void closeConnection(void);
-        void archLogGetList(void);
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader *reader);
         void readerDropAll(void);
-        void checkTableForGrants(string tableName);
-        Reader *readerCreate(int64_t group);
-        void checkOnlineRedoLogs();
-        uint64_t getSequenceFromFileName(const char *file);
+        static uint64_t getSequenceFromFileName(const char *file);
+        virtual const char* getModeName(void);
+        virtual void checkConnection(void);
+        virtual bool continueWithOnline(void);
+        virtual void refreshSchema(void);
 
     public:
-        OracleAnalyser(OutputBuffer *outputBuffer, const char *alias, const char *database, const char *user, const char *password,
-                const char *connectString, const char *userASM, const char *passwdASM, const char *connectStringASM, uint64_t arch, uint64_t trace,
-                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t readerType, uint64_t disableChecks,
-                uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t checkpointInterval, uint64_t memoryMinMb, uint64_t memoryMaxMb);
-        virtual ~OracleAnalyser();
+        OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
+                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks,
+                uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb);
+        virtual ~OracleAnalyzer();
 
-        DatabaseEnvironment *env;
-        DatabaseConnection *conn;
-        DatabaseConnection *connASM;
+        string database;
+        string nlsCharacterSet;
+        string nlsNcharCharacterSet;
+        string dbRecoveryFileDest;
+        string logArchiveFormat;
+        string logArchiveDest;
+        Reader *archReader;
+        set<Reader*> readers;
         bool waitingForWriter;
         mutex mtx;
         condition_variable readerCond;
         condition_variable sleepingCond;
-        condition_variable analyserCond;
+        condition_variable analyzerCond;
         condition_variable memoryCond;
         string databaseContext;
         typescn databaseScn;
-        unordered_map<typexid, Transaction*> xidTransactionMap;
-        TransactionMap *lastOpTransactionMap;
-        TransactionHeap *transactionHeap;
+        typescn startScn;
+        typeseq startSequence;
+        string startTime;
+        int64_t startTimeRel;
+
+        unordered_map<typeusnslt, Transaction*> xidTransactionMap;
         TransactionBuffer *transactionBuffer;
-        uint8_t recordBuffer[REDO_RECORD_MAX_SIZE];
+        Schema *schema;
         OutputBuffer *outputBuffer;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
         uint64_t flags;
-        uint64_t readerType;
         uint64_t disableChecks;
         vector<string> pathMapping;
         vector<string> redoLogsBatch;
         uint64_t redoReadSleep;
         uint64_t archReadSleep;
-        uint64_t arch;
         uint64_t trace;
         uint64_t trace2;
         uint64_t version;                   //compatibility level of redo logs
@@ -174,6 +132,7 @@ namespace OpenLogReplicator {
         uint64_t isBigEndian;
         uint64_t suppLogSize;
         bool version12;
+        void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);
 
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
@@ -211,32 +170,27 @@ namespace OpenLogReplicator {
         static void writeSCNLittle(uint8_t* buf, typescn val);
         static void writeSCNBig(uint8_t* buf, typescn val);
 
-        void initializeOnlineMode(void);
-        bool readSchema(void);
-        void writeSchema(void);
+        void setBigEndian(void);
+        virtual void initialize(void);
         void *run(void);
-        void freeRollbackList(void);
-        bool onRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void addToRollbackList(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        OracleObject *checkDict(typeobj objn, typeobj objd);
-        void addTable(const char *mask, vector<string> &keys, string &keysStr, uint64_t options);
-        void checkForCheckpoint(void);
+        virtual Reader *readerCreate(int64_t group);
+        void checkOnlineRedoLogs();
         bool readerUpdateRedoLog(Reader *reader);
         virtual void stop(void);
         void addPathMapping(const char* source, const char* target);
         void addRedoLogsBatch(string path);
+        static void archGetLogPath(OracleAnalyzer *oracleAnalyzer);
+        static void archGetLogList(OracleAnalyzer *oracleAnalyzer);
+        string applyMapping(string path);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        string applyMapping(string path);
-        void printRollbackInfo(RedoLogRecord *redoLogRecord, Transaction *transaction, const char *msg);
-        void printRollbackInfo(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, Transaction *transaction, const char *msg);
 
         uint8_t *getMemoryChunk(const char *module, bool supp);
         void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
 
-        friend ostream& operator<<(ostream& os, const OracleAnalyser& oracleAnalyser);
+        friend ostream& operator<<(ostream& os, const OracleAnalyzer& oracleAnalyzer);
     };
 }
 

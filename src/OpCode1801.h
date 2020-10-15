@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     public:
         bool validDDL;
         uint16_t type;
-        OpCode1801(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        OpCode1801(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
         virtual ~OpCode1801();
 
         virtual void process(void);

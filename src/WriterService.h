@@ -41,17 +41,26 @@ using namespace grpc;
 namespace OpenLogReplicator {
 
     class RedoLogRecord;
-    class OracleAnalyser;
+    class OracleAnalyzer;
 
     class WriterService : public Writer {
     protected:
         string uri;
+#ifdef LINK_LIBRARY_GRPC
+        ServerBuilder builder;
+        std::unique_ptr<ServerCompletionQueue> cq_;
+        pb::RedoStream::AsyncService service_;
+        std::unique_ptr<Server> server_;
+#endif /* LINK_LIBRARY_GRPC */
 
-        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
+        virtual void sendMessage(OutputBufferMsg *msg);
         virtual string getName();
+        virtual void pollQueue(void);
 
     public:
-        WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *uri);
+        WriterService(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *uri, uint64_t pollInterval,
+                uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime,
+                uint64_t startTimeRel);
         virtual ~WriterService();
     };
 }

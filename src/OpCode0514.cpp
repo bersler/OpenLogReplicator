@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode0513.h"
 #include "OpCode0514.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "RedoLogRecord.h"
@@ -28,8 +28,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0514::OpCode0514(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode0513(oracleAnalyser, redoLogRecord) {
+    OpCode0514::OpCode0514(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode0513(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0514::~OpCode0514() {
@@ -40,40 +40,40 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         dumpMsgSessionSerial(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
         dumpVal(fieldPos, fieldLength, "transaction name = ");
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 3
         dumpMsgFlags(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 4
         dumpMsgVersion(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 5
         dumpMsgAuditSessionid(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 6
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 7
         dumpVal(fieldPos, fieldLength, "Client Id = ");
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 8
         dumpVal(fieldPos, fieldLength, "login   username = ");

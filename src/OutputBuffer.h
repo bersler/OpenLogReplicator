@@ -30,26 +30,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
 
-#define TRANSACTION_INSERT          1
-#define TRANSACTION_DELETE          2
-#define TRANSACTION_UPDATE          3
-
-#define OUTPUT_BUFFER_NEXT          0
-#define OUTPUT_BUFFER_END           (sizeof(uint8_t*))
-#define OUTPUT_BUFFER_DATA          (sizeof(uint8_t*)+sizeof(uint64_t))
-#define OUTPUT_BUFFER_LENGTH_SIZE   (sizeof(uint64_t))
-
-#define VALUE_BEFORE                0
-#define VALUE_AFTER                 1
-#define VALUE_BEFORE_SUPP           2
-#define VALUE_AFTER_SUPP            3
-
 using namespace std;
 
 namespace OpenLogReplicator {
 
     class CharacterSet;
-    class OracleAnalyser;
+    class OracleAnalyzer;
     class OracleObject;
     class OracleColumn;
     class RedoLogRecord;
@@ -65,7 +51,7 @@ namespace OpenLogReplicator {
     protected:
         static const char map64[65];
         static const char map16[17];
-        OracleAnalyser *oracleAnalyser;
+        OracleAnalyzer *oracleAnalyzer;
         uint64_t messageFormat;
         uint64_t xidFormat;
         uint64_t timestampFormat;
@@ -87,11 +73,13 @@ namespace OpenLogReplicator {
         uint8_t *merges[MAX_NO_COLUMNS*4];
         uint64_t valuesMax;
         uint64_t mergesMax;
+        uint64_t id;
 
         void valuesRelease();
         void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb);
-        void outputBufferShift(uint64_t bytes);
-        void outputBufferBegin(void);
+        void outputBufferRotate(bool copy);
+        void outputBufferShift(uint64_t bytes, bool copy);
+        void outputBufferBegin(uint32_t dictId);
         void outputBufferCommit(void);
         void outputBufferAppend(char character);
         void outputBufferAppend(const char* str, uint64_t length);
@@ -121,18 +109,15 @@ namespace OpenLogReplicator {
         condition_variable writersCond;
 
         uint64_t buffersAllocated;
-        uint64_t firstBufferPos;
-        uint8_t *firstBuffer;
-        uint8_t *curBuffer;
-        uint64_t curBufferPos;
-        uint8_t *lastBuffer;
-        uint64_t lastBufferPos;
+        OutputBufferQueue *firstBuffer;
+        OutputBufferQueue *lastBuffer;
+        OutputBufferMsg *curMsg;
 
         OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBuffer();
 
-        void initialize(OracleAnalyser *oracleAnalyser);
+        void initialize(OracleAnalyzer *oracleAnalyzer);
         uint64_t outputBufferSize(void);
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);

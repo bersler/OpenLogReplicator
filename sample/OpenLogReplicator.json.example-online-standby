@@ -5,7 +5,7 @@
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "online", 
+        "type": "online-standby",
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE"
@@ -27,9 +27,9 @@
       "alias": "K1", 
       "source": "S1",
       "writer": {
-        "type": "file",
-        "name": "transactions.json",
-        "start-seq": 100
+        "type": "kafka",
+        "topic": "O112A",
+        "brokers": "localhost:9092"
       }
     }
   ]

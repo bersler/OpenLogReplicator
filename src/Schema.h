@@ -1,4 +1,4 @@
-/* Header for TransactionHeap class
+/* Header for Schema class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,38 +17,39 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <unordered_map>
+#include <vector>
+
 #include "types.h"
 
-#ifndef TRANSACTIONHEAP_H_
-#define TRANSACTIONHEAP_H_
+#ifndef SCHEMA_H_
+#define SCHEMA_H_
 
-#define HEAPS_MAX (MAX_TRANSACTIONS_LIMIT*sizeof(Transaction*)/(MEMORY_CHUNK_SIZE_MB*1024*1024))
-#define HEAP_IN_CHUNK (1024*1024/sizeof(Transaction*))
-#define HEAP_AT(a) heapsList[(a)/HEAP_IN_CHUNK][(a)%HEAP_IN_CHUNK]
+using namespace std;
 
 namespace OpenLogReplicator {
+    class OracleAnalyzer;
+    class OracleObject;
+    class SchemaElement;
 
-    class OracleAnalyser;
-    class Transaction;
-
-    class TransactionHeap {
+    class Schema {
     protected:
-        OracleAnalyser *oracleAnalyser;
-        uint64_t heaps;
-        Transaction **heapsList[HEAPS_MAX];
+        stringstream& writeEscapeValue(stringstream &ss, string &str);
+        unordered_map<typeobj, OracleObject*> objectMap;
+        unordered_map<typeobj, OracleObject*> partitionMap;
 
     public:
-        uint64_t size;
+        OracleObject *object;
+        vector<SchemaElement*> elements;
 
-        TransactionHeap(OracleAnalyser *oracleAnalyser);
-        virtual ~TransactionHeap();
+        Schema();
+        virtual ~Schema();
 
-        void pop(void);
-        void pop(uint64_t pos);
-        Transaction *top(void);
-        Transaction *at(uint64_t pos);
-        uint64_t add(Transaction *element);
-        void update(uint64_t pos);
+        bool readSchema(OracleAnalyzer *oracleAnalyzer);
+        void writeSchema(OracleAnalyzer *oracleAnalyzer);
+        OracleObject *checkDict(typeobj objn, typeobj objd);
+        void addToDict(OracleObject *object);
+        SchemaElement* addElement(void);
     };
 }
 

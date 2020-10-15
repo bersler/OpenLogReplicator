@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OutputBuffer.h"
 #include "OpCode0B0B.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "RedoLogRecord.h"
@@ -28,8 +28,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B0B::OpCode0B0B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord) {
+    OpCode0B0B::OpCode0B0B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0B0B::~OpCode0B0B() {
@@ -40,25 +40,25 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 3
         redoLogRecord->rowLenghsDelta = fieldPos;
         if (fieldLength < redoLogRecord->nrow * 2) {
-            oracleAnalyser->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
             return;
         }
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 4
         redoLogRecord->rowData = fieldNum;

@@ -17,14 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyser *oracleAnalyser) {
+    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyzer *oracleAnalyzer) {
         stream << "##: " << dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
 
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyser->read16(data + fieldLengthsDelta + i * 2);
+            uint16_t fieldLength = oracleAnalyzer->read16(data + fieldLengthsDelta + i * 2);
             stream << "##: " << dec << fieldLength << " (" << i << ", " << fieldPosLocal << ")";
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)

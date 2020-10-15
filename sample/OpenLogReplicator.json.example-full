@@ -1,5 +1,5 @@
 {
-  "version": "0.7.17",
+  "version": "0.8.0-beta0",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -51,7 +51,10 @@
         "topic": "O112A",
         "brokers": "localhost:9092",
         "max-message-mb": 500,
-        "max-messages": 200000
+        "max-messages": 200000,
+        "enable-idempotence": 0,
+        "poll-interval": 100000,
+        "queue-size": 65536
       }
     }
   ]

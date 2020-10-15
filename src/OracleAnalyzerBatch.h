@@ -1,4 +1,4 @@
-/* Header for OpCode0B0B class
+/* Header for OracleAnalyzerBatch class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,21 +17,25 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode.h"
+#include "OracleAnalyzer.h"
 
-#ifndef OPCODE0B0B_H_
-#define OPCODE0B0B_H_
+#ifndef ORACLEANALYZERBATCH_H_
+#define ORACLEANALYZERBATCH_H_
+
+using namespace std;
 
 namespace OpenLogReplicator {
 
-    class RedoLogRecord;
+    class OracleAnalyzerBatch : public OracleAnalyzer {
+    protected:
+        virtual const char* getModeName(void);
+        virtual bool continueWithOnline(void);
 
-    class OpCode0B0B: public OpCode {
     public:
-        OpCode0B0B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
-        virtual ~OpCode0B0B();
-
-        virtual void process(void);
+        OracleAnalyzerBatch(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
+                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks,
+                uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb);
+        virtual ~OracleAnalyzerBatch();
     };
 }
 

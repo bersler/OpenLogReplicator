@@ -27,31 +27,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <rapidjson/document.h>
-#include <WriterService.h>
 
-#include "OutputBuffer.h"
 #include "ConfigurationException.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
+#include "OracleAnalyzerBatch.h"
+#include "OracleAnalyzerOnline.h"
+#include "OracleAnalyzerOnlineASM.h"
+#include "OutputBuffer.h"
 #include "OutputBufferJson.h"
 #include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
+#include "Schema.h"
+#include "SchemaElement.h"
+#include "Writer.h"
 #include "WriterFile.h"
 #include "WriterKafka.h"
 #include "WriterService.h"
-#include "Writer.h"
 
 using namespace std;
 using namespace rapidjson;
 using namespace OpenLogReplicator;
 
-const Value& getJSONfield(string &fileName, const Value& value, const char* field) {
+const Value& getJSONfieldV(string &fileName, const Value& value, const char* field) {
     if (!value.HasMember(field)) {
         CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
     return value[field];
 }
 
-const Value& getJSONfield(string &fileName, const Document& document, const char* field) {
+const Value& getJSONfieldD(string &fileName, const Document& document, const char* field) {
     if (!document.HasMember(field)) {
         CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
@@ -61,11 +65,13 @@ const Value& getJSONfield(string &fileName, const Document& document, const char
 mutex mainMtx;
 condition_variable mainThread;
 bool exitOnSignal = false;
+bool mainShutdown = false;
 uint64_t trace2 = 0;
 
 void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
 
+    mainShutdown = true;
     TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
     mainThread.notify_all();
 }
@@ -92,10 +98,10 @@ int main(int argc, char **argv) {
     signal(SIGSEGV, signalCrash);
     cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
 
-    list<OracleAnalyser *> analysers;
+    list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
-    OracleAnalyser *oracleAnalyser = nullptr;
+    OracleAnalyzer *oracleAnalyzer = nullptr;
     Writer *writer = nullptr;
     int fid = -1;
     char *configFileBuffer = nullptr;
@@ -134,7 +140,7 @@ int main(int argc, char **argv) {
             CONFIG_FAIL("parsing OpenLogReplicator.json");
         }
 
-        const Value& versionJSON = getJSONfield(configFileName, document, "version");
+        const Value& versionJSON = getJSONfieldD(configFileName, document, "version");
         if (strcmp(versionJSON.GetString(), PACKAGE_VERSION) != 0) {
             CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PACKAGE_VERSION << ", got: " << versionJSON.GetString());
         }
@@ -168,14 +174,14 @@ int main(int argc, char **argv) {
         }
 
         //iterate through sources
-        const Value& sourcesJSON = getJSONfield(configFileName, document, "sources");
+        const Value& sourcesJSON = getJSONfieldD(configFileName, document, "sources");
         if (!sourcesJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, \"sources\" should be an array");
         }
 
         for (SizeType i = 0; i < sourcesJSON.Size(); ++i) {
             const Value& sourceJSON = sourcesJSON[i];
-            const Value& aliasJSON = getJSONfield(configFileName, sourceJSON, "alias");
+            const Value& aliasJSON = getJSONfieldV(configFileName, sourceJSON, "alias");
             cerr << "Adding source: " << aliasJSON.GetString() << endl;
 
             //optional
@@ -221,62 +227,7 @@ int main(int argc, char **argv) {
                 archReadSleep = archReadSleepJSON.GetUint();
             }
 
-            //optional
-            uint32_t checkpointInterval = 10;
-            if (sourceJSON.HasMember("checkpoint-interval")) {
-                const Value& checkpointIntervalJSON = sourceJSON["checkpoint-interval"];
-                checkpointInterval = checkpointIntervalJSON.GetUint64();
-            }
-
-            uint64_t arch = ARCH_LOG_PATH;
-            const Value& readerJSON = getJSONfield(configFileName, sourceJSON, "reader");
-            const Value& readerTypeJSON = getJSONfield(configFileName, readerJSON, "type");
-            uint64_t readerType = READER_ONLINE;
-            if (strcmp(readerTypeJSON.GetString(), "online") == 0)
-                readerType = READER_ONLINE;
-            else if (strcmp(readerTypeJSON.GetString(), "offline") == 0)
-                readerType = READER_OFFLINE;
-            else if (strcmp(readerTypeJSON.GetString(), "asm") == 0)
-                readerType = READER_ASM;
-            else if (strcmp(readerTypeJSON.GetString(), "standby") == 0)
-                readerType = READER_STANDBY;
-            else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
-                 readerType = READER_BATCH;
-                 flags |= REDO_FLAGS_ARCH_ONLY;
-                 arch = ARCH_LOG_LIST;
-            } else {
-                CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());
-            }
-
-#ifndef LINK_LIBRARY_OCI
-            if (readerType == READER_ONLINE || readerType == READER_ASM) {
-                RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
-            }
-#endif /*LINK_LIBRARY_OCI*/
-
-            //optional
-            if (sourceJSON.HasMember("arch")) {
-                const Value& archJSON = sourceJSON["arch"];
-                if (strcmp(archJSON.GetString(), "path") == 0)
-                    arch = ARCH_LOG_PATH;
-                else {
-                    if (readerType == READER_BATCH) {
-                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", only \"disk\" can be used here");
-                    }
-
-                    if (strcmp(archJSON.GetString(), "online") == 0)
-                        arch = ARCH_LOG_ONLINE;
-                    else if (strcmp(archJSON.GetString(), "online-keep") == 0)
-                        arch = ARCH_LOG_ONLINE_KEEP;
-                    if (strcmp(archJSON.GetString(), "list") == 0) {
-                        if (readerType != READER_OFFLINE) {
-                            CONFIG_FAIL("bad JSON, invalid \"arch\" value: \"list\" mode is only valid for \"offline\" reader");
-                        }
-                    } else{
-                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString());
-                    }
-                }
-            }
+            const Value& readerJSON = getJSONfieldV(configFileName, sourceJSON, "reader");
 
             //optional
             uint64_t disableChecks = 0;
@@ -285,29 +236,10 @@ int main(int argc, char **argv) {
                 disableChecks = disableChecksJSON.GetUint64();
             }
 
-            const Value& nameJSON = getJSONfield(configFileName, sourceJSON, "name");
-
-            const char *user = "", *password = "", *server = "", *userASM = "", *passwordASM = "", *serverASM = "";
-            if (readerType == READER_ONLINE || readerType == READER_ASM || readerType == READER_STANDBY) {
-                const Value& userJSON = getJSONfield(configFileName, readerJSON, "user");
-                user = userJSON.GetString();
-                const Value& passwordJSON = getJSONfield(configFileName, readerJSON, "password");
-                password = passwordJSON.GetString();
-                const Value& serverJSON = getJSONfield(configFileName, readerJSON, "server");
-                server = serverJSON.GetString();
-            }
-            if (readerType == READER_ASM) {
-                const Value& userASMJSON = getJSONfield(configFileName, readerJSON, "user-asm");
-                userASM = userASMJSON.GetString();
-                const Value& passwordASMJSON = getJSONfield(configFileName, readerJSON, "password-asm");
-                passwordASM = passwordASMJSON.GetString();
-                const Value& serverASMJSON = getJSONfield(configFileName, readerJSON, "server-asm");
-                serverASM = serverASMJSON.GetString();
-            }
+            const Value& nameJSON = getJSONfieldV(configFileName, sourceJSON, "name");
 
             //format
-            const Value& formatJSON = getJSONfield(configFileName, sourceJSON, "format");
-
+            const Value& formatJSON = getJSONfieldV(configFileName, sourceJSON, "format");
 
             //optional
             uint64_t messageFormat = 0;
@@ -389,7 +321,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            const Value& formatTypeJSON = getJSONfield(configFileName, formatJSON, "type");
+            const Value& formatTypeJSON = getJSONfieldV(configFileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
@@ -405,15 +337,37 @@ int main(int argc, char **argv) {
             }
             buffers.push_back(outputBuffer);
 
-            oracleAnalyser = new OracleAnalyser(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), user, password, server, userASM,
-                    passwordASM, serverASM, arch, trace, trace2, dumpRedoLog, dumpRawData, flags, readerType, disableChecks, redoReadSleep,
-                    archReadSleep, checkpointInterval, memoryMinMb, memoryMaxMb);
-            if (oracleAnalyser == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyser) << " bytes memory (for: oracle analyser)");
-            }
+            const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
+            if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
+                    strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
+#ifndef LINK_LIBRARY_OCI
+                RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
+#endif /*LINK_LIBRARY_OCI*/
 
-            //optional
-            if (readerType == READER_ONLINE || readerType == READER_OFFLINE || readerType == READER_STANDBY) {
+                bool isStandby = false;
+                if (strcmp(readerTypeJSON.GetString(), "online-standby") == 0)
+                    isStandby = true;
+
+                const char *user = "";
+                const Value& userJSON = getJSONfieldV(configFileName, readerJSON, "user");
+                user = userJSON.GetString();
+
+                const char *password = "";
+                const Value& passwordJSON = getJSONfieldV(configFileName, readerJSON, "password");
+                password = passwordJSON.GetString();
+
+                const char *server = "";
+                const Value& serverJSON = getJSONfieldV(configFileName, readerJSON, "server");
+                server = serverJSON.GetString();
+
+                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
+                        trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
+                        archReadSleep, memoryMinMb, memoryMaxMb, user, password, server, isStandby);
+
+                if (oracleAnalyzer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
+                }
+
                 if (readerJSON.HasMember("path-mapping")) {
                     const Value& pathMapping = readerJSON["path-mapping"];
                     if (!pathMapping.IsArray()) {
@@ -426,102 +380,270 @@ int main(int argc, char **argv) {
                     for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
                         const Value& sourceMapping = pathMapping[j * 2];
                         const Value& targetMapping = pathMapping[j * 2 + 1];
-                        oracleAnalyser->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                        oracleAnalyzer->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
                     }
                 }
-            }
 
-            if (readerType == READER_BATCH) {
-                if (!readerJSON.HasMember("redo-logs")) {
-                    CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
+                //optional
+                if (sourceJSON.HasMember("arch")) {
+                    const Value& archJSON = sourceJSON["arch"];
+                    if (strcmp(archJSON.GetString(), "path") == 0)
+                        oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
+                    else if (strcmp(archJSON.GetString(), "online") == 0) {
+                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
+                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0)
+                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                    else {
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
+                    }
                 }
 
-                const Value& redoLogsBatch = readerJSON["redo-logs"];
-                if (!redoLogsBatch.IsArray()) {
-                    CONFIG_FAIL("bad JSON, \"redo-logs\" field should be array");
+            } else if (strcmp(readerTypeJSON.GetString(), "offline") == 0) {
+
+                oracleAnalyzer = new OracleAnalyzer(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
+                        trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
+                        archReadSleep, memoryMinMb, memoryMaxMb);
+
+                if (oracleAnalyzer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
 
-                for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
-                    const Value& path = redoLogsBatch[j];
-                    oracleAnalyser->addRedoLogsBatch(path.GetString());
-                }
-            }
+                if (readerJSON.HasMember("path-mapping")) {
+                    const Value& pathMapping = readerJSON["path-mapping"];
+                    if (!pathMapping.IsArray()) {
+                        CONFIG_FAIL("bad JSON, \"path-mapping\" should be array");
+                    }
+                    if ((pathMapping.Size() % 2) != 0) {
+                        CONFIG_FAIL("bad JSON, \"path-mapping\" should contain even number of elements");
+                    }
 
-            outputBuffer->initialize(oracleAnalyser);
-
-            if (readerType == READER_OFFLINE || readerType == READER_BATCH) {
-                if (!oracleAnalyser->readSchema()) {
-                    CONFIG_FAIL("bad JSON, can't read schema from <database>-schema.json");
+                    for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
+                        const Value& sourceMapping = pathMapping[j * 2];
+                        const Value& targetMapping = pathMapping[j * 2 + 1];
+                        oracleAnalyzer->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                    }
                 }
+
+            } else if (strcmp(readerTypeJSON.GetString(), "asm") == 0 ||
+                    strcmp(readerTypeJSON.GetString(), "asm-standby") == 0) {
+#ifndef LINK_LIBRARY_OCI
+                RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
+#endif /*LINK_LIBRARY_OCI*/
+
+                bool isStandby = false;
+                if (strcmp(readerTypeJSON.GetString(), "asm-standby") == 0)
+                    isStandby = true;
+
+                const char *user = "";
+                const Value& userJSON = getJSONfieldV(configFileName, readerJSON, "user");
+                user = userJSON.GetString();
+
+                const char *password = "";
+                const Value& passwordJSON = getJSONfieldV(configFileName, readerJSON, "password");
+                password = passwordJSON.GetString();
+
+                const char *server = "";
+                const Value& serverJSON = getJSONfieldV(configFileName, readerJSON, "server");
+                server = serverJSON.GetString();
+
+                const char *userASM = "";
+                const Value& userASMJSON = getJSONfieldV(configFileName, readerJSON, "user-asm");
+                userASM = userASMJSON.GetString();
+
+                const char *passwordASM = "";
+                const Value& passwordASMJSON = getJSONfieldV(configFileName, readerJSON, "password-asm");
+                passwordASM = passwordASMJSON.GetString();
+
+                const char *serverASM = "";
+                const Value& serverASMJSON = getJSONfieldV(configFileName, readerJSON, "server-asm");
+                serverASM = serverASMJSON.GetString();
+
+                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
+                        trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
+                        archReadSleep, memoryMinMb, memoryMaxMb,
+                        user, password, server, userASM, passwordASM, serverASM, isStandby);
+
+                if (oracleAnalyzer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
+                }
+
+                //optional
+                if (sourceJSON.HasMember("arch")) {
+                    const Value& archJSON = sourceJSON["arch"];
+                    if (strcmp(archJSON.GetString(), "path") == 0)
+                        oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
+                    else if (strcmp(archJSON.GetString(), "online") == 0) {
+                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
+                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0)
+                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                    else {
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
+                    }
+                }
+
+            } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
+                 flags |= REDO_FLAGS_ARCH_ONLY;
+
+                 if (!readerJSON.HasMember("redo-logs")) {
+                     CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
+                 }
+
+                 const Value& redoLogsBatch = readerJSON["redo-logs"];
+                 if (!redoLogsBatch.IsArray()) {
+                     CONFIG_FAIL("bad JSON, \"redo-logs\" field should be array");
+                 }
+
+                 for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
+                     const Value& path = redoLogsBatch[j];
+                     oracleAnalyzer->addRedoLogsBatch(path.GetString());
+                 }
+
+                 oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
+
             } else {
-                oracleAnalyser->initializeOnlineMode();
-
-                string keysStr("");
-                vector<string> keys;
-                if (sourceJSON.HasMember("event-table")) {
-                    const Value& eventtableJSON = sourceJSON["event-table"];
-                    oracleAnalyser->addTable(eventtableJSON.GetString(), keys, keysStr, 1);
-                }
-
-                const Value& tablesJSON = getJSONfield(configFileName, sourceJSON, "tables");
-                if (!tablesJSON.IsArray()) {
-                    CONFIG_FAIL("bad JSON, field \"tables\" should be array");
-                }
-
-                for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
-                    const Value& tableJSON = getJSONfield(configFileName, tablesJSON[j], "table");
-
-                    if (tablesJSON[j].HasMember("key")) {
-                        const Value& key = tablesJSON[j]["key"];
-                        keysStr = key.GetString();
-                        stringstream keyStream(keysStr);
-
-                        while (keyStream.good()) {
-                            string keyCol, keyCol2;
-                            getline(keyStream, keyCol, ',' );
-                            keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
-                            transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
-                            keys.push_back(keyCol);
-                        }
-                    } else
-                        keysStr = "";
-                    oracleAnalyser->addTable(tableJSON.GetString(), keys, keysStr, 0);
-                    keys.clear();
-                }
-
-                oracleAnalyser->writeSchema();
+                CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());
             }
 
-            if (pthread_create(&oracleAnalyser->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyser)) {
-                RUNTIME_FAIL("error spawning thread - oracle analyser");
+            outputBuffer->initialize(oracleAnalyzer);
+
+            if (sourceJSON.HasMember("event-table")) {
+                const Value& eventtableJSON = sourceJSON["event-table"];
+                SchemaElement *element = oracleAnalyzer->schema->addElement();
+                element->mask = eventtableJSON.GetString();
+                element->options = 1;
             }
 
-            analysers.push_back(oracleAnalyser);
-            oracleAnalyser = nullptr;
+            const Value& tablesJSON = getJSONfieldV(configFileName, sourceJSON, "tables");
+            if (!tablesJSON.IsArray()) {
+                CONFIG_FAIL("bad JSON, field \"tables\" should be array");
+            }
+
+            for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
+                const Value& tableJSON = getJSONfieldV(configFileName, tablesJSON[j], "table");
+                SchemaElement *element = oracleAnalyzer->schema->addElement();
+                element->mask = tableJSON.GetString();
+
+                if (tablesJSON[j].HasMember("key")) {
+                    const Value& key = tablesJSON[j]["key"];
+                    element->keysStr = key.GetString();
+                    stringstream keyStream(element->keysStr);
+
+                    while (keyStream.good()) {
+                        string keyCol, keyCol2;
+                        getline(keyStream, keyCol, ',' );
+                        keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
+                        transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
+                        element->keys.push_back(keyCol);
+                    }
+                } else
+                    element->keysStr = "";
+            }
+
+            if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
+                RUNTIME_FAIL("error spawning thread - oracle analyzer");
+            }
+
+            analyzers.push_back(oracleAnalyzer);
+            oracleAnalyzer = nullptr;
         }
 
         //iterate through targets
-        const Value& targetsJSON = getJSONfield(configFileName, document, "targets");
+        const Value& targetsJSON = getJSONfieldD(configFileName, document, "targets");
         if (!targetsJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, field \"targets\" should be array");
         }
         for (SizeType i = 0; i < targetsJSON.Size(); ++i) {
             const Value& targetJSON = targetsJSON[i];
-            const Value& aliasJSON = getJSONfield(configFileName, targetJSON, "alias");
+            const Value& aliasJSON = getJSONfieldV(configFileName, targetJSON, "alias");
             cerr << "Adding target: " << aliasJSON.GetString() << endl;
 
-            const Value& sourceJSON = getJSONfield(configFileName, targetJSON, "source");
-            OracleAnalyser *oracleAnalyser = nullptr;
-            for (OracleAnalyser *analyser : analysers)
-                if (analyser->alias.compare(sourceJSON.GetString()) == 0)
-                    oracleAnalyser = (OracleAnalyser*)analyser;
-            if (oracleAnalyser == nullptr) {
+            const Value& sourceJSON = getJSONfieldV(configFileName, targetJSON, "source");
+            OracleAnalyzer *oracleAnalyzer = nullptr;
+            for (OracleAnalyzer *analyzer : analyzers)
+                if (analyzer->alias.compare(sourceJSON.GetString()) == 0)
+                    oracleAnalyzer = (OracleAnalyzer*)analyzer;
+            if (oracleAnalyzer == nullptr) {
                 CONFIG_FAIL("bad JSON, couldn't find reader for \"source\" value: " << sourceJSON.GetString());
             }
 
             //writer
-            const Value& writerJSON = getJSONfield(configFileName, targetJSON, "writer");
-            const Value& writerTypeJSON = getJSONfield(configFileName, writerJSON, "type");
+            const Value& writerJSON = getJSONfieldV(configFileName, targetJSON, "writer");
+            const Value& writerTypeJSON = getJSONfieldV(configFileName, writerJSON, "type");
+
+            //optional
+            uint64_t pollInterval = 100000;
+            if (writerJSON.HasMember("poll-interval")) {
+                const Value& pollIntervalJSON = writerJSON["poll-interval"];
+                pollInterval = pollIntervalJSON.GetUint64();
+                if (pollInterval < 100 || pollInterval > 3600000000) {
+                    CONFIG_FAIL("bad JSON, invalid \"poll-interval\" value: " << pollIntervalJSON.GetString() << ", expected from 100 to 3600000000");
+                }
+            }
+
+            //optional
+            typescn startScn = 0;
+            if (writerJSON.HasMember("start-scn")) {
+                const Value& startScnJSON = writerJSON["start-scn"];
+                startScn = startScnJSON.GetUint64();
+            }
+
+            //optional
+            typeseq startSequence = 0;
+            if (writerJSON.HasMember("start-seq")) {
+                if (startScn > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-seq\"");
+                }
+                const Value& startSequenceJSON = writerJSON["start-seq"];
+                startSequence = startSequenceJSON.GetUint64();
+            }
+
+            //optional
+            int64_t startTimeRel = 0;
+            if (writerJSON.HasMember("start-time-rel")) {
+                if (startScn > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time-rel\"");
+                }
+                if (startSequence > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-seq\" used together with \"start-time-rel\"");
+                }
+                const Value& startTimeRelJSON = writerJSON["start-time-rel"];
+                startTimeRel = startTimeRelJSON.GetInt64();
+            }
+
+            //optional
+            const char *startTime = "";
+            if (writerJSON.HasMember("start-time")) {
+                if (startScn > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time\"");
+                }
+                if (startSequence > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-seq\" used together with \"start-time\"");
+                }
+                if (startTimeRel > 0) {
+                    CONFIG_FAIL("bad JSON, \"start-time-rel\" used together with \"start-time\"");
+                }
+                const Value& startTimeJSON = writerJSON["start-time"];
+                startTime = startTimeJSON.GetString();
+            }
+
+            //optional
+            uint32_t checkpointInterval = 10;
+            if (writerJSON.HasMember("checkpoint-interval")) {
+                const Value& checkpointIntervalJSON = writerJSON["checkpoint-interval"];
+                checkpointInterval = checkpointIntervalJSON.GetUint64();
+            }
+
+            //optional
+            uint64_t queueSize = 65536;
+            if (writerJSON.HasMember("queue-size")) {
+                const Value& queueSizeJSON = writerJSON["queue-size"];
+                queueSize = queueSizeJSON.GetUint64();
+                if (queueSize < 1 || queueSize > 1000000) {
+                    CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << queueSizeJSON.GetString() << ", expected from 1 to 1000000");
+                }
+            }
 
             if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
                 const char *name = "";
@@ -530,7 +652,8 @@ int main(int argc, char **argv) {
                     name = nameJSON.GetString();
                 }
 
-                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyser, name);
+                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, name, pollInterval, checkpointInterval, queueSize,
+                        startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
@@ -555,18 +678,30 @@ int main(int argc, char **argv) {
                         maxMessages = MAX_KAFKA_MAX_MESSAGES;
                 }
 
-                const Value& brokersJSON = getJSONfield(configFileName, writerJSON, "brokers");
-                const Value& topicJSON = getJSONfield(configFileName, writerJSON, "topic");
+                //optional
+                uint64_t enableIdempocence = 1;
+                if (writerJSON.HasMember("enable-idempocence")) {
+                    const Value& enableIdempocenceJSON = writerJSON["enable-idempocence"];
+                    enableIdempocence = enableIdempocenceJSON.GetUint64();
+                    if (enableIdempocence > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"enable-idempocence\" value: " << enableIdempocenceJSON.GetString() << ", expected values {0, 1}");
+                    }
+                }
 
-                writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyser, brokersJSON.GetString(),
-                        topicJSON.GetString(), maxMessageMb, maxMessages);
+                const Value& brokersJSON = getJSONfieldV(configFileName, writerJSON, "brokers");
+                const Value& topicJSON = getJSONfieldV(configFileName, writerJSON, "topic");
+
+                writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyzer, brokersJSON.GetString(),
+                        topicJSON.GetString(), maxMessageMb, maxMessages, pollInterval, checkpointInterval, queueSize,
+                        startScn, startSequence, startTime, startTimeRel, enableIdempocence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: kafka writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
-                const Value& uriJSON = getJSONfield(configFileName, writerJSON, "uri");
+                const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
-                writer = new WriterService(aliasJSON.GetString(), oracleAnalyser, uriJSON.GetString());
+                writer = new WriterService(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
+                        queueSize, startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterService) << " bytes memory (for: service writer)");
                 }
@@ -574,7 +709,7 @@ int main(int argc, char **argv) {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
             }
 
-            oracleAnalyser->outputBuffer->setWriter(writer);
+            oracleAnalyzer->outputBuffer->setWriter(writer);
             if (pthread_create(&writer->pthread, nullptr, &Thread::runStatic, (void*)writer)) {
                 RUNTIME_FAIL("error spawning thread - kafka writer");
             }
@@ -586,26 +721,26 @@ int main(int argc, char **argv) {
         //sleep until killed
         {
             unique_lock<mutex> lck(mainMtx);
-            mainThread.wait(lck);
+            if (!mainShutdown)
+                mainThread.wait(lck);
         }
 
     } catch(ConfigurationException &ex) {
     } catch(RuntimeException &ex) {
     }
 
-    if (oracleAnalyser != nullptr)
-        analysers.push_back(oracleAnalyser);
+    if (oracleAnalyzer != nullptr)
+        analyzers.push_back(oracleAnalyzer);
 
     if (writer != nullptr)
         writers.push_back(writer);
 
-    //shut down all analysers
-    for (OracleAnalyser *analyser : analysers)
-        analyser->stop();
-    for (OracleAnalyser *analyser : analysers) {
-        if (analyser->started)
-            pthread_join(analyser->pthread, nullptr);
-    }
+    //shut down all analyzers
+    for (OracleAnalyzer *analyzer : analyzers)
+        analyzer->stop();
+    for (OracleAnalyzer *analyzer : analyzers)
+        if (analyzer->started)
+            pthread_join(analyzer->pthread, nullptr);
 
     //shut down writers
     for (Writer *writer : writers)
@@ -625,9 +760,9 @@ int main(int argc, char **argv) {
         delete outputBuffer;
     buffers.clear();
 
-    for (OracleAnalyser *analyser : analysers)
-        delete analyser;
-    analysers.clear();
+    for (OracleAnalyzer *analyzer : analyzers)
+        delete analyzer;
+    analyzers.clear();
 
     if (fid != -1)
         close(fid);

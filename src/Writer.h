@@ -31,23 +31,45 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class OutputBuffer;
-    class OracleAnalyser;
+    class OracleAnalyzer;
     class RedoLogRecord;
 
     class Writer : public Thread {
     protected:
         OutputBuffer *outputBuffer;
-        OracleAnalyser *oracleAnalyser;
-        uint8_t *msgBuffer;
+        OracleAnalyzer *oracleAnalyzer;
+        uint64_t confirmedMessages;
+        uint64_t sentMessages;
+        uint64_t pollInterval;
+        time_t previousCheckpoint;
+        uint64_t checkpointInterval;
+        uint64_t queueSize;
+        uint64_t curQueueSize;
+        uint64_t maxQueueSize;
+        OutputBufferMsg **queue;
+        typescn confirmedScn;
+        typescn checkpointScn;
+        typescn startScn;
+        typeseq startSequence;
+        string startTime;
+        int64_t startTimeRel;
 
-        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) = 0;
+        void createMessage(OutputBufferMsg *msg);
+        virtual void sendMessage(OutputBufferMsg *msg) = 0;
         virtual string getName() = 0;
+        virtual void pollQueue(void) = 0;
         virtual void *run(void);
+
+        virtual void writeCheckpoint(bool force);
+        virtual void readCheckpoint(void);
 
     public:
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
-        Writer(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t maxMessageMb);
+        Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollInterval,
+                uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSequence, const char* startTime,
+                int64_t startTimeRel);
         virtual ~Writer();
+        void confirmMessage(OutputBufferMsg *msg);
     };
 }
 

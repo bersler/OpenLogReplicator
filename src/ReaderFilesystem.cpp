@@ -21,15 +21,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "ReaderFilesystem.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
-        Reader(alias, oracleAnalyser, group, 0),
+    ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
+        Reader(alias, oracleAnalyzer, group, 0),
         fileDes(0),
         flags(0) {
     }
@@ -57,16 +57,16 @@ namespace OpenLogReplicator {
         flags = O_RDONLY | O_LARGEFILE;
         fileSize = fileStat.st_size;
 
-        if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) == 0)
+        if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) == 0)
             flags |= O_DIRECT;
-        if ((oracleAnalyser->flags & REDO_FLAGS_NOATIME) != 0)
+        if ((oracleAnalyzer->flags & REDO_FLAGS_NOATIME) != 0)
             flags |= O_NOATIME;
 
         fileDes = open(pathMapped.c_str(), flags);
         TRACE(TRACE2_FILE, "open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
-            if ((oracleAnalyser->flags & REDO_FLAGS_DIRECT) != 0)
+            if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0)
                 return REDO_ERROR;
 
             flags &= (~O_DIRECT);

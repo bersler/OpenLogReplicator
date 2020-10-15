@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "CharacterSet.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBufferProtobuf.h"
@@ -315,7 +315,7 @@ namespace OpenLogReplicator {
         lastTime = time;
         lastScn = scn;
         lastXid = xid;
-        outputBufferBegin();
+        outputBufferBegin(0);
 
         if (redoPB != nullptr) {
             RUNTIME_FAIL("ERROR, PB begin processing failed, message already exists, internal error");
@@ -383,7 +383,7 @@ namespace OpenLogReplicator {
             if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, message already exists, internal error");
             }
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             redoPB = new pb::Redo;
             appendHeader(true);
         }
@@ -401,9 +401,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
@@ -443,7 +443,7 @@ namespace OpenLogReplicator {
             if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message already exists, internal error");
             }
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             redoPB = new pb::Redo;
             appendHeader(true);
         }
@@ -461,9 +461,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
@@ -482,9 +482,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
@@ -524,7 +524,7 @@ namespace OpenLogReplicator {
             if (redoPB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, message already exists, internal error");
             }
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             redoPB = new pb::Redo;
             appendHeader(true);
         }
@@ -542,9 +542,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
