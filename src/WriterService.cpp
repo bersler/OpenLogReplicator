@@ -39,12 +39,14 @@ namespace OpenLogReplicator {
     }
 
     WriterService::~WriterService() {
+#ifdef LINK_LIBRARY_GRPC
         server_->Shutdown();
         cq_->Shutdown();
 
         void* ignored_tag;
         bool ignored_ok;
         while (cq_->Next(&ignored_tag, &ignored_ok)) {}
+#endif /* LINK_LIBRARY_GRPC */
     }
 
     void WriterService::sendMessage(OutputBufferMsg *msg) {
