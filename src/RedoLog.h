@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
         OpCode *opCodes[VECTOR_MAX_LENGTH];
         RedoLogRecord zero;
         uint64_t vectors;
-        uint64_t lwnCur;
+        uint64_t lwnConfirmedBlock;
         uint8_t *lwnChunks[MAX_LWN_CHUNKS];
         uint64_t lwnAllocated;
         typetime lwnTimestamp;

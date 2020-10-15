@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
     RedoLog::RedoLog(OracleAnalyzer *oracleAnalyzer, int64_t group, const char *path) :
             oracleAnalyzer(oracleAnalyzer),
             vectors(0),
-            lwnCur(2),
+            lwnConfirmedBlock(2),
             lwnAllocated(0),
             lwnTimestamp(0),
             lwnRecords(0),
@@ -76,9 +76,8 @@ namespace OpenLogReplicator {
     }
 
     RedoLog::~RedoLog() {
-        for (uint64_t i = 0; i < lwnAllocated; ++i)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
-        lwnAllocated = 0;
+        while (lwnAllocated > 0)
+            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
 
         for (uint64_t i = 0; i < vectors; ++i) {
             if (opCodes[i] != nullptr) {
@@ -874,23 +873,21 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::resetRedo(void) {
-        lwnCur = 2;
+        lwnConfirmedBlock = 2;
 
-        for (uint64_t i = 1; i < lwnAllocated; ++i)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
-        lwnAllocated = 1;
+        while (lwnAllocated > 1)
+            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
         uint64_t *length = (uint64_t *)lwnChunks[0];
         *length = sizeof(uint64_t);
     }
 
     void RedoLog::continueRedo(RedoLog *prev) {
-        lwnCur = prev->lwnCur;
-        reader->bufferStart = prev->lwnCur * prev->reader->blockSize;
-        reader->bufferEnd = prev->lwnCur * prev->reader->blockSize;
+        lwnConfirmedBlock = prev->lwnConfirmedBlock;
+        reader->bufferStart = prev->lwnConfirmedBlock * prev->reader->blockSize;
+        reader->bufferEnd = prev->lwnConfirmedBlock * prev->reader->blockSize;
 
-        for (uint64_t i = 1; i < lwnAllocated; ++i)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
-        lwnAllocated = 1;
+        while (lwnAllocated > 1)
+            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
         uint64_t *length = (uint64_t *)lwnChunks[0];
         *length = sizeof(uint64_t);
     }
@@ -901,7 +898,7 @@ namespace OpenLogReplicator {
             nextScn = reader->nextScn;
         }
         INFO("processing redo log: " << *this);
-        uint64_t blockNumber = lwnCur, blockPos = 16, bufferPos = 0, blockNumberStart = lwnCur;
+        uint64_t currentBlock = lwnConfirmedBlock, blockPos = 16, bufferPos = 0, startBlock = lwnConfirmedBlock;
         uint64_t curBufferStart = 0, curBufferEnd = 0, curRet, curStatus;
         LwnMember *lwnMember;
 
@@ -929,9 +926,9 @@ namespace OpenLogReplicator {
             oracleAnalyzer->sleepingCond.notify_all();
         }
         curBufferStart = reader->bufferStart;
-        bufferPos = (blockNumber * reader->blockSize) % DISK_BUFFER_SIZE;
-        uint64_t recordLength4 = 0, recordPos = 0, recordLeftToCopy = 0, lwnEnd = lwnCur, lwnStart = lwnCur;
-        uint16_t lwnNumChk = 0, lwnNumChkMax = 0;
+        bufferPos = (currentBlock * reader->blockSize) % DISK_BUFFER_SIZE;
+        uint64_t recordLength4 = 0, recordPos = 0, recordLeftToCopy = 0, lwnEndBlock = lwnConfirmedBlock, lwnStartBlock = lwnConfirmedBlock;
+        uint16_t lwnNum = 0, lwnNumMax = 0;
 
         while (!oracleAnalyzer->shutdown) {
             //there is some work to do
@@ -941,19 +938,17 @@ namespace OpenLogReplicator {
 
                 blockPos = 16;
                 //new LWN block
-                if (blockNumber == lwnEnd) {
+                if (currentBlock == lwnEndBlock) {
                     uint8_t vld = reader->redoBuffer[bufferPos + blockPos + 4];
 
                     if ((vld & 0x04) != 0) {
-                        lwnNumChk = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 24);
-                        if (lwnNumChk == 0)
-                            lwnCur = blockNumber;
-                        lwnNumChkMax = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 26);
+                        lwnNum = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 24);
+                        lwnNumMax = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 26);
                         uint32_t lwnLength = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 28);
                         lwnTimestamp = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 64);
-                        lwnStart = blockNumber;
-                        lwnEnd = lwnStart + lwnLength;
-                        TRACE(TRACE2_LWN, "LWN: at: " << dec << lwnStart << " length: " << lwnLength << " chk: " << dec << lwnNumChk << " max: " << lwnNumChkMax);
+                        lwnStartBlock = currentBlock;
+                        lwnEndBlock = lwnStartBlock + lwnLength;
+                        TRACE(TRACE2_LWN, "LWN: at: " << dec << lwnStartBlock << " length: " << lwnLength << " chk: " << dec << lwnNum << " max: " << lwnNumMax);
                     } else {
                         RUNTIME_FAIL("did not find LWN at pos: " << dec << curBufferStart);
                     }
@@ -986,7 +981,7 @@ namespace OpenLogReplicator {
                                     ((uint64_t)(oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 6)) << 32);
                             lwnMember->subScn = oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 12);
                             //lwnMember->timestmap = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 64);
-                            lwnMember->block = blockNumber;
+                            lwnMember->block = currentBlock;
                             lwnMember->pos = blockPos;
 
                             TRACE(TRACE2_LWN, "LWN: length: " << dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
@@ -1025,10 +1020,10 @@ namespace OpenLogReplicator {
                     recordPos += toCopy;
                 }
 
-                ++blockNumber;
+                ++currentBlock;
 
                 //checkpoint
-                if (blockNumber == lwnEnd && lwnNumChk + 1 == lwnNumChkMax) {
+                if (currentBlock == lwnEndBlock && lwnNum + 1 == lwnNumMax) {
                     try {
                         TRACE(TRACE2_LWN, "LWN: analyze");
                         for (uint64_t i = 0; i < lwnRecords; ++i)
@@ -1045,6 +1040,7 @@ namespace OpenLogReplicator {
                     lwnAllocated = 1;
                     *((uint64_t*)lwnChunks[0]) = 0;
                     lwnRecords = 0;
+                    lwnConfirmedBlock = currentBlock;
                 }
 
                 curBufferStart += reader->blockSize;
@@ -1085,14 +1081,14 @@ namespace OpenLogReplicator {
 
         clock_t cEnd = clock();
         double mySpeed = 0, myTime = 1000.0 * (cEnd-cStart) / CLOCKS_PER_SEC, suppLogPercent = 0.0;
-        if (blockNumber != blockNumberStart)
-            suppLogPercent = 100.0 * oracleAnalyzer->suppLogSize / ((blockNumber - blockNumberStart)* reader->blockSize);
+        if (currentBlock != startBlock)
+            suppLogPercent = 100.0 * oracleAnalyzer->suppLogSize / ((currentBlock - startBlock)* reader->blockSize);
         if (myTime > 0)
-            mySpeed = (blockNumber - blockNumberStart) * reader->blockSize / 1024 / 1024 / myTime * 1000;
+            mySpeed = (currentBlock - startBlock) * reader->blockSize / 1024 / 1024 / myTime * 1000;
 
         TRACE(TRACE2_PERFORMANCE, "redo processing time: " << myTime << " ms, " <<
                 "Speed: " << fixed << setprecision(2) << mySpeed << " MB/s, " <<
-                "Redo log size: " << dec << ((blockNumber - blockNumberStart) * reader->blockSize / 1024) << " kB, " <<
+                "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024) << " kB, " <<
                 "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
                 "(" << fixed << setprecision(2) << suppLogPercent << " %)");
 
