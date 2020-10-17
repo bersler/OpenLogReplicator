@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
             "   NAME"
             ",  SEQUENCE#"
             ",  FIRST_CHANGE#"
-            "   NEXT_CHANGE#"
+            ",  NEXT_CHANGE#"
             " FROM"
             "   SYS.V_$ARCHIVED_LOG"
             " WHERE"
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
 
     const char* OracleAnalyzerOnline::SQL_GET_SCN_FROM_SEQUENCE(
             "SELECT"
-            "   FIRST_CHANGE#"
+            "   FIRST_CHANGE# - 1 AS FIRST_CHANGE#"
             " FROM"
             "   SYS.V_$ARCHIVED_LOG"
             " WHERE"
@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
             "   AND ACTIVATION# = :k"
             " UNION ALL "
             "SELECT"
-            "   FIRST_CHANGE#"
+            "   FIRST_CHANGE# - 1 AS FIRST_CHANGE#"
             " FROM"
             "   SYS.V_$LOG"
             " WHERE"
@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
 
     const char* OracleAnalyzerOnline::SQL_GET_SCN_FROM_SEQUENCE_STANDBY(
             "SELECT"
-            "   FIRST_CHANGE#"
+            "   FIRST_CHANGE# -1 AS FIRST_CHANGE#"
             " FROM"
             "   SYS.V_$ARCHIVED_LOG"
             " WHERE"
@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
             "   AND ACTIVATION# = :k"
             " UNION ALL "
             "SELECT"
-            "   FIRST_CHANGE#"
+            "   FIRST_CHANGE# - 1 AS FIRST_CHANGE#"
             " FROM"
             "   SYS.V_$STANDBY_LOG"
             " WHERE"
@@ -131,14 +131,14 @@ namespace OpenLogReplicator {
             "   FROM"
             "     SYS.V_$LOG"
             "   WHERE"
-            "     FIRST_CHANGE# <= :i"
+            "     FIRST_CHANGE# - 1 <= :i"
             "   UNION "
             "  SELECT"
             "     SEQUENCE#"
             "   FROM"
             "     SYS.V_$ARCHIVED_LOG"
             "   WHERE"
-            "     FIRST_CHANGE# <= :i)");
+            "     FIRST_CHANGE# - 1 <= :i)");
 
     const char* OracleAnalyzerOnline::SQL_GET_SEQUENCE_FROM_SCN_STANDBY(
             "SELECT"
@@ -356,7 +356,7 @@ namespace OpenLogReplicator {
         if (shutdown)
             return;
 
-        typescn currentDatabaseScn;
+        typescn currentScn;
         typeresetlogs currentResetlogs;
         typeactivation currentActivation;
 
@@ -395,11 +395,11 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(3, suppLogDbPrimary);
             stmt.defineUInt64(4, suppLogDbAll);
             stmt.defineUInt64(5, isBigEndian);
-            stmt.defineUInt64(6, currentDatabaseScn);
+            stmt.defineUInt64(6, currentScn);
             stmt.defineUInt32(7, currentResetlogs);
             stmt.defineUInt32(8, currentActivation);
             char bannerStr[81]; stmt.defineString(9, bannerStr, sizeof(bannerStr));
-            char databaseContextStr[81]; stmt.defineString(10, databaseContextStr, sizeof(databaseContextStr));
+            char contextStr[81]; stmt.defineString(10, contextStr, sizeof(contextStr));
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
@@ -444,9 +444,9 @@ namespace OpenLogReplicator {
                     if (stmt2.executeQuery())
                         conName = conNameChar;
                 }
-                databaseContext = databaseContextStr;
+                context = contextStr;
 
-                INFO_("version: " << dec << bannerStr << ", database: " << databaseContext << ", resetlogs: " << dec << resetlogs <<
+                INFO_("version: " << dec << bannerStr << ", context: " << context << ", resetlogs: " << dec << resetlogs <<
                         ", activation: " << activation << ", con_id: " << conId << ", con_name: " << conName);
             } else {
                 RUNTIME_FAIL("trying to read SYS.V_$DATABASE");
@@ -515,12 +515,12 @@ namespace OpenLogReplicator {
             stmt.bindUInt32(2, resetlogs);
             stmt.bindUInt32(3, activation);
             stmt.bindUInt32(4, startSequence);
-            stmt.defineUInt64(1, databaseScn);
+            stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("can't find redo sequence " << dec << databaseSequence);
+                RUNTIME_FAIL("can't find redo sequence " << dec << sequence);
             }
-            databaseSequence = startSequence;
+            sequence = startSequence;
 
         //position by time
         } else if (startTime.length() > 0) {
@@ -533,7 +533,7 @@ namespace OpenLogReplicator {
             }
             stringstream ss;
             stmt.bindString(1, startTime);
-            stmt.defineUInt64(1, databaseScn);
+            stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find SCN for: " << startTime);
@@ -549,26 +549,26 @@ namespace OpenLogReplicator {
             }
 
             stmt.bindInt64(1, startTimeRel);
-            stmt.defineUInt64(1, databaseScn);
+            stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find SCN for " << dec << startTime);
             }
 
         } else if (startScn > 0) {
-            databaseScn = startScn;
+            scn = startScn;
         } else {
             //NOW
-            databaseScn = currentDatabaseScn;
+            scn = currentScn;
         }
 
-        if (databaseScn == 0) {
+        if (scn == 0) {
             RUNTIME_FAIL("getting database SCN");
         }
 
         OracleAnalyzer::initialize();
 
-        if (databaseSequence == 0) {
+        if (sequence == 0) {
             FULL_("starting sequence not found - starting with new batch");
 
             DatabaseStatement stmt(conn);
@@ -579,15 +579,15 @@ namespace OpenLogReplicator {
                 TRACE_(TRACE2_SQL, SQL_GET_SEQUENCE_FROM_SCN);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN);
             }
-            stmt.bindUInt64(1, databaseScn);
-            stmt.defineUInt32(1, databaseSequence);
+            stmt.bindUInt64(1, scn);
+            stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("getting database sequence for SCN: " << dec << databaseScn);
+                RUNTIME_FAIL("getting database sequence for SCN: " << dec << scn);
             }
         }
 
-        FULL_("start SEQ: " << dec << databaseSequence);
+        FULL_("start SEQ: " << dec << sequence);
 
         if (!keepConnection)
             closeConnection();
@@ -937,12 +937,12 @@ namespace OpenLogReplicator {
 
         DatabaseStatement stmt(((OracleAnalyzerOnline*)oracleAnalyzer)->conn);
         TRACE(TRACE2_SQL, SQL_GET_ARCHIVE_LOG_LIST << endl <<
-                "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->databaseSequence << endl <<
+                "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence << endl <<
                 "PARAM2: " << dec << oracleAnalyzer->resetlogs << endl <<
                 "PARAM3: " << dec << oracleAnalyzer->activation);
 
         stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-        stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->databaseSequence);
+        stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
         stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
         stmt.bindUInt32(3, oracleAnalyzer->activation);
 

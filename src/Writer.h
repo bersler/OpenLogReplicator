@@ -30,8 +30,9 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class OutputBuffer;
     class OracleAnalyzer;
+    class OutputBuffer;
+    struct OutputBufferMsg;
     class RedoLogRecord;
 
     class Writer : public Thread {

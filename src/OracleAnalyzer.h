@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
 
     class OracleAnalyzer : public Thread {
     protected:
-        typeseq databaseSequence;
+        typeseq sequence;
 
         priority_queue<RedoLog*, vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
         set<RedoLog*> onlineRedoSet;
@@ -101,8 +101,8 @@ namespace OpenLogReplicator {
         condition_variable sleepingCond;
         condition_variable analyzerCond;
         condition_variable memoryCond;
-        string databaseContext;
-        typescn databaseScn;
+        string context;
+        typescn scn;
         typescn startScn;
         typeseq startSequence;
         string startTime;

@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
             uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
         Thread(alias),
-        databaseSequence(0),
+        sequence(0),
         suppLogDbPrimary(0),
         suppLogDbAll(0),
         memoryMinMb(memoryMinMb),
@@ -62,8 +62,8 @@ namespace OpenLogReplicator {
         database(database),
         archReader(nullptr),
         waitingForWriter(false),
-        databaseContext(""),
-        databaseScn(0),
+        context(""),
+        scn(0),
         startScn(ZERO_SCN),
         startSequence(0),
         startTimeRel(0),
@@ -403,7 +403,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initialize(void) {
-        INFO_("last confirmed SCN: " << dec << databaseScn);
+        INFO_("last confirmed SCN: " << dec << scn);
 
         if (!schema->readSchema(this)) {
             refreshSchema();
@@ -464,11 +464,11 @@ namespace OpenLogReplicator {
 
                     while (!shutdown) {
                         redo = nullptr;
-                        TRACE_(TRACE2_REDO, "searching online redo log for sequence: " << dec << databaseSequence);
+                        TRACE_(TRACE2_REDO, "searching online redo log for sequence: " << dec << sequence);
 
                         //find the candidate to read
                         for (RedoLog *redoLog : onlineRedoSet) {
-                            if (redoLog->sequence == databaseSequence)
+                            if (redoLog->sequence == sequence)
                                 redo = redoLog;
                             TRACE_(TRACE2_REDO, redoLog->path << " is " << dec << redoLog->sequence);
                         }
@@ -478,9 +478,9 @@ namespace OpenLogReplicator {
                             bool isHigher = false;
                             while (!shutdown) {
                                 for (RedoLog *redoTmp : onlineRedoSet) {
-                                    if (redoTmp->reader->sequence > databaseSequence)
+                                    if (redoTmp->reader->sequence > sequence)
                                         isHigher = true;
-                                    if (redoTmp->reader->sequence == databaseSequence)
+                                    if (redoTmp->reader->sequence == sequence)
                                         redo = redoTmp;
                                 }
 
@@ -521,7 +521,7 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                        ++databaseSequence;
+                        ++sequence;
                     }
                 }
 
@@ -535,29 +535,29 @@ namespace OpenLogReplicator {
 
                 if (archiveRedoQueue.empty()) {
                     if ((flags & REDO_FLAGS_ARCH_ONLY) != 0) {
-                        TRACE_(TRACE2_ARCHIVE_LIST, "archived redo log missing for sequence: " << dec << databaseSequence << ", sleeping");
+                        TRACE_(TRACE2_ARCHIVE_LIST, "archived redo log missing for sequence: " << dec << sequence << ", sleeping");
                         usleep(archReadSleep);
                     } else {
-                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << databaseSequence);
+                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << sequence);
                     }
                 }
 
                 while (!archiveRedoQueue.empty() && !shutdown) {
                     RedoLog *redoPrev = redo;
                     redo = archiveRedoQueue.top();
-                    TRACE_(TRACE2_REDO, "searching archived redo log for sequence: " << dec << databaseSequence);
+                    TRACE_(TRACE2_REDO, "searching archived redo log for sequence: " << dec << sequence);
 
                     //when no checkpoint exists start processing from first file
-                    if (databaseSequence == 0)
-                        databaseSequence = redo->sequence;
+                    if (sequence == 0)
+                        sequence = redo->sequence;
 
                     //skip older archived redo logs
-                    if (redo->sequence < databaseSequence) {
+                    if (redo->sequence < sequence) {
                         archiveRedoQueue.pop();
                         delete redo;
                         continue;
-                    } else if (redo->sequence > databaseSequence) {
-                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << databaseSequence << ", found: " << redo->sequence << " instead");
+                    } else if (redo->sequence > sequence) {
+                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << sequence << ", found: " << redo->sequence << " instead");
                     }
 
                     logsProcessed = true;
@@ -587,7 +587,7 @@ namespace OpenLogReplicator {
                         RUNTIME_FAIL("archive log processing returned: " << dec << ret);
                     }
 
-                    ++databaseSequence;
+                    ++sequence;
                     archiveRedoQueue.pop();
                     delete redo;
                     redo = nullptr;
@@ -1012,7 +1012,7 @@ namespace OpenLogReplicator {
 
                 TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 
-                if (sequence == 0 || sequence < oracleAnalyzer->databaseSequence)
+                if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
 
                 RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName.c_str());
@@ -1067,7 +1067,7 @@ namespace OpenLogReplicator {
 
                 TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 
-                if (sequence == 0 || sequence < oracleAnalyzer->databaseSequence)
+                if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
 
                 RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
@@ -1098,7 +1098,7 @@ namespace OpenLogReplicator {
 
                     TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 
-                    if (sequence == 0 || sequence < oracleAnalyzer->databaseSequence)
+                    if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                         continue;
 
                     RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName.c_str());

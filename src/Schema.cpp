@@ -93,8 +93,8 @@ namespace OpenLogReplicator {
         const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
         oracleAnalyzer->activation = activationJSON.GetUint64();
 
-        const Value& databaseContextJSON = getJSONfieldD(fileName, document, "database-context");
-        oracleAnalyzer->databaseContext = databaseContextJSON.GetString();
+        const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
+        oracleAnalyzer->context = databaseContextJSON.GetString();
 
         const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
         oracleAnalyzer->conId = conIdJSON.GetUint64();
@@ -289,7 +289,7 @@ namespace OpenLogReplicator {
                 "\"big-endian\":" << dec << oracleAnalyzer->isBigEndian << "," <<
                 "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
                 "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
-                "\"database-context\":\"" << oracleAnalyzer->databaseContext << "\"," <<
+                "\"context\":\"" << oracleAnalyzer->context << "\"," <<
                 "\"con-id\":" << dec << oracleAnalyzer->conId << "," <<
                 "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
                 "\"db-recovery-file-dest\":\"";

@@ -115,19 +115,18 @@ typedef uint64_t typeunicode;
 #define TRACE_INFO                              2
 #define TRACE_FULL                              3
 
-#define TRACE2_THREADS                          0x0000001
-#define TRACE2_SQL                              0x0000002
-#define TRACE2_FILE                             0x0000004
-#define TRACE2_DISK                             0x0000008
-#define TRACE2_MEMORY                           0x0000010
-#define TRACE2_PERFORMANCE                      0x0000020
-#define TRACE2_VECTOR                           0x0000040
-#define TRACE2_TRANSACTION                      0x0000080
-#define TRACE2_LWN                              0x0000100
-#define TRACE2_REDO                             0x0000200
-#define TRACE2_DML                              0x0000200
-#define TRACE2_ARCHIVE_LIST                     0x0000400
-#define TRACE2_DUMP                             0x0000800
+#define TRACE2_DML                              0x0000001
+#define TRACE2_DUMP                             0x0000002
+#define TRACE2_LWN                              0x0000004
+#define TRACE2_THREADS                          0x0000008
+#define TRACE2_SQL                              0x0000010
+#define TRACE2_FILE                             0x0000020
+#define TRACE2_DISK                             0x0000040
+#define TRACE2_MEMORY                           0x0000080
+#define TRACE2_PERFORMANCE                      0x0000100
+#define TRACE2_TRANSACTION                      0x0000200
+#define TRACE2_REDO                             0x0000400
+#define TRACE2_ARCHIVE_LIST                     0x0000800
 #define TRACE2_KAFKA                            0x0001000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x0000001
@@ -191,25 +190,6 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class OracleAnalyzer;
-
-    struct OutputBufferQueue {
-        uint64_t id;
-        uint64_t length;
-        uint8_t* data;
-        OutputBufferQueue *next;
-    };
-
-    struct OutputBufferMsg {
-        uint64_t id;
-        uint64_t queueId;
-        uint64_t length;
-        typescn scn;
-        OracleAnalyzer *oracleAnalyzer;
-        uint8_t* data;
-        uint32_t dictId;
-        uint16_t pos;
-        uint16_t flags;
-    };
 
     class typetime {
         uint32_t val;

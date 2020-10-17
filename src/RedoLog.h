@@ -39,7 +39,6 @@ namespace OpenLogReplicator {
         typesubscn subScn;
         typeblk block;
         uint64_t pos;
-        uint32_t length;
     };
 
     class RedoLog {

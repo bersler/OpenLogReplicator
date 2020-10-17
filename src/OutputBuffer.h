@@ -47,6 +47,25 @@ namespace OpenLogReplicator {
         bool merge;
     };
 
+    struct OutputBufferQueue {
+        uint64_t id;
+        uint64_t length;
+        uint8_t* data;
+        OutputBufferQueue *next;
+    };
+
+    struct OutputBufferMsg {
+        uint64_t id;
+        uint64_t queueId;
+        uint64_t length;
+        typescn scn;
+        OracleAnalyzer *oracleAnalyzer;
+        uint8_t* data;
+        uint32_t dictId;
+        uint16_t pos;
+        uint16_t flags;
+    };
+
     class OutputBuffer {
     protected:
         static const char map64[65];

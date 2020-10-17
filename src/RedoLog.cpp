@@ -710,7 +710,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
                 transaction->isRollback = true;
 
-            if (transaction->lastScn > oracleAnalyzer->databaseScn) {
+            if (transaction->lastScn > oracleAnalyzer->scn) {
                 if (transaction->shutdown)
                     stopMain();
                 else {
@@ -907,7 +907,7 @@ namespace OpenLogReplicator {
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
                 stringstream name;
-                name << oracleAnalyzer->databaseContext.c_str() << "-" << dec << sequence << ".logdump";
+                name << oracleAnalyzer->context.c_str() << "-" << dec << sequence << ".logdump";
                 oracleAnalyzer->dumpStream.open(name.str());
                 if (!oracleAnalyzer->dumpStream.is_open()) {
                     WARNING("can't open " << name.str() << " for write. Aborting log dump.");
@@ -933,7 +933,7 @@ namespace OpenLogReplicator {
         while (!oracleAnalyzer->shutdown) {
             //there is some work to do
             while (curBufferStart < curBufferEnd) {
-                TRACE(TRACE2_VECTOR, "block " << dec << (curBufferStart / reader->blockSize) << " left: " << dec << recordLeftToCopy << ", last length: "
+                TRACE(TRACE2_LWN, "LWN block: " << dec << (curBufferStart / reader->blockSize) << " left: " << dec << recordLeftToCopy << ", last length: "
                             << recordLength4);
 
                 blockPos = 16;
@@ -975,12 +975,10 @@ namespace OpenLogReplicator {
                             }
 
                             lwnMember = (struct LwnMember*)(lwnChunks[lwnAllocated - 1] + *length);
-                            *((uint64_t*)lwnChunks[lwnAllocated - 1]) += sizeof(LwnMember) + recordLength4;
-                            lwnMember->length = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos);
+                            *length += sizeof(LwnMember) + recordLength4;
                             lwnMember->scn = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 8) |
                                     ((uint64_t)(oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 6)) << 32);
                             lwnMember->subScn = oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 12);
-                            //lwnMember->timestmap = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 64);
                             lwnMember->block = currentBlock;
                             lwnMember->pos = blockPos;
 
