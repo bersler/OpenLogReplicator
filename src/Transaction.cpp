@@ -48,8 +48,8 @@ namespace OpenLogReplicator {
             oracleAnalyzer(oracleAnalyzer),
             xid(xid),
             firstSequence(0),
-            firstScn(ZERO_SCN),
-            lastScn(ZERO_SCN),
+            firstPos(0),
+            commitScn(0),
             firstTc(nullptr),
             lastTc(nullptr),
             opCodes(0),
@@ -109,32 +109,19 @@ namespace OpenLogReplicator {
         uint16_t myFieldLength = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
     }
 
-    void Transaction::touch(typescn scn, typeseq sequence) {
-        if (firstSequence == 0 || firstSequence > sequence)
-            firstSequence = sequence;
-        if (firstScn == ZERO_SCN || firstScn > scn)
-            firstScn = scn;
-        if (lastScn == ZERO_SCN || lastScn < scn)
-            lastScn = scn;
-    }
-
     void Transaction::add(RedoLogRecord *redoLogRecord) {
         oracleAnalyzer->transactionBuffer->addTransactionChunk(this, redoLogRecord);
         ++opCodes;
-        touch(redoLogRecord->scn, redoLogRecord->sequence);
     }
 
     void Transaction::add(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         oracleAnalyzer->transactionBuffer->addTransactionChunk(this, redoLogRecord1, redoLogRecord2);
         ++opCodes;
-        touch(redoLogRecord1->scn, redoLogRecord1->sequence);
     }
 
     void Transaction::rollbackLastOp(typescn scn) {
         oracleAnalyzer->transactionBuffer->rollbackTransactionChunk(this);
         --opCodes;
-        if (lastScn == ZERO_SCN || lastScn < scn)
-            lastScn = scn;
     }
 
     void Transaction::flush(void) {
@@ -144,7 +131,7 @@ namespace OpenLogReplicator {
         if (opCodes > 0 && !isRollback) {
             TRACE(TRACE2_TRANSACTION, *this);
 
-            oracleAnalyzer->outputBuffer->processBegin(lastScn, commitTimestamp, xid);
+            oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *last501 = nullptr;
 
@@ -165,6 +152,9 @@ namespace OpenLogReplicator {
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
                                     " op: " << setfill('0') << setw(8) << hex << op <<
+                                    " scn: " << dec << redoLogRecord1->scn <<
+                                    " subScn: " << dec << redoLogRecord1->subScn <<
+                                    " scnRecord: " << dec << redoLogRecord1->scnRecord <<
                                     " objn: " << dec << redoLogRecord1->objn <<
                                     " objd: " << dec << redoLogRecord1->objd <<
                                     " flg1: 0x" << setfill('0') << setw(4) << hex << redoLogRecord1->flg <<
@@ -363,7 +353,7 @@ namespace OpenLogReplicator {
                             oracleAnalyzer->outputBuffer->outputBufferSize() + DATA_BUFFER_SIZE > oracleAnalyzer->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
                         WARNING("big transaction divided (forced commit after " << oracleAnalyzer->outputBuffer->outputBufferSize() << " bytes)");
                         oracleAnalyzer->outputBuffer->processCommit();
-                        oracleAnalyzer->outputBuffer->processBegin(lastScn, commitTimestamp, xid);
+                        oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
                     }
 
                     if (opFlush) {
@@ -415,7 +405,9 @@ namespace OpenLogReplicator {
             tc = tc->next;
         }
 
-        os << "scn: " << dec << tran.firstScn << "-" << tran.lastScn <<
+        os << "scn: " << dec << tran.commitScn <<
+                " seq: " << dec << tran.firstSequence <<
+                " pos: " << dec << tran.firstPos <<
                 " xid: " << PRINTXID(tran.xid) <<
                 " flags: " << dec << tran.isBegin << "/" << tran.isRollback <<
                 " op: " << dec << tran.opCodes <<

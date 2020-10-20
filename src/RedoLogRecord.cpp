@@ -55,13 +55,15 @@ namespace OpenLogReplicator {
     ostream& operator<<(ostream& os, const RedoLogRecord& redo) {
         stringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
+                " scn: " << dec << redo.scn <<
+                " subScn: " << dec << redo.subScn <<
                 " xid: " << PRINTXID(redo.xid) <<
                 " op: " << setfill('0') << setw(4) << hex << redo.opCode <<
                 " cls: " << dec << redo.cls <<
                 " rbl: " << dec << redo.rbl <<
                 " seq: " << dec << (uint64_t)redo.seq <<
                 " typ: " << dec << (uint64_t)redo.typ <<
-                " con_id: " << dec << redo.conId <<
+                " conId: " << dec << redo.conId <<
                 " flgRecord: " << dec << redo.flgRecord <<
 //                " vectorNo: " << dec << vectorNo <<
                 " robjn: " << dec << redo.recordObjn <<

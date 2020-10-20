@@ -41,8 +41,8 @@ namespace OpenLogReplicator {
     public:
         typexid xid;
         typeseq firstSequence;
-        typescn firstScn;
-        typescn lastScn;
+        uint64_t firstPos;
+        typescn commitScn;
         TransactionChunk *firstTc;
         TransactionChunk *lastTc;
         uint64_t opCodes;
@@ -55,7 +55,6 @@ namespace OpenLogReplicator {
         Transaction(OracleAnalyzer *oracleAnalyzer, typexid xid);
         virtual ~Transaction();
 
-        void touch(typescn scn, typeseq sequence);
         void add(RedoLogRecord *redoLogRecord);
         void add(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void rollbackLastOp(typescn scn);

@@ -51,13 +51,17 @@ namespace OpenLogReplicator {
         uint8_t *lwnChunks[MAX_LWN_CHUNKS];
         uint64_t lwnAllocated;
         typetime lwnTimestamp;
+        typescn lwnScn;
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
         uint64_t lwnRecords;
+        uint64_t lwnStartBlock;
 
         void printHeaderInfo(void);
         void analyzeLwn(LwnMember* lwnMember);
-        //void flushTransactions(void);
-        void appendToTransaction(RedoLogRecord *redoLogRecord, LwnMember *lwnMember);
+        void appendToTransactionDDL(RedoLogRecord *redoLogRecord);
+        void appendToTransactionUndo(RedoLogRecord *redoLogRecord);
+        void appendToTransactionBegin(RedoLogRecord *redoLogRecord);
+        void appendToTransactionCommit(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void dumpRedoVector(uint8_t *data, uint64_t recordLength4);
 
