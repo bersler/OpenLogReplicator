@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         builder.RegisterService(&service_);
         cq_ = builder.AddCompletionQueue();
         server_ = builder.BuildAndStart();
-        cout << "Server listening on " << uri << endl;
+        cout << "GRPC server listening on " << uri << endl;
 #endif /* LINK_LIBRARY_GRPC */
     }
 

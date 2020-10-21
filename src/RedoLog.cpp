@@ -351,7 +351,8 @@ namespace OpenLogReplicator {
 
         if (headerLength > recordLength) {
             dumpRedoVector(data, recordLength);
-            REDOLOG_FAIL("too small log record, header length: " << dec << headerLength << ", field length: " << recordLength);
+            REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                    ": too small log record, header length: " << dec << headerLength << ", field length: " << recordLength);
         }
 
         uint64_t pos = headerLength;
@@ -380,7 +381,8 @@ namespace OpenLogReplicator {
 
             if (pos + fieldOffset + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("position of field list (" << dec << (pos + fieldOffset + 1) << ") outside of record, length: " << recordLength);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                                    ": position of field list (" << dec << (pos + fieldOffset + 1) << ") outside of record, length: " << recordLength);
             }
 
             uint8_t *fieldList = data + pos + fieldOffset;
@@ -404,7 +406,8 @@ namespace OpenLogReplicator {
 
                 if (pos + redoLogRecord[vectors].length > recordLength) {
                     dumpRedoVector(data, recordLength);
-                    REDOLOG_FAIL("position of field list outside of record (" <<
+                    REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                                        ": position of field list outside of record (" <<
                             "i: " << dec << i <<
                             " c: " << dec << redoLogRecord[vectors].fieldCnt << " " <<
                             " o: " << dec << fieldOffset <<
@@ -416,7 +419,8 @@ namespace OpenLogReplicator {
 
             if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("incomplete record, pos: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                                    ": incomplete record, pos: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
             }
 
             redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
@@ -1009,6 +1013,9 @@ namespace OpenLogReplicator {
                             TRACE(TRACE2_LWN, "LWN: length: " << dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
 
                             uint64_t lwnPos = lwnRecords++;
+                            if (lwnPos == MAX_RECORDS_IN_LWN) {
+                                RUNTIME_FAIL("all " << dec << lwnPos << " records in LWN were used");
+                            }
                             while (lwnPos > 0 &&
                                     (lwnMembers[lwnPos - 1]->scn > lwnMember->scn ||
                                         (lwnMembers[lwnPos - 1]->scn == lwnMember->scn && lwnMembers[lwnPos - 1]->subScn > lwnMember->subScn))) {
