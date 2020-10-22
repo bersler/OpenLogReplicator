@@ -231,6 +231,9 @@ namespace OpenLogReplicator {
         if (compatVsn == 0x120B0000) //18.11.0.0
             version = 0x18B00;
         else
+        if (compatVsn == 0x120C0000) //18.12.0.0
+            version = 0x18C00;
+        else
         if (compatVsn == 0x13000000) //19.0.0.0
             version = 0x19000;
         else
@@ -251,6 +254,9 @@ namespace OpenLogReplicator {
         else
         if (compatVsn == 0x13080000) //19.8.0.0
             version = 0x19800;
+        else
+        if (compatVsn == 0x13090000) //19.9.0.0
+            version = 0x19900;
 
         if (oracleAnalyzer->version == 0)
             oracleAnalyzer->version = version;

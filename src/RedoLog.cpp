@@ -1070,7 +1070,8 @@ namespace OpenLogReplicator {
                     for (uint64_t i = 1; i < lwnAllocated; ++i)
                         oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
                     lwnAllocated = 1;
-                    *((uint64_t*)lwnChunks[0]) = 0;
+                    uint64_t *length = (uint64_t *)lwnChunks[0];
+                    *length = sizeof(uint64_t);
                     lwnRecords = 0;
                     lwnConfirmedBlock = currentBlock;
                 }
