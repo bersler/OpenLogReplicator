@@ -1052,7 +1052,7 @@ namespace OpenLogReplicator {
                 ++currentBlock;
 
                 //checkpoint
-                if (currentBlock == lwnEndBlock && lwnNum + 1 == lwnNumMax) {
+                if (currentBlock == lwnEndBlock && lwnNum + 1 >= lwnNumMax) {
                     try {
                         TRACE(TRACE2_LWN, "LWN: analyze");
                         for (uint64_t i = 0; i < lwnRecords; ++i) {
