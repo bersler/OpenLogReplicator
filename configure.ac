@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.8.0-beta2],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.8.0-beta3],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -46,7 +46,7 @@ AC_TYPE_UINT8_T
 
 AC_ARG_WITH([rdkafka],
   [AS_HELP_STRING([--with-rdkafka=PATH], [rdkafka directory])],
-  [CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_LIBRDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
+  [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_LIBRDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
   [])
 
 AC_ARG_WITH([rapidjson],
@@ -56,16 +56,19 @@ AC_ARG_WITH([rapidjson],
 
 AC_ARG_WITH([grpc],
   [AS_HELP_STRING([--with-grpc=PATH], [grpc directory])],
-  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 `export PKG_CONFIG_PATH=$withval/lib/pkgconfig:$withval/lib64/pkgconfig; pkg-config --libs protobuf grpc++` $LDFLAGS"],
+  [GRPC=true; PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 `export PKG_CONFIG_PATH=$withval/lib/pkgconfig:$withval/lib64/pkgconfig; pkg-config --libs protobuf grpc++` $LDFLAGS"],
   [])
 
 AC_ARG_WITH([instantclient],
   [AS_HELP_STRING([--with-instantclient=PATH], [instant client directory])],
-  [CPPFLAGS="-I$withval/sdk/include -DLINK_LIBRARY_OCI $CPPFLAGS"; LDFLAGS="-L$withval -lclntshcore -lnnz19 -lclntsh $LDFLAGS"],
+  [OCI=true; CPPFLAGS="-I$withval/sdk/include -DLINK_LIBRARY_OCI $CPPFLAGS"; LDFLAGS="-L$withval -lclntshcore -lnnz19 -lclntsh $LDFLAGS"],
   [])
 
 CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmessage-length=0"
 LDFLAGS="$LDFLAGS -pthread"
+AM_CONDITIONAL([KAFKA_COMPILE], [test x$KAFKA = xtrue])
+AM_CONDITIONAL([OCI_COMPILE], [test x$OCI = xtrue])
+AM_CONDITIONAL([GRPC_COMPILE], [test x$GRPC = xtrue])
 AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
 
 AC_CONFIG_FILES([

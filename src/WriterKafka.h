@@ -20,13 +20,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <queue>
 #include <set>
 #include <stdint.h>
+#include <librdkafka/rdkafka.h>
 
 #include "types.h"
 #include "Writer.h"
-
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-#include <librdkafka/rdkafka.h>
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
 #ifndef WRITERKAFKA_H_
 #define WRITERKAFKA_H_
@@ -48,16 +45,12 @@ namespace OpenLogReplicator {
         uint64_t maxMessages;
         uint64_t enableIdempotence;
         char errstr[512];
-
-#ifdef LINK_LIBRARY_LIBRDKAFKA
         rd_kafka_t *rk;
         rd_kafka_topic_t *rkt;
         rd_kafka_conf_t *conf;
         static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque);
         static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque);
         static void logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf);
-
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
         virtual void sendMessage(OutputBufferMsg *msg);
         virtual string getName();

@@ -424,6 +424,9 @@ namespace OpenLogReplicator {
                 analyzerCond.wait(lck);
         }
 
+        if (shutdown)
+            return 0;
+
         string flagsStr;
         if (flags) {
             flagsStr = " (flags: " + to_string(flags) + ")";

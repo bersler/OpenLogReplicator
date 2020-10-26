@@ -17,26 +17,24 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifdef LINK_LIBRARY_GRPC
 #include <grpcpp/grpcpp.h>
 #include <grpc/support/log.h>
-#endif /* LINK_LIBRARY_GRPC */
 
 #include "types.h"
-#include "Writer.h"
-
-#ifdef LINK_LIBRARY_PROTOBUF
 #include "OraProtoBuf.pb.h"
 #include "OraProtoBuf.grpc.pb.h"
-#endif /* LINK_LIBRARY_PROTOBUF */
+#include "Writer.h"
+
+#define SERVICE_CONNECT             0
+#define SERVICE_READ                1
+#define SERVICE_WRITE               2
+#define SERVICE_DISCONNECT          3
 
 #ifndef WRITERSERVICE_H_
 #define WRITERSERVICE_H_
 
 using namespace std;
-#ifdef LINK_LIBRARY_GRPC
 using namespace grpc;
-#endif /* LINK_LIBRARY_GRPC */
 
 namespace OpenLogReplicator {
 
@@ -46,16 +44,22 @@ namespace OpenLogReplicator {
     class WriterService : public Writer {
     protected:
         string uri;
-#ifdef LINK_LIBRARY_GRPC
         ServerBuilder builder;
-        std::unique_ptr<ServerCompletionQueue> cq_;
-        pb::RedoStream::AsyncService service_;
-        std::unique_ptr<Server> server_;
-#endif /* LINK_LIBRARY_GRPC */
+        unique_ptr<ServerCompletionQueue> cq;
+        unique_ptr<pb::RedoStreamService::AsyncService> service;
+        unique_ptr<Server> server;
+        unique_ptr<ServerContext> context;
+        unique_ptr<ServerAsyncReaderWriter<pb::Response, pb::Request>> stream;
+        pb::Request request;
+        pb::Response response;
+        bool started;
 
         virtual void sendMessage(OutputBufferMsg *msg);
         virtual string getName();
         virtual void pollQueue(void);
+        void processInitialize(void);
+        void processConfirm(typescn scn);
+        virtual void readCheckpoint(void);
 
     public:
         WriterService(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *uri, uint64_t pollInterval,

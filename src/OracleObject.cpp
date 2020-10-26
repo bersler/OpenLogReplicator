@@ -39,9 +39,8 @@ namespace OpenLogReplicator {
     }
 
     OracleObject::~OracleObject() {
-        for (OracleColumn *column: columns) {
+        for (OracleColumn *column: columns)
             delete column;
-        }
         pk.clear();
         columns.clear();
         partitions.clear();

@@ -46,15 +46,11 @@ namespace OpenLogReplicator {
         brokers(brokers),
         topic(topic),
         maxMessages(maxMessages),
-        enableIdempotence(enableIdempotence)
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-        ,rk(nullptr),
+        enableIdempotence(enableIdempotence),
+        rk(nullptr),
         rkt(nullptr),
-        conf(nullptr)
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
-    {
+        conf(nullptr) {
 
-#ifdef LINK_LIBRARY_LIBRDKAFKA
         conf = rd_kafka_conf_new();
         if (conf == nullptr) {
             CONFIG_FAIL("Kafka failed to create configuration, message: " << errstr);
@@ -83,14 +79,9 @@ namespace OpenLogReplicator {
         conf = nullptr;
 
         rkt = rd_kafka_topic_new(rk, topic, nullptr);
-
-#else
-        RUNTIME_FAIL("Kafka writer is not compiled, exiting");
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
     WriterKafka::~WriterKafka() {
-#ifdef LINK_LIBRARY_LIBRDKAFKA
         if (conf != nullptr)
             rd_kafka_conf_destroy(conf);
 
@@ -102,10 +93,8 @@ namespace OpenLogReplicator {
             rd_kafka_destroy(rk);
 
         INFO("Kafka producer exit code: " << dec << err);
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
-#ifdef LINK_LIBRARY_LIBRDKAFKA
     void WriterKafka::dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque) {
         OutputBufferMsg *msg = (OutputBufferMsg *)rkmessage->_private;
         OracleAnalyzer *oracleAnalyzer = msg->oracleAnalyzer;
@@ -132,10 +121,8 @@ namespace OpenLogReplicator {
     void WriterKafka::logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf) {
         TRACE_(TRACE2_KAFKA, "level: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
     }
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
 
     void WriterKafka::sendMessage(OutputBufferMsg *msg) {
-#ifdef LINK_LIBRARY_LIBRDKAFKA
         for(;;) {
             rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
                     RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
@@ -157,8 +144,6 @@ namespace OpenLogReplicator {
         }
 
         rd_kafka_poll(rk, 0);
-
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
     }
 
     string WriterKafka::getName() {

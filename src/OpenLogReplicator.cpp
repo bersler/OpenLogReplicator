@@ -31,18 +31,30 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleAnalyzerBatch.h"
-#include "OracleAnalyzerOnline.h"
-#include "OracleAnalyzerOnlineASM.h"
 #include "OutputBuffer.h"
 #include "OutputBufferJson.h"
-#include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
 #include "Schema.h"
 #include "SchemaElement.h"
 #include "Writer.h"
 #include "WriterFile.h"
-#include "WriterKafka.h"
+
+#ifdef LINK_LIBRARY_GRPC
 #include "WriterService.h"
+#endif /* LINK_LIBRARY_GRPC */
+
+#ifdef LINK_LIBRARY_KAFKA
+#include "WriterKafka.h"
+#endif /* LINK_LIBRARY_KAFKA */
+
+#ifdef LINK_LIBRARY_OCI
+#include "OracleAnalyzerOnline.h"
+#include "OracleAnalyzerOnlineASM.h"
+#endif /* LINK_LIBRARY_OCI */
+
+#ifdef LINK_LIBRARY_PROTOBUF
+#include "OutputBufferProtobuf.h"
+#endif /* LINK_LIBRARY_PROTOBUF */
 
 using namespace std;
 using namespace rapidjson;
@@ -327,8 +339,12 @@ int main(int argc, char **argv) {
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
                 outputBuffer = new OutputBufferJson(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
             } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
+#ifdef LINK_LIBRARY_PROTOBUF
                 outputBuffer = new OutputBufferProtobuf(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
-            } else {
+#else
+                RUNTIME_FAIL("format \"protobuf\" is not compiled, exiting");
+#endif /* LINK_LIBRARY_PROTOBUF */
+                } else {
                 CONFIG_FAIL("bad JSON, invalid \"type\" value: " << formatTypeJSON.GetString());
             }
 
@@ -340,10 +356,7 @@ int main(int argc, char **argv) {
             const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
-#ifndef LINK_LIBRARY_OCI
-                RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
-#endif /*LINK_LIBRARY_OCI*/
-
+#ifdef LINK_LIBRARY_OCI
                 bool isStandby = false;
                 if (strcmp(readerTypeJSON.GetString(), "online-standby") == 0)
                     isStandby = true;
@@ -398,6 +411,9 @@ int main(int argc, char **argv) {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
                     }
                 }
+#else
+                RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
+#endif /*LINK_LIBRARY_OCI*/
 
             } else if (strcmp(readerTypeJSON.GetString(), "offline") == 0) {
 
@@ -427,10 +443,7 @@ int main(int argc, char **argv) {
 
             } else if (strcmp(readerTypeJSON.GetString(), "asm") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "asm-standby") == 0) {
-#ifndef LINK_LIBRARY_OCI
-                RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
-#endif /*LINK_LIBRARY_OCI*/
-
+#ifdef LINK_LIBRARY_OCI
                 bool isStandby = false;
                 if (strcmp(readerTypeJSON.GetString(), "asm-standby") == 0)
                     isStandby = true;
@@ -482,6 +495,9 @@ int main(int argc, char **argv) {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
                     }
                 }
+#else
+                RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
+#endif /*LINK_LIBRARY_OCI*/
 
             } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
                  flags |= REDO_FLAGS_ARCH_ONLY;
@@ -658,6 +674,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
+#ifdef LINK_LIBRARY_KAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
                     const Value& maxMessageMbJSON = writerJSON["max-message-mb"];
@@ -697,7 +714,11 @@ int main(int argc, char **argv) {
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: kafka writer)");
                 }
+#else
+                RUNTIME_FAIL("Service Kafka is not compiled, exiting")
+#endif /* LINK_LIBRARY_KAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
+#ifdef LINK_LIBRARY_GRPC
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
                 writer = new WriterService(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
@@ -705,7 +726,10 @@ int main(int argc, char **argv) {
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterService) << " bytes memory (for: service writer)");
                 }
-            } else {
+#else
+                RUNTIME_FAIL("Service writer is not compiled, exiting")
+#endif /* LINK_LIBRARY_GRPC */
+                } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
             }
 

@@ -35,9 +35,6 @@ CharacterSetZHT16HKSCS31.cpp \
 CharacterSetZHT32EUC.cpp \
 CharacterSetZHT32TRIS.cpp \
 ConfigurationException.cpp \
-DatabaseConnection.cpp \
-DatabaseEnvironment.cpp \
-DatabaseStatement.cpp \
 OpCode0501.cpp \
 OpCode0502.cpp \
 OpCode0504.cpp \
@@ -59,13 +56,10 @@ OpCode.cpp \
 OpenLogReplicator.cpp \
 OracleAnalyzer.cpp \
 OracleAnalyzerBatch.cpp \
-OracleAnalyzerOnline.cpp \
-OracleAnalyzerOnlineASM.cpp \
 OracleColumn.cpp \
 OracleObject.cpp \
 OutputBuffer.cpp \
 OutputBufferJson.cpp \
-OutputBufferProtobuf.cpp \
 ReaderASM.cpp \
 Reader.cpp \
 ReaderFilesystem.cpp \
@@ -79,10 +73,22 @@ Thread.cpp \
 TransactionBuffer.cpp \
 Transaction.cpp \
 Writer.cpp \
-WriterFile.cpp \
-WriterKafka.cpp \
-WriterService.cpp
+WriterFile.cpp
+
+if OCI_COMPILE
+OpenLogReplicator_SOURCES += DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
+endif
+
+if KAFKA_COMPILE
+OpenLogReplicator_SOURCES += WriterKafka.cpp
+endif
+
+if GRPC_COMPILE
+OpenLogReplicator_SOURCES += WriterService.cpp
+endif
 
 if PROTOBUF_COMPILE
-OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+bin_PROGRAMS += ClientGRPC
+OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp OutputBufferProtobuf.cpp
+ClientGRPC_SOURCES=ClientGRPC.cpp OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
 endif

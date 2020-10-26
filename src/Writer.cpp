@@ -62,7 +62,8 @@ namespace OpenLogReplicator {
         startScn(startScn),
         startSequence(startSequence),
         startTime(startTime),
-        startTimeRel(startTimeRel) {
+        startTimeRel(startTimeRel),
+        alwaysPoll(false) {
 
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
@@ -166,7 +167,7 @@ namespace OpenLogReplicator {
             for (;;) {
 
                 while (!shutdown) {
-                    if (curQueueSize > 0)
+                    if (alwaysPoll || curQueueSize > 0)
                         pollQueue();
                     writeCheckpoint(false);
 
@@ -194,7 +195,7 @@ namespace OpenLogReplicator {
                         if (curQueueSize > 0)
                             outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
                         else {
-                            if (checkpointScn == confirmedScn)
+                            if (checkpointScn == confirmedScn && !alwaysPoll)
                                 outputBuffer->writersCond.wait(lck);
                             else
                                 outputBuffer->writersCond.wait_for(lck, chrono::seconds(1));

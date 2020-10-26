@@ -96,8 +96,12 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = OpenLogReplicator$(EXEEXT)
-@PROTOBUF_COMPILE_TRUE@am__append_1 = OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
+@OCI_COMPILE_TRUE@am__append_1 = DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
+@KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
+@GRPC_COMPILE_TRUE@am__append_3 = WriterService.cpp
+@PROTOBUF_COMPILE_TRUE@am__append_4 = ClientGRPC
+@PROTOBUF_COMPILE_TRUE@am__append_5 = OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp OutputBufferProtobuf.cpp
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/config/depcomp
@@ -112,8 +116,20 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
+@PROTOBUF_COMPILE_TRUE@am__EXEEXT_1 = ClientGRPC$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am__ClientGRPC_SOURCES_DIST = ClientGRPC.cpp OraProtoBuf.pb.cpp \
+	OraProtoBuf.grpc.pb.cpp
+@PROTOBUF_COMPILE_TRUE@am_ClientGRPC_OBJECTS = ClientGRPC.$(OBJEXT) \
+@PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.$(OBJEXT) \
+@PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT)
+ClientGRPC_OBJECTS = $(am_ClientGRPC_OBJECTS)
+ClientGRPC_LDADD = $(LDADD)
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	CharacterSet7bit.cpp CharacterSet8bit.cpp \
 	CharacterSetAL16UTF16.cpp CharacterSetAL32UTF8.cpp \
@@ -123,23 +139,33 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	CharacterSetUTF8.cpp CharacterSetZHS16GBK.cpp \
 	CharacterSetZHS32GB18030.cpp CharacterSetZHT16HKSCS31.cpp \
 	CharacterSetZHT32EUC.cpp CharacterSetZHT32TRIS.cpp \
-	ConfigurationException.cpp DatabaseConnection.cpp \
-	DatabaseEnvironment.cpp DatabaseStatement.cpp OpCode0501.cpp \
-	OpCode0502.cpp OpCode0504.cpp OpCode0506.cpp OpCode050B.cpp \
-	OpCode0513.cpp OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp \
-	OpCode0B04.cpp OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp \
-	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
-	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
-	OracleAnalyzerBatch.cpp OracleAnalyzerOnline.cpp \
-	OracleAnalyzerOnlineASM.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
-	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
-	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
-	Schema.cpp SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
-	Transaction.cpp Writer.cpp WriterFile.cpp WriterKafka.cpp \
-	WriterService.cpp OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
-@PROTOBUF_COMPILE_TRUE@am__objects_1 = OraProtoBuf.pb.$(OBJEXT) \
-@PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT)
+	ConfigurationException.cpp OpCode0501.cpp OpCode0502.cpp \
+	OpCode0504.cpp OpCode0506.cpp OpCode050B.cpp OpCode0513.cpp \
+	OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp OpCode0B04.cpp \
+	OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp OpCode0B0B.cpp \
+	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
+	OpenLogReplicator.cpp OracleAnalyzer.cpp \
+	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
+	OutputBuffer.cpp OutputBufferJson.cpp ReaderASM.cpp Reader.cpp \
+	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
+	RedoLogRecord.cpp RuntimeException.cpp Schema.cpp \
+	SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp \
+	DatabaseConnection.cpp DatabaseEnvironment.cpp \
+	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
+	OracleAnalyzerOnlineASM.cpp WriterKafka.cpp WriterService.cpp \
+	OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp \
+	OutputBufferProtobuf.cpp
+@OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
+@OCI_COMPILE_TRUE@	DatabaseEnvironment.$(OBJEXT) \
+@OCI_COMPILE_TRUE@	DatabaseStatement.$(OBJEXT) \
+@OCI_COMPILE_TRUE@	OracleAnalyzerOnline.$(OBJEXT) \
+@OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT)
+@KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
+@GRPC_COMPILE_TRUE@am__objects_3 = WriterService.$(OBJEXT)
+@PROTOBUF_COMPILE_TRUE@am__objects_4 = OraProtoBuf.pb.$(OBJEXT) \
+@PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT) \
+@PROTOBUF_COMPILE_TRUE@	OutputBufferProtobuf.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSet7bit.$(OBJEXT) CharacterSet8bit.$(OBJEXT) \
 	CharacterSetAL16UTF16.$(OBJEXT) CharacterSetAL32UTF8.$(OBJEXT) \
@@ -152,33 +178,26 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSetZHS32GB18030.$(OBJEXT) \
 	CharacterSetZHT16HKSCS31.$(OBJEXT) \
 	CharacterSetZHT32EUC.$(OBJEXT) CharacterSetZHT32TRIS.$(OBJEXT) \
-	ConfigurationException.$(OBJEXT) DatabaseConnection.$(OBJEXT) \
-	DatabaseEnvironment.$(OBJEXT) DatabaseStatement.$(OBJEXT) \
-	OpCode0501.$(OBJEXT) OpCode0502.$(OBJEXT) OpCode0504.$(OBJEXT) \
-	OpCode0506.$(OBJEXT) OpCode050B.$(OBJEXT) OpCode0513.$(OBJEXT) \
-	OpCode0514.$(OBJEXT) OpCode0B02.$(OBJEXT) OpCode0B03.$(OBJEXT) \
-	OpCode0B04.$(OBJEXT) OpCode0B05.$(OBJEXT) OpCode0B06.$(OBJEXT) \
-	OpCode0B08.$(OBJEXT) OpCode0B0B.$(OBJEXT) OpCode0B0C.$(OBJEXT) \
-	OpCode0B10.$(OBJEXT) OpCode1801.$(OBJEXT) OpCode.$(OBJEXT) \
+	ConfigurationException.$(OBJEXT) OpCode0501.$(OBJEXT) \
+	OpCode0502.$(OBJEXT) OpCode0504.$(OBJEXT) OpCode0506.$(OBJEXT) \
+	OpCode050B.$(OBJEXT) OpCode0513.$(OBJEXT) OpCode0514.$(OBJEXT) \
+	OpCode0B02.$(OBJEXT) OpCode0B03.$(OBJEXT) OpCode0B04.$(OBJEXT) \
+	OpCode0B05.$(OBJEXT) OpCode0B06.$(OBJEXT) OpCode0B08.$(OBJEXT) \
+	OpCode0B0B.$(OBJEXT) OpCode0B0C.$(OBJEXT) OpCode0B10.$(OBJEXT) \
+	OpCode1801.$(OBJEXT) OpCode.$(OBJEXT) \
 	OpenLogReplicator.$(OBJEXT) OracleAnalyzer.$(OBJEXT) \
-	OracleAnalyzerBatch.$(OBJEXT) OracleAnalyzerOnline.$(OBJEXT) \
-	OracleAnalyzerOnlineASM.$(OBJEXT) OracleColumn.$(OBJEXT) \
+	OracleAnalyzerBatch.$(OBJEXT) OracleColumn.$(OBJEXT) \
 	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
-	OutputBufferJson.$(OBJEXT) OutputBufferProtobuf.$(OBJEXT) \
-	ReaderASM.$(OBJEXT) Reader.$(OBJEXT) \
-	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
+	OutputBufferJson.$(OBJEXT) ReaderASM.$(OBJEXT) \
+	Reader.$(OBJEXT) ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
 	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
 	RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
 	SchemaElement.$(OBJEXT) Thread.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
-	Writer.$(OBJEXT) WriterFile.$(OBJEXT) WriterKafka.$(OBJEXT) \
-	WriterService.$(OBJEXT) $(am__objects_1)
+	Writer.$(OBJEXT) WriterFile.$(OBJEXT) $(am__objects_1) \
+	$(am__objects_2) $(am__objects_3) $(am__objects_4)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -213,8 +232,9 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(OpenLogReplicator_SOURCES)
-DIST_SOURCES = $(am__OpenLogReplicator_SOURCES_DIST)
+SOURCES = $(ClientGRPC_SOURCES) $(OpenLogReplicator_SOURCES)
+DIST_SOURCES = $(am__ClientGRPC_SOURCES_DIST) \
+	$(am__OpenLogReplicator_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -368,21 +388,19 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	CharacterSetZHS16GBK.cpp CharacterSetZHS32GB18030.cpp \
 	CharacterSetZHT16HKSCS31.cpp CharacterSetZHT32EUC.cpp \
 	CharacterSetZHT32TRIS.cpp ConfigurationException.cpp \
-	DatabaseConnection.cpp DatabaseEnvironment.cpp \
-	DatabaseStatement.cpp OpCode0501.cpp OpCode0502.cpp \
-	OpCode0504.cpp OpCode0506.cpp OpCode050B.cpp OpCode0513.cpp \
-	OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp OpCode0B04.cpp \
-	OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp OpCode0B0B.cpp \
-	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
-	OpenLogReplicator.cpp OracleAnalyzer.cpp \
-	OracleAnalyzerBatch.cpp OracleAnalyzerOnline.cpp \
-	OracleAnalyzerOnlineASM.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp OutputBufferProtobuf.cpp \
+	OpCode0501.cpp OpCode0502.cpp OpCode0504.cpp OpCode0506.cpp \
+	OpCode050B.cpp OpCode0513.cpp OpCode0514.cpp OpCode0B02.cpp \
+	OpCode0B03.cpp OpCode0B04.cpp OpCode0B05.cpp OpCode0B06.cpp \
+	OpCode0B08.cpp OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp \
+	OpCode1801.cpp OpCode.cpp OpenLogReplicator.cpp \
+	OracleAnalyzer.cpp OracleAnalyzerBatch.cpp OracleColumn.cpp \
+	OracleObject.cpp OutputBuffer.cpp OutputBufferJson.cpp \
 	ReaderASM.cpp Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
 	RedoLogException.cpp RedoLogRecord.cpp RuntimeException.cpp \
 	Schema.cpp SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
-	Transaction.cpp Writer.cpp WriterFile.cpp WriterKafka.cpp \
-	WriterService.cpp $(am__append_1)
+	Transaction.cpp Writer.cpp WriterFile.cpp $(am__append_1) \
+	$(am__append_2) $(am__append_3) $(am__append_5)
+@PROTOBUF_COMPILE_TRUE@ClientGRPC_SOURCES = ClientGRPC.cpp OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
 all: all-am
 
 .SUFFIXES:
@@ -467,6 +485,10 @@ clean-binPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+ClientGRPC$(EXEEXT): $(ClientGRPC_OBJECTS) $(ClientGRPC_DEPENDENCIES) $(EXTRA_ClientGRPC_DEPENDENCIES) 
+	@rm -f ClientGRPC$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(ClientGRPC_OBJECTS) $(ClientGRPC_LDADD) $(LIBS)
+
 OpenLogReplicator$(EXEEXT): $(OpenLogReplicator_OBJECTS) $(OpenLogReplicator_DEPENDENCIES) $(EXTRA_OpenLogReplicator_DEPENDENCIES) 
 	@rm -f OpenLogReplicator$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(OpenLogReplicator_OBJECTS) $(OpenLogReplicator_LDADD) $(LIBS)
@@ -494,6 +516,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CharacterSetZHT16HKSCS31.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CharacterSetZHT32EUC.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CharacterSetZHT32TRIS.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ClientGRPC.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ConfigurationException.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DatabaseConnection.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/DatabaseEnvironment.Po@am__quote@
