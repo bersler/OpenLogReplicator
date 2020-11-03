@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     OutputBufferProtobuf::OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
             uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
             OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat),
-            responsePB(nullptr),
+            redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),
             schemaPB(nullptr) {
@@ -38,9 +38,9 @@ namespace OpenLogReplicator {
     }
 
     OutputBufferProtobuf::~OutputBufferProtobuf() {
-        if (responsePB != nullptr) {
-            delete responsePB;
-            responsePB = nullptr;
+        if (redoResponsePB != nullptr) {
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
         }
         google::protobuf::ShutdownProtobufLibrary();
     }
@@ -126,9 +126,9 @@ namespace OpenLogReplicator {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
                 char buf[17];
                 numToString(lastScn, buf, 16);
-                responsePB->set_scns(buf);
+                redoResponsePB->set_scns(buf);
             } else {
-                responsePB->set_scn(lastScn);
+                redoResponsePB->set_scn(lastScn);
             }
         }
 
@@ -137,9 +137,9 @@ namespace OpenLogReplicator {
                 char iso[21];
                 lastTime.toISO8601(iso);
                 string isoStr(iso);
-                responsePB->set_tms(isoStr);
+                redoResponsePB->set_tms(isoStr);
             } else {
-                responsePB->set_tm(lastTime.toTime() * 1000);
+                redoResponsePB->set_tm(lastTime.toTime() * 1000);
             }
         }
 
@@ -150,9 +150,9 @@ namespace OpenLogReplicator {
             sb << (uint64_t)SLT(lastXid);
             sb << '.';
             sb << (uint64_t)SQN(lastXid);
-            responsePB->set_xid(sb.str());
+            redoResponsePB->set_xid(sb.str());
         } else {
-            responsePB->set_xidn(lastXid);
+            redoResponsePB->set_xidn(lastXid);
         }
     }
 
@@ -289,21 +289,21 @@ namespace OpenLogReplicator {
         lastXid = xid;
         outputBufferBegin(0);
 
-        if (responsePB != nullptr) {
+        if (redoResponsePB != nullptr) {
             RUNTIME_FAIL("ERROR, PB begin processing failed, message already exists, internal error");
         }
-        responsePB = new pb::Response;
+        redoResponsePB = new pb::RedoResponse;
         appendHeader(true);
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
-            responsePB->add_payload();
-            payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+            redoResponsePB->add_payload();
+            payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::BEGIN);
 
             string output;
-            bool ret = responsePB->SerializeToString(&output);
-            delete responsePB;
-            responsePB = nullptr;
+            bool ret = redoResponsePB->SerializeToString(&output);
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB begin processing failed, error serializing to string");
@@ -315,25 +315,26 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processCommit(void) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (responsePB == nullptr) {
+            if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (responsePB != nullptr) {
+            if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message already exists, internal error");
             }
-            responsePB = new pb::Response;
+            outputBufferBegin(0);
+            redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
 
-            responsePB->add_payload();
-            payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+            redoResponsePB->add_payload();
+            payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::COMMIT);
         }
 
         string output;
-        bool ret = responsePB->SerializeToString(&output);
-        delete responsePB;
-        responsePB = nullptr;
+        bool ret = redoResponsePB->SerializeToString(&output);
+        delete redoResponsePB;
+        redoResponsePB = nullptr;
 
         if (!ret) {
             RUNTIME_FAIL("ERROR, PB commit processing failed, error serializing to string");
@@ -344,20 +345,20 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (responsePB == nullptr) {
+            if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, message missing, internal error");
             }
         } else {
-            if (responsePB != nullptr) {
+            if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, message already exists, internal error");
             }
             outputBufferBegin(object->objn);
-            responsePB = new pb::Response;
+            redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
         }
 
-        responsePB->add_payload();
-        payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+        redoResponsePB->add_payload();
+        payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
         payloadPB->set_op(pb::INSERT);
 
         schemaPB = payloadPB->mutable_schema();
@@ -388,9 +389,9 @@ namespace OpenLogReplicator {
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = responsePB->SerializeToString(&output);
-            delete responsePB;
-            responsePB = nullptr;
+            bool ret = redoResponsePB->SerializeToString(&output);
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB insert processing failed, error serializing to string");
@@ -402,20 +403,20 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (responsePB == nullptr) {
+            if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message missing, internal error");
             }
         } else {
-            if (responsePB != nullptr) {
+            if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message already exists, internal error");
             }
             outputBufferBegin(object->objn);
-            responsePB = new pb::Response;
+            redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
         }
 
-        responsePB->add_payload();
-        payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+        redoResponsePB->add_payload();
+        payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
         payloadPB->set_op(pb::UPDATE);
 
         schemaPB = payloadPB->mutable_schema();
@@ -434,12 +435,12 @@ namespace OpenLogReplicator {
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
                 payloadPB->add_before();
-                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                 processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] > 0) {
                 payloadPB->add_before();
-                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                 columnNull(object->columns[i]);
             }
         }
@@ -467,9 +468,9 @@ namespace OpenLogReplicator {
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = responsePB->SerializeToString(&output);
-            delete responsePB;
-            responsePB = nullptr;
+            bool ret = redoResponsePB->SerializeToString(&output);
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB update processing failed, error serializing to string");
@@ -481,20 +482,20 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (responsePB == nullptr) {
+            if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, message missing, internal error");
             }
         } else {
-            if (responsePB != nullptr) {
+            if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, message already exists, internal error");
             }
             outputBufferBegin(object->objn);
-            responsePB = new pb::Response;
+            redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
         }
 
-        responsePB->add_payload();
-        payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+        redoResponsePB->add_payload();
+        payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
         payloadPB->set_op(pb::DELETE);
 
         schemaPB = payloadPB->mutable_schema();
@@ -513,21 +514,21 @@ namespace OpenLogReplicator {
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0) {
                 payloadPB->add_before();
-                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                 processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
             } else
             if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
                 payloadPB->add_before();
-                valuePB = payloadPB->mutable_after(payloadPB->before_size() - 1);
+                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                 columnNull(object->columns[i]);
             }
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = responsePB->SerializeToString(&output);
-            delete responsePB;
-            responsePB = nullptr;
+            bool ret = redoResponsePB->SerializeToString(&output);
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB delete processing failed, error serializing to string");
@@ -539,27 +540,27 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
-            if (responsePB == nullptr) {
+            if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (responsePB != nullptr) {
+            if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, message already exists, internal error");
             }
-            responsePB = new pb::Response;
+            redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
 
-            responsePB->add_payload();
-            payloadPB = responsePB->mutable_payload(responsePB->payload_size() - 1);
+            redoResponsePB->add_payload();
+            payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::DDL);
             payloadPB->set_ddl(sql, sqlLength);
         }
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             string output;
-            bool ret = responsePB->SerializeToString(&output);
-            delete responsePB;
-            responsePB = nullptr;
+            bool ret = redoResponsePB->SerializeToString(&output);
+            delete redoResponsePB;
+            redoResponsePB = nullptr;
 
             if (!ret) {
                 RUNTIME_FAIL("ERROR, PB commit processing failed, error serializing to string");

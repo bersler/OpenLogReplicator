@@ -22,53 +22,53 @@
 namespace OpenLogReplicator {
 namespace pb {
 
-static const char* RedoStreamService_method_names[] = {
-  "/OpenLogReplicator.pb.RedoStreamService/RedoStream",
+static const char* OpenLogReplicator_method_names[] = {
+  "/OpenLogReplicator.pb.OpenLogReplicator/Redo",
 };
 
-std::unique_ptr< RedoStreamService::Stub> RedoStreamService::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
+std::unique_ptr< OpenLogReplicator::Stub> OpenLogReplicator::NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options) {
   (void)options;
-  std::unique_ptr< RedoStreamService::Stub> stub(new RedoStreamService::Stub(channel));
+  std::unique_ptr< OpenLogReplicator::Stub> stub(new OpenLogReplicator::Stub(channel));
   return stub;
 }
 
-RedoStreamService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
-  : channel_(channel), rpcmethod_RedoStream_(RedoStreamService_method_names[0], ::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
+OpenLogReplicator::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
+  : channel_(channel), rpcmethod_Redo_(OpenLogReplicator_method_names[0], ::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
   {}
 
-::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStreamService::Stub::RedoStreamRaw(::grpc::ClientContext* context) {
-  return ::grpc_impl::internal::ClientReaderWriterFactory< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>::Create(channel_.get(), rpcmethod_RedoStream_, context);
+::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* OpenLogReplicator::Stub::RedoRaw(::grpc::ClientContext* context) {
+  return ::grpc_impl::internal::ClientReaderWriterFactory< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>::Create(channel_.get(), rpcmethod_Redo_, context);
 }
 
-void RedoStreamService::Stub::experimental_async::RedoStream(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>* reactor) {
-  ::grpc_impl::internal::ClientCallbackReaderWriterFactory< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>::Create(stub_->channel_.get(), stub_->rpcmethod_RedoStream_, context, reactor);
+void OpenLogReplicator::Stub::experimental_async::Redo(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>* reactor) {
+  ::grpc_impl::internal::ClientCallbackReaderWriterFactory< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>::Create(stub_->channel_.get(), stub_->rpcmethod_Redo_, context, reactor);
 }
 
-::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStreamService::Stub::AsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>::Create(channel_.get(), cq, rpcmethod_RedoStream_, context, true, tag);
+::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* OpenLogReplicator::Stub::AsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>::Create(channel_.get(), cq, rpcmethod_Redo_, context, true, tag);
 }
 
-::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStreamService::Stub::PrepareAsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>::Create(channel_.get(), cq, rpcmethod_RedoStream_, context, false, nullptr);
+::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* OpenLogReplicator::Stub::PrepareAsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+  return ::grpc_impl::internal::ClientAsyncReaderWriterFactory< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>::Create(channel_.get(), cq, rpcmethod_Redo_, context, false, nullptr);
 }
 
-RedoStreamService::Service::Service() {
+OpenLogReplicator::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      RedoStreamService_method_names[0],
+      OpenLogReplicator_method_names[0],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
-      new ::grpc::internal::BidiStreamingHandler< RedoStreamService::Service, ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>(
-          [](RedoStreamService::Service* service,
+      new ::grpc::internal::BidiStreamingHandler< OpenLogReplicator::Service, ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>(
+          [](OpenLogReplicator::Service* service,
              ::grpc::ServerContext* ctx,
-             ::grpc_impl::ServerReaderWriter<::OpenLogReplicator::pb::Response,
-             ::OpenLogReplicator::pb::Request>* stream) {
-               return service->RedoStream(ctx, stream);
+             ::grpc_impl::ServerReaderWriter<::OpenLogReplicator::pb::RedoResponse,
+             ::OpenLogReplicator::pb::RedoRequest>* stream) {
+               return service->Redo(ctx, stream);
              }, this)));
 }
 
-RedoStreamService::Service::~Service() {
+OpenLogReplicator::Service::~Service() {
 }
 
-::grpc::Status RedoStreamService::Service::RedoStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* stream) {
+::grpc::Status OpenLogReplicator::Service::Redo(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* stream) {
   (void) context;
   (void) stream;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");

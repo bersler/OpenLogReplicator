@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         archReader(nullptr),
         waitingForWriter(false),
         context(""),
-        scn(0),
+        scn(ZERO_SCN),
         startScn(ZERO_SCN),
         startSequence(0),
         startTimeRel(0),
@@ -403,8 +403,24 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initialize(void) {
-        INFO_("last confirmed SCN: " << dec << scn);
+        if (startSequence > 0) {
+            RUNTIME_FAIL("starting by SCN is not supported for offline mode");
+        } else if (startTime.length() > 0) {
+            RUNTIME_FAIL("starting by time is not supported for offline mode");
+        } else if (startTimeRel > 0) {
+            RUNTIME_FAIL("starting by relative time is not supported for offline mode");
+        } else if (startScn != ZERO_SCN) {
+            RUNTIME_FAIL("startup SCN is not provided");
+        }
 
+        if (scn == ZERO_SCN) {
+            RUNTIME_FAIL("getting database SCN");
+        }
+        initializeSchema();
+    }
+
+    void OracleAnalyzer::initializeSchema(void) {
+        INFO_("last confirmed SCN: " << dec << scn);
         if (!schema->readSchema(this)) {
             refreshSchema();
             schema->writeSchema(this);
@@ -418,42 +434,51 @@ namespace OpenLogReplicator {
     void *OracleAnalyzer::run(void) {
         TRACE_(TRACE2_THREADS, "ANALYZER (" << hex << this_thread::get_id() << ") START");
 
-        {
-            unique_lock<mutex> lck(mtx);
-            if (startScn == ZERO_SCN)
-                analyzerCond.wait(lck);
-        }
-
-        if (shutdown)
-            return 0;
-
-        string flagsStr;
-        if (flags) {
-            flagsStr = " (flags: " + to_string(flags) + ")";
-        }
-
-        string starting;
-        if (startSequence > 0)
-            starting = "SEQ:" + to_string(startSequence);
-        else if (startTime.length() > 0)
-            starting = "TIME:" + startTime;
-        else if (startTimeRel > 0)
-            starting = "TIME-REL:" + to_string(startTimeRel);
-        else if (startScn > 0)
-            starting = "SCN:" + to_string(startScn);
-        else
-            starting = "NOW";
-
-        INFO_("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting);
-
-        uint64_t ret = REDO_OK;
-        RedoLog *redo = nullptr;
-        bool logsProcessed;
-
         try {
-            if (shutdown)
-                throw RuntimeException("shut down on request");
-            initialize();
+            while (scn == ZERO_SCN) {
+                {
+                    unique_lock<mutex> lck(mtx);
+                    if (startScn == ZERO_SCN) {
+                        cerr << "SCN is null, sleeping" << endl;
+                        analyzerCond.wait(lck);
+                    }
+                }
+
+                if (shutdown)
+                    return 0;
+
+                string flagsStr;
+                if (flags) {
+                    flagsStr = " (flags: " + to_string(flags) + ")";
+                }
+
+                string starting;
+                if (startSequence > 0)
+                    starting = "SEQ:" + to_string(startSequence);
+                else if (startTime.length() > 0)
+                    starting = "TIME:" + startTime;
+                else if (startTimeRel > 0)
+                    starting = "TIME-REL:" + to_string(startTimeRel);
+                else if (startScn != ZERO_SCN)
+                    starting = "SCN:" + to_string(startScn);
+                else
+                    starting = "NOW";
+
+                INFO_("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting);
+
+                if (shutdown)
+                    throw RuntimeException("shut down on request");
+                initialize();
+
+                {
+                    unique_lock<mutex> lck(mtx);
+                    outputBuffer->writersCond.notify_all();
+                }
+            }
+
+            uint64_t ret = REDO_OK;
+            RedoLog *redo = nullptr;
+            bool logsProcessed;
 
             while (!shutdown) {
                 logsProcessed = false;

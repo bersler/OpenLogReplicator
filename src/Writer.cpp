@@ -62,8 +62,7 @@ namespace OpenLogReplicator {
         startScn(startScn),
         startSequence(startSequence),
         startTime(startTime),
-        startTimeRel(startTimeRel),
-        alwaysPoll(false) {
+        startTimeRel(startTimeRel) {
 
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
@@ -151,24 +150,14 @@ namespace OpenLogReplicator {
 
         try {
             readCheckpoint();
-            oracleAnalyzer->startSequence = startSequence;
-            oracleAnalyzer->startScn = startScn;
-            oracleAnalyzer->startTime = startTime;
-            oracleAnalyzer->startTimeRel = startTimeRel;
-
-            {
-                unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                oracleAnalyzer->analyzerCond.notify_all();
-            }
 
             OutputBufferMsg *msg = nullptr;
             OutputBufferQueue *curBuffer = outputBuffer->firstBuffer;
             uint64_t curLength = 0, tmpLength = 0;
-            for (;;) {
+            while (!shutdown) {
 
                 while (!shutdown) {
-                    if (alwaysPoll || curQueueSize > 0)
-                        pollQueue();
+                    pollQueue();
                     writeCheckpoint(false);
 
                     {
@@ -194,12 +183,8 @@ namespace OpenLogReplicator {
 
                         if (curQueueSize > 0)
                             outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
-                        else {
-                            if (checkpointScn == confirmedScn && !alwaysPoll)
-                                outputBuffer->writersCond.wait(lck);
-                            else
-                                outputBuffer->writersCond.wait_for(lck, chrono::seconds(1));
-                        }
+                        else
+                            outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
                     }
                 }
 
@@ -315,8 +300,10 @@ namespace OpenLogReplicator {
         ifstream infile;
         string fileName = oracleAnalyzer->database + "-chkpt.json";
         infile.open(fileName.c_str(), ios::in);
-        if (!infile.is_open())
+        if (!infile.is_open()) {
+            startReader();
             return;
+        }
 
         string configJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
         Document document;
@@ -345,5 +332,24 @@ namespace OpenLogReplicator {
         INFO("checkpoint - reading scn: " << dec << startScn);
 
         infile.close();
+        startReader();
+    }
+
+    void Writer::startReader(void) {
+        oracleAnalyzer->startSequence = startSequence;
+        oracleAnalyzer->startScn = startScn;
+        oracleAnalyzer->startTime = startTime;
+        oracleAnalyzer->startTimeRel = startTimeRel;
+
+        cerr << "attempt to start analyzer" << endl;
+        if (oracleAnalyzer->scn == ZERO_SCN && !shutdown) {
+            unique_lock<mutex> lck(oracleAnalyzer->mtx);
+            oracleAnalyzer->analyzerCond.notify_all();
+            outputBuffer->writersCond.wait(lck);
+        }
+
+        if (oracleAnalyzer->scn != ZERO_SCN && !shutdown) {
+            cerr << "analyzer started" << endl;
+        }
     }
 }

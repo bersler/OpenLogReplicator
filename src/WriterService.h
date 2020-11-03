@@ -25,10 +25,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OraProtoBuf.grpc.pb.h"
 #include "Writer.h"
 
-#define SERVICE_CONNECT             0
-#define SERVICE_READ                1
-#define SERVICE_WRITE               2
-#define SERVICE_DISCONNECT          3
+#define STATE_WAITING_FOR_CLIENT    0
+#define STATE_CLIENT_CONNECTED      1
+#define STATE_WAITING_FOR_RPC       2
+#define STATE_STREAMING             3
+
+#define SERVICE_DISCONNECT          0
+#define SERVICE_REDO                1
+#define SERVICE_REDO_READ           2
+#define SERVICE_REDO_WRITE          3
 
 #ifndef WRITERSERVICE_H_
 #define WRITERSERVICE_H_
@@ -46,20 +51,23 @@ namespace OpenLogReplicator {
         string uri;
         ServerBuilder builder;
         unique_ptr<ServerCompletionQueue> cq;
-        unique_ptr<pb::RedoStreamService::AsyncService> service;
+        pb::OpenLogReplicator::AsyncService service;
         unique_ptr<Server> server;
         unique_ptr<ServerContext> context;
-        unique_ptr<ServerAsyncReaderWriter<pb::Response, pb::Request>> stream;
-        pb::Request request;
-        pb::Response response;
-        bool started;
+        unique_ptr<ServerAsyncReaderWriter<pb::RedoResponse, pb::RedoRequest>> stream;
+        pb::RedoRequest request;
+        pb::RedoResponse response;
 
         virtual void sendMessage(OutputBufferMsg *msg);
         virtual string getName();
         virtual void pollQueue(void);
-        void processInitialize(void);
         void processConfirm(typescn scn);
         virtual void readCheckpoint(void);
+        void info(void);
+        void start(void);
+        //void processRedo(void);
+        bool getEvent(bool &ok, void *&tag);
+        void writeResponse(void);
 
     public:
         WriterService(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *uri, uint64_t pollInterval,

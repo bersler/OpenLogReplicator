@@ -54,7 +54,6 @@ namespace OpenLogReplicator {
         typeseq startSequence;
         string startTime;
         int64_t startTimeRel;
-        bool alwaysPoll;
 
         void createMessage(OutputBufferMsg *msg);
         virtual void sendMessage(OutputBufferMsg *msg) = 0;
@@ -63,6 +62,7 @@ namespace OpenLogReplicator {
         virtual void *run(void);
         virtual void writeCheckpoint(bool force);
         virtual void readCheckpoint(void);
+        void startReader(void);
 
     public:
         uint64_t maxMessageMb;      //maximum message size able to handle by writer

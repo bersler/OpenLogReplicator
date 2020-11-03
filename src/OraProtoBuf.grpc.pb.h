@@ -48,30 +48,30 @@
 namespace OpenLogReplicator {
 namespace pb {
 
-class RedoStreamService final {
+class OpenLogReplicator final {
  public:
   static constexpr char const* service_full_name() {
-    return "OpenLogReplicator.pb.RedoStreamService";
+    return "OpenLogReplicator.pb.OpenLogReplicator";
   }
   class StubInterface {
    public:
     virtual ~StubInterface() {}
-    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> RedoStream(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(RedoStreamRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> Redo(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(RedoRaw(context));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> AsyncRedoStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(AsyncRedoStreamRaw(context, cq, tag));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> AsyncRedo(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(AsyncRedoRaw(context, cq, tag));
     }
-    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> PrepareAsyncRedoStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(PrepareAsyncRedoStreamRaw(context, cq));
+    std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> PrepareAsyncRedo(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(PrepareAsyncRedoRaw(context, cq));
     }
     class experimental_async_interface {
      public:
       virtual ~experimental_async_interface() {}
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void RedoStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>* reactor) = 0;
+      virtual void Redo(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>* reactor) = 0;
       #else
-      virtual void RedoStream(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>* reactor) = 0;
+      virtual void Redo(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>* reactor) = 0;
       #endif
     };
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -82,29 +82,29 @@ class RedoStreamService final {
     #endif
     virtual class experimental_async_interface* experimental_async() { return nullptr; }
   private:
-    virtual ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStreamRaw(::grpc::ClientContext* context) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* AsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
-    virtual ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* PrepareAsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* RedoRaw(::grpc::ClientContext* context) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* AsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
+    virtual ::grpc::ClientAsyncReaderWriterInterface< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* PrepareAsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel);
-    std::unique_ptr< ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> RedoStream(::grpc::ClientContext* context) {
-      return std::unique_ptr< ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(RedoStreamRaw(context));
+    std::unique_ptr< ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> Redo(::grpc::ClientContext* context) {
+      return std::unique_ptr< ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(RedoRaw(context));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> AsyncRedoStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(AsyncRedoStreamRaw(context, cq, tag));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> AsyncRedo(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(AsyncRedoRaw(context, cq, tag));
     }
-    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>> PrepareAsyncRedoStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>>(PrepareAsyncRedoStreamRaw(context, cq));
+    std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>> PrepareAsyncRedo(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>>(PrepareAsyncRedoRaw(context, cq));
     }
     class experimental_async final :
       public StubInterface::experimental_async_interface {
      public:
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void RedoStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>* reactor) override;
+      void Redo(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>* reactor) override;
       #else
-      void RedoStream(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::Request,::OpenLogReplicator::pb::Response>* reactor) override;
+      void Redo(::grpc::ClientContext* context, ::grpc::experimental::ClientBidiReactor< ::OpenLogReplicator::pb::RedoRequest,::OpenLogReplicator::pb::RedoResponse>* reactor) override;
       #endif
      private:
       friend class Stub;
@@ -117,10 +117,10 @@ class RedoStreamService final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class experimental_async async_stub_{this};
-    ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStreamRaw(::grpc::ClientContext* context) override;
-    ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* AsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
-    ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* PrepareAsyncRedoStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
-    const ::grpc::internal::RpcMethod rpcmethod_RedoStream_;
+    ::grpc::ClientReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* RedoRaw(::grpc::ClientContext* context) override;
+    ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* AsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
+    ::grpc::ClientAsyncReaderWriter< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* PrepareAsyncRedoRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
+    const ::grpc::internal::RpcMethod rpcmethod_Redo_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -128,115 +128,115 @@ class RedoStreamService final {
    public:
     Service();
     virtual ~Service();
-    virtual ::grpc::Status RedoStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* stream);
+    virtual ::grpc::Status Redo(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* stream);
   };
   template <class BaseClass>
-  class WithAsyncMethod_RedoStream : public BaseClass {
+  class WithAsyncMethod_Redo : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_RedoStream() {
+    WithAsyncMethod_Redo() {
       ::grpc::Service::MarkMethodAsync(0);
     }
-    ~WithAsyncMethod_RedoStream() override {
+    ~WithAsyncMethod_Redo() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RedoStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* /*stream*/)  override {
+    ::grpc::Status Redo(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestRedoStream(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestRedo(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncBidiStreaming(0, context, stream, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_RedoStream<Service > AsyncService;
+  typedef WithAsyncMethod_Redo<Service > AsyncService;
   template <class BaseClass>
-  class ExperimentalWithCallbackMethod_RedoStream : public BaseClass {
+  class ExperimentalWithCallbackMethod_Redo : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithCallbackMethod_RedoStream() {
+    ExperimentalWithCallbackMethod_Redo() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
     #else
       ::grpc::Service::experimental().
     #endif
         MarkMethodCallback(0,
-          new ::grpc_impl::internal::CallbackBidiHandler< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>(
+          new ::grpc_impl::internal::CallbackBidiHandler< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                    ::grpc::CallbackServerContext*
     #else
                    ::grpc::experimental::CallbackServerContext*
     #endif
-                     context) { return this->RedoStream(context); }));
+                     context) { return this->Redo(context); }));
     }
-    ~ExperimentalWithCallbackMethod_RedoStream() override {
+    ~ExperimentalWithCallbackMethod_Redo() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RedoStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* /*stream*/)  override {
+    ::grpc::Status Redo(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerBidiReactor< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStream(
+    virtual ::grpc::ServerBidiReactor< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* Redo(
       ::grpc::CallbackServerContext* /*context*/)
     #else
-    virtual ::grpc::experimental::ServerBidiReactor< ::OpenLogReplicator::pb::Request, ::OpenLogReplicator::pb::Response>* RedoStream(
+    virtual ::grpc::experimental::ServerBidiReactor< ::OpenLogReplicator::pb::RedoRequest, ::OpenLogReplicator::pb::RedoResponse>* Redo(
       ::grpc::experimental::CallbackServerContext* /*context*/)
     #endif
       { return nullptr; }
   };
   #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-  typedef ExperimentalWithCallbackMethod_RedoStream<Service > CallbackService;
+  typedef ExperimentalWithCallbackMethod_Redo<Service > CallbackService;
   #endif
 
-  typedef ExperimentalWithCallbackMethod_RedoStream<Service > ExperimentalCallbackService;
+  typedef ExperimentalWithCallbackMethod_Redo<Service > ExperimentalCallbackService;
   template <class BaseClass>
-  class WithGenericMethod_RedoStream : public BaseClass {
+  class WithGenericMethod_Redo : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_RedoStream() {
+    WithGenericMethod_Redo() {
       ::grpc::Service::MarkMethodGeneric(0);
     }
-    ~WithGenericMethod_RedoStream() override {
+    ~WithGenericMethod_Redo() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RedoStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* /*stream*/)  override {
+    ::grpc::Status Redo(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
   };
   template <class BaseClass>
-  class WithRawMethod_RedoStream : public BaseClass {
+  class WithRawMethod_Redo : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_RedoStream() {
+    WithRawMethod_Redo() {
       ::grpc::Service::MarkMethodRaw(0);
     }
-    ~WithRawMethod_RedoStream() override {
+    ~WithRawMethod_Redo() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RedoStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* /*stream*/)  override {
+    ::grpc::Status Redo(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestRedoStream(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestRedo(::grpc::ServerContext* context, ::grpc::ServerAsyncReaderWriter< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* stream, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncBidiStreaming(0, context, stream, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
-  class ExperimentalWithRawCallbackMethod_RedoStream : public BaseClass {
+  class ExperimentalWithRawCallbackMethod_Redo : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    ExperimentalWithRawCallbackMethod_RedoStream() {
+    ExperimentalWithRawCallbackMethod_Redo() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
     #else
@@ -250,21 +250,21 @@ class RedoStreamService final {
     #else
                    ::grpc::experimental::CallbackServerContext*
     #endif
-                     context) { return this->RedoStream(context); }));
+                     context) { return this->Redo(context); }));
     }
-    ~ExperimentalWithRawCallbackMethod_RedoStream() override {
+    ~ExperimentalWithRawCallbackMethod_Redo() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status RedoStream(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::Response, ::OpenLogReplicator::pb::Request>* /*stream*/)  override {
+    ::grpc::Status Redo(::grpc::ServerContext* /*context*/, ::grpc::ServerReaderWriter< ::OpenLogReplicator::pb::RedoResponse, ::OpenLogReplicator::pb::RedoRequest>* /*stream*/)  override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerBidiReactor< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* RedoStream(
+    virtual ::grpc::ServerBidiReactor< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* Redo(
       ::grpc::CallbackServerContext* /*context*/)
     #else
-    virtual ::grpc::experimental::ServerBidiReactor< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* RedoStream(
+    virtual ::grpc::experimental::ServerBidiReactor< ::grpc::ByteBuffer, ::grpc::ByteBuffer>* Redo(
       ::grpc::experimental::CallbackServerContext* /*context*/)
     #endif
       { return nullptr; }

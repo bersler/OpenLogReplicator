@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
 
     class OutputBufferProtobuf : public OutputBuffer {
 protected:
-        pb::Response *responsePB;
+        pb::RedoResponse *redoResponsePB;
         pb::Value *valuePB;
         pb::Payload *payloadPB;
         pb::Schema *schemaPB;

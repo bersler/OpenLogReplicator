@@ -18,13 +18,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <chrono>
+#include <unistd.h>
 
 #include "OracleAnalyzer.h"
+#include "OutputBuffer.h"
+#include "RuntimeException.h"
 #include "WriterService.h"
 
 using namespace std;
-
-extern void stopMain();
 
 namespace OpenLogReplicator {
 
@@ -32,39 +33,39 @@ namespace OpenLogReplicator {
             uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime,
             uint64_t startTimeRel) :
         Writer(alias, oracleAnalyzer, 0, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime, startTimeRel),
-        uri(uri),
-        started(false) {
-        alwaysPoll = true;
+        uri(uri) {
 
         builder.AddListeningPort(uri, InsecureServerCredentials());
-        service.reset(new pb::RedoStreamService::AsyncService);
-        builder.RegisterService(service.get());
+        //service.reset(new pb::OpenLogReplicator::AsyncService);
+        builder.RegisterService(&service);
         cq = builder.AddCompletionQueue();
         server = builder.BuildAndStart();
-
-        context.reset(new ServerContext);
-        stream.reset(new ServerAsyncReaderWriter<pb::Response, pb::Request>(context.get()));
-        service->RequestRedoStream(context.get(), stream.get(), cq.get(), cq.get(), SERVICE_CONNECT);
-        context->AsyncNotifyWhenDone((void*)SERVICE_DISCONNECT);
     }
 
     WriterService::~WriterService() {
-        context.release();
-        stream.release();
-        service.release();
-        server->Shutdown();
+        server->Shutdown(std::chrono::system_clock::now() + std::chrono::nanoseconds(pollInterval));
         cq->Shutdown();
 
-        //purge queue
         void* ignored_tag;
         bool ignored_ok;
-        while (cq->Next(&ignored_tag, &ignored_ok)) {}
+        while (cq->Next(&ignored_tag, &ignored_ok))
+            ;
+
+        stream.release();
+        context.release();
+        server.release();
+        cq.release();
     }
 
     void WriterService::sendMessage(OutputBufferMsg *msg) {
-        //response.Clear();
-        //response.set_response_code(pb::ResponseCode::PAYLOAD);
-        //stream->Write(response, (void*)SERVICE_WRITE);
+        cerr << "send response: " << msg->length << endl;
+        response.Clear();
+        response.set_code(pb::ResponseCode::PAYLOAD);
+        response.set_scn(msg->scn);
+        response.add_payload();
+        pb::Payload *payload = response.mutable_payload(response.payload_size() - 1);
+        payload->ParseFromArray(msg->data, msg->length);
+        writeResponse();
     }
 
     string WriterService::getName() {
@@ -72,99 +73,6 @@ namespace OpenLogReplicator {
     }
 
     void WriterService::pollQueue(void) {
-        void* tag;
-        bool ok;
-        switch (cq->AsyncNext(&tag, &ok, chrono::system_clock::now() + chrono::nanoseconds(pollInterval))) {
-        case CompletionQueue::SHUTDOWN:
-            stopMain();
-            break;
-
-        case CompletionQueue::GOT_EVENT:
-            if (ok)
-                switch ((uint64_t)tag) {
-                    case SERVICE_CONNECT:
-                        stream->Read(&request, (void*)SERVICE_READ);
-                        break;
-
-                    case SERVICE_DISCONNECT:
-                        context.reset(new ServerContext);
-                        stream.reset(new ServerAsyncReaderWriter<pb::Response, pb::Request>(context.get()));
-                        service->RequestRedoStream(context.get(), stream.get(), cq.get(), cq.get(), (void*)SERVICE_CONNECT);
-                        context->AsyncNotifyWhenDone((void*)SERVICE_DISCONNECT);
-                        break;
-
-                    case SERVICE_READ:
-                        response.Clear();
-                        switch (request.request_code()) {
-                            case pb::RequestCode::INITIALIZE:
-                                processInitialize();
-                                break;
-
-                            case pb::RequestCode::START:
-                                if (request.database_name().compare(oracleAnalyzer->database) != 0) {
-                                    response.set_response_code(pb::ResponseCode::INVALID_DATABASE);
-                                } else {
-                                    switch (request.tm_val_case()) {
-                                        case pb::Request::TmValCase::kScn:
-                                            startScn = request.scn();
-                                            started = true;
-                                            response.set_response_code(pb::ResponseCode::STARTED);
-                                            break;
-
-                                        case pb::Request::TmValCase::kSeq:
-                                            startSequence = request.seq();
-                                            started = true;
-                                            response.set_response_code(pb::ResponseCode::STARTED);
-                                            break;
-
-                                        case pb::Request::TmValCase::kTms:
-                                            startTime = request.tms();
-                                            started = true;
-                                            response.set_response_code(pb::ResponseCode::STARTED);
-                                            break;
-
-                                        case pb::Request::TmValCase::kTmRel:
-                                            startTimeRel = request.tm_rel();
-                                            started = true;
-                                            response.set_response_code(pb::ResponseCode::STARTED);
-                                            break;
-
-                                        default:
-                                            response.set_response_code(pb::ResponseCode::INVALID_COMMAND);
-                                            break;
-                                    }
-                                }
-                                break;
-
-                            case pb::RequestCode::CONFIRM:
-                                processConfirm(request.scn());
-                                break;
-
-                            default:
-                                response.set_response_code(pb::ResponseCode::INVALID_COMMAND);
-                                break;
-                        }
-                        stream->Write(response, (void*)SERVICE_WRITE);
-                        break;
-
-                    case SERVICE_WRITE:
-                        stream->Read(&request, (void*)SERVICE_READ);
-                        break;
-                }
-            break;
-
-        case CompletionQueue::TIMEOUT:
-            break;
-        }
-    }
-
-    void WriterService::processInitialize(void) {
-        if (started) {
-            response.set_response_code(pb::ResponseCode::STARTED);
-            response.set_scn(oracleAnalyzer->startScn);
-        } else {
-            response.set_response_code(pb::ResponseCode::READY);
-        }
     }
 
     void WriterService::processConfirm(typescn scn) {
@@ -172,7 +80,161 @@ namespace OpenLogReplicator {
     }
 
     void WriterService::readCheckpoint(void) {
-        while (!shutdown && !started)
-            pollQueue();
+        bool ok;
+        void *tag;
+
+        while (oracleAnalyzer->scn == ZERO_SCN) {
+            context.reset(new ServerContext());
+            stream.reset(new ServerAsyncReaderWriter<pb::RedoResponse, pb::RedoRequest>(context.get()));
+            service.RequestRedo(context.get(), stream.get(), cq.get(), cq.get(), (void*)SERVICE_REDO);
+            context->AsyncNotifyWhenDone((void*)SERVICE_DISCONNECT);
+
+            if (!getEvent(ok, tag) && shutdown)
+                return;
+
+            if ((uint64_t)tag != SERVICE_REDO) {
+                RUNTIME_FAIL("GRPC service error")
+            }
+
+            cerr << "event: tag: " << (uint64_t) tag << " ok: " << ok << endl;
+            while (!shutdown) {
+                stream->Read(&request, (void*)SERVICE_REDO_READ);
+
+                if (!getEvent(ok, tag) && shutdown)
+                    return;
+
+                if ((uint64_t)tag == SERVICE_DISCONNECT) {
+                    if (!getEvent(ok, tag) && shutdown)
+                        return;
+
+                    if ((uint64_t)tag != SERVICE_REDO_READ) {
+                        RUNTIME_FAIL("GRPC read error")
+                    }
+
+                    break;
+                } else
+                if ((uint64_t)tag != SERVICE_REDO_READ) {
+                    RUNTIME_FAIL("GRPC read error")
+                }
+
+                if (ok) {
+                    response.Clear();
+                    if (request.code() == pb::RequestCode::INFO)
+                        info();
+                    else
+                    if (request.code() == pb::RequestCode::START)
+                        start();
+                    else
+                        response.set_code(pb::ResponseCode::INVALID_COMMAND);
+                    writeResponse();
+                }
+
+                if (shutdown)
+                    return;
+            }
+        }
+
+        if (oracleAnalyzer->scn != ZERO_SCN)
+            INFO("checkpoint - client requested scn: " << dec << startScn);
+    }
+
+    void WriterService::info(void) {
+        if (request.database_name().compare(oracleAnalyzer->database) != 0) {
+            response.set_code(pb::ResponseCode::INVALID_DATABASE);
+        } else if (oracleAnalyzer->scn != ZERO_SCN) {
+            response.set_code(pb::ResponseCode::STARTED);
+            response.set_scn(oracleAnalyzer->scn);
+        } else {
+            response.set_code(pb::ResponseCode::READY);
+        }
+    }
+
+    void WriterService::start(void) {
+        if (request.database_name().compare(oracleAnalyzer->database) != 0) {
+            response.set_code(pb::ResponseCode::INVALID_DATABASE);
+        } else if (oracleAnalyzer->scn != ZERO_SCN) {
+            response.set_code(pb::ResponseCode::ALREADY_STARTED);
+            response.set_scn(oracleAnalyzer->scn);
+        } else {
+            startScn = 0;
+            startSequence = 0;
+            startTime.clear();
+            startTimeRel = 0;
+
+            switch (request.tm_val_case()) {
+                case pb::RedoRequest::TmValCase::kScn:
+                    startScn = request.scn();
+                    startReader();
+                    break;
+
+                case pb::RedoRequest::TmValCase::kSeq:
+                    startSequence = request.seq();
+                    startReader();
+                    break;
+
+                case pb::RedoRequest::TmValCase::kTms:
+                    startTime = request.tms();
+                    startReader();
+                    break;
+
+                case pb::RedoRequest::TmValCase::kTmRel:
+                    startTimeRel = request.tm_rel();
+                    startReader();
+                    break;
+
+                default:
+                    response.set_code(pb::ResponseCode::INVALID_COMMAND);
+                    break;
+            }
+
+            if (oracleAnalyzer->scn != ZERO_SCN) {
+                response.set_code(pb::ResponseCode::STARTED);
+                response.set_scn(oracleAnalyzer->scn);
+            } else {
+                response.set_code(pb::ResponseCode::FAILED_START);
+            }
+        }
+    }
+
+    void WriterService::writeResponse(void) {
+        bool ok;
+        void *tag;
+        stream->Write(response, (void*)SERVICE_REDO_WRITE);
+
+        if (!getEvent(ok, tag) && shutdown)
+            return;
+
+        if ((uint64_t)tag == SERVICE_DISCONNECT) {
+            if (!getEvent(ok, tag) && shutdown)
+                return;
+
+            if ((uint64_t)tag != SERVICE_REDO_WRITE) {
+                RUNTIME_FAIL("GRPC write error")
+            }
+
+            return;
+        } else
+        if ((uint64_t)tag != SERVICE_REDO_WRITE) {
+            RUNTIME_FAIL("GRPC write error")
+        }
+    }
+
+    bool WriterService::getEvent(bool &ok, void *&tag) {
+        while (!shutdown) {
+            switch (cq->AsyncNext(&tag, &ok, chrono::system_clock::now() + chrono::nanoseconds(pollInterval))) {
+                case CompletionQueue::SHUTDOWN:
+                    {
+                        RUNTIME_FAIL("GRPC shut down")
+                    }
+                    break;
+
+                case CompletionQueue::GOT_EVENT:
+                    return true;
+
+                case CompletionQueue::TIMEOUT:
+                    continue;
+            }
+        }
+        return false;
     }
 }

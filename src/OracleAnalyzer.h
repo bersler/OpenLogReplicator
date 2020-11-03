@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
         condition_variable memoryCond;
         string context;
         typescn scn;
-        typescn startScn;
+        volatile typescn startScn;
         typeseq startSequence;
         string startTime;
         int64_t startTimeRel;
@@ -172,6 +172,7 @@ namespace OpenLogReplicator {
 
         void setBigEndian(void);
         virtual void initialize(void);
+        void initializeSchema(void);
         void *run(void);
         virtual Reader *readerCreate(int64_t group);
         void checkOnlineRedoLogs();

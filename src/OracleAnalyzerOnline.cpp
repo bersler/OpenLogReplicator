@@ -555,18 +555,19 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("can't find SCN for " << dec << startTime);
             }
 
-        } else if (startScn > 0) {
+        } else if (startScn != ZERO_SCN) {
             scn = startScn;
+
         } else {
             //NOW
             scn = currentScn;
         }
 
-        if (scn == 0) {
+        if (scn == ZERO_SCN) {
             RUNTIME_FAIL("getting database SCN");
         }
 
-        OracleAnalyzer::initialize();
+        initializeSchema();
 
         if (sequence == 0) {
             FULL_("starting sequence not found - starting with new batch");

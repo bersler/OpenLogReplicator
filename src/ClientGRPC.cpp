@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OraProtoBuf.pb.h"
 #include "OraProtoBuf.grpc.pb.h"
+#include "types.h"
 
 using namespace grpc;
 using namespace std;
@@ -35,42 +36,65 @@ int main(int argc, char** argv) {
 
     string uri(argv[1]);
     shared_ptr<Channel> channel(grpc::CreateChannel(uri, grpc::InsecureChannelCredentials()));
-    unique_ptr<pb::RedoStreamService::Stub> stub_(pb::RedoStreamService::NewStub(channel));
-    ClientContext context;
-    shared_ptr<ClientReaderWriter<pb::Request, pb::Response>> stream(stub_->RedoStream(&context));
+    unique_ptr<pb::OpenLogReplicator::Stub> stub_(pb::OpenLogReplicator::NewStub(channel));
+    unique_ptr<ClientContext> context(new ClientContext);
+    //shared_ptr<ClientReaderWriter<pb::Request, pb::Response>> stream(stub_->RedoStream(&context));
 
-    pb::Request request;
-    pb::Response response;
+    pb::RedoRequest request;
+    pb::RedoResponse response;
+    request.set_code(pb::RequestCode::INFO);
+    request.set_database_name(argv[3]);
+    cerr << "OpenLogReplicator v." PACKAGE_VERSION " test client (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    unique_ptr<ClientReaderWriter<pb::RedoRequest, pb::RedoResponse>> readerWriter = stub_->Redo(context.get());
 
-    request.set_request_code(pb::RequestCode::INITIALIZE);
-    cout << "Initialize" << endl;
-    stream->Write(request);
-    if (!stream->Read(&response))
-        return 1;
+    if (!readerWriter->Write(request)) {
+        cerr << "error writing RPC" << endl;
+        return 0;
+    }
+    if (!readerWriter->Read(&response)) {
+        cerr << "error reading RPC" << endl;
+        return 0;
+    }
+    cerr << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+    uint64_t scn = 0;
 
-    if (response.response_code() == pb::ResponseCode::READY) {
+    if (response.code() == pb::ResponseCode::STARTED) {
+        scn = response.scn();
+    } else if (response.code() == pb::ResponseCode::READY) {
+
         request.Clear();
-        request.set_request_code(pb::RequestCode::START);
+        request.set_code(pb::RequestCode::START);
         request.set_scn(atoi(argv[2]));
         request.set_database_name(argv[3]);
+
         cout << "Setting SCN: " << dec << request.scn() << ", database: " << request.database_name() << endl;
-        stream->Write(request);
-        if (!stream->Read(&response))
+        if (!readerWriter->Write(request)) {
+            cerr << "error writing RPC" << endl;
             return 0;
+        }
+        if (!readerWriter->Read(&response)) {
+            cerr << "error reading RPC" << endl;
+            return 0;
+        }
+        cerr << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+
+        if (response.code() == pb::ResponseCode::STARTED) {
+            scn = response.scn();
+        } else {
+            cout << "returned code: " << response.code() << endl;
+            return 1;
+        }
     }
 
-    if (response.response_code() != pb::ResponseCode::STARTED) {
-        cout << "returned code: " << response.response_code() << endl;
-        return 1;
-    }
-    cout << "Last confirmed SCN during start: " << dec << response.scn() << endl;
+    cout << "Last confirmed SCN during start: " << dec << scn << endl;
 
     for (;;) {
-        if (stream->Read(&response)) {
-            cout << "code: " << response.response_code() << " scn: " << response.scn() << endl;
-        }// else
-        //    break;
-        sleep(1);
+        if (!readerWriter->Read(&response)) {
+            cerr << "error reading RPC" << endl;
+            return 0;
+        }
+        cerr << "stream: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
     }
+
     return 0;
 }
