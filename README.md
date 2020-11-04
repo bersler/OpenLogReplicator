@@ -1,6 +1,10 @@
 # OpenLogReplicator
 Open Source logbased replictor of Oracle Database to Kafka
 
+Please mind that the code has 2 branches:
+1. master - branch with stable code - updated monthly
+2. nightly - unstable current branch with daily code updates
+
 Updating GRPC/Protobuf code:
 1. cd proto
 2. export PATH=/opt/grpc/bin:$PATH
