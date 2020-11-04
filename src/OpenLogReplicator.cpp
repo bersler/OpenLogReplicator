@@ -712,19 +712,19 @@ int main(int argc, char **argv) {
                         topicJSON.GetString(), maxMessageMb, maxMessages, pollInterval, checkpointInterval, queueSize,
                         startScn, startSequence, startTime, startTimeRel, enableIdempocence);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: kafka writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
 #else
                 RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
 #endif /* LINK_LIBRARY_KAFKA */
-            } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
+            } else if (strcmp(writerTypeJSON.GetString(), "grpc") == 0) {
 #ifdef LINK_LIBRARY_GRPC
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
                 writer = new WriterGRPC(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
                         queueSize, startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterGRPC) << " bytes memory (for: service writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterGRPC) << " bytes memory (for: GRPC writer)");
                 }
 #else
                 RUNTIME_FAIL("Writer GRPC is not compiled, exiting")
