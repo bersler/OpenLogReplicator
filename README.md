@@ -1,6 +1,16 @@
 # OpenLogReplicator
 Open Source logbased replictor of Oracle Database to Kafka
 
+Updating GRPC/Protobuf code:
+1. cd proto
+2. export PATH=/opt/grpc/bin:$PATH
+3. protoc OraProtoBuf.proto --cpp_out=.
+4. protoc OraProtoBuf.proto --plugin=protoc-gen-grpc=`which grpc_cpp_plugin` --grpc_out=.
+5. mv OraProtoBuf.pb.cc ../src/OraProtoBuf.pb.cpp
+6. mv OraProtoBuf.pb.h ../src/OraProtoBuf.pb.h
+7. mv OraProtoBuf.grpc.pb.cc ../src/OraProtoBuf.grpc.pb.cpp
+8. mv OraProtoBuf.grpc.pb.h ../src/OraProtoBuf.grpc.pb.h
+
 Compilation for Debug:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
@@ -12,7 +22,7 @@ Compilation for Release:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8
+4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8 --with-grpc=/opt/grpc
 5. make
 
 Step 3 is optional and required if you downloaded the files from GIT and timestamps of files may be changed.
@@ -20,7 +30,7 @@ Step 3 is optional and required if you downloaded the files from GIT and timesta
 Running:
 1. cp sample/OpenLogReplicator.json.example OpenLogReplicator.json
 2. vi OpenLogReplicator.json
-3. export LD_LIBRARY_PATH=/opt/instantclient_19_8:/opt/librdkafka/lib
+3. export LD_LIBRARY_PATH=/opt/instantclient_19_8:/opt/grpc/lib:/opt/grpc/lib64:/opt/librdkafka/lib
 4. ./src/OpenLogReplicator
 
 The documentation for the OpenLogReplicator program can be found on https://www.bersler.com/openlogreplicator/
