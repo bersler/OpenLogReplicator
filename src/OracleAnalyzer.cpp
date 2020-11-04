@@ -438,10 +438,8 @@ namespace OpenLogReplicator {
             while (scn == ZERO_SCN) {
                 {
                     unique_lock<mutex> lck(mtx);
-                    if (startScn == ZERO_SCN) {
-                        cerr << "SCN is null, sleeping" << endl;
+                    if (startScn == ZERO_SCN)
                         analyzerCond.wait(lck);
-                    }
                 }
 
                 if (shutdown)

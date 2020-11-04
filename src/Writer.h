@@ -63,6 +63,7 @@ namespace OpenLogReplicator {
         virtual void writeCheckpoint(bool force);
         virtual void readCheckpoint(void);
         void startReader(void);
+        void sortQueue(void);
 
     public:
         uint64_t maxMessageMb;      //maximum message size able to handle by writer

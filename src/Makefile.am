@@ -84,7 +84,7 @@ OpenLogReplicator_SOURCES += WriterKafka.cpp
 endif
 
 if GRPC_COMPILE
-OpenLogReplicator_SOURCES += WriterService.cpp
+OpenLogReplicator_SOURCES += WriterGRPC.cpp
 endif
 
 if PROTOBUF_COMPILE

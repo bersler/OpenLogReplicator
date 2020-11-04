@@ -1,4 +1,4 @@
-/* Main class for the program
+/* Main program
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -40,7 +40,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterFile.h"
 
 #ifdef LINK_LIBRARY_GRPC
-#include "WriterService.h"
+#include <WriterGRPC.h>
 #endif /* LINK_LIBRARY_GRPC */
 
 #ifdef LINK_LIBRARY_KAFKA
@@ -715,19 +715,19 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: kafka writer)");
                 }
 #else
-                RUNTIME_FAIL("Service Kafka is not compiled, exiting")
+                RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
 #endif /* LINK_LIBRARY_KAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "service") == 0) {
 #ifdef LINK_LIBRARY_GRPC
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
-                writer = new WriterService(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
+                writer = new WriterGRPC(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
                         queueSize, startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterService) << " bytes memory (for: service writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterGRPC) << " bytes memory (for: service writer)");
                 }
 #else
-                RUNTIME_FAIL("Service writer is not compiled, exiting")
+                RUNTIME_FAIL("Writer GRPC is not compiled, exiting")
 #endif /* LINK_LIBRARY_GRPC */
                 } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());

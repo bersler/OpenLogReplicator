@@ -167,12 +167,13 @@ enum RequestCode : int {
   INFO = 0,
   START = 1,
   REDO = 2,
+  CONFIRM = 3,
   RequestCode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   RequestCode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool RequestCode_IsValid(int value);
 constexpr RequestCode RequestCode_MIN = INFO;
-constexpr RequestCode RequestCode_MAX = REDO;
+constexpr RequestCode RequestCode_MAX = CONFIRM;
 constexpr int RequestCode_ARRAYSIZE = RequestCode_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RequestCode_descriptor();
@@ -191,10 +192,10 @@ inline bool RequestCode_Parse(
 }
 enum ResponseCode : int {
   READY = 0,
-  STARTED = 1,
-  FAILED_START = 2,
+  FAILED_START = 1,
+  STARTED = 2,
   ALREADY_STARTED = 3,
-  OK = 4,
+  STREAMING = 4,
   PAYLOAD = 5,
   INVALID_DATABASE = 6,
   INVALID_COMMAND = 7,

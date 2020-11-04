@@ -319,16 +319,16 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "P\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTERVAL_Y"
   "EAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_SECOND"
   "\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LOCAL_T"
-  "Z\020\022*,\n\013RequestCode\022\010\n\004INFO\020\000\022\t\n\005START\020\001\022"
-  "\010\n\004REDO\020\002*\215\001\n\014ResponseCode\022\t\n\005READY\020\000\022\013\n"
-  "\007STARTED\020\001\022\020\n\014FAILED_START\020\002\022\023\n\017ALREADY_"
-  "STARTED\020\003\022\006\n\002OK\020\004\022\013\n\007PAYLOAD\020\005\022\024\n\020INVALI"
-  "D_DATABASE\020\006\022\023\n\017INVALID_COMMAND\020\0072f\n\021Ope"
-  "nLogReplicator\022Q\n\004Redo\022!.OpenLogReplicat"
-  "or.pb.RedoRequest\032\".OpenLogReplicator.pb"
-  ".RedoResponse(\0010\001B7\n\"io.debezium.connect"
-  "or.oracle.protoB\021OpenLogReplicatorb\006prot"
-  "o3"
+  "Z\020\022*9\n\013RequestCode\022\010\n\004INFO\020\000\022\t\n\005START\020\001\022"
+  "\010\n\004REDO\020\002\022\013\n\007CONFIRM\020\003*\224\001\n\014ResponseCode\022"
+  "\t\n\005READY\020\000\022\020\n\014FAILED_START\020\001\022\013\n\007STARTED\020"
+  "\002\022\023\n\017ALREADY_STARTED\020\003\022\r\n\tSTREAMING\020\004\022\013\n"
+  "\007PAYLOAD\020\005\022\024\n\020INVALID_DATABASE\020\006\022\023\n\017INVA"
+  "LID_COMMAND\020\0072f\n\021OpenLogReplicator\022Q\n\004Re"
+  "do\022!.OpenLogReplicator.pb.RedoRequest\032\"."
+  "OpenLogReplicator.pb.RedoResponse(\0010\001B7\n"
+  "\"io.debezium.connector.oracle.protoB\021Ope"
+  "nLogReplicatorb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -343,7 +343,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1922,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1942,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -411,6 +411,7 @@ bool RequestCode_IsValid(int value) {
     case 0:
     case 1:
     case 2:
+    case 3:
       return true;
     default:
       return false;

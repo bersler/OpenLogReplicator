@@ -99,7 +99,7 @@ host_triplet = @host@
 bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
 @OCI_COMPILE_TRUE@am__append_1 = DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
 @KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
-@GRPC_COMPILE_TRUE@am__append_3 = WriterService.cpp
+@GRPC_COMPILE_TRUE@am__append_3 = WriterGRPC.cpp
 @PROTOBUF_COMPILE_TRUE@am__append_4 = ClientGRPC
 @PROTOBUF_COMPILE_TRUE@am__append_5 = OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp OutputBufferProtobuf.cpp
 subdir = src
@@ -153,7 +153,7 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	Transaction.cpp Writer.cpp WriterFile.cpp \
 	DatabaseConnection.cpp DatabaseEnvironment.cpp \
 	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
-	OracleAnalyzerOnlineASM.cpp WriterKafka.cpp WriterService.cpp \
+	OracleAnalyzerOnlineASM.cpp WriterKafka.cpp WriterGRPC.cpp \
 	OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp \
 	OutputBufferProtobuf.cpp
 @OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
@@ -162,7 +162,7 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnline.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT)
 @KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
-@GRPC_COMPILE_TRUE@am__objects_3 = WriterService.$(OBJEXT)
+@GRPC_COMPILE_TRUE@am__objects_3 = WriterGRPC.$(OBJEXT)
 @PROTOBUF_COMPILE_TRUE@am__objects_4 = OraProtoBuf.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.grpc.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OutputBufferProtobuf.$(OBJEXT)
@@ -565,8 +565,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TransactionBuffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Writer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterFile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterGRPC.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterKafka.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterService.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

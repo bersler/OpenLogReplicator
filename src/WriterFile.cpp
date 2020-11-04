@@ -71,11 +71,6 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("error writing to write: " << dec << name);
         }
 
-        if (msg->flags & OUTPUT_BUFFER_ALLOCATED) {
-            free(msg->data);
-            msg->flags &= ~OUTPUT_BUFFER_ALLOCATED;
-        }
-
         confirmMessage(msg);
     }
 

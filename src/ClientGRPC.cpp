@@ -33,20 +33,20 @@ int main(int argc, char** argv) {
         cout << "Use: ClientGRPC <uri> <scn> <database>" << endl;
         return 0;
     }
+    cout << "OpenLogReplicator v." PACKAGE_VERSION " test client (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
 
     string uri(argv[1]);
     shared_ptr<Channel> channel(grpc::CreateChannel(uri, grpc::InsecureChannelCredentials()));
     unique_ptr<pb::OpenLogReplicator::Stub> stub_(pb::OpenLogReplicator::NewStub(channel));
     unique_ptr<ClientContext> context(new ClientContext);
-    //shared_ptr<ClientReaderWriter<pb::Request, pb::Response>> stream(stub_->RedoStream(&context));
 
-    pb::RedoRequest request;
+    pb::RedoRequest request, confirm;
     pb::RedoResponse response;
-    request.set_code(pb::RequestCode::INFO);
-    request.set_database_name(argv[3]);
-    cerr << "OpenLogReplicator v." PACKAGE_VERSION " test client (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
     unique_ptr<ClientReaderWriter<pb::RedoRequest, pb::RedoResponse>> readerWriter = stub_->Redo(context.get());
 
+    cout << "INFO database: " << argv[3] << endl;
+    request.set_code(pb::RequestCode::INFO);
+    request.set_database_name(argv[3]);
     if (!readerWriter->Write(request)) {
         cerr << "error writing RPC" << endl;
         return 0;
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         cerr << "error reading RPC" << endl;
         return 0;
     }
-    cerr << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+    cout << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
     uint64_t scn = 0;
 
     if (response.code() == pb::ResponseCode::STARTED) {
@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
         request.set_scn(atoi(argv[2]));
         request.set_database_name(argv[3]);
 
-        cout << "Setting SCN: " << dec << request.scn() << ", database: " << request.database_name() << endl;
+        cout << "START scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
         if (!readerWriter->Write(request)) {
             cerr << "error writing RPC" << endl;
             return 0;
@@ -76,9 +76,9 @@ int main(int argc, char** argv) {
             cerr << "error reading RPC" << endl;
             return 0;
         }
-        cerr << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+        cout << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
 
-        if (response.code() == pb::ResponseCode::STARTED) {
+        if (response.code() == pb::ResponseCode::STARTED || response.code() == pb::ResponseCode::ALREADY_STARTED) {
             scn = response.scn();
         } else {
             cout << "returned code: " << response.code() << endl;
@@ -88,12 +88,42 @@ int main(int argc, char** argv) {
 
     cout << "Last confirmed SCN during start: " << dec << scn << endl;
 
+    request.Clear();
+    request.set_code(pb::RequestCode::REDO);
+    request.set_scn(atoi(argv[2]));
+    request.set_database_name(argv[3]);
+
+    cout << "REDO scn: " << dec << scn << endl;
+    if (!readerWriter->Write(request)) {
+        cerr << "error writing RPC" << endl;
+        return 0;
+    }
+
+    uint64_t lastScn, prevScn = 0;
+    uint64_t num = 0;
     for (;;) {
         if (!readerWriter->Read(&response)) {
             cerr << "error reading RPC" << endl;
             return 0;
         }
-        cerr << "stream: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+        cerr << "- scn: " << response.scn() << endl;
+        lastScn = response.scn();
+        ++num;
+
+        if (num > 100 && prevScn < lastScn) {
+            confirm.Clear();
+            confirm.set_code(pb::RequestCode::CONFIRM);
+            confirm.set_scn(prevScn);
+            confirm.set_database_name(argv[3]);
+
+            cout << "CONFIRM scn: " << dec << prevScn << endl;
+            if (!readerWriter->Write(confirm)) {
+                cerr << "error writing RPC" << endl;
+                return 0;
+            }
+            num = 0;
+        }
+        prevScn = lastScn;
     }
 
     return 0;

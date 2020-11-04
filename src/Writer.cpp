@@ -71,16 +71,56 @@ namespace OpenLogReplicator {
     }
 
     Writer::~Writer() {
+        if (queue != nullptr) {
+            delete[] queue;
+            queue = nullptr;
+        }
     }
 
     void Writer::createMessage(OutputBufferMsg *msg) {
-        if (shutdown)
-            return;
         ++sentMessages;
 
         queue[curQueueSize++] = msg;
         if (curQueueSize > maxQueueSize)
             maxQueueSize = curQueueSize;
+    }
+
+    void Writer::sortQueue(void) {
+        if (curQueueSize == 0)
+            return;
+
+        OutputBufferMsg **oldQueue = queue;
+        queue = new OutputBufferMsg*[queueSize];
+        if (queue == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
+        }
+
+        uint64_t oldQueueSize = curQueueSize;
+
+        for (uint64_t newId = 0 ; newId < curQueueSize; ++newId) {
+            queue[newId] = oldQueue[0];
+            uint64_t i = 0;
+            --oldQueueSize;
+            while (i < oldQueueSize) {
+                if (i * 2 + 2 < oldQueueSize && oldQueue[i * 2 + 2]->id < oldQueue[oldQueueSize]->id) {
+                    if (oldQueue[i * 2 + 1]->id < oldQueue[i * 2 + 2]->id) {
+                        oldQueue[i] = oldQueue[i * 2 + 1];
+                        i = i * 2 + 1;
+                    } else {
+                        oldQueue[i] = oldQueue[i * 2 + 2];
+                        i = i * 2 + 2;
+                    }
+                } else if (i * 2 + 1 < oldQueueSize && oldQueue[i * 2 + 1]->id < oldQueue[oldQueueSize]->id) {
+                    oldQueue[i] = oldQueue[i * 2 + 1];
+                    i = i * 2 + 1;
+                } else
+                    break;
+            }
+            oldQueue[i] = oldQueue[oldQueueSize];
+        }
+
+        delete[] oldQueue;
+        oldQueue = nullptr;
     }
 
     void Writer::confirmMessage(OutputBufferMsg *msg) {
@@ -156,6 +196,7 @@ namespace OpenLogReplicator {
             uint64_t curLength = 0, tmpLength = 0;
             while (!shutdown) {
 
+                //get new message to send
                 while (!shutdown) {
                     pollQueue();
                     writeCheckpoint(false);
@@ -191,6 +232,7 @@ namespace OpenLogReplicator {
                 if (shutdown)
                     break;
 
+                //found message, send it
                 while (curLength + sizeof(struct OutputBufferMsg) < tmpLength) {
                     msg = (OutputBufferMsg *)(curBuffer->data + curLength);
                     if (msg->length == 0)
@@ -341,7 +383,7 @@ namespace OpenLogReplicator {
         oracleAnalyzer->startTime = startTime;
         oracleAnalyzer->startTimeRel = startTimeRel;
 
-        cerr << "attempt to start analyzer" << endl;
+        FULL("attempt to start analyzer");
         if (oracleAnalyzer->scn == ZERO_SCN && !shutdown) {
             unique_lock<mutex> lck(oracleAnalyzer->mtx);
             oracleAnalyzer->analyzerCond.notify_all();
@@ -349,7 +391,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->scn != ZERO_SCN && !shutdown) {
-            cerr << "analyzer started" << endl;
+            FULL("analyzer started");
         }
     }
 }
