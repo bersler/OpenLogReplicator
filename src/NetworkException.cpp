@@ -1,4 +1,4 @@
-/* Header for ConfigurationException class
+/* Exception used in program
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,28 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-#include <iostream>
-#include <sstream>
-
-#ifndef CONFIGURATIONEXCEPTION_H_
-#define CONFIGURATIONEXCEPTION_H_
-
-#define CONFIG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw ConfigurationException("error");}
+#include "NetworkException.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class ConfigurationException: public exception {
-    public:
-        const char *msg;
+    NetworkException::~NetworkException() {
+    }
 
-        ConfigurationException(const char* msg);
-        virtual ~ConfigurationException();
+    NetworkException::NetworkException(const char* msg) :
+            exception(),
+            msg(msg) {
+    }
 
-        friend ostream& operator<<(ostream& os, const ConfigurationException& ors);
-    };
+    ostream& operator<<(ostream& os, const NetworkException& ors) {
+        os << ors.msg;
+        return os;
+    }
 }
-
-#endif

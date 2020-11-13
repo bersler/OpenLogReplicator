@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 bin_PROGRAMS=OpenLogReplicator
-OpenLogReplicator_SOURCES=CharacterSet16bit.cpp \
+OpenLogReplicator_SOURCES = CharacterSet16bit.cpp \
 CharacterSet7bit.cpp \
 CharacterSet8bit.cpp \
 CharacterSetAL16UTF16.cpp \
@@ -35,6 +35,7 @@ CharacterSetZHT16HKSCS31.cpp \
 CharacterSetZHT32EUC.cpp \
 CharacterSetZHT32TRIS.cpp \
 ConfigurationException.cpp \
+NetworkException.cpp \
 OpCode0501.cpp \
 OpCode0502.cpp \
 OpCode0504.cpp \
@@ -83,12 +84,12 @@ if KAFKA_COMPILE
 OpenLogReplicator_SOURCES += WriterKafka.cpp
 endif
 
-if GRPC_COMPILE
-OpenLogReplicator_SOURCES += WriterGRPC.cpp
-endif
-
 if PROTOBUF_COMPILE
-bin_PROGRAMS += ClientGRPC
-OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp OutputBufferProtobuf.cpp
-ClientGRPC_SOURCES=ClientGRPC.cpp OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp WriterStream.cpp
+StreamClient_SOURCES = StreamClient.cpp OraProtoBuf.pb.cpp NetworkException.cpp RuntimeException.cpp Stream.cpp StreamNetwork.cpp
+bin_PROGRAMS += StreamClient
+if ZEROMQ_COMPILE
+OpenLogReplicator_SOURCES += StreamZeroMQ.cpp
+StreamClient_SOURCES += StreamZeroMQ.cpp
+endif
 endif

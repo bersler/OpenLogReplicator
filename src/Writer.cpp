@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "ConfigurationException.h"
+#include "NetworkException.h"
 #include "OutputBuffer.h"
 #include "OracleAnalyzer.h"
 #include "OracleColumn.h"
@@ -62,7 +63,8 @@ namespace OpenLogReplicator {
         startScn(startScn),
         startSequence(startSequence),
         startTime(startTime),
-        startTimeRel(startTimeRel) {
+        startTimeRel(startTimeRel),
+        streaming(false) {
 
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
@@ -189,111 +191,125 @@ namespace OpenLogReplicator {
         INFO("Writer is starting: " << getName());
 
         try {
-            readCheckpoint();
-
-            OutputBufferMsg *msg = nullptr;
-            OutputBufferQueue *curBuffer = outputBuffer->firstBuffer;
-            uint64_t curLength = 0, tmpLength = 0;
+            //external loop for client disconnection
             while (!shutdown) {
+                try {
+                    //client connected
+                    readCheckpoint();
 
-                //get new message to send
-                while (!shutdown) {
-                    pollQueue();
-                    writeCheckpoint(false);
+                    OutputBufferMsg *msg = nullptr;
+                    OutputBufferQueue *curBuffer = outputBuffer->firstBuffer;
+                    uint64_t curLength = 0, tmpLength = 0;
+                    curQueueSize = 0;
 
-                    {
-                        unique_lock<mutex> lck(outputBuffer->mtx);
+                    //start streaming
+                    while (!shutdown) {
 
-                        //next buffer
-                        if (curBuffer->length == curLength && curBuffer->next != nullptr) {
-                            curBuffer = curBuffer->next;
-                            curLength = 0;
-                        }
+                        //get message to send
+                        while (!shutdown) {
+                            //check for client checkpoint
+                            pollQueue();
+                            writeCheckpoint(false);
 
-                        //found something
-                        msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+                            {
+                                unique_lock<mutex> lck(outputBuffer->mtx);
 
-                        if (curBuffer->length > curLength + sizeof(struct OutputBufferMsg) && msg->length > 0) {
-                            oracleAnalyzer->waitingForWriter = true;
-                            tmpLength = curBuffer->length;
-                            break;
-                        }
+                                //next buffer
+                                if (curBuffer->length == curLength && curBuffer->next != nullptr) {
+                                    curBuffer = curBuffer->next;
+                                    curLength = 0;
+                                }
 
-                        oracleAnalyzer->waitingForWriter = false;
-                        oracleAnalyzer->memoryCond.notify_all();
+                                //found something
+                                msg = (OutputBufferMsg *)(curBuffer->data + curLength);
 
-                        if (curQueueSize > 0)
-                            outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
-                        else
-                            outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
-                    }
-                }
+                                if (curBuffer->length > curLength + sizeof(struct OutputBufferMsg) && msg->length > 0) {
+                                    oracleAnalyzer->waitingForWriter = true;
+                                    tmpLength = curBuffer->length;
+                                    break;
+                                }
 
-                if (shutdown)
-                    break;
+                                oracleAnalyzer->waitingForWriter = false;
+                                oracleAnalyzer->memoryCond.notify_all();
 
-                //found message, send it
-                while (curLength + sizeof(struct OutputBufferMsg) < tmpLength) {
-                    msg = (OutputBufferMsg *)(curBuffer->data + curLength);
-                    if (msg->length == 0)
-                        break;
-
-                    //queue is full
-                    pollQueue();
-                    while (curQueueSize >= queueSize && !shutdown) {
-                        FULL("output queue is full (" << dec << curQueueSize << " elements), sleeping " << dec << pollInterval << "us");
-                        usleep(pollInterval);
-                        pollQueue();
-                    }
-                    writeCheckpoint(false);
-                    if (shutdown)
-                        break;
-
-                    //outputBuffer->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
-                    uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
-                    curLength += sizeof(struct OutputBufferMsg);
-
-                    //message in one part - send directly from buffer
-                    if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
-                        createMessage(msg);
-                        sendMessage(msg);
-                        curLength += length8;
-                        msg = (OutputBufferMsg *)(curBuffer->data + curLength);
-
-                    //message in many parts - copy
-                    } else {
-                        msg->data = (uint8_t*)malloc(msg->length);
-                        if (msg->data == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << dec << msg->length << " bytes memory (for: temporary buffer for JSON message)");
-                        }
-                        msg->flags |= OUTPUT_BUFFER_ALLOCATED;
-
-                        uint64_t copied = 0;
-                        while (msg->length - copied > 0) {
-                            uint64_t toCopy = msg->length - copied;
-                            if (toCopy > tmpLength - curLength) {
-                                toCopy = tmpLength - curLength;
-                                memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
-                                curBuffer = curBuffer->next;
-                                tmpLength = OUTPUT_BUFFER_DATA_SIZE;
-                                curLength = 0;
-                            } else {
-                                memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
-                                curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
+                                if (curQueueSize > 0)
+                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
+                                else
+                                    outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
                             }
-                            copied += toCopy;
                         }
 
-                        createMessage(msg);
-                        sendMessage(msg);
-                        pollQueue();
-                        writeCheckpoint(false);
-                        break;
+                        if (shutdown)
+                            break;
+
+                        //send message
+                        while (curLength + sizeof(struct OutputBufferMsg) < tmpLength && !shutdown) {
+                            msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+                            if (msg->length == 0)
+                                break;
+
+                            //queue is full
+                            pollQueue();
+                            while (curQueueSize >= queueSize && !shutdown) {
+                                FULL("output queue is full (" << dec << curQueueSize << " elements), sleeping " << dec << pollInterval << "us");
+                                usleep(pollInterval);
+                                pollQueue();
+                            }
+                            writeCheckpoint(false);
+                            if (shutdown)
+                                break;
+
+                            //outputBuffer->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
+                            uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
+                            curLength += sizeof(struct OutputBufferMsg);
+
+                            //message in one part - send directly from buffer
+                            if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
+                                createMessage(msg);
+                                sendMessage(msg);
+                                curLength += length8;
+                                msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+
+                            //message in many parts - copy
+                            } else {
+                                msg->data = (uint8_t*)malloc(msg->length);
+                                if (msg->data == nullptr) {
+                                    RUNTIME_FAIL("couldn't allocate " << dec << msg->length << " bytes memory (for: temporary buffer for JSON message)");
+                                }
+                                msg->flags |= OUTPUT_BUFFER_ALLOCATED;
+
+                                uint64_t copied = 0;
+                                while (msg->length - copied > 0) {
+                                    uint64_t toCopy = msg->length - copied;
+                                    if (toCopy > tmpLength - curLength) {
+                                        toCopy = tmpLength - curLength;
+                                        memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                                        curBuffer = curBuffer->next;
+                                        tmpLength = OUTPUT_BUFFER_DATA_SIZE;
+                                        curLength = 0;
+                                    } else {
+                                        memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                                        curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
+                                    }
+                                    copied += toCopy;
+                                }
+
+                                createMessage(msg);
+                                sendMessage(msg);
+                                pollQueue();
+                                writeCheckpoint(false);
+                                break;
+                            }
+                        }
                     }
+
+                    writeCheckpoint(true);
+
+                } catch (NetworkException &ex) {
+                    streaming = false;
+                    //client got disconnected
                 }
             }
-
-            writeCheckpoint(true);
 
         } catch(ConfigurationException &ex) {
             stopMain();

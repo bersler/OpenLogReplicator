@@ -1,4 +1,4 @@
-/* Header for ConfigurationException class
+/* Header for StreamZeroMQ class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,27 +17,33 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-#include <iostream>
-#include <sstream>
+#include <zmq.h>
 
-#ifndef CONFIGURATIONEXCEPTION_H_
-#define CONFIGURATIONEXCEPTION_H_
+#include "Stream.h"
 
-#define CONFIG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw ConfigurationException("error");}
+#ifndef STREAMZEROMQ_H_
+#define STREAMZEROMQ_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class ConfigurationException: public exception {
+    class StreamZeroMQ : public Stream {
+    protected:
+        void *socket;
+        void *context;
+
     public:
-        const char *msg;
+        virtual string getName(void);
+        virtual void initializeClient(volatile bool *shutdown);
+        virtual void initializeServer(volatile bool *shutdown);
+        virtual void sendMessage(const void *msg, uint64_t length);
+        virtual uint64_t receiveMessage(void *msg, uint64_t length);
+        virtual uint64_t receiveMessageNB(void *msg, uint64_t length);
+        virtual bool connected(void);
 
-        ConfigurationException(const char* msg);
-        virtual ~ConfigurationException();
-
-        friend ostream& operator<<(ostream& os, const ConfigurationException& ors);
+        StreamZeroMQ(const char *uri, uint64_t pollInterval);
+        virtual ~StreamZeroMQ();
     };
 }
 

@@ -54,10 +54,11 @@ namespace OpenLogReplicator {
         typeseq startSequence;
         string startTime;
         int64_t startTimeRel;
+        bool streaming;
 
         void createMessage(OutputBufferMsg *msg);
         virtual void sendMessage(OutputBufferMsg *msg) = 0;
-        virtual string getName() = 0;
+        virtual string getName(void) = 0;
         virtual void pollQueue(void) = 0;
         virtual void *run(void);
         virtual void writeCheckpoint(bool force);

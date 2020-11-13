@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.8.0-beta4],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.8.0-beta5],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -54,9 +54,14 @@ AC_ARG_WITH([rapidjson],
   [CPPFLAGS="-I$withval/include $CPPFLAGS"]
   [])
 
-AC_ARG_WITH([grpc],
-  [AS_HELP_STRING([--with-grpc=PATH], [grpc directory])],
-  [GRPC=true; PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF -DLINK_LIBRARY_GRPC $CPPFLAGS"; LDFLAGS="-L$withval/lib -L$withval/lib64 `export PKG_CONFIG_PATH=$withval/lib/pkgconfig:$withval/lib64/pkgconfig; pkg-config --libs protobuf grpc++` $LDFLAGS"],
+AC_ARG_WITH([protobuf],
+  [AS_HELP_STRING([--with-protobuf=PATH], [protobuf directory])],
+  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF $CPPFLAGS"; LDFLAGS="-L$withval/lib -lprotobuf $LDFLAGS"],
+  [])
+
+AC_ARG_WITH([zeromq],
+  [AS_HELP_STRING([--with-zeromq=PATH], [zeromq directory])],
+  [ZEROMQ=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_ZEROMQ $CPPFLAGS"; LDFLAGS="-L$withval/lib64 -lzmq $LDFLAGS"],
   [])
 
 AC_ARG_WITH([instantclient],
@@ -68,8 +73,8 @@ CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmes
 LDFLAGS="$LDFLAGS -pthread"
 AM_CONDITIONAL([KAFKA_COMPILE], [test x$KAFKA = xtrue])
 AM_CONDITIONAL([OCI_COMPILE], [test x$OCI = xtrue])
-AM_CONDITIONAL([GRPC_COMPILE], [test x$GRPC = xtrue])
 AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
+AM_CONDITIONAL([ZEROMQ_COMPILE], [test x$ZEROMQ = xtrue])
 
 AC_CONFIG_FILES([
   Makefile 

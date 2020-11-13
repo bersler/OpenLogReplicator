@@ -122,6 +122,7 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::appendHeader(bool first) {
+        redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
                 char buf[17];

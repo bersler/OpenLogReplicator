@@ -63,17 +63,17 @@ enum RequestCode {
     INFO = 0;
     START = 1;
     REDO = 2;
+    CONFIRM = 3;
 }
 
 enum ResponseCode {
     READY = 0;
-    STARTED = 1;
-    FAILED_START = 2;
+    FAILED_START = 1;
+    STARTED = 2;
     ALREADY_STARTED = 3;
-    OK = 4;
-    PAYLOAD = 5;
-    INVALID_DATABASE = 6;
-    INVALID_COMMAND = 7;
+    PAYLOAD = 4;
+    INVALID_DATABASE = 5;
+    INVALID_COMMAND = 6;
 }
 
 message Value {

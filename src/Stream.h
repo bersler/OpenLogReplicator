@@ -1,4 +1,4 @@
-/* Header for ConfigurationException class
+/* Header for Stream class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,27 +17,35 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-#include <iostream>
-#include <sstream>
+#include "types.h"
 
-#ifndef CONFIGURATIONEXCEPTION_H_
-#define CONFIGURATIONEXCEPTION_H_
+#ifndef STREAM_H_
+#define STREAM_H_
 
-#define CONFIG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw ConfigurationException("error");}
+#define READ_NETWORK_BUFFER         1024
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class ConfigurationException: public exception {
+    class Stream {
+    protected:
+        volatile bool *shutdown;
+        uint64_t pollInterval;
+
     public:
-        const char *msg;
+        string uri;
 
-        ConfigurationException(const char* msg);
-        virtual ~ConfigurationException();
+        virtual string getName(void) = 0;
+        virtual void initializeClient(volatile bool *shutdown) = 0;
+        virtual void initializeServer(volatile bool *shutdown) = 0;
+        virtual void sendMessage(const void *msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessage(void *msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessageNB(void *msg, uint64_t length) = 0;
+        virtual bool connected(void) = 0;
 
-        friend ostream& operator<<(ostream& os, const ConfigurationException& ors);
+        Stream(const char *uri, uint64_t pollInterval);
+        virtual ~Stream();
     };
 }
 

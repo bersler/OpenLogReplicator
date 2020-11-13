@@ -1,4 +1,4 @@
-/* Header for ConfigurationException class
+/* Base class for streaming redo data to client
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,28 +17,18 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-#include <iostream>
-#include <sstream>
-
-#ifndef CONFIGURATIONEXCEPTION_H_
-#define CONFIGURATIONEXCEPTION_H_
-
-#define CONFIG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw ConfigurationException("error");}
+#include "Stream.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    class ConfigurationException: public exception {
-    public:
-        const char *msg;
+    Stream::Stream(const char *uri, uint64_t pollInterval) :
+        uri(uri),
+        pollInterval(pollInterval),
+        shutdown(shutdown) {
+    }
 
-        ConfigurationException(const char* msg);
-        virtual ~ConfigurationException();
-
-        friend ostream& operator<<(ostream& os, const ConfigurationException& ors);
-    };
+    Stream::~Stream() {
+    }
 }
-
-#endif

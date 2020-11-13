@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <rapidjson/document.h>
-
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleAnalyzerBatch.h"
@@ -38,10 +37,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 #include "Writer.h"
 #include "WriterFile.h"
-
-#ifdef LINK_LIBRARY_GRPC
-#include <WriterGRPC.h>
-#endif /* LINK_LIBRARY_GRPC */
 
 #ifdef LINK_LIBRARY_KAFKA
 #include "WriterKafka.h"
@@ -54,6 +49,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #ifdef LINK_LIBRARY_PROTOBUF
 #include "OutputBufferProtobuf.h"
+#include "StreamNetwork.h"
+#include "WriterStream.h"
+#ifdef LINK_LIBRARY_ZEROMQ
+#include "StreamZeroMQ.h"
+#endif /* LINK_LIBRARY_ZEROMQ */
 #endif /* LINK_LIBRARY_PROTOBUF */
 
 using namespace std;
@@ -717,19 +717,41 @@ int main(int argc, char **argv) {
 #else
                 RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
 #endif /* LINK_LIBRARY_KAFKA */
-            } else if (strcmp(writerTypeJSON.GetString(), "grpc") == 0) {
-#ifdef LINK_LIBRARY_GRPC
+            } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
+#if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
-                writer = new WriterGRPC(aliasJSON.GetString(), oracleAnalyzer, uriJSON.GetString(), pollInterval, checkpointInterval,
-                        queueSize, startScn, startSequence, startTime, startTimeRel);
+                StreamZeroMQ *stream = new StreamZeroMQ(uriJSON.GetString(), pollInterval);
+                if (stream == nullptr) {
+                    RUNTIME_FAIL("network stream creation failed");
+                }
+
+                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollInterval, checkpointInterval,
+                        queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterGRPC) << " bytes memory (for: GRPC writer)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
-                RUNTIME_FAIL("Writer GRPC is not compiled, exiting")
-#endif /* LINK_LIBRARY_GRPC */
-                } else {
+                RUNTIME_FAIL("Writer ZeroMQ is not compiled, exiting")
+#endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
+            } else if (strcmp(writerTypeJSON.GetString(), "network") == 0) {
+#ifdef LINK_LIBRARY_PROTOBUF
+                const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
+
+                StreamNetwork *stream = new StreamNetwork(uriJSON.GetString(), pollInterval);
+                if (stream == nullptr) {
+                    RUNTIME_FAIL("network stream creation failed");
+                }
+
+                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollInterval, checkpointInterval,
+                        queueSize, startScn, startSequence, startTime, startTimeRel, stream);
+                if (writer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
+                }
+#else
+                RUNTIME_FAIL("Writer Network is not compiled, exiting")
+#endif /* LINK_LIBRARY_PROTOBUF */
+            } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
             }
 
