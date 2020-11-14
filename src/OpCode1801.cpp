@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode1801.h"
 #include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
 #include "RedoLogRecord.h"
 
 using namespace std;

@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <vector>
+
 #include "types.h"
 
 #ifndef TRANSACTION_H_

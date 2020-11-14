@@ -17,12 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <ostream>
-#include <queue>
-#include <set>
-#include <stdint.h>
-
-#include "types.h"
 #include "Writer.h"
 
 #ifndef WRITERFILE_H_

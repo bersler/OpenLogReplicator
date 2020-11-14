@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-
 #include "CharacterSet16bit.h"
 #include "CharacterSet7bit.h"
 #include "CharacterSet8bit.h"

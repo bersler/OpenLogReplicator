@@ -17,12 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <queue>
-#include <set>
-#include <stdint.h>
 #include <librdkafka/rdkafka.h>
 
-#include "types.h"
 #include "Writer.h"
 
 #ifndef WRITERKAFKA_H_

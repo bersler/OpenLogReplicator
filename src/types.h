@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
 #include <sstream>
-#include <stdint.h>
 #include <string.h>
 #include <time.h>
 

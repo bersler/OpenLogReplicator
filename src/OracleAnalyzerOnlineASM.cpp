@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "DatabaseConnection.h"
 #include "OracleAnalyzerOnlineASM.h"
-#include "OutputBuffer.h"
 #include "ReaderASM.h"
 #include "RuntimeException.h"
 

@@ -18,7 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <exception>
-#include <iostream>
+
+#include "types.h"
 
 #ifndef REDOLOGEXCEPTION_H_
 #define REDOLOGEXCEPTION_H_

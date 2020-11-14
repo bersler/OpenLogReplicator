@@ -17,10 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-
 #include "DatabaseStatement.h"
-#include "OracleAnalyzer.h"
 #include "OracleAnalyzerOnlineASM.h"
 #include "ReaderASM.h"
 #include "RuntimeException.h"

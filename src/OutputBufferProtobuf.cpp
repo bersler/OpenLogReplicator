@@ -17,13 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet.h"
 #include "OracleAnalyzer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBufferProtobuf.h"
 #include "RuntimeException.h"
-#include "Writer.h"
 
 namespace OpenLogReplicator {
 

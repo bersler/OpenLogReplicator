@@ -17,13 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-#include <unistd.h>
-
 #include "DatabaseConnection.h"
 #include "DatabaseEnvironment.h"
 #include "DatabaseStatement.h"
-#include "RuntimeException.h"
 
 using namespace std;
 

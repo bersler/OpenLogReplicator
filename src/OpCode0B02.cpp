@@ -17,11 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OutputBuffer.h"
 #include "OpCode0B02.h"
 #include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
 #include "RedoLogRecord.h"
 
 using namespace std;

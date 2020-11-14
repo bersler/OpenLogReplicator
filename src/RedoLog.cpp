@@ -17,10 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <thread>
-#include <signal.h>
-#include <string.h>
-
 #include "OpCode0501.h"
 #include "OpCode0502.h"
 #include "OpCode0504.h"
@@ -43,7 +39,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 #include "RedoLog.h"
 #include "RedoLogException.h"
-#include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Schema.h"
 #include "Transaction.h"

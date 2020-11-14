@@ -17,20 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <chrono>
-#include <condition_variable>
-#include <mutex>
 #include <rapidjson/document.h>
 #include <thread>
 #include <unistd.h>
 
 #include "ConfigurationException.h"
 #include "NetworkException.h"
-#include "OutputBuffer.h"
 #include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "RedoLogRecord.h"
+#include "OutputBuffer.h"
 #include "RuntimeException.h"
 #include "Writer.h"
 

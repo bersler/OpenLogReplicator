@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <zmq.h>
-
 #include "Stream.h"
 
 #ifndef STREAMZEROMQ_H_

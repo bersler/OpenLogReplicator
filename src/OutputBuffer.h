@@ -20,10 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <condition_variable>
 #include <mutex>
 #include <map>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <stdint.h>
 
 #include "types.h"
 

@@ -17,13 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
-#include <vector>
-#include <pthread.h>
-
-#include "types.h"
 #include "Thread.h"
 
 #ifndef READER_H_

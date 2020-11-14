@@ -20,18 +20,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <thread>
 #include <dirent.h>
 #include <unistd.h>
-#include <RedoLog.h>
 #include <sys/stat.h>
 
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
 #include "OutputBuffer.h"
-#include "Reader.h"
 #include "ReaderFilesystem.h"
+#include "RedoLog.h"
 #include "RedoLogException.h"
-#include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Schema.h"
 #include "Transaction.h"

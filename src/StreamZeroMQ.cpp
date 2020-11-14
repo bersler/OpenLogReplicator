@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <unistd.h>
+#include <zmq.h>
 
 #include "NetworkException.h"
 #include "RuntimeException.h"

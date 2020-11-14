@@ -17,18 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <thread>
-#include <stdio.h>
-#include <signal.h>
-#include <unistd.h>
-#include <string.h>
-
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "WriterKafka.h"
 

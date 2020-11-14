@@ -17,16 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <algorithm>
-#include <list>
-#include <thread>
 #include <execinfo.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
+#include <fcntl.h>
+#include <list>
+#include <rapidjson/document.h>
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <rapidjson/document.h>
+#include <thread>
+#include <unistd.h>
+
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleAnalyzerBatch.h"

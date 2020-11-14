@@ -18,7 +18,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OracleAnalyzerBatch.h"
-#include "OutputBuffer.h"
 
 using namespace std;
 

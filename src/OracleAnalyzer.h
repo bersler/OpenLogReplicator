@@ -19,19 +19,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <condition_variable>
 #include <fstream>
-#include <iostream>
 #include <mutex>
 #include <queue>
 #include <set>
-#include <sstream>
-#include <string>
 #include <unordered_map>
 #include <vector>
-#include <stdint.h>
 
-#include "types.h"
 #include "Thread.h"
-#include "TransactionBuffer.h"
 
 #ifndef ORACLEANALYZER_H_
 #define ORACLEANALYZER_H_
@@ -46,6 +40,7 @@ namespace OpenLogReplicator {
     class RedoLogRecord;
     class Schema;
     class Transaction;
+    class TransactionBuffer;
 
     struct redoLogCompare {
         bool operator()(RedoLog* const& p1, RedoLog* const& p2);

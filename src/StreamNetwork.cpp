@@ -17,11 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "NetworkException.h"

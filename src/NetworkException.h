@@ -18,8 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <exception>
-#include <iostream>
-#include <sstream>
+
+#include "types.h"
 
 #ifndef NETWORKEXCEPTION_H_
 #define NETWORKEXCEPTION_H_

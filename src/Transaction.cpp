@@ -17,23 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-
-#include "OutputBuffer.h"
-#include "OpCode.h"
 #include "OpCode0501.h"
-#include "OpCode0502.h"
-#include "OpCode0504.h"
-#include "OpCode0B02.h"
-#include "OpCode0B03.h"
-#include "OpCode0B05.h"
-#include "OpCode0B06.h"
-#include "OpCode0B08.h"
-#include "OpCode0B0B.h"
-#include "OpCode0B0C.h"
-#include "OpCode0B10.h"
-#include "OpCode1801.h"
 #include "OracleAnalyzer.h"
+#include "OutputBuffer.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
 #include "Transaction.h"
