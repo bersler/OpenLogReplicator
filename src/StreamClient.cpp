@@ -109,6 +109,8 @@ int main(int argc, char** argv) {
                 cout << "returned code: " << response.code() << endl;
                 return 1;
             }
+        } else {
+            return 1;
         }
 
         uint64_t lastScn, prevScn = 0;
