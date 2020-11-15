@@ -1,5 +1,8 @@
 # OpenLogReplicator
-Open Source logbased replictor of Oracle Database to Kafka
+Open Source redo log parser which can output transactions in JSON or Protobuf format to:
+* Kafka
+* flat file
+* network stream (plan TCP/IP or ZeroMQ)
 
 Please mind that the code has 2 branches:
 1. master - branch with stable code - updated monthly

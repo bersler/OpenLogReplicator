@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
         FULL("attempt to start analyzer");
         if (oracleAnalyzer->scn == ZERO_SCN && !shutdown) {
             unique_lock<mutex> lck(oracleAnalyzer->mtx);
-            oracleAnalyzer->analyzerCond.notify_all();
+            oracleAnalyzer->writerCond.notify_all();
             outputBuffer->writersCond.wait(lck);
         }
 

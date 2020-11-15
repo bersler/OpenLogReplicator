@@ -60,7 +60,6 @@ namespace OpenLogReplicator {
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0)"
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_ALL, 'YES', 1, 0)"
             ",  DECODE(TP.ENDIAN_FORMAT, 'Big', 1, 0)"
-            ",  D.CURRENT_SCN"
             ",  DI.RESETLOGS_ID"
             ",  D.ACTIVATION#"
             ",  VER.BANNER"
@@ -76,6 +75,12 @@ namespace OpenLogReplicator {
             " JOIN"
             "   SYS.V_$DATABASE_INCARNATION DI ON"
             "     DI.STATUS = 'CURRENT'");
+
+    const char* OracleAnalyzerOnline::SQL_GET_DATABASE_SCN(
+            "SELECT"
+            "   D.CURRENT_SCN"
+            " FROM"
+            "   SYS.V_$DATABASE D");
 
     const char* OracleAnalyzerOnline::SQL_GET_CON_INFO(
             "SELECT"
@@ -356,7 +361,6 @@ namespace OpenLogReplicator {
         if (shutdown)
             return;
 
-        typescn currentScn;
         typeresetlogs currentResetlogs;
         typeactivation currentActivation;
 
@@ -395,11 +399,10 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(3, suppLogDbPrimary);
             stmt.defineUInt64(4, suppLogDbAll);
             stmt.defineUInt64(5, isBigEndian);
-            stmt.defineUInt64(6, currentScn);
-            stmt.defineUInt32(7, currentResetlogs);
-            stmt.defineUInt32(8, currentActivation);
-            char bannerStr[81]; stmt.defineString(9, bannerStr, sizeof(bannerStr));
-            char contextStr[81]; stmt.defineString(10, contextStr, sizeof(contextStr));
+            stmt.defineUInt32(6, currentResetlogs);
+            stmt.defineUInt32(7, currentActivation);
+            char bannerStr[81]; stmt.defineString(8, bannerStr, sizeof(bannerStr));
+            char contextStr[81]; stmt.defineString(9, contextStr, sizeof(contextStr));
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
@@ -499,7 +502,9 @@ namespace OpenLogReplicator {
 
         checkOnlineRedoLogs();
         archReader = readerCreate(0);
+    }
 
+    void OracleAnalyzerOnline::start(void) {
         //position by sequence
         if (startSequence > 0) {
             DatabaseStatement stmt(conn);
@@ -558,9 +563,16 @@ namespace OpenLogReplicator {
         } else if (startScn != ZERO_SCN) {
             scn = startScn;
 
+        //NOW
         } else {
-            //NOW
-            scn = currentScn;
+            DatabaseStatement stmt(conn);
+            TRACE_(TRACE2_SQL, SQL_GET_DATABASE_SCN);
+            stmt.createStatement(SQL_GET_DATABASE_SCN);
+            stmt.defineUInt64(1, scn);
+
+            if (!stmt.executeQuery()) {
+                RUNTIME_FAIL("can't find database current SCN");
+            }
         }
 
         if (scn == ZERO_SCN) {

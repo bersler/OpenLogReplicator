@@ -399,6 +399,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initialize(void) {
+        //nothing here for offline mode
+    }
+
+    void OracleAnalyzer::start(void) {
         if (startSequence > 0) {
             RUNTIME_FAIL("starting by SCN is not supported for offline mode");
         } else if (startTime.length() > 0) {
@@ -431,11 +435,12 @@ namespace OpenLogReplicator {
         TRACE_(TRACE2_THREADS, "ANALYZER (" << hex << this_thread::get_id() << ") START");
 
         try {
+            initialize();
             while (scn == ZERO_SCN) {
                 {
                     unique_lock<mutex> lck(mtx);
                     if (startScn == ZERO_SCN)
-                        analyzerCond.wait(lck);
+                        writerCond.wait(lck);
                 }
 
                 if (shutdown)
@@ -462,7 +467,7 @@ namespace OpenLogReplicator {
 
                 if (shutdown)
                     throw RuntimeException("shut down on request");
-                initialize();
+                start();
 
                 {
                     unique_lock<mutex> lck(mtx);
@@ -806,6 +811,7 @@ namespace OpenLogReplicator {
             sleepingCond.notify_all();
             analyzerCond.notify_all();
             memoryCond.notify_all();
+            writerCond.notify_all();
         }
     }
 

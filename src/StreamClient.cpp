@@ -54,8 +54,8 @@ void receive(pb::RedoResponse &response, Stream *stream) {
 }
 
 int main(int argc, char** argv) {
-    if (argc < 5) {
-        cout << "Use: ClientNetwork [network|zeromq] <uri> <scn> <database>" << endl;
+    if (argc < 4) {
+        cout << "Use: ClientNetwork [network|zeromq] <uri> <database> {<scn>}" << endl;
         return 0;
     }
     cout << "OpenLogReplicator v." PACKAGE_VERSION " StreamClient (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
         stream->initializeClient(&shutdown);
 
         request.set_code(pb::RequestCode::INFO);
-        request.set_database_name(argv[4]);
+        request.set_database_name(argv[3]);
         cout << "INFO database: " << request.database_name() << endl;
         send(request, stream);
         receive(response, stream);
@@ -92,9 +92,15 @@ int main(int argc, char** argv) {
         } else if (response.code() == pb::ResponseCode::READY) {
             request.Clear();
             request.set_code(pb::RequestCode::START);
-            request.set_scn(atoi(argv[3]));
-            request.set_database_name(argv[4]);
-            cout << "START scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
+            request.set_database_name(argv[3]);
+            if (argc > 4) {
+                request.set_scn(atoi(argv[4]));
+                cout << "START scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
+            } else {
+                //start from now, when SCN is not given
+                request.set_scn(ZERO_SCN);
+                cout << "START NOW, database: " << request.database_name() << endl;
+            }
             send(request, stream);
             receive(response, stream);
             cout << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
@@ -114,7 +120,7 @@ int main(int argc, char** argv) {
 
         request.Clear();
         request.set_code(pb::RequestCode::REDO);
-        request.set_database_name(argv[4]);
+        request.set_database_name(argv[3]);
         cout << "REDO database: " << request.database_name() << endl;
         send(request, stream);
         receive(response, stream);
@@ -134,7 +140,7 @@ int main(int argc, char** argv) {
                 request.Clear();
                 request.set_code(pb::RequestCode::CONFIRM);
                 request.set_scn(prevScn);
-                request.set_database_name(argv[4]);
+                request.set_database_name(argv[3]);
                 cout << "CONFIRM scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
                 send(request, stream);
                 num = 0;

@@ -96,6 +96,7 @@ namespace OpenLogReplicator {
         condition_variable sleepingCond;
         condition_variable analyzerCond;
         condition_variable memoryCond;
+        condition_variable writerCond;
         string context;
         typescn scn;
         volatile typescn startScn;
@@ -166,6 +167,7 @@ namespace OpenLogReplicator {
         static void writeSCNBig(uint8_t* buf, typescn val);
 
         void setBigEndian(void);
+        virtual void start(void);
         virtual void initialize(void);
         void initializeSchema(void);
         void *run(void);

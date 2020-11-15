@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
     }
 
     string WriterStream::getName(void) {
-        return "Stream:" + stream->getName();
+        return stream->getName();
     }
 
     void WriterStream::readCheckpoint(void) {
@@ -94,25 +94,21 @@ namespace OpenLogReplicator {
             switch (request.tm_val_case()) {
                 case pb::RedoRequest::TmValCase::kScn:
                     startScn = request.scn();
-                    INFO("starting on request from scn: " << dec << request.scn());
                     startReader();
                     break;
 
                 case pb::RedoRequest::TmValCase::kSeq:
                     startSequence = request.seq();
-                    INFO("starting on request from sequence: " << dec << request.seq());
                     startReader();
                     break;
 
                 case pb::RedoRequest::TmValCase::kTms:
                     startTime = request.tms();
-                    INFO("starting on request from tms: " << dec << request.tms());
                     startReader();
                     break;
 
                 case pb::RedoRequest::TmValCase::kTmRel:
                     startTimeRel = request.tm_rel();
-                    INFO("starting on request from tm_rel: " << dec << request.tm_rel());
                     startReader();
                     break;
 

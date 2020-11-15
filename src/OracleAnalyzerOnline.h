@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
     protected:
         static const char* SQL_GET_ARCHIVE_LOG_LIST;
         static const char* SQL_GET_DATABASE_INFORMATION;
+        static const char* SQL_GET_DATABASE_SCN;
         static const char* SQL_GET_CON_INFO;
         static const char* SQL_GET_SCN_FROM_SEQUENCE;
         static const char* SQL_GET_SCN_FROM_SEQUENCE_STANDBY;
@@ -54,6 +55,7 @@ namespace OpenLogReplicator {
         string password;
         string connectString;
 
+        virtual void start(void);
         virtual void initialize(void);
         virtual void checkConnection(void);
         void closeConnection(void);
