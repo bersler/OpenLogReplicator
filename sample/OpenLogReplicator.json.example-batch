@@ -1,12 +1,13 @@
 {
-  "version": "0.7.17",
+  "version": "0.8.0-beta7",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
         "type": "batch",
-        "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"]
+        "redo-logs": ["/oracle/arch/o1_mf_1_1991_hkb9y64l_.arc", "/oracle/arch/o1_mf_1_1992_hkb9y93r_.arc", "/oracle/otherDir"],
+        "log-archive-format": ""
       },
       "format": {
         "type": "json"

@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         virtual const char* getUndoType(void);
 
     public:
-        OpCode050B(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        OpCode050B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
         virtual ~OpCode050B();
 
         virtual void process(void);

@@ -17,14 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "CharacterSet.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBufferJson.h"
-#include "RedoLogRecord.h"
-#include "RuntimeException.h"
-#include "Writer.h"
 
 namespace OpenLogReplicator {
 
@@ -497,7 +493,7 @@ namespace OpenLogReplicator {
         lastXid = xid;
         hasPreviousRedo = false;
 
-        outputBufferBegin();
+        outputBufferBegin(0);
         outputBufferAppend('{');
         appendHeader(true);
 
@@ -513,7 +509,7 @@ namespace OpenLogReplicator {
         if (messageFormat == MESSAGE_FORMAT_FULL)
             outputBufferAppend("]}");
         else {
-            outputBufferBegin();
+            outputBufferBegin(0);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[{\"op\":\"commit\"}]}");
@@ -528,7 +524,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
@@ -545,9 +541,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
@@ -571,7 +567,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
@@ -588,9 +584,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
@@ -607,9 +603,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
@@ -633,7 +629,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
@@ -650,9 +646,9 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyser->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                 continue;
-            if (object->columns[i]->invisible && (oracleAnalyser->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 continue;
 
             if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
@@ -676,7 +672,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin();
+            outputBufferBegin(object->objn);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");

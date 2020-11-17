@@ -1,18 +1,32 @@
 # OpenLogReplicator
-Open Source logbased replictor of Oracle Database to Kafka
+Open Source Oracle database CDC written purely in C++. Reads transactions directly from database redo log files and streams in JSON or Protobuf format to:
+* Kafka
+* flat file
+* network stream (plan TCP/IP or ZeroMQ)
+
+Please mind that the code has 2 branches:
+1. master - branch with stable code - updated monthly
+2. nightly - unstable current branch with daily code updates
+
+Updating Protobuf code:
+1. cd proto
+2. export PATH=/opt/protobuf/bin:$PATH
+3. protoc OraProtoBuf.proto --cpp_out=.
+4. mv OraProtoBuf.pb.cc ../src/OraProtoBuf.pb.cpp
+5. mv OraProtoBuf.pb.h ../src/OraProtoBuf.pb.h
 
 Compilation for Debug:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CXXFLAGS='-g -O0 -fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8
+4. ./configure CXXFLAGS='-g -O0 -fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8 --with-protobuf=/opt/protobuf --with-zeromq=/usr
 5. make
 
 Compilation for Release:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8
+4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_8 --with-protobuf=/opt/protobuf --with-zeromq=/usr
 5. make
 
 Step 3 is optional and required if you downloaded the files from GIT and timestamps of files may be changed.
@@ -20,7 +34,7 @@ Step 3 is optional and required if you downloaded the files from GIT and timesta
 Running:
 1. cp sample/OpenLogReplicator.json.example OpenLogReplicator.json
 2. vi OpenLogReplicator.json
-3. export LD_LIBRARY_PATH=/opt/instantclient_19_8:/opt/librdkafka/lib
+3. export LD_LIBRARY_PATH=/opt/instantclient_19_8:/opt/protobuf/lib:/opt/librdkafka/lib
 4. ./src/OpenLogReplicator
 
 The documentation for the OpenLogReplicator program can be found on https://www.bersler.com/openlogreplicator/

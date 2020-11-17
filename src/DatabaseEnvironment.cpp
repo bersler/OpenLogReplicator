@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-
 #include "DatabaseEnvironment.h"
 #include "RuntimeException.h"
 
@@ -26,24 +24,16 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    DatabaseEnvironment::DatabaseEnvironment()
-#ifdef LINK_LIBRARY_OCI
-        : envhp(nullptr)
-#endif /* LINK_LIBRARY_OCI */
-    {
-#ifdef LINK_LIBRARY_OCI
+    DatabaseEnvironment::DatabaseEnvironment() :
+            envhp(nullptr) {
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
-#endif /* LINK_LIBRARY_OCI */
     }
 
     DatabaseEnvironment::~DatabaseEnvironment() {
-#ifdef LINK_LIBRARY_OCI
         OCIHandleFree(envhp, OCI_HTYPE_ENV);
         OCITerminate(OCI_DEFAULT);
-#endif /* LINK_LIBRARY_OCI */
     }
 
-#ifdef LINK_LIBRARY_OCI
     void DatabaseEnvironment::checkErr(OCIError *errhp, sword status) {
         sb4 errcode = 0;
         uint64_t len;
@@ -109,5 +99,4 @@ namespace OpenLogReplicator {
                 break;
         }
     }
-#endif /* LINK_LIBRARY_OCI */
 }

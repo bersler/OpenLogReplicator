@@ -1,4 +1,4 @@
-/* Thread writing to GRPC
+/* Exception used in program
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,24 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "WriterService.h"
+#include "NetworkException.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    WriterService::WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *uri) :
-        Writer(alias, oracleAnalyser, 0),
-        uri(uri) {
+    NetworkException::~NetworkException() {
     }
 
-    WriterService::~WriterService() {
+    NetworkException::NetworkException(const char* msg) :
+            exception(),
+            msg(msg) {
     }
 
-    void WriterService::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
-    }
-
-    string WriterService::getName() {
-        return "Service:" + uri;
+    ostream& operator<<(ostream& os, const NetworkException& ors) {
+        os << ors.msg;
+        return os;
     }
 }

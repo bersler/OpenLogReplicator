@@ -1,5 +1,5 @@
 {
-  "version": "0.7.17",
+  "version": "0.8.0-beta7",
   "sources": [
     {
       "alias": "S1",
@@ -28,7 +28,8 @@
       "source": "S1",
       "writer": {
         "type": "file",
-        "name": "transactions.json"
+        "name": "transactions.json",
+        "start-seq": 100
       }
     }
   ]

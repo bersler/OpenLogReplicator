@@ -17,11 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
 #include <sstream>
-#include <stdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -47,6 +47,7 @@ typedef uint64_t typeobj2;
 typedef uint32_t typeseq;
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
+typedef uint32_t typeusnslt;
 typedef uint64_t typescn;
 typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
@@ -60,17 +61,12 @@ typedef uint64_t typeunicode;
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
+#define MAX_RECORDS_IN_LWN                      262144
 #define MEMORY_CHUNK_SIZE_MB                    1
 #define MEMORY_CHUNK_SIZE_MB_CHR                "1"
 #define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
 #define MEMORY_CHUNK_MIN_MB                     16
 #define MEMORY_CHUNK_MIN_MB_CHR                 "16"
-
-#define READER_ONLINE                           1
-#define READER_OFFLINE                          2
-#define READER_ASM                              3
-#define READER_STANDBY                          4
-#define READER_BATCH                            5
 
 #define WRITER_KAFKA                            1
 #define WRITER_FILE                             2
@@ -119,24 +115,19 @@ typedef uint64_t typeunicode;
 #define TRACE_INFO                              2
 #define TRACE_FULL                              3
 
-#define TRACE2_THREADS                          0x0000001
-#define TRACE2_SQL                              0x0000002
-#define TRACE2_FILE                             0x0000004
-#define TRACE2_DISK                             0x0000008
-#define TRACE2_MEMORY                           0x0000010
-#define TRACE2_PERFORMANCE                      0x0000020
-#define TRACE2_VECTOR                           0x0000040
-#define TRACE2_TRANSACTION                      0x0000080
-#define TRACE2_COMMIT_ROLLBACK                  0x0000100
-#define TRACE2_REDO                             0x0000200
-#define TRACE2_CHECKPOINT_FLUSH                 0x0000400
-#define TRACE2_DML                              0x0000800
-#define TRACE2_SPLIT                            0x0001000
-#define TRACE2_ARCHIVE_LIST                     0x0002000
-#define TRACE2_ROLLBACK                         0x0004000
-#define TRACE2_DUMP                             0x0008000
-
-#define REDO_RECORD_MAX_SIZE                    1048576
+#define TRACE2_DML                              0x0000001
+#define TRACE2_DUMP                             0x0000002
+#define TRACE2_LWN                              0x0000004
+#define TRACE2_THREADS                          0x0000008
+#define TRACE2_SQL                              0x0000010
+#define TRACE2_FILE                             0x0000020
+#define TRACE2_DISK                             0x0000040
+#define TRACE2_MEMORY                           0x0000080
+#define TRACE2_PERFORMANCE                      0x0000100
+#define TRACE2_TRANSACTION                      0x0000200
+#define TRACE2_REDO                             0x0000400
+#define TRACE2_ARCHIVE_LIST                     0x0000800
+#define TRACE2_KAFKA                            0x0001000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x0000001
 #define REDO_FLAGS_DIRECT                       0x0000002
@@ -151,6 +142,19 @@ typedef uint64_t typeunicode;
 
 #define DISABLE_CHECK_GRANTS                    0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x0000002
+
+#define TRANSACTION_INSERT                      1
+#define TRANSACTION_DELETE                      2
+#define TRANSACTION_UPDATE                      3
+
+#define OUTPUT_BUFFER_DATA_SIZE                 (MEMORY_CHUNK_SIZE - sizeof(struct OutputBufferQueue))
+#define OUTPUT_BUFFER_ALLOCATED                 0x0001
+#define OUTPUT_BUFFER_CONFIRMED                 0x0002
+
+#define VALUE_BEFORE                            0
+#define VALUE_AFTER                             1
+#define VALUE_BEFORE_SUPP                       2
+#define VALUE_AFTER_SUPP                        3
 
 #define USN(xid)                                ((uint16_t)(((uint64_t)xid)>>48))
 #define SLT(xid)                                ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))
@@ -171,10 +175,10 @@ typedef uint64_t typeunicode;
 #define ERROR(x)                                {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); }
 #define OUT(x)                                  {cerr << x; }
 
-#define WARNING(x)                              {if (oracleAnalyser->trace >= TRACE_INFO){stringstream s; s << "WARNING: " << x << endl; cerr << s.str();} }
-#define INFO(x)                                 {if (oracleAnalyser->trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
-#define FULL(x)                                 {if (oracleAnalyser->trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
-#define TRACE(t,x)                              {if ((oracleAnalyser->trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
+#define WARNING(x)                              {if (oracleAnalyzer->trace >= TRACE_INFO){stringstream s; s << "WARNING: " << x << endl; cerr << s.str();} }
+#define INFO(x)                                 {if (oracleAnalyzer->trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
+#define FULL(x)                                 {if (oracleAnalyzer->trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
+#define TRACE(t,x)                              {if ((oracleAnalyzer->trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
 
 #define WARNING_(x)                             {if (trace >= TRACE_INFO){stringstream s; s << "WARNING: " << x << endl; cerr << s.str();} }
 #define INFO_(x)                                {if (trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
@@ -184,6 +188,8 @@ typedef uint64_t typeunicode;
 using namespace std;
 
 namespace OpenLogReplicator {
+
+    class OracleAnalyzer;
 
     class typetime {
         uint32_t val;

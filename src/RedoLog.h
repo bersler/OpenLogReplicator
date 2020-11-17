@@ -1,4 +1,4 @@
-/* Header for OracleAnalyserRedoLog class
+/* Header for RedoLog class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,44 +20,50 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "RedoLogRecord.h"
 
-#ifndef ORACLEANALYSERREDO_H_
-#define ORACLEANALYSERREDO_H_
+#ifndef REDOLOG_H_
+#define REDOLOG_H_
 
 using namespace std;
 
 #define VECTOR_MAX_LENGTH 512
+#define MAX_LWN_CHUNKS (256*2/MEMORY_CHUNK_SIZE_MB)
 
 namespace OpenLogReplicator {
 
-    class OracleAnalyser;
+    class OracleAnalyzer;
     class OpCode;
     class Reader;
 
-    class OracleAnalyserRedoLog {
+    struct LwnMember {
+        typescn scn;
+        typesubscn subScn;
+        typeblk block;
+        uint64_t pos;
+    };
+
+    class RedoLog {
     protected:
-        OracleAnalyser *oracleAnalyser;
-        typescn lastCheckpointScn;
-        typescn extScn;
-        typescn curScn;
-        typescn curScnPrev;
-        typesubscn curSubScn;
-        uint64_t recordBeginPos;
-        typeblk recordBeginBlock;
-        typetime recordTimestmap;
-        uint64_t recordPos;
-        uint64_t recordLength4;
-        uint64_t recordLeftToCopy;
-        uint64_t blockNumber;
+        OracleAnalyzer *oracleAnalyzer;
         OpCode *opCodes[VECTOR_MAX_LENGTH];
         RedoLogRecord zero;
         uint64_t vectors;
+        uint64_t lwnConfirmedBlock;
+        uint8_t *lwnChunks[MAX_LWN_CHUNKS];
+        uint64_t lwnAllocated;
+        typetime lwnTimestamp;
+        typescn lwnScn;
+        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
+        uint64_t lwnRecords;
+        uint64_t lwnStartBlock;
 
         void printHeaderInfo(void);
-        void analyzeRecord(void);
-        void flushTransactions(typescn checkpointScn);
-        void appendToTransaction(RedoLogRecord *redoLogRecord);
+        void analyzeLwn(LwnMember* lwnMember);
+        void appendToTransactionDDL(RedoLogRecord *redoLogRecord);
+        void appendToTransactionUndo(RedoLogRecord *redoLogRecord);
+        void appendToTransactionBegin(RedoLogRecord *redoLogRecord);
+        void appendToTransactionCommit(RedoLogRecord *redoLogRecord);
         void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void dumpRedoVector(void);
+        void dumpRedoVector(uint8_t *data, uint64_t recordLength4);
 
     public:
         int64_t group;
@@ -68,12 +74,12 @@ namespace OpenLogReplicator {
         Reader *reader;
 
         void resetRedo(void);
-        void continueRedo(OracleAnalyserRedoLog *prev);
+        void continueRedo(RedoLog *prev);
         uint64_t processLog(void);
-        OracleAnalyserRedoLog(OracleAnalyser *oracleAnalyser, int64_t group, const char *path);
-        virtual ~OracleAnalyserRedoLog(void);
+        RedoLog(OracleAnalyzer *oracleAnalyzer, int64_t group, const char *path);
+        virtual ~RedoLog(void);
 
-        friend ostream& operator<<(ostream& os, const OracleAnalyserRedoLog& ors);
+        friend ostream& operator<<(ostream& os, const RedoLog& ors);
     };
 }
 

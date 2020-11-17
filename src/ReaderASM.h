@@ -17,10 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <pthread.h>
-#include <string>
-
-#include "types.h"
 #include "Reader.h"
 
 #ifndef READERASM_H_
@@ -31,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     class DatabaseStatement;
-    class OracleAnalyser;
+    class OracleAnalyzer;
 
     class ReaderASM : public Reader {
     protected:
@@ -50,7 +46,7 @@ namespace OpenLogReplicator {
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
 
     public:
-        ReaderASM(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group);
+        ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group);
         virtual ~ReaderASM();
     };
 }

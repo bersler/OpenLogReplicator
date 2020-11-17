@@ -17,19 +17,16 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OpCode0501.h"
 #include "OpCode0B05.h"
-#include "OracleAnalyser.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B05::OpCode0B05(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord) {
+    OpCode0B05::OpCode0B05(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0B05::~OpCode0B05() {
@@ -40,39 +37,39 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
         redoLogRecord->nullsDelta = fieldPos + 26;
         uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 3
         redoLogRecord->colNumsDelta = fieldPos;
         uint8_t *colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
 
         if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
-            oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
             //field: 4
             redoLogRecord->rowData = fieldNum;
-            if (oracleAnalyser->dumpRedoLog >= 1)
-                dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNums), fieldLength);
+            if (oracleAnalyzer->dumpRedoLog >= 1)
+                dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
         } else {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
 
             //fields: 4 + cc .. 4 + cc - 1
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
 
-                if (oracleAnalyser->dumpRedoLog >= 1)
-                    dumpCols(redoLogRecord->data + fieldPos, oracleAnalyser->read16(colNums), fieldLength, *nulls & bits);
+                if (oracleAnalyzer->dumpRedoLog >= 1)
+                    dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
                 bits <<= 1;
                 colNums += 2;
                 if (bits == 0) {

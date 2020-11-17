@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
 #include "types.h"
 
 #ifndef OPCODE_H_
@@ -27,12 +26,12 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class OracleAnalyser;
+    class OracleAnalyzer;
     class RedoLogRecord;
 
     class OpCode {
     protected:
-        OracleAnalyser *oracleAnalyser;
+        OracleAnalyzer *oracleAnalyzer;
         RedoLogRecord *redoLogRecord;
 
         void ktbRedo(uint64_t fieldPos, uint64_t fieldLength);
@@ -55,7 +54,7 @@ namespace OpenLogReplicator {
         void processFbFlags(uint8_t fb, char *fbStr);
 
     public:
-        OpCode(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        OpCode(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
         virtual ~OpCode();
 
         virtual void process(void);

@@ -22,8 +22,6 @@ AC_PROG_MKDIR_P
 AC_CHECK_LIB([clntsh], [main])
 # FIXME: Replace `main' with a function in `-lclntshcore':
 AC_CHECK_LIB([clntshcore], [main])
-# FIXME: Replace `main' with a function in `-lgrpc':
-AC_CHECK_LIB([grpc], [main])
 # FIXME: Replace `main' with a function in `-lnnz19':
 AC_CHECK_LIB([nnz19], [main])
 # FIXME: Replace `main' with a function in `-lprotobuf':

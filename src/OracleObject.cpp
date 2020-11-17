@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
-#include "RuntimeException.h"
 
 using namespace std;
 
@@ -39,9 +38,8 @@ namespace OpenLogReplicator {
     }
 
     OracleObject::~OracleObject() {
-        for (OracleColumn *column: columns) {
+        for (OracleColumn *column: columns)
             delete column;
-        }
         pk.clear();
         columns.clear();
         partitions.clear();

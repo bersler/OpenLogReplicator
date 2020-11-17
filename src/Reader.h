@@ -17,13 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <condition_variable>
-#include <mutex>
-#include <string>
-#include <vector>
-#include <pthread.h>
-
-#include "types.h"
 #include "Thread.h"
 
 #ifndef READER_H_
@@ -55,11 +48,11 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    class OracleAnalyser;
+    class OracleAnalyzer;
 
     class Reader : public Thread {
     protected:
-        OracleAnalyser *oracleAnalyser;
+        OracleAnalyzer *oracleAnalyzer;
         bool singleBlockRead;
 
         virtual void redoClose(void) = 0;
@@ -92,7 +85,7 @@ namespace OpenLogReplicator {
         volatile uint64_t bufferStart;
         volatile uint64_t bufferEnd;
 
-        Reader(const char *alias, OracleAnalyser *oracleAnalyser, int64_t group, bool singleBlockRead);
+        Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group, bool singleBlockRead);
         virtual ~Reader();
 
         void *run(void);

@@ -18,10 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OutputBuffer.h"
-
-#ifdef LINK_LIBRARY_PROTOBUF
 #include "OraProtoBuf.pb.h"
-#endif /* LINK_LIBRARY_PROTOBUF */
 
 #ifndef OUTPUTBUFFERPROTOBUF_H_
 #define OUTPUTBUFFERPROTOBUF_H_
@@ -32,12 +29,11 @@ namespace OpenLogReplicator {
 
     class OutputBufferProtobuf : public OutputBuffer {
 protected:
-#ifdef LINK_LIBRARY_PROTOBUF
-        pb::Redo *redoPB;
+        pb::RedoResponse *redoResponsePB;
         pb::Value *valuePB;
         pb::Payload *payloadPB;
         pb::Schema *schemaPB;
-#endif /* LINK_LIBRARY_PROTOBUF */
+
         virtual void columnNull(OracleColumn *column);
         virtual void columnFloat(string &columnName, float value);
         virtual void columnDouble(string &columnName, double value);

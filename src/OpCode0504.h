@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         void ktucf(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
-        OpCode0504(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord);
+        OpCode0504(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
         virtual ~OpCode0504();
 
         virtual void process(void);

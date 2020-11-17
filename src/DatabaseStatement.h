@@ -17,14 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string>
 #include <vector>
+#include <oci.h>
 
 #include "types.h"
-
-#ifdef LINK_LIBRARY_OCI
-#include <oci.h>
-#endif /* LINK_LIBRARY_OCI */
 
 #ifndef DATABASESTATEMENT_H_
 #define DATABASESTATEMENT_H_
@@ -39,11 +35,9 @@ namespace OpenLogReplicator {
     protected:
         DatabaseConnection *conn;
         bool isExecuted;
-#ifdef LINK_LIBRARY_OCI
         OCIStmt *stmthp;
         vector<OCIBind *> binds;
         vector<OCIDefine *> defines;
-#endif /* LINK_LIBRARY_OCI */
 
     public:
         DatabaseStatement(DatabaseConnection *conn);

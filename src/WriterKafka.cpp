@@ -17,112 +17,132 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <thread>
-#include <librdkafka/rdkafkacpp.h>
-
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
-#include "OracleAnalyser.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "RedoLogRecord.h"
+#include "OracleAnalyzer.h"
 #include "RuntimeException.h"
 #include "WriterKafka.h"
 
 using namespace std;
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-using namespace RdKafka;
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
+
+extern uint64_t trace2;
 
 namespace OpenLogReplicator {
 
-    WriterKafka::WriterKafka(const char *alias, OracleAnalyser *oracleAnalyser, const char *brokers, const char *topic, uint64_t maxMessageMb, uint64_t maxMessages) :
-        Writer(alias, oracleAnalyser, maxMessageMb),
+    WriterKafka::WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic,
+            uint64_t maxMessageMb, uint64_t maxMessages, uint64_t pollInterval, uint64_t checkpointInterval, uint64_t queueSize,
+            typescn startScn, typeseq startSeq, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence) :
+        Writer(alias, oracleAnalyzer, maxMessageMb, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime,
+                startTimeRel),
         brokers(brokers),
         topic(topic),
-        maxMessages(maxMessages)
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-    	,conf(nullptr),
-        tconf(nullptr),
-        producer(nullptr),
-        ktopic(nullptr)
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
-    {
+        maxMessages(maxMessages),
+        enableIdempotence(enableIdempotence),
+        rk(nullptr),
+        rkt(nullptr),
+        conf(nullptr) {
 
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-        conf = Conf::create(Conf::CONF_GLOBAL);
-        tconf = Conf::create(Conf::CONF_TOPIC);
+        conf = rd_kafka_conf_new();
+        if (conf == nullptr) {
+            CONFIG_FAIL("Kafka failed to create configuration, message: " << errstr);
+        }
 
-        string errstr;
-        conf->set("metadata.broker.list", brokers, errstr);
-        conf->set("client.id", "OpenLogReplicator", errstr);
         string maxMessageMbStr = to_string(maxMessageMb * 1024 * 1024);
-        conf->set("message.max.bytes", maxMessageMbStr.c_str(), errstr);
         string maxMessagesStr = to_string(maxMessages);
-        conf->set("queue.buffering.max.messages", maxMessagesStr.c_str(), errstr);
-
-        producer = Producer::create(conf, errstr);
-        if (producer == nullptr) {
+        if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
+            (enableIdempotence && rd_kafka_conf_set(conf, "enable.idempotence", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) ||
+            rd_kafka_conf_set(conf, "client.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
+            rd_kafka_conf_set(conf, "group.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
+            rd_kafka_conf_set(conf, "message.max.bytes", maxMessageMbStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
+            rd_kafka_conf_set(conf, "queue.buffering.max.messages", maxMessagesStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
             CONFIG_FAIL("Kafka message: " << errstr);
         }
 
-        ktopic = Topic::create(producer, topic, tconf, errstr);
-        if (ktopic == nullptr) {
-            CONFIG_FAIL("Kafka message: " << errstr);
+        rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
+        rd_kafka_conf_set_error_cb(conf, error_cb);
+        rd_kafka_conf_set_log_cb(conf, logger_cb);
+        rd_kafka_conf_set_opaque(conf, oracleAnalyzer);
+
+        rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
+        if (rk == nullptr) {
+            CONFIG_FAIL("Kafka failed to create producer, message: " << errstr);
         }
-#else
-        RUNTIME_FAIL("Kafka writer is not compiled, exiting");
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
+        conf = nullptr;
+
+        rkt = rd_kafka_topic_new(rk, topic, nullptr);
     }
 
     WriterKafka::~WriterKafka() {
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-        if (ktopic != nullptr) {
-            delete ktopic;
-            ktopic = nullptr;
-        }
-        if (producer != nullptr) {
-            delete producer;
-            producer = nullptr;
-        }
-        if (tconf != nullptr) {
-            delete tconf;
-            tconf = nullptr;
-        }
-        if (conf != nullptr) {
-            delete conf;
-            conf = nullptr;
-        }
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
+        if (conf != nullptr)
+            rd_kafka_conf_destroy(conf);
+
+        if (rkt != nullptr)
+            rd_kafka_topic_destroy(rkt);
+
+        rd_kafka_resp_err_t err = rd_kafka_fatal_error(rk, NULL, 0);
+        if (rk != nullptr)
+            rd_kafka_destroy(rk);
+
+        INFO("Kafka producer exit code: " << dec << err);
     }
 
-    void WriterKafka::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
-#ifdef LINK_LIBRARY_LIBRDKAFKA
-        int msgflags = Producer::RK_MSG_COPY;
-        if (dealloc)
-            msgflags = Producer::RK_MSG_FREE;
-
-        ErrorCode error = producer->produce(ktopic, Topic::PARTITION_UA, msgflags, buffer, length, nullptr, nullptr);
-        if (error != ERR_NO_ERROR) {
-            //on error, memory is not released by librdkafka
-            if (dealloc)
-                free(buffer);
-            if (error == ERR__QUEUE_FULL) {
-                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", maximum number of outstanding messages has been reached (" <<
-                        dec << maxMessages << "), increase \"max-messages\" parameter value");
-            } else if (error == ERR_MSG_SIZE_TOO_LARGE) {
-                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", message is larger than configured max size (" <<
-                        dec << maxMessageMb << " MB), increase \"max-message-mb\" parameter value");
-            } else if (error == ERR__UNKNOWN_PARTITION) {
-                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", requested partition is unknown in the Kafka cluster");
-            } else if (error == ERR__UNKNOWN_TOPIC) {
-                RUNTIME_FAIL("writing to topic, bytes sent: " << dec << length << ", topic is unknown in the Kafka cluster");
-            }
+    void WriterKafka::dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque) {
+        OutputBufferMsg *msg = (OutputBufferMsg *)rkmessage->_private;
+        OracleAnalyzer *oracleAnalyzer = msg->oracleAnalyzer;
+        if (rkmessage->err) {
+            WARNING("Kafka: " << msg->id << " delivery failed: " << rd_kafka_err2str(rkmessage->err));
+        } else {
+            oracleAnalyzer->outputBuffer->writer->confirmMessage(msg);
         }
-#endif /* LINK_LIBRARY_LIBRDKAFKA */
+    }
+
+    void WriterKafka::error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque) {
+        OracleAnalyzer *oracleAnalyzer = (OracleAnalyzer*)opaque;
+
+        WARNING("Kafka: " << rd_kafka_err2name((rd_kafka_resp_err_t)err) << ", reason: " << reason);
+
+        if (err != RD_KAFKA_RESP_ERR__FATAL)
+            return;
+
+        char errstr[512];
+        rd_kafka_resp_err_t orig_err = rd_kafka_fatal_error(rk, errstr, sizeof(errstr));
+        RUNTIME_FAIL("Kafka: fatal error: " << rd_kafka_err2name(orig_err) << ", reason: " << errstr);
+    }
+
+    void WriterKafka::logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf) {
+        TRACE_(TRACE2_KAFKA, "level: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
+    }
+
+    void WriterKafka::sendMessage(OutputBufferMsg *msg) {
+        for(;;) {
+            rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
+                    RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);
+            //rd_kafka_resp_err_t err = (rd_kafka_resp_err_t)rd_kafka_produce(rkt, RD_KAFKA_PARTITION_UA, 0, msg->data, msg->length, nullptr, 0, msg);
+
+            if (err) {
+                WARNING("Failed to produce to topic " << topic.c_str() << ", message: " << rd_kafka_err2str(err));
+
+                if (err == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
+                    WARNING("Queue, full, sleeping " << (pollInterval / 1000) << "ms, then retrying");
+                    rd_kafka_poll(rk, pollInterval / 1000);
+                    continue;
+                } else {
+                    WARNING("OTHER ERROR?");
+                    break;
+                }
+            } else
+                break;
+        }
+
+        rd_kafka_poll(rk, 0);
     }
 
     string WriterKafka::getName() {
         return "Kafka:" + topic;
+    }
+
+    void WriterKafka::pollQueue(void) {
+        if (curQueueSize > 0)
+            rd_kafka_poll(rk, 0);
     }
 }

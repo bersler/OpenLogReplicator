@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <iostream>
-
 #include "types.h"
 
 #ifndef REDOLOGRECORD_H_
@@ -92,7 +90,7 @@ namespace OpenLogReplicator {
 #define OPFLAG_BEGIN_TRANS      0x01
 
     class OracleObject;
-    class OracleAnalyser;
+    class OracleAnalyzer;
 
     class RedoLogRecord {
     public:
@@ -109,6 +107,7 @@ namespace OpenLogReplicator {
         typeobj recordObjn;
         typeobj recordObjd;
 
+        typeseq sequence;
         typescn scn;              //scn
         typesubscn subScn;        //subscn
         uint8_t *data;            //data
@@ -165,7 +164,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogLenDelta;
         uint64_t opFlags;
 
-        void dumpHex(ostream &str, OracleAnalyser *oracleAnalyser);
+        void dumpHex(ostream &str, OracleAnalyzer *oracleAnalyzer);
         friend ostream& operator<<(ostream& os, const RedoLogRecord& redo);
     };
 }

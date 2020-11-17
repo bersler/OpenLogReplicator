@@ -17,11 +17,9 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-
-#ifdef LINK_LIBRARY_OCI
 #include <oci.h>
-#endif /* LINK_LIBRARY_OCI */
+
+#include "types.h"
 
 #ifndef DATABASEECONNECTION_H_
 #define DATABASEECONNECTION_H_
@@ -37,12 +35,10 @@ namespace OpenLogReplicator {
 
     public:
         DatabaseEnvironment *env;
-#ifdef LINK_LIBRARY_OCI
         OCIError *errhp;
         OCIServer *srvhp;
         OCISvcCtx *svchp;
         OCISession *authp;
-#endif /* LINK_LIBRARY_OCI */
 
         DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM);
         virtual ~DatabaseConnection();

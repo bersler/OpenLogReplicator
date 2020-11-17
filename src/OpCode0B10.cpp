@@ -18,15 +18,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OpCode0B10.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode0B10::OpCode0B10(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord) {
+    OpCode0B10::OpCode0B10(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0B10::~OpCode0B10() {
@@ -37,11 +37,11 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);

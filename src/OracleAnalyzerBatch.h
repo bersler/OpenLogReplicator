@@ -1,4 +1,4 @@
-/* Header for WriterService class
+/* Header for OracleAnalyzerBatch class
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,42 +17,25 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifdef LINK_LIBRARY_GRPC
-#include <grpcpp/grpcpp.h>
-#include <grpc/support/log.h>
-#endif /* LINK_LIBRARY_GRPC */
+#include "OracleAnalyzer.h"
 
-#include "types.h"
-#include "Writer.h"
-
-#ifdef LINK_LIBRARY_PROTOBUF
-#include "OraProtoBuf.pb.h"
-#include "OraProtoBuf.grpc.pb.h"
-#endif /* LINK_LIBRARY_PROTOBUF */
-
-#ifndef WRITERSERVICE_H_
-#define WRITERSERVICE_H_
+#ifndef ORACLEANALYZERBATCH_H_
+#define ORACLEANALYZERBATCH_H_
 
 using namespace std;
-#ifdef LINK_LIBRARY_GRPC
-using namespace grpc;
-#endif /* LINK_LIBRARY_GRPC */
 
 namespace OpenLogReplicator {
 
-    class RedoLogRecord;
-    class OracleAnalyser;
-
-    class WriterService : public Writer {
+    class OracleAnalyzerBatch : public OracleAnalyzer {
     protected:
-        string uri;
-
-        virtual void sendMessage(uint8_t *buffer, uint64_t length, bool dealloc);
-        virtual string getName();
+        virtual const char* getModeName(void);
+        virtual bool continueWithOnline(void);
 
     public:
-        WriterService(const char *alias, OracleAnalyser *oracleAnalyser, const char *uri);
-        virtual ~WriterService();
+        OracleAnalyzerBatch(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
+                uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks,
+                uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat);
+        virtual ~OracleAnalyzerBatch();
     };
 }
 

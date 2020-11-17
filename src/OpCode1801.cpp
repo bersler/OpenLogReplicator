@@ -18,17 +18,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "OpCode1801.h"
-#include "OracleAnalyser.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
+#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
-    OpCode1801::OpCode1801(OracleAnalyser *oracleAnalyser, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyser, redoLogRecord),
+    OpCode1801::OpCode1801(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+            OpCode(oracleAnalyzer, redoLogRecord),
             validDDL(false),
             type(0) {
     }
@@ -41,15 +39,15 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyser->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
         //field: 1
-        redoLogRecord->xid = XID(oracleAnalyser->read16(redoLogRecord->data + fieldPos + 4),
-                oracleAnalyser->read16(redoLogRecord->data + fieldPos + 6),
-                oracleAnalyser->read32(redoLogRecord->data + fieldPos + 8));
-        type = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 12);
-        uint16_t tmp = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 16);
-        //uint16_t seq = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 18);
-        //uint16_t cnt = oracleAnalyser->read16(redoLogRecord->data + fieldPos + 20);
+        redoLogRecord->xid = XID(oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4),
+                oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 6),
+                oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 8));
+        type = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 12);
+        uint16_t tmp = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 16);
+        //uint16_t seq = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 18);
+        //uint16_t cnt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
         if (type == 85 // truncate table
                 //|| type == 1 //create table
                 || type == 12 // drop table
@@ -63,51 +61,51 @@ namespace OpenLogReplicator {
             validDDL = false;
         }
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 2
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 3
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 4
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 5
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 6
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 7
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 8
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 9
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 10
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 11
 
-        if (!oracleAnalyser->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
         //field: 12
 
-        if (validDDL && redoLogRecord->scn > oracleAnalyser->databaseScn)
-            redoLogRecord->objn = oracleAnalyser->read32(redoLogRecord->data + fieldPos + 0);
+        if (validDDL && redoLogRecord->scn > oracleAnalyzer->scn)
+            redoLogRecord->objn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
     }
 }

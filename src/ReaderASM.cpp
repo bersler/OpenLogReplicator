@@ -17,10 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <string.h>
-
 #include "DatabaseStatement.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzerOnlineASM.h"
 #include "ReaderASM.h"
 #include "RuntimeException.h"
 
@@ -33,8 +31,8 @@ namespace OpenLogReplicator {
     const char* ReaderASM::SQL_ASM_OPEN("BEGIN dbms_diskgroup.open(:i, 'r', :j, :k, :l, :m, :n); END;");
     const char* ReaderASM::SQL_ASM_READ("BEGIN dbms_diskgroup.read(:i, :j, :k, :l); END;");
 
-    ReaderASM::ReaderASM(const char *alias, OracleAnalyser *oracleAnalyser, uint64_t group) :
-        Reader(alias, oracleAnalyser, group, 1),
+    ReaderASM::ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
+        Reader(alias, oracleAnalyzer, group, 1),
         fileDes(-1),
         fileType(0),
         physicalBlockSize(0),
@@ -55,7 +53,7 @@ namespace OpenLogReplicator {
             return;
 
         try {
-            DatabaseStatement stmt(oracleAnalyser->connASM);
+            DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, SQL_ASM_CLOSE << endl << "PARAM1: " << fileDes);
             stmt.createStatement(SQL_ASM_CLOSE);
             stmt.bindInt32(1, fileDes);
@@ -70,8 +68,9 @@ namespace OpenLogReplicator {
 
         try {
             blockSize = 0;
-            DatabaseStatement stmt(oracleAnalyser->connASM);
-            TRACE(TRACE2_SQL, SQL_ASM_GETFILEATR << endl << "PARAM1: " << pathMapped);
+            DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
+            TRACE(TRACE2_SQL, SQL_ASM_GETFILEATR << endl <<
+                    "PARAM1: " << pathMapped);
             stmt.createStatement(SQL_ASM_GETFILEATR);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -80,7 +79,10 @@ namespace OpenLogReplicator {
             stmt.executeQuery();
 
             physicalBlockSize = -1;
-            TRACE(TRACE2_SQL, SQL_ASM_OPEN << endl << "PARAM1: " << pathMapped << endl << "PARAM2: " << fileType << "PARAM3: " << blockSize);
+            TRACE(TRACE2_SQL, SQL_ASM_OPEN << endl <<
+                    "PARAM1: " << pathMapped << endl <<
+                    "PARAM2: " << fileType << endl <<
+                    "PARAM3: " << blockSize);
             stmt.createStatement(SQL_ASM_OPEN);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -105,7 +107,7 @@ namespace OpenLogReplicator {
         pos /= blockSize;
         try {
             if (stmtRead == nullptr) {
-                stmtRead = new DatabaseStatement(oracleAnalyser->connASM);
+                stmtRead = new DatabaseStatement(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
                 TRACE(TRACE2_SQL, SQL_ASM_READ << endl << "PARAM1: " << fileDes);
                 stmtRead->createStatement(SQL_ASM_READ);
             } else

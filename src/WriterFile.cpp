@@ -17,11 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <fstream>
-#include <thread>
-
-#include "ConfigurationException.h"
-#include "OracleAnalyser.h"
+#include "OracleAnalyzer.h"
+#include "OutputBuffer.h"
 #include "RuntimeException.h"
 #include "WriterFile.h"
 
@@ -29,8 +26,10 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    WriterFile::WriterFile(const char *alias, OracleAnalyser *oracleAnalyser, const char *name) :
-        Writer(alias, oracleAnalyser, 0),
+    WriterFile::WriterFile(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *name, uint64_t pollInterval,
+            uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime,
+            uint64_t startTimeRel) :
+        Writer(alias, oracleAnalyzer, 0, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime, startTimeRel),
         name(name),
         fileOpen(false) {
         if (this->name.length() == 0) {
@@ -57,17 +56,25 @@ namespace OpenLogReplicator {
         }
     }
 
-    void WriterFile::sendMessage(uint8_t *buffer, uint64_t length, bool dealloc) {
-        output->write((const char*)buffer, length);
+    void WriterFile::sendMessage(OutputBufferMsg *msg) {
+        output->write((const char*)msg->data, msg->length);
         if (((ofstream*)output)->fail()) {
             RUNTIME_FAIL("error writing to write: " << dec << name);
         }
+
         *output << endl;
-        if (dealloc)
-            free(buffer);
+        if (((ofstream*)output)->fail()) {
+            RUNTIME_FAIL("error writing to write: " << dec << name);
+        }
+
+        confirmMessage(msg);
     }
 
     string WriterFile::getName() {
         return "File:" + name;
+    }
+
+
+    void WriterFile::pollQueue(void) {
     }
 }

@@ -55,37 +55,25 @@ enum ColumnType {
     TIMESTAMP_WITH_LOCAL_TZ = 18; //231
 }
 
-enum ClientMessage {
-    START = 0;
-    CHECKPOINT = 1;
+service OpenLogReplicator {
+    rpc Redo(stream RedoRequest) returns (stream RedoResponse);
 }
 
-enum RetCode {
-    OK = 0;
-    INVALID_DATABASE = 1;
-    INVALID_SCN_RANGE = 2;
+enum RequestCode {
+    INFO = 0;
+    START = 1;
+    REDO = 2;
+    CONFIRM = 3;
 }
 
-service RedoStream {
-    rpc redoStream(stream Request) returns (stream Redo) {}
-}
-
-message RequestSchema {
-    string mask = 1;
-    string filter = 2;  
-}
-
-message Request {
-    int64 connector = 1;
-    ClientMessage message = 2;
-    oneof tm_val {
-        uint64 scn = 3;
-        uint64 tm = 4;
-        string tms = 5;
-    }
-    uint64 version = 6;
-    string database_name = 7;
-    repeated RequestSchema schema = 8;
+enum ResponseCode {
+    READY = 0;
+    FAILED_START = 1;
+    STARTED = 2;
+    ALREADY_STARTED = 3;
+    PAYLOAD = 4;
+    INVALID_DATABASE = 5;
+    INVALID_COMMAND = 6;
 }
 
 message Value {
@@ -128,8 +116,25 @@ message Payload {
     string ddl = 6;
 }
 
-message Redo {
-    RetCode ret = 1;
+message SchemaRequest {
+    string mask = 1;
+    string filter = 2;
+}
+
+message RedoRequest {
+    RequestCode code = 1;
+    string database_name = 2;
+    oneof tm_val {
+        uint64 scn = 3;
+        uint64 seq = 4;
+        string tms = 5;
+        int64 tm_rel = 6;
+    }
+    repeated SchemaRequest schema = 7;
+}
+
+message RedoResponse {
+    ResponseCode code = 1;
     oneof scn_val {
         uint64 scn = 2;
         string scns = 3;

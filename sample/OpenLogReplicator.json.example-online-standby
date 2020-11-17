@@ -1,11 +1,11 @@
 {
-  "version": "0.7.17",
+  "version": "0.8.0-beta7",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "standby",
+        "type": "online-standby",
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE"

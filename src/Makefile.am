@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 bin_PROGRAMS=OpenLogReplicator
-OpenLogReplicator_SOURCES=CharacterSet16bit.cpp \
+OpenLogReplicator_SOURCES = CharacterSet16bit.cpp \
 CharacterSet7bit.cpp \
 CharacterSet8bit.cpp \
 CharacterSetAL16UTF16.cpp \
@@ -35,9 +35,7 @@ CharacterSetZHT16HKSCS31.cpp \
 CharacterSetZHT32EUC.cpp \
 CharacterSetZHT32TRIS.cpp \
 ConfigurationException.cpp \
-DatabaseConnection.cpp \
-DatabaseEnvironment.cpp \
-DatabaseStatement.cpp \
+NetworkException.cpp \
 OpCode0501.cpp \
 OpCode0502.cpp \
 OpCode0504.cpp \
@@ -57,29 +55,41 @@ OpCode0B10.cpp \
 OpCode1801.cpp \
 OpCode.cpp \
 OpenLogReplicator.cpp \
-OracleAnalyser.cpp \
-OracleAnalyserRedoLog.cpp \
+OracleAnalyzer.cpp \
+OracleAnalyzerBatch.cpp \
 OracleColumn.cpp \
 OracleObject.cpp \
 OutputBuffer.cpp \
 OutputBufferJson.cpp \
-OutputBufferProtobuf.cpp \
 ReaderASM.cpp \
 Reader.cpp \
 ReaderFilesystem.cpp \
+RedoLog.cpp \
 RedoLogException.cpp \
 RedoLogRecord.cpp \
 RuntimeException.cpp \
+Schema.cpp \
+SchemaElement.cpp \
 Thread.cpp \
 TransactionBuffer.cpp \
 Transaction.cpp \
-TransactionHeap.cpp \
-TransactionMap.cpp \
 Writer.cpp \
-WriterFile.cpp \
-WriterKafka.cpp \
-WriterService.cpp
+WriterFile.cpp
+
+if OCI_COMPILE
+OpenLogReplicator_SOURCES += DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
+endif
+
+if KAFKA_COMPILE
+OpenLogReplicator_SOURCES += WriterKafka.cpp
+endif
 
 if PROTOBUF_COMPILE
-OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OraProtoBuf.grpc.pb.cpp
+OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp WriterStream.cpp
+StreamClient_SOURCES = StreamClient.cpp OraProtoBuf.pb.cpp NetworkException.cpp RuntimeException.cpp Stream.cpp StreamNetwork.cpp
+bin_PROGRAMS += StreamClient
+if ZEROMQ_COMPILE
+OpenLogReplicator_SOURCES += StreamZeroMQ.cpp
+StreamClient_SOURCES += StreamZeroMQ.cpp
+endif
 endif
