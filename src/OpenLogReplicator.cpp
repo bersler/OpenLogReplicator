@@ -352,6 +352,13 @@ int main(int argc, char **argv) {
             }
             buffers.push_back(outputBuffer);
 
+            //optional
+            const char *logArchiveFormat = "o1_mf_%t_%s_%h_.arc";
+            if (readerJSON.HasMember("log-archive-format")) {
+                const Value& logArchiveFormatJSON = sourceJSON["logArchiveFormat"];
+                logArchiveFormat = logArchiveFormatJSON.GetString();
+            }
+
             const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
@@ -374,7 +381,7 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
                         trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
-                        archReadSleep, memoryMinMb, memoryMaxMb, user, password, server, isStandby);
+                        archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat, user, password, server, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -418,7 +425,7 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzer(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
                         trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
-                        archReadSleep, memoryMinMb, memoryMaxMb);
+                        archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -473,7 +480,7 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
                         trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
-                        archReadSleep, memoryMinMb, memoryMaxMb,
+                        archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat,
                         user, password, server, userASM, passwordASM, serverASM, isStandby);
 
                 if (oracleAnalyzer == nullptr) {

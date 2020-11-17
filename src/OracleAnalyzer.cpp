@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
 
     OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
-            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
+            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat) :
         Thread(alias),
         sequence(0),
         suppLogDbPrimary(0),
@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         memoryChunksHWM(0),
         memoryChunksSupplemental(0),
         database(database),
+        logArchiveFormat(logArchiveFormat),
         archReader(nullptr),
         waitingForWriter(false),
         context(""),
@@ -732,56 +733,72 @@ namespace OpenLogReplicator {
         }
     }
 
-    //checking if file name looks something like o1_mf_1_SSSS_XXXXXXXX_.arc
-    //SS - sequence number
-    uint64_t OracleAnalyzer::getSequenceFromFileName(const char *file) {
-        uint64_t sequence = 0, i, j, iMax = strnlen(file, 256);
-        for (i = 0; i < iMax; ++i)
-            if (file[i] == '_')
-                break;
+    //format uses wildcards:
+    //%s - sequence number
+    //%S - sequence number zero filled
+    //%t - thread id
+    //%T - thread id zero filled
+    //%r - resetlogs id
+    //%a - activation id
+    //%d - database id
+    //%h - some hash
+    uint64_t OracleAnalyzer::getSequenceFromFileName(OracleAnalyzer *oracleAnalyzer, const string &file) {
+        uint64_t sequence = 0, i = 0, j = 0;
 
-        //first '_'
-        if (i >= iMax || file[i] != '_')
-            return 0;
+        while (i < oracleAnalyzer->logArchiveFormat.length() && j < file.length()) {
+            if (oracleAnalyzer->logArchiveFormat[i] == '%') {
+                if (i + 1 >= oracleAnalyzer->logArchiveFormat.length()) {
+                    WARNING("Error getting sequence from file: " << file << " log_archive_format: " << oracleAnalyzer->logArchiveFormat <<
+                            " at position " << j << " format position " << i << ", found end after %");
+                    return 0;
+                }
+                uint64_t digits = 0;
+                if (oracleAnalyzer->logArchiveFormat[i + 1] == 's' || oracleAnalyzer->logArchiveFormat[i + 1] == 'S' ||
+                        oracleAnalyzer->logArchiveFormat[i + 1] == 't' || oracleAnalyzer->logArchiveFormat[i + 1] == 'T' ||
+                        oracleAnalyzer->logArchiveFormat[i + 1] == 'r' || oracleAnalyzer->logArchiveFormat[i + 1] == 'a' ||
+                        oracleAnalyzer->logArchiveFormat[i + 1] == 'd') {
+                    //some [0-9]*
+                    uint64_t number = 0;
+                    while (j < file.length() && file[j] >= '0' && file[j] <= '9') {
+                        number = number * 10 + (file[j] - '0');
+                        ++j;
+                        ++digits;
+                    }
 
-        for (++i; i < iMax; ++i)
-            if (file[i] == '_')
-                break;
+                    if (oracleAnalyzer->logArchiveFormat[i + 1] == 's' || oracleAnalyzer->logArchiveFormat[i + 1] == 'S')
+                        sequence = number;
+                    i += 2;
+                } else if (oracleAnalyzer->logArchiveFormat[i + 1] == 'h') {
+                    //some [0-9a-z]*
+                    while (j < file.length() && ((file[j] >= '0' && file[j] <= '9') || (file[j] >= 'a' && file[j] <= 'z'))) {
+                        ++j;
+                        ++digits;
+                    }
+                    i += 2;
+                }
 
-        //second '_'
-        if (i >= iMax || file[i] != '_')
-            return 0;
+                if (digits == 0) {
+                    WARNING("Error getting sequence from file: " << file << " log_archive_format: " << oracleAnalyzer->logArchiveFormat <<
+                            " at position " << j << " format position " << i << ", found no number/hash");
+                    return 0;
+                }
+            } else
+            if (file[j] == oracleAnalyzer->logArchiveFormat[i]) {
+                ++i;
+                ++j;
+            } else {
+                WARNING("Error getting sequence from file: " << file << " log_archive_format: " << oracleAnalyzer->logArchiveFormat <<
+                        " at position " << j << " format position " << i << ", found different values");
+                return 0;
+            }
+        }
 
-        for (++i; i < iMax; ++i)
-            if (file[i] == '_')
-                break;
+        if  (i == oracleAnalyzer->logArchiveFormat.length() && j == file.length())
+            return sequence;
 
-        //third '_'
-        if (i >= iMax || file[i] != '_')
-            return 0;
-
-        for (++i; i < iMax; ++i)
-            if (file[i] >= '0' && file[i] <= '9')
-                sequence = sequence * 10 + (file[i] - '0');
-            else
-                break;
-
-        //forth '_'
-        if (i >= iMax || file[i] != '_')
-            return 0;
-
-        for (++i; i < iMax; ++i)
-            if (file[i] == '_')
-                break;
-
-        if (i >= iMax || file[i] != '_')
-            return 0;
-
-        //fifth '_'
-        if (strncmp(file + i, "_.arc", 5) != 0)
-            return 0;
-
-        return sequence;
+        WARNING("Error getting sequence from file: " << file << " log_archive_format: " << oracleAnalyzer->logArchiveFormat <<
+                " at position " << j << " format position " << i << ", found no sequence");
+        return 0;
     }
 
     bool OracleAnalyzer::readerUpdateRedoLog(Reader *reader) {
@@ -983,12 +1000,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::archGetLogPath(OracleAnalyzer *oracleAnalyzer) {
-        if (oracleAnalyzer->dbRecoveryFileDest.length() == 0) {
-            if (oracleAnalyzer->logArchiveDest.length() > 0 && oracleAnalyzer->logArchiveFormat.length() > 0) {
-                RUNTIME_FAIL("only db_recovery_file_dest location of archived redo logs is supported for offline mode");
-            } else {
-                RUNTIME_FAIL("missing location of archived redo logs for offline mode");
-            }
+        if (oracleAnalyzer->logArchiveFormat.length() == 0) {
+            RUNTIME_FAIL("missing location of archived redo logs for offline mode");
         }
 
         string mappedPath = oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->database + "/archivelog");
@@ -1036,7 +1049,7 @@ namespace OpenLogReplicator {
                 string fileName = mappedPath + "/" + ent->d_name + "/" + ent2->d_name;
                 TRACE(TRACE2_ARCHIVE_LIST, "checking path: " << fileName);
 
-                uint64_t sequence = getSequenceFromFileName(ent2->d_name);
+                uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent2->d_name);
 
                 TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 
@@ -1091,7 +1104,7 @@ namespace OpenLogReplicator {
                         break;
                     --j;
                 }
-                uint64_t sequence = getSequenceFromFileName(fileName + j);
+                uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, fileName + j);
 
                 TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 
@@ -1122,7 +1135,7 @@ namespace OpenLogReplicator {
                     string fileName = mappedPath + "/" + ent->d_name;
                     TRACE(TRACE2_ARCHIVE_LIST, "checking path: " << fileName);
 
-                    uint64_t sequence = getSequenceFromFileName(ent->d_name);
+                    uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent->d_name);
 
                     TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
 

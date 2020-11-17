@@ -332,10 +332,10 @@ namespace OpenLogReplicator {
 
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
-            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb,
+            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat,
             const char *user, const char *password, const char *connectString, bool isStandby) :
                     OracleAnalyzer(outputBuffer, alias, database, trace, trace2, dumpRedoLog, dumpRawData, flags,
-            disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb),
+            disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat),
             isStandby(isStandby),
             user(user),
             password(password),
@@ -458,7 +458,8 @@ namespace OpenLogReplicator {
 
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
         logArchiveDest = getParameterValue("log_archive_dest");
-        logArchiveFormat = getParameterValue("log_archive_format");
+        if (logArchiveFormat.length() == 0 && dbRecoveryFileDest.length() == 0)
+            logArchiveFormat = getParameterValue("log_archive_format");
         nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
         nlsNcharCharacterSet = getPropertyValue("NLS_NCHAR_CHARACTERSET");
         outputBuffer->setNlsCharset(nlsCharacterSet, nlsNcharCharacterSet);

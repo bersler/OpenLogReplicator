@@ -104,8 +104,10 @@ namespace OpenLogReplicator {
         const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
         oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
 
-        const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
-        oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
+        if (oracleAnalyzer->logArchiveFormat.length() == 0) {
+            const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
+            oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
+        }
 
         const Value& logArchiveDestJSON = getJSONfieldD(fileName, document, "log-archive-dest");
         oracleAnalyzer->logArchiveDest = logArchiveDestJSON.GetString();

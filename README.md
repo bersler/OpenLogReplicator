@@ -1,5 +1,5 @@
 # OpenLogReplicator
-Open Source redo log parser which can output transactions in JSON or Protobuf format to:
+Open Source Oracle database CDC written purely in C++. Reads transactions directly from database redo log files and streams in JSON or Protobuf format to:
 * Kafka
 * flat file
 * network stream (plan TCP/IP or ZeroMQ)

@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
 
     OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
-            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb) :
+            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat) :
                     OracleAnalyzer(outputBuffer, alias, database, trace, trace2, dumpRedoLog, dumpRawData, flags,
-            disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb) {
+            disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat) {
     }
 
     OracleAnalyzerBatch::~OracleAnalyzerBatch() {
@@ -45,5 +45,4 @@ namespace OpenLogReplicator {
         stopMain();
         return false;
     }
-
 }
