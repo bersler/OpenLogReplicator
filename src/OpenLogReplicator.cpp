@@ -39,9 +39,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 #include "WriterFile.h"
 
-#ifdef LINK_LIBRARY_KAFKA
+#ifdef LINK_LIBRARY_RDKAFKA
 #include "WriterKafka.h"
-#endif /* LINK_LIBRARY_KAFKA */
+#endif /* LINK_LIBRARY_RDKAFKA */
 
 #ifdef LINK_LIBRARY_OCI
 #include "OracleAnalyzerOnline.h"
@@ -682,7 +682,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
-#ifdef LINK_LIBRARY_KAFKA
+#ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
                     const Value& maxMessageMbJSON = writerJSON["max-message-mb"];
@@ -724,7 +724,7 @@ int main(int argc, char **argv) {
                 }
 #else
                 RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
-#endif /* LINK_LIBRARY_KAFKA */
+#endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");

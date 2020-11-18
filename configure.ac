@@ -46,7 +46,7 @@ AC_TYPE_UINT8_T
 
 AC_ARG_WITH([rdkafka],
   [AS_HELP_STRING([--with-rdkafka=PATH], [rdkafka directory])],
-  [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_LIBRDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
+  [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_RDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
   [])
 
 AC_ARG_WITH([rapidjson],

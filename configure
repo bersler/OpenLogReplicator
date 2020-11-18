@@ -16326,7 +16326,7 @@ _ACEOF
 
 # Check whether --with-rdkafka was given.
 if test "${with_rdkafka+set}" = set; then :
-  withval=$with_rdkafka; KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_LIBRDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"
+  withval=$with_rdkafka; KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_RDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"
 
 fi
 
