@@ -71,9 +71,10 @@ enum ResponseCode {
     FAILED_START = 1;
     STARTED = 2;
     ALREADY_STARTED = 3;
-    PAYLOAD = 4;
-    INVALID_DATABASE = 5;
-    INVALID_COMMAND = 6;
+    STREAMING = 4;
+    PAYLOAD = 5;
+    INVALID_DATABASE = 6;
+    INVALID_COMMAND = 7;
 }
 
 message Value {

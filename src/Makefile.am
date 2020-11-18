@@ -61,7 +61,6 @@ OracleColumn.cpp \
 OracleObject.cpp \
 OutputBuffer.cpp \
 OutputBufferJson.cpp \
-ReaderASM.cpp \
 Reader.cpp \
 ReaderFilesystem.cpp \
 RedoLog.cpp \
@@ -77,7 +76,12 @@ Writer.cpp \
 WriterFile.cpp
 
 if OCI_COMPILE
-OpenLogReplicator_SOURCES += DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
+OpenLogReplicator_SOURCES += DatabaseConnection.cpp \
+DatabaseEnvironment.cpp \
+DatabaseStatement.cpp \
+OracleAnalyzerOnline.cpp \
+OracleAnalyzerOnlineASM.cpp \
+ReaderASM.cpp
 endif
 
 if KAFKA_COMPILE
@@ -85,8 +89,17 @@ OpenLogReplicator_SOURCES += WriterKafka.cpp
 endif
 
 if PROTOBUF_COMPILE
-OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp WriterStream.cpp
-StreamClient_SOURCES = StreamClient.cpp OraProtoBuf.pb.cpp NetworkException.cpp RuntimeException.cpp Stream.cpp StreamNetwork.cpp
+OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp \
+OutputBufferProtobuf.cpp \
+Stream.cpp \
+StreamNetwork.cpp \
+WriterStream.cpp
+StreamClient_SOURCES = StreamClient.cpp \
+OraProtoBuf.pb.cpp \
+NetworkException.cpp \
+RuntimeException.cpp \
+Stream.cpp \
+StreamNetwork.cpp
 bin_PROGRAMS += StreamClient
 if ZEROMQ_COMPILE
 OpenLogReplicator_SOURCES += StreamZeroMQ.cpp

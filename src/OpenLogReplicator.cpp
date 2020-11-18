@@ -17,10 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <list>
 #include <rapidjson/document.h>
+#include <signal.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <thread>
