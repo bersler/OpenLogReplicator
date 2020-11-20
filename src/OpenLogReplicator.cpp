@@ -357,7 +357,7 @@ int main(int argc, char **argv) {
             //optional
             const char *logArchiveFormat = "o1_mf_%t_%s_%h_.arc";
             if (readerJSON.HasMember("log-archive-format")) {
-                const Value& logArchiveFormatJSON = sourceJSON["logArchiveFormat"];
+                const Value& logArchiveFormatJSON = sourceJSON["log-archive-format"];
                 logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
