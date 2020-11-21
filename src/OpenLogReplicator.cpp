@@ -510,6 +510,14 @@ int main(int argc, char **argv) {
             } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
                  flags |= REDO_FLAGS_ARCH_ONLY;
 
+                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
+                         trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
+                         archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat);
+
+                 if (oracleAnalyzer == nullptr) {
+                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
+                 }
+
                  if (!readerJSON.HasMember("redo-logs")) {
                      CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
                  }
