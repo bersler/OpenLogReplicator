@@ -40,7 +40,6 @@ namespace OpenLogReplicator {
             uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSequence, const char* startTime,
             int64_t startTimeRel) :
         Thread(alias),
-        outputBuffer(oracleAnalyzer->outputBuffer),
         oracleAnalyzer(oracleAnalyzer),
         confirmedMessages(0),
         sentMessages(0),
@@ -58,7 +57,8 @@ namespace OpenLogReplicator {
         startSequence(startSequence),
         startTime(startTime),
         startTimeRel(startTimeRel),
-        streaming(false) {
+        streaming(false),
+        outputBuffer(oracleAnalyzer->outputBuffer) {
 
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
@@ -228,8 +228,13 @@ namespace OpenLogReplicator {
 
                                 if (curQueueSize > 0)
                                     outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
-                                else
-                                    outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
+                                else {
+                                    if (stop) {
+                                        INFO("Writer flushed, shutting down");
+                                        doShutdown();
+                                    } else
+                                        outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
+                                }
                             }
                         }
 

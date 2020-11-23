@@ -459,7 +459,7 @@ namespace OpenLogReplicator {
                     starting = "TIME:" + startTime;
                 else if (startTimeRel > 0)
                     starting = "TIME-REL:" + to_string(startTimeRel);
-                else if (startScn != ZERO_SCN)
+                else if (startScn > 0)
                     starting = "SCN:" + to_string(startScn);
                 else
                     starting = "NOW";
@@ -467,9 +467,9 @@ namespace OpenLogReplicator {
                 INFO_("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting);
 
                 if (shutdown)
-                    throw RuntimeException("shut down on request");
-                start();
+                    return 0;
 
+                start();
                 {
                     unique_lock<mutex> lck(mtx);
                     outputBuffer->writersCond.notify_all();
@@ -820,7 +820,7 @@ namespace OpenLogReplicator {
             return false;
     }
 
-    void OracleAnalyzer::stop(void) {
+    void OracleAnalyzer::doShutdown(void) {
         shutdown = true;
         {
             unique_lock<mutex> lck(mtx);

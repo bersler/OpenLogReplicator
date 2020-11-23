@@ -34,7 +34,6 @@ namespace OpenLogReplicator {
     class Writer : public Thread {
     protected:
         OutputBuffer *outputBuffer;
-        OracleAnalyzer *oracleAnalyzer;
         uint64_t confirmedMessages;
         uint64_t sentMessages;
         uint64_t pollInterval;
@@ -63,6 +62,7 @@ namespace OpenLogReplicator {
         void sortQueue(void);
 
     public:
+        OracleAnalyzer *oracleAnalyzer;
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
         Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollInterval,
                 uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSequence, const char* startTime,

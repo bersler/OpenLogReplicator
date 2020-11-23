@@ -799,14 +799,17 @@ int main(int argc, char **argv) {
 
     //shut down all analyzers
     for (OracleAnalyzer *analyzer : analyzers)
-        analyzer->stop();
+        analyzer->doShutdown();
     for (OracleAnalyzer *analyzer : analyzers)
         if (analyzer->started)
             pthread_join(analyzer->pthread, nullptr);
 
     //shut down writers
-    for (Writer *writer : writers)
-        writer->stop();
+    for (Writer *writer : writers) {
+        writer->doStop();
+        if ((writer->oracleAnalyzer->flags & REDO_FLAGS_FLUSH_QUEUE_ON_EXIT) == 0)
+            writer->doShutdown();
+    }
     for (OutputBuffer *outputBuffer : buffers) {
         unique_lock<mutex> lck(outputBuffer->mtx);
         outputBuffer->writersCond.notify_all();
