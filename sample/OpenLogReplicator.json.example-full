@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0-beta8"
+  "version": "0.8.0"
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -33,7 +33,6 @@
       "memory-max-mb": 1024,
       "redo-read-sleep": 10000,
       "arch-read-sleep": 10000000,
-      "checkpoint-interval": 10,
       "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
@@ -54,6 +53,7 @@
         "max-messages": 200000,
         "enable-idempotence": 0,
         "poll-interval": 100000,
+        "checkpoint-interval": 10,
         "queue-size": 65536
       }
     }
