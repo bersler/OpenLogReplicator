@@ -1,0 +1,35 @@
+{
+  "version": "0.8.0",
+  "sources": [
+    {
+      "alias": "S1",
+      "name": "O112A",
+      "reader": {
+        "type": "online", 
+        "user": "user1",
+        "password": "Password1",
+        "server": "//host:1521/SERVICE"
+      },
+      "format": {
+        "type": "protobuf"
+      },
+      "memory-min-mb": 64,
+      "memory-max-mb": 1024,
+      "tables": [
+        {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
+        {"table": "OWNER1.TABLENAME2"},
+        {"table": "OWNER2.TAB%"}
+      ]
+    }
+  ],
+  "targets": [
+    {
+      "alias": "K1", 
+      "source": "S1",
+      "writer": {
+        "type": "network",
+        "uri": "0.0.0.0:50000"
+      }
+    }
+  ]
+}
