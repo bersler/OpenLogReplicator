@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterStream::readCheckpoint(void) {
-        while (!streaming && !shutdown) {
+        while (!streaming && !shutdown && !stop) {
             try {
                 usleep(pollInterval);
                 if (stream->connected()) {

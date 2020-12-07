@@ -175,7 +175,7 @@ namespace OpenLogReplicator {
         virtual Reader *readerCreate(int64_t group);
         void checkOnlineRedoLogs();
         bool readerUpdateRedoLog(Reader *reader);
-        virtual void stop(void);
+        virtual void doShutdown(void);
         void addPathMapping(const char* source, const char* target);
         void addRedoLogsBatch(string path);
         static void archGetLogPath(OracleAnalyzer *oracleAnalyzer);

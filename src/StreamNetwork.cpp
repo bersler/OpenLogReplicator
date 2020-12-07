@@ -130,24 +130,70 @@ namespace OpenLogReplicator {
         FD_SET(socketFD, &wset);
 
         //header content
-        while (sent < sizeof(uint32_t)) {
-            if (*shutdown)
-                return;
+        if (length < 0xFFFFFFFF) {
+            //32-bit length
+            while (sent < sizeof(uint32_t)) {
+                if (*shutdown)
+                    return;
 
-            w = wset;
-            //blocking select
-            select(socketFD + 1, NULL, &w, NULL, NULL);
-            int r = write(socketFD, ((uint8_t*)&length32) + sent, sizeof(uint32_t) - sent);
-            if (r <= 0) {
-               if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
-                   r = 0;
-               else {
-                   close(socketFD);
-                   socketFD = -1;
-                   NETWORK_FAIL("network send error");
-               }
+                w = wset;
+                //blocking select
+                select(socketFD + 1, NULL, &w, NULL, NULL);
+                int r = write(socketFD, ((uint8_t*)&length32) + sent, sizeof(uint32_t) - sent);
+                if (r <= 0) {
+                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                       r = 0;
+                   else {
+                       close(socketFD);
+                       socketFD = -1;
+                       NETWORK_FAIL("network send error");
+                   }
+                }
+                sent += r;
             }
-            sent += r;
+        } else {
+            //64-bit length
+            length32 = 0xFFFFFFFF;
+            while (sent < sizeof(uint32_t)) {
+                if (*shutdown)
+                    return;
+
+                w = wset;
+                //blocking select
+                select(socketFD + 1, NULL, &w, NULL, NULL);
+                int r = write(socketFD, ((uint8_t*)&length32) + sent, sizeof(uint32_t) - sent);
+                if (r <= 0) {
+                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                       r = 0;
+                   else {
+                       close(socketFD);
+                       socketFD = -1;
+                       NETWORK_FAIL("network send error");
+                   }
+                }
+                sent += r;
+            }
+
+            sent = 0;
+            while (sent < sizeof(uint64_t)) {
+                if (*shutdown)
+                    return;
+
+                w = wset;
+                //blocking select
+                select(socketFD + 1, NULL, &w, NULL, NULL);
+                int r = write(socketFD, ((uint8_t*)&length) + sent, sizeof(uint64_t) - sent);
+                if (r <= 0) {
+                   if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
+                       r = 0;
+                   else {
+                       close(socketFD);
+                       socketFD = -1;
+                       NETWORK_FAIL("network send error");
+                   }
+                }
+                sent += r;
+            }
         }
 
         sent = 0;
@@ -196,12 +242,44 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (length < *((uint32_t*)msg)) {
-            RUNTIME_FAIL("read buffer too small");
-        }
+        if (*((uint32_t*)msg) < 0xFFFFFFFF) {
+            //32-bit message length
+            if (length < *((uint32_t*)msg)) {
+                RUNTIME_FAIL("read buffer too small");
+            }
 
-        length = *((uint32_t*)msg);
-        recvd = 0;
+            length = *((uint32_t*)msg);
+            recvd = 0;
+        } else {
+            //64-bit message length
+            recvd = 0;
+
+            while (recvd < sizeof(uint64_t)) {
+                if (*shutdown)
+                    return 0;
+
+                int64_t bytes = read(socketFD, msg + recvd, sizeof(uint64_t) - recvd);
+
+                if (bytes > 0)
+                    recvd += bytes;
+                else if (bytes == 0) {
+                    close(socketFD);
+                    socketFD = -1;
+                    NETWORK_FAIL("host disconnected");
+                } else {
+                    close(socketFD);
+                    socketFD = -1;
+                    NETWORK_FAIL("network receive error");
+                }
+            }
+
+            if (length < *((uint64_t*)msg)) {
+                RUNTIME_FAIL("read buffer too small");
+            }
+
+            length = *((uint64_t*)msg);
+            recvd = 0;
+        }
 
         while (recvd < length) {
             if (*shutdown)
@@ -253,12 +331,49 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (length < *((uint32_t*)msg)) {
-            RUNTIME_FAIL("read buffer too small");
-        }
+        if (*((uint32_t*)msg) < 0xFFFFFFFF) {
+            //32-bit message length
+            if (length < *((uint32_t*)msg)) {
+                RUNTIME_FAIL("read buffer too small");
+            }
 
-        length = *((uint32_t*)msg);
-        recvd = 0;
+            length = *((uint32_t*)msg);
+            recvd = 0;
+        } else {
+            //64-bit message length
+            recvd = 0;
+
+            while (recvd < sizeof(uint64_t)) {
+                if (*shutdown)
+                    return 0;
+
+                int64_t bytes = read(socketFD, msg + recvd, sizeof(uint64_t) - recvd);
+
+                if (bytes > 0)
+                    recvd += bytes;
+                //client disconnected
+                else if (bytes == 0) {
+                    close(socketFD);
+                    socketFD = -1;
+                    NETWORK_FAIL("host disconnected");
+                } else {
+                    if (recvd == 0)
+                        return 0;
+
+                    if (errno == EWOULDBLOCK || errno == EAGAIN)
+                        usleep(pollInterval);
+                    else
+                        return 0;
+                }
+            }
+
+            if (length < *((uint64_t*)msg)) {
+                RUNTIME_FAIL("read buffer too small");
+            }
+
+            length = *((uint64_t*)msg);
+            recvd = 0;
+        }
 
         while (recvd < length) {
             int64_t bytes = read(socketFD, msg + recvd, length - recvd);

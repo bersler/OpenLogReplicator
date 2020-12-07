@@ -24,6 +24,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     Thread::Thread(const char *alias) :
+        stop(false),
         shutdown(false),
         started(false),
         pthread(0),
@@ -39,7 +40,11 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    void Thread::stop(void) {
+    void Thread::doShutdown(void) {
         shutdown = true;
+    }
+
+    void Thread::doStop(void) {
+        stop = true;
     }
 }

@@ -74,7 +74,6 @@ namespace OpenLogReplicator {
         return "File:" + name;
     }
 
-
     void WriterFile::pollQueue(void) {
     }
 }

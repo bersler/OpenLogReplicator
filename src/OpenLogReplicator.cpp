@@ -17,10 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <list>
 #include <rapidjson/document.h>
+#include <signal.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <thread>
@@ -37,9 +39,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 #include "WriterFile.h"
 
-#ifdef LINK_LIBRARY_KAFKA
+#ifdef LINK_LIBRARY_RDKAFKA
 #include "WriterKafka.h"
-#endif /* LINK_LIBRARY_KAFKA */
+#endif /* LINK_LIBRARY_RDKAFKA */
 
 #ifdef LINK_LIBRARY_OCI
 #include "OracleAnalyzerOnline.h"
@@ -355,7 +357,7 @@ int main(int argc, char **argv) {
             //optional
             const char *logArchiveFormat = "o1_mf_%t_%s_%h_.arc";
             if (readerJSON.HasMember("log-archive-format")) {
-                const Value& logArchiveFormatJSON = sourceJSON["logArchiveFormat"];
+                const Value& logArchiveFormatJSON = readerJSON["log-archive-format"];
                 logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
@@ -507,6 +509,14 @@ int main(int argc, char **argv) {
 
             } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
                  flags |= REDO_FLAGS_ARCH_ONLY;
+
+                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(),
+                         trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep,
+                         archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat);
+
+                 if (oracleAnalyzer == nullptr) {
+                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
+                 }
 
                  if (!readerJSON.HasMember("redo-logs")) {
                      CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
@@ -680,7 +690,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
             } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
-#ifdef LINK_LIBRARY_KAFKA
+#ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
                     const Value& maxMessageMbJSON = writerJSON["max-message-mb"];
@@ -722,7 +732,7 @@ int main(int argc, char **argv) {
                 }
 #else
                 RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
-#endif /* LINK_LIBRARY_KAFKA */
+#endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
@@ -789,14 +799,17 @@ int main(int argc, char **argv) {
 
     //shut down all analyzers
     for (OracleAnalyzer *analyzer : analyzers)
-        analyzer->stop();
+        analyzer->doShutdown();
     for (OracleAnalyzer *analyzer : analyzers)
         if (analyzer->started)
             pthread_join(analyzer->pthread, nullptr);
 
     //shut down writers
-    for (Writer *writer : writers)
-        writer->stop();
+    for (Writer *writer : writers) {
+        writer->doStop();
+        if ((writer->oracleAnalyzer->flags & REDO_FLAGS_FLUSH_QUEUE_ON_EXIT) == 0)
+            writer->doShutdown();
+    }
     for (OutputBuffer *outputBuffer : buffers) {
         unique_lock<mutex> lck(outputBuffer->mtx);
         outputBuffer->writersCond.notify_all();

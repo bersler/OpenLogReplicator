@@ -31,6 +31,7 @@ namespace OpenLogReplicator {
         virtual void *run(void) = 0;
 
     public:
+        volatile bool stop;
         volatile bool shutdown;
         volatile bool started;
         pthread_t pthread;
@@ -38,7 +39,8 @@ namespace OpenLogReplicator {
 
         static void *runStatic(void *context);
 
-        virtual void stop(void);
+        virtual void doShutdown(void);
+        virtual void doStop(void);
 
         Thread(const char *alias);
         virtual ~Thread();

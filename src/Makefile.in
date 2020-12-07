@@ -97,9 +97,20 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
-@OCI_COMPILE_TRUE@am__append_1 = DatabaseConnection.cpp DatabaseEnvironment.cpp DatabaseStatement.cpp OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp
+@OCI_COMPILE_TRUE@am__append_1 = DatabaseConnection.cpp \
+@OCI_COMPILE_TRUE@DatabaseEnvironment.cpp \
+@OCI_COMPILE_TRUE@DatabaseStatement.cpp \
+@OCI_COMPILE_TRUE@OracleAnalyzerOnline.cpp \
+@OCI_COMPILE_TRUE@OracleAnalyzerOnlineASM.cpp \
+@OCI_COMPILE_TRUE@ReaderASM.cpp
+
 @KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
-@PROTOBUF_COMPILE_TRUE@am__append_3 = OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp WriterStream.cpp
+@PROTOBUF_COMPILE_TRUE@am__append_3 = OraProtoBuf.pb.cpp \
+@PROTOBUF_COMPILE_TRUE@OutputBufferProtobuf.cpp \
+@PROTOBUF_COMPILE_TRUE@Stream.cpp \
+@PROTOBUF_COMPILE_TRUE@StreamNetwork.cpp \
+@PROTOBUF_COMPILE_TRUE@WriterStream.cpp
+
 @PROTOBUF_COMPILE_TRUE@am__append_4 = StreamClient
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_5 = StreamZeroMQ.cpp
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_6 = StreamZeroMQ.cpp
@@ -136,21 +147,22 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
 	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
 	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp ReaderASM.cpp Reader.cpp \
+	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
 	RedoLogRecord.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
 	Transaction.cpp Writer.cpp WriterFile.cpp \
 	DatabaseConnection.cpp DatabaseEnvironment.cpp \
 	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
-	OracleAnalyzerOnlineASM.cpp WriterKafka.cpp OraProtoBuf.pb.cpp \
-	OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp \
-	WriterStream.cpp StreamZeroMQ.cpp
+	OracleAnalyzerOnlineASM.cpp ReaderASM.cpp WriterKafka.cpp \
+	OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp \
+	StreamNetwork.cpp WriterStream.cpp StreamZeroMQ.cpp
 @OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseEnvironment.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseStatement.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnline.$(OBJEXT) \
-@OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT)
+@OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT) \
+@OCI_COMPILE_TRUE@	ReaderASM.$(OBJEXT)
 @KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
 @PROTOBUF_COMPILE_TRUE@am__objects_3 = OraProtoBuf.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OutputBufferProtobuf.$(OBJEXT) \
@@ -180,8 +192,8 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OpenLogReplicator.$(OBJEXT) OracleAnalyzer.$(OBJEXT) \
 	OracleAnalyzerBatch.$(OBJEXT) OracleColumn.$(OBJEXT) \
 	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
-	OutputBufferJson.$(OBJEXT) ReaderASM.$(OBJEXT) \
-	Reader.$(OBJEXT) ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
+	OutputBufferJson.$(OBJEXT) Reader.$(OBJEXT) \
+	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
 	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
 	RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
 	SchemaElement.$(OBJEXT) Thread.$(OBJEXT) \
@@ -404,7 +416,7 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
 	OpenLogReplicator.cpp OracleAnalyzer.cpp \
 	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp ReaderASM.cpp Reader.cpp \
+	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
 	RedoLogRecord.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \

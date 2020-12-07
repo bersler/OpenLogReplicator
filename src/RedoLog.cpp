@@ -728,9 +728,9 @@ namespace OpenLogReplicator {
             transaction->isRollback = true;
 
         if (transaction->commitScn > oracleAnalyzer->scn) {
-            if (transaction->shutdown)
+            if (transaction->shutdown) {
                 stopMain();
-            else {
+            } else {
                 if (transaction->isBegin)
                     transaction->flush();
                 else {

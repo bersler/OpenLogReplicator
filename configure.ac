@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.8.0-beta7],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.8.0],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -46,7 +46,7 @@ AC_TYPE_UINT8_T
 
 AC_ARG_WITH([rdkafka],
   [AS_HELP_STRING([--with-rdkafka=PATH], [rdkafka directory])],
-  [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_LIBRDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
+  [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_RDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
   [])
 
 AC_ARG_WITH([rapidjson],
