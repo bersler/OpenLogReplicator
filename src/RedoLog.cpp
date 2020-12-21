@@ -689,6 +689,10 @@ namespace OpenLogReplicator {
     void RedoLog::appendToTransactionBegin(RedoLogRecord *redoLogRecord) {
         TRACE(TRACE2_DUMP, *redoLogRecord);
 
+        //skip other PDB vectors
+        if (oracleAnalyzer->conId > 0 && redoLogRecord->conId != oracleAnalyzer->conId)
+            return;
+
         //skip SQN cleanup
         if (SQN(redoLogRecord->xid) == 0)
             return;
@@ -711,6 +715,10 @@ namespace OpenLogReplicator {
 
     void RedoLog::appendToTransactionCommit(RedoLogRecord *redoLogRecord) {
         TRACE(TRACE2_DUMP, *redoLogRecord);
+
+        //skip other PDB vectors
+        if (oracleAnalyzer->conId > 0 && redoLogRecord->conId != oracleAnalyzer->conId)
+            return;
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32];
         if (transaction == nullptr) {
