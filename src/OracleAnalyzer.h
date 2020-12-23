@@ -105,7 +105,7 @@ namespace OpenLogReplicator {
         string startTime;
         int64_t startTimeRel;
 
-        unordered_map<typeusnslt, Transaction*> xidTransactionMap;
+        unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
         TransactionBuffer *transactionBuffer;
         Schema *schema;
         OutputBuffer *outputBuffer;
