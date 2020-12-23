@@ -615,10 +615,6 @@ namespace OpenLogReplicator {
     void RedoLog::appendToTransactionDDL(RedoLogRecord *redoLogRecord) {
         TRACE(TRACE2_DUMP, *redoLogRecord);
 
-        //skip other PDB vectors
-        if (oracleAnalyzer->conId > 0 && redoLogRecord->conId != oracleAnalyzer->conId)
-            return;
-
         //track DDL
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
             return;
@@ -627,10 +623,10 @@ namespace OpenLogReplicator {
         if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
             return;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32];
+        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
-                oracleAnalyzer->xidTransactionMap.erase(redoLogRecord->xid >> 32);
+                oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
                 return;
             }
 
@@ -638,7 +634,7 @@ namespace OpenLogReplicator {
             if (transaction == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#1)");
             }
-            oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32] = transaction;
+            oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)] = transaction;
         } else {
             if (transaction->xid != redoLogRecord->xid) {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #ddl");
@@ -657,10 +653,10 @@ namespace OpenLogReplicator {
         if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
             return;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32];
+        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
-                oracleAnalyzer->xidTransactionMap.erase(redoLogRecord->xid >> 32);
+                oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
                 return;
             }
 
@@ -668,7 +664,7 @@ namespace OpenLogReplicator {
             if (transaction == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#2)");
             }
-            oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32] = transaction;
+            oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)] = transaction;
         } else {
             if (transaction->xid != redoLogRecord->xid) {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
@@ -693,7 +689,7 @@ namespace OpenLogReplicator {
         if (SQN(redoLogRecord->xid) == 0)
             return;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32];
+        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction != nullptr) {
             RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #begin");
         }
@@ -702,7 +698,7 @@ namespace OpenLogReplicator {
         if (transaction == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: begin transaction)");
         }
-        oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32] = transaction;
+        oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)] = transaction;
 
         transaction->isBegin = true;
         transaction->firstSequence = sequence;
@@ -712,10 +708,10 @@ namespace OpenLogReplicator {
     void RedoLog::appendToTransactionCommit(RedoLogRecord *redoLogRecord) {
         TRACE(TRACE2_DUMP, *redoLogRecord);
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord->xid >> 32];
+        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             //unknown transaction
-            oracleAnalyzer->xidTransactionMap.erase(redoLogRecord->xid >> 32);
+            oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
             return;
         }
         if (transaction->xid != redoLogRecord->xid) {
@@ -741,7 +737,7 @@ namespace OpenLogReplicator {
             INFO("skipping transaction already committed: " << *transaction);
         }
 
-        oracleAnalyzer->xidTransactionMap.erase(transaction->xid >> 32);
+        oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
         delete transaction;
 
     }
@@ -752,8 +748,10 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_DUMP, *redoLogRecord2);
 
         //skip other PDB vectors
-        if (oracleAnalyzer->conId > 0 && redoLogRecord2->conId != oracleAnalyzer->conId && redoLogRecord1->opCode == 0x0501)
+        if (oracleAnalyzer->conId > 0 && redoLogRecord2->conId != oracleAnalyzer->conId &&
+                redoLogRecord1->opCode == 0x0501)
             return;
+
         if (oracleAnalyzer->conId > 0 && redoLogRecord1->conId != oracleAnalyzer->conId &&
                 (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
             return;
@@ -816,10 +814,10 @@ namespace OpenLogReplicator {
         //supp log for update
         case 0x05010B10:
             {
-                Transaction *transaction = oracleAnalyzer->xidTransactionMap[redoLogRecord1->xid >> 32];
+                Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32)];
                 if (transaction == nullptr) {
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
-                        oracleAnalyzer->xidTransactionMap.erase(redoLogRecord1->xid >> 32);
+                        oracleAnalyzer->xidTransactionMap.erase((redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32));
                         return;
                     }
 
@@ -827,7 +825,7 @@ namespace OpenLogReplicator {
                     if (transaction == nullptr) {
                         RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Transaction) << " bytes memory (for: append to transaction#3)");
                     }
-                    oracleAnalyzer->xidTransactionMap[redoLogRecord1->xid >> 32] = transaction;
+                    oracleAnalyzer->xidTransactionMap[(redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32)] = transaction;
                 } else {
                     if (transaction->xid != redoLogRecord1->xid) {
                         RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord1->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #append");
@@ -860,14 +858,14 @@ namespace OpenLogReplicator {
         case 0x0B100506:
         case 0x0B10050B:
             {
-                typeusnslt usnslt = (((uint32_t)redoLogRecord2->usn) << 16) | (redoLogRecord2->slt);
-                Transaction *transaction = oracleAnalyzer->xidTransactionMap[usnslt];
+                typeXIDMAP xidMap = (((uint32_t)redoLogRecord2->usn) << 16) | (redoLogRecord2->slt) | (((uint64_t)redoLogRecord2->conId) << 32);
+                Transaction *transaction = oracleAnalyzer->xidTransactionMap[xidMap];
 
                 //match
                 if (transaction != nullptr) {
                     transaction->rollbackLastOp(redoLogRecord1->scn);
                 } else {
-                    oracleAnalyzer->xidTransactionMap.erase(usnslt);
+                    oracleAnalyzer->xidTransactionMap.erase(xidMap);
                     WARNING("no match found for transaction rollback, skipping");
                 }
             }

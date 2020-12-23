@@ -47,10 +47,10 @@ typedef uint64_t typeobj2;
 typedef uint32_t typeseq;
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
-typedef uint32_t typeusnslt;
 typedef uint64_t typescn;
 typedef uint16_t typesubscn;
 typedef uint32_t typeseq;
+typedef uint64_t typeXIDMAP;
 
 typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
