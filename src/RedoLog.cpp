@@ -962,8 +962,8 @@ namespace OpenLogReplicator {
                     uint8_t vld = reader->redoBuffer[bufferPos + blockPos + 4];
 
                     if ((vld & 0x04) != 0) {
-                        lwnNum = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 24);
-                        lwnNumMax = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 26);
+                        lwnNum = oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 24);
+                        lwnNumMax = oracleAnalyzer->read16(reader->redoBuffer + bufferPos + blockPos + 26);
                         uint32_t lwnLength = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 28);
                         lwnScn = oracleAnalyzer->readSCN(reader->redoBuffer + bufferPos + blockPos + 40);
                         lwnTimestamp = oracleAnalyzer->read32(reader->redoBuffer + bufferPos + blockPos + 64);
