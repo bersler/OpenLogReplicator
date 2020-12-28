@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
     protected:
         virtual const char* getModeName(void);
         virtual bool continueWithOnline(void);
+        virtual void start(void);
 
     public:
         OracleAnalyzerBatch(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,

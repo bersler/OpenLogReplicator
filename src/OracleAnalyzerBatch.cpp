@@ -35,6 +35,12 @@ namespace OpenLogReplicator {
     OracleAnalyzerBatch::~OracleAnalyzerBatch() {
     }
 
+    void OracleAnalyzerBatch::start(void) {
+        initializeSchema();
+        context = database;
+        if (scn == ZERO_SCN)
+            scn = 0;
+    }
 
     const char* OracleAnalyzerBatch::getModeName(void) {
         return "batch";

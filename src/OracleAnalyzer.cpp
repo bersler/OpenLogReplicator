@@ -400,7 +400,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initialize(void) {
-        //nothing here for offline mode
+        archReader = readerCreate(0);
     }
 
     void OracleAnalyzer::start(void) {
