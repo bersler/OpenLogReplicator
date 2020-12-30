@@ -105,7 +105,7 @@ namespace OpenLogReplicator {
         ++opCodes;
     }
 
-    void Transaction::rollbackLastOp(typescn scn) {
+    void Transaction::rollbackLastOp(typeSCN scn) {
         oracleAnalyzer->transactionBuffer->rollbackTransactionChunk(this);
         --opCodes;
     }

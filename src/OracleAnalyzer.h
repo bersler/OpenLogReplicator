@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
 
     class OracleAnalyzer : public Thread {
     protected:
-        typeseq sequence;
+        typeSEQ sequence;
 
         priority_queue<RedoLog*, vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
         set<RedoLog*> onlineRedoSet;
@@ -87,6 +87,7 @@ namespace OpenLogReplicator {
         string nlsCharacterSet;
         string nlsNcharCharacterSet;
         string dbRecoveryFileDest;
+        string dbBlockChecksum;
         string logArchiveFormat;
         string logArchiveDest;
         Reader *archReader;
@@ -99,9 +100,9 @@ namespace OpenLogReplicator {
         condition_variable memoryCond;
         condition_variable writerCond;
         string context;
-        typescn scn;
-        volatile typescn startScn;
-        typeseq startSequence;
+        typeSCN scn;
+        volatile typeSCN startScn;
+        typeSEQ startSequence;
         string startTime;
         int64_t startTimeRel;
 
@@ -135,13 +136,13 @@ namespace OpenLogReplicator {
         uint32_t (*read32)(const uint8_t* buf);
         uint64_t (*read56)(const uint8_t* buf);
         uint64_t (*read64)(const uint8_t* buf);
-        typescn (*readSCN)(const uint8_t* buf);
-        typescn (*readSCNr)(const uint8_t* buf);
+        typeSCN (*readSCN)(const uint8_t* buf);
+        typeSCN (*readSCNr)(const uint8_t* buf);
         void (*write16)(uint8_t* buf, uint16_t val);
         void (*write32)(uint8_t* buf, uint32_t val);
         void (*write56)(uint8_t* buf, uint64_t val);
         void (*write64)(uint8_t* buf, uint64_t val);
-        void (*writeSCN)(uint8_t* buf, typescn val);
+        void (*writeSCN)(uint8_t* buf, typeSCN val);
 
         static uint16_t read16Little(const uint8_t* buf);
         static uint16_t read16Big(const uint8_t* buf);
@@ -151,10 +152,10 @@ namespace OpenLogReplicator {
         static uint64_t read56Big(const uint8_t* buf);
         static uint64_t read64Little(const uint8_t* buf);
         static uint64_t read64Big(const uint8_t* buf);
-        static typescn readSCNLittle(const uint8_t* buf);
-        static typescn readSCNBig(const uint8_t* buf);
-        static typescn readSCNrLittle(const uint8_t* buf);
-        static typescn readSCNrBig(const uint8_t* buf);
+        static typeSCN readSCNLittle(const uint8_t* buf);
+        static typeSCN readSCNBig(const uint8_t* buf);
+        static typeSCN readSCNrLittle(const uint8_t* buf);
+        static typeSCN readSCNrBig(const uint8_t* buf);
 
         static void write16Little(uint8_t* buf, uint16_t val);
         static void write16Big(uint8_t* buf, uint16_t val);
@@ -164,8 +165,8 @@ namespace OpenLogReplicator {
         static void write56Big(uint8_t* buf, uint64_t val);
         static void write64Little(uint8_t* buf, uint64_t val);
         static void write64Big(uint8_t* buf, uint64_t val);
-        static void writeSCNLittle(uint8_t* buf, typescn val);
-        static void writeSCNBig(uint8_t* buf, typescn val);
+        static void writeSCNLittle(uint8_t* buf, typeSCN val);
+        static void writeSCNBig(uint8_t* buf, typeSCN val);
 
         void setBigEndian(void);
         virtual void start(void);

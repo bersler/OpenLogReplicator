@@ -44,19 +44,19 @@ typedef uint8_t typerci;
 typedef int64_t typecol;
 typedef uint32_t typeobj;
 typedef uint64_t typeobj2;
-typedef uint32_t typeseq;
+typedef uint32_t typeSEQ;
 typedef uint64_t typeuba;
 typedef uint64_t typexid;
-typedef uint64_t typescn;
-typedef uint16_t typesubscn;
-typedef uint32_t typeseq;
+typedef uint64_t typeSCN;
+typedef uint16_t typeSubSCN;
+typedef uint32_t typeSEQ;
 typedef uint64_t typeXIDMAP;
 
 typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define ZERO_SCN                                ((typescn)0xFFFFFFFFFFFFFFFF)
+#define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
@@ -135,7 +135,7 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_ON_ERROR_CONTINUE            0x0000008
 #define REDO_FLAGS_TRACK_DDL                    0x0000010
 #define REDO_FLAGS_DISABLE_READ_VERIFICATION    0x0000020
-#define REDO_FLAGS_BLOCK_CHECK_SUM              0x0000040
+#define REDO_FLAGS_SKIP_BLOCK_CHECK_SUM         0x0000040
 #define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x0000080
 #define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x0000100
 #define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x0000200

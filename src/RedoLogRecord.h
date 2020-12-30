@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
         RedoLogRecord *next;
         RedoLogRecord *prev;
         uint16_t cls;
-        typescn scnRecord;
+        typeSCN scnRecord;
         uint32_t rbl;
         uint8_t seq;
         uint8_t typ;
@@ -107,9 +107,9 @@ namespace OpenLogReplicator {
         typeobj recordObjn;
         typeobj recordObjd;
 
-        typeseq sequence;
-        typescn scn;              //scn
-        typesubscn subScn;        //subscn
+        typeSEQ sequence;
+        typeSCN scn;              //scn
+        typeSubSCN subScn;        //subscn
         uint8_t *data;            //data
         uint16_t fieldCnt;
         uint64_t fieldPos;
@@ -164,7 +164,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogLenDelta;
         uint64_t opFlags;
 
-        void dumpHex(ostream &str, OracleAnalyzer *oracleAnalyzer);
+        void dumpHex(ostream &str, OracleAnalyzer *oracleAnalyzer) const;
         friend ostream& operator<<(ostream& os, const RedoLogRecord& redo);
     };
 }

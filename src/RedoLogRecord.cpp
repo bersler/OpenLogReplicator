@@ -24,7 +24,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyzer *oracleAnalyzer) {
+    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyzer *oracleAnalyzer) const {
         stream << "##: " << dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)

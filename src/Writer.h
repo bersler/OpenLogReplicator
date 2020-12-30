@@ -43,10 +43,10 @@ namespace OpenLogReplicator {
         uint64_t curQueueSize;
         uint64_t maxQueueSize;
         OutputBufferMsg **queue;
-        typescn confirmedScn;
-        typescn checkpointScn;
-        typescn startScn;
-        typeseq startSequence;
+        typeSCN confirmedScn;
+        typeSCN checkpointScn;
+        typeSCN startScn;
+        typeSEQ startSequence;
         string startTime;
         int64_t startTimeRel;
         bool streaming;
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         OracleAnalyzer *oracleAnalyzer;
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
         Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollInterval,
-                uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSequence, const char* startTime,
+                uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
                 int64_t startTimeRel);
         virtual ~Writer();
         void confirmMessage(OutputBufferMsg *msg);

@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x40) != 0) flagStr[1] = 'B';
                     if ((flag & 0x20) != 0) flagStr[2] = 'U';
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
-                    typescn scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
+                    typeSCN scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
 
                     if (oracleAnalyzer->version < 0x12200)
                         oracleAnalyzer->dumpStream << "                     " <<
@@ -224,7 +224,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x40) != 0) flagStr[1] = 'B';
                     if ((flag & 0x20) != 0) flagStr[2] = 'U';
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
-                    typescn scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
+                    typeSCN scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
 
                     if (oracleAnalyzer->version < 0x12200)
                         oracleAnalyzer->dumpStream << "                     " <<
@@ -268,7 +268,7 @@ namespace OpenLogReplicator {
         //block cleanout record
         if ((op & KTBOP_BLOCKCLEANOUT) != 0) {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
-                typescn scn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 48);
+                typeSCN scn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 48);
                 uint8_t opt = redoLogRecord->data[fieldPos + 44];
                 uint8_t ver = redoLogRecord->data[fieldPos + 46];
                 uint8_t entries = redoLogRecord->data[fieldPos + 45];
@@ -305,7 +305,7 @@ namespace OpenLogReplicator {
                 for (uint64_t j = 0; j < entries; ++j) {
                     uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
-                    typescn scn = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
+                    typeSCN scn = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
                     if (oracleAnalyzer->version < 0x12100)
                         oracleAnalyzer->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
                                 " flg: " << (uint64_t)flg << " " <<
@@ -936,9 +936,9 @@ namespace OpenLogReplicator {
                     uint16_t flg2 = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
                     int16_t buExtIdx = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 26);
                     typeuba prevCtlUba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 28);
-                    typescn prevCtlMaxCmtScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 36);
-                    typescn prevTxCmtScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 44);
-                    typescn txStartScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 56);
+                    typeSCN prevCtlMaxCmtScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 36);
+                    typeSCN prevTxCmtScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 44);
+                    typeSCN txStartScn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 56);
                     uint32_t prevBrb = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 64);
                     uint32_t prevBcl = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 68);
                     uint32_t logonUser = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 72);

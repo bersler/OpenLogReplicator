@@ -244,7 +244,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            typescn dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
+            typeSCN dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
             if (oracleAnalyzer->version < 0x12200)
                 oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
             else

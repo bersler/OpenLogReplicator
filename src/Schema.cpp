@@ -101,6 +101,9 @@ namespace OpenLogReplicator {
         const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
         oracleAnalyzer->conName = conNameJSON.GetString();
 
+        const Value& dbBlockChecksumJSON = getJSONfieldD(fileName, document, "db-block-checksum");
+        oracleAnalyzer->dbBlockChecksum = dbBlockChecksumJSON.GetString();
+
         const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
         oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
 
@@ -297,6 +300,8 @@ namespace OpenLogReplicator {
         writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
         ss << "\"," << "\"log-archive-dest\":\"";
         writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
+        ss << "\"," << "\"db-block-checksum\":\"";
+        writeEscapeValue(ss, oracleAnalyzer->dbBlockChecksum);
         ss << "\"," << "\"log-archive-format\":\"";
         writeEscapeValue(ss, oracleAnalyzer->logArchiveFormat);
         ss << "\"," << "\"nls-character-set\":\"";

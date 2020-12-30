@@ -37,7 +37,7 @@ extern const Value& getJSONfieldD(string &fileName, const Document& document, co
 namespace OpenLogReplicator {
 
     Writer::Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollInterval,
-            uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSequence, const char* startTime,
+            uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
             int64_t startTimeRel) :
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),

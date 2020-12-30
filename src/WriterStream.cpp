@@ -32,7 +32,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     WriterStream::WriterStream(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t pollInterval, uint64_t checkpointInterval,
-            uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime, uint64_t startTimeRel, Stream *stream) :
+            uint64_t queueSize, typeSCN startScn, typeSEQ startSeq, const char* startTime, uint64_t startTimeRel, Stream *stream) :
         Writer(alias, oracleAnalyzer, 0, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime, startTimeRel),
         stream(stream) {
         stream->initializeServer(&shutdown);

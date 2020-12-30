@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBufferJson();
 
-        virtual void processBegin(typescn scn, typetime time, typexid xid);
+        virtual void processBegin(typeSCN scn, typetime time, typexid xid);
         virtual void processCommit(void);
         virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
         virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);

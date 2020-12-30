@@ -282,7 +282,7 @@ namespace OpenLogReplicator {
         buf[length] = 0;
     }
 
-    void OutputBufferProtobuf::processBegin(typescn scn, typetime time, typexid xid) {
+    void OutputBufferProtobuf::processBegin(typeSCN scn, typetime time, typexid xid) {
         lastTime = time;
         lastScn = scn;
         lastXid = xid;

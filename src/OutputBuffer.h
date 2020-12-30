@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         uint64_t id;
         uint64_t queueId;
         uint64_t length;
-        typescn scn;
+        typeSCN scn;
         OracleAnalyzer *oracleAnalyzer;
         uint8_t* data;
         uint32_t dictId;
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         unordered_map<uint16_t, const char*> timeZoneMap;
         unordered_set<OracleObject*> objects;
         typetime lastTime;
-        typescn lastScn;
+        typeSCN lastScn;
         typexid lastXid;
         map<uint16_t, uint16_t> valuesMap;
         ColumnValue values[MAX_NO_COLUMNS][4];
@@ -139,7 +139,7 @@ namespace OpenLogReplicator {
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
 
-        virtual void processBegin(typescn scn, typetime time, typexid xid) = 0;
+        virtual void processBegin(typeSCN scn, typetime time, typexid xid) = 0;
         virtual void processCommit(void) = 0;
         virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
         virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) = 0;
@@ -149,8 +149,8 @@ namespace OpenLogReplicator {
         void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         void processDDLheader(RedoLogRecord *redoLogRecord1);
-        //virtual void processCheckpoint(typescn scn, typetime time) = 0;
-        //virtual void processSwitch(typescn scn, typetime time) = 0;
+        //virtual void processCheckpoint(typeSCN scn, typetime time) = 0;
+        //virtual void processSwitch(typeSCN scn, typetime time) = 0;
     };
 }
 

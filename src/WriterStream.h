@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     public:
         WriterStream(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t pollInterval, uint64_t checkpointInterval,
-                uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime, uint64_t startTimeRel,
+                uint64_t queueSize, typeSCN startScn, typeSEQ startSeq, const char* startTime, uint64_t startTimeRel,
                 Stream *stream);
         virtual ~WriterStream();
     };

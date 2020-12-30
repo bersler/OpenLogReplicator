@@ -487,7 +487,7 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void OutputBufferJson::processBegin(typescn scn, typetime time, typexid xid) {
+    void OutputBufferJson::processBegin(typeSCN scn, typetime time, typexid xid) {
         lastTime = time;
         lastScn = scn;
         lastXid = xid;

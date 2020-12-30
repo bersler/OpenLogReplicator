@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::printHeaderInfo(void) {
+    void RedoLog::printHeaderInfo(void) const {
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             char SID[9];
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << reader->blockSize << ", File Type=2 LOG" << endl;
 
-            typeseq seq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 8);
+            typeSEQ seq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 8);
             uint8_t descrip[65];
             memcpy (descrip, reader->headerBuffer + reader->blockSize + 92, 64); descrip[64] = 0;
             uint16_t thread = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 176);
@@ -127,23 +127,23 @@ namespace OpenLogReplicator {
             oracleAnalyzer->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
                     " thread: " << dec << thread <<
                     " nab: 0x" << hex << nab <<
-                    " seq: 0x" << setfill('0') << setw(8) << hex << (typeseq)seq <<
+                    " seq: 0x" << setfill('0') << setw(8) << hex << (typeSEQ)seq <<
                     " hws: 0x" << hex << hws <<
                     " eot: " << dec << (uint64_t)eot <<
                     " dis: " << dec << (uint64_t)dis << endl;
 
-            typescn resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
+            typeSCN resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
             typeresetlogs prevResetlogsCnt = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 292);
-            typescn prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
+            typeSCN prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
             typetime firstTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 188));
             typetime nextTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 200));
-            typescn enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
+            typeSCN enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
             typetime enabledTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 216));
-            typescn threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
+            typeSCN threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
             typetime threadClosedTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 228));
-            typescn termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
+            typeSCN termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
             typetime termialRecTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 248));
-            typescn mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
+            typeSCN mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
             typesum chSum = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 14);
             typesum chSum2 = reader->calcChSum(reader->headerBuffer + reader->blockSize, reader->blockSize);
 
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                         " Terminal recovery  " << termialRecTime << endl <<
                         " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << endl;
             } else {
-                typescn realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
+                typeSCN realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
 
                 oracleAnalyzer->dumpStream <<
                         " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
 
             int32_t thr = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 432);
             int32_t seq2 = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 436);
-            typescn scn2 = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 440);
+            typeSCN scn2 = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 440);
             uint8_t zeroBlocks = reader->headerBuffer[reader->blockSize + 206];
             uint8_t formatId = reader->headerBuffer[reader->blockSize + 207];
             if (oracleAnalyzer->version < 0x12200)
@@ -271,7 +271,7 @@ namespace OpenLogReplicator {
 
         vectors = 0;
         memset(opCodes, 0, sizeof(opCodes));
-        uint64_t recordLength = oracleAnalyzer->read32(data);
+        uint32_t recordLength = oracleAnalyzer->read32(data);
         uint8_t vld = data[4];
         uint64_t headerLength;
 
@@ -319,22 +319,22 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << lwnMember->subScn << " " << lwnTimestamp << endl;
                 else
                     oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << lwnMember->subScn << " " << lwnTimestamp << endl;
-                uint32_t nst = 1; //FIXME
-                uint32_t lwnLen = oracleAnalyzer->read32(data + 28);
+                uint16_t lwnNst = oracleAnalyzer->read16(data + 26);
+                uint32_t lwnLen = oracleAnalyzer->read32(data + 32);
 
                 if (oracleAnalyzer->version < 0x12200)
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
                                     setfill('0') << setw(4) << hex << lwnMember->pos <<
                         " LEN: " << setfill('0') << setw(4) << dec << lwnLen <<
-                        " NST: " << setfill('0') << setw(4) << dec << nst <<
+                        " NST: " << setfill('0') << setw(4) << dec << lwnNst <<
                         " SCN: " << PRINTSCN48(lwnScn) << ")" << endl;
                 else
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
                                     setfill('0') << setw(4) << hex << lwnMember->pos <<
                         " LEN: 0x" << setfill('0') << setw(8) << hex << lwnLen <<
-                        " NST: 0x" << setfill('0') << setw(4) << hex << nst <<
+                        " NST: 0x" << setfill('0') << setw(4) << hex << lwnNst <<
                         " SCN: " << PRINTSCN64(lwnScn) << ")" << endl;
             } else {
                 if (oracleAnalyzer->version < 0x12200)
@@ -874,7 +874,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::dumpRedoVector(uint8_t *data, uint64_t recordLength) {
+    void RedoLog::dumpRedoVector(uint8_t *data, uint64_t recordLength) const {
         if (oracleAnalyzer->trace >= TRACE_WARNING) {
             stringstream ss;
             ss << "WARNING: Dumping redo Vector" << endl;

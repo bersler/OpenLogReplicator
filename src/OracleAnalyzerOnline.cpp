@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <unistd.h>
 
 #include "DatabaseConnection.h"
@@ -458,6 +459,8 @@ namespace OpenLogReplicator {
 
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
         logArchiveDest = getParameterValue("log_archive_dest");
+        dbBlockChecksum = getParameterValue("db_block_checksum");
+        std::transform(dbBlockChecksum.begin(), dbBlockChecksum.end(), dbBlockChecksum.begin(), ::toupper);
         if (logArchiveFormat.length() == 0 && dbRecoveryFileDest.length() == 0)
             logArchiveFormat = getParameterValue("log_archive_format");
         nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
@@ -961,9 +964,9 @@ namespace OpenLogReplicator {
         stmt.bindUInt32(3, oracleAnalyzer->activation);
 
         char path[513]; stmt.defineString(1, path, sizeof(path));
-        typeseq sequence; stmt.defineUInt32(2, sequence);
-        typescn firstScn; stmt.defineUInt64(3, firstScn);
-        typescn nextScn; stmt.defineUInt64(4, nextScn);
+        typeSEQ sequence; stmt.defineUInt32(2, sequence);
+        typeSCN firstScn; stmt.defineUInt64(3, firstScn);
+        typeSCN nextScn; stmt.defineUInt64(4, nextScn);
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
