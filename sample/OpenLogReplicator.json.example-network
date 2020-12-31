@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
   "version": "0.8.0.2",
-=======
-  "version": "0.8.0.1",
->>>>>>> ef6c09b14eed21dc79d7099a6bdd636fda7f5a66
   "sources": [
     {
       "alias": "S1",
