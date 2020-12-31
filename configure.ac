@@ -17,7 +17,11 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
+<<<<<<< HEAD
 AC_INIT([OpenLogReplicator],[0.8.0.2],[aleszczynski@bersler.com])
+=======
+AC_INIT([OpenLogReplicator],[0.8.0.1],[aleszczynski@bersler.com])
+>>>>>>> ef6c09b14eed21dc79d7099a6bdd636fda7f5a66
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)

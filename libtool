@@ -1,7 +1,11 @@
 #! /bin/sh
 
 # libtool - Provide generalized library-building support services.
+<<<<<<< HEAD
 # Generated automatically by config.status (openlogreplicator) 0.8.0.2
+=======
+# Generated automatically by config.status (openlogreplicator) 0.8.0.1
+>>>>>>> ef6c09b14eed21dc79d7099a6bdd636fda7f5a66
 # Libtool was configured on host demawend.localdomain:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
