@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     CharacterSetJA16EUC::~CharacterSetJA16EUC() {
     }
 
-    uint64_t CharacterSetJA16EUC::decode(const uint8_t* &str, uint64_t &length) {
+    uint64_t CharacterSetJA16EUC::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
@@ -66,17 +66,17 @@ namespace OpenLogReplicator {
         return readMap2(byte1, byte2);
     }
 
-    uint64_t CharacterSetJA16EUC::readMap2(uint64_t byte1, uint64_t byte2) {
+    uint64_t CharacterSetJA16EUC::readMap2(uint64_t byte1, uint64_t byte2) const {
         return unicode_map_JA16EUC_2b[(byte1 - JA16EUC_b1_min) * (JA16EUC_b2_max - JA16EUC_b2_min + 1) +
                                       (byte2 - JA16EUC_b2_min)];
     }
 
-    uint64_t CharacterSetJA16EUC::readMap3(uint64_t byte2, uint64_t byte3) {
+    uint64_t CharacterSetJA16EUC::readMap3(uint64_t byte2, uint64_t byte3) const {
         return unicode_map_JA16EUC_3b[(byte2 - JA16EUC_b2_min) * (JA16EUC_b3_max - JA16EUC_b3_min + 1) +
                                       (byte3 - JA16EUC_b3_min)];
     }
 
-    bool CharacterSetJA16EUC::validCode(uint64_t byte1, uint64_t byte2) {
+    bool CharacterSetJA16EUC::validCode(uint64_t byte1, uint64_t byte2) const {
         if (byte1 >= 0x90 && byte1 <= 0xA0)
             return false;
         return true;

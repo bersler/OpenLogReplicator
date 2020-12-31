@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
         dumpVal(fieldPos, fieldLength, "Client Id  = ");
     }
 
-    void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) const {
         uint16_t flags = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
         if ((flags & 0x0001) != 0) oracleAnalyzer->dumpStream << "DDL transaction" << endl;
         if ((flags & 0x0002) != 0) oracleAnalyzer->dumpStream << "Space Management transaction" << endl;
@@ -123,7 +123,7 @@ namespace OpenLogReplicator {
         if ((flags & 0x0800) != 0) oracleAnalyzer->dumpStream << "Tx audit CV flags undefined" << endl;
     }
 
-    void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             if (fieldLength < 4) {
                 WARNING("too short session number: " << dec << fieldLength);
@@ -148,14 +148,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t version = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
             oracleAnalyzer->dumpStream << "version " << dec << version << endl;
         }
     }
 
-    void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t auditSessionid = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
             oracleAnalyzer->dumpStream << "audit sessionid " << auditSessionid << endl;

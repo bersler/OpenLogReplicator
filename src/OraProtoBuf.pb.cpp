@@ -206,7 +206,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   ~0u,  // no _weak_field_map_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, owner_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, name_),
-  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, objn_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, obj_),
   offsetof(::OpenLogReplicator::pb::SchemaDefaultTypeInternal, tm_),
   offsetof(::OpenLogReplicator::pb::SchemaDefaultTypeInternal, tms_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, column_),
@@ -288,47 +288,47 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "\022\014\n\004name\030\001 \001(\t\022.\n\004type\030\002 \001(\0162 .OpenLogRe"
   "plicator.pb.ColumnType\022\016\n\006length\030\003 \001(\005\022\021"
   "\n\tprecision\030\004 \001(\005\022\r\n\005scale\030\005 \001(\005\022\020\n\010null"
-  "able\030\006 \001(\010\"\210\001\n\006Schema\022\r\n\005owner\030\001 \001(\t\022\014\n\004"
-  "name\030\002 \001(\t\022\014\n\004objn\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004H\000\022\r"
-  "\n\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.OpenLogR"
-  "eplicator.pb.ColumnB\010\n\006tm_val\"\320\001\n\007Payloa"
-  "d\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb.Op\022"
-  ",\n\006schema\030\002 \001(\0132\034.OpenLogReplicator.pb.S"
-  "chema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033.Ope"
-  "nLogReplicator.pb.Value\022*\n\005after\030\005 \003(\0132\033"
-  ".OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006 \001(\t"
-  "\"-\n\rSchemaRequest\022\014\n\004mask\030\001 \001(\t\022\016\n\006filte"
-  "r\030\002 \001(\t\"\323\001\n\013RedoRequest\022/\n\004code\030\001 \001(\0162!."
-  "OpenLogReplicator.pb.RequestCode\022\025\n\rdata"
-  "base_name\030\002 \001(\t\022\r\n\003scn\030\003 \001(\004H\000\022\r\n\003seq\030\004 "
-  "\001(\004H\000\022\r\n\003tms\030\005 \001(\tH\000\022\020\n\006tm_rel\030\006 \001(\003H\000\0223"
-  "\n\006schema\030\007 \003(\0132#.OpenLogReplicator.pb.Sc"
-  "hemaRequestB\010\n\006tm_val\"\353\001\n\014RedoResponse\0220"
-  "\n\004code\030\001 \001(\0162\".OpenLogReplicator.pb.Resp"
-  "onseCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004scns\030\003 \001(\tH\000\022"
-  "\014\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH\001\022\r\n\003xid\030\006 \001("
-  "\tH\002\022\016\n\004xidn\030\007 \001(\004H\002\022.\n\007payload\030\010 \003(\0132\035.O"
-  "penLogReplicator.pb.PayloadB\t\n\007scn_valB\010"
-  "\n\006tm_valB\t\n\007xid_val*H\n\002Op\022\t\n\005BEGIN\020\000\022\n\n\006"
-  "COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n\006DELE"
-  "TE\020\004\022\007\n\003DDL\020\005*\263\002\n\nColumnType\022\013\n\007UNKNOWN\020"
-  "\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG\020\003\022\010\n"
-  "\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005ROWID\020"
-  "\007\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBINARY_"
-  "DOUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIMESTAM"
-  "P\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTERVAL_Y"
-  "EAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_SECOND"
-  "\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LOCAL_T"
-  "Z\020\022*9\n\013RequestCode\022\010\n\004INFO\020\000\022\t\n\005START\020\001\022"
-  "\010\n\004REDO\020\002\022\013\n\007CONFIRM\020\003*\224\001\n\014ResponseCode\022"
-  "\t\n\005READY\020\000\022\020\n\014FAILED_START\020\001\022\013\n\007STARTED\020"
-  "\002\022\023\n\017ALREADY_STARTED\020\003\022\r\n\tSTREAMING\020\004\022\013\n"
-  "\007PAYLOAD\020\005\022\024\n\020INVALID_DATABASE\020\006\022\023\n\017INVA"
-  "LID_COMMAND\020\0072f\n\021OpenLogReplicator\022Q\n\004Re"
-  "do\022!.OpenLogReplicator.pb.RedoRequest\032\"."
-  "OpenLogReplicator.pb.RedoResponse(\0010\001B7\n"
-  "\"io.debezium.connector.oracle.protoB\021Ope"
-  "nLogReplicatorb\006proto3"
+  "able\030\006 \001(\010\"\207\001\n\006Schema\022\r\n\005owner\030\001 \001(\t\022\014\n\004"
+  "name\030\002 \001(\t\022\013\n\003obj\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004H\000\022\r\n"
+  "\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.OpenLogRe"
+  "plicator.pb.ColumnB\010\n\006tm_val\"\320\001\n\007Payload"
+  "\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb.Op\022,"
+  "\n\006schema\030\002 \001(\0132\034.OpenLogReplicator.pb.Sc"
+  "hema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033.Open"
+  "LogReplicator.pb.Value\022*\n\005after\030\005 \003(\0132\033."
+  "OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006 \001(\t\""
+  "-\n\rSchemaRequest\022\014\n\004mask\030\001 \001(\t\022\016\n\006filter"
+  "\030\002 \001(\t\"\323\001\n\013RedoRequest\022/\n\004code\030\001 \001(\0162!.O"
+  "penLogReplicator.pb.RequestCode\022\025\n\rdatab"
+  "ase_name\030\002 \001(\t\022\r\n\003scn\030\003 \001(\004H\000\022\r\n\003seq\030\004 \001"
+  "(\004H\000\022\r\n\003tms\030\005 \001(\tH\000\022\020\n\006tm_rel\030\006 \001(\003H\000\0223\n"
+  "\006schema\030\007 \003(\0132#.OpenLogReplicator.pb.Sch"
+  "emaRequestB\010\n\006tm_val\"\353\001\n\014RedoResponse\0220\n"
+  "\004code\030\001 \001(\0162\".OpenLogReplicator.pb.Respo"
+  "nseCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004scns\030\003 \001(\tH\000\022\014"
+  "\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH\001\022\r\n\003xid\030\006 \001(\t"
+  "H\002\022\016\n\004xidn\030\007 \001(\004H\002\022.\n\007payload\030\010 \003(\0132\035.Op"
+  "enLogReplicator.pb.PayloadB\t\n\007scn_valB\010\n"
+  "\006tm_valB\t\n\007xid_val*H\n\002Op\022\t\n\005BEGIN\020\000\022\n\n\006C"
+  "OMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n\006DELET"
+  "E\020\004\022\007\n\003DDL\020\005*\263\002\n\nColumnType\022\013\n\007UNKNOWN\020\000"
+  "\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n\004LONG\020\003\022\010\n\004"
+  "DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006\022\t\n\005ROWID\020\007"
+  "\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022\021\n\rBINARY_D"
+  "OUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIMESTAMP"
+  "\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026INTERVAL_YE"
+  "AR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY_TO_SECOND\020"
+  "\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WITH_LOCAL_TZ"
+  "\020\022*9\n\013RequestCode\022\010\n\004INFO\020\000\022\t\n\005START\020\001\022\010"
+  "\n\004REDO\020\002\022\013\n\007CONFIRM\020\003*\224\001\n\014ResponseCode\022\t"
+  "\n\005READY\020\000\022\020\n\014FAILED_START\020\001\022\013\n\007STARTED\020\002"
+  "\022\023\n\017ALREADY_STARTED\020\003\022\r\n\tSTREAMING\020\004\022\013\n\007"
+  "PAYLOAD\020\005\022\024\n\020INVALID_DATABASE\020\006\022\023\n\017INVAL"
+  "ID_COMMAND\020\0072f\n\021OpenLogReplicator\022Q\n\004Red"
+  "o\022!.OpenLogReplicator.pb.RedoRequest\032\".O"
+  "penLogReplicator.pb.RedoResponse(\0010\001B7\n\""
+  "io.debezium.connector.oracle.protoB\021Open"
+  "LogReplicatorb\006proto3"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_OraProtoBuf_2eproto_deps[1] = {
 };
@@ -343,7 +343,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_Ora
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1942,
+  false, false, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 1941,
   &descriptor_table_OraProtoBuf_2eproto_once, descriptor_table_OraProtoBuf_2eproto_sccs, descriptor_table_OraProtoBuf_2eproto_deps, 7, 0,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, 7, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -1222,7 +1222,7 @@ Schema::Schema(const Schema& from)
     name_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_name(),
       GetArena());
   }
-  objn_ = from.objn_;
+  obj_ = from.obj_;
   clear_has_tm_val();
   switch (from.tm_val_case()) {
     case kTm: {
@@ -1244,7 +1244,7 @@ void Schema::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Schema_OraProtoBuf_2eproto.base);
   owner_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   name_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  objn_ = 0u;
+  obj_ = 0u;
   clear_has_tm_val();
 }
 
@@ -1306,7 +1306,7 @@ void Schema::Clear() {
   column_.Clear();
   owner_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   name_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  objn_ = 0u;
+  obj_ = 0u;
   clear_tm_val();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
@@ -1337,10 +1337,10 @@ const char* Schema::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::int
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // uint32 objn = 3;
+      // uint32 obj = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
-          objn_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          obj_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1420,10 +1420,10 @@ failure:
         2, this->_internal_name(), target);
   }
 
-  // uint32 objn = 3;
-  if (this->objn() != 0) {
+  // uint32 obj = 3;
+  if (this->obj() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(3, this->_internal_objn(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(3, this->_internal_obj(), target);
   }
 
   // uint64 tm = 4;
@@ -1487,11 +1487,11 @@ size_t Schema::ByteSizeLong() const {
         this->_internal_name());
   }
 
-  // uint32 objn = 3;
-  if (this->objn() != 0) {
+  // uint32 obj = 3;
+  if (this->obj() != 0) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_objn());
+        this->_internal_obj());
   }
 
   switch (tm_val_case()) {
@@ -1551,8 +1551,8 @@ void Schema::MergeFrom(const Schema& from) {
   if (from.name().size() > 0) {
     _internal_set_name(from._internal_name());
   }
-  if (from.objn() != 0) {
-    _internal_set_objn(from._internal_objn());
+  if (from.obj() != 0) {
+    _internal_set_obj(from._internal_obj());
   }
   switch (from.tm_val_case()) {
     case kTm: {
@@ -1593,7 +1593,7 @@ void Schema::InternalSwap(Schema* other) {
   column_.InternalSwap(&other->column_);
   owner_.Swap(&other->owner_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   name_.Swap(&other->name_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  swap(objn_, other->objn_);
+  swap(obj_, other->obj_);
   swap(tm_val_, other->tm_val_);
   swap(_oneof_case_[0], other->_oneof_case_[0]);
 }

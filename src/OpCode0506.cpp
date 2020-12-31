@@ -35,8 +35,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        redoLogRecord->objn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->objd = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+        redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
     }
 
     OpCode0506::~OpCode0506() {
@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
         ktuxvoff(fieldPos, fieldLength);
     }
 
-    const char* OpCode0506::getUndoType(void) {
+    const char* OpCode0506::getUndoType(void) const {
         return "User undo done   ";
     }
 

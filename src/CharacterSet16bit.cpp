@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
     CharacterSet16bit::~CharacterSet16bit() {
     }
 
-    typeunicode CharacterSet16bit::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSet16bit::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         return readMap(byte1, byte2);
     }
 
-    uint64_t CharacterSet16bit::readMap(uint64_t byte1, uint64_t byte2) {
+    uint64_t CharacterSet16bit::readMap(uint64_t byte1, uint64_t byte2) const {
         return map[(byte1 - byte1min) * (byte2max - byte2min + 1) + (byte2 - byte2min)];
     }
 

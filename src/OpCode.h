@@ -46,12 +46,12 @@ namespace OpenLogReplicator {
         virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
 
         void ktub(uint64_t fieldPos, uint64_t fieldLength);
-        virtual const char* getUndoType(void);
-        void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
-        void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength);
-        void dumpRows(uint8_t *data);
-        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg);
-        void processFbFlags(uint8_t fb, char *fbStr);
+        virtual const char* getUndoType(void) const;
+        void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
+        void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength) const;
+        void dumpRows(uint8_t *data) const;
+        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg) const;
+        void processFbFlags(uint8_t fb, char *fbStr) const;
 
     public:
         OpCode(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);

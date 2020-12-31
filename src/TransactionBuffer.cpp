@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
 
     TransactionBuffer::~TransactionBuffer() {
         if (partiallyFullChunks.size() > 0) {
-            RUNTIME_FAIL("non free blocks in transaction buffer: " << dec << partiallyFullChunks.size());
+            WARNING("non free blocks in transaction buffer: " << dec << partiallyFullChunks.size());
         }
     }
 

@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     class OpCode0506: public OpCode {
     protected:
-        virtual const char* getUndoType(void);
+        virtual const char* getUndoType(void) const;
         void ktuxvoff(uint64_t fieldPos, uint64_t fieldLength);
 
     public:

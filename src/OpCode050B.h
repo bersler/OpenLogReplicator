@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     class OpCode050B: public OpCode {
     protected:
-        virtual const char* getUndoType(void);
+        virtual const char* getUndoType(void) const;
 
     public:
         OpCode050B(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);

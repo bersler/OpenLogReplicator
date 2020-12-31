@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         CharacterSetZHT32EUC();
         virtual ~CharacterSetZHT32EUC();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
     };
 }
 

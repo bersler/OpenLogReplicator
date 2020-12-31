@@ -49,13 +49,13 @@ namespace OpenLogReplicator {
         static void logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf);
 
         virtual void sendMessage(OutputBufferMsg *msg);
-        virtual string getName();
+        virtual string getName() const;
         virtual void pollQueue(void);
 
     public:
         WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic, uint64_t maxMessageMb,
-                uint64_t maxMessages, uint64_t pollInterval, uint64_t checkpointInterval, uint64_t queueSize, typescn startScn,
-                typeseq startSeq, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence);
+                uint64_t maxMessages, uint64_t pollInterval, uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn,
+                typeSEQ startSeq, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence);
         virtual ~WriterKafka();
     };
 }

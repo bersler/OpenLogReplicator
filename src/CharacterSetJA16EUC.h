@@ -35,9 +35,9 @@ namespace OpenLogReplicator {
 
     class CharacterSetJA16EUC : public CharacterSet {
     protected:
-        virtual bool validCode(uint64_t byte1, uint64_t byte2);
-        virtual typeunicode readMap2(uint64_t byte1, uint64_t byte2);
-        virtual typeunicode readMap3(uint64_t byte2, uint64_t byte3);
+        virtual bool validCode(uint64_t byte1, uint64_t byte2) const;
+        virtual typeunicode readMap2(uint64_t byte1, uint64_t byte2) const;
+        virtual typeunicode readMap3(uint64_t byte2, uint64_t byte3) const;
         static typeunicode16 unicode_map_JA16EUC_2b[(JA16EUC_b1_max - JA16EUC_b1_min + 1) *
                                                     (JA16EUC_b2_max - JA16EUC_b2_min + 1)];
         static typeunicode16 unicode_map_JA16EUC_3b[(JA16EUC_b2_max - JA16EUC_b2_min + 1) *
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
         CharacterSetJA16EUC(const char *name);
         virtual ~CharacterSetJA16EUC();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
     };
 }
 

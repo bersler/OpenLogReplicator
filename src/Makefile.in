@@ -149,9 +149,9 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
 	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
-	RedoLogRecord.cpp RuntimeException.cpp Schema.cpp \
+	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
-	Transaction.cpp Writer.cpp WriterFile.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp uintX_t.cpp \
 	DatabaseConnection.cpp DatabaseEnvironment.cpp \
 	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
 	OracleAnalyzerOnlineASM.cpp ReaderASM.cpp WriterKafka.cpp \
@@ -195,11 +195,12 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OutputBufferJson.$(OBJEXT) Reader.$(OBJEXT) \
 	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
 	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
-	RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
+	RowId.$(OBJEXT) RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
 	SchemaElement.$(OBJEXT) Thread.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
-	Writer.$(OBJEXT) WriterFile.$(OBJEXT) $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3) $(am__objects_4)
+	Writer.$(OBJEXT) WriterFile.$(OBJEXT) uintX_t.$(OBJEXT) \
+	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -418,10 +419,11 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
 	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
-	RedoLogRecord.cpp RuntimeException.cpp Schema.cpp \
+	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp Thread.cpp TransactionBuffer.cpp \
-	Transaction.cpp Writer.cpp WriterFile.cpp $(am__append_1) \
-	$(am__append_2) $(am__append_3) $(am__append_5)
+	Transaction.cpp Writer.cpp WriterFile.cpp uintX_t.cpp \
+	$(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_5)
 @PROTOBUF_COMPILE_TRUE@StreamClient_SOURCES = StreamClient.cpp \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.cpp NetworkException.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.cpp Stream.cpp \
@@ -581,6 +583,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLogException.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RedoLogRecord.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RowId.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RuntimeException.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Schema.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SchemaElement.Po@am__quote@
@@ -595,6 +598,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterFile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterKafka.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterStream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uintX_t.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

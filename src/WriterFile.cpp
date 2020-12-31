@@ -27,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     WriterFile::WriterFile(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *name, uint64_t pollInterval,
-            uint64_t checkpointInterval, uint64_t queueSize, typescn startScn, typeseq startSeq, const char* startTime,
+            uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn, typeSEQ startSeq, const char* startTime,
             uint64_t startTimeRel) :
         Writer(alias, oracleAnalyzer, 0, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime, startTimeRel),
         name(name),
@@ -70,7 +70,7 @@ namespace OpenLogReplicator {
         confirmMessage(msg);
     }
 
-    string WriterFile::getName() {
+    string WriterFile::getName() const {
         return "File:" + name;
     }
 

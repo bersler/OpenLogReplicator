@@ -36,13 +36,13 @@ namespace OpenLogReplicator {
     CharacterSet8bit::~CharacterSet8bit() {
     }
 
-    typeunicode CharacterSet8bit::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSet8bit::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         return readMap(byte1);
     }
 
-    typeunicode CharacterSet8bit::readMap(uint64_t character) {
+    typeunicode CharacterSet8bit::readMap(uint64_t character) const {
         if (customASCII)
             return map[character];
         else  if (character <= 127)

@@ -1007,9 +1007,17 @@ namespace OpenLogReplicator {
         };
     }
 
-    void OutputBuffer::processValue(OracleColumn *column, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+    void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
         uint8_t digits;
         CharacterSet *characterSet = nullptr;
+
+        if (object == nullptr) {
+            string columnName = "COL_" + to_string(col);
+            columnRaw(columnName, data, length);
+            return;
+        }
+        OracleColumn *column = object->columns[col];
+
         if (length == 0) {
             RUNTIME_FAIL("ERROR, trying to output null data for column: " << column->name);
         }
@@ -1359,7 +1367,7 @@ namespace OpenLogReplicator {
         lastBuffer = firstBuffer;
     }
 
-    uint64_t OutputBuffer::outputBufferSize(void) {
+    uint64_t OutputBuffer::outputBufferSize(void) const {
         return ((messageLength + 7) & 0xFFFFFFFFFFFFFFF8) + sizeof(struct OutputBufferMsg);
     }
 
@@ -1420,7 +1428,13 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
-            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
+            typeCOL maxI;
+            if (object != nullptr)
+                maxI = object->maxSegCol;
+            else
+                maxI = jcc;
+
+            for (uint64_t i = 0; i < maxI; ++i) {
                 if (i >= jcc) {
                     colLength = 0;
                 } else {
@@ -1439,7 +1453,7 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            processInsert(object, redoLogRecord2->bdba,
+            processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                     oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
             valuesRelease();
 
@@ -1473,10 +1487,16 @@ namespace OpenLogReplicator {
                     pos += 8;
             }
 
-            for (uint64_t i = 0; i < object->maxSegCol; ++i) {
-                if (i >= jcc)
+            typeCOL maxI;
+            if (object != nullptr)
+                maxI = object->maxSegCol;
+            else
+                maxI = jcc;
+
+            for (uint64_t i = 0; i < maxI; ++i) {
+                if (i >= jcc) {
                     colLength = 0;
-                else {
+                } else {
                     colLength = redoLogRecord1->data[fieldPos + pos];
                     ++pos;
                     if (colLength == 0xFF) {
@@ -1492,7 +1512,7 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            processDelete(object, redoLogRecord2->bdba,
+            processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                     oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
             valuesRelease();
 
@@ -1502,8 +1522,9 @@ namespace OpenLogReplicator {
 
     void OutputBuffer::processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
         uint8_t fb;
-        typedba bdba;
-        typeslot slot;
+        typeDATAOBJ dataObj;
+        typeDBA bdba;
+        typeSLOT slot;
         RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
         OracleObject *object = redoLogRecord1->object;
 
@@ -1517,25 +1538,31 @@ namespace OpenLogReplicator {
 
             if (redoLogRecord2p == nullptr) {
                 WARNING("couldn't find correct rowid for INSERT");
+                dataObj = 0;
                 bdba = 0;
                 slot = 0;
             } else {
+                dataObj = redoLogRecord2p->dataObj;
                 bdba = redoLogRecord2p->bdba;
                 slot = redoLogRecord2p->slot;
             }
         } else if (type == TRANSACTION_DELETE) {
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
+                dataObj = redoLogRecord1->dataObj;
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
             } else {
+                dataObj = redoLogRecord2->dataObj;
                 bdba = redoLogRecord2->bdba;
                 slot = redoLogRecord2->slot;
             }
         } else {
             if (redoLogRecord1->suppLogBdba > 0 || redoLogRecord1->suppLogSlot > 0) {
+                dataObj = redoLogRecord1->dataObj;
                 bdba = redoLogRecord1->suppLogBdba;
                 slot = redoLogRecord1->suppLogSlot;
             } else {
+                dataObj = redoLogRecord2->dataObj;
                 bdba = redoLogRecord2->bdba;
                 slot = redoLogRecord2->slot;
             }
@@ -1577,7 +1604,11 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        WARNING("table: " << object->owner << "." << object->name << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
+                        if (object != nullptr) {
+                            WARNING("table: " << object->owner << "." << object->name << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
+                        } else {
+                            WARNING("table: [DATAOBJ:" << redoLogRecord1p->dataObj << "]: out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
+                        }
                         break;
                     }
                     if (colNums != nullptr) {
@@ -1592,7 +1623,7 @@ namespace OpenLogReplicator {
                     if (i == redoLogRecord1p->cc - 1 && (redoLogRecord1p->fb & FB_N) != 0)
                         fb |= FB_N;
 
-                    if (colNum >= object->maxSegCol) {
+                    if (object != nullptr && colNum >= object->maxSegCol) {
                         WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
@@ -1626,13 +1657,17 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
-                        RUNTIME_FAIL("table: " << object->owner << "." << object->name << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
+                        if (object != nullptr) {
+                            RUNTIME_FAIL("table: " << object->owner << "." << object->name << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
+                        } else {
+                            RUNTIME_FAIL("table: [DATAOBJ:" << redoLogRecord1p->dataObj << "]: out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
+                        }
                     }
 
                     oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
                     colNum = oracleAnalyzer->read16(colNums) - 1;
 
-                    if (colNum >= object->maxSegCol) {
+                    if (object != nullptr && colNum >= object->maxSegCol) {
                         WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
@@ -1683,7 +1718,11 @@ namespace OpenLogReplicator {
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
-                        WARNING("table: " << object->owner << "." << object->name << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
+                        if (object != nullptr) {
+                            WARNING("table: " << object->owner << "." << object->name << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
+                        } else {
+                            WARNING("table: [DATAOBJ:" << redoLogRecord2p->dataObj << "]: out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
+                        }
                         break;
                     }
 
@@ -1701,7 +1740,7 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (colNum >= object->maxSegCol) {
+                    if (object != nullptr && colNum >= object->maxSegCol) {
                         WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
                                 dec << colNum << "), probably table was altered, ignoring extra column");
                         break;
@@ -1727,7 +1766,7 @@ namespace OpenLogReplicator {
         }
 
         int16_t guardPos = -1;
-        if (object->guardSegNo != -1) {
+        if (object != nullptr && object->guardSegNo != -1) {
             auto it = valuesMap.find(object->guardSegNo);
             if (it != valuesMap.end())
                 guardPos = (*it).second;
@@ -1778,7 +1817,7 @@ namespace OpenLogReplicator {
 
             if (values[pos][VALUE_BEFORE].data[0] == nullptr) {
                 bool guardPresent = false;
-                if (object->columns[i]->guardSegNo != -1 && guardPos != -1) {
+                if (object != nullptr && object->columns[i]->guardSegNo != -1 && guardPos != -1) {
                     uint8_t *guardData = values[guardPos][VALUE_BEFORE].data[0];
                     if (guardData != nullptr) {
                         guardPresent = true;
@@ -1799,7 +1838,7 @@ namespace OpenLogReplicator {
 
             if (values[pos][VALUE_AFTER].data[0] == nullptr) {
                 bool guardPresent = false;
-                if (object->columns[i]->guardSegNo != -1 && guardPos != -1) {
+                if (object != nullptr && object->columns[i]->guardSegNo != -1 && guardPos != -1) {
                     uint8_t *guardData = values[guardPos][VALUE_AFTER].data[0];
                     if (guardData != nullptr) {
                         guardPresent = true;
@@ -1820,23 +1859,38 @@ namespace OpenLogReplicator {
         }
 
         if ((oracleAnalyzer->trace2 & TRACE2_DML) != 0) {
-            TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
+            if (object != nullptr) {
+                TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
 
-            for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+                    uint16_t i = (*it).first;
+                    uint16_t pos = (*it).second;
 
-                TRACE(TRACE2_DML, dec << i << ": " <<
-                        " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
-                        " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
-                        " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
-                        " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")" <<
-                        " pk: " << dec << object->columns[i]->numPk);
+                    TRACE(TRACE2_DML, dec << i << ": " <<
+                            " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
+                            " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
+                            " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
+                            " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")" <<
+                            " pk: " << dec << object->columns[i]->numPk);
+                }
+            } else {
+                TRACE(TRACE2_DML, "tab: [DATAOBJ:" << redoLogRecord1->dataObj << "] type: " << type);
+
+                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
+                    uint16_t i = (*it).first;
+                    uint16_t pos = (*it).second;
+
+                    TRACE(TRACE2_DML, dec << i << ": " <<
+                            " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
+                            " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
+                            " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
+                            " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")");
+                }
             }
         }
 
         if (type == TRANSACTION_UPDATE) {
-            if (columnFormat < COLUMN_FORMAT_FULL) {
+            if (object != nullptr && columnFormat < COLUMN_FORMAT_FULL) {
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ) {
                     uint16_t i = (*it).first;
                     uint16_t pos = (*it).second;
@@ -1871,26 +1925,28 @@ namespace OpenLogReplicator {
                 }
             }
 
-            processUpdate(object, bdba, slot, redoLogRecord1->xid);
+            processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
         } else {
-            //assume null values for missing columns
-            for (uint16_t i: object->pk ) {
-                auto it = valuesMap.find(i);
-                if (it == valuesMap.end()) {
-                    memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
-                    memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
-                    memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
-                    memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
-                    values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
-                    values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
-                    valuesMap[i] = valuesMax++;
+            if (object != nullptr) {
+                //assume null values for missing columns
+                for (uint16_t i: object->pk ) {
+                    auto it = valuesMap.find(i);
+                    if (it == valuesMap.end()) {
+                        memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
+                        memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
+                        memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
+                        memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
+                        values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
+                        values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
+                        valuesMap[i] = valuesMax++;
+                    }
                 }
             }
 
             if (type == TRANSACTION_INSERT)
-                processInsert(object, bdba, slot, redoLogRecord1->xid);
+                processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
             else if (type == TRANSACTION_DELETE)
-                processDelete(object, bdba, slot, redoLogRecord1->xid);
+                processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
         }
 
         valuesRelease();
@@ -1940,12 +1996,12 @@ namespace OpenLogReplicator {
         sqlText = (char*)redoLogRecord1->data + fieldPos;
 
         if (type == 85)
-            processDDL(object, type, seq, "truncate", sqlText, sqlLength - 1);
+            processDDL(object, redoLogRecord1->dataObj, type, seq, "truncate", sqlText, sqlLength - 1);
         else if (type == 12)
-            processDDL(object, type, seq, "drop", sqlText, sqlLength - 1);
+            processDDL(object, redoLogRecord1->dataObj, type, seq, "drop", sqlText, sqlLength - 1);
         else if (type == 15)
-            processDDL(object, type, seq, "alter", sqlText, sqlLength - 1);
+            processDDL(object, redoLogRecord1->dataObj, type, seq, "alter", sqlText, sqlLength - 1);
         else
-            processDDL(object, type, seq, "?", sqlText, sqlLength - 1);
+            processDDL(object, redoLogRecord1->dataObj, type, seq, "?", sqlText, sqlLength - 1);
     }
 }

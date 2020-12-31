@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     class CharacterSet8bit : public CharacterSet7bit {
     protected:
-        virtual typeunicode readMap(uint64_t character);
+        virtual typeunicode readMap(uint64_t character) const;
         bool customASCII;
 
     public:
@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         CharacterSet8bit(const char *name, const typeunicode16 *map, bool customASCII);
         virtual ~CharacterSet8bit();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
 
         static typeunicode16 unicode_map_AR8ADOS710[128];
         static typeunicode16 unicode_map_AR8ADOS710T[128];

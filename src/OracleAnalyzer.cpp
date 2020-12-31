@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         memoryChunksHWM(0),
         memoryChunksSupplemental(0),
         database(database),
+        dbBlockChecksum(""),
         logArchiveFormat(logArchiveFormat),
         archReader(nullptr),
         waitingForWriter(false),
@@ -222,7 +223,7 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
     }
 
-    typescn OracleAnalyzer::readSCNLittle(const uint8_t* buf) {
+    typeSCN OracleAnalyzer::readSCNLittle(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[5] & 0x80) == 0x80)
@@ -236,7 +237,7 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40);
     }
 
-    typescn OracleAnalyzer::readSCNBig(const uint8_t* buf) {
+    typeSCN OracleAnalyzer::readSCNBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[4] & 0x80) == 0x80)
@@ -250,7 +251,7 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[5] << 32) | ((uint64_t)buf[4] << 40);
     }
 
-    typescn OracleAnalyzer::readSCNrLittle(const uint8_t* buf) {
+    typeSCN OracleAnalyzer::readSCNrLittle(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[1] & 0x80) == 0x80)
@@ -264,7 +265,7 @@ namespace OpenLogReplicator {
                 ((uint64_t)buf[0] << 32) | ((uint64_t)buf[1] << 40);
     }
 
-    typescn OracleAnalyzer::readSCNrBig(const uint8_t* buf) {
+    typeSCN OracleAnalyzer::readSCNrBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[0] & 0x80) == 0x80)
@@ -344,7 +345,7 @@ namespace OpenLogReplicator {
         buf[7] = val & 0xFF;
     }
 
-    void OracleAnalyzer::writeSCNLittle(uint8_t* buf, typescn val) {
+    void OracleAnalyzer::writeSCNLittle(uint8_t* buf, typeSCN val) {
         if (val < 0x800000000000) {
             buf[0] = val & 0xFF;
             buf[1] = (val >> 8) & 0xFF;
@@ -364,7 +365,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzer::writeSCNBig(uint8_t* buf, typescn val) {
+    void OracleAnalyzer::writeSCNBig(uint8_t* buf, typeSCN val) {
         if (val < 0x800000000000) {
             buf[5] = val & 0xFF;
             buf[4] = (val >> 8) & 0xFF;
@@ -421,7 +422,14 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initializeSchema(void) {
-        INFO_("last confirmed SCN: " << dec << scn);
+        if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
+            return;
+
+        if (scn == ZERO_SCN) {
+            INFO_("last confirmed SCN: <none>");
+        } else {
+            INFO_("last confirmed SCN: " << dec << scn);
+        }
         if (!schema->readSchema(this)) {
             refreshSchema();
             schema->writeSchema(this);
@@ -470,6 +478,13 @@ namespace OpenLogReplicator {
                     return 0;
 
                 start();
+
+                if ((dbBlockChecksum.compare("OFF") == 0 || dbBlockChecksum.compare("FALSE") == 0) &&
+                        (flags & REDO_FLAGS_SKIP_BLOCK_CHECK_SUM) == 0) {
+                    WARNING_("database parameter db_block_checksum = " << dbBlockChecksum << ", disabling block checksum calculation");
+                    flags |= REDO_FLAGS_SKIP_BLOCK_CHECK_SUM;
+                }
+
                 {
                     unique_lock<mutex> lck(mtx);
                     outputBuffer->writersCond.notify_all();
@@ -869,8 +884,8 @@ namespace OpenLogReplicator {
         if (fieldNum > redoLogRecord->fieldCnt) {
             REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
                     ", data: " << dec << redoLogRecord->rowData <<
-                    ", objn: " << dec << redoLogRecord->objn <<
-                    ", objd: " << dec << redoLogRecord->objd <<
+                    ", obj: " << dec << redoLogRecord->obj <<
+                    ", dataObj: " << dec << redoLogRecord->dataObj <<
                     ", op: " << hex << redoLogRecord->opCode <<
                     ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
                     ", suppCC: " << dec << redoLogRecord->suppLogCC);
@@ -995,7 +1010,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    const char* OracleAnalyzer::getModeName(void) {
+    const char* OracleAnalyzer::getModeName(void) const {
         return "offline";
     }
 

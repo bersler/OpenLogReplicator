@@ -57,6 +57,7 @@ namespace OpenLogReplicator {
         void bindBinary(uint64_t col, uint8_t *buf, uint64_t size);
         void defineString(uint64_t col, char *val, uint64_t len);
         void defineUInt16(uint64_t col, uint16_t &val);
+        void defineInt16(uint64_t col, int16_t &val);
         void defineUInt32(uint64_t col, uint32_t &val);
         void defineInt32(uint64_t col, int32_t &val);
         void defineUInt64(uint64_t col, uint64_t &val);

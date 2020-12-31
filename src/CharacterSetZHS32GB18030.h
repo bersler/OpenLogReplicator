@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         CharacterSetZHS32GB18030();
         virtual ~CharacterSetZHS32GB18030();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
     };
 }
 

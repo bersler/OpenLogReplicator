@@ -66,6 +66,7 @@ ReaderFilesystem.cpp \
 RedoLog.cpp \
 RedoLogException.cpp \
 RedoLogRecord.cpp \
+RowId.cpp \
 RuntimeException.cpp \
 Schema.cpp \
 SchemaElement.cpp \
@@ -73,7 +74,8 @@ Thread.cpp \
 TransactionBuffer.cpp \
 Transaction.cpp \
 Writer.cpp \
-WriterFile.cpp
+WriterFile.cpp \
+uintX_t.cpp
 
 if OCI_COMPILE
 OpenLogReplicator_SOURCES += DatabaseConnection.cpp \

@@ -41,8 +41,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        redoLogRecord->objn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->objd = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+        redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
     }
 
     OpCode0501::~OpCode0501() {
@@ -231,9 +231,9 @@ namespace OpenLogReplicator {
             return;
         }
         if (oracleAnalyzer->dumpRedoLog >= 2) {
-            typeobj newobjd = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
+            typeOBJ newDataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
             oracleAnalyzer->dumpStream << "kteoputrn - undo operation for flush for truncate " << endl;
-            oracleAnalyzer->dumpStream << "newobjd: 0x" << hex << newobjd << " " << endl;
+            oracleAnalyzer->dumpStream << "newobjd: 0x" << hex << newDataObj << " " << endl;
         }
     }
 
@@ -244,7 +244,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            typescn dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
+            typeSCN dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
             if (oracleAnalyzer->version < 0x12200)
                 oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
             else

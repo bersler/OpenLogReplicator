@@ -166,6 +166,14 @@ namespace OpenLogReplicator {
         conn->env->checkErr(conn->errhp, ret);
     }
 
+    void DatabaseStatement::defineInt16(uint64_t col, int16_t &val) {
+        OCIDefine* defp = nullptr;
+        sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_INT, nullptr, nullptr, nullptr, OCI_DEFAULT);
+        if (defp != nullptr)
+            defines.push_back(defp);
+        conn->env->checkErr(conn->errhp, ret);
+    }
+
     void DatabaseStatement::defineUInt32(uint64_t col, uint32_t &val) {
         OCIDefine* defp = nullptr;
         sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_UIN, nullptr, nullptr, nullptr, OCI_DEFAULT);
@@ -176,7 +184,7 @@ namespace OpenLogReplicator {
 
     void DatabaseStatement::defineInt32(uint64_t col, int32_t &val) {
         OCIDefine* defp = nullptr;
-        sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_UIN, nullptr, nullptr, nullptr, OCI_DEFAULT);
+        sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_INT, nullptr, nullptr, nullptr, OCI_DEFAULT);
         if (defp != nullptr)
             defines.push_back(defp);
         conn->env->checkErr(conn->errhp, ret);
@@ -192,7 +200,7 @@ namespace OpenLogReplicator {
 
     void DatabaseStatement::defineInt64(uint64_t col, int64_t &val) {
         OCIDefine* defp = nullptr;
-        sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_UIN, nullptr, nullptr, nullptr, OCI_DEFAULT);
+        sword ret = OCIDefineByPos(stmthp, &defp, conn->errhp, col, &val, sizeof(val), SQLT_INT, nullptr, nullptr, nullptr, OCI_DEFAULT);
         if (defp != nullptr)
             defines.push_back(defp);
         conn->env->checkErr(conn->errhp, ret);

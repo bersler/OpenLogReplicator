@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
     protected:
         static typeunicode32 unicode_map_ZHT16HKSCS31_2b[(ZHT16HKSCS31_b1_max - ZHT16HKSCS31_b1_min + 1) *
                                                          (ZHT16HKSCS31_b2_max - ZHT16HKSCS31_b2_min + 1)];
-        virtual typeunicode readMap(uint64_t byte1, uint64_t byte2);
+        virtual typeunicode readMap(uint64_t byte1, uint64_t byte2) const;
 
     public:
         CharacterSetZHT16HKSCS31();

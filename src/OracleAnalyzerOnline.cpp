@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <algorithm>
 #include <unistd.h>
 
 #include "DatabaseConnection.h"
@@ -64,6 +65,7 @@ namespace OpenLogReplicator {
             ",  D.ACTIVATION#"
             ",  VER.BANNER"
             ",  SYS_CONTEXT('USERENV','DB_NAME')"
+            ",  CURRENT_SCN"
             " FROM"
             "   SYS.V_$DATABASE D"
             " JOIN"
@@ -203,7 +205,7 @@ namespace OpenLogReplicator {
             "   SYS.DEFERRED_STG$ DS ON"
             "     T.OBJ# = DS.OBJ#"
             " WHERE"
-            "   BITAND(O.flags, 128) = 0"
+            "   BITAND(O.FLAGS, 128) = 0"
             "   AND U.NAME || '.' || O.NAME LIKE UPPER(:i)"
             " ORDER BY"
             "   4,5");
@@ -284,12 +286,12 @@ namespace OpenLogReplicator {
 
     const char* OracleAnalyzerOnline::SQL_GET_PARTITION_LIST(
             "SELECT"
-            "   T.OBJ#"
-            ",  T.DATAOBJ#"
+            "   TP.OBJ#"
+            ",  TP.DATAOBJ#"
             " FROM"
-            "   SYS.TABPART$ T"
+            "   SYS.TABPART$ TP"
             " WHERE"
-            "   T.BO# = :1"
+            "   TP.BO# = :1"
             " UNION ALL"
             " SELECT"
             "   TSP.OBJ#"
@@ -300,19 +302,16 @@ namespace OpenLogReplicator {
             "   SYS.TABCOMPART$ TCP ON"
             "     TCP.OBJ# = TSP.POBJ#"
             " WHERE"
-            "   TCP.BO# = :1");
+            "   TCP.BO# = :i");
 
     const char* OracleAnalyzerOnline::SQL_GET_SUPPLEMNTAL_LOG_TABLE(
             "SELECT"
-            "   C.TYPE#"
+            "   D.TYPE#"
             " FROM"
-            "   SYS.CON$ OC"
-            " JOIN"
-            "   SYS.CDEF$ C ON"
-            "     OC.CON# = C.CON#"
+            "   SYS.CDEF$ D"
             " WHERE"
-            "   C.OBJ# = :i"
-            "   AND (C.TYPE# = 14 OR C.TYPE# = 17)");
+            "   D.OBJ# = :i"
+            "   AND (D.TYPE# = 14 OR D.TYPE# = 17)");
 
     const char* OracleAnalyzerOnline::SQL_GET_PARAMETER(
             "SELECT"
@@ -328,7 +327,7 @@ namespace OpenLogReplicator {
             " FROM"
             "   DATABASE_PROPERTIES"
             " WHERE"
-            "   PROPERTY_NAME = :1");
+            "   PROPERTY_NAME = :i");
 
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
             uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
@@ -363,23 +362,9 @@ namespace OpenLogReplicator {
 
         typeresetlogs currentResetlogs;
         typeactivation currentActivation;
+        typeSCN currentScn;
 
         if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
-            checkTableForGrants("SYS.CCOL$");
-            checkTableForGrants("SYS.CDEF$");
-            checkTableForGrants("SYS.COL$");
-            checkTableForGrants("SYS.CON$");
-            checkTableForGrants("SYS.DEFERRED_STG$");
-            checkTableForGrants("SYS.ECOL$");
-            checkTableForGrants("SYS.ICOL$");
-            checkTableForGrants("SYS.IND$");
-            checkTableForGrants("SYS.OBJ$");
-            checkTableForGrants("SYS.SEG$");
-            checkTableForGrants("SYS.TAB$");
-            checkTableForGrants("SYS.TABCOMPART$");
-            checkTableForGrants("SYS.TABPART$");
-            checkTableForGrants("SYS.TABSUBPART$");
-            checkTableForGrants("SYS.USER$");
             checkTableForGrants("SYS.V_$ARCHIVED_LOG");
             checkTableForGrants("SYS.V_$DATABASE");
             checkTableForGrants("SYS.V_$DATABASE_INCARNATION");
@@ -403,6 +388,7 @@ namespace OpenLogReplicator {
             stmt.defineUInt32(7, currentActivation);
             char bannerStr[81]; stmt.defineString(8, bannerStr, sizeof(bannerStr));
             char contextStr[81]; stmt.defineString(9, contextStr, sizeof(contextStr));
+            stmt.defineUInt64(10, currentScn);
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
@@ -456,8 +442,25 @@ namespace OpenLogReplicator {
             }
         }
 
+        if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
+            checkTableForGrantsFlashback("SYS.CCOL$", currentScn);
+            checkTableForGrantsFlashback("SYS.CDEF$", currentScn);
+            checkTableForGrantsFlashback("SYS.COL$", currentScn);
+            checkTableForGrantsFlashback("SYS.DEFERRED_STG$", currentScn);
+            checkTableForGrantsFlashback("SYS.ECOL$", currentScn);
+            checkTableForGrantsFlashback("SYS.OBJ$", currentScn);
+            checkTableForGrantsFlashback("SYS.SEG$", currentScn);
+            checkTableForGrantsFlashback("SYS.TAB$", currentScn);
+            checkTableForGrantsFlashback("SYS.TABCOMPART$", currentScn);
+            checkTableForGrantsFlashback("SYS.TABPART$", currentScn);
+            checkTableForGrantsFlashback("SYS.TABSUBPART$", currentScn);
+            checkTableForGrantsFlashback("SYS.USER$", currentScn);
+        }
+
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
         logArchiveDest = getParameterValue("log_archive_dest");
+        dbBlockChecksum = getParameterValue("db_block_checksum");
+        std::transform(dbBlockChecksum.begin(), dbBlockChecksum.end(), dbBlockChecksum.begin(), ::toupper);
         if (logArchiveFormat.length() == 0 && dbRecoveryFileDest.length() == 0)
             logArchiveFormat = getParameterValue("log_archive_format");
         nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
@@ -687,6 +690,27 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OracleAnalyzerOnline::checkTableForGrantsFlashback(string tableName, typeSCN scn) {
+        try {
+            string query("SELECT 1 FROM " + tableName + " AS OF SCN " + to_string(scn) + " WHERE 0 = 1");
+
+            DatabaseStatement stmt(conn);
+            TRACE_(TRACE2_SQL, query);
+            stmt.createStatement(query.c_str());
+            uint64_t dummy; stmt.defineUInt64(1, dummy);
+            stmt.executeQuery();
+        } catch (RuntimeException &ex) {
+            if (conId > 0) {
+                RUNTIME_FAIL("grants missing" << endl <<
+                        "HINT run: ALTER SESSION SET CONTAINER = " << conName << ";" << endl <<
+                        "HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+            } else {
+                RUNTIME_FAIL("grants missing" << endl << "HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+            }
+            throw RuntimeException (ex.msg);
+        }
+    }
+
     void OracleAnalyzerOnline::refreshSchema(void) {
         for (SchemaElement *element : schema->elements)
             addTable(element->mask, element->keys, element->keysStr, element->options);
@@ -694,15 +718,16 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzerOnline::addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options) {
         INFO_("- reading table schema for: " << mask);
+
         uint64_t tabCnt = 0;
         DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
 
         TRACE_(TRACE2_SQL, SQL_GET_TABLE_LIST << endl <<
                 "PARAM1: " << mask);
         stmt.createStatement(SQL_GET_TABLE_LIST);
-        typeobj objd; stmt.defineUInt32(1, objd);
-        typeobj objn; stmt.defineUInt32(2, objn);
-        uint64_t cluCols; stmt.defineUInt64(3, cluCols);
+        typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
+        typeOBJ obj; stmt.defineUInt32(2, obj);
+        typeCOL cluCols; stmt.defineInt16(3, cluCols);
         char owner[129]; stmt.defineString(4, owner, sizeof(owner));
         char name[129]; stmt.defineString(5, name, sizeof(name));
         uint64_t clustered; stmt.defineUInt64(6, clustered);
@@ -718,15 +743,15 @@ namespace OpenLogReplicator {
 
         if (version12) {
             TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST << endl <<
-                    "PARAM1: " << dec << objn);
+                    "PARAM1: " << dec << obj);
             stmtCol.createStatement(SQL_GET_COLUMN_LIST);
         } else {
             TRACE_(TRACE2_SQL, SQL_GET_COLUMN_LIST11 << endl <<
-                    "PARAM1: " << dec << objn);
+                    "PARAM1: " << dec << obj);
             stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
         }
-        typecol colNo; stmtCol.defineInt64(1, colNo);
-        typecol segColNo; stmtCol.defineInt64(2, segColNo);
+        typeCOL colNo; stmtCol.defineInt16(1, colNo);
+        typeCOL segColNo; stmtCol.defineInt16(2, segColNo);
         char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
         uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
         uint64_t length; stmtCol.defineUInt64(5, length);
@@ -740,81 +765,81 @@ namespace OpenLogReplicator {
         int64_t constraint; stmtCol.defineInt64(13, constraint);
         int64_t added; stmtCol.defineInt64(14, added);
         int64_t guard; stmtCol.defineInt64(15, guard);
-        typecol guardSegNo; stmtCol.defineInt64(16, guardSegNo);
-        uint64_t numPk; stmtCol.defineUInt64(17, numPk);
-        uint64_t numSup; stmtCol.defineUInt64(18, numSup);
-        stmtCol.bindUInt32(1, objn);
+        typeCOL guardSegNo; stmtCol.defineInt16(16, guardSegNo);
+        typeCOL numPk; stmtCol.defineInt16(17, numPk);
+        typeCOL numSup; stmtCol.defineInt16(18, numSup);
+        stmtCol.bindUInt32(1, obj);
 
         TRACE_(TRACE2_SQL, SQL_GET_PARTITION_LIST << endl <<
-                "PARAM1: " << dec << objn << endl <<
-                "PARAM2: " << dec << objn);
+                "PARAM1: " << dec << obj << endl <<
+                "PARAM2: " << dec << obj);
         stmtPart.createStatement(SQL_GET_PARTITION_LIST);
-        typeobj partitionObjn; stmtPart.defineUInt32(1, partitionObjn);
-        typeobj partitionObjd; stmtPart.defineUInt32(2, partitionObjd);
-        stmtPart.bindUInt32(1, objn);
-        stmtPart.bindUInt32(2, objn);
+        typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
+        typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
+        stmtPart.bindUInt32(1, obj);
+        stmtPart.bindUInt32(2, obj);
 
         TRACE_(TRACE2_SQL, SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl <<
-                "PARAM1: " << dec << objn);
+                "PARAM1: " << dec << obj);
         stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
         uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
-        stmtSupp.bindUInt32(1, objn);
+        stmtSupp.bindUInt32(1, obj);
 
         stmt.bindString(1, mask.c_str());
         cluCols = 0;
-        objd = 0;
+        dataObj = 0;
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - IOT");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - IOT");
                 cluCols = 0;
-                objd = 0;
+                dataObj = 0;
                 ret = stmt.next();
                 continue;
             }
 
             //skip temporary tables
             if (temporary) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - temporary table");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - temporary table");
                 cluCols = 0;
-                objd = 0;
+                dataObj = 0;
                 ret = stmt.next();
                 continue;
             }
 
             //skip nested tables
             if (nested) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - nested table");
+                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - nested table");
                 cluCols = 0;
-                objd = 0;
+                dataObj = 0;
                 ret = stmt.next();
                 continue;
             }
 
             //skip compressed tables
             if (compressed) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - compressed table");
-                objd = 0;
+                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - compressed table");
+                dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
                 continue;
             }
 
             //table already added with another rule
-            if (schema->checkDict(objn, objd) != nullptr) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJN: " << dec << objn << ") - already added");
-                objd = 0;
+            if (schema->checkDict(obj, dataObj) != nullptr) {
+                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - already added");
+                dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
                 continue;
             }
 
-            uint64_t totalPk = 0, maxSegCol = 0, keysCnt = 0;
+            typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
             bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
 
-            schema->object = new OracleObject(objn, objd, cluCols, options, owner, name);
+            schema->object = new OracleObject(obj, dataObj, cluCols, options, owner, name);
             if (schema->object == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
             }
@@ -824,7 +849,7 @@ namespace OpenLogReplicator {
                 int64_t ret2 = stmtPart.executeQuery();
 
                 while (ret2) {
-                    schema->object->addPartition(partitionObjn, partitionObjd);
+                    schema->object->addPartition(partitionObj, partitionDataObj);
                     ret2 = stmtPart.next();
                 }
             }
@@ -906,7 +931,7 @@ namespace OpenLogReplicator {
             }
 
             stringstream ss;
-            ss << "  * found: " << owner << "." << name << " (OBJD: " << dec << objd << ", OBJN: " << dec << objn << ")";
+            ss << "  * found: " << owner << "." << name << " (DATAOBJ: " << dec << dataObj << ", OBJ: " << dec << obj << ")";
             if (clustered)
                 ss << ", part of cluster";
             if (partitioned)
@@ -928,7 +953,7 @@ namespace OpenLogReplicator {
                 //user defined primary key
                 } else {
                     if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << objn << " (" << keysStr << ") ALWAYS;";
+                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
             INFO_(ss.str());
@@ -939,7 +964,7 @@ namespace OpenLogReplicator {
             schema->addToDict(schema->object);
             schema->object = nullptr;
 
-            objd = 0;
+            dataObj = 0;
             cluCols = 0;
             ret = stmt.next();
         }
@@ -961,9 +986,9 @@ namespace OpenLogReplicator {
         stmt.bindUInt32(3, oracleAnalyzer->activation);
 
         char path[513]; stmt.defineString(1, path, sizeof(path));
-        typeseq sequence; stmt.defineUInt32(2, sequence);
-        typescn firstScn; stmt.defineUInt64(3, firstScn);
-        typescn nextScn; stmt.defineUInt64(4, nextScn);
+        typeSEQ sequence; stmt.defineUInt32(2, sequence);
+        typeSCN firstScn; stmt.defineUInt64(3, firstScn);
+        typeSCN nextScn; stmt.defineUInt64(4, nextScn);
         int64_t ret = stmt.executeQuery();
 
         while (ret) {
@@ -986,7 +1011,7 @@ namespace OpenLogReplicator {
     }
 
 
-    const char* OracleAnalyzerOnline::getModeName(void) {
+    const char* OracleAnalyzerOnline::getModeName(void) const {
         return "online";
     }
 }

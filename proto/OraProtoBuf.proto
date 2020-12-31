@@ -100,7 +100,7 @@ message Column {
 message Schema {
     string owner = 1;
     string name = 2;
-    uint32 objn = 3;
+    uint32 obj = 3;
     oneof tm_val {
         uint64 tm = 4;
         string tms = 5;

@@ -62,7 +62,8 @@ namespace OpenLogReplicator {
         string getParameterValue(const char *parameter);
         string getPropertyValue(const char *property);
         void checkTableForGrants(string tableName);
-        virtual const char* getModeName(void);
+        void checkTableForGrantsFlashback(string tableName, typeSCN scn);
+        virtual const char* getModeName(void) const;
         virtual void refreshSchema(void);
         void addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options);
 

@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSetZHT32TRIS::~CharacterSetZHT32TRIS() {
     }
 
-    typeunicode CharacterSetZHT32TRIS::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSetZHT32TRIS::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

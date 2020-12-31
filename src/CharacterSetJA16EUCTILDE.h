@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     class CharacterSetJA16EUCTILDE : public CharacterSetJA16EUC {
     protected:
-        virtual typeunicode readMap2(uint64_t byte1, uint64_t byte2);
+        virtual typeunicode readMap2(uint64_t byte1, uint64_t byte2) const;
 
     public:
         CharacterSetJA16EUCTILDE();

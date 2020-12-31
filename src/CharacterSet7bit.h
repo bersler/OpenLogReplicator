@@ -29,13 +29,13 @@ namespace OpenLogReplicator {
     class CharacterSet7bit : public CharacterSet {
     protected:
         const typeunicode16 *map;
-        virtual typeunicode readMap(uint64_t character);
+        virtual typeunicode readMap(uint64_t character) const;
 
     public:
         CharacterSet7bit(const char *name, const typeunicode16 *map);
         virtual ~CharacterSet7bit();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
 
         //conversion arrays for 7-bit character sets
         static typeunicode16 unicode_map_D7DEC[128];

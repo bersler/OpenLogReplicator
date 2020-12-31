@@ -97,19 +97,19 @@ namespace OpenLogReplicator {
         RedoLogRecord *next;
         RedoLogRecord *prev;
         uint16_t cls;
-        typescn scnRecord;
+        typeSCN scnRecord;
         uint32_t rbl;
         uint8_t seq;
         uint8_t typ;
-        typecon conId;
+        typeconid conId;
         uint32_t flgRecord;
         uint32_t vectorNo;
-        typeobj recordObjn;
-        typeobj recordObjd;
+        typeOBJ recordObj;
+        typeOBJ recordDataObj;
 
-        typeseq sequence;
-        typescn scn;              //scn
-        typesubscn subScn;        //subscn
+        typeSEQ sequence;
+        typeSCN scn;              //scn
+        typeSubSCN subScn;        //subscn
         uint8_t *data;            //data
         uint16_t fieldCnt;
         uint64_t fieldPos;
@@ -121,18 +121,18 @@ namespace OpenLogReplicator {
         uint64_t nullsDelta;
         uint64_t colNumsDelta;
 
-        uint32_t afn;             //absolute file number
+        typeAFN afn;             //absolute file number
         uint64_t length;          //length
-        typedba dba;
-        typedba bdba;             //block DBA
-        typeobj objn;             //object ID
-        typeobj objd;             //data object ID
+        typeDBA dba;
+        typeDBA bdba;             //block DBA
+        typeOBJ obj;              //object ID
+        typeOBJ dataObj;          //data object ID
         uint32_t tsn;
         uint32_t undo;
         int16_t usn;
         OracleObject *object;
-        typexid xid;              //transaction id
-        typeuba uba;              //Undo Block Address
+        typeXID xid;              //transaction id
+        typeUBA uba;              //Undo Block Address
         uint32_t pdbId;
 
         typeslt slt;
@@ -144,27 +144,27 @@ namespace OpenLogReplicator {
         uint8_t op;
         uint8_t cc;
         uint8_t itli;
-        typeslot slot;
+        typeSLOT slot;
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
         uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
 
-        typedba nridBdba;         //next row id bdba
-        typeslot nridSlot;        //next row id slot
+        typeDBA nridBdba;         //next row id bdba
+        typeSLOT nridSlot;        //next row id slot
 
         uint8_t suppLogType;
         uint8_t suppLogFb;
         uint16_t suppLogCC;
         uint16_t suppLogBefore;
         uint16_t suppLogAfter;
-        typedba suppLogBdba;
-        typeslot suppLogSlot;
+        typeDBA suppLogBdba;
+        typeSLOT suppLogSlot;
         uint64_t suppLogRowData;
         uint64_t suppLogNumsDelta;
         uint64_t suppLogLenDelta;
         uint64_t opFlags;
 
-        void dumpHex(ostream &str, OracleAnalyzer *oracleAnalyzer);
+        void dumpHex(ostream &str, OracleAnalyzer *oracleAnalyzer) const;
         friend ostream& operator<<(ostream& os, const RedoLogRecord& redo);
     };
 }

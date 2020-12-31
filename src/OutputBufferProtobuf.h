@@ -34,28 +34,28 @@ protected:
         pb::Payload *payloadPB;
         pb::Schema *schemaPB;
 
-        virtual void columnNull(OracleColumn *column);
+        virtual void columnNull(OracleObject *object, typeCOL col);
         virtual void columnFloat(string &columnName, float value);
         virtual void columnDouble(string &columnName, double value);
         virtual void columnString(string &columnName);
         virtual void columnNumber(string &columnName, uint64_t precision, uint64_t scale);
         virtual void columnRaw(string &columnName, const uint8_t *data, uint64_t length);
         virtual void columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz);
-        virtual void appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot);
+        virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
         virtual void appendHeader(bool first);
-        virtual void appendSchema(OracleObject *object);
+        virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj);
         void numToString(uint64_t value, char *buf, uint64_t length);
 public:
         OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);
         virtual ~OutputBufferProtobuf();
 
-        virtual void processBegin(typescn scn, typetime time, typexid xid);
+        virtual void processBegin(typeSCN scn, typetime time, typeXID xid);
         virtual void processCommit(void);
-        virtual void processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid);
-        virtual void processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength);
+        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength);
     };
 }
 

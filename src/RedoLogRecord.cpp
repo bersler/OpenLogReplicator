@@ -1,4 +1,4 @@
-/* Struct used to hold in memory basic information for OpCode
+/* Structure used to hold in memory basic information for OpCode
    Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -24,7 +24,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyzer *oracleAnalyzer) {
+    void RedoLogRecord::dumpHex(ostream &stream, OracleAnalyzer *oracleAnalyzer) const {
         stream << "##: " << dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
@@ -66,16 +66,16 @@ namespace OpenLogReplicator {
                 " conId: " << dec << redo.conId <<
                 " flgRecord: " << dec << redo.flgRecord <<
 //                " vectorNo: " << dec << vectorNo <<
-                " robjn: " << dec << redo.recordObjn <<
-                " robjd: " << dec << redo.recordObjd <<
+                " robj: " << dec << redo.recordObj <<
+                " rdataObj: " << dec << redo.recordDataObj <<
 //                " scn: " << PRINTSCN64(scn) <<
                 " nrow: " << dec << (uint64_t)redo.nrow <<
                 " afn: " << dec << redo.afn <<
                 " length: " << dec << redo.length <<
                 " dba: 0x" << hex << redo.dba <<
                 " bdba: 0x" << hex << redo.bdba <<
-                " objn: " << dec << redo.objn <<
-                " objd: " << dec << redo.objd <<
+                " obj: " << dec << redo.obj <<
+                " dataObj: " << dec << redo.dataObj <<
                 " tsn: " << dec << redo.tsn <<
                 " undo: " << dec << redo.undo <<
                 " usn: " << dec << redo.usn <<

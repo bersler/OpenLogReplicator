@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <vector>
 #include "Thread.h"
 
 #ifndef READER_H_
@@ -40,9 +41,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_ERROR              2
 #define REDO_FINISHED           3
 #define REDO_EMPTY              4
+#define REDO_BAD_CRC            5
 
 #define DISK_BUFFER_SIZE        MEMORY_CHUNK_SIZE
 #define REDO_PAGE_SIZE_MAX      4096
+#define REDO_BAD_CDC_MAX_CNT    20
 
 using namespace std;
 
@@ -54,6 +57,7 @@ namespace OpenLogReplicator {
     protected:
         OracleAnalyzer *oracleAnalyzer;
         bool singleBlockRead;
+        bool hintDisplayed;
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
@@ -66,18 +70,18 @@ namespace OpenLogReplicator {
         uint8_t *redoBuffer;
         uint8_t *headerBuffer;
         int64_t group;
-        typeseq sequence;
+        typeSEQ sequence;
         vector<string> paths;
         string pathMapped;
         uint64_t blockSize;
         typeblk numBlocks;
-        typescn firstScn;
-        typescn nextScn;
+        typeSCN firstScn;
+        typeSCN nextScn;
         uint32_t compatVsn;
         typeresetlogs resetlogsRead;
         typeactivation activationRead;
-        typescn firstScnHeader;
-        typescn nextScnHeader;
+        typeSCN firstScnHeader;
+        typeSCN nextScnHeader;
 
         uint64_t fileSize;
         volatile uint64_t status;
@@ -89,7 +93,7 @@ namespace OpenLogReplicator {
         virtual ~Reader();
 
         void *run(void);
-        typesum calcChSum(uint8_t *buffer, uint64_t size);
+        typesum calcChSum(uint8_t *buffer, uint64_t size) const;
     };
 }
 

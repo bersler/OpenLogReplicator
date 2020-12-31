@@ -796,7 +796,7 @@ class Schema PROTOBUF_FINAL :
     kColumnFieldNumber = 6,
     kOwnerFieldNumber = 1,
     kNameFieldNumber = 2,
-    kObjnFieldNumber = 3,
+    kObjFieldNumber = 3,
     kTmFieldNumber = 4,
     kTmsFieldNumber = 5,
   };
@@ -850,13 +850,13 @@ class Schema PROTOBUF_FINAL :
   std::string* _internal_mutable_name();
   public:
 
-  // uint32 objn = 3;
-  void clear_objn();
-  ::PROTOBUF_NAMESPACE_ID::uint32 objn() const;
-  void set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  // uint32 obj = 3;
+  void clear_obj();
+  ::PROTOBUF_NAMESPACE_ID::uint32 obj() const;
+  void set_obj(::PROTOBUF_NAMESPACE_ID::uint32 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_objn() const;
-  void _internal_set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_obj() const;
+  void _internal_set_obj(::PROTOBUF_NAMESPACE_ID::uint32 value);
   public:
 
   // uint64 tm = 4;
@@ -907,7 +907,7 @@ class Schema PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Column > column_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr owner_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr name_;
-  ::PROTOBUF_NAMESPACE_ID::uint32 objn_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 obj_;
   union TmValUnion {
     TmValUnion() {}
     ::PROTOBUF_NAMESPACE_ID::uint64 tm_;
@@ -2578,24 +2578,24 @@ inline void Schema::set_allocated_name(std::string* name) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Schema.name)
 }
 
-// uint32 objn = 3;
-inline void Schema::clear_objn() {
-  objn_ = 0u;
+// uint32 obj = 3;
+inline void Schema::clear_obj() {
+  obj_ = 0u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::_internal_objn() const {
-  return objn_;
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::_internal_obj() const {
+  return obj_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::objn() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.objn)
-  return _internal_objn();
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Schema::obj() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Schema.obj)
+  return _internal_obj();
 }
-inline void Schema::_internal_set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+inline void Schema::_internal_set_obj(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   
-  objn_ = value;
+  obj_ = value;
 }
-inline void Schema::set_objn(::PROTOBUF_NAMESPACE_ID::uint32 value) {
-  _internal_set_objn(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.objn)
+inline void Schema::set_obj(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_obj(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Schema.obj)
 }
 
 // uint64 tm = 4;

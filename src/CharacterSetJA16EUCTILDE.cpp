@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     CharacterSetJA16EUCTILDE::~CharacterSetJA16EUCTILDE() {
     }
 
-    typeunicode CharacterSetJA16EUCTILDE::readMap2(uint64_t byte1, uint64_t byte2) {
+    typeunicode CharacterSetJA16EUCTILDE::readMap2(uint64_t byte1, uint64_t byte2) const {
         if (byte1 == 0xA1 && byte2 == 0xC1)
             return 0xFF5E;
 

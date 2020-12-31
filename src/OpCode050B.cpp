@@ -36,8 +36,8 @@ namespace OpenLogReplicator {
                 return;
             }
 
-            redoLogRecord->objn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->objd = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
+            redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
         }
     }
 
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
     }
 
-    const char* OpCode050B::getUndoType(void) {
+    const char* OpCode050B::getUndoType(void) const {
         return "User undo done    Begin trans    ";
     }
 }

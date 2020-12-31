@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         string passwordASM;
         string connectStringASM;
 
-        virtual const char* getModeName(void);
+        virtual const char* getModeName(void) const;
         virtual Reader *readerCreate(int64_t group);
         virtual void checkConnection(void);
 

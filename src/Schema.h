@@ -35,8 +35,8 @@ namespace OpenLogReplicator {
     class Schema {
     protected:
         stringstream& writeEscapeValue(stringstream &ss, string &str);
-        unordered_map<typeobj, OracleObject*> objectMap;
-        unordered_map<typeobj, OracleObject*> partitionMap;
+        unordered_map<typeOBJ, OracleObject*> objectMap;
+        unordered_map<typeOBJ, OracleObject*> partitionMap;
 
     public:
         OracleObject *object;
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
         bool readSchema(OracleAnalyzer *oracleAnalyzer);
         void writeSchema(OracleAnalyzer *oracleAnalyzer);
-        OracleObject *checkDict(typeobj objn, typeobj objd);
+        OracleObject *checkDict(typeOBJ obj, typeDATAOBJ dataObj);
         void addToDict(OracleObject *object);
         SchemaElement* addElement(void);
     };

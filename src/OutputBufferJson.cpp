@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBufferJson.h"
+#include "RowId.h"
 
 namespace OpenLogReplicator {
 
@@ -34,14 +35,19 @@ namespace OpenLogReplicator {
     OutputBufferJson::~OutputBufferJson() {
     }
 
-    void OutputBufferJson::columnNull(OracleColumn *column) {
+    void OutputBufferJson::columnNull(OracleObject *object, typeCOL col) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
             hasPreviousColumn = true;
 
         outputBufferAppend('"');
-        outputBufferAppend(column->name);
+        if (object != nullptr)
+            outputBufferAppend(object->columns[col]->name);
+        else {
+            string columnName = "COL_" + to_string(col);
+            outputBufferAppend(columnName);
+        }
         outputBufferAppend("\":null");
     }
 
@@ -167,28 +173,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::appendRowid(typeobj objn, typeobj objd, typedba bdba, typeslot slot) {
-        uint32_t afn = bdba >> 22;
-        bdba &= 0x003FFFFF;
+    void OutputBufferJson::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
+        RowId rowId(dataObj, bdba, slot);
+        char str[19];
+        rowId.toString(str);
         outputBufferAppend("\"rid\":\"");
-        outputBufferAppend(map64[(objd >> 30) & 0x3F]);
-        outputBufferAppend(map64[(objd >> 24) & 0x3F]);
-        outputBufferAppend(map64[(objd >> 18) & 0x3F]);
-        outputBufferAppend(map64[(objd >> 12) & 0x3F]);
-        outputBufferAppend(map64[(objd >> 6) & 0x3F]);
-        outputBufferAppend(map64[objd & 0x3F]);
-        outputBufferAppend(map64[(afn >> 12) & 0x3F]);
-        outputBufferAppend(map64[(afn >> 6) & 0x3F]);
-        outputBufferAppend(map64[afn & 0x3F]);
-        outputBufferAppend(map64[(bdba >> 30) & 0x3F]);
-        outputBufferAppend(map64[(bdba >> 24) & 0x3F]);
-        outputBufferAppend(map64[(bdba >> 18) & 0x3F]);
-        outputBufferAppend(map64[(bdba >> 12) & 0x3F]);
-        outputBufferAppend(map64[(bdba >> 6) & 0x3F]);
-        outputBufferAppend(map64[bdba & 0x3F]);
-        outputBufferAppend(map64[(slot >> 12) & 0x3F]);
-        outputBufferAppend(map64[(slot >> 6) & 0x3F]);
-        outputBufferAppend(map64[slot & 0x3F]);
+        outputBufferAppend(str);
         outputBufferAppend('"');
     }
 
@@ -233,16 +223,24 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::appendSchema(OracleObject *object) {
+    void OutputBufferJson::appendSchema(OracleObject *object, typeDATAOBJ dataObj) {
+        if (object == nullptr) {
+            outputBufferAppend("\"schema\":{\"table\":\"");
+            string objectName = "OBJ_" + to_string(dataObj);
+            outputBufferAppend(objectName);
+            outputBufferAppend('"');
+            return;
+        }
+
         outputBufferAppend("\"schema\":{\"owner\":\"");
         outputBufferAppend(object->owner);
         outputBufferAppend("\",\"table\":\"");
         outputBufferAppend(object->name);
         outputBufferAppend('"');
 
-        if ((schemaFormat & SCHEMA_FORMAT_OBJN) != 0) {
-            outputBufferAppend(",\"objn\":");
-            appendDec(object->objn);
+        if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
+            outputBufferAppend(",\"obj\":");
+            appendDec(object->obj);
         }
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
@@ -464,7 +462,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    time_t OutputBufferJson::tmToEpoch(struct tm *epoch) {
+    time_t OutputBufferJson::tmToEpoch(struct tm *epoch) const {
         static const int cumdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
         uint64_t year;
         time_t result;
@@ -487,7 +485,7 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void OutputBufferJson::processBegin(typescn scn, typetime time, typexid xid) {
+    void OutputBufferJson::processBegin(typeSCN scn, typetime time, typeXID xid) {
         lastTime = time;
         lastScn = scn;
         lastXid = xid;
@@ -517,23 +515,26 @@ namespace OpenLogReplicator {
         outputBufferCommit();
     }
 
-    void OutputBufferJson::processInsert(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferJson::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin(object->objn);
+            if (object != nullptr)
+                outputBufferBegin(object->obj);
+            else
+                outputBufferBegin(0);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"c\",");
-        appendSchema(object);
+        appendSchema(object, dataObj);
         outputBufferAppend(',');
-        appendRowid(object->objn, object->objd, bdba, slot);
+        appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"after\":{");
 
         hasPreviousColumn = false;
@@ -541,16 +542,24 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                continue;
-            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                continue;
+            if (object != nullptr) {
+                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                    continue;
+                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                    continue;
 
-            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-            else
-            if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
-                columnNull(object->columns[i]);
+                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                    processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                else
+                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
+                    columnNull(object, i);
+            } else {
+                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                    processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
+                else
+                if (columnFormat >= COLUMN_FORMAT_INS_DEC)
+                    columnNull(nullptr, i);
+            }
         }
         outputBufferAppend("}}");
 
@@ -560,23 +569,26 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::processUpdate(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferJson::processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin(object->objn);
+            if (object != nullptr)
+                outputBufferBegin(object->obj);
+            else
+                outputBufferBegin(0);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"u\",");
-        appendSchema(object);
+        appendSchema(object, dataObj);
         outputBufferAppend(',');
-        appendRowid(object->objn, object->objd, bdba, slot);
+        appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
@@ -584,16 +596,24 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                continue;
-            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                continue;
+            if (object != nullptr) {
+                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                    continue;
+                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                    continue;
 
-            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-            else
-            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                columnNull(object->columns[i]);
+                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                    processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                else
+                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
+                    columnNull(object, i);
+            } else {
+                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                    processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
+                else
+                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
+                    columnNull(nullptr, i);
+            }
         }
 
         outputBufferAppend("},\"after\":{");
@@ -603,16 +623,24 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                continue;
-            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                continue;
+            if (object != nullptr) {
+                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                    continue;
+                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                    continue;
 
-            if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                processValue(object->columns[i], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-            else
-            if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                columnNull(object->columns[i]);
+                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                    processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                else
+                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
+                    columnNull(object, i);
+            } else {
+                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
+                    processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
+                else
+                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
+                    columnNull(nullptr, i);
+            }
         }
         outputBufferAppend("}}");
 
@@ -622,23 +650,26 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::processDelete(OracleObject *object, typedba bdba, typeslot slot, typexid xid) {
+    void OutputBufferJson::processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin(object->objn);
+            if (object != nullptr)
+                outputBufferBegin(object->obj);
+            else
+                outputBufferBegin(0);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"d\",");
-        appendSchema(object);
+        appendSchema(object, dataObj);
         outputBufferAppend(',');
-        appendRowid(object->objn, object->objd, bdba, slot);
+        appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
@@ -646,16 +677,24 @@ namespace OpenLogReplicator {
             uint16_t i = (*it).first;
             uint16_t pos = (*it).second;
 
-            if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                continue;
-            if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                continue;
+            if (object != nullptr) {
+                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                    continue;
+                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                    continue;
 
-            if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                processValue(object->columns[i], values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-            else
-            if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
-                columnNull(object->columns[i]);
+                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                    processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
+                else
+                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
+                    columnNull(object, i);
+            } else {
+                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
+                    processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
+                else
+                if (columnFormat >= COLUMN_FORMAT_INS_DEC)
+                    columnNull(nullptr, i);
+            }
         }
         outputBufferAppend("}}");
 
@@ -665,21 +704,24 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::processDDL(OracleObject *object, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
+    void OutputBufferJson::processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
-            outputBufferBegin(object->objn);
+            if (object != nullptr)
+                outputBufferBegin(object->obj);
+            else
+                outputBufferBegin(0);
             outputBufferAppend('{');
             appendHeader(false);
             outputBufferAppend(",\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"ddl\",");
-        appendSchema(object);
+        appendSchema(object, dataObj);
         outputBufferAppend(",\"sql\":\"");
         appendEscape(sql, sqlLength);
         outputBufferAppend("\"}");

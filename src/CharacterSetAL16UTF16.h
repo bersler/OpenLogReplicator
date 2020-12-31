@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         CharacterSetAL16UTF16();
         virtual ~CharacterSetAL16UTF16();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length);
+        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
     };
 }
 

@@ -31,13 +31,13 @@ namespace OpenLogReplicator {
     CharacterSet7bit::~CharacterSet7bit() {
     }
 
-    typeunicode CharacterSet7bit::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSet7bit::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         return readMap(byte1 & 0x7F);
     }
 
-    typeunicode CharacterSet7bit::readMap(uint64_t character) {
+    typeunicode CharacterSet7bit::readMap(uint64_t character) const {
         return map[character];
     }
 

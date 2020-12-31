@@ -30,8 +30,9 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    Transaction::Transaction(OracleAnalyzer *oracleAnalyzer, typexid xid) :
+    Transaction::Transaction(OracleAnalyzer *oracleAnalyzer, typeXID xid) :
             oracleAnalyzer(oracleAnalyzer),
+            deallocTc(nullptr),
             xid(xid),
             firstSequence(0),
             firstPos(0),
@@ -52,6 +53,14 @@ namespace OpenLogReplicator {
             firstTc = nullptr;
             lastTc = nullptr;
         }
+
+        while (deallocTc != nullptr) {
+            TransactionChunk *nextTc = deallocTc->next;
+            oracleAnalyzer->transactionBuffer->deleteTransactionChunk(deallocTc);
+            deallocTc = nextTc;
+        }
+        deallocTc = nullptr;
+
         for (uint8_t* buf : merges)
             delete[] buf;
         merges.clear();
@@ -105,14 +114,14 @@ namespace OpenLogReplicator {
         ++opCodes;
     }
 
-    void Transaction::rollbackLastOp(typescn scn) {
+    void Transaction::rollbackLastOp(typeSCN scn) {
         oracleAnalyzer->transactionBuffer->rollbackTransactionChunk(this);
         --opCodes;
     }
 
     void Transaction::flush(void) {
         bool opFlush = false;
-        TransactionChunk *deallocTc = nullptr;
+        deallocTc = nullptr;
 
         if (opCodes > 0 && !isRollback) {
             TRACE(TRACE2_TRANSACTION, *this);
@@ -141,8 +150,8 @@ namespace OpenLogReplicator {
                                     " scn: " << dec << redoLogRecord1->scn <<
                                     " subScn: " << dec << redoLogRecord1->subScn <<
                                     " scnRecord: " << dec << redoLogRecord1->scnRecord <<
-                                    " objn: " << dec << redoLogRecord1->objn <<
-                                    " objd: " << dec << redoLogRecord1->objd <<
+                                    " obj: " << dec << redoLogRecord1->obj <<
+                                    " dataObj: " << dec << redoLogRecord1->dataObj <<
                                     " flg1: 0x" << setfill('0') << setw(4) << hex << redoLogRecord1->flg <<
                                     " flg2: 0x" << setfill('0') << setw(4) << hex << redoLogRecord2->flg <<
                                     " uba1: " << PRINTUBA(redoLogRecord1->uba) <<

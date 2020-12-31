@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
     CharacterSetJA16SJIS::~CharacterSetJA16SJIS() {
     }
 
-    bool CharacterSetJA16SJIS::validCode(uint64_t byte1, uint64_t byte2) {
+    bool CharacterSetJA16SJIS::validCode(uint64_t byte1, uint64_t byte2) const {
         if (byte1 == 0x85 || byte1 == 0x86 ||
                 (byte1 >= 0xA0 && byte1 <= 0xDF) ||
                 byte1 == 0xEB || byte1 == 0xEC || byte1 == 0xEF)
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    typeunicode CharacterSetJA16SJIS::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSetJA16SJIS::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

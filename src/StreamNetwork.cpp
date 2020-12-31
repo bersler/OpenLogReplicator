@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    string StreamNetwork::getName(void) {
+    string StreamNetwork::getName(void) const {
         return "Network:" + uri;
     }
 

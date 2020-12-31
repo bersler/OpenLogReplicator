@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSetKO16KSCCS::~CharacterSetKO16KSCCS() {
     }
 
-    bool CharacterSetKO16KSCCS::validCode(uint64_t byte1, uint64_t byte2) {
+    bool CharacterSetKO16KSCCS::validCode(uint64_t byte1, uint64_t byte2) const {
         if (byte1 >= 0xD4 && byte1 <= 0xD7)
             return false;
 

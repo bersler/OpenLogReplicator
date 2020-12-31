@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         uint64_t readBufferLen;
 
     public:
-        virtual string getName(void);
+        virtual string getName(void) const;
         virtual void initializeClient(volatile bool *shutdown);
         virtual void initializeServer(volatile bool *shutdown);
         virtual void sendMessage(const void *msg, uint64_t length);

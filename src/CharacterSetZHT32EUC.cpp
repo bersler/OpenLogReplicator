@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSetZHT32EUC::~CharacterSetZHT32EUC() {
     }
 
-    typeunicode CharacterSetZHT32EUC::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSetZHT32EUC::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
 

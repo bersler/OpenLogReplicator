@@ -32,6 +32,7 @@ namespace OpenLogReplicator {
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),
         singleBlockRead(singleBlockRead),
+        hintDisplayed(false),
         redoBuffer(nullptr),
         headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         group(group),
@@ -80,7 +81,7 @@ namespace OpenLogReplicator {
         }
 
         typeblk blockNumberHeader = oracleAnalyzer->read32(buffer + 4);
-        typeseq sequenceHeader = oracleAnalyzer->read32(buffer + 8);
+        typeSEQ sequenceHeader = oracleAnalyzer->read32(buffer + 8);
 
         if (sequence == 0 || status == READER_STATUS_UPDATE) {
             sequence = sequenceHeader;
@@ -101,15 +102,21 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        if ((oracleAnalyzer->flags & REDO_FLAGS_BLOCK_CHECK_SUM) != 0 &&
+        if ((oracleAnalyzer->flags & REDO_FLAGS_SKIP_BLOCK_CHECK_SUM) == 0 &&
                 (checkSum || group == 0 || (oracleAnalyzer->flags & REDO_FLAGS_DISABLE_READ_VERIFICATION) != 0)) {
             typesum chSum = oracleAnalyzer->read16(buffer + 14);
             typesum chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
-                ERROR("header sum for block number for block " << dec << blockNumber <<
+                WARNING("header sum for block number for block " << dec << blockNumber <<
                         ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
                         ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
-                return REDO_ERROR;
+                if (!hintDisplayed) {
+                    WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
+                            " or turn off consistency checking in OpenLogReplicator setting parameter flags: "
+                            << dec << REDO_FLAGS_SKIP_BLOCK_CHECK_SUM << " for the reader");
+                    hintDisplayed = true;
+                }
+                return REDO_BAD_CRC;
             }
         }
 
@@ -279,10 +286,24 @@ namespace OpenLogReplicator {
         firstScnHeader = oracleAnalyzer->readSCN(headerBuffer + blockSize + 180);
         nextScnHeader = oracleAnalyzer->readSCN(headerBuffer + blockSize + 192);
 
-        uint64_t ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
+        uint64_t badBlockCrcCount = 0, ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
         TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
+
+        while (ret == REDO_BAD_CRC) {
+            ++badBlockCrcCount;
+            if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
+                return REDO_ERROR;
+
+            usleep(oracleAnalyzer->redoReadSleep);
+            ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
+            TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
+        }
+
         if (ret != REDO_OK)
             return ret;
+
+        if (oracleAnalyzer->resetlogs == 0 && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+            oracleAnalyzer->resetlogs = resetlogsRead;
 
         if (resetlogsRead != oracleAnalyzer->resetlogs) {
             if (group == 0) {
@@ -293,6 +314,9 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->resetlogs << "): " << pathMapped);
             } return REDO_ERROR;
         }
+
+        if (oracleAnalyzer->activation == 0 && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+            oracleAnalyzer->activation = activationRead;
 
         if (activationRead != 0 && activationRead != oracleAnalyzer->activation) {
             if (group == 0) {
@@ -329,7 +353,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    typesum Reader::calcChSum(uint8_t *buffer, uint64_t size) {
+    typesum Reader::calcChSum(uint8_t *buffer, uint64_t size) const {
         typesum oldChSum = oracleAnalyzer->read16(buffer + 14);
         uint64_t sum = 0;
 
@@ -343,7 +367,7 @@ namespace OpenLogReplicator {
     }
 
     void *Reader::run(void) {
-        uint64_t curStatus;
+        uint64_t curStatus, badBlockCrcCount = 0;
         TRACE(TRACE2_THREADS, "READER (" << hex << this_thread::get_id() << ") START");
 
         while (!shutdown) {
@@ -455,9 +479,25 @@ namespace OpenLogReplicator {
                             status = READER_STATUS_SLEEPING;
                             ret = curRet;
                             break;
+                        } else if (curRet == REDO_BAD_CRC) {
+                            if (goodBlocks == 0) {
+                                ++badBlockCrcCount;
+                                if (badBlockCrcCount < REDO_BAD_CDC_MAX_CNT)
+                                    usleep(oracleAnalyzer->redoReadSleep);
+                                else {
+                                    unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                                    status = READER_STATUS_SLEEPING;
+                                    curRet = REDO_ERROR;
+                                    ret = curRet;
+                                }
+                            }
+                            break;
                         } else if (curRet == REDO_EMPTY) {
                             reachedZero = true;
                             break;
+                        } else {
+                            if (badBlockCrcCount > 0)
+                                badBlockCrcCount = 0;
                         }
 
                         ++goodBlocks;
@@ -494,6 +534,12 @@ namespace OpenLogReplicator {
                             } else if (curRet == REDO_ERROR) {
                                 unique_lock<mutex> lck(oracleAnalyzer->mtx);
                                 status = READER_STATUS_SLEEPING;
+                                ret = curRet;
+                                break;
+                            } else if (curRet == REDO_BAD_CRC) {
+                                unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                                status = READER_STATUS_SLEEPING;
+                                curRet = REDO_ERROR;
                                 ret = curRet;
                                 break;
                             } else if (curRet == REDO_EMPTY) {

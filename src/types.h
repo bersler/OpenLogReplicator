@@ -35,28 +35,33 @@ typedef uint32_t typeresetlogs;
 typedef uint32_t typeactivation;
 typedef uint16_t typeop1;
 typedef uint32_t typeop2;
-typedef uint16_t typecon;
+typedef uint16_t typeconid;
 typedef uint32_t typeblk;
-typedef uint32_t typedba;
-typedef uint16_t typeslot;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
-typedef int64_t typecol;
-typedef uint32_t typeobj;
-typedef uint64_t typeobj2;
-typedef uint32_t typeseq;
-typedef uint64_t typeuba;
-typedef uint64_t typexid;
-typedef uint64_t typescn;
-typedef uint16_t typesubscn;
-typedef uint32_t typeseq;
+
+typedef uint64_t typeUBA;
+typedef uint32_t typeSEQ;
+typedef uint64_t typeSCN;
+typedef uint16_t typeSubSCN;
+typedef uint64_t typeXID;
 typedef uint64_t typeXIDMAP;
+typedef uint16_t typeAFN;
+typedef uint32_t typeDBA;
+typedef uint16_t typeSLOT;
+typedef uint32_t typeOBJ;
+typedef uint32_t typeDATAOBJ;
+typedef uint64_t typeOBJ2;
+typedef int16_t typeCOL;
+typedef uint16_t typeTYPE;
+typedef uint32_t typeCON;
+typedef uint32_t typeUSER;
 
 typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define ZERO_SCN                                ((typescn)0xFFFFFFFFFFFFFFFF)
+#define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
@@ -101,7 +106,7 @@ typedef uint64_t typeunicode;
 #define SCHEMA_FORMAT_NAME                      0
 #define SCHEMA_FORMAT_FULL                      1
 #define SCHEMA_FORMAT_REPEATED                  2
-#define SCHEMA_FORMAT_OBJN                      4
+#define SCHEMA_FORMAT_OBJ                       4
 
 //default, only changed columns for update, or PK
 #define COLUMN_FORMAT_CHANGED                   0
@@ -127,19 +132,22 @@ typedef uint64_t typeunicode;
 #define TRACE2_TRANSACTION                      0x0000200
 #define TRACE2_REDO                             0x0000400
 #define TRACE2_ARCHIVE_LIST                     0x0000800
-#define TRACE2_KAFKA                            0x0001000
+#define TRACE2_SCHEMA_LIST                      0x0001000
+#define TRACE2_KAFKA                            0x0002000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x0000001
-#define REDO_FLAGS_DIRECT                       0x0000002
-#define REDO_FLAGS_NOATIME                      0x0000004
-#define REDO_FLAGS_ON_ERROR_CONTINUE            0x0000008
-#define REDO_FLAGS_TRACK_DDL                    0x0000010
-#define REDO_FLAGS_DISABLE_READ_VERIFICATION    0x0000020
-#define REDO_FLAGS_BLOCK_CHECK_SUM              0x0000040
-#define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x0000080
-#define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x0000100
-#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x0000200
-#define REDO_FLAGS_FLUSH_QUEUE_ON_EXIT          0x0000400
+#define REDO_FLAGS_SCHEMALESS                   0x0000002
+#define REDO_FLAGS_DIRECT                       0x0000004
+#define REDO_FLAGS_NOATIME                      0x0000008
+#define REDO_FLAGS_ON_ERROR_CONTINUE            0x0000010
+#define REDO_FLAGS_TRACK_DDL                    0x0000020
+#define REDO_FLAGS_DISABLE_READ_VERIFICATION    0x0000040
+#define REDO_FLAGS_SKIP_BLOCK_CHECK_SUM         0x0000080
+#define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x0000100
+#define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x0000200
+#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x0000400
+#define REDO_FLAGS_FLUSH_QUEUE_ON_EXIT          0x0000800
+#define REDO_FLAGS_SAVEPOINTS_OFF               0x0001000
 
 #define DISABLE_CHECK_GRANTS                    0x0000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x0000002
@@ -185,12 +193,26 @@ typedef uint64_t typeunicode;
 #define INFO_(x)                                {if (trace >= TRACE_INFO){stringstream s; s << "INFO: " << x << endl; cerr << s.str();} }
 #define FULL_(x)                                {if (trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
 #define TRACE_(t,x)                             {if ((trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
+#define TYPEINTXLEN                             4
 
 using namespace std;
 
 namespace OpenLogReplicator {
 
     class OracleAnalyzer;
+
+    class uintX_t {
+    private:
+        uint64_t data[TYPEINTXLEN];
+    public:
+        uintX_t& operator+=(const uintX_t &val);
+        uintX_t& operator=(const uintX_t &val);
+        uintX_t& operator=(uint64_t val);
+        uintX_t& operator=(const char *val);
+        uintX_t& set(uint64_t val1, uint64_t val2);
+
+        friend ostream& operator<<(ostream& os, const uintX_t& val);
+    };
 
     class typetime {
         uint32_t val;

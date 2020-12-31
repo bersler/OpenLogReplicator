@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSetAL16UTF16::~CharacterSetAL16UTF16() {
     }
 
-    typeunicode CharacterSetAL16UTF16::decode(const uint8_t* &str, uint64_t &length) {
+    typeunicode CharacterSetAL16UTF16::decode(const uint8_t* &str, uint64_t &length) const {
         uint64_t byte1 = *str++;
         --length;
 

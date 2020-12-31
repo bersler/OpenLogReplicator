@@ -25,9 +25,9 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    OracleObject::OracleObject(typeobj objn, typeobj objd, uint64_t cluCols, uint64_t options, const char *owner, const char *name) :
-        objn(objn),
-        objd(objd),
+    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t options, const char *owner, const char *name) :
+        obj(obj),
+        dataObj(dataObj),
         cluCols(cluCols),
         totalPk(0),
         options(options),
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
     void OracleObject::addColumn(OracleColumn *column) {
         if (column->segColNo < columns.size() + 1) {
-            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJN: " << dec << objn << ", OBJD: " << dec << objd <<
+            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJ: " << dec << obj << ", DATAOBJ: " << dec << dataObj <<
                 ") column: " << column->name << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
                 ") on position " << (columns.size() + 1));
         }
@@ -62,13 +62,13 @@ namespace OpenLogReplicator {
         columns.push_back(column);
     }
 
-    void OracleObject::addPartition(typeobj partitionObjn, typeobj partitionObjd) {
-        typeobj2 objx = (((typeobj2)partitionObjn)<<32) | ((typeobj2)partitionObjd);
+    void OracleObject::addPartition(typeOBJ partitionObj, typeDATAOBJ partitionDataObj) {
+        typeOBJ2 objx = (((typeOBJ2)partitionObj)<<32) | ((typeOBJ2)partitionDataObj);
         partitions.push_back(objx);
     }
 
     void OracleObject::updatePK(void) {
-        for (typecol i = 0; i < maxSegCol; ++i) {
+        for (typeCOL i = 0; i < maxSegCol; ++i) {
             if (columns[i] == nullptr)
                 continue;
             if (columns[i]->numPk > 0)
@@ -77,8 +77,8 @@ namespace OpenLogReplicator {
     }
 
     ostream& operator<<(ostream& os, const OracleObject& object) {
-        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << dec << object.objn << ", " <<
-                object.objd << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
+        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << dec << object.obj << ", " <<
+                object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
         for (OracleColumn *column : object.columns)
             os << "     - " << *column << endl;
         return os;

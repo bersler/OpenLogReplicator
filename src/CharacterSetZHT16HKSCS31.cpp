@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSetZHT16HKSCS31::~CharacterSetZHT16HKSCS31() {
     }
 
-    uint64_t CharacterSetZHT16HKSCS31::readMap(uint64_t byte1, uint64_t byte2) {
+    uint64_t CharacterSetZHT16HKSCS31::readMap(uint64_t byte1, uint64_t byte2) const {
         return unicode_map_ZHT16HKSCS31_2b[(byte1 - byte1min) * (byte2max - byte2min + 1) + (byte2 - byte2min)];
     }
 

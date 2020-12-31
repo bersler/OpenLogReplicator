@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::printHeaderInfo(void) {
+    void RedoLog::printHeaderInfo(void) const {
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             char SID[9];
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << reader->blockSize << ", File Type=2 LOG" << endl;
 
-            typeseq seq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 8);
+            typeSEQ seq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 8);
             uint8_t descrip[65];
             memcpy (descrip, reader->headerBuffer + reader->blockSize + 92, 64); descrip[64] = 0;
             uint16_t thread = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 176);
@@ -127,23 +127,23 @@ namespace OpenLogReplicator {
             oracleAnalyzer->dumpStream << " descrip:\"" << descrip << "\"" << endl <<
                     " thread: " << dec << thread <<
                     " nab: 0x" << hex << nab <<
-                    " seq: 0x" << setfill('0') << setw(8) << hex << (typeseq)seq <<
+                    " seq: 0x" << setfill('0') << setw(8) << hex << (typeSEQ)seq <<
                     " hws: 0x" << hex << hws <<
                     " eot: " << dec << (uint64_t)eot <<
                     " dis: " << dec << (uint64_t)dis << endl;
 
-            typescn resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
+            typeSCN resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
             typeresetlogs prevResetlogsCnt = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 292);
-            typescn prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
+            typeSCN prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
             typetime firstTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 188));
             typetime nextTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 200));
-            typescn enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
+            typeSCN enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
             typetime enabledTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 216));
-            typescn threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
+            typeSCN threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
             typetime threadClosedTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 228));
-            typescn termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
+            typeSCN termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
             typetime termialRecTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 248));
-            typescn mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
+            typeSCN mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
             typesum chSum = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 14);
             typesum chSum2 = reader->calcChSum(reader->headerBuffer + reader->blockSize, reader->blockSize);
 
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                         " Terminal recovery  " << termialRecTime << endl <<
                         " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << endl;
             } else {
-                typescn realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
+                typeSCN realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
 
                 oracleAnalyzer->dumpStream <<
                         " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
@@ -217,7 +217,7 @@ namespace OpenLogReplicator {
 
             int32_t thr = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 432);
             int32_t seq2 = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 436);
-            typescn scn2 = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 440);
+            typeSCN scn2 = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 440);
             uint8_t zeroBlocks = reader->headerBuffer[reader->blockSize + 206];
             uint8_t formatId = reader->headerBuffer[reader->blockSize + 207];
             if (oracleAnalyzer->version < 0x12200)
@@ -271,7 +271,7 @@ namespace OpenLogReplicator {
 
         vectors = 0;
         memset(opCodes, 0, sizeof(opCodes));
-        uint64_t recordLength = oracleAnalyzer->read32(data);
+        uint32_t recordLength = oracleAnalyzer->read32(data);
         uint8_t vld = data[4];
         uint64_t headerLength;
 
@@ -319,22 +319,22 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << lwnMember->subScn << " " << lwnTimestamp << endl;
                 else
                     oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << setfill(' ') << setw(3) << dec << lwnMember->subScn << " " << lwnTimestamp << endl;
-                uint32_t nst = 1; //FIXME
-                uint32_t lwnLen = oracleAnalyzer->read32(data + 28);
+                uint16_t lwnNst = oracleAnalyzer->read16(data + 26);
+                uint32_t lwnLen = oracleAnalyzer->read32(data + 32);
 
                 if (oracleAnalyzer->version < 0x12200)
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
                                     setfill('0') << setw(4) << hex << lwnMember->pos <<
                         " LEN: " << setfill('0') << setw(4) << dec << lwnLen <<
-                        " NST: " << setfill('0') << setw(4) << dec << nst <<
+                        " NST: " << setfill('0') << setw(4) << dec << lwnNst <<
                         " SCN: " << PRINTSCN48(lwnScn) << ")" << endl;
                 else
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
                                     setfill('0') << setw(4) << hex << lwnMember->pos <<
                         " LEN: 0x" << setfill('0') << setw(8) << hex << lwnLen <<
-                        " NST: 0x" << setfill('0') << setw(4) << hex << nst <<
+                        " NST: 0x" << setfill('0') << setw(4) << hex << lwnNst <<
                         " SCN: " << PRINTSCN64(lwnScn) << ")" << endl;
             } else {
                 if (oracleAnalyzer->version < 0x12200)
@@ -418,8 +418,8 @@ namespace OpenLogReplicator {
                                     ": incomplete record, pos: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
             }
 
-            redoLogRecord[vectors].recordObjn = 0xFFFFFFFF;
-            redoLogRecord[vectors].recordObjd = 0xFFFFFFFF;
+            redoLogRecord[vectors].recordObj = 0xFFFFFFFF;
+            redoLogRecord[vectors].recordDataObj = 0xFFFFFFFF;
 
             pos += redoLogRecord[vectors].length;
 
@@ -559,8 +559,8 @@ namespace OpenLogReplicator {
                 opCodesUndo[vectorsUndo++] = vectors;
                 isUndoRedo[vectors] = 1;
                 if (vectorsUndo <= vectorsRedo) {
-                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObjd = redoLogRecord[opCodesUndo[vectorsUndo - 1]].objd;
-                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObjn = redoLogRecord[opCodesUndo[vectorsUndo - 1]].objn;
+                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
+                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
                 }
             //REDO
             } else if ((redoLogRecord[vectors].opCode & 0xFF00) == 0x0A00 ||
@@ -568,8 +568,8 @@ namespace OpenLogReplicator {
                 opCodesRedo[vectorsRedo++] = vectors;
                 isUndoRedo[vectors] = 2;
                 if (vectorsRedo <= vectorsUndo) {
-                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObjd = redoLogRecord[opCodesUndo[vectorsRedo - 1]].objd;
-                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObjn = redoLogRecord[opCodesUndo[vectorsRedo - 1]].objn;
+                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsRedo - 1]].dataObj;
+                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsRedo - 1]].obj;
                 }
             }
 
@@ -619,9 +619,11 @@ namespace OpenLogReplicator {
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
             return;
 
-        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-        if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
-            return;
+        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
+            redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+                return;
+        }
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -649,9 +651,11 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
             return;
 
-        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->objn, redoLogRecord->objd);
-        if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
-            return;
+        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
+            redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+                return;
+        }
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -756,17 +760,19 @@ namespace OpenLogReplicator {
                 (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
             return;
 
-        typeobj objn, objd;
-        if (redoLogRecord1->objd != 0) {
-            objn = redoLogRecord1->objn;
-            objd = redoLogRecord1->objd;
-            redoLogRecord2->objn = redoLogRecord1->objn;
-            redoLogRecord2->objd = redoLogRecord1->objd;
+        typeOBJ obj;
+        typeDATAOBJ dataObj;
+
+        if (redoLogRecord1->dataObj != 0) {
+            obj = redoLogRecord1->obj;
+            dataObj = redoLogRecord1->dataObj;
+            redoLogRecord2->obj = redoLogRecord1->obj;
+            redoLogRecord2->dataObj = redoLogRecord1->dataObj;
         } else {
-            objn = redoLogRecord2->objn;
-            objd = redoLogRecord2->objd;
-            redoLogRecord1->objn = redoLogRecord2->objn;
-            redoLogRecord1->objd = redoLogRecord2->objd;
+            obj = redoLogRecord2->obj;
+            dataObj = redoLogRecord2->dataObj;
+            redoLogRecord1->obj = redoLogRecord2->obj;
+            redoLogRecord1->dataObj = redoLogRecord2->dataObj;
         }
 
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
@@ -775,9 +781,11 @@ namespace OpenLogReplicator {
             REDOLOG_FAIL("BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
         }
 
-        redoLogRecord1->object = oracleAnalyzer->schema->checkDict(objn, objd);
-        if (redoLogRecord1->object == nullptr)
-            return;
+        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
+            redoLogRecord1->object = oracleAnalyzer->schema->checkDict(obj, dataObj);
+            if (redoLogRecord1->object == nullptr)
+                return;
+        }
 
         //cluster key
         if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
@@ -790,7 +798,7 @@ namespace OpenLogReplicator {
         redoLogRecord2->object = redoLogRecord1->object;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        if (redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
+        if (redoLogRecord1->object != nullptr && redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
             INFO("found shutdown command in events table");
             shutdown = true;
         }
@@ -874,7 +882,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::dumpRedoVector(uint8_t *data, uint64_t recordLength) {
+    void RedoLog::dumpRedoVector(uint8_t *data, uint64_t recordLength) const {
         if (oracleAnalyzer->trace >= TRACE_WARNING) {
             stringstream ss;
             ss << "WARNING: Dumping redo Vector" << endl;

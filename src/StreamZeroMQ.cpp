@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
         zmq_ctx_term(context);
     }
 
-    string StreamZeroMQ::getName(void) {
+    string StreamZeroMQ::getName(void) const {
         return "ZeroMQ:" + uri;
     }
 
