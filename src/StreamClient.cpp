@@ -1,5 +1,5 @@
 /* Test client for Zero MQ
-   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
         cout << "Use: ClientNetwork [network|zeromq] <uri> <database> {<scn>}" << endl;
         return 0;
     }
-    cout << "OpenLogReplicator v." PACKAGE_VERSION " StreamClient (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    cout << "OpenLogReplicator v." PACKAGE_VERSION " StreamClient (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
 
     pb::RedoRequest request;
     pb::RedoResponse response;

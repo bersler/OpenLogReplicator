@@ -1,5 +1,5 @@
 /* Main program
-   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
-    cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2020 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
 
     list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;

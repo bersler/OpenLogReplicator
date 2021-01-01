@@ -1,5 +1,5 @@
 /* Definition of type uint256_t
-   Copyright (C) 2018-2020 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
