@@ -111,9 +111,11 @@ namespace OpenLogReplicator {
                         ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
                         ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
                 if (!hintDisplayed) {
-                    WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
-                            " or turn off consistency checking in OpenLogReplicator setting parameter flags: "
-                            << dec << REDO_FLAGS_SKIP_BLOCK_CHECK_SUM << " for the reader");
+                    if (oracleAnalyzer->dbBlockChecksum.compare("OFF") == 0 || oracleAnalyzer->dbBlockChecksum.compare("FALSE") == 0) {
+                        WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
+                                " or turn off consistency checking in OpenLogReplicator setting parameter flags: "
+                                << dec << REDO_FLAGS_SKIP_BLOCK_CHECK_SUM << " for the reader");
+                    }
                     hintDisplayed = true;
                 }
                 return REDO_BAD_CRC;
