@@ -292,6 +292,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
 
         while (ret == REDO_BAD_CRC) {
+            WARNING("CRC error during header check");
             ++badBlockCrcCount;
             if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
                 return REDO_ERROR;
@@ -482,7 +483,9 @@ namespace OpenLogReplicator {
                             ret = curRet;
                             break;
                         } else if (curRet == REDO_BAD_CRC) {
+                            WARNING("CRC error during header check, good blocks: " << dec << goodBlocks << " during first read of " << maxNumBlock << " blocks");
                             if (goodBlocks == 0) {
+                                lastRead = blockSize;
                                 ++badBlockCrcCount;
                                 if (badBlockCrcCount < REDO_BAD_CDC_MAX_CNT)
                                     usleep(oracleAnalyzer->redoReadSleep);
@@ -492,6 +495,8 @@ namespace OpenLogReplicator {
                                     curRet = REDO_ERROR;
                                     ret = curRet;
                                 }
+                            } else {
+                                curRet = REDO_OK;
                             }
                             break;
                         } else if (curRet == REDO_EMPTY) {
@@ -504,6 +509,9 @@ namespace OpenLogReplicator {
 
                         ++goodBlocks;
                     }
+
+                    if (goodBlocks == 0 && curRet == REDO_BAD_CRC)
+                        continue;
 
                     //read verification to prevent buffer overwrite
                     if (goodBlocks > 0 && group != 0 && (oracleAnalyzer->flags & REDO_FLAGS_DISABLE_READ_VERIFICATION) == 0) {
@@ -539,6 +547,7 @@ namespace OpenLogReplicator {
                                 ret = curRet;
                                 break;
                             } else if (curRet == REDO_BAD_CRC) {
+                                WARNING("CRC error during header check, good blocks: " << dec << goodBlocks << " during second read of " << maxNumBlock << " blocks");
                                 unique_lock<mutex> lck(oracleAnalyzer->mtx);
                                 status = READER_STATUS_SLEEPING;
                                 curRet = REDO_ERROR;
