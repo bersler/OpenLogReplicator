@@ -974,36 +974,38 @@ namespace OpenLogReplicator {
     void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer *oracleAnalyzer) {
         ((OracleAnalyzerOnline*)oracleAnalyzer)->checkConnection();
 
-        DatabaseStatement stmt(((OracleAnalyzerOnline*)oracleAnalyzer)->conn);
-        TRACE(TRACE2_SQL, SQL_GET_ARCHIVE_LOG_LIST << endl <<
-                "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence << endl <<
-                "PARAM2: " << dec << oracleAnalyzer->resetlogs << endl <<
-                "PARAM3: " << dec << oracleAnalyzer->activation);
+        {
+            DatabaseStatement stmt(((OracleAnalyzerOnline*)oracleAnalyzer)->conn);
+            TRACE(TRACE2_SQL, SQL_GET_ARCHIVE_LOG_LIST << endl <<
+                    "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence << endl <<
+                    "PARAM2: " << dec << oracleAnalyzer->resetlogs << endl <<
+                    "PARAM3: " << dec << oracleAnalyzer->activation);
 
-        stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-        stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
-        stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
-        stmt.bindUInt32(3, oracleAnalyzer->activation);
+            stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
+            stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+            stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
+            stmt.bindUInt32(3, oracleAnalyzer->activation);
 
-        char path[513]; stmt.defineString(1, path, sizeof(path));
-        typeSEQ sequence; stmt.defineUInt32(2, sequence);
-        typeSCN firstScn; stmt.defineUInt64(3, firstScn);
-        typeSCN nextScn; stmt.defineUInt64(4, nextScn);
-        int64_t ret = stmt.executeQuery();
+            char path[513]; stmt.defineString(1, path, sizeof(path));
+            typeSEQ sequence; stmt.defineUInt32(2, sequence);
+            typeSCN firstScn; stmt.defineUInt64(3, firstScn);
+            typeSCN nextScn; stmt.defineUInt64(4, nextScn);
+            int64_t ret = stmt.executeQuery();
 
-        while (ret) {
-            string mappedPath = oracleAnalyzer->applyMapping(path);
+            while (ret) {
+                string mappedPath = oracleAnalyzer->applyMapping(path);
 
-            RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
-            if (redo == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#1)");
+                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
+                if (redo == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#1)");
+                }
+
+                redo->firstScn = firstScn;
+                redo->nextScn = nextScn;
+                redo->sequence = sequence;
+                ((OracleAnalyzerOnline*)oracleAnalyzer)->archiveRedoQueue.push(redo);
+                ret = stmt.next();
             }
-
-            redo->firstScn = firstScn;
-            redo->nextScn = nextScn;
-            redo->sequence = sequence;
-            ((OracleAnalyzerOnline*)oracleAnalyzer)->archiveRedoQueue.push(redo);
-            ret = stmt.next();
         }
 
         if (!((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection)
