@@ -574,6 +574,9 @@ namespace OpenLogReplicator {
             }
 
             ++vectors;
+            if (vectors >= VECTOR_MAX_LENGTH) {
+                RUNTIME_FAIL("out of redo vectors(" << dec << vectors << "), at pos: " << dec << pos << " record length: " << dec << recordLength);
+            }
         }
 
         for (uint64_t i = 0; i < vectors; ++i) {
