@@ -743,7 +743,6 @@ namespace OpenLogReplicator {
 
         oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
         delete transaction;
-
     }
 
     void RedoLog::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
