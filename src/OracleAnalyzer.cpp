@@ -422,8 +422,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::initializeSchema(void) {
-        if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
+        if ((flags & REDO_FLAGS_SCHEMALESS) != 0) {
+            schema->readSchema(this);
             return;
+        }
 
         if (scn == ZERO_SCN) {
             INFO_("last confirmed SCN: <none>");

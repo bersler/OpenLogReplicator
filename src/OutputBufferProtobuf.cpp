@@ -420,10 +420,11 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("ERROR, PB update processing failed, message already exists, internal error");
             }
 
-            if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0)
+            if (object != nullptr)
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
+
             redoResponsePB = new pb::RedoResponse;
             appendHeader(true);
         }

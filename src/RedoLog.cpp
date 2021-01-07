@@ -622,8 +622,8 @@ namespace OpenLogReplicator {
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
             return;
 
+        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
             if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
                 return;
         }
@@ -654,8 +654,8 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
             return;
 
+        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
             if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
                 return;
         }
@@ -783,8 +783,8 @@ namespace OpenLogReplicator {
             REDOLOG_FAIL("BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
         }
 
+        redoLogRecord1->object = oracleAnalyzer->schema->checkDict(obj, dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            redoLogRecord1->object = oracleAnalyzer->schema->checkDict(obj, dataObj);
             if (redoLogRecord1->object == nullptr)
                 return;
         }
