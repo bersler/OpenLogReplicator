@@ -391,8 +391,18 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].usn = usn;
             redoLogRecord[vectors].data = data + pos;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
+            if (redoLogRecord[vectors].fieldLengthsDelta + 1 >= recordLength) {
+                dumpRedoVector(data, recordLength);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                                    ": field length list (" << dec << (redoLogRecord[vectors].fieldLengthsDelta) << ") outside of record, length: " << recordLength);
+            }
             redoLogRecord[vectors].fieldCnt = (oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
             redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
+            if (redoLogRecord[vectors].fieldPos >= recordLength) {
+                dumpRedoVector(data, recordLength);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                                    ": fields (" << dec << (redoLogRecord[vectors].fieldPos) << ") outside of record, length: " << recordLength);
+            }
 
             uint64_t fieldPos = redoLogRecord[vectors].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
