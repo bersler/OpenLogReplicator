@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     const char* ReaderASM::SQL_ASM_READ("BEGIN dbms_diskgroup.read(:i, :j, :k, :l); END;");
 
     ReaderASM::ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
-        Reader(alias, oracleAnalyzer, group, 1),
+        Reader(alias, oracleAnalyzer, group),
         fileDes(-1),
         fileType(0),
         physicalBlockSize(0),
@@ -124,4 +124,18 @@ namespace OpenLogReplicator {
 
         return size;
     }
+
+    uint64_t ReaderASM::readSize(uint64_t lastRead) {
+        return blockSize;
+    }
+
+    uint64_t ReaderASM::reloadHeaderRead(void) {
+        int64_t bytes = redoRead(headerBuffer + blockSize, blockSize, blockSize);
+        if (bytes != blockSize) {
+            ERROR("unable to read file " << pathMapped);
+            return REDO_ERROR;
+        }
+        return REDO_OK;
+    }
+
 }

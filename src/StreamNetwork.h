@@ -38,8 +38,8 @@ namespace OpenLogReplicator {
 
     public:
         virtual string getName(void) const;
-        virtual void initializeClient(volatile bool *shutdown);
-        virtual void initializeServer(volatile bool *shutdown);
+        virtual void initializeClient(atomic<bool> *shutdown);
+        virtual void initializeServer(atomic<bool> *shutdown);
         virtual void sendMessage(const void *msg, uint64_t length);
         virtual uint64_t receiveMessage(void *msg, uint64_t length);
         virtual uint64_t receiveMessageNB(void *msg, uint64_t length);

@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode0513.h"
 #include "OracleAnalyzer.h"
+#include "Reader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
@@ -132,7 +133,7 @@ namespace OpenLogReplicator {
 
             uint16_t serialNumber = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 2);
             uint32_t sessionNumber;
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 sessionNumber = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
             else {
                 if (fieldLength < 8) {

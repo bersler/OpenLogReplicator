@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <atomic>
 #include <vector>
 #include "Thread.h"
 
@@ -28,6 +29,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define READER_STATUS_CHECK     1
 #define READER_STATUS_UPDATE    2
 #define READER_STATUS_READ      3
+
+#define REDO_VERSION_12_1       0x0C100000
+#define REDO_VERSION_12_2       0x0C200000
+#define REDO_VERSION_19_0       0x13000000
 
 #define REDO_END                0x0008
 #define REDO_ASYNC              0x0100
@@ -46,6 +51,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define DISK_BUFFER_SIZE        MEMORY_CHUNK_SIZE
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20
+#define REDO_BUFFER_FULL_SLEEP  1000
+#define REDO_READ_VERIFY_MAX_BLOCKS 256
 
 using namespace std;
 
@@ -56,15 +63,17 @@ namespace OpenLogReplicator {
     class Reader : public Thread {
     protected:
         OracleAnalyzer *oracleAnalyzer;
-        bool singleBlockRead;
         bool hintDisplayed;
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size) = 0;
+        virtual uint64_t readSize(uint64_t lastRead);
+        virtual uint64_t reloadHeaderRead(void);
 
         uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum);
         uint64_t reloadHeader(void);
+        time_t getTime(void);
 
     public:
         uint8_t *redoBuffer;
@@ -74,6 +83,7 @@ namespace OpenLogReplicator {
         vector<string> paths;
         string pathMapped;
         uint64_t blockSize;
+        typeblk numBlocksHeader;
         typeblk numBlocks;
         typeSCN firstScn;
         typeSCN nextScn;
@@ -84,12 +94,12 @@ namespace OpenLogReplicator {
         typeSCN nextScnHeader;
 
         uint64_t fileSize;
-        volatile uint64_t status;
-        volatile uint64_t ret;
-        volatile uint64_t bufferStart;
-        volatile uint64_t bufferEnd;
+        atomic<uint64_t> status;
+        atomic<uint64_t> ret;
+        atomic<uint64_t> bufferStart;
+        atomic<uint64_t> bufferEnd;
 
-        Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group, bool singleBlockRead);
+        Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group);
         virtual ~Reader();
 
         void *run(void);

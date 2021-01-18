@@ -37,6 +37,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBuffer.h"
+#include "Reader.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
 
@@ -70,7 +71,7 @@ namespace OpenLogReplicator {
             buffersAllocated(0),
             firstBuffer(nullptr),
             lastBuffer(nullptr),
-            curMsg(nullptr) {
+            msg(nullptr) {
 
         characterMap[1] = new CharacterSet7bit("US7ASCII", CharacterSet7bit::unicode_map_US7ASCII);
         characterMap[2] = new CharacterSet8bit("WE8DEC", CharacterSet8bit::unicode_map_WE8DEC);
@@ -894,10 +895,10 @@ namespace OpenLogReplicator {
         nextBuffer->data = ((uint8_t*)nextBuffer) + sizeof(struct OutputBufferQueue);
 
         //message could potentially fit in one buffer
-        if (copy && curMsg != nullptr && sizeof(struct OutputBufferMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
-            memcpy(nextBuffer->data, curMsg, sizeof(struct OutputBufferMsg) + messageLength);
-            curMsg = (OutputBufferMsg*)nextBuffer->data;
-            curMsg->data = nextBuffer->data + sizeof(struct OutputBufferMsg);
+        if (copy && msg != nullptr && sizeof(struct OutputBufferMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
+            memcpy(nextBuffer->data, msg, sizeof(struct OutputBufferMsg) + messageLength);
+            msg = (OutputBufferMsg*)nextBuffer->data;
+            msg->data = nextBuffer->data + sizeof(struct OutputBufferMsg);
             nextBuffer->length = sizeof(struct OutputBufferMsg) + messageLength;
             lastBuffer->length -= sizeof(struct OutputBufferMsg) + messageLength;
         } else
@@ -924,16 +925,16 @@ namespace OpenLogReplicator {
         if (lastBuffer->length + sizeof(struct OutputBufferMsg) >= OUTPUT_BUFFER_DATA_SIZE)
             outputBufferRotate(true);
 
-        curMsg = (OutputBufferMsg*)(lastBuffer->data + lastBuffer->length);
+        msg = (OutputBufferMsg*)(lastBuffer->data + lastBuffer->length);
         outputBufferShift(sizeof(struct OutputBufferMsg), true);
-        curMsg->scn = lastScn;
-        curMsg->length = 0;
-        curMsg->id = id++;
-        curMsg->dictId = dictId;
-        curMsg->oracleAnalyzer = oracleAnalyzer;
-        curMsg->pos = 0;
-        curMsg->flags = 0;
-        curMsg->data = lastBuffer->data + lastBuffer->length;
+        msg->scn = lastScn;
+        msg->length = 0;
+        msg->id = id++;
+        msg->dictId = dictId;
+        msg->oracleAnalyzer = oracleAnalyzer;
+        msg->pos = 0;
+        msg->flags = 0;
+        msg->data = lastBuffer->data + lastBuffer->length;
     }
 
     void OutputBuffer::outputBufferCommit(void) {
@@ -941,14 +942,14 @@ namespace OpenLogReplicator {
             WARNING("JSON buffer - commit of empty transaction");
         }
 
-        curMsg->queueId = lastBuffer->id;
+        msg->queueId = lastBuffer->id;
         outputBufferShift((8 - (messageLength & 7)) & 7, false);
         {
             unique_lock<mutex> lck(mtx);
-            curMsg->length = messageLength;
+            msg->length = messageLength;
             writersCond.notify_all();
         }
-        curMsg = nullptr;
+        msg = nullptr;
     }
 
     void OutputBuffer::outputBufferAppend(char character) {
@@ -1422,7 +1423,7 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord2->op & OP_ROWDEPENDENCIES) != 0) {
-                if (oracleAnalyzer->version < 0x12200)
+                if (oracleAnalyzer->version < REDO_VERSION_12_2)
                     pos += 6;
                 else
                     pos += 8;
@@ -1481,7 +1482,7 @@ namespace OpenLogReplicator {
             pos = 3;
 
             if ((redoLogRecord1->op & OP_ROWDEPENDENCIES) != 0) {
-                if (oracleAnalyzer->version < 0x12200)
+                if (oracleAnalyzer->version < REDO_VERSION_12_2)
                     pos += 6;
                 else
                     pos += 8;

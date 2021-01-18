@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
         return "ZeroMQ:" + uri;
     }
 
-    void StreamZeroMQ::initializeClient(volatile bool *shutdown) {
+    void StreamZeroMQ::initializeClient(atomic<bool> *shutdown) {
         this->shutdown = shutdown;
 
         if (zmq_connect(socket, uri.c_str()) != 0) {
@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamZeroMQ::initializeServer(volatile bool *shutdown) {
+    void StreamZeroMQ::initializeServer(atomic<bool> *shutdown) {
         this->shutdown = shutdown;
         if (zmq_bind(socket, uri.c_str()) != 0) {
             RUNTIME_FAIL("ZeroMQ bind to " << uri << " error (errno: " << dec << errno << ")");

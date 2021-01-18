@@ -140,8 +140,8 @@ namespace OpenLogReplicator {
     void WriterStream::processConfirm(void) {
         uint64_t confirmed = 0;
         if (request.database_name().compare(oracleAnalyzer->database) == 0) {
-            uint64_t oldSize = curQueueSize;
-            while (curQueueSize > 0 && queue[0]->scn <= request.scn())
+            uint64_t oldSize = tmpQueueSize;
+            while (tmpQueueSize > 0 && queue[0]->scn <= request.scn())
                 confirmMessage(queue[0]);
         }
     }

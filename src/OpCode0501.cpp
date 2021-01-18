@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode0501.h"
 #include "OracleAnalyzer.h"
+#include "Reader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
@@ -245,7 +246,7 @@ namespace OpenLogReplicator {
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             typeSCN dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
-            if (oracleAnalyzer->version < 0x12200)
+            if (oracleAnalyzer->version < REDO_VERSION_12_2)
                 oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
             else
                 oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN64(dscn) << endl;

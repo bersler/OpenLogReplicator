@@ -44,6 +44,8 @@ namespace OpenLogReplicator {
         virtual void redoClose(void);
         virtual uint64_t redoOpen(void);
         virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
+        virtual uint64_t readSize(uint64_t lastRead);
+        virtual uint64_t reloadHeaderRead(void);
 
     public:
         ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group);

@@ -29,7 +29,7 @@ using namespace std;
 namespace OpenLogReplicator {
 
     ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
-        Reader(alias, oracleAnalyzer, group, 0),
+        Reader(alias, oracleAnalyzer, group),
         fileDes(0),
         flags(0) {
     }

@@ -241,8 +241,14 @@ int main(int argc, char **argv) {
                 archReadSleep = archReadSleepJSON.GetUint();
             }
 
-            const Value& nameJSON = getJSONfieldV(configFileName, sourceJSON, "name");
+            //optional
+            uint64_t redoVerifyDelay = 50000;
+            if (sourceJSON.HasMember("redo-verify-delay")) {
+                const Value& redoVerifyDelayJSON = sourceJSON["redo-verify-delay"];
+                redoVerifyDelay = redoVerifyDelayJSON.GetUint();
+            }
 
+            const Value& nameJSON = getJSONfieldV(configFileName, sourceJSON, "name");
 
             //FORMAT
             const Value& formatJSON = getJSONfieldV(configFileName, sourceJSON, "format");
@@ -386,8 +392,8 @@ int main(int argc, char **argv) {
                 server = serverJSON.GetString();
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, memoryMinMb,
-                        memoryMaxMb, logArchiveFormat, user, password, server, isStandby);
+                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
+                        memoryMinMb, memoryMaxMb, logArchiveFormat, user, password, server, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -430,8 +436,8 @@ int main(int argc, char **argv) {
             } else if (strcmp(readerTypeJSON.GetString(), "offline") == 0) {
 
                 oracleAnalyzer = new OracleAnalyzer(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace, trace2,
-                        dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb,
-                        logArchiveFormat);
+                        dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay, memoryMinMb,
+                        memoryMaxMb, logArchiveFormat);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -485,9 +491,9 @@ int main(int argc, char **argv) {
                 serverASM = serverASMJSON.GetString();
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, memoryMinMb,
-                        memoryMaxMb, logArchiveFormat, user, password, server, userASM, passwordASM, serverASM,
-                        isStandby);
+                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
+                        memoryMinMb, memoryMaxMb, logArchiveFormat, user, password, server, userASM, passwordASM,
+                        serverASM, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -522,8 +528,8 @@ int main(int argc, char **argv) {
                  }
 
                  oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                         trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, memoryMinMb,
-                         memoryMaxMb, logArchiveFormat, conId);
+                         trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
+                         memoryMinMb, memoryMaxMb, logArchiveFormat, conId);
 
                  if (oracleAnalyzer == nullptr) {
                      RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");

@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         uint64_t buffersAllocated;
         OutputBufferQueue *firstBuffer;
         OutputBufferQueue *lastBuffer;
-        OutputBufferMsg *curMsg;
+        OutputBufferMsg *msg;
 
         OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat);

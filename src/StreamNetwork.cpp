@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
         return "Network:" + uri;
     }
 
-    void StreamNetwork::initializeClient(volatile bool *shutdown) {
+    void StreamNetwork::initializeClient(atomic<bool> *shutdown) {
         this->shutdown = shutdown;
         struct sockaddr_in addressC;
         memset((uint8_t*)&addressC, 0, sizeof(addressC));
@@ -81,7 +81,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamNetwork::initializeServer(volatile bool *shutdown) {
+    void StreamNetwork::initializeServer(atomic<bool> *shutdown) {
         this->shutdown = shutdown;
         struct addrinfo hints, *res;
         memset(&hints, 0, sizeof hints);

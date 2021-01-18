@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <atomic>
 #include "OraProtoBuf.pb.h"
 #include "NetworkException.h"
 #include "RuntimeException.h"
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
 
     pb::RedoRequest request;
     pb::RedoResponse response;
-    volatile bool shutdown = false;
+    atomic<bool> shutdown(false);
 
     try {
         Stream *stream = nullptr;

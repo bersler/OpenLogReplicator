@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <atomic>
 #include "types.h"
 
 #ifndef STREAM_H_
@@ -30,14 +31,14 @@ namespace OpenLogReplicator {
 
     class Stream {
     protected:
-        volatile bool *shutdown;
+        atomic<bool> *shutdown;
         uint64_t pollInterval;
         string uri;
 
     public:
         virtual string getName(void) const = 0;
-        virtual void initializeClient(volatile bool *shutdown) = 0;
-        virtual void initializeServer(volatile bool *shutdown) = 0;
+        virtual void initializeClient(atomic<bool> *shutdown) = 0;
+        virtual void initializeServer(atomic<bool> *shutdown) = 0;
         virtual void sendMessage(const void *msg, uint64_t length) = 0;
         virtual uint64_t receiveMessage(void *msg, uint64_t length) = 0;
         virtual uint64_t receiveMessageNB(void *msg, uint64_t length) = 0;

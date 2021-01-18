@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <atomic>
 #include "types.h"
 
 #ifndef THREAD_H_
@@ -31,9 +32,9 @@ namespace OpenLogReplicator {
         virtual void *run(void) = 0;
 
     public:
-        volatile bool stop;
-        volatile bool shutdown;
-        volatile bool started;
+        atomic<bool> stop;
+        atomic<bool> shutdown;
+        atomic<bool> started;
         pthread_t pthread;
         string alias;
 

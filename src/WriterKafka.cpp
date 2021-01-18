@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::pollQueue(void) {
-        if (curQueueSize > 0)
+        if (tmpQueueSize > 0)
             rd_kafka_poll(rk, 0);
     }
 }

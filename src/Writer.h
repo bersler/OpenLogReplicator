@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         time_t previousCheckpoint;
         uint64_t checkpointInterval;
         uint64_t queueSize;
-        uint64_t curQueueSize;
+        uint64_t tmpQueueSize;
         uint64_t maxQueueSize;
         OutputBufferMsg **queue;
         typeSCN confirmedScn;

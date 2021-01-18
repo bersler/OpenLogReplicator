@@ -39,9 +39,9 @@ extern void stopMain();
 
 namespace OpenLogReplicator {
 
-    OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
-            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
-            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat) :
+    OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace, uint64_t trace2,
+            uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
+            uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat) :
         Thread(alias),
         sequence(0),
         suppLogDbPrimary(0),
@@ -74,6 +74,7 @@ namespace OpenLogReplicator {
         disableChecks(disableChecks),
         redoReadSleep(redoReadSleep),
         archReadSleep(archReadSleep),
+        redoVerifyDelay(redoVerifyDelay),
         trace(trace),
         trace2(trace2),
         version(0),
@@ -482,9 +483,10 @@ namespace OpenLogReplicator {
                 start();
 
                 if ((dbBlockChecksum.compare("OFF") == 0 || dbBlockChecksum.compare("FALSE") == 0) &&
-                        (flags & REDO_FLAGS_SKIP_BLOCK_CHECK_SUM) == 0) {
-                    WARNING_("database parameter db_block_checksum = " << dbBlockChecksum << ", disabling block checksum calculation");
-                    flags |= REDO_FLAGS_SKIP_BLOCK_CHECK_SUM;
+                        (disableChecks & DISABLE_CHECK_BLOCK_SUM) == 0) {
+                    WARNING_("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
+                            " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
+                            << dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
                 }
 
                 {

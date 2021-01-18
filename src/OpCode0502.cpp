@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode0502.h"
 #include "OracleAnalyzer.h"
+#include "Reader.h"
 #include "RedoLogRecord.h"
 
 using namespace std;
@@ -112,7 +113,7 @@ namespace OpenLogReplicator {
                     " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
                     " siz: " << dec << siz <<
                     " fbi: " << dec << (uint64_t)fbi << endl;
-            if (oracleAnalyzer->version < 0x12100 || redoLogRecord->conId == 0)
+            if (oracleAnalyzer->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 oracleAnalyzer->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
@@ -120,7 +121,7 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
-            if (oracleAnalyzer->version < 0x12100 || redoLogRecord->conId == 0)
+            if (oracleAnalyzer->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 oracleAnalyzer->dumpStream << endl;
         }
     }

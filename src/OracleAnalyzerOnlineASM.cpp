@@ -30,13 +30,13 @@ using namespace std;
 namespace OpenLogReplicator {
 
     OracleAnalyzerOnlineASM::OracleAnalyzerOnlineASM(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
-            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks,
-            uint64_t redoReadSleep, uint64_t archReadSleep, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat,
+            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
+            uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat,
             const char *user, const char *password, const char *connectString, const char *userASM,
             const char *passwordASM, const char *connectStringASM, bool isStandby) :
                     OracleAnalyzerOnline(outputBuffer, alias, database, trace, trace2, dumpRedoLog, dumpRawData, flags,
-            disableChecks, redoReadSleep, archReadSleep, memoryMinMb, memoryMaxMb, logArchiveFormat,
-            user, password, connectString, isStandby),
+            disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay, memoryMinMb, memoryMaxMb, logArchiveFormat, user,
+            password, connectString, isStandby),
             userASM(userASM),
             passwordASM(passwordASM),
             connectStringASM(connectStringASM),

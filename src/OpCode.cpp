@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode.h"
 #include "OracleAnalyzer.h"
+#include "Reader.h"
 #include "RedoLogException.h"
 #include "RedoLogRecord.h"
 
@@ -40,7 +41,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->typ & 0x80) != 0)
                 encrypted = true;
 
-            if (oracleAnalyzer->version < 0x12000) {
+            if (oracleAnalyzer->version < REDO_VERSION_12_1) {
                 if (redoLogRecord->typ == 6)
                     oracleAnalyzer->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
@@ -60,7 +61,7 @@ namespace OpenLogReplicator {
                         " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
                         " ENC:" << dec << (uint64_t)encrypted <<
                         " RBL:" << dec << redoLogRecord->rbl << endl;
-            } else if (oracleAnalyzer->version < 0x12200) {
+            } else if (oracleAnalyzer->version < REDO_VERSION_12_2) {
                 if (redoLogRecord->typ == 6)
                     oracleAnalyzer->dumpStream << "CHANGE #" << dec << (uint64_t)redoLogRecord->vectorNo <<
                         " MEDIA RECOVERY MARKER" <<
@@ -188,7 +189,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
                     typeSCN scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleAnalyzer->version < 0x12200)
+                    if (oracleAnalyzer->version < REDO_VERSION_12_2)
                         oracleAnalyzer->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
                                 " lkc:  " << (uint64_t)lkc << "    " <<
@@ -226,7 +227,7 @@ namespace OpenLogReplicator {
                     if ((flag & 0x10) != 0) flagStr[3] = 'T';
                     typeSCN scnx = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleAnalyzer->version < 0x12200)
+                    if (oracleAnalyzer->version < REDO_VERSION_12_2)
                         oracleAnalyzer->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
                                 " lkc:  " << (uint64_t)lkc << "    " <<
@@ -273,7 +274,7 @@ namespace OpenLogReplicator {
                 uint8_t ver = redoLogRecord->data[fieldPos + 46];
                 uint8_t entries = redoLogRecord->data[fieldPos + 45];
 
-                if (oracleAnalyzer->version < 0x12200)
+                if (oracleAnalyzer->version < REDO_VERSION_12_2)
                     oracleAnalyzer->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN48(scn) <<
                             " ver: 0x" << setfill('0') << setw(2) << hex << (uint64_t)ver <<
@@ -306,11 +307,11 @@ namespace OpenLogReplicator {
                     uint8_t itli = redoLogRecord->data[fieldPos + 56 + j * 8];
                     uint8_t flg = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typeSCN scn = oracleAnalyzer->readSCNr(redoLogRecord->data + fieldPos + 58 + j * 8);
-                    if (oracleAnalyzer->version < 0x12100)
+                    if (oracleAnalyzer->version < REDO_VERSION_12_1)
                         oracleAnalyzer->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
                                 " flg: " << (uint64_t)flg << " " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
-                    else if (oracleAnalyzer->version < 0x12200)
+                    else if (oracleAnalyzer->version < REDO_VERSION_12_2)
                         oracleAnalyzer->dumpStream << "  itli: " << dec << (uint64_t)itli << " " <<
                                 " flg: (opt=" << (uint64_t)(flg & 0x03) << " whr=" << (uint64_t)(flg >>2) << ") " <<
                                 " scn: " << PRINTSCN48(scn) << endl;
@@ -769,13 +770,13 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
             isKtubl = true;
             ktuType = "ktubl";
-            if (oracleAnalyzer->version < 0x19000) {
+            if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                 prevObj = "[";
                 postObj = "]";
             }
         }
 
-        if (oracleAnalyzer->version < 0x19000) {
+        if (oracleAnalyzer->version < REDO_VERSION_19_0) {
             oracleAnalyzer->dumpStream <<
                     ktuType << " redo:" <<
                     " slt: " << dec << (uint64_t)redoLogRecord->slt <<
@@ -805,7 +806,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_LASTBUFFERSPLIT) != 0)
             lastBufferSplit = "Yes";
         else {
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 lastBufferSplit = "No";
             else
                 lastBufferSplit = " No";
@@ -815,14 +816,14 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
             userUndoDone = "Yes";
         else {
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 userUndoDone = "No";
             else
                 userUndoDone = " No";
         }
 
         string undoType;
-        if (oracleAnalyzer->version < 0x12200) {
+        if (oracleAnalyzer->version < REDO_VERSION_12_2) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -831,7 +832,7 @@ namespace OpenLogReplicator {
                 undoType = "Multi-block undo - MID";
             else
                 undoType = "Regular undo      ";
-        } else if (oracleAnalyzer->version < 0x19000) {
+        } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-Block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
@@ -855,7 +856,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_ISTEMPOBJECT) != 0)
             tempObject = "Yes";
         else {
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 tempObject = "No";
             else
                 tempObject = " No";
@@ -865,7 +866,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_TABLESPACEUNDO) != 0)
             tablespaceUndo = "Yes";
         else {
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 tablespaceUndo = "No";
             else
                 tablespaceUndo = " No";
@@ -875,7 +876,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {
-            if (oracleAnalyzer->version < 0x19000)
+            if (oracleAnalyzer->version < REDO_VERSION_19_0)
                 userOnly = "No";
             else
                 userOnly = " No";
@@ -894,7 +895,7 @@ namespace OpenLogReplicator {
                     uint16_t flg2 = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
                     int16_t buExtIdx = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 26);
 
-                    if (oracleAnalyzer->version < 0x12200) {
+                    if (oracleAnalyzer->version < REDO_VERSION_12_2) {
                         oracleAnalyzer->dumpStream <<
                                 "Undo type:  " << undoType << "  " <<
                                 "Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -905,7 +906,7 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->dumpStream <<
                                 " BuExt idx: " << dec << buExtIdx <<
                                 " flg2: " << hex << flg2 << endl;
-                    } else if (oracleAnalyzer->version < 0x19000) {
+                    } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                         oracleAnalyzer->dumpStream <<
                                 "Undo type:  " << undoType <<
                                 "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -943,7 +944,7 @@ namespace OpenLogReplicator {
                     uint32_t prevBcl = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 68);
                     uint32_t logonUser = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 72);
 
-                    if (oracleAnalyzer->version < 0x12200) {
+                    if (oracleAnalyzer->version < REDO_VERSION_12_2) {
                         oracleAnalyzer->dumpStream <<
                                 "Undo type:  " << undoType << "  " <<
                                 "Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -963,7 +964,7 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->dumpStream <<
                                 " BuExt idx: " << dec << buExtIdx <<
                                 " flg2: " << hex << flg2 << endl;
-                    } else if (oracleAnalyzer->version < 0x19000) {
+                    } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                         oracleAnalyzer->dumpStream <<
                                 "Undo type:  " << undoType <<
                                 "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << endl <<
@@ -1011,7 +1012,7 @@ namespace OpenLogReplicator {
         } else {
             //KTUBU
             if (oracleAnalyzer->dumpRedoLog >= 1) {
-                if (oracleAnalyzer->version < 0x19000) {
+                if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                     oracleAnalyzer->dumpStream <<
                             "Undo type:  " << undoType << " " <<
                             "Undo type:  " << getUndoType() <<
@@ -1099,7 +1100,7 @@ namespace OpenLogReplicator {
                 pos += 3;
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                    if (oracleAnalyzer->version < 0x12200)
+                    if (oracleAnalyzer->version < REDO_VERSION_12_2)
                         pos += 6;
                     else
                         pos += 8;

@@ -43,12 +43,12 @@ namespace OpenLogReplicator {
         oracleAnalyzer(oracleAnalyzer),
         confirmedMessages(0),
         sentMessages(0),
-        curQueueSize(0),
+        tmpQueueSize(0),
         maxQueueSize(0),
         queue(nullptr),
         maxMessageMb(maxMessageMb),
         pollInterval(pollInterval),
-        previousCheckpoint(clock()),
+        previousCheckpoint(time(nullptr)),
         checkpointInterval(checkpointInterval),
         queueSize(queueSize),
         confirmedScn(0),
@@ -76,13 +76,13 @@ namespace OpenLogReplicator {
     void Writer::createMessage(OutputBufferMsg *msg) {
         ++sentMessages;
 
-        queue[curQueueSize++] = msg;
-        if (curQueueSize > maxQueueSize)
-            maxQueueSize = curQueueSize;
+        queue[tmpQueueSize++] = msg;
+        if (tmpQueueSize > maxQueueSize)
+            maxQueueSize = tmpQueueSize;
     }
 
     void Writer::sortQueue(void) {
-        if (curQueueSize == 0)
+        if (tmpQueueSize == 0)
             return;
 
         OutputBufferMsg **oldQueue = queue;
@@ -91,9 +91,9 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
         }
 
-        uint64_t oldQueueSize = curQueueSize;
+        uint64_t oldQueueSize = tmpQueueSize;
 
-        for (uint64_t newId = 0 ; newId < curQueueSize; ++newId) {
+        for (uint64_t newId = 0 ; newId < tmpQueueSize; ++newId) {
             queue[newId] = oldQueue[0];
             uint64_t i = 0;
             --oldQueueSize;
@@ -129,16 +129,16 @@ namespace OpenLogReplicator {
 
         uint64_t maxId = 0;
         {
-            while (curQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_CONFIRMED) != 0) {
+            while (tmpQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
                 confirmedScn = queue[0]->scn;
 
-                if (--curQueueSize == 0)
+                if (--tmpQueueSize == 0)
                     break;
 
                 uint64_t i = 0;
-                while (i < curQueueSize) {
-                    if (i * 2 + 2 < curQueueSize && queue[i * 2 + 2]->id < queue[curQueueSize]->id) {
+                while (i < tmpQueueSize) {
+                    if (i * 2 + 2 < tmpQueueSize && queue[i * 2 + 2]->id < queue[tmpQueueSize]->id) {
                         if (queue[i * 2 + 1]->id < queue[i * 2 + 2]->id) {
                             queue[i] = queue[i * 2 + 1];
                             i = i * 2 + 1;
@@ -146,13 +146,13 @@ namespace OpenLogReplicator {
                             queue[i] = queue[i * 2 + 2];
                             i = i * 2 + 2;
                         }
-                    } else if (i * 2 + 1 < curQueueSize && queue[i * 2 + 1]->id < queue[curQueueSize]->id) {
+                    } else if (i * 2 + 1 < tmpQueueSize && queue[i * 2 + 1]->id < queue[tmpQueueSize]->id) {
                         queue[i] = queue[i * 2 + 1];
                         i = i * 2 + 1;
                     } else
                         break;
                 }
-                queue[i] = queue[curQueueSize];
+                queue[i] = queue[tmpQueueSize];
             }
         }
 
@@ -194,7 +194,7 @@ namespace OpenLogReplicator {
                     OutputBufferMsg *msg = nullptr;
                     OutputBufferQueue *curBuffer = outputBuffer->firstBuffer;
                     uint64_t curLength = 0, tmpLength = 0;
-                    curQueueSize = 0;
+                    tmpQueueSize = 0;
 
                     //start streaming
                     while (!shutdown) {
@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
                                 oracleAnalyzer->waitingForWriter = false;
                                 oracleAnalyzer->memoryCond.notify_all();
 
-                                if (curQueueSize > 0)
+                                if (tmpQueueSize > 0)
                                     outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
                                 else {
                                     if (stop) {
@@ -249,8 +249,8 @@ namespace OpenLogReplicator {
 
                             //queue is full
                             pollQueue();
-                            while (curQueueSize >= queueSize && !shutdown) {
-                                FULL("output queue is full (" << dec << curQueueSize << " elements), sleeping " << dec << pollInterval << "us");
+                            while (tmpQueueSize >= queueSize && !shutdown) {
+                                FULL("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollInterval << "us");
                                 usleep(pollInterval);
                                 pollQueue();
                             }
