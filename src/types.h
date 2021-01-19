@@ -193,6 +193,7 @@ typedef uint64_t typeunicode;
 #define FULL_(x)                                {if (trace >= TRACE_FULL){stringstream s; s << "FULL: " << x << endl; cerr << s.str();} }
 #define TRACE_(t,x)                             {if ((trace2 & (t)) != 0) {stringstream s; s << "TRACE: " << x << endl; cerr << s.str();} }
 #define TYPEINTXLEN                             4
+#define TYPEINTXLENDIGITS                       77
 
 using namespace std;
 
@@ -203,12 +204,16 @@ namespace OpenLogReplicator {
     class uintX_t {
     private:
         uint64_t data[TYPEINTXLEN];
+        static uintX_t BASE10[TYPEINTXLENDIGITS][10];
     public:
+        static void initializeBASE10(void);
         uintX_t& operator+=(const uintX_t &val);
         uintX_t& operator=(const uintX_t &val);
         uintX_t& operator=(uint64_t val);
+        uintX_t& operator=(const string &val);
         uintX_t& operator=(const char *val);
         uintX_t& set(uint64_t val1, uint64_t val2);
+        uintX_t& setStr(const char *val, uint64_t length);
 
         friend ostream& operator<<(ostream& os, const uintX_t& val);
     };
@@ -296,7 +301,5 @@ namespace OpenLogReplicator {
         }
     };
 }
-
-#define CHECKPOINT_SIZE 12
 
 #endif

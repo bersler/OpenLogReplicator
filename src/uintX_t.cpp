@@ -21,6 +21,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
+    uintX_t uintX_t::BASE10[TYPEINTXLENDIGITS][10];
+
+    void uintX_t::initializeBASE10(void) {
+        memset(BASE10, 0, sizeof(BASE10));
+        for (uint64_t digit = 0; digit < 10; ++digit) {
+            BASE10[0][digit] = digit;
+
+            for (uint64_t pos = 1; pos < TYPEINTXLENDIGITS; ++pos) {
+                BASE10[pos][digit] = BASE10[pos - 1][digit];
+                for (uint64_t j = 1; j < 10; ++j)
+                    BASE10[pos][digit] += BASE10[pos - 1][digit];
+            }
+        }
+    }
+
     uintX_t& uintX_t::operator+=(const uintX_t &val) {
         uint64_t carry = 0;
 
@@ -51,9 +66,30 @@ namespace OpenLogReplicator {
         return *this;
     }
 
+    uintX_t& uintX_t::operator=(const string &val) {
+        return setStr(val.c_str(), val.length());
+    }
+
     uintX_t& uintX_t::operator=(const char *val) {
+        return setStr(val, strlen(val));
+    }
 
+    uintX_t& uintX_t::setStr(const char *val, uint64_t length) {
+        *this = (uint64_t)0;
+        if (length > TYPEINTXLENDIGITS) {
+            ERROR("incorrect conversion of string: " << val);
+            return *this;
+        }
 
+        for (uint64_t i = 0; i < length; ++i) {
+            if (*val < '0' || *val > '9') {
+                ERROR("incorrect conversion of string: " << val);
+                return *this;
+            }
+
+            *this += BASE10[length - i - 1][*val - '0'];
+            ++val;
+        }
         return *this;
     }
 

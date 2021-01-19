@@ -38,6 +38,7 @@ namespace OpenLogReplicator {
         group(group),
         sequence(0),
         blockSize(0),
+        numBlocksHeader(0xFFFFFFFF),
         numBlocks(0),
         firstScn(ZERO_SCN),
         nextScn(ZERO_SCN),
