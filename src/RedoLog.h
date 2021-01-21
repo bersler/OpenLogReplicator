@@ -52,6 +52,7 @@ namespace OpenLogReplicator {
         uint64_t lwnAllocated;
         typetime lwnTimestamp;
         typeSCN lwnScn;
+        typeSCN lwnScnMax;
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
         uint64_t lwnRecords;
         uint64_t lwnStartBlock;

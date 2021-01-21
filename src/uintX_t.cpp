@@ -21,14 +21,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    uintX_t uintX_t::BASE10[TYPEINTXLENDIGITS][10];
+    uintX_t uintX_t::BASE10[TYPEINTXDIGITS][10];
 
     void uintX_t::initializeBASE10(void) {
         memset(BASE10, 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
             BASE10[0][digit] = digit;
 
-            for (uint64_t pos = 1; pos < TYPEINTXLENDIGITS; ++pos) {
+            for (uint64_t pos = 1; pos < TYPEINTXDIGITS; ++pos) {
                 BASE10[pos][digit] = BASE10[pos - 1][digit];
                 for (uint64_t j = 1; j < 10; ++j)
                     BASE10[pos][digit] += BASE10[pos - 1][digit];
@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
 
     uintX_t& uintX_t::setStr(const char *val, uint64_t length) {
         *this = (uint64_t)0;
-        if (length > TYPEINTXLENDIGITS) {
+        if (length > TYPEINTXDIGITS) {
             ERROR("incorrect conversion of string: " << val);
             return *this;
         }

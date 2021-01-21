@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
             lwnAllocated(0),
             lwnTimestamp(0),
             lwnScn(0),
+            lwnScnMax(0),
             lwnRecords(0),
             lwnStartBlock(0),
             shutdown(false),
@@ -737,7 +738,7 @@ namespace OpenLogReplicator {
         }
 
         transaction->commitTimestamp = lwnTimestamp;
-        transaction->commitScn = redoLogRecord->scnRecord; //maybe lwnScn?
+        transaction->commitScn = redoLogRecord->scnRecord;
         if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->isRollback = true;
 
@@ -1072,6 +1073,8 @@ namespace OpenLogReplicator {
                             TRACE(TRACE2_LWN, "LWN: analyze blk: " << dec << lwnMembers[i]->block << " pos: " << lwnMembers[i]->pos <<
                                     " scn: " << lwnMembers[i]->scn << " subscn: " << lwnMembers[i]->subScn);
                             analyzeLwn(lwnMembers[i]);
+                            if (lwnScnMax < lwnMembers[i]->scn)
+                                lwnScnMax = lwnMembers[i]->scn;
                         }
                     } catch(RedoLogException &ex) {
                         if ((oracleAnalyzer->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
@@ -1080,6 +1083,7 @@ namespace OpenLogReplicator {
                             WARNING("forced to continue working in spite of error");
                     }
 
+                    TRACE(TRACE2_LWN, "LWN: scn: " << dec << lwnScnMax);
                     for (uint64_t i = 1; i < lwnAllocated; ++i)
                         oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
                     lwnNumCnt = 0;
@@ -1118,6 +1122,9 @@ namespace OpenLogReplicator {
 
                 //all work done
                 if (tmpBufferStart == reader->bufferEnd) {
+                    if (reader->ret == REDO_FINISHED && nextScn == ZERO_SCN && reader->nextScn != 0)
+                        nextScn = reader->nextScn;
+
                     if (reader->ret == REDO_FINISHED || reader->ret == REDO_OVERWRITTEN || reader->status == READER_STATUS_SLEEPING)
                         break;
                     oracleAnalyzer->analyzerCond.wait(lck);
