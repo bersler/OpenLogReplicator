@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0.3"
+  "version": "0.8.0.4"
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -31,9 +31,10 @@
       "flags": 0,
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
+      "read-buffer-max-mb": 256,
       "redo-read-sleep": 10000,
       "arch-read-sleep": 10000000,
-      "redo-verify-delay": 50000,
+      "redo-verify-delay": 500000,
       "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},

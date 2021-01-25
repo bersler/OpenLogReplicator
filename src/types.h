@@ -36,7 +36,6 @@ typedef uint32_t typeactivation;
 typedef uint16_t typeop1;
 typedef uint32_t typeop2;
 typedef uint16_t typeconid;
-typedef uint32_t typeblk;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
 
@@ -49,6 +48,7 @@ typedef uint64_t typeXIDMAP;
 typedef uint16_t typeAFN;
 typedef uint32_t typeDBA;
 typedef uint16_t typeSLOT;
+typedef uint32_t typeBLK;
 typedef uint32_t typeOBJ;
 typedef uint32_t typeDATAOBJ;
 typedef uint64_t typeOBJ2;

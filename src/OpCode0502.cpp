@@ -66,11 +66,11 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t highwater = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 16);
             uint16_t ext = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4);
-            typeblk blk = 0; //FIXME
+            typeBLK blk = 0; //FIXME
             uint32_t extSize = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
             uint32_t blocksFreelist = 0; //FIXME
             uint32_t blocksBelow = 0; //FIXME
-            typeblk mapblk = 0; //FIXME
+            typeBLK mapblk = 0; //FIXME
             uint16_t offset = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
 
             oracleAnalyzer->dumpStream << "kteop redo - redo operation on extent map" << endl;

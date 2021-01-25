@@ -48,7 +48,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_EMPTY              4
 #define REDO_BAD_CRC            5
 
-#define DISK_BUFFER_SIZE        MEMORY_CHUNK_SIZE
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20
 #define REDO_BUFFER_FULL_SLEEP  1000
@@ -71,20 +70,20 @@ namespace OpenLogReplicator {
         virtual uint64_t readSize(uint64_t lastRead);
         virtual uint64_t reloadHeaderRead(void);
 
-        uint64_t checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum);
+        uint64_t checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum);
         uint64_t reloadHeader(void);
         time_t getTime(void);
 
     public:
-        uint8_t *redoBuffer;
+        uint8_t **redoBufferList;
         uint8_t *headerBuffer;
         int64_t group;
         typeSEQ sequence;
         vector<string> paths;
         string pathMapped;
         uint64_t blockSize;
-        typeblk numBlocksHeader;
-        typeblk numBlocks;
+        typeBLK numBlocksHeader;
+        typeBLK numBlocks;
         typeSCN firstScn;
         typeSCN nextScn;
         uint32_t compatVsn;
@@ -98,11 +97,15 @@ namespace OpenLogReplicator {
         atomic<uint64_t> ret;
         atomic<uint64_t> bufferStart;
         atomic<uint64_t> bufferEnd;
+        atomic<uint64_t> buffersFree;
+        uint64_t buffersMax;
 
         Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group);
         virtual ~Reader();
 
         void *run(void);
+        void bufferAllocate(uint64_t num);
+        void bufferFree(uint64_t num);
         typesum calcChSum(uint8_t *buffer, uint64_t size) const;
     };
 }

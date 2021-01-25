@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
 
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader *reader);
-        void readerDropAll(void);
+        uint64_t readerDropAll(void);
         static uint64_t getSequenceFromFileName(OracleAnalyzer *oracleAnalyzer, const string &file);
         virtual const char* getModeName(void) const;
         virtual void checkConnection(void);
@@ -79,7 +79,8 @@ namespace OpenLogReplicator {
     public:
         OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace, uint64_t trace2,
                 uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
-                uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat);
+                uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+                const char *logArchiveFormat);
         virtual ~OracleAnalyzer();
 
         string database;
@@ -104,6 +105,7 @@ namespace OpenLogReplicator {
         typeSEQ startSequence;
         string startTime;
         int64_t startTimeRel;
+        uint64_t readBufferMax;
 
         unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
         TransactionBuffer *transactionBuffer;

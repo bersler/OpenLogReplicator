@@ -33,8 +33,6 @@ namespace OpenLogReplicator {
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),
         hintDisplayed(false),
-        redoBuffer(nullptr),
-        headerBuffer(new uint8_t[REDO_PAGE_SIZE_MAX * 2]),
         group(group),
         sequence(0),
         blockSize(0),
@@ -50,17 +48,29 @@ namespace OpenLogReplicator {
         fileSize(0),
         status(READER_STATUS_SLEEPING),
         bufferStart(0),
-        bufferEnd(0) {
-        redoBuffer = oracleAnalyzer->getMemoryChunk("DISK", false);
+        bufferEnd(0),
+        buffersFree(oracleAnalyzer->readBufferMax),
+        buffersMax(0) {
+
+        redoBufferList = new uint8_t*[oracleAnalyzer->readBufferMax];
+        if (redoBufferList == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << (oracleAnalyzer->readBufferMax * sizeof(uint8_t*)) << " bytes memory (for: read buffer list)");
+        }
+        memset(redoBufferList, 0, oracleAnalyzer->readBufferMax * sizeof(uint8_t*));
+
+        headerBuffer = new uint8_t[REDO_PAGE_SIZE_MAX * 2];
         if (headerBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read buffer)");
+            RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read header)");
         }
     }
 
     Reader::~Reader() {
-        if (redoBuffer != nullptr) {
-            oracleAnalyzer->freeMemoryChunk("DISK", redoBuffer, false);
-            redoBuffer = nullptr;
+        for (uint64_t num = 0; num < oracleAnalyzer->readBufferMax; ++num)
+            bufferFree(num);
+
+        if (redoBufferList != nullptr) {
+            delete[] redoBufferList;
+            redoBufferList = nullptr;
         }
 
         if (headerBuffer != nullptr) {
@@ -69,7 +79,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeblk blockNumber, bool checkSum) {
+    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
@@ -81,7 +91,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        typeblk blockNumberHeader = oracleAnalyzer->read32(buffer + 4);
+        typeBLK blockNumberHeader = oracleAnalyzer->read32(buffer + 4);
         typeSEQ sequenceHeader = oracleAnalyzer->read32(buffer + 8);
 
         if (sequence == 0 || status == READER_STATUS_UPDATE) {
@@ -130,8 +140,8 @@ namespace OpenLogReplicator {
             return blockSize;
 
         lastRead *= 2;
-        if (lastRead > DISK_BUFFER_SIZE / 8)
-            lastRead = DISK_BUFFER_SIZE / 8;
+        if (lastRead > MEMORY_CHUNK_SIZE / 8)
+            lastRead = MEMORY_CHUNK_SIZE / 8;
 
         return lastRead;
     }
@@ -317,7 +327,7 @@ namespace OpenLogReplicator {
 
                 if (status == READER_STATUS_SLEEPING && !shutdown) {
                     oracleAnalyzer->sleepingCond.wait(lck);
-                } else if (status == READER_STATUS_READ && bufferStart + DISK_BUFFER_SIZE == bufferEnd && !shutdown) {
+                } else if (status == READER_STATUS_READ && !shutdown && (bufferEnd % MEMORY_CHUNK_SIZE) == 0 && buffersFree == 0) {
                     oracleAnalyzer->readerCond.wait(lck);
                 }
             }
@@ -351,7 +361,7 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->analyzerCond.notify_all();
                 }
             } else if (status == READER_STATUS_READ) {
-                TRACE(TRACE2_DISK, "reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
+                TRACE(TRACE2_DISK, "DISK: reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
                 uint64_t lastRead = blockSize;
                 clock_t lastReadTime = 0, read1Time = 0, read2Time = 0;
                 uint64_t bufferScan = bufferEnd;
@@ -365,7 +375,7 @@ namespace OpenLogReplicator {
                     //buffer full?
                     {
                         unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                        if (bufferStart + DISK_BUFFER_SIZE <= bufferEnd) {
+                        if ((bufferEnd % MEMORY_CHUNK_SIZE) == 0 && buffersFree == 0) {
                             oracleAnalyzer->readerCond.wait(lck);
                             continue;
                         }
@@ -384,7 +394,10 @@ namespace OpenLogReplicator {
                             maxNumBlock = REDO_READ_VERIFY_MAX_BLOCKS;
 
                         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            time_t *readTime = (time_t*)(redoBuffer + ((bufferEnd + numBlock * blockSize) % DISK_BUFFER_SIZE));
+                            uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
+                            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+
+                            time_t *readTime = (time_t*)(redoBufferList[redoBufferNum] + redoBufferPos);
                             if (*readTime + oracleAnalyzer->redoVerifyDelay < loopTime)
                                 ++goodBlocks;
                             else {
@@ -398,9 +411,11 @@ namespace OpenLogReplicator {
                             if (toRead > goodBlocks * blockSize)
                                 toRead = goodBlocks * blockSize;
 
-                            uint64_t bufferPos = bufferEnd % DISK_BUFFER_SIZE;
-                            if (bufferPos + toRead > DISK_BUFFER_SIZE)
-                                toRead = DISK_BUFFER_SIZE - bufferPos;
+                            uint64_t redoBufferPos = bufferEnd % MEMORY_CHUNK_SIZE;
+                            uint64_t redoBufferNum = (bufferEnd / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+
+                            if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
+                                toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
 
                             if (toRead == 0) {
                                 WARNING("zero bytes to read #2, start: " << dec << bufferStart << ", end: " << bufferEnd << ", scan: " << bufferScan);
@@ -408,23 +423,23 @@ namespace OpenLogReplicator {
                                 break;
                             }
 
-                            TRACE(TRACE2_DISK, "reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
-                            int64_t actualRead = redoRead(redoBuffer + bufferPos, bufferEnd, toRead);
+                            TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
+                            int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
 
-                            TRACE(TRACE2_DISK, "reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
+                            TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                             if (actualRead < 0) {
                                 ret = REDO_ERROR;
                                 break;
                             }
 
                             uint64_t tmpRet = REDO_OK;
-                            typeblk maxNumBlock = actualRead / blockSize;
-                            typeblk bufferEndBlock = bufferEnd / blockSize;
+                            typeBLK maxNumBlock = actualRead / blockSize;
+                            typeBLK bufferEndBlock = bufferEnd / blockSize;
 
                             //check which blocks are good
                             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                                tmpRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferEndBlock + numBlock, false);
-                                TRACE(TRACE2_DISK, "block: " << dec << (bufferEndBlock + numBlock) << " check: " << tmpRet);
+                                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock, false);
+                                TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << tmpRet);
 
                                 if (tmpRet != REDO_OK)
                                     break;
@@ -449,18 +464,19 @@ namespace OpenLogReplicator {
                     }
 
                     //#1 read
-                    if (bufferScan < fileSize && bufferStart + DISK_BUFFER_SIZE > bufferScan
+                    if (bufferScan < fileSize && bufferStart + MEMORY_CHUNK_SIZE > bufferScan
                             && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleep < loopTime)) {
                         uint64_t toRead = readSize(lastRead);
-                        if (bufferScan + toRead - bufferStart > DISK_BUFFER_SIZE)
-                            toRead = DISK_BUFFER_SIZE - bufferScan + bufferStart;
+                        if (bufferScan + toRead - bufferStart > MEMORY_CHUNK_SIZE)
+                            toRead = MEMORY_CHUNK_SIZE - bufferScan + bufferStart;
 
                         if (bufferScan + toRead > fileSize)
                             toRead = fileSize - bufferScan;
 
-                        uint64_t bufferPos = bufferScan % DISK_BUFFER_SIZE;
-                        if (bufferPos + toRead > DISK_BUFFER_SIZE)
-                            toRead = DISK_BUFFER_SIZE - bufferPos;
+                        uint64_t redoBufferPos = bufferScan % MEMORY_CHUNK_SIZE;
+                        uint64_t redoBufferNum = (bufferScan / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+                        if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
+                            toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
 
                         if (toRead == 0) {
                             WARNING("zero bytes to read #1, start: " << dec << bufferStart << ", end: " << bufferEnd << ", scan: " << bufferScan);
@@ -468,24 +484,25 @@ namespace OpenLogReplicator {
                             break;
                         }
 
-                        TRACE(TRACE2_DISK, "reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
-                        int64_t actualRead = redoRead(redoBuffer + bufferPos, bufferScan, toRead);
+                        bufferAllocate(redoBufferNum);
+                        TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
+                        int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
 
-                        TRACE(TRACE2_DISK, "reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
+                        TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                         if (actualRead < 0) {
                             ret = REDO_ERROR;
                             break;
                         }
 
-                        typeblk maxNumBlock = actualRead / blockSize;
-                        typeblk bufferScanBlock = bufferScan / blockSize;
+                        typeBLK maxNumBlock = actualRead / blockSize;
+                        typeBLK bufferScanBlock = bufferScan / blockSize;
                         uint64_t goodBlocks = 0;
                         uint64_t tmpRet = REDO_OK;
 
                         //check which blocks are good
                         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            tmpRet = checkBlockHeader(redoBuffer + bufferPos + numBlock * blockSize, bufferScanBlock + numBlock, false);
-                            TRACE(TRACE2_DISK, "block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
+                            tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock, false);
+                            TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
 
                             if (tmpRet != REDO_OK)
                                 break;
@@ -519,7 +536,7 @@ namespace OpenLogReplicator {
                                 bufferScan += goodBlocks * blockSize;
 
                                 for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
-                                    time_t *readTime = (time_t*)(redoBuffer + bufferPos + numBlock * blockSize);
+                                    time_t *readTime = (time_t*)(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
                                     *readTime = lastReadTime;
                                 }
                             } else {
@@ -570,5 +587,32 @@ namespace OpenLogReplicator {
         redoClose();
         TRACE(TRACE2_THREADS, "READER (" << hex << this_thread::get_id() << ") STOP");
         return 0;
+    }
+
+    void Reader::bufferAllocate(uint64_t num) {
+        if (redoBufferList[num] == nullptr) {
+            redoBufferList[num] = oracleAnalyzer->getMemoryChunk("DISK", false);
+            if (redoBufferList[num] == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE << " bytes memory (for: read buffer)");
+            }
+
+            {
+                unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                --buffersFree;
+                if (oracleAnalyzer->readBufferMax - buffersFree > buffersMax)
+                    buffersMax = oracleAnalyzer->readBufferMax - buffersFree;
+            }
+        }
+    }
+
+    void Reader::bufferFree(uint64_t num) {
+        if (redoBufferList[num] != nullptr) {
+            oracleAnalyzer->freeMemoryChunk("DISK", redoBufferList[num], false);
+            redoBufferList[num] = nullptr;
+            {
+                unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                ++buffersFree;
+            }
+        }
     }
 }

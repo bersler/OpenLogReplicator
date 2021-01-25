@@ -41,7 +41,8 @@ namespace OpenLogReplicator {
 
     OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace, uint64_t trace2,
             uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
-            uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat) :
+            uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, 
+            const char *logArchiveFormat) :
         Thread(alias),
         sequence(0),
         suppLogDbPrimary(0),
@@ -65,6 +66,7 @@ namespace OpenLogReplicator {
         startScn(ZERO_SCN),
         startSequence(0),
         startTimeRel(0),
+        readBufferMax(readBufferMax),
         transactionBuffer(nullptr),
         schema(nullptr),
         outputBuffer(outputBuffer),
@@ -511,7 +513,7 @@ namespace OpenLogReplicator {
 
                     while (!shutdown) {
                         redo = nullptr;
-                        TRACE_(TRACE2_REDO, "searching online redo log for sequence: " << dec << sequence);
+                        TRACE_(TRACE2_REDO, "searching online redo log for seq: " << dec << sequence);
 
                         //find the candidate to read
                         for (RedoLog *redoLog : onlineRedoSet) {
@@ -582,17 +584,17 @@ namespace OpenLogReplicator {
 
                 if (archiveRedoQueue.empty()) {
                     if ((flags & REDO_FLAGS_ARCH_ONLY) != 0) {
-                        TRACE_(TRACE2_ARCHIVE_LIST, "archived redo log missing for sequence: " << dec << sequence << ", sleeping");
+                        TRACE_(TRACE2_ARCHIVE_LIST, "archived redo log missing for seq: " << dec << sequence << ", sleeping");
                         usleep(archReadSleep);
                     } else {
-                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << sequence);
+                        RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence);
                     }
                 }
 
                 while (!archiveRedoQueue.empty() && !shutdown) {
                     RedoLog *redoPrev = redo;
                     redo = archiveRedoQueue.top();
-                    TRACE_(TRACE2_REDO, "searching archived redo log for sequence: " << dec << sequence);
+                    TRACE_(TRACE2_REDO, "searching archived redo log for seq: " << dec << sequence);
 
                     //when no checkpoint exists start processing from first file
                     if (sequence == 0)
@@ -604,7 +606,7 @@ namespace OpenLogReplicator {
                         delete redo;
                         continue;
                     } else if (redo->sequence > sequence) {
-                        RUNTIME_FAIL("couldn't find archive log for sequence: " << dec << sequence << ", found: " << redo->sequence << " instead");
+                        RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence << ", found: " << redo->sequence << " instead");
                     }
 
                     logsProcessed = true;
@@ -658,10 +660,10 @@ namespace OpenLogReplicator {
         INFO_("Oracle analyzer for: " << database << " is shutting down");
 
         FULL_(*this);
-        readerDropAll();
+        uint64_t buffersMax = readerDropAll();
 
         INFO_("Oracle analyzer for: " << database << " is shut down, allocated at most " << dec <<
-                (memoryChunksHWM * MEMORY_CHUNK_SIZE_MB) << "MB memory");
+                (memoryChunksHWM * MEMORY_CHUNK_SIZE_MB) << "MB memory, max disk read buffer: " << (buffersMax * MEMORY_CHUNK_SIZE_MB) << "MB");
 
         TRACE_(TRACE2_THREADS, "ANALYZER (" << hex << this_thread::get_id() << ") STOP");
         return 0;
@@ -688,7 +690,8 @@ namespace OpenLogReplicator {
             return false;
     }
 
-    void OracleAnalyzer::readerDropAll(void) {
+    uint64_t OracleAnalyzer::readerDropAll(void) {
+        uint64_t buffersMax = 0;
         {
             unique_lock<mutex> lck(mtx);
             for (Reader *reader : readers)
@@ -699,10 +702,13 @@ namespace OpenLogReplicator {
         for (Reader *reader : readers) {
             if (reader->started)
                 pthread_join(reader->pthread, nullptr);
+            if (reader->buffersMax > buffersMax)
+                buffersMax = reader->buffersMax;
             delete reader;
         }
         archReader = nullptr;
         readers.clear();
+        return buffersMax;
     }
 
     Reader *OracleAnalyzer::readerCreate(int64_t group) {
@@ -950,7 +956,7 @@ namespace OpenLogReplicator {
     }
 
     uint8_t *OracleAnalyzer::getMemoryChunk(const char *module, bool supp) {
-        TRACE_(TRACE2_MEMORY, module << " - get at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
+        TRACE_(TRACE2_MEMORY, "MEMORY: " << module << " - get at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
 
         {
             unique_lock<mutex> lck(mtx);
@@ -985,7 +991,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::freeMemoryChunk(const char *module, uint8_t *chunk, bool supp) {
-        TRACE_(TRACE2_MEMORY, module << " - free at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
+        TRACE_(TRACE2_MEMORY, "MEMORY: " << module << " - free at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
 
         {
             unique_lock<mutex> lck(mtx);
@@ -1070,7 +1076,7 @@ namespace OpenLogReplicator {
 
                 uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent2->d_name);
 
-                TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
+                TRACE(TRACE2_ARCHIVE_LIST, "found seq: " << sequence);
 
                 if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
@@ -1125,7 +1131,7 @@ namespace OpenLogReplicator {
                 }
                 uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, fileName + j);
 
-                TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
+                TRACE(TRACE2_ARCHIVE_LIST, "found seq: " << sequence);
 
                 if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
@@ -1156,7 +1162,7 @@ namespace OpenLogReplicator {
 
                     uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent->d_name);
 
-                    TRACE(TRACE2_ARCHIVE_LIST, "found sequence: " << sequence);
+                    TRACE(TRACE2_ARCHIVE_LIST, "found seq: " << sequence);
 
                     if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                         continue;

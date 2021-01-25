@@ -41,9 +41,9 @@ namespace OpenLogReplicator {
 
         OracleAnalyzerOnlineASM(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace, uint64_t trace2,
                 uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
-                uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, const char *logArchiveFormat,
-                const char *user, const char *password, const char *connectString, const char *userASM,
-                const char *passwdASM, const char *connectStringASM, bool isStandby);
+                uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, 
+                const char *logArchiveFormat, const char *user, const char *password, const char *connectString,
+                const char *userASM, const char *passwdASM, const char *connectStringASM, bool isStandby);
         virtual ~OracleAnalyzerOnlineASM();
     };
 }
