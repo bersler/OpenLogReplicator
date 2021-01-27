@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0.4"
+  "version": "0.8.0.5",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -11,6 +11,7 @@
       "reader": {
         "type": "online", 
         "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
+        "redo-copy-path": "copy",
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE",
@@ -34,7 +35,7 @@
       "read-buffer-max-mb": 256,
       "redo-read-sleep": 10000,
       "arch-read-sleep": 10000000,
-      "redo-verify-delay": 500000,
+      "redo-verify-delay": 50000,
       "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
         {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},

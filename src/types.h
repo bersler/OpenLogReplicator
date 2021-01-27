@@ -66,7 +66,7 @@ typedef uint64_t typeunicode;
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
-#define MAX_RECORDS_IN_LWN                      262144
+#define MAX_RECORDS_IN_LWN                      1048576
 #define MEMORY_CHUNK_SIZE_MB                    1
 #define MEMORY_CHUNK_SIZE_MB_CHR                "1"
 #define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)

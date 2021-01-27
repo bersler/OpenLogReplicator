@@ -124,7 +124,7 @@ namespace OpenLogReplicator {
         deallocTc = nullptr;
 
         if (opCodes > 0 && !isRollback) {
-            TRACE(TRACE2_TRANSACTION, *this);
+            TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << *this);
 
             oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
             uint64_t pos, type = 0;
@@ -142,7 +142,7 @@ namespace OpenLogReplicator {
                     redoLogRecord2->data = tc->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
-                    TRACE(TRACE2_TRANSACTION, "Row: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
+                    TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
                                         ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
                                     " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
                                         ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<

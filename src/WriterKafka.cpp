@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf) {
-        TRACE_(TRACE2_KAFKA, "level: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
+        TRACE_(TRACE2_KAFKA, "KAFKA: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
     }
 
     void WriterKafka::sendMessage(OutputBufferMsg *msg) {

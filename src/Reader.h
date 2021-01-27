@@ -51,7 +51,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20
 #define REDO_BUFFER_FULL_SLEEP  1000
-#define REDO_READ_VERIFY_MAX_BLOCKS 256
+#define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
 
 using namespace std;
 
@@ -63,6 +63,8 @@ namespace OpenLogReplicator {
     protected:
         OracleAnalyzer *oracleAnalyzer;
         bool hintDisplayed;
+        int64_t fileCopyDes;
+        typeSEQ fileCopySequence;
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
@@ -82,15 +84,15 @@ namespace OpenLogReplicator {
         vector<string> paths;
         string pathMapped;
         uint64_t blockSize;
+        uint32_t compatVsn;
         typeBLK numBlocksHeader;
         typeBLK numBlocks;
-        typeSCN firstScn;
-        typeSCN nextScn;
-        uint32_t compatVsn;
-        typeresetlogs resetlogsRead;
-        typeactivation activationRead;
+        typeresetlogs resetlogsHeader;
+        typeactivation activationHeader;
         typeSCN firstScnHeader;
+        typeSCN firstScn;
         typeSCN nextScnHeader;
+        typeSCN nextScn;
 
         uint64_t fileSize;
         atomic<uint64_t> status;

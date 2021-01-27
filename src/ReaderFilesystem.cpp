@@ -18,8 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "OracleAnalyzer.h"
 #include "ReaderFilesystem.h"
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
     void ReaderFilesystem::redoClose(void) {
         if (fileDes > 0) {
             close(fileDes);
-            fileDes = -1;
+            fileDes = 0;
         }
     }
 
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         struct stat fileStat;
 
         int ret = stat(pathMapped.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "stat for " << pathMapped << " returns " << dec << ret << ", errno = " << errno);
+        TRACE(TRACE2_FILE, "FILE: stat for " << pathMapped << " returns " << dec << ret << ", errno = " << errno);
         if (ret != 0) {
             return REDO_ERROR;
         }
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
             flags |= O_NOATIME;
 
         fileDes = open(pathMapped.c_str(), flags);
-        TRACE(TRACE2_FILE, "open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
+        TRACE(TRACE2_FILE, "FILE: open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0)
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
 
     int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
         int64_t bytes = pread(fileDes, buf, size, pos);
-        TRACE(TRACE2_FILE, "read " << pathMapped << ", " << dec << pos << ", " << dec << size << " returns " << dec << bytes);
+        TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << pos << ", " << dec << size << " returns " << dec << bytes);
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {

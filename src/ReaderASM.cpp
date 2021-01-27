@@ -54,7 +54,8 @@ namespace OpenLogReplicator {
 
         try {
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
-            TRACE(TRACE2_SQL, SQL_ASM_CLOSE << endl << "PARAM1: " << fileDes);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_CLOSE << endl <<
+                    "PARAM1: " << fileDes);
             stmt.createStatement(SQL_ASM_CLOSE);
             stmt.bindInt32(1, fileDes);
             stmt.executeQuery();
@@ -69,8 +70,11 @@ namespace OpenLogReplicator {
         try {
             blockSize = 0;
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
-            TRACE(TRACE2_SQL, SQL_ASM_GETFILEATR << endl <<
-                    "PARAM1: " << pathMapped);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_GETFILEATR << endl <<
+                    "PARAM1: " << pathMapped << endl <<
+                    "PARAM2: " << fileType << endl <<
+                    "PARAM3: " << fileSize << endl <<
+                    "PARAM4: " << blockSize);
             stmt.createStatement(SQL_ASM_GETFILEATR);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -79,10 +83,13 @@ namespace OpenLogReplicator {
             stmt.executeQuery();
 
             physicalBlockSize = -1;
-            TRACE(TRACE2_SQL, SQL_ASM_OPEN << endl <<
+            TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_OPEN << endl <<
                     "PARAM1: " << pathMapped << endl <<
                     "PARAM2: " << fileType << endl <<
-                    "PARAM3: " << blockSize);
+                    "PARAM3: " << blockSize << endl <<
+                    "PARAM4: " << fileDes << endl <<
+                    "PARAM5: " << physicalBlockSize << endl <<
+                    "PARAM6: " << fileSize);
             stmt.createStatement(SQL_ASM_OPEN);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -108,7 +115,10 @@ namespace OpenLogReplicator {
         try {
             if (stmtRead == nullptr) {
                 stmtRead = new DatabaseStatement(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
-                TRACE(TRACE2_SQL, SQL_ASM_READ << endl << "PARAM1: " << fileDes);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_READ << endl <<
+                        "PARAM1: " << fileDes << endl <<
+                        "PARAM2: " << pos << endl <<
+                        "PARAM3: " << size);
                 stmtRead->createStatement(SQL_ASM_READ);
             } else
                 stmtRead->unbindAll();

@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
             oracleAnalyzer->dumpStream << " FILE HEADER:" << endl <<
                     "\tCompatibility Vsn = " << dec << reader->compatVsn << "=0x" << hex << reader->compatVsn << endl <<
                     "\tDb ID=" << dec << dbid << "=0x" << hex << dbid << ", Db Name='" << SID << "'" << endl <<
-                    "\tActivation ID=" << dec << reader->activationRead << "=0x" << hex << reader->activationRead << endl <<
+                    "\tActivation ID=" << dec << reader->activationHeader << "=0x" << hex << reader->activationHeader << endl <<
                     "\tControl Seq=" << dec << controlSeq << "=0x" << hex << controlSeq << ", File size=" << dec << fileSize << "=0x" << hex << fileSize << endl <<
                     "\tFile Number=" << dec << fileNumber << ", Blksiz=" << dec << reader->blockSize << ", File Type=2 LOG" << endl;
 
@@ -151,7 +151,7 @@ namespace OpenLogReplicator {
 
             if (oracleAnalyzer->version < REDO_VERSION_12_2) {
                 oracleAnalyzer->dumpStream <<
-                        " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
+                        " resetlogs count: 0x" << hex << reader->resetlogsHeader << " scn: " << PRINTSCN48(resetlogsScn) << " (" << dec << resetlogsScn << ")" << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << dec << prevResetlogsScn << ")" << endl <<
                         " Low  scn: " << PRINTSCN48(reader->firstScnHeader) << " (" << dec << reader->firstScnHeader << ")" << " " << firstTime << endl <<
                         " Next scn: " << PRINTSCN48(reader->nextScnHeader) << " (" << dec << reader->nextScn << ")" << " " << nextTime << endl <<
@@ -165,7 +165,7 @@ namespace OpenLogReplicator {
                 typeSCN realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
 
                 oracleAnalyzer->dumpStream <<
-                        " resetlogs count: 0x" << hex << reader->resetlogsRead << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
+                        " resetlogs count: 0x" << hex << reader->resetlogsHeader << " scn: " << PRINTSCN64(resetlogsScn) << endl <<
                         " prev resetlogs count: 0x" << hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << endl <<
                         " Low  scn: " << PRINTSCN64(reader->firstScnHeader) << " " << firstTime << endl <<
                         " Next scn: " << PRINTSCN64(reader->nextScnHeader) << " " << nextTime << endl <<
@@ -279,7 +279,6 @@ namespace OpenLogReplicator {
         uint64_t headerLength;
 
         if (recordLength != lwnMember->length) {
-            dumpRedoVector(data, lwnMember->length);
             REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
                     ": too small log record, buffer length: " << dec << lwnMember->length << ", field length: " << recordLength);
         }
@@ -635,7 +634,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionDDL(RedoLogRecord *redoLogRecord) {
-        TRACE(TRACE2_DUMP, *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         //track DDL
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
@@ -668,7 +667,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionUndo(RedoLogRecord *redoLogRecord) {
-        TRACE(TRACE2_DUMP, *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
             return;
@@ -709,7 +708,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionBegin(RedoLogRecord *redoLogRecord) {
-        TRACE(TRACE2_DUMP, *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         //skip SQN cleanup
         if (SQN(redoLogRecord->xid) == 0)
@@ -732,7 +731,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionCommit(RedoLogRecord *redoLogRecord) {
-        TRACE(TRACE2_DUMP, *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -768,8 +767,8 @@ namespace OpenLogReplicator {
 
     void RedoLog::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
         bool shutdownFound = false;
-        TRACE(TRACE2_DUMP, *redoLogRecord1);
-        TRACE(TRACE2_DUMP, *redoLogRecord2);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2);
 
         //skip other PDB vectors
         if (oracleAnalyzer->conId > 0 && redoLogRecord2->conId != oracleAnalyzer->conId &&
@@ -926,6 +925,7 @@ namespace OpenLogReplicator {
             oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
         uint64_t *length = (uint64_t *)lwnChunks[0];
         *length = sizeof(uint64_t);
+        lwnRecords = 0;
     }
 
     void RedoLog::continueRedo(RedoLog *prev) {
@@ -937,6 +937,7 @@ namespace OpenLogReplicator {
             oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
         uint64_t *length = (uint64_t *)lwnChunks[0];
         *length = sizeof(uint64_t);
+        lwnRecords = 0;
     }
 
     uint64_t RedoLog::processLog(void) {
@@ -973,9 +974,6 @@ namespace OpenLogReplicator {
         }
         tmpBufferStart = reader->bufferStart;
 
-        uint64_t redoBufferPos = (currentBlock * reader->blockSize) % MEMORY_CHUNK_SIZE;
-        uint64_t redoBufferNum = ((currentBlock * reader->blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
-
         uint64_t recordLength4 = 0, recordPos = 0, recordLeftToCopy = 0, lwnEndBlock = lwnConfirmedBlock;
         uint16_t lwnNum = 0, lwnNumMax = 0, lwnNumCnt = 0;
         lwnStartBlock = lwnConfirmedBlock;
@@ -983,7 +981,10 @@ namespace OpenLogReplicator {
         while (!oracleAnalyzer->shutdown) {
             //there is some work to do
             while (tmpBufferStart < reader->bufferEnd) {
+                uint64_t redoBufferPos = (currentBlock * reader->blockSize) % MEMORY_CHUNK_SIZE;
+                uint64_t redoBufferNum = ((currentBlock * reader->blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
                 uint8_t *redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
+
                 blockPos = 16;
                 //new LWN block
                 if (currentBlock == lwnEndBlock) {
@@ -1084,7 +1085,7 @@ namespace OpenLogReplicator {
                             if (lwnScnMax < lwnMembers[i]->scn)
                                 lwnScnMax = lwnMembers[i]->scn;
                         }
-                    } catch(RedoLogException &ex) {
+                    } catch (RedoLogException &ex) {
                         if ((oracleAnalyzer->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
                             RUNTIME_FAIL("runtime error, aborting further redo log processing");
                         } else
@@ -1125,12 +1126,8 @@ namespace OpenLogReplicator {
 
             {
                 unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                if (reader->bufferStart < tmpBufferStart) {
+                if (reader->bufferStart < tmpBufferStart)
                     reader->bufferStart = tmpBufferStart;
-                    if (reader->status == READER_STATUS_READ) {
-                        oracleAnalyzer->readerCond.notify_all();
-                    }
-                }
 
                 //all work done
                 if (tmpBufferStart == reader->bufferEnd) {
@@ -1151,7 +1148,7 @@ namespace OpenLogReplicator {
         if (myTime > 0)
             mySpeed = (currentBlock - startBlock) * reader->blockSize / 1024 / 1024 / myTime * 1000;
 
-        TRACE(TRACE2_PERFORMANCE, "redo processing time: " << myTime << " ms, " <<
+        TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " << myTime << " ms, " <<
                 "Speed: " << fixed << setprecision(2) << mySpeed << " MB/s, " <<
                 "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024) << " kB, " <<
                 "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<

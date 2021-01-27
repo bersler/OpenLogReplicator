@@ -86,7 +86,7 @@ void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
 
     mainShutdown = true;
-    TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
+    TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
     mainThread.notify_all();
 }
 
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
             const Value& traceJSON = document["trace2"];
             trace2 = traceJSON.GetUint64();
         }
-        TRACE_(TRACE2_THREADS, "THREAD: MAIN (" << hex << this_thread::get_id() << ") START");
+        TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
 
         //optional
         uint64_t dumpRawData = 0;
@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
             }
 
             //optional
-            uint64_t redoVerifyDelay = 500000;
+            uint64_t redoVerifyDelay = 50000;
             if (sourceJSON.HasMember("redo-verify-delay")) {
                 const Value& redoVerifyDelayJSON = sourceJSON["redo-verify-delay"];
                 redoVerifyDelay = redoVerifyDelayJSON.GetUint();
@@ -389,6 +389,13 @@ int main(int argc, char **argv) {
                 logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
+            //optional
+            const char *redoCopyPath = "";
+            if (readerJSON.HasMember("redo-copy-path")) {
+                const Value& redoCopyPathJSON = readerJSON["redo-copy-path"];
+                redoCopyPath = redoCopyPathJSON.GetString();
+            }
+
             const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
@@ -411,7 +418,8 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
                         trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, user, password, server, isStandby);
+                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, user, password,
+                        server, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -455,7 +463,7 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzer(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace, trace2,
                         dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay, memoryMinMb,
-                        memoryMaxMb, readBufferMax, logArchiveFormat);
+                        memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -510,8 +518,8 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
                         trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, user, password, server, userASM,
-                        passwordASM, serverASM, isStandby);
+                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, user, password,
+                        server, userASM, passwordASM, serverASM, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -547,7 +555,7 @@ int main(int argc, char **argv) {
 
                  oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
                          trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                         memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, conId);
+                         memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, conId);
 
                  if (oracleAnalyzer == nullptr) {
                      RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
@@ -822,8 +830,8 @@ int main(int argc, char **argv) {
                 mainThread.wait(lck);
         }
 
-    } catch(ConfigurationException &ex) {
-    } catch(RuntimeException &ex) {
+    } catch (ConfigurationException &ex) {
+    } catch (RuntimeException &ex) {
     }
 
     if (oracleAnalyzer != nullptr)
@@ -869,6 +877,6 @@ int main(int argc, char **argv) {
     if (configFileBuffer != nullptr)
         delete[] configFileBuffer;
 
-    TRACE_(TRACE2_THREADS, "MAIN (" << hex << this_thread::get_id() << ") STOP");
+    TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP");
     return 0;
 }
