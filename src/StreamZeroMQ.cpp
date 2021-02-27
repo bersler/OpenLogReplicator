@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     StreamZeroMQ::StreamZeroMQ(const char *uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
         socket(nullptr),

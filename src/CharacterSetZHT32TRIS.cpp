@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     CharacterSetZHT32TRIS::CharacterSetZHT32TRIS() :
         CharacterSet("ZHT32TRIS") {
     }

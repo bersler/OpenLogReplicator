@@ -28,7 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     StreamNetwork::StreamNetwork(const char *uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
         socketFD(-1),

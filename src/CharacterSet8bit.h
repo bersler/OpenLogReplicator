@@ -25,7 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSet8bit : public CharacterSet7bit {
     protected:
         virtual typeunicode readMap(uint64_t character) const;

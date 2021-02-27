@@ -29,22 +29,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     Transaction::Transaction(OracleAnalyzer *oracleAnalyzer, typeXID xid) :
-            oracleAnalyzer(oracleAnalyzer),
-            deallocTc(nullptr),
-            xid(xid),
-            firstSequence(0),
-            firstPos(0),
-            commitScn(0),
-            firstTc(nullptr),
-            lastTc(nullptr),
-            opCodes(0),
-            pos(0),
-            commitTimestamp(0),
-            isBegin(false),
-            isRollback(false),
-            shutdown(false) {
+		oracleAnalyzer(oracleAnalyzer),
+		deallocTc(nullptr),
+		xid(xid),
+		firstSequence(0),
+		firstPos(0),
+		commitScn(0),
+		firstTc(nullptr),
+		lastTc(nullptr),
+		opCodes(0),
+		pos(0),
+		commitTimestamp(0),
+		isBegin(false),
+		isRollback(false),
+		shutdown(false) {
     }
 
     Transaction::~Transaction() {

@@ -23,13 +23,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOG_H_
 #define REDOLOG_H_
 
-using namespace std;
-
 #define VECTOR_MAX_LENGTH 512
 #define MAX_LWN_CHUNKS (256*2/MEMORY_CHUNK_SIZE_MB)
 
-namespace OpenLogReplicator {
+using namespace std;
 
+namespace OpenLogReplicator {
     class OracleAnalyzer;
     class OpCode;
     class Reader;

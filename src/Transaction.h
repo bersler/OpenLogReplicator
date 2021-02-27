@@ -25,7 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRANSACTION_H_
 
 namespace OpenLogReplicator {
-
     class TransactionChunk;
     class OpCode;
     class OpCode0502;

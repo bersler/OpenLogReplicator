@@ -22,13 +22,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     RedoLogException::~RedoLogException() {
     }
 
     RedoLogException::RedoLogException(const char* msg) :
-            exception(),
-            msg(msg) {
+		exception(),
+		msg(msg) {
     }
 
     ostream& operator<<(ostream& os, const RedoLogException& ors) {

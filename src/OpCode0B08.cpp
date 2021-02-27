@@ -24,9 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     OpCode0B08::OpCode0B08(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
-            OpCode(oracleAnalyzer, redoLogRecord) {
+        OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
     OpCode0B08::~OpCode0B08() {

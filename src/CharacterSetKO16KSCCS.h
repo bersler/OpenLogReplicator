@@ -26,10 +26,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define KO16KSCCS_b1_max    0xF9
 #define KO16KSCCS_b2_min    0x31
 #define KO16KSCCS_b2_max    0xFE
+
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSetKO16KSCCS : public CharacterSet16bit {
     protected:
         static typeunicode16 unicode_map_KO16KSCCS_2b[(KO16KSCCS_b1_max - KO16KSCCS_b1_min + 1) *

@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 
 namespace OpenLogReplicator {
-
     uintX_t uintX_t::BASE10[TYPEINTXDIGITS][10];
 
     void uintX_t::initializeBASE10(void) {

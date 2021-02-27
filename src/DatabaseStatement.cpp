@@ -24,11 +24,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     DatabaseStatement::DatabaseStatement(DatabaseConnection *conn) :
-            conn(conn),
-            isExecuted(false),
-            stmthp(nullptr) {
+		conn(conn),
+		isExecuted(false),
+		stmthp(nullptr) {
+
         conn->env->checkErr(conn->errhp, OCIHandleAlloc(conn->env->envhp, (dvoid **)&stmthp, OCI_HTYPE_STMT, 0, nullptr));
     }
 

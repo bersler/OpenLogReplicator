@@ -30,7 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSetJA16SJIS : public CharacterSet16bit {
     protected:
         virtual bool validCode(uint64_t byte1, uint64_t byte2) const;

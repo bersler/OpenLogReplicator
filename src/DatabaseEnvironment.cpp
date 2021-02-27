@@ -23,9 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     DatabaseEnvironment::DatabaseEnvironment() :
-            envhp(nullptr) {
+		envhp(nullptr) {
+
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
     }
 

@@ -30,7 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class RedoLogRecord;
     class OracleAnalyzer;
 

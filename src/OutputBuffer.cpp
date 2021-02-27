@@ -42,7 +42,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 
 namespace OpenLogReplicator {
-
     const char OutputBuffer::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     const char OutputBuffer::map16[17] = "0123456789abcdef";
 

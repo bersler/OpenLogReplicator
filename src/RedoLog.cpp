@@ -48,24 +48,24 @@ using namespace std;
 extern void stopMain();
 
 namespace OpenLogReplicator {
-
     RedoLog::RedoLog(OracleAnalyzer *oracleAnalyzer, int64_t group, const char *path) :
-            oracleAnalyzer(oracleAnalyzer),
-            vectors(0),
-            lwnConfirmedBlock(2),
-            lwnAllocated(0),
-            lwnTimestamp(0),
-            lwnScn(0),
-            lwnScnMax(0),
-            lwnRecords(0),
-            lwnStartBlock(0),
-            shutdown(false),
-            group(group),
-            path(path),
-            sequence(0),
-            firstScn(firstScn),
-            nextScn(nextScn),
-            reader(nullptr) {
+		oracleAnalyzer(oracleAnalyzer),
+		vectors(0),
+		lwnConfirmedBlock(2),
+		lwnAllocated(0),
+		lwnTimestamp(0),
+		lwnScn(0),
+		lwnScnMax(0),
+		lwnRecords(0),
+		lwnStartBlock(0),
+		shutdown(false),
+		group(group),
+		path(path),
+		sequence(0),
+		firstScn(firstScn),
+		nextScn(nextScn),
+		reader(nullptr) {
+
         memset(&zero, 0, sizeof(struct RedoLogRecord));
 
         lwnChunks[0] = oracleAnalyzer->getMemoryChunk("LWN", false);

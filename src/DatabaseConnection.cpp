@@ -23,14 +23,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM) :
-            env(env)
-            ,errhp(nullptr),
-            srvhp(nullptr),
-            svchp(nullptr),
-            authp(nullptr)
-    {
+		env(env),
+		errhp(nullptr),
+		srvhp(nullptr),
+		svchp(nullptr),
+		authp(nullptr) {
+
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&errhp, OCI_HTYPE_ERROR, 0, nullptr);
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&srvhp, OCI_HTYPE_SERVER, 0, nullptr);
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&svchp, OCI_HTYPE_SVCCTX, 0, nullptr);

@@ -26,11 +26,11 @@ namespace OpenLogReplicator {
         CharacterSet16bit("JA16SJIS", unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {
     }
 
-    CharacterSetJA16SJIS::CharacterSetJA16SJIS(const char *name) :
-        CharacterSet16bit(name, unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {
+    CharacterSetJA16SJIS::~CharacterSetJA16SJIS() {
     }
 
-    CharacterSetJA16SJIS::~CharacterSetJA16SJIS() {
+    CharacterSetJA16SJIS::CharacterSetJA16SJIS(const char *name) :
+        CharacterSet16bit(name, unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {
     }
 
     bool CharacterSetJA16SJIS::validCode(uint64_t byte1, uint64_t byte2) const {

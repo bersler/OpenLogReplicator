@@ -48,7 +48,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSetZHS32GB18030 : public CharacterSet {
     protected:
         static typeunicode16 unicode_map_ZHS32GB18030_2b[(ZHS32GB18030_2_b1_max - ZHS32GB18030_2_b1_min + 1) *

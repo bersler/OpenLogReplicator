@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     CharacterSetAL32UTF8::CharacterSetAL32UTF8() :
         CharacterSet("AL32UTF8") {
     }

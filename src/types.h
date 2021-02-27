@@ -198,7 +198,6 @@ typedef uint64_t typeunicode;
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class OracleAnalyzer;
 
     class uintX_t {

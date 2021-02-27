@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     CharacterSet8bit::CharacterSet8bit(const char *name, const typeunicode16 *map) :
         CharacterSet7bit(name, map),
         customASCII(false) {

@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     CharacterSetZHT32EUC::CharacterSetZHT32EUC() :
         CharacterSet("ZHT32EUC") {
     }

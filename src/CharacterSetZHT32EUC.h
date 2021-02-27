@@ -38,7 +38,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSetZHT32EUC : public CharacterSet {
     protected:
         static typeunicode16 unicode_map_ZHT32EUC_2b[(ZHT32EUC_2_b1_max - ZHT32EUC_2_b1_min + 1) *

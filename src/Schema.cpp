@@ -35,9 +35,8 @@ extern const Value& getJSONfieldV(string &fileName, const Value& value, const ch
 extern const Value& getJSONfieldD(string &fileName, const Document& document, const char* field);
 
 namespace OpenLogReplicator {
-
     Schema::Schema() :
-            object(nullptr) {
+		object(nullptr) {
     }
 
     Schema::~Schema() {
@@ -347,7 +346,7 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss << "{\"obj\":" << dec << objectTmp->obj << "," <<
-                    "\"dataObj\":" << dec << objectTmp->dataObj << "," <<
+                    "\"data-obj\":" << dec << objectTmp->dataObj << "," <<
                     "\"clu-cols\":" << dec << objectTmp->cluCols << "," <<
                     "\"total-pk\":" << dec << objectTmp->totalPk << "," <<
                     "\"options\":" << dec << objectTmp->options << "," <<
@@ -389,7 +388,7 @@ namespace OpenLogReplicator {
                     typeOBJ partitionObjn = objectTmp->partitions[i] >> 32;
                     typeOBJ partitionObjd = objectTmp->partitions[i] & 0xFFFFFFFF;
                     ss << "{\"obj\":" << dec << partitionObjn << "," <<
-                            "\"dataObj\":" << dec << partitionObjd << "}";
+                            "\"data-obj\":" << dec << partitionObjd << "}";
                 }
                 ss << "]";
             }

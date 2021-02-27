@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTERSET16BIT_H_
 #define CHARACTERSET16BIT_H_
 
-
 #define JA16VMS_b1_min          0xA1
 #define JA16VMS_b1_max          0xF4
 #define JA16VMS_b2_min          0xA1

@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
         Reader(alias, oracleAnalyzer, group),
         fileDes(0),

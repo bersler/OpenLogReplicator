@@ -37,7 +37,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BUFFERS_FREE_MASK   0xFFFF
 
 namespace OpenLogReplicator {
-
     class OracleAnalyzer;
     class RedoLogRecord;
     class Transaction;

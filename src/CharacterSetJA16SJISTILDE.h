@@ -25,7 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     class CharacterSetJA16SJISTILDE : public CharacterSetJA16SJIS {
     protected:
         virtual typeunicode readMap(uint64_t byte1, uint64_t byte2) const;

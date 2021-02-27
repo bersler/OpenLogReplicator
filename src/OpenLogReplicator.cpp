@@ -774,7 +774,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
 #else
-                RUNTIME_FAIL("Writer Kafka is not compiled, exiting")
+                RUNTIME_FAIL("writer Kafka is not compiled, exiting")
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
@@ -791,7 +791,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
-                RUNTIME_FAIL("Writer ZeroMQ is not compiled, exiting")
+                RUNTIME_FAIL("writer ZeroMQ is not compiled, exiting")
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
             } else if (strcmp(writerTypeJSON.GetString(), "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
@@ -808,7 +808,7 @@ int main(int argc, char **argv) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
-                RUNTIME_FAIL("Writer Network is not compiled, exiting")
+                RUNTIME_FAIL("writer Network is not compiled, exiting")
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());

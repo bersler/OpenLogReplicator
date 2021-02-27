@@ -22,7 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     Thread::Thread(const char *alias) :
         stop(false),
         shutdown(false),

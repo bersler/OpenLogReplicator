@@ -22,10 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOGRECORD_H_
 #define REDOLOGRECORD_H_
 
-using namespace std;
-
-namespace OpenLogReplicator {
-
 #define FLAGS_XA                0x01
 #define FLAGS_XR                0x02
 #define FLAGS_CR                0x03
@@ -89,6 +85,9 @@ namespace OpenLogReplicator {
 
 #define OPFLAG_BEGIN_TRANS      0x01
 
+using namespace std;
+
+namespace OpenLogReplicator {
     class OracleObject;
     class OracleAnalyzer;
 

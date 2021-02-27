@@ -23,7 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPCODE1801_H_
 
 namespace OpenLogReplicator {
-
     class RedoLogRecord;
 
     class OpCode1801: public OpCode {

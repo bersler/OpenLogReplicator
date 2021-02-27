@@ -22,13 +22,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
-    NetworkException::~NetworkException() {
+    NetworkException::NetworkException(const char* msg) :
+		exception(),
+		msg(msg) {
     }
 
-    NetworkException::NetworkException(const char* msg) :
-            exception(),
-            msg(msg) {
+    NetworkException::~NetworkException() {
     }
 
     ostream& operator<<(ostream& os, const NetworkException& ors) {
