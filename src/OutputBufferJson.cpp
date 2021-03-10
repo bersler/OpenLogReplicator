@@ -453,11 +453,14 @@ namespace OpenLogReplicator {
             } else if (*str == '\b') {
                 outputBufferAppend('\\');
                 outputBufferAppend('b');
+            } else if (*str == 0) {
+                outputBufferAppend("\\u0000");
             } else {
                 if (*str == '"' || *str == '\\' || *str == '/')
                     outputBufferAppend('\\');
-                outputBufferAppend(*(str++));
+                outputBufferAppend(*str);
             }
+            ++str;
             --length;
         }
     }
