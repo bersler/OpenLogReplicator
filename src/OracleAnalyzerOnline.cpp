@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
     const char* OracleAnalyzerOnline::SQL_GET_DATABASE_INFORMATION(
             "SELECT"
             "   DECODE(D.LOG_MODE, 'ARCHIVELOG', 1, 0)"
-            ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_MIN, 'YES', 1, 0)"
+            ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_MIN, 'NO', 0, 1)"
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0)"
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_ALL, 'YES', 1, 0)"
             ",  DECODE(TP.ENDIAN_FORMAT, 'Big', 1, 0)"
