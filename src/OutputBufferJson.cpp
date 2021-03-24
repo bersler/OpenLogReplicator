@@ -488,8 +488,8 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void OutputBufferJson::processBegin(typeSCN scn, typetime time, typeXID xid) {
-        lastTime = time;
+    void OutputBufferJson::processBegin(typeSCN scn, typetime time_, typeXID xid) {
+        lastTime = time_;
         lastScn = scn;
         lastXid = xid;
         hasPreviousRedo = false;
@@ -554,13 +554,13 @@ namespace OpenLogReplicator {
                 if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
                     processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
                 else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0)
                     columnNull(object, i);
             } else {
                 if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
                     processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
                 else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC)
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
                     columnNull(nullptr, i);
             }
         }
@@ -689,13 +689,13 @@ namespace OpenLogReplicator {
                 if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
                     processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
                 else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0)
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0)
                     columnNull(object, i);
             } else {
                 if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
                     processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
                 else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC)
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
                     columnNull(nullptr, i);
             }
         }

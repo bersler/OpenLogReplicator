@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
         valuePB->set_name(columnName);
     }
 
-    void OutputBufferProtobuf::columnTimestamp(string &columnName, struct tm &time, uint64_t fraction, const char *tz) {
+    void OutputBufferProtobuf::columnTimestamp(string &columnName, struct tm &time_, uint64_t fraction, const char *tz) {
         valuePB->set_name(columnName);
     }
 
@@ -275,8 +275,8 @@ namespace OpenLogReplicator {
         buf[length] = 0;
     }
 
-    void OutputBufferProtobuf::processBegin(typeSCN scn, typetime time, typeXID xid) {
-        lastTime = time;
+    void OutputBufferProtobuf::processBegin(typeSCN scn, typetime time_, typeXID xid) {
+        lastTime = time_;
         lastScn = scn;
         lastXid = xid;
         outputBufferBegin(0);
@@ -377,7 +377,7 @@ namespace OpenLogReplicator {
                     valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                     processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
                 } else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0) {
                     payloadPB->add_after();
                     valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                     columnNull(object, i);
@@ -388,7 +388,7 @@ namespace OpenLogReplicator {
                     valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                     processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
                 } else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC) {
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
                     payloadPB->add_after();
                     valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                     columnNull(nullptr, i);
@@ -562,7 +562,7 @@ namespace OpenLogReplicator {
                     valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                     processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
                 } else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC || object->columns[i]->numPk > 0) {
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0) {
                     payloadPB->add_before();
                     valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                     columnNull(object, i);
@@ -573,7 +573,7 @@ namespace OpenLogReplicator {
                     valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                     processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
                 } else
-                if (columnFormat >= COLUMN_FORMAT_INS_DEC) {
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
                     payloadPB->add_before();
                     valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
                     columnNull(nullptr, i);

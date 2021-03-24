@@ -1890,7 +1890,7 @@ namespace OpenLogReplicator {
         }
 
         if (type == TRANSACTION_UPDATE) {
-            if (object != nullptr && columnFormat < COLUMN_FORMAT_FULL) {
+            if (object != nullptr && (columnFormat & COLUMN_FORMAT_FULL_UPD) == 0) {
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ) {
                     uint16_t i = (*it).first;
                     uint16_t pos = (*it).second;
@@ -1928,17 +1928,34 @@ namespace OpenLogReplicator {
             processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
         } else {
             if (object != nullptr) {
-                //assume null values for missing columns
-                for (uint16_t i: object->pk ) {
-                    auto it = valuesMap.find(i);
-                    if (it == valuesMap.end()) {
-                        memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
-                        memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
-                        memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
-                        memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
-                        values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
-                        values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
-                        valuesMap[i] = valuesMax++;
+                //assume null values for all missing columns
+                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
+                    uint16_t maxCol = object->columns.size();
+                    for (uint16_t i = 0; i < maxCol; ++i) {
+                        auto it = valuesMap.find(i);
+                        if (it == valuesMap.end()) {
+                            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
+                            values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
+                            values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
+                            valuesMap[i] = valuesMax++;
+                        }
+                    }
+                } else {
+                    //assume null values for pk missing columns
+                    for (uint16_t i: object->pk) {
+                        auto it = valuesMap.find(i);
+                        if (it == valuesMap.end()) {
+                            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
+                            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
+                            values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
+                            values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
+                            valuesMap[i] = valuesMax++;
+                        }
                     }
                 }
             }

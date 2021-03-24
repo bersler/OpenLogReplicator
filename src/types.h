@@ -111,9 +111,9 @@ typedef uint64_t typeunicode;
 //default, only changed columns for update, or PK
 #define COLUMN_FORMAT_CHANGED                   0
 //show full nulls from insert & delete
-#define COLUMN_FORMAT_INS_DEC                   1
+#define COLUMN_FORMAT_FULL_INS_DEC              1
 //show all from redo
-#define COLUMN_FORMAT_FULL                      2
+#define COLUMN_FORMAT_FULL_UPD                  2
 
 #define TRACE_SILENT                            0
 #define TRACE_WARNING                           1
