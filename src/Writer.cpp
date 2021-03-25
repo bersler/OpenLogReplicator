@@ -181,7 +181,7 @@ namespace OpenLogReplicator {
     void *Writer::run(void) {
         TRACE(TRACE2_THREADS, "THREADS: WRITER (" << hex << this_thread::get_id() << ") START");
 
-        INFO("Writer is starting: " << getName());
+        INFO("writer is starting: " << getName());
 
         try {
             //external loop for client disconnection
@@ -229,7 +229,7 @@ namespace OpenLogReplicator {
                                     outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
                                 else {
                                     if (stop) {
-                                        INFO("Writer flushed, shutting down");
+                                        INFO("writer flushed, shutting down");
                                         doShutdown();
                                     } else
                                         outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
@@ -315,7 +315,7 @@ namespace OpenLogReplicator {
             stopMain();
         }
 
-        INFO("Writer is stopping: " << getName() << ", max queue size: " << dec << maxQueueSize);
+        INFO("writer is stopping: " << getName() << ", max queue size: " << dec << maxQueueSize);
 
         TRACE(TRACE2_THREADS, "THREADS: WRITER (" << hex << this_thread::get_id() << ") STOP");
         return 0;
