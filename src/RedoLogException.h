@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOGEXCEPTION_H_
 #define REDOLOGEXCEPTION_H_
 
-#define REDOLOG_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw RedoLogException("error");}
-
 using namespace std;
 
 namespace OpenLogReplicator {

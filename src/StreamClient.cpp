@@ -27,6 +27,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamZeroMQ.h"
 #endif /* LINK_LIBRARY_ZEROMQ */
 
+uint64_t trace = 3, trace2 = 0;
+#define TRACEVAR
+
 #define POLL_INTERVAL           10000
 
 using namespace std;
@@ -36,7 +39,7 @@ void send(pb::RedoRequest &request, Stream *stream) {
     string buffer;
     bool ret = request.SerializeToString(&buffer);
     if (!ret) {
-        cout << "Message serialization error" << endl;
+        ERROR("message serialization");
         exit(0);
     }
 
@@ -49,17 +52,17 @@ void receive(pb::RedoResponse &response, Stream *stream) {
 
     response.Clear();
     if (!response.ParseFromArray(buffer, length)) {
-        cout << "Response parse error" << endl;
+        ERROR("response parse");
         exit(0);
     }
 }
 
 int main(int argc, char** argv) {
     if (argc < 4) {
-        cout << "Use: ClientNetwork [network|zeromq] <uri> <database> {<scn>}" << endl;
+        WARNING("use: ClientNetwork [network|zeromq] <uri> <database> {<scn>}");
         return 0;
     }
-    cout << "OpenLogReplicator v." PACKAGE_VERSION " StreamClient (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    INFO("OpenLogReplicator v." PACKAGE_VERSION " StreamClient (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
     pb::RedoRequest request;
     pb::RedoResponse response;
@@ -82,10 +85,10 @@ int main(int argc, char** argv) {
 
         request.set_code(pb::RequestCode::INFO);
         request.set_database_name(argv[3]);
-        cout << "INFO database: " << request.database_name() << endl;
+        INFO("INFO database: " << request.database_name());
         send(request, stream);
         receive(response, stream);
-        cout << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+        INFO("- code: " << (uint64_t)response.code() << ", scn: " << response.scn());
 
         uint64_t scn = 0;
         if (response.code() == pb::ResponseCode::STARTED) {
@@ -96,20 +99,20 @@ int main(int argc, char** argv) {
             request.set_database_name(argv[3]);
             if (argc > 4) {
                 request.set_scn(atoi(argv[4]));
-                cout << "START scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
+                INFO("START scn: " << dec << request.scn() << ", database: " << request.database_name());
             } else {
                 //start from now, when SCN is not given
                 request.set_scn(ZERO_SCN);
-                cout << "START NOW, database: " << request.database_name() << endl;
+                INFO("START NOW, database: " << request.database_name());
             }
             send(request, stream);
             receive(response, stream);
-            cout << "- code: " << (uint64_t)response.code() << ", scn: " << response.scn() << endl;
+            INFO("- code: " << (uint64_t)response.code() << ", scn: " << response.scn());
 
             if (response.code() == pb::ResponseCode::STARTED || response.code() == pb::ResponseCode::ALREADY_STARTED) {
                 scn = response.scn();
             } else {
-                cout << "returned code: " << response.code() << endl;
+                ERROR("returned code: " << response.code());
                 return 1;
             }
         } else {
@@ -122,17 +125,17 @@ int main(int argc, char** argv) {
         request.Clear();
         request.set_code(pb::RequestCode::REDO);
         request.set_database_name(argv[3]);
-        cout << "REDO database: " << request.database_name() << endl;
+        INFO("REDO database: " << request.database_name());
         send(request, stream);
         receive(response, stream);
-        cout << "- code: " << (uint64_t)response.code() << endl;
+        INFO("- code: " << (uint64_t)response.code());
 
         if (response.code() != pb::ResponseCode::STREAMING)
             return 1;
 
         for (;;) {
             receive(response, stream);
-            cout << "- scn: " << dec << response.scn() << ", code: " << (uint64_t) response.code() << " payload size: " << response.payload_size() << endl;
+            INFO("- scn: " << dec << response.scn() << ", code: " << (uint64_t) response.code() << " payload size: " << response.payload_size());
             lastScn = response.scn();
             ++num;
 
@@ -142,7 +145,7 @@ int main(int argc, char** argv) {
                 request.set_code(pb::RequestCode::CONFIRM);
                 request.set_scn(prevScn);
                 request.set_database_name(argv[3]);
-                cout << "CONFIRM scn: " << dec << request.scn() << ", database: " << request.database_name() << endl;
+                INFO("CONFIRM scn: " << dec << request.scn() << ", database: " << request.database_name());
                 send(request, stream);
                 num = 0;
             }

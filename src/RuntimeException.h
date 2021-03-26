@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef RUNTIMEEXCEPTION_H_
 #define RUNTIMEEXCEPTION_H_
 
-#define RUNTIME_FAIL(x) {stringstream s; s << "ERROR: " << x << endl; cerr << s.str(); throw RuntimeException("error");}
-
 using namespace std;
 
 namespace OpenLogReplicator {

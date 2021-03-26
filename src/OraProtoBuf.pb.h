@@ -99,12 +99,13 @@ enum Op : int {
   UPDATE = 3,
   DELETE = 4,
   DDL = 5,
+  CHKPT = 6,
   Op_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
   Op_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
 };
 bool Op_IsValid(int value);
 constexpr Op Op_MIN = BEGIN;
-constexpr Op Op_MAX = DDL;
+constexpr Op Op_MAX = CHKPT;
 constexpr int Op_ARRAYSIZE = Op_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Op_descriptor();
@@ -1039,6 +1040,9 @@ class Payload PROTOBUF_FINAL :
     kDdlFieldNumber = 6,
     kSchemaFieldNumber = 2,
     kOpFieldNumber = 1,
+    kSeqFieldNumber = 7,
+    kPosFieldNumber = 8,
+    kRedoFieldNumber = 9,
   };
   // repeated .OpenLogReplicator.pb.Value before = 4;
   int before_size() const;
@@ -1135,6 +1139,33 @@ class Payload PROTOBUF_FINAL :
   void _internal_set_op(::OpenLogReplicator::pb::Op value);
   public:
 
+  // uint32 seq = 7;
+  void clear_seq();
+  ::PROTOBUF_NAMESPACE_ID::uint32 seq() const;
+  void set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint32 _internal_seq() const;
+  void _internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value);
+  public:
+
+  // uint64 pos = 8;
+  void clear_pos();
+  ::PROTOBUF_NAMESPACE_ID::uint64 pos() const;
+  void set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_pos() const;
+  void _internal_set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
+  // bool redo = 9;
+  void clear_redo();
+  bool redo() const;
+  void set_redo(bool value);
+  private:
+  bool _internal_redo() const;
+  void _internal_set_redo(bool value);
+  public:
+
   // @@protoc_insertion_point(class_scope:OpenLogReplicator.pb.Payload)
  private:
   class _Internal;
@@ -1148,6 +1179,9 @@ class Payload PROTOBUF_FINAL :
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr ddl_;
   ::OpenLogReplicator::pb::Schema* schema_;
   int op_;
+  ::PROTOBUF_NAMESPACE_ID::uint32 seq_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 pos_;
+  bool redo_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
@@ -3094,6 +3128,66 @@ inline void Payload::set_allocated_ddl(std::string* ddl) {
   ddl_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ddl,
       GetArena());
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.Payload.ddl)
+}
+
+// uint32 seq = 7;
+inline void Payload::clear_seq() {
+  seq_ = 0u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Payload::_internal_seq() const {
+  return seq_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint32 Payload::seq() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.seq)
+  return _internal_seq();
+}
+inline void Payload::_internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  
+  seq_ = value;
+}
+inline void Payload::set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+  _internal_set_seq(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.seq)
+}
+
+// uint64 pos = 8;
+inline void Payload::clear_pos() {
+  pos_ = PROTOBUF_ULONGLONG(0);
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::_internal_pos() const {
+  return pos_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::pos() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.pos)
+  return _internal_pos();
+}
+inline void Payload::_internal_set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  
+  pos_ = value;
+}
+inline void Payload::set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_pos(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.pos)
+}
+
+// bool redo = 9;
+inline void Payload::clear_redo() {
+  redo_ = false;
+}
+inline bool Payload::_internal_redo() const {
+  return redo_;
+}
+inline bool Payload::redo() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.redo)
+  return _internal_redo();
+}
+inline void Payload::_internal_set_redo(bool value) {
+  
+  redo_ = value;
+}
+inline void Payload::set_redo(bool value) {
+  _internal_set_redo(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.redo)
 }
 
 // -------------------------------------------------------------------

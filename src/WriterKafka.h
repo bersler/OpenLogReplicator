@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
 
     public:
         WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic, uint64_t maxMessageMb,
-                uint64_t maxMessages, uint64_t pollInterval, uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn,
+                uint64_t maxMessages, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn,
                 typeSEQ startSeq, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence);
         virtual ~WriterKafka();
     };

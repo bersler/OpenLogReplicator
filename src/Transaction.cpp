@@ -260,9 +260,9 @@ namespace OpenLogReplicator {
                         }
 
                         if (redoLogRecord1->suppLogType == 0) {
-                            RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing" << endl <<
-                                    "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl <<
-                                    "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                            WARNING("HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
+                            WARNING("HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                            RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing");
                         }
 
                         if (first1 == nullptr) {

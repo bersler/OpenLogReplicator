@@ -36,7 +36,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-
     const char* OracleAnalyzerOnline::SQL_GET_ARCHIVE_LOG_LIST(
             "SELECT"
             "   NAME"
@@ -329,21 +328,17 @@ namespace OpenLogReplicator {
             " WHERE"
             "   PROPERTY_NAME = :i");
 
-    OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace,
-            uint64_t trace2, uint64_t dumpRedoLog, uint64_t dumpRawData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
-            uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-            const char *logArchiveFormat, const char *redoCopyPath, const char *user, const char *password,
-            const char *connectString, bool isStandby) :
-                    OracleAnalyzer(outputBuffer, alias, database, trace, trace2, dumpRedoLog, dumpRawData, flags, disableChecks,
-                    redoReadSleep, archReadSleep, redoVerifyDelay, memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat,
-                    redoCopyPath),
-            isStandby(isStandby),
-            user(user),
-            password(password),
-            connectString(connectString),
-            env(nullptr),
-            conn(nullptr),
-            keepConnection(false) {
+    OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
+            const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+            uint64_t disableChecks, const char *user, const char *password, const char *connectString, bool isStandby) :
+        OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks),
+        isStandby(isStandby),
+        user(user),
+        password(password),
+        connectString(connectString),
+        env(nullptr),
+        conn(nullptr),
+        keepConnection(false) {
 
         env = new DatabaseEnvironment();
     }
@@ -379,7 +374,7 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INFORMATION);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INFORMATION);
             stmt.createStatement(SQL_GET_DATABASE_INFORMATION);
             uint64_t logMode; stmt.defineUInt64(1, logMode);
             uint64_t supplementalLogMin; stmt.defineUInt64(2, supplementalLogMin);
@@ -394,17 +389,17 @@ namespace OpenLogReplicator {
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
-                    RUNTIME_FAIL("database not in ARCHIVELOG mode" << endl <<
-                            "HINT run: SHUTDOWN IMMEDIATE;" << endl <<
-                            "HINT run: STARTUP MOUNT;" << endl <<
-                            "HINT run: ALTER DATABASE ARCHIVELOG;" << endl <<
-                            "HINT run: ALTER DATABASE OPEN;");
+                    WARNING("HINT run: SHUTDOWN IMMEDIATE;");
+                    WARNING("HINT run: STARTUP MOUNT;");
+                    WARNING("HINT run: ALTER DATABASE ARCHIVELOG;");
+                    WARNING("HINT run: ALTER DATABASE OPEN;");
+                    RUNTIME_FAIL("database not in ARCHIVELOG mode");
                 }
 
                 if (supplementalLogMin == 0) {
-                    RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing" << endl <<
-                            "HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;" << endl <<
-                            "HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                    WARNING("HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
+                    WARNING("HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                    RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
                 if (isBigEndian)
@@ -427,7 +422,7 @@ namespace OpenLogReplicator {
                 if (memcmp(bannerStr, "Oracle Database 11g", 19) != 0) {
                     version12 = true;
                     DatabaseStatement stmt2(conn);
-                    TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_CON_INFO);
+                    TRACE(TRACE2_SQL, "SQL: " << SQL_GET_CON_INFO);
                     stmt2.createStatement(SQL_GET_CON_INFO);
                     stmt2.defineUInt16(1, conId);
                     char conNameChar[81];
@@ -437,7 +432,7 @@ namespace OpenLogReplicator {
                 }
                 context = contextStr;
 
-                INFO_("version: " << dec << bannerStr << ", context: " << context << ", resetlogs: " << dec << resetlogs <<
+                INFO("version: " << dec << bannerStr << ", context: " << context << ", resetlogs: " << dec << resetlogs <<
                         ", activation: " << activation << ", con_id: " << conId << ", con_name: " << conName);
             } else {
                 RUNTIME_FAIL("trying to read SYS.V_$DATABASE");
@@ -471,8 +466,8 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST << endl <<
-                    "PARAM1: " << isStandby);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: " << isStandby);
             stmt.createStatement(SQL_GET_LOGFILE_LIST);
             if (isStandby)
                 stmt.bindString(1, "STANDBY");
@@ -515,18 +510,18 @@ namespace OpenLogReplicator {
         if (startSequence > 0) {
             DatabaseStatement stmt(conn);
             if (isStandby) {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_SEQUENCE_STANDBY << endl <<
-                        "PARAM1: " << startSequence << endl <<
-                        "PARAM2: " << resetlogs << endl <<
-                        "PARAM3: " << activation << endl <<
-                        "PARAM4: " << startSequence);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_SEQUENCE_STANDBY);
+                TRACE(TRACE2_SQL, "PARAM1: " << startSequence);
+                TRACE(TRACE2_SQL, "PARAM2: " << resetlogs);
+                TRACE(TRACE2_SQL, "PARAM3: " << activation);
+                TRACE(TRACE2_SQL, "PARAM4: " << startSequence);
                 stmt.createStatement(SQL_GET_SCN_FROM_SEQUENCE_STANDBY);
             } else {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_SEQUENCE << endl <<
-                        "PARAM1: " << startSequence << endl <<
-                        "PARAM2: " << resetlogs << endl <<
-                        "PARAM3: " << activation << endl <<
-                        "PARAM4: " << startSequence);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_SEQUENCE);
+                TRACE(TRACE2_SQL, "PARAM1: " << startSequence);
+                TRACE(TRACE2_SQL, "PARAM2: " << resetlogs);
+                TRACE(TRACE2_SQL, "PARAM3: " << activation);
+                TRACE(TRACE2_SQL, "PARAM4: " << startSequence);
                 stmt.createStatement(SQL_GET_SCN_FROM_SEQUENCE);
             }
 
@@ -547,8 +542,8 @@ namespace OpenLogReplicator {
             if (isStandby) {
                 RUNTIME_FAIL("can't position by time for standby database");
             } else {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME << endl <<
-                        "PARAM1: " << startTime);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME);
+                TRACE(TRACE2_SQL, "PARAM1: " << startTime);
                 stmt.createStatement(SQL_GET_SCN_FROM_TIME);
             }
             stringstream ss;
@@ -564,8 +559,8 @@ namespace OpenLogReplicator {
             if (isStandby) {
                 RUNTIME_FAIL("can't position by relative time for standby database");
             } else {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME_RELATIVE << endl <<
-                        "PARAM1: " << startTimeRel);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME_RELATIVE);
+                TRACE(TRACE2_SQL, "PARAM1: " << startTimeRel);
                 stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
             }
 
@@ -582,7 +577,7 @@ namespace OpenLogReplicator {
         //NOW
         } else {
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
             stmt.defineUInt64(1, scn);
 
@@ -598,16 +593,16 @@ namespace OpenLogReplicator {
         initializeSchema();
 
         if (sequence == 0) {
-            FULL_("starting sequence not found - starting with new batch");
+            DEBUG("starting sequence not found - starting with new batch");
 
             DatabaseStatement stmt(conn);
             if (isStandby) {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN_STANDBY << endl <<
-                        "PARAM1: " << scn);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
+                TRACE(TRACE2_SQL, "PARAM1: " << scn);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
             } else {
-                TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN << endl <<
-                        "PARAM1: " << scn);
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN);
+                TRACE(TRACE2_SQL, "PARAM1: " << scn);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN);
             }
             stmt.bindUInt64(1, scn);
@@ -618,17 +613,16 @@ namespace OpenLogReplicator {
             }
         }
 
-        FULL_("start SEQ: " << dec << sequence);
+        DEBUG("start SEQ: " << dec << sequence);
 
         if (!keepConnection)
             closeConnection();
     }
 
     void OracleAnalyzerOnline::checkConnection(void) {
+        INFO("connecting to Oracle instance of " << database << " to " << connectString);
         while (!shutdown) {
             if (conn == nullptr) {
-                INFO_("connecting to Oracle instance of " << database << " to " << connectString);
-
                 try {
                     conn = new DatabaseConnection(env, user, password, connectString, false);
                 } catch (RuntimeException &ex) {
@@ -639,7 +633,7 @@ namespace OpenLogReplicator {
             if (conn != nullptr)
                 break;
 
-            WARNING_("cannot connect to database, retry in 5 sec.");
+            WARNING("cannot connect to database, retry in 5 sec.");
             sleep(5);
         }
     }
@@ -654,8 +648,8 @@ namespace OpenLogReplicator {
     string OracleAnalyzerOnline::getParameterValue(const char *parameter) {
         char value[4001];
         DatabaseStatement stmt(conn);
-        TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_PARAMETER << endl <<
-                "PARAM1: " << parameter);
+        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARAMETER);
+        TRACE(TRACE2_SQL, "PARAM1: " << parameter);
         stmt.createStatement(SQL_GET_PARAMETER);
         stmt.bindString(1, parameter);
         stmt.defineString(1, value, sizeof(value));
@@ -670,8 +664,8 @@ namespace OpenLogReplicator {
     string OracleAnalyzerOnline::getPropertyValue(const char *property) {
         char value[4001];
         DatabaseStatement stmt(conn);
-        TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_PROPERTY << endl <<
-                "PARAM1: " << property);
+        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PROPERTY);
+        TRACE(TRACE2_SQL, "PARAM1: " << property);
         stmt.createStatement(SQL_GET_PROPERTY);
         stmt.bindString(1, property);
         stmt.defineString(1, value, sizeof(value));
@@ -688,17 +682,18 @@ namespace OpenLogReplicator {
             string query("SELECT 1 FROM " + tableName + " WHERE 0 = 1");
 
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, "SQL: " << query);
+            TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
             stmt.executeQuery();
         } catch (RuntimeException &ex) {
             if (conId > 0) {
-                RUNTIME_FAIL("grants missing" << endl <<
-                        "HINT run: ALTER SESSION SET CONTAINER = " << conName << ";" << endl <<
-                        "HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                WARNING("HINT run: ALTER SESSION SET CONTAINER = " << conName << ";");
+                WARNING("HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                RUNTIME_FAIL("grants missing");
             } else {
-                RUNTIME_FAIL("grants missing" << endl << "HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                WARNING("HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);
         }
@@ -709,17 +704,18 @@ namespace OpenLogReplicator {
             string query("SELECT 1 FROM " + tableName + " AS OF SCN " + to_string(scn) + " WHERE 0 = 1");
 
             DatabaseStatement stmt(conn);
-            TRACE_(TRACE2_SQL, "SQL: " << query);
+            TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
             stmt.executeQuery();
         } catch (RuntimeException &ex) {
             if (conId > 0) {
-                RUNTIME_FAIL("grants missing" << endl <<
-                        "HINT run: ALTER SESSION SET CONTAINER = " << conName << ";" << endl <<
-                        "HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                WARNING("HINT run: ALTER SESSION SET CONTAINER = " << conName << ";");
+                WARNING("HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                RUNTIME_FAIL("grants missing");
             } else {
-                RUNTIME_FAIL("grants missing" << endl << "HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                WARNING("HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);
         }
@@ -731,13 +727,13 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options) {
-        INFO_("- reading table schema for: " << mask);
+        INFO("- reading table schema for: " << mask);
 
         uint64_t tabCnt = 0;
         DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
 
-        TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST << endl <<
-                "PARAM1: " << mask);
+        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST);
+        TRACE(TRACE2_SQL, "PARAM1: " << mask);
         stmt.createStatement(SQL_GET_TABLE_LIST);
         typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
         typeOBJ obj; stmt.defineUInt32(2, obj);
@@ -756,12 +752,12 @@ namespace OpenLogReplicator {
         uint64_t compressed; stmt.defineUInt64(15, compressed);
 
         if (version12) {
-            TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST << endl <<
-                    "PARAM1: " << obj);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: " << obj);
             stmtCol.createStatement(SQL_GET_COLUMN_LIST);
         } else {
-            TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11 << endl <<
-                    "PARAM1: " << obj);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11);
+            TRACE(TRACE2_SQL, "PARAM1: " << obj);
             stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
         }
         typeCOL colNo; stmtCol.defineInt16(1, colNo);
@@ -784,17 +780,17 @@ namespace OpenLogReplicator {
         typeCOL numSup; stmtCol.defineInt16(18, numSup);
         stmtCol.bindUInt32(1, obj);
 
-        TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST << endl <<
-                "PARAM1: " << obj << endl <<
-                "PARAM2: " << obj);
+        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST);
+        TRACE(TRACE2_SQL, "PARAM1: " << obj);
+        TRACE(TRACE2_SQL, "PARAM2: " << obj);
         stmtPart.createStatement(SQL_GET_PARTITION_LIST);
         typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
         typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
         stmtPart.bindUInt32(1, obj);
         stmtPart.bindUInt32(2, obj);
 
-        TRACE_(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE << endl <<
-                "PARAM1: " << obj);
+        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE);
+        TRACE(TRACE2_SQL, "PARAM1: " << obj);
         stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
         uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
         stmtSupp.bindUInt32(1, obj);
@@ -807,7 +803,7 @@ namespace OpenLogReplicator {
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - IOT");
+                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - IOT");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -816,7 +812,7 @@ namespace OpenLogReplicator {
 
             //skip temporary tables
             if (temporary) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - temporary table");
+                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - temporary table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -825,7 +821,7 @@ namespace OpenLogReplicator {
 
             //skip nested tables
             if (nested) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - nested table");
+                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - nested table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -834,7 +830,7 @@ namespace OpenLogReplicator {
 
             //skip compressed tables
             if (compressed) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - compressed table");
+                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - compressed table");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -843,7 +839,7 @@ namespace OpenLogReplicator {
 
             //table already added with another rule
             if (schema->checkDict(obj, dataObj) != nullptr) {
-                INFO_("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - already added");
+                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - already added");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -893,9 +889,9 @@ namespace OpenLogReplicator {
                 if (typeNo == 1 || typeNo == 96) {
                     auto it = outputBuffer->characterMap.find(charmapId);
                     if (it == outputBuffer->characterMap.end()) {
+                        WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
                         RUNTIME_FAIL("table " << owner << "." << name << " - unsupported character set id: " << dec << charmapId <<
-                                " for column: " << columnName << endl <<
-                                "HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
+                                " for column: " << columnName);
                     }
                 }
 
@@ -919,7 +915,7 @@ namespace OpenLogReplicator {
                         supLogColMissing = true;
                 }
 
-                FULL_("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", G: " << dec << guardSegNo << ")");
+                DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", G: " << dec << guardSegNo << ")");
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
                         charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
@@ -970,7 +966,7 @@ namespace OpenLogReplicator {
                         ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
-            INFO_(ss.str());
+            INFO(ss.str());
 
             schema->object->maxSegCol = maxSegCol;
             schema->object->totalPk = totalPk;
@@ -982,7 +978,7 @@ namespace OpenLogReplicator {
             cluCols = 0;
             ret = stmt.next();
         }
-        INFO_("  * total: " << dec << tabCnt << " tables");
+        INFO("  * total: " << dec << tabCnt << " tables");
     }
 
     void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer *oracleAnalyzer) {
@@ -990,10 +986,10 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(((OracleAnalyzerOnline*)oracleAnalyzer)->conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST << endl <<
-                    "PARAM1: " << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence << endl <<
-                    "PARAM2: " << oracleAnalyzer->resetlogs << endl <<
-                    "PARAM3: " << oracleAnalyzer->activation);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: " << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+            TRACE(TRACE2_SQL, "PARAM2: " << oracleAnalyzer->resetlogs);
+            TRACE(TRACE2_SQL, "PARAM3: " << oracleAnalyzer->activation);
 
             stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
             stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
@@ -1025,7 +1021,6 @@ namespace OpenLogReplicator {
         if (!((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection)
             ((OracleAnalyzerOnline*)oracleAnalyzer)->closeConnection();
     }
-
 
     const char* OracleAnalyzerOnline::getModeName(void) const {
         return "online";

@@ -76,10 +76,8 @@ namespace OpenLogReplicator {
         virtual void refreshSchema(void);
 
     public:
-        OracleAnalyzer(OutputBuffer *outputBuffer, const char *alias, const char *database, uint64_t trace, uint64_t trace2,
-                uint64_t dumpRedoLog, uint64_t dumpData, uint64_t flags, uint64_t disableChecks, uint64_t redoReadSleep,
-                uint64_t archReadSleep, uint64_t redoVerifyDelay, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-                const char *logArchiveFormat, const char *redoCopyPath);
+        OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias, const char *database,
+                uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
         virtual ~OracleAnalyzer();
 
         string database;
@@ -118,11 +116,9 @@ namespace OpenLogReplicator {
         uint64_t disableChecks;
         vector<string> pathMapping;
         vector<string> redoLogsBatch;
-        uint64_t redoReadSleep;
-        uint64_t archReadSleep;
-        uint64_t redoVerifyDelay;
-        uint64_t trace;
-        uint64_t trace2;
+        uint64_t redoReadSleepUS;
+        uint64_t archReadSleepUS;
+        uint64_t redoVerifyDelayUS;
         uint64_t version;                   //compatibility level of redo logs
         typeconid conId;
         string conName;

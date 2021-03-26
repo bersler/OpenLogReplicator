@@ -88,10 +88,13 @@ namespace OpenLogReplicator {
         typeBLK numBlocks;
         typeresetlogs resetlogsHeader;
         typeactivation activationHeader;
+        typetime firstTimeHeader;
         typeSCN firstScnHeader;
         typeSCN firstScn;
         typeSCN nextScnHeader;
         typeSCN nextScn;
+        uint64_t sumRead;
+        uint64_t sumTime;
 
         uint64_t fileSize;
         atomic<uint64_t> status;

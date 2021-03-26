@@ -28,6 +28,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <thread>
 #include <unistd.h>
 
+uint64_t trace = 3, trace2 = 0;
+#define TRACEVAR
+
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleAnalyzerBatch.h"
@@ -80,19 +83,18 @@ mutex mainMtx;
 condition_variable mainThread;
 bool exitOnSignal = false;
 bool mainShutdown = false;
-uint64_t trace2 = 0;
 
 void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
 
     mainShutdown = true;
-    TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
+    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
     mainThread.notify_all();
 }
 
 void signalHandler(int s) {
     if (!exitOnSignal) {
-        cerr << "Caught signal " << s << ", exiting" << endl;
+        WARNING("caught signal " << s << ", exiting");
         exitOnSignal = true;
         stopMain();
     }
@@ -101,7 +103,7 @@ void signalHandler(int s) {
 void signalCrash(int sig) {
     void *array[32];
     size_t size = backtrace(array, 32);
-    cerr << "Error: signal " << dec << sig << endl;
+    ERROR("signal " << dec << sig);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
@@ -112,7 +114,7 @@ int main(int argc, char **argv) {
     signal(SIGSEGV, signalCrash);
     uintX_t::initializeBASE10();
 
-    cerr << "OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << endl;
+    INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
     list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;
@@ -169,7 +171,6 @@ int main(int argc, char **argv) {
         }
 
         //optional
-        uint64_t trace = 2;
         if (document.HasMember("trace")) {
             const Value& traceJSON = document["trace"];
             trace = traceJSON.GetUint64();
@@ -180,7 +181,7 @@ int main(int argc, char **argv) {
             const Value& traceJSON = document["trace2"];
             trace2 = traceJSON.GetUint64();
         }
-        TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
+        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
 
         //optional
         uint64_t dumpRawData = 0;
@@ -198,14 +199,7 @@ int main(int argc, char **argv) {
         for (SizeType i = 0; i < sourcesJSON.Size(); ++i) {
             const Value& sourceJSON = sourcesJSON[i];
             const Value& aliasJSON = getJSONfieldV(configFileName, sourceJSON, "alias");
-            cerr << "Adding source: " << aliasJSON.GetString() << endl;
-
-            //optional
-            uint64_t flags = 0;
-            if (sourceJSON.HasMember("flags")) {
-                const Value& flagsJSON = sourceJSON["flags"];
-                flags = flagsJSON.GetUint64();
-            }
+            INFO("adding source: " << aliasJSON.GetString());
 
             //optional
             uint64_t memoryMinMb = 32;
@@ -243,27 +237,6 @@ int main(int argc, char **argv) {
                 if (readBufferMax <= 1) {
                     CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value should be at least " << dec << MEMORY_CHUNK_SIZE_MB * 2);
                 }
-            }
-
-            //optional
-            uint64_t redoReadSleep = 10000;
-            if (sourceJSON.HasMember("redo-read-sleep")) {
-                const Value& redoReadSleepJSON = sourceJSON["redo-read-sleep"];
-                redoReadSleep = redoReadSleepJSON.GetUint();
-            }
-
-            //optional
-            uint64_t archReadSleep = 10000000;
-            if (sourceJSON.HasMember("arch-read-sleep")) {
-                const Value& archReadSleepJSON = sourceJSON["arch-read-sleep"];
-                archReadSleep = archReadSleepJSON.GetUint();
-            }
-
-            //optional
-            uint64_t redoVerifyDelay = 50000;
-            if (sourceJSON.HasMember("redo-verify-delay")) {
-                const Value& redoVerifyDelayJSON = sourceJSON["redo-verify-delay"];
-                redoVerifyDelay = redoVerifyDelayJSON.GetUint();
             }
 
             const Value& nameJSON = getJSONfieldV(configFileName, sourceJSON, "name");
@@ -351,14 +324,26 @@ int main(int argc, char **argv) {
                 }
             }
 
+            //optional
+            uint64_t unknownType = UNKNOWN_TYPE_HIDE;
+            if (formatJSON.HasMember("unknown-type")) {
+                const Value& unknownTypeJSON = formatJSON["unknown-type"];
+                unknownType = unknownTypeJSON.GetUint64();
+                if (unknownType > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << unknownTypeJSON.GetString() << ", expected one of: {0, 1}");
+                }
+            }
+
             const Value& formatTypeJSON = getJSONfieldV(configFileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferJson(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
+                outputBuffer = new OutputBufferJson(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                        schemaFormat, columnFormat, unknownType);
             } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                outputBuffer = new OutputBufferProtobuf(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat);
+                outputBuffer = new OutputBufferProtobuf(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                        schemaFormat, columnFormat, unknownType);
 #else
                 RUNTIME_FAIL("format \"protobuf\" is not compiled, exiting");
 #endif /* LINK_LIBRARY_PROTOBUF */
@@ -382,20 +367,6 @@ int main(int argc, char **argv) {
                 disableChecks = disableChecksJSON.GetUint64();
             }
 
-            //optional
-            const char *logArchiveFormat = "o1_mf_%t_%s_%h_.arc";
-            if (readerJSON.HasMember("log-archive-format")) {
-                const Value& logArchiveFormatJSON = readerJSON["log-archive-format"];
-                logArchiveFormat = logArchiveFormatJSON.GetString();
-            }
-
-            //optional
-            const char *redoCopyPath = "";
-            if (readerJSON.HasMember("redo-copy-path")) {
-                const Value& redoCopyPathJSON = readerJSON["redo-copy-path"];
-                redoCopyPath = redoCopyPathJSON.GetString();
-            }
-
             const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
@@ -416,10 +387,8 @@ int main(int argc, char **argv) {
                 const Value& serverJSON = getJSONfieldV(configFileName, readerJSON, "server");
                 server = serverJSON.GetString();
 
-                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, user, password,
-                        server, isStandby);
+                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
+                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -461,9 +430,8 @@ int main(int argc, char **argv) {
 
             } else if (strcmp(readerTypeJSON.GetString(), "offline") == 0) {
 
-                oracleAnalyzer = new OracleAnalyzer(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace, trace2,
-                        dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay, memoryMinMb,
-                        memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath);
+                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
+                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -516,10 +484,9 @@ int main(int argc, char **argv) {
                 const Value& serverASMJSON = getJSONfieldV(configFileName, readerJSON, "server-asm");
                 serverASM = serverASMJSON.GetString();
 
-                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                        trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                        memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, user, password,
-                        server, userASM, passwordASM, serverASM, isStandby);
+                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
+                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server,
+                        userASM, passwordASM, serverASM, isStandby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -544,7 +511,6 @@ int main(int argc, char **argv) {
 #endif /*LINK_LIBRARY_OCI*/
 
             } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
-                 flags |= REDO_FLAGS_ARCH_ONLY;
 
                  //optional
                  typeconid conId = 0;
@@ -553,9 +519,9 @@ int main(int argc, char **argv) {
                      conId = conIdJSON.GetUint();
                  }
 
-                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, aliasJSON.GetString(), nameJSON.GetString(), trace,
-                         trace2, dumpRedoLog, dumpRawData, flags, disableChecks, redoReadSleep, archReadSleep, redoVerifyDelay,
-                         memoryMinMb, memoryMaxMb, readBufferMax, logArchiveFormat, redoCopyPath, conId);
+                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
+                         nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
+                 oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
                  if (oracleAnalyzer == nullptr) {
                      RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
@@ -607,13 +573,49 @@ int main(int argc, char **argv) {
 
                     while (keyStream.good()) {
                         string keyCol, keyCol2;
-                        getline(keyStream, keyCol, ',' );
+                        getline(keyStream, keyCol, ',');
                         keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
                         transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
                         element->keys.push_back(keyCol);
                     }
                 } else
                     element->keysStr = "";
+            }
+
+            //optional
+            if (sourceJSON.HasMember("flags")) {
+                const Value& flagsJSON = sourceJSON["flags"];
+                oracleAnalyzer->flags |= flagsJSON.GetUint64();
+            }
+
+            //optional
+            if (sourceJSON.HasMember("redo-verify-delay-us")) {
+                const Value& redoVerifyDelayUSJSON = sourceJSON["redo-verify-delay-us"];
+                oracleAnalyzer->redoVerifyDelayUS = redoVerifyDelayUSJSON.GetUint64();
+            }
+
+            //optional
+            if (sourceJSON.HasMember("arch-read-sleep-us")) {
+                const Value& archReadSleepUSJSON = sourceJSON["arch-read-sleep-us"];
+                oracleAnalyzer->archReadSleepUS = archReadSleepUSJSON.GetUint64();
+            }
+
+            //optional
+            if (sourceJSON.HasMember("redo-read-sleep-us")) {
+                const Value& redoReadSleepUSJSON = sourceJSON["redo-read-sleep-us"];
+                oracleAnalyzer->redoReadSleepUS = redoReadSleepUSJSON.GetUint64();
+            }
+
+            //optional
+            if (readerJSON.HasMember("redo-copy-path")) {
+                const Value& redoCopyPathJSON = readerJSON["redo-copy-path"];
+                oracleAnalyzer->redoCopyPath = redoCopyPathJSON.GetString();
+            }
+
+            //optional
+            if (readerJSON.HasMember("log-archive-format")) {
+                const Value& logArchiveFormatJSON = readerJSON["log-archive-format"];
+                oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
             if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
@@ -632,7 +634,7 @@ int main(int argc, char **argv) {
         for (SizeType i = 0; i < targetsJSON.Size(); ++i) {
             const Value& targetJSON = targetsJSON[i];
             const Value& aliasJSON = getJSONfieldV(configFileName, targetJSON, "alias");
-            cerr << "Adding target: " << aliasJSON.GetString() << endl;
+            INFO("adding target: " << aliasJSON.GetString());
 
             const Value& sourceJSON = getJSONfieldV(configFileName, targetJSON, "source");
             OracleAnalyzer *oracleAnalyzer = nullptr;
@@ -648,12 +650,12 @@ int main(int argc, char **argv) {
             const Value& writerTypeJSON = getJSONfieldV(configFileName, writerJSON, "type");
 
             //optional
-            uint64_t pollInterval = 100000;
-            if (writerJSON.HasMember("poll-interval")) {
-                const Value& pollIntervalJSON = writerJSON["poll-interval"];
-                pollInterval = pollIntervalJSON.GetUint64();
-                if (pollInterval < 100 || pollInterval > 3600000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"poll-interval\" value: " << pollIntervalJSON.GetString() << ", expected from 100 to 3600000000");
+            uint64_t pollIntervalUS = 100000;
+            if (writerJSON.HasMember("poll-interval-us")) {
+                const Value& pollIntervalUSJSON = writerJSON["poll-interval-us"];
+                pollIntervalUS = pollIntervalUSJSON.GetUint64();
+                if (pollIntervalUS < 100 || pollIntervalUS > 3600000000) {
+                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << pollIntervalUSJSON.GetString() << ", expected from 100 to 3600000000");
                 }
             }
 
@@ -704,10 +706,10 @@ int main(int argc, char **argv) {
             }
 
             //optional
-            uint64_t checkpointInterval = 10;
-            if (writerJSON.HasMember("checkpoint-interval")) {
-                const Value& checkpointIntervalJSON = writerJSON["checkpoint-interval"];
-                checkpointInterval = checkpointIntervalJSON.GetUint64();
+            uint64_t checkpointIntervalS = 10;
+            if (writerJSON.HasMember("checkpoint-interval-s")) {
+                const Value& checkpointIntervalSJSON = writerJSON["checkpoint-interval-s"];
+                checkpointIntervalS = checkpointIntervalSJSON.GetUint64();
             }
 
             //optional
@@ -727,7 +729,7 @@ int main(int argc, char **argv) {
                     name = nameJSON.GetString();
                 }
 
-                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, name, pollInterval, checkpointInterval, queueSize,
+                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, name, pollIntervalUS, checkpointIntervalS, queueSize,
                         startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
@@ -768,7 +770,7 @@ int main(int argc, char **argv) {
                 const Value& topicJSON = getJSONfieldV(configFileName, writerJSON, "topic");
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyzer, brokersJSON.GetString(),
-                        topicJSON.GetString(), maxMessageMb, maxMessages, pollInterval, checkpointInterval, queueSize,
+                        topicJSON.GetString(), maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS, queueSize,
                         startScn, startSequence, startTime, startTimeRel, enableIdempocence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
@@ -780,12 +782,12 @@ int main(int argc, char **argv) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
-                StreamZeroMQ *stream = new StreamZeroMQ(uriJSON.GetString(), pollInterval);
+                StreamZeroMQ *stream = new StreamZeroMQ(uriJSON.GetString(), pollIntervalUS);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollInterval, checkpointInterval,
+                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
@@ -797,12 +799,12 @@ int main(int argc, char **argv) {
 #ifdef LINK_LIBRARY_PROTOBUF
                 const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
 
-                StreamNetwork *stream = new StreamNetwork(uriJSON.GetString(), pollInterval);
+                StreamNetwork *stream = new StreamNetwork(uriJSON.GetString(), pollIntervalUS);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollInterval, checkpointInterval,
+                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
@@ -877,6 +879,6 @@ int main(int argc, char **argv) {
     if (configFileBuffer != nullptr)
         delete[] configFileBuffer;
 
-    TRACE_(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP");
+    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP");
     return 0;
 }

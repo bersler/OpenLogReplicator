@@ -35,8 +35,8 @@ extern void stopMain();
 extern const Value& getJSONfieldD(string &fileName, const Document& document, const char* field);
 
 namespace OpenLogReplicator {
-    Writer::Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollInterval,
-            uint64_t checkpointInterval, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
+    Writer::Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
+            uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
             int64_t startTimeRel) :
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),
@@ -46,9 +46,9 @@ namespace OpenLogReplicator {
         maxQueueSize(0),
         queue(nullptr),
         maxMessageMb(maxMessageMb),
-        pollInterval(pollInterval),
+        pollIntervalUS(pollIntervalUS),
         previousCheckpoint(time(nullptr)),
-        checkpointInterval(checkpointInterval),
+        checkpointIntervalS(checkpointIntervalS),
         queueSize(queueSize),
         confirmedScn(0),
         checkpointScn(0),
@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
                                 oracleAnalyzer->memoryCond.notify_all();
 
                                 if (tmpQueueSize > 0)
-                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollInterval));
+                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollIntervalUS));
                                 else {
                                     if (stop) {
                                         INFO("writer flushed, shutting down");
@@ -249,8 +249,8 @@ namespace OpenLogReplicator {
                             //queue is full
                             pollQueue();
                             while (tmpQueueSize >= queueSize && !shutdown) {
-                                FULL("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollInterval << "us");
-                                usleep(pollInterval);
+                                DEBUG("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollIntervalUS << "us");
+                                usleep(pollIntervalUS);
                                 pollQueue();
                             }
                             writeCheckpoint(false);
@@ -322,15 +322,16 @@ namespace OpenLogReplicator {
     }
 
     void Writer::writeCheckpoint(bool force) {
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << checkpointScn << " confirmed scn: " << confirmedScn);
         if (checkpointScn == confirmedScn)
             return;
 
         time_t now = time(nullptr);
         uint64_t timeSinceCheckpoint = (now - previousCheckpoint);
-        if (timeSinceCheckpoint < checkpointInterval && !force)
+        if (timeSinceCheckpoint < checkpointIntervalS && !force)
             return;
 
-        FULL("checkpoint - writing scn: " << dec << confirmedScn);
+        DEBUG("checkpoint - writing scn: " << dec << confirmedScn);
         string fileName = oracleAnalyzer->database + "-chkpt.json";
         ofstream outfile;
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
@@ -397,7 +398,7 @@ namespace OpenLogReplicator {
         oracleAnalyzer->startTime = startTime;
         oracleAnalyzer->startTimeRel = startTimeRel;
 
-        FULL("attempt to start analyzer");
+        DEBUG("attempt to start analyzer");
         if (oracleAnalyzer->scn == ZERO_SCN && !shutdown) {
             unique_lock<mutex> lck(oracleAnalyzer->mtx);
             oracleAnalyzer->writerCond.notify_all();
@@ -405,7 +406,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->scn != ZERO_SCN && !shutdown) {
-            FULL("analyzer started");
+            DEBUG("analyzer started");
         }
     }
 }

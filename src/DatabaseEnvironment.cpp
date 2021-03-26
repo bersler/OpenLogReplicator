@@ -45,13 +45,15 @@ namespace OpenLogReplicator {
                 break;
 
             case OCI_SUCCESS_WITH_INFO:
-                cerr << "ERROR: OCI_SUCCESS_WITH_INFO" << endl;
+                WARNING("OCI_SUCCESS_WITH_INFO");
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
-                if (errcode != 100)
-                    cerr << "WARNING: " << errbuf1 << endl;
+                if (errcode != 100) {
+                    WARNING("OCI: " << errbuf1);
+                }
                 OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
-                if (errcode != 100)
-                    cerr << "WARNING: " << errbuf1 << endl;
+                if (errcode != 100) {
+                    WARNING("OCI: " << errbuf1);
+                }
                 break;
 
             case OCI_NEED_DATA:

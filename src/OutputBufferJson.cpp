@@ -24,18 +24,37 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RowId.h"
 
 namespace OpenLogReplicator {
-
-    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
-            uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat) :
-            OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat),
-            hasPreviousRedo(false),
-            hasPreviousColumn(false) {
+    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat,
+            uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType) :
+        OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
+                unknownType),
+        hasPreviousRedo(false),
+        hasPreviousColumn(false) {
     }
 
     OutputBufferJson::~OutputBufferJson() {
     }
 
     void OutputBufferJson::columnNull(OracleObject *object, typeCOL col) {
+        if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
+            OracleColumn *column = object->columns[col];
+
+            if (column->storedAsLob)
+                return;
+
+            uint64_t typeNo = object->columns[col]->typeNo;
+            if (typeNo != 1 //varchar2/nvarchar2
+                    && typeNo != 96 //char/nchar
+                    && typeNo != 2 //number/float
+                    && typeNo != 12 //date
+                    && typeNo != 180 //timestamp
+                    && typeNo != 23 //raw
+                    && typeNo != 100 //binary_float
+                    && typeNo != 101 //binary_double
+                    && typeNo != 181) //timestamp with time zone
+                return;
+        }
+
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -182,44 +201,54 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::appendHeader(bool first) {
+    void OutputBufferJson::appendHeader(bool first, bool showXid) {
+        bool beforeVal = false;
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
                 outputBufferAppend("\"scns\":\"0x");
                 appendHex(lastScn, 16);
-                outputBufferAppend("\",");
+                outputBufferAppend('"');
             } else {
                 outputBufferAppend("\"scn\":");
                 appendDec(lastScn);
-                outputBufferAppend(',');
             }
+            beforeVal = true;
         }
 
         if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
+            if (beforeVal)
+                outputBufferAppend(',');
+
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
                 outputBufferAppend("\"tms\":\"");
                 char iso[21];
                 lastTime.toISO8601(iso);
                 outputBufferAppend(iso);
-                outputBufferAppend("\",");
+                outputBufferAppend('"');
             } else {
                 outputBufferAppend("\"tm\":");
                 appendDec(lastTime.toTime() * 1000);
-                outputBufferAppend(',');
             }
+
+            beforeVal = true;
         }
 
-        if (xidFormat == XID_FORMAT_TEXT) {
-            outputBufferAppend("\"xid\":\"");
-            appendDec(USN(lastXid));
-            outputBufferAppend('.');
-            appendDec(SLT(lastXid));
-            outputBufferAppend('.');
-            appendDec(SQN(lastXid));
-            outputBufferAppend('"');
-        } else {
-            outputBufferAppend("\"xidn\":");
-            appendDec(lastXid);
+        if (showXid) {
+            if (beforeVal)
+                 outputBufferAppend(',');
+
+            if (xidFormat == XID_FORMAT_TEXT) {
+                outputBufferAppend("\"xid\":\"");
+                appendDec(USN(lastXid));
+                outputBufferAppend('.');
+                appendDec(SLT(lastXid));
+                outputBufferAppend('.');
+                appendDec(SQN(lastXid));
+                outputBufferAppend('"');
+            } else {
+                outputBufferAppend("\"xidn\":");
+                appendDec(lastXid);
+            }
         }
     }
 
@@ -496,7 +525,7 @@ namespace OpenLogReplicator {
 
         outputBufferBegin(0);
         outputBufferAppend('{');
-        appendHeader(true);
+        appendHeader(true, true);
 
         if (messageFormat == MESSAGE_FORMAT_FULL)
             outputBufferAppend(",\"payload\":[");
@@ -512,7 +541,7 @@ namespace OpenLogReplicator {
         else {
             outputBufferBegin(0);
             outputBufferAppend('{');
-            appendHeader(false);
+            appendHeader(false, true);
             outputBufferAppend(",\"payload\":[{\"op\":\"commit\"}]}");
         }
         outputBufferCommit();
@@ -530,7 +559,7 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
-            appendHeader(false);
+            appendHeader(false, true);
             outputBufferAppend(",\"payload\":[");
         }
 
@@ -584,7 +613,7 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
-            appendHeader(false);
+            appendHeader(false, true);
             outputBufferAppend(",\"payload\":[");
         }
 
@@ -665,7 +694,7 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
-            appendHeader(false);
+            appendHeader(false, true);
             outputBufferAppend(",\"payload\":[");
         }
 
@@ -719,7 +748,7 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
-            appendHeader(false);
+            appendHeader(false, true);
             outputBufferAppend(",\"payload\":[");
         }
 

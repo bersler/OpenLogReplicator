@@ -31,6 +31,7 @@ enum Op {
     UPDATE = 3; //u
     DELETE = 4; //d
     DDL = 5;    //ddl
+    CHKPT = 6; //checkpoint
 }
 
 enum ColumnType {
@@ -115,6 +116,9 @@ message Payload {
     repeated Value before = 4;
     repeated Value after = 5;
     string ddl = 6;
+    uint32 seq = 7;
+    uint64 pos = 8;
+    bool redo = 9;
 }
 
 message SchemaRequest {

@@ -25,13 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 using namespace std;
 
-extern uint64_t trace2;
-
 namespace OpenLogReplicator {
     WriterKafka::WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic,
-            uint64_t maxMessageMb, uint64_t maxMessages, uint64_t pollInterval, uint64_t checkpointInterval, uint64_t queueSize,
+            uint64_t maxMessageMb, uint64_t maxMessages, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize,
             typeSCN startScn, typeSEQ startSeq, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence) :
-        Writer(alias, oracleAnalyzer, maxMessageMb, pollInterval, checkpointInterval, queueSize, startScn, startSeq, startTime,
+        Writer(alias, oracleAnalyzer, maxMessageMb, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSeq, startTime,
                 startTimeRel),
         brokers(brokers),
         topic(topic),
@@ -109,7 +107,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf) {
-        TRACE_(TRACE2_KAFKA, "KAFKA: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
+        TRACE(TRACE2_KAFKA, "KAFKA: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
     }
 
     void WriterKafka::sendMessage(OutputBufferMsg *msg) {
@@ -122,8 +120,8 @@ namespace OpenLogReplicator {
                 WARNING("Failed to produce to topic " << topic.c_str() << ", message: " << rd_kafka_err2str(err));
 
                 if (err == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
-                    WARNING("Queue, full, sleeping " << (pollInterval / 1000) << "ms, then retrying");
-                    rd_kafka_poll(rk, pollInterval / 1000);
+                    WARNING("Queue, full, sleeping " << (pollIntervalUS / 1000) << "ms, then retrying");
+                    rd_kafka_poll(rk, pollIntervalUS / 1000);
                     continue;
                 } else {
                     WARNING("OTHER ERROR?");
