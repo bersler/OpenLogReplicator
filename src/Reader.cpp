@@ -257,7 +257,7 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200) //12.1.0.0 - 12.1.0.2
             || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100) //12.2.0.0 - 12.2.0.1
             || (compatVsn >= 0x12000000 && compatVsn <= 0x120D0000) //18.0.0.0 - 18.13.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x130A0000)) //19.0.0.0 - 19.10.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x130B0000)) //19.0.0.0 - 19.11.0.0
             version = compatVsn;
 
         if (oracleAnalyzer->version == 0) {
