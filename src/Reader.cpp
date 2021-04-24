@@ -31,6 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
+    char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "ERROR", "FINISHED", "EMPTY", "BAD CRC"};
+
     Reader::Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group) :
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),

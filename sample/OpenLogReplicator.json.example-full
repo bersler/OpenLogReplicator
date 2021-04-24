@@ -1,5 +1,5 @@
 {
-  "version": "0.8.3",
+  "version": "0.8.4",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -28,6 +28,17 @@
         "schema": 0,
         "column": 0,
         "unknown-type": 0
+      },
+      "checkpoint": {
+        "path": "checkpoint",
+        "interval-s": 600,
+        "interval-mb": 100,
+        "keep-last": 10,
+        "keep-s": 0,
+        "keep-all": 0,
+        "all": 0,
+        "output-checkpoint": 1,
+        "output-log-switch": 1
       },
       "arch": "online",
       "flags": 0,

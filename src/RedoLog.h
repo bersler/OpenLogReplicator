@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
     class Reader;
 
     struct LwnMember {
-        uint64_t pos;
+        uint64_t offset;
         uint64_t length;
         typeSCN scn;
         typeSubSCN subScn;

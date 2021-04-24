@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    int64_t ReaderASM::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
+    int64_t ReaderASM::redoRead(uint8_t *buf, uint64_t offset, uint64_t size) {
         if (fileDes == -1)
             return -1;
 
@@ -114,20 +114,20 @@ namespace OpenLogReplicator {
         if ((trace2 & TRACE2_PERFORMANCE) != 0)
             startTime = getTime();
 
-        pos /= blockSize;
+        offset /= blockSize;
         try {
             if (stmtRead == nullptr) {
                 stmtRead = new DatabaseStatement(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
                 TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_READ);
                 TRACE(TRACE2_SQL, "PARAM1: " << fileDes);
-                TRACE(TRACE2_SQL, "PARAM2: " << pos);
+                TRACE(TRACE2_SQL, "PARAM2: " << offset);
                 TRACE(TRACE2_SQL, "PARAM3: " << size);
                 stmtRead->createStatement(SQL_ASM_READ);
             } else
                 stmtRead->unbindAll();
 
             stmtRead->bindInt32(1, fileDes);
-            stmtRead->bindUInt64(2, pos);
+            stmtRead->bindUInt64(2, offset);
             stmtRead->bindUInt64(3, size);
             stmtRead->bindBinary(4, buf, 512);
             stmtRead->executeQuery();

@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         uint64_t flags;
         virtual void redoClose(void);
         virtual uint64_t redoOpen(void);
-        virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size);
+        virtual int64_t redoRead(uint8_t *buf, uint64_t offset, uint64_t size);
 
     public:
         ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group);

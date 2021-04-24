@@ -117,7 +117,7 @@ message Payload {
     repeated Value after = 5;
     string ddl = 6;
     uint32 seq = 7;
-    uint64 pos = 8;
+    uint64 offset = 8;
     bool redo = 9;
 }
 

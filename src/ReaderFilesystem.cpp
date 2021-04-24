@@ -79,13 +79,13 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t pos, uint64_t size) {
+    int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
         if ((trace2 & TRACE2_PERFORMANCE) != 0)
             startTime = getTime();
 
-        int64_t bytes = pread(fileDes, buf, size, pos);
-        TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << pos << ", " << dec << size << " returns " << dec << bytes);
+        int64_t bytes = pread(fileDes, buf, size, offset);
+        TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
             fcntl(fileDes, F_SETFL, flags);
 
             //disable direct read and re-try the read
-            bytes = pread(fileDes, buf, size, pos);
+            bytes = pread(fileDes, buf, size, offset);
 
             //display warning only if this helped
             if (bytes > 0) {

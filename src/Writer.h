@@ -43,7 +43,6 @@ namespace OpenLogReplicator {
         uint64_t maxQueueSize;
         OutputBufferMsg **queue;
         typeSCN confirmedScn;
-        typeSCN checkpointScn;
         typeSCN startScn;
         typeSEQ startSequence;
         string startTime;

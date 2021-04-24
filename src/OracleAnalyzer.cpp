@@ -61,6 +61,7 @@ namespace OpenLogReplicator {
         waitingForWriter(false),
         context(""),
         scn(ZERO_SCN),
+        checkpointScn(ZERO_SCN),
         startScn(ZERO_SCN),
         startSequence(0),
         startTimeRel(0),
@@ -628,7 +629,7 @@ namespace OpenLogReplicator {
                         break;
 
                     if (ret != REDO_FINISHED) {
-                        RUNTIME_FAIL("archive log processing returned: " << dec << ret);
+                        RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << dec << ret << ")");
                     }
 
                     ++sequence;

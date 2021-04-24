@@ -1041,7 +1041,7 @@ class Payload PROTOBUF_FINAL :
     kSchemaFieldNumber = 2,
     kOpFieldNumber = 1,
     kSeqFieldNumber = 7,
-    kPosFieldNumber = 8,
+    kOffsetFieldNumber = 8,
     kRedoFieldNumber = 9,
   };
   // repeated .OpenLogReplicator.pb.Value before = 4;
@@ -1148,13 +1148,13 @@ class Payload PROTOBUF_FINAL :
   void _internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value);
   public:
 
-  // uint64 pos = 8;
-  void clear_pos();
-  ::PROTOBUF_NAMESPACE_ID::uint64 pos() const;
-  void set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  // uint64 offset = 8;
+  void clear_offset();
+  ::PROTOBUF_NAMESPACE_ID::uint64 offset() const;
+  void set_offset(::PROTOBUF_NAMESPACE_ID::uint64 value);
   private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_pos() const;
-  void _internal_set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_offset() const;
+  void _internal_set_offset(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
   // bool redo = 9;
@@ -1180,7 +1180,7 @@ class Payload PROTOBUF_FINAL :
   ::OpenLogReplicator::pb::Schema* schema_;
   int op_;
   ::PROTOBUF_NAMESPACE_ID::uint32 seq_;
-  ::PROTOBUF_NAMESPACE_ID::uint64 pos_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 offset_;
   bool redo_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_OraProtoBuf_2eproto;
@@ -3150,24 +3150,24 @@ inline void Payload::set_seq(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.seq)
 }
 
-// uint64 pos = 8;
-inline void Payload::clear_pos() {
-  pos_ = PROTOBUF_ULONGLONG(0);
+// uint64 offset = 8;
+inline void Payload::clear_offset() {
+  offset_ = PROTOBUF_ULONGLONG(0);
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::_internal_pos() const {
-  return pos_;
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::_internal_offset() const {
+  return offset_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::pos() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.pos)
-  return _internal_pos();
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::offset() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.offset)
+  return _internal_offset();
 }
-inline void Payload::_internal_set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+inline void Payload::_internal_set_offset(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   
-  pos_ = value;
+  offset_ = value;
 }
-inline void Payload::set_pos(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_pos(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.pos)
+inline void Payload::set_offset(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_offset(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.offset)
 }
 
 // bool redo = 9;

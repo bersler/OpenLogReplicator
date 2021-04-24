@@ -50,8 +50,7 @@ namespace OpenLogReplicator {
         previousCheckpoint(time(nullptr)),
         checkpointIntervalS(checkpointIntervalS),
         queueSize(queueSize),
-        confirmedScn(0),
-        checkpointScn(0),
+        confirmedScn(ZERO_SCN),
         startScn(startScn),
         startSequence(startSequence),
         startTime(startTime),
@@ -322,8 +321,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::writeCheckpoint(bool force) {
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << checkpointScn << " confirmed scn: " << confirmedScn);
-        if (checkpointScn == confirmedScn)
+        if (oracleAnalyzer->checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
             return;
 
         time_t now = time(nullptr);
@@ -331,7 +329,7 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < checkpointIntervalS && !force)
             return;
 
-        DEBUG("checkpoint - writing scn: " << dec << confirmedScn);
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
         string fileName = oracleAnalyzer->database + "-chkpt.json";
         ofstream outfile;
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
@@ -349,7 +347,7 @@ namespace OpenLogReplicator {
         outfile << ss.rdbuf();
         outfile.close();
 
-        checkpointScn = confirmedScn;
+        oracleAnalyzer->checkpointScn = confirmedScn;
         previousCheckpoint = now;
     }
 

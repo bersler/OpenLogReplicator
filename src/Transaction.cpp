@@ -34,12 +34,11 @@ namespace OpenLogReplicator {
 		deallocTc(nullptr),
 		xid(xid),
 		firstSequence(0),
-		firstPos(0),
+		firstOffset(0),
 		commitScn(0),
 		firstTc(nullptr),
 		lastTc(nullptr),
 		opCodes(0),
-		pos(0),
 		commitTimestamp(0),
 		isBegin(false),
 		isRollback(false),
@@ -401,7 +400,7 @@ namespace OpenLogReplicator {
 
         os << "scn: " << dec << tran.commitScn <<
                 " seq: " << dec << tran.firstSequence <<
-                " pos: " << dec << tran.firstPos <<
+                " offset: " << dec << tran.firstOffset <<
                 " xid: " << PRINTXID(tran.xid) <<
                 " flags: " << dec << tran.isBegin << "/" << tran.isRollback <<
                 " op: " << dec << tran.opCodes <<

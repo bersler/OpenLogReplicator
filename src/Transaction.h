@@ -42,12 +42,11 @@ namespace OpenLogReplicator {
     public:
         typeXID xid;
         typeSEQ firstSequence;
-        uint64_t firstPos;
+        uint64_t firstOffset;
         typeSCN commitScn;
         TransactionChunk *firstTc;
         TransactionChunk *lastTc;
         uint64_t opCodes;
-        uint64_t pos;
         typetime commitTimestamp;
         bool isBegin;
         bool isRollback;

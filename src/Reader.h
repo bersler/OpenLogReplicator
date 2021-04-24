@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
-        virtual int64_t redoRead(uint8_t *buf, uint64_t pos, uint64_t size) = 0;
+        virtual int64_t redoRead(uint8_t *buf, uint64_t offset, uint64_t size) = 0;
         virtual uint64_t readSize(uint64_t lastRead);
         virtual uint64_t reloadHeaderRead(void);
 
@@ -76,6 +76,7 @@ namespace OpenLogReplicator {
         time_t getTime(void);
 
     public:
+        static char* REDO_CODE[6];
         uint8_t **redoBufferList;
         uint8_t *headerBuffer;
         int64_t group;

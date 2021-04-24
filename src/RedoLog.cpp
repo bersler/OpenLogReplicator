@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
         uint64_t headerLength;
 
         if (recordLength != lwnMember->length) {
-            REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+            REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                     ": too small log record, buffer length: " << dec << lwnMember->length << ", field length: " << recordLength);
         }
 
@@ -297,7 +297,7 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
-                                    setfill('0') << setw(4) << hex << lwnMember->pos <<
+                                    setfill('0') << setw(4) << hex << lwnMember->offset <<
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
                         " VLD: 0x" << setfill('0') << setw(2) << hex << (uint64_t)vld << endl;
             else {
@@ -305,7 +305,7 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "REDO RECORD - Thread:" << thread <<
                         " RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
-                                    setfill('0') << setw(4) << hex << lwnMember->pos <<
+                                    setfill('0') << setw(4) << hex << lwnMember->offset <<
                         " LEN: 0x" << setfill('0') << setw(4) << hex << recordLength <<
                         " VLD: 0x" << setfill('0') << setw(2) << hex << (uint64_t)vld <<
                         " CON_UID: " << dec << conUid << endl;
@@ -334,14 +334,14 @@ namespace OpenLogReplicator {
                 if (oracleAnalyzer->version < REDO_VERSION_12_2)
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
-                                    setfill('0') << setw(4) << hex << lwnMember->pos <<
+                                    setfill('0') << setw(4) << hex << lwnMember->offset <<
                         " LEN: " << setfill('0') << setw(4) << dec << lwnLen <<
                         " NST: " << setfill('0') << setw(4) << dec << lwnNst <<
                         " SCN: " << PRINTSCN48(lwnScn) << ")" << endl;
                 else
                     oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << setfill('0') << setw(6) << hex << sequence << "." <<
                                     setfill('0') << setw(8) << hex << lwnMember->block << "." <<
-                                    setfill('0') << setw(4) << hex << lwnMember->pos <<
+                                    setfill('0') << setw(4) << hex << lwnMember->offset <<
                         " LEN: 0x" << setfill('0') << setw(8) << hex << lwnLen <<
                         " NST: 0x" << setfill('0') << setw(4) << hex << lwnNst <<
                         " SCN: " << PRINTSCN64(lwnScn) << ")" << endl;
@@ -355,61 +355,61 @@ namespace OpenLogReplicator {
 
         if (headerLength > recordLength) {
             dumpRedoVector(data, recordLength);
-            REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+            REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                     ": too small log record, header length: " << dec << headerLength << ", field length: " << recordLength);
         }
 
-        uint64_t pos = headerLength;
-        while (pos < recordLength) {
+        uint64_t offset = headerLength;
+        while (offset < recordLength) {
             memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
             redoLogRecord[vectors].vectorNo = vectors + 1;
-            redoLogRecord[vectors].cls = oracleAnalyzer->read16(data + pos + 2);
-            redoLogRecord[vectors].afn = oracleAnalyzer->read32(data + pos + 4) & 0xFFFF;
-            redoLogRecord[vectors].dba = oracleAnalyzer->read32(data + pos + 8);
-            redoLogRecord[vectors].scnRecord = oracleAnalyzer->readSCN(data + pos + 12);
+            redoLogRecord[vectors].cls = oracleAnalyzer->read16(data + offset + 2);
+            redoLogRecord[vectors].afn = oracleAnalyzer->read32(data + offset + 4) & 0xFFFF;
+            redoLogRecord[vectors].dba = oracleAnalyzer->read32(data + offset + 8);
+            redoLogRecord[vectors].scnRecord = oracleAnalyzer->readSCN(data + offset + 12);
             redoLogRecord[vectors].rbl = 0; //FIXME
-            redoLogRecord[vectors].seq = data[pos + 20];
-            redoLogRecord[vectors].typ = data[pos + 21];
+            redoLogRecord[vectors].seq = data[offset + 20];
+            redoLogRecord[vectors].typ = data[offset + 21];
             int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
             if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
                 fieldOffset = 32;
-                redoLogRecord[vectors].flgRecord = oracleAnalyzer->read16(data + pos + 28);
-                redoLogRecord[vectors].conId = oracleAnalyzer->read16(data + pos + 24);
+                redoLogRecord[vectors].flgRecord = oracleAnalyzer->read16(data + offset + 28);
+                redoLogRecord[vectors].conId = oracleAnalyzer->read16(data + offset + 24);
             } else {
                 fieldOffset = 24;
                 redoLogRecord[vectors].flgRecord = 0;
                 redoLogRecord[vectors].conId = 0;
             }
 
-            if (pos + fieldOffset + 1 >= recordLength) {
+            if (offset + fieldOffset + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
-                                    ": position of field list (" << dec << (pos + fieldOffset + 1) << ") outside of record, length: " << recordLength);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
+                                    ": position of field list (" << dec << (offset + fieldOffset + 1) << ") outside of record, length: " << recordLength);
             }
 
-            uint8_t *fieldList = data + pos + fieldOffset;
+            uint8_t *fieldList = data + offset + fieldOffset;
 
-            redoLogRecord[vectors].opCode = (((typeop1)data[pos + 0]) << 8) |
-                    data[pos + 1];
+            redoLogRecord[vectors].opCode = (((typeop1)data[offset + 0]) << 8) |
+                    data[offset + 1];
             redoLogRecord[vectors].length = fieldOffset + ((oracleAnalyzer->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectors].sequence = sequence;
             redoLogRecord[vectors].scn = lwnMember->scn;
             redoLogRecord[vectors].subScn = lwnMember->subScn;
             redoLogRecord[vectors].usn = usn;
-            redoLogRecord[vectors].data = data + pos;
+            redoLogRecord[vectors].data = data + offset;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
             if (redoLogRecord[vectors].fieldLengthsDelta + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                                     ": field length list (" << dec << (redoLogRecord[vectors].fieldLengthsDelta) << ") outside of record, length: " << recordLength);
             }
             redoLogRecord[vectors].fieldCnt = (oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
             redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
             if (redoLogRecord[vectors].fieldPos >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                                     ": fields (" << dec << (redoLogRecord[vectors].fieldPos) << ") outside of record, length: " << recordLength);
             }
 
@@ -418,14 +418,14 @@ namespace OpenLogReplicator {
                 redoLogRecord[vectors].length += (oracleAnalyzer->read16(fieldList + i * 2) + 3) & 0xFFFC;
                 fieldPos += (oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
-                if (pos + redoLogRecord[vectors].length > recordLength) {
+                if (offset + redoLogRecord[vectors].length > recordLength) {
                     dumpRedoVector(data, recordLength);
-                    REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
+                    REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                                         ": position of field list outside of record (" <<
                             "i: " << dec << i <<
                             " c: " << dec << redoLogRecord[vectors].fieldCnt << " " <<
                             " o: " << dec << fieldOffset <<
-                            " p: " << dec << pos <<
+                            " p: " << dec << offset <<
                             " l: " << dec << redoLogRecord[vectors].length <<
                             " r: " << dec << recordLength << ")");
                 }
@@ -433,14 +433,14 @@ namespace OpenLogReplicator {
 
             if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", pos: " << lwnMember->pos <<
-                                    ": incomplete record, pos: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
+                REDOLOG_FAIL("block: " << dec << lwnMember->block << ", offset: " << lwnMember->offset <<
+                                    ": incomplete record, offset: " << dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
             }
 
             redoLogRecord[vectors].recordObj = 0xFFFFFFFF;
             redoLogRecord[vectors].recordDataObj = 0xFFFFFFFF;
 
-            pos += redoLogRecord[vectors].length;
+            offset += redoLogRecord[vectors].length;
 
             switch (redoLogRecord[vectors].opCode) {
             case 0x0501: //Undo
@@ -594,7 +594,7 @@ namespace OpenLogReplicator {
 
             ++vectors;
             if (vectors >= VECTOR_MAX_LENGTH) {
-                RUNTIME_FAIL("out of redo vectors(" << dec << vectors << "), at pos: " << dec << pos << " record length: " << dec << recordLength);
+                RUNTIME_FAIL("out of redo vectors(" << dec << vectors << "), at offset: " << dec << offset << " record length: " << dec << recordLength);
             }
         }
 
@@ -728,7 +728,7 @@ namespace OpenLogReplicator {
 
         transaction->isBegin = true;
         transaction->firstSequence = sequence;
-        transaction->firstPos = lwnStartBlock * reader->blockSize;
+        transaction->firstOffset = lwnStartBlock * reader->blockSize;
     }
 
     void RedoLog::appendToTransactionCommit(RedoLogRecord *redoLogRecord) {
@@ -944,7 +944,7 @@ namespace OpenLogReplicator {
             nextScn = reader->nextScn;
         }
         INFO("processing redo log: " << *this);
-        uint64_t currentBlock = lwnConfirmedBlock, blockPos = 16, startBlock = lwnConfirmedBlock;
+        uint64_t currentBlock = lwnConfirmedBlock, blockOffset = 16, startBlock = lwnConfirmedBlock;
         uint64_t tmpBufferStart = 0;
         LwnMember *lwnMember;
 
@@ -983,33 +983,33 @@ namespace OpenLogReplicator {
                 uint64_t redoBufferNum = ((currentBlock * reader->blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
                 uint8_t *redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
-                blockPos = 16;
+                blockOffset = 16;
                 //new LWN block
                 if (currentBlock == lwnEndBlock) {
-                    uint8_t vld = redoBlock[blockPos + 4];
+                    uint8_t vld = redoBlock[blockOffset + 4];
 
                     if ((vld & 0x04) != 0) {
                         ++lwnNumCnt;
-                        lwnNum = oracleAnalyzer->read16(redoBlock + blockPos + 24);
-                        lwnNumMax = oracleAnalyzer->read16(redoBlock + blockPos + 26);
-                        uint32_t lwnLength = oracleAnalyzer->read32(redoBlock + blockPos + 28);
-                        lwnScn = oracleAnalyzer->readSCN(redoBlock + blockPos + 40);
-                        lwnTimestamp = oracleAnalyzer->read32(redoBlock + blockPos + 64);
+                        lwnNum = oracleAnalyzer->read16(redoBlock + blockOffset + 24);
+                        lwnNumMax = oracleAnalyzer->read16(redoBlock + blockOffset + 26);
+                        uint32_t lwnLength = oracleAnalyzer->read32(redoBlock + blockOffset + 28);
+                        lwnScn = oracleAnalyzer->readSCN(redoBlock + blockOffset + 40);
+                        lwnTimestamp = oracleAnalyzer->read32(redoBlock + blockOffset + 64);
                         lwnStartBlock = currentBlock;
                         lwnEndBlock = lwnStartBlock + lwnLength;
                         TRACE(TRACE2_LWN, "LWN: at: " << dec << lwnStartBlock << " length: " << lwnLength << " chk: " << dec << lwnNum << " max: " << lwnNumMax);
                     } else {
-                        RUNTIME_FAIL("did not find LWN at pos: " << dec << tmpBufferStart);
+                        RUNTIME_FAIL("did not find LWN at offset: " << dec << tmpBufferStart);
                     }
                 }
 
-                while (blockPos < reader->blockSize) {
+                while (blockOffset < reader->blockSize) {
                     //next record
                     if (recordLeftToCopy == 0) {
-                        if (blockPos + 20 >= reader->blockSize)
+                        if (blockOffset + 20 >= reader->blockSize)
                             break;
 
-                        recordLength4 = (((uint64_t)oracleAnalyzer->read32(redoBlock + blockPos)) + 3) & 0xFFFFFFFC;
+                        recordLength4 = (((uint64_t)oracleAnalyzer->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
                         if (recordLength4 > 0) {
                             uint64_t *length = (uint64_t*)(lwnChunks[lwnAllocated - 1]);
 
@@ -1029,11 +1029,11 @@ namespace OpenLogReplicator {
 
                             lwnMember = (struct LwnMember*)(lwnChunks[lwnAllocated - 1] + *length);
                             *length += (sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8;
-                            lwnMember->scn = oracleAnalyzer->read32(redoBlock + blockPos + 8) |
-                                    ((uint64_t)(oracleAnalyzer->read16(redoBlock + blockPos + 6)) << 32);
-                            lwnMember->subScn = oracleAnalyzer->read16(redoBlock + blockPos + 12);
+                            lwnMember->scn = oracleAnalyzer->read32(redoBlock + blockOffset + 8) |
+                                    ((uint64_t)(oracleAnalyzer->read16(redoBlock + blockOffset + 6)) << 32);
+                            lwnMember->subScn = oracleAnalyzer->read16(redoBlock + blockOffset + 12);
                             lwnMember->block = currentBlock;
-                            lwnMember->pos = blockPos;
+                            lwnMember->offset = blockOffset;
                             lwnMember->length = recordLength4;
                             TRACE(TRACE2_LWN, "LWN: length: " << dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
 
@@ -1059,14 +1059,14 @@ namespace OpenLogReplicator {
                         break;
 
                     uint64_t toCopy;
-                    if (blockPos + recordLeftToCopy > reader->blockSize)
-                        toCopy = reader->blockSize - blockPos;
+                    if (blockOffset + recordLeftToCopy > reader->blockSize)
+                        toCopy = reader->blockSize - blockOffset;
                     else
                         toCopy = recordLeftToCopy;
 
-                    memcpy(((uint8_t*)lwnMember) + sizeof(struct LwnMember) + recordPos, redoBlock + blockPos, toCopy);
+                    memcpy(((uint8_t*)lwnMember) + sizeof(struct LwnMember) + recordPos, redoBlock + blockOffset, toCopy);
                     recordLeftToCopy -= toCopy;
-                    blockPos += toCopy;
+                    blockOffset += toCopy;
                     recordPos += toCopy;
                 }
 
@@ -1079,7 +1079,7 @@ namespace OpenLogReplicator {
                     try {
                         TRACE(TRACE2_LWN, "LWN: analyze");
                         for (uint64_t i = 0; i < lwnRecords; ++i) {
-                            TRACE(TRACE2_LWN, "LWN: analyze blk: " << dec << lwnMembers[i]->block << " pos: " << lwnMembers[i]->pos <<
+                            TRACE(TRACE2_LWN, "LWN: analyze blk: " << dec << lwnMembers[i]->block << " offset: " << lwnMembers[i]->offset <<
                                     " scn: " << lwnMembers[i]->scn << " subscn: " << lwnMembers[i]->subScn);
                             analyzeLwn(lwnMembers[i]);
                             if (lwnScnMax < lwnMembers[i]->scn)
