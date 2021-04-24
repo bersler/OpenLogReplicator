@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
             }
 
             if (pwrite(fileCopyDes, headerBuffer, bytes, 0) != bytes) {
-                ERROR("error writing " << dec << bytes << " bytes at pos " << 0 << " to redo log copy file");
+                ERROR("error writing " << dec << bytes << " bytes at offset " << 0 << " to redo log copy file");
                 return REDO_ERROR;
             }
         }
@@ -492,7 +492,7 @@ namespace OpenLogReplicator {
                             }
                             if (actualRead > 0 && fileCopyDes > 0) {
                                 if (pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd) != actualRead) {
-                                    ERROR("error writing " << dec << actualRead << " bytes at pos " << 0 << " to redo log copy file");
+                                    ERROR("error writing " << dec << actualRead << " bytes at offset " << 0 << " to redo log copy file");
                                     ret = REDO_ERROR;
                                     break;
                                 }
@@ -561,7 +561,7 @@ namespace OpenLogReplicator {
                         }
                         if (actualRead > 0 && fileCopyDes > 0 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
                             if (pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd) != actualRead) {
-                                ERROR("error writing " << dec << actualRead << " bytes at pos " << 0 << " to redo log copy file");
+                                ERROR("error writing " << dec << actualRead << " bytes at offset " << 0 << " to redo log copy file");
                                 ret = REDO_ERROR;
                                 break;
                             }

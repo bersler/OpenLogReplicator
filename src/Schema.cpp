@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
         Document document;
 
         if (schemaJSON.length() == 0 || document.Parse(schemaJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing of <database>-schema.json");
+            RUNTIME_FAIL("parsing of " << fileName);
         }
 
         const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
@@ -122,7 +122,7 @@ namespace OpenLogReplicator {
 
         const Value& onlineRedo = getJSONfieldD(fileName, document, "online-redo");
         if (!onlineRedo.IsArray()) {
-            CONFIG_FAIL("bad JSON in <database>-schema.json, online-redo should be an array");
+            CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
         }
 
         for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
@@ -147,7 +147,7 @@ namespace OpenLogReplicator {
 
         const Value& schema = getJSONfieldD(fileName, document, "schema");
         if (!schema.IsArray()) {
-            CONFIG_FAIL("bad JSON in <database>-schema.json, schema should be an array");
+            CONFIG_FAIL("bad JSON in " << fileName << ", schema should be an array");
         }
 
         for (SizeType i = 0; i < schema.Size(); ++i) {
@@ -184,7 +184,7 @@ namespace OpenLogReplicator {
 
             const Value& columns = getJSONfieldV(fileName, schema[i], "columns");
             if (!columns.IsArray()) {
-                CONFIG_FAIL("bad JSON in <database>-schema.json, columns should be an array");
+                CONFIG_FAIL("bad JSON in " << fileName << ", columns should be an array");
             }
 
             for (SizeType j = 0; j < columns.Size(); ++j) {
@@ -197,7 +197,7 @@ namespace OpenLogReplicator {
                 const Value& segColNoJSON = getJSONfieldV(fileName, columns[j], "seg-col-no");
                 typeCOL segColNo = segColNoJSON.GetInt();
                 if (segColNo > 1000) {
-                    CONFIG_FAIL("bad JSON in <database>-schema.json, invalid seg-col-no value");
+                    CONFIG_FAIL("bad JSON in " << fileName << ", invalid seg-col-no value");
                 }
 
                 const Value& columnNameJSON = getJSONfieldV(fileName, columns[j], "name");
@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
             if (schema[i].HasMember("partitions")) {
                 const Value& partitions = getJSONfieldV(fileName, schema[i], "partitions");
                 if (!columns.IsArray()) {
-                    CONFIG_FAIL("bad JSON in <database>-schema.json, partitions should be an array");
+                    CONFIG_FAIL("bad JSON in " << fileName << ", partitions should be an array");
                 }
 
                 for (SizeType j = 0; j < partitions.Size(); ++j) {
