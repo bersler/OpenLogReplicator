@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <fcntl.h>
 #include <list>
 #include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <signal.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -155,7 +156,8 @@ int main(int argc, char **argv) {
 
         Document document;
         if (document.Parse(configFileBuffer).HasParseError()) {
-            CONFIG_FAIL("parsing " << configFileName);
+            CONFIG_FAIL("parsing " << configFileName << " at offset: " << document.GetErrorOffset() <<
+                    ", message: " << GetParseError_En(document.GetParseError()));
         }
 
         const Value& versionJSON = getJSONfieldD(configFileName, document, "version");

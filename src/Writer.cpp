@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <thread>
 #include <unistd.h>
 
@@ -364,7 +365,8 @@ namespace OpenLogReplicator {
         Document document;
 
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing of " << fileName);
+            RUNTIME_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
+                    ", message: " << GetParseError_En(document.GetParseError()));
         }
 
         const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
