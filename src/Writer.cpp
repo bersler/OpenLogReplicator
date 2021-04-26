@@ -335,7 +335,7 @@ namespace OpenLogReplicator {
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
         if (!outfile.is_open()) {
-            RUNTIME_FAIL("writing checkpoint data to <database>-chkpt.json");
+            RUNTIME_FAIL("writing checkpoint data to " << fileName);
         }
 
         stringstream ss;
@@ -364,12 +364,12 @@ namespace OpenLogReplicator {
         Document document;
 
         if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing of <database>-chkpt.json");
+            RUNTIME_FAIL("parsing of " << fileName);
         }
 
         const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
         if (oracleAnalyzer->database.compare(databaseJSON.GetString()) != 0) {
-            RUNTIME_FAIL("parsing of <database>-chkpt.json - invalid database name");
+            RUNTIME_FAIL("parsing of " << fileName << " - invalid database name");
         }
 
         const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");

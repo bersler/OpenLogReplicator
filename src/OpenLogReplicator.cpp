@@ -155,7 +155,7 @@ int main(int argc, char **argv) {
 
         Document document;
         if (document.Parse(configFileBuffer).HasParseError()) {
-            CONFIG_FAIL("parsing OpenLogReplicator.json");
+            CONFIG_FAIL("parsing " << configFileName);
         }
 
         const Value& versionJSON = getJSONfieldD(configFileName, document, "version");
