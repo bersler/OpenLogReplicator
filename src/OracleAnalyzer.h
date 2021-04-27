@@ -119,6 +119,7 @@ namespace OpenLogReplicator {
         vector<string> redoLogsBatch;
         uint64_t redoReadSleepUS;
         uint64_t archReadSleepUS;
+        uint64_t archReadRetry;
         uint64_t redoVerifyDelayUS;
         uint64_t version;                   //compatibility level of redo logs
         typeconid conId;

@@ -603,6 +603,12 @@ int main(int argc, char **argv) {
             }
 
             //optional
+            if (sourceJSON.HasMember("arch-read-retry")) {
+                const Value& archReadRetryJSON = sourceJSON["arch-read-retry"];
+                oracleAnalyzer->archReadRetry = archReadRetryJSON.GetUint64();
+            }
+
+            //optional
             if (sourceJSON.HasMember("redo-read-sleep-us")) {
                 const Value& redoReadSleepUSJSON = sourceJSON["redo-read-sleep-us"];
                 oracleAnalyzer->redoReadSleepUS = redoReadSleepUSJSON.GetUint64();

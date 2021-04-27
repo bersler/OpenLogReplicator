@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
         disableChecks(disableChecks),
         redoReadSleepUS(10000),
         archReadSleepUS(10000000),
+        archReadRetry(3),
         redoVerifyDelayUS(50000),
         version(0),
         conId(0),
@@ -575,7 +576,7 @@ namespace OpenLogReplicator {
                 //
                 if (shutdown)
                     break;
-                TRACE(TRACE2_REDO, "REDO: checking archive redo logs");
+                TRACE(TRACE2_REDO, "REDO: checking archived redo logs");
                 archGetLog(this);
 
                 if (archiveRedoQueue.empty()) {
@@ -609,12 +610,19 @@ namespace OpenLogReplicator {
                     redo->reader = archReader;
 
                     archReader->pathMapped = redo->path;
-                    if (!readerCheckRedoLog(archReader)) {
-                        RUNTIME_FAIL("opening archive log: " << redo->path);
-                    }
+                    uint64_t retry = archReadRetry;
 
-                    if (!readerUpdateRedoLog(archReader)) {
-                        RUNTIME_FAIL("reading archive log: " << redo->path);
+                    while (true) {
+                        if (readerCheckRedoLog(archReader) && readerUpdateRedoLog(archReader))
+                            break;
+
+                        if (retry == 0) {
+                            RUNTIME_FAIL("opening archived redo log: " << redo->path);
+                        }
+
+                        INFO("archived redo log " << redo->path << " is not ready for read, sleeping " << dec << archReadSleepUS << " us");
+                        usleep(archReadSleepUS);
+                        --retry;
                     }
 
                     if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {

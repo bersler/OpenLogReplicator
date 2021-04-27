@@ -1,5 +1,5 @@
 {
-  "version": "0.8.4",
+  "version": "0.8.5",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -47,6 +47,7 @@
       "read-buffer-max-mb": 256,
       "redo-read-sleep-us": 10000,
       "arch-read-sleep-us": 10000000,
+      "arch-read-retry": 3,
       "redo-verify-delay-us": 50000,
       "event-table": "SYSTEM.OPENLOGREPLICATOR",
       "tables": [
