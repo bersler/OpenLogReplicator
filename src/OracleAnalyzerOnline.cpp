@@ -328,6 +328,249 @@ namespace OpenLogReplicator {
             " WHERE"
             "   PROPERTY_NAME = :i");
 
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_CCOL_USER(
+            "SELECT"
+            "   L.ROWID, L.CON#, L.INTCOL#, L.OBJ#, L.SPARE1"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.CCOL$ AS OF SCN :j L ON"
+            "     O.OBJ# = L.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_CCOL_OBJ(
+            "SELECT"
+            "   L.ROWID, L.CON#, L.INTCOL#, L.OBJ#, L.SPARE1"
+            " FROM"
+            "   SYS.CCOL$ AS OF SCN :j L"
+            " WHERE"
+            "   L.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_CDEF_USER(
+            "SELECT"
+            "   D.ROWID, D.CON#, D.OBJ#, D.TYPE#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.CDEF$ AS OF SCN :j D ON"
+            "     O.OBJ# = D.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_CDEF_OBJ(
+            "SELECT"
+            "   D.ROWID, D.CON#, D.OBJ#, D.TYPE#"
+            " FROM"
+            "   SYS.CDEF$ AS OF SCN :j D"
+            " WHERE"
+            "   D.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_COL_USER(
+            "SELECT"
+            "   C.ROWID, C.OBJ#, C.COL#, C.SEGCOL#, C.INTCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$,"
+            "   MOD(C.PROPERTY, 18446744073709551616), C.PROPERTY / 18446744073709551616"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.COL$ AS OF SCN :j C ON"
+            "     O.OBJ# = C.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_COL_OBJ(
+            "SELECT"
+            "   C.ROWID, C.OBJ#, C.COL#, C.SEGCOL#, C.INTCOL#, C.NAME, C.TYPE#, C.LENGTH, C.PRECISION#, C.SCALE, C.CHARSETFORM, C.CHARSETID, C.NULL$,"
+            "   MOD(C.PROPERTY, 18446744073709551616), C.PROPERTY / 18446744073709551616"
+            " FROM"
+            "   SYS.COL$ AS OF SCN :j C"
+            " WHERE"
+            "   C.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_DEFERRED_STG_USER(
+            "SELECT"
+            "   DS.ROWID, DS.OBJ#, DS.FLAGS_STG"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.DEFERRED_STG$ AS OF SCN :j DS ON"
+            "     O.OBJ# = DS.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_DEFERRED_STG_OBJ(
+            "SELECT"
+            "   DS.ROWID, DS.OBJ#, DS.FLAGS_STG"
+            " FROM"
+            "   SYS.DEFERRED_STG$ AS OF SCN :j DS"
+            " WHERE"
+            "   DS.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL_USER(
+            "SELECT"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, E.GUARD_ID"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.ECOL$ AS OF SCN :j E ON"
+            "     O.OBJ# = E.TABOBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL_OBJ(
+            "SELECT"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, E.GUARD_ID"
+            " FROM"
+            "   SYS.ECOL$ AS OF SCN :j E"
+            " WHERE"
+            "   E.TABOBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL11_USER(
+            "SELECT"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, 0 AS GUARD_ID"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.ECOL$ AS OF SCN :j E ON"
+            "     O.OBJ# = E.TABOBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL11_OBJ(
+            "SELECT"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, 0 AS GUARD_ID"
+            " FROM"
+            "   SYS.ECOL$ AS OF SCN :j E"
+            " WHERE"
+            "   E.TABOBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_OBJ_USER(
+            "SELECT"
+            "   O.ROWID, O.OWNER#, O.OBJ#, O.DATAOBJ#, O.NAME, O.TYPE#, O.FLAGS"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " WHERE"
+            "   O.OWNER# = :j");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_OBJ_NAME(
+            "SELECT"
+            "   O.ROWID, O.OWNER#, O.OBJ#, O.DATAOBJ#, O.NAME, O.TYPE#, O.FLAGS"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " WHERE"
+            "   O.OWNER# = :j AND O.NAME like :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_SEG_USER(
+            "SELECT"
+            "   S.ROWID, S.FILE#, S.BLOCK#, S.TS#, S.SPARE1"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.TAB$ AS OF SCN :i T ON"
+            "     T.OBJ# = O.OBJ#"
+            " JOIN"
+            "   SYS.SEG$ AS OF SCN :j S ON "
+            "     T.FILE# = S.FILE# AND T.BLOCK# = S.BLOCK# AND T.TS# = S.TS#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_SEG_OBJ(
+            "SELECT"
+            "   S.ROWID, S.FILE#, S.BLOCK#, S.TS#, S.SPARE1"
+            " FROM"
+            "   SYS.TAB$ AS OF SCN :i T"
+            " JOIN"
+            "   SYS.SEG$ AS OF SCN :j S ON "
+            "     T.FILE# = S.FILE# AND T.BLOCK# = S.BLOCK# AND T.TS# = S.TS#"
+            " WHERE"
+            "   T.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TAB_USER(
+            "SELECT"
+            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.TS#, T.FILE#, T.BLOCK#, T.CLUCOLS, T.FLAGS,"
+            "   MOD(T.PROPERTY, 18446744073709551616), T.PROPERTY / 18446744073709551616"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.TAB$ AS OF SCN :j T ON"
+            "     O.OBJ# = T.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TAB_OBJ(
+            "SELECT"
+            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.TS#, T.FILE#, T.BLOCK#, T.CLUCOLS, T.FLAGS,"
+            "   MOD(T.PROPERTY, 18446744073709551616), T.PROPERTY / 18446744073709551616"
+            " FROM"
+            "   SYS.TAB$ AS OF SCN :j T"
+            " WHERE"
+            "   T.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABCOMPART_USER(
+            "SELECT"
+            "   TCP.ROWID, TCP.OBJ#, TCP.DATAOBJ#, TCP.BO#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.TABCOMPART$ AS OF SCN :j TCP ON"
+            "     O.OBJ# = TCP.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABCOMPART_OBJ(
+            "SELECT"
+            "   TCP.ROWID, TCP.OBJ#, TCP.DATAOBJ#, TCP.BO#"
+            " FROM"
+            "   SYS.TABCOMPART$ AS OF SCN :j TCP"
+            " WHERE"
+            "   TCP.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABPART_USER(
+            "SELECT"
+            "   TP.ROWID, TP.OBJ#, TP.DATAOBJ#, TP.BO#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.TABPART$ AS OF SCN :j TP ON"
+            "     O.OBJ# = TP.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABPART_OBJ(
+            "SELECT"
+            "   TP.ROWID, TP.OBJ#, TP.DATAOBJ#, TP.BO#"
+            " FROM"
+            "   SYS.TABPART$ AS OF SCN :j TP"
+            " WHERE"
+            "   TP.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABSUBPART_USER(
+            "SELECT"
+            "   TSP.ROWID, TSP.OBJ#, TSP.DATAOBJ#, TSP.POBJ#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.TABSUBPART$ AS OF SCN :j TSP ON"
+            "     O.OBJ# = TSP.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_TABSUBPART_OBJ(
+            "SELECT"
+            "   TSP.ROWID, TSP.OBJ#, TSP.DATAOBJ#, TSP.POBJ#"
+            " FROM"
+            "   SYS.TABSUBPART$ AS OF SCN :j TSP"
+            " WHERE"
+            "   TSP.OBJ# = :k");
+
+    const char* OracleAnalyzerOnline::SQL_GET_SYS_USER(
+            "SELECT"
+            "   U.ROWID, U.USER#, U.NAME, U.SPARE1"
+            " FROM"
+            "   SYS.USER$ AS OF SCN :i U"
+            " WHERE"
+            "   U.NAME LIKE UPPER(:j)");
+
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
             uint64_t disableChecks, const char *user, const char *password, const char *connectString, bool isStandby) :
@@ -551,7 +794,7 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("can't find SCN for: " << startTime);
+                RUNTIME_FAIL("can't find scn for: " << startTime);
             }
 
         } else if (startTimeRel > 0) {
@@ -568,7 +811,7 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("can't find SCN for " << dec << startTime);
+                RUNTIME_FAIL("can't find scn for " << dec << startTime);
             }
 
         } else if (startScn > 0) {
@@ -582,12 +825,12 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(1, scn);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("can't find database current SCN");
+                RUNTIME_FAIL("can't find database current scn");
             }
         }
 
         if (scn == ZERO_SCN) {
-            RUNTIME_FAIL("getting database SCN");
+            RUNTIME_FAIL("getting database scn");
         }
 
         initializeSchema();
@@ -609,7 +852,7 @@ namespace OpenLogReplicator {
             stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("getting database sequence for SCN: " << dec << scn);
+                RUNTIME_FAIL("getting database sequence for scn: " << dec << scn);
             }
         }
 
@@ -803,7 +1046,7 @@ namespace OpenLogReplicator {
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
-                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - IOT");
+                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - IOT");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -812,7 +1055,7 @@ namespace OpenLogReplicator {
 
             //skip temporary tables
             if (temporary) {
-                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - temporary table");
+                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - temporary table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -821,7 +1064,7 @@ namespace OpenLogReplicator {
 
             //skip nested tables
             if (nested) {
-                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - nested table");
+                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - nested table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -830,7 +1073,7 @@ namespace OpenLogReplicator {
 
             //skip compressed tables
             if (compressed) {
-                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - compressed table");
+                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - compressed table");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -839,7 +1082,7 @@ namespace OpenLogReplicator {
 
             //table already added with another rule
             if (schema->checkDict(obj, dataObj) != nullptr) {
-                INFO("  * skipped: " << owner << "." << name << " (OBJ: " << dec << obj << ") - already added");
+                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - already added");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -941,7 +1184,7 @@ namespace OpenLogReplicator {
             }
 
             stringstream ss;
-            ss << "  * found: " << owner << "." << name << " (DATAOBJ: " << dec << dataObj << ", OBJ: " << dec << obj << ")";
+            ss << "  * found: " << owner << "." << name << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
             if (clustered)
                 ss << ", part of cluster";
             if (partitioned)
