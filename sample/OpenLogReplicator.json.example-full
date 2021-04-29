@@ -33,9 +33,6 @@
         "path": "checkpoint",
         "interval-s": 600,
         "interval-mb": 100,
-        "keep-last": 10,
-        "keep-s": 0,
-        "keep-all": 0,
         "all": 0,
         "output-checkpoint": 1,
         "output-log-switch": 1
