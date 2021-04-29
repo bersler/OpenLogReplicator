@@ -127,40 +127,40 @@ int main(int argc, char **argv) {
 
     try {
         struct stat fileStat;
-        string configFileName = "OpenLogReplicator.json";
-        fid = open(configFileName.c_str(), O_RDONLY);
+        string fileName = "OpenLogReplicator.json";
+        fid = open(fileName.c_str(), O_RDONLY);
         if (fid == -1) {
-            CONFIG_FAIL("can't open file " << configFileName);
+            CONFIG_FAIL("can't open file " << fileName);
         }
 
         if (flock(fid, LOCK_EX | LOCK_NB)) {
-            CONFIG_FAIL("can't lock file " << configFileName << ", another process may be running");
+            CONFIG_FAIL("can't lock file " << fileName << ", another process may be running");
         }
 
-        int ret = stat(configFileName.c_str(), &fileStat);
+        int ret = stat(fileName.c_str(), &fileStat);
         if (ret != 0) {
-            CONFIG_FAIL("can't check file size of " << configFileName);
+            CONFIG_FAIL("can't check file size of " << fileName);
         }
         if (fileStat.st_size == 0) {
-            CONFIG_FAIL("file " << configFileName << " is empty");
+            CONFIG_FAIL("file " << fileName << " is empty");
         }
 
         configFileBuffer = new char[fileStat.st_size + 1];
         if (configFileBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (fileStat.st_size + 1) << " bytes memory (for: reading " << configFileName << ")");
+            RUNTIME_FAIL("couldn't allocate " << dec << (fileStat.st_size + 1) << " bytes memory (for: reading " << fileName << ")");
         }
         if (read(fid, configFileBuffer, fileStat.st_size) != fileStat.st_size) {
-            CONFIG_FAIL("can't read file " << configFileName);
+            CONFIG_FAIL("can't read file " << fileName);
         }
         configFileBuffer[fileStat.st_size] = 0;
 
         Document document;
         if (document.Parse(configFileBuffer).HasParseError()) {
-            CONFIG_FAIL("parsing " << configFileName << " at offset: " << document.GetErrorOffset() <<
+            CONFIG_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const Value& versionJSON = getJSONfieldD(configFileName, document, "version");
+        const Value& versionJSON = getJSONfieldD(fileName, document, "version");
         if (strcmp(versionJSON.GetString(), PACKAGE_VERSION) != 0) {
             CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PACKAGE_VERSION << ", got: " << versionJSON.GetString());
         }
@@ -193,14 +193,14 @@ int main(int argc, char **argv) {
         }
 
         //iterate through sources
-        const Value& sourcesJSON = getJSONfieldD(configFileName, document, "sources");
+        const Value& sourcesJSON = getJSONfieldD(fileName, document, "sources");
         if (!sourcesJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, \"sources\" should be an array");
         }
 
         for (SizeType i = 0; i < sourcesJSON.Size(); ++i) {
             const Value& sourceJSON = sourcesJSON[i];
-            const Value& aliasJSON = getJSONfieldV(configFileName, sourceJSON, "alias");
+            const Value& aliasJSON = getJSONfieldV(fileName, sourceJSON, "alias");
             INFO("adding source: " << aliasJSON.GetString());
 
             //optional
@@ -241,10 +241,10 @@ int main(int argc, char **argv) {
                 }
             }
 
-            const Value& nameJSON = getJSONfieldV(configFileName, sourceJSON, "name");
+            const Value& nameJSON = getJSONfieldV(fileName, sourceJSON, "name");
 
             //FORMAT
-            const Value& formatJSON = getJSONfieldV(configFileName, sourceJSON, "format");
+            const Value& formatJSON = getJSONfieldV(fileName, sourceJSON, "format");
 
             //optional
             uint64_t messageFormat = 0;
@@ -336,7 +336,7 @@ int main(int argc, char **argv) {
                 }
             }
 
-            const Value& formatTypeJSON = getJSONfieldV(configFileName, formatJSON, "type");
+            const Value& formatTypeJSON = getJSONfieldV(fileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
@@ -360,7 +360,7 @@ int main(int argc, char **argv) {
 
 
             //READER
-            const Value& readerJSON = getJSONfieldV(configFileName, sourceJSON, "reader");
+            const Value& readerJSON = getJSONfieldV(fileName, sourceJSON, "reader");
 
             //optional
             uint64_t disableChecks = 0;
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
                 disableChecks = disableChecksJSON.GetUint64();
             }
 
-            const Value& readerTypeJSON = getJSONfieldV(configFileName, readerJSON, "type");
+            const Value& readerTypeJSON = getJSONfieldV(fileName, readerJSON, "type");
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
@@ -378,15 +378,15 @@ int main(int argc, char **argv) {
                     isStandby = true;
 
                 const char *user = "";
-                const Value& userJSON = getJSONfieldV(configFileName, readerJSON, "user");
+                const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
                 user = userJSON.GetString();
 
                 const char *password = "";
-                const Value& passwordJSON = getJSONfieldV(configFileName, readerJSON, "password");
+                const Value& passwordJSON = getJSONfieldV(fileName, readerJSON, "password");
                 password = passwordJSON.GetString();
 
                 const char *server = "";
-                const Value& serverJSON = getJSONfieldV(configFileName, readerJSON, "server");
+                const Value& serverJSON = getJSONfieldV(fileName, readerJSON, "server");
                 server = serverJSON.GetString();
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
@@ -463,27 +463,27 @@ int main(int argc, char **argv) {
                     isStandby = true;
 
                 const char *user = "";
-                const Value& userJSON = getJSONfieldV(configFileName, readerJSON, "user");
+                const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
                 user = userJSON.GetString();
 
                 const char *password = "";
-                const Value& passwordJSON = getJSONfieldV(configFileName, readerJSON, "password");
+                const Value& passwordJSON = getJSONfieldV(fileName, readerJSON, "password");
                 password = passwordJSON.GetString();
 
                 const char *server = "";
-                const Value& serverJSON = getJSONfieldV(configFileName, readerJSON, "server");
+                const Value& serverJSON = getJSONfieldV(fileName, readerJSON, "server");
                 server = serverJSON.GetString();
 
                 const char *userASM = "";
-                const Value& userASMJSON = getJSONfieldV(configFileName, readerJSON, "user-asm");
+                const Value& userASMJSON = getJSONfieldV(fileName, readerJSON, "user-asm");
                 userASM = userASMJSON.GetString();
 
                 const char *passwordASM = "";
-                const Value& passwordASMJSON = getJSONfieldV(configFileName, readerJSON, "password-asm");
+                const Value& passwordASMJSON = getJSONfieldV(fileName, readerJSON, "password-asm");
                 passwordASM = passwordASMJSON.GetString();
 
                 const char *serverASM = "";
-                const Value& serverASMJSON = getJSONfieldV(configFileName, readerJSON, "server-asm");
+                const Value& serverASMJSON = getJSONfieldV(fileName, readerJSON, "server-asm");
                 serverASM = serverASMJSON.GetString();
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
@@ -558,13 +558,13 @@ int main(int argc, char **argv) {
                 element->options = 1;
             }
 
-            const Value& tablesJSON = getJSONfieldV(configFileName, sourceJSON, "tables");
+            const Value& tablesJSON = getJSONfieldV(fileName, sourceJSON, "tables");
             if (!tablesJSON.IsArray()) {
                 CONFIG_FAIL("bad JSON, field \"tables\" should be array");
             }
 
             for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
-                const Value& tableJSON = getJSONfieldV(configFileName, tablesJSON[j], "table");
+                const Value& tableJSON = getJSONfieldV(fileName, tablesJSON[j], "table");
                 SchemaElement *element = oracleAnalyzer->schema->addElement();
                 element->mask = tableJSON.GetString();
 
@@ -635,16 +635,16 @@ int main(int argc, char **argv) {
         }
 
         //iterate through targets
-        const Value& targetsJSON = getJSONfieldD(configFileName, document, "targets");
+        const Value& targetsJSON = getJSONfieldD(fileName, document, "targets");
         if (!targetsJSON.IsArray()) {
             CONFIG_FAIL("bad JSON, field \"targets\" should be array");
         }
         for (SizeType i = 0; i < targetsJSON.Size(); ++i) {
             const Value& targetJSON = targetsJSON[i];
-            const Value& aliasJSON = getJSONfieldV(configFileName, targetJSON, "alias");
+            const Value& aliasJSON = getJSONfieldV(fileName, targetJSON, "alias");
             INFO("adding target: " << aliasJSON.GetString());
 
-            const Value& sourceJSON = getJSONfieldV(configFileName, targetJSON, "source");
+            const Value& sourceJSON = getJSONfieldV(fileName, targetJSON, "source");
             OracleAnalyzer *oracleAnalyzer = nullptr;
             for (OracleAnalyzer *analyzer : analyzers)
                 if (analyzer->alias.compare(sourceJSON.GetString()) == 0)
@@ -654,8 +654,8 @@ int main(int argc, char **argv) {
             }
 
             //writer
-            const Value& writerJSON = getJSONfieldV(configFileName, targetJSON, "writer");
-            const Value& writerTypeJSON = getJSONfieldV(configFileName, writerJSON, "type");
+            const Value& writerJSON = getJSONfieldV(fileName, targetJSON, "writer");
+            const Value& writerTypeJSON = getJSONfieldV(fileName, writerJSON, "type");
 
             //optional
             uint64_t pollIntervalUS = 100000;
@@ -774,8 +774,8 @@ int main(int argc, char **argv) {
                     }
                 }
 
-                const Value& brokersJSON = getJSONfieldV(configFileName, writerJSON, "brokers");
-                const Value& topicJSON = getJSONfieldV(configFileName, writerJSON, "topic");
+                const Value& brokersJSON = getJSONfieldV(fileName, writerJSON, "brokers");
+                const Value& topicJSON = getJSONfieldV(fileName, writerJSON, "topic");
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyzer, brokersJSON.GetString(),
                         topicJSON.GetString(), maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS, queueSize,
@@ -788,7 +788,7 @@ int main(int argc, char **argv) {
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
-                const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
+                const Value& uriJSON = getJSONfieldV(fileName, writerJSON, "uri");
 
                 StreamZeroMQ *stream = new StreamZeroMQ(uriJSON.GetString(), pollIntervalUS);
                 if (stream == nullptr) {
@@ -805,7 +805,7 @@ int main(int argc, char **argv) {
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
             } else if (strcmp(writerTypeJSON.GetString(), "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                const Value& uriJSON = getJSONfieldV(configFileName, writerJSON, "uri");
+                const Value& uriJSON = getJSONfieldV(fileName, writerJSON, "uri");
 
                 StreamNetwork *stream = new StreamNetwork(uriJSON.GetString(), pollIntervalUS);
                 if (stream == nullptr) {

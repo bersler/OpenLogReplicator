@@ -18,6 +18,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <thread>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -33,9 +35,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 
+using namespace rapidjson;
 using namespace std;
 
 extern void stopMain();
+extern const Value& getJSONfieldV(string &fileName, const Value& value, const char* field);
+extern const Value& getJSONfieldD(string &fileName, const Document& document, const char* field);
 
 namespace OpenLogReplicator {
     OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias,
@@ -407,17 +412,17 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::start(void) {
         if (startSequence > 0) {
-            RUNTIME_FAIL("starting by SCN is not supported for offline mode");
+            RUNTIME_FAIL("starting by scn is not supported for offline mode");
         } else if (startTime.length() > 0) {
             RUNTIME_FAIL("starting by time is not supported for offline mode");
         } else if (startTimeRel > 0) {
             RUNTIME_FAIL("starting by relative time is not supported for offline mode");
         } else if (startScn != ZERO_SCN) {
-            RUNTIME_FAIL("startup SCN is not provided");
+            RUNTIME_FAIL("startup scn is not provided");
         }
 
         if (scn == ZERO_SCN) {
-            RUNTIME_FAIL("getting database SCN");
+            RUNTIME_FAIL("getting database scn");
         }
         initializeSchema();
     }
@@ -429,9 +434,9 @@ namespace OpenLogReplicator {
         }
 
         if (scn == ZERO_SCN) {
-            INFO("last confirmed SCN: <none>");
+            INFO("last confirmed scn: <none>");
         } else {
-            INFO("last confirmed SCN: " << dec << scn);
+            INFO("last confirmed scn: " << dec << scn);
         }
         if (!schema->readSchema(this)) {
             refreshSchema();
@@ -465,15 +470,15 @@ namespace OpenLogReplicator {
 
                 string starting;
                 if (startSequence > 0)
-                    starting = "SEQ:" + to_string(startSequence);
+                    starting = "seq:" + to_string(startSequence);
                 else if (startTime.length() > 0)
-                    starting = "TIME:" + startTime;
+                    starting = "time:" + startTime;
                 else if (startTimeRel > 0)
-                    starting = "TIME-REL:" + to_string(startTimeRel);
+                    starting = "time-rel:" + to_string(startTimeRel);
                 else if (startScn > 0)
-                    starting = "SCN:" + to_string(startScn);
+                    starting = "scn:" + to_string(startScn);
                 else
-                    starting = "NOW";
+                    starting = "now";
 
                 INFO("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting);
 
