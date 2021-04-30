@@ -763,4 +763,20 @@ namespace OpenLogReplicator {
             outputBufferCommit();
         }
     }
+
+    void OutputBufferJson::processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) {
+        lastTime = time_;
+        lastScn = scn;
+        outputBufferBegin(0);
+        outputBufferAppend('{');
+        appendHeader(false, false);
+        outputBufferAppend(",\"payload\":[{\"op\":\"chkpt\",\"seq\":");
+        appendDec(sequence);
+        outputBufferAppend(",\"offset\":");
+        appendDec(offset);
+        if (redo)
+            outputBufferAppend(",\"redo\":true");
+        outputBufferAppend("}]}");
+        outputBufferCommit();
+    }
 }

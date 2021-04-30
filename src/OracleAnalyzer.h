@@ -88,6 +88,15 @@ namespace OpenLogReplicator {
         string logArchiveFormat;
         string logArchiveDest;
         string redoCopyPath;
+        string checkpointPath;
+        uint64_t checkpointIntervalS;
+        uint64_t checkpointIntervalMB;
+        uint64_t checkpointAll;
+        uint64_t checkpointOutputCheckpoint;
+        uint64_t checkpointOutputLogSwitch;
+        typetime checkpointLastTime;
+        uint64_t checkpointLastOffset;
+
         Reader *archReader;
         set<Reader*> readers;
         bool waitingForWriter;
@@ -100,10 +109,12 @@ namespace OpenLogReplicator {
         string context;
         typeSCN scn;
         typeSCN checkpointScn;
+        typeSCN schemaScn;
         typeSCN startScn;
         typeSEQ startSequence;
         string startTime;
         int64_t startTimeRel;
+        uint64_t readStartOffset;
         uint64_t readBufferMax;
 
         unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;

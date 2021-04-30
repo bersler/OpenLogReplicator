@@ -648,4 +648,31 @@ namespace OpenLogReplicator {
         }
         outputBufferCommit();
     }
+
+    void OutputBufferProtobuf::processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) {
+        if (redoResponsePB != nullptr) {
+            RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
+        }
+        redoResponsePB = new pb::RedoResponse;
+        appendHeader(true, true);
+
+        redoResponsePB->add_payload();
+        payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
+        payloadPB->set_op(pb::CHKPT);
+        payloadPB->set_seq(sequence);
+        payloadPB->set_offset(offset);
+        payloadPB->set_redo(redo);
+
+        string output;
+        bool ret = redoResponsePB->SerializeToString(&output);
+        delete redoResponsePB;
+        redoResponsePB = nullptr;
+
+        if (!ret) {
+            RUNTIME_FAIL("PB commit processing failed, error serializing to string");
+        }
+        outputBufferAppend(output);
+
+        outputBufferCommit();
+    }
 }

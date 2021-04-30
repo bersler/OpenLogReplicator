@@ -148,6 +148,7 @@ namespace OpenLogReplicator {
         void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
         void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
         void processDDLheader(RedoLogRecord *redoLogRecord1);
+        virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
     };
 }
 

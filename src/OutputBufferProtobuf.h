@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
                 const char *sql, uint64_t sqlLength);
+        virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo);
     };
 }
 
