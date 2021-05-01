@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.8.5],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.8.6],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -30,7 +30,6 @@ AC_LANG([C++])
 AC_FUNC_STRNLEN
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h unistd.h])
-AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([memset])
 AC_CHECK_HEADER_STDBOOL
@@ -38,7 +37,6 @@ AC_TYPE_INT16_T
 AC_TYPE_INT32_T
 AC_TYPE_INT64_T
 AC_TYPE_INT8_T
-AC_TYPE_SIZE_T
 AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T

@@ -171,35 +171,35 @@ typedef uint64_t typeunicode;
 #define VALUE_BEFORE_SUPP                       2
 #define VALUE_AFTER_SUPP                        3
 
-#define USN(xid)                                ((uint16_t)(((uint64_t)xid)>>48))
-#define SLT(xid)                                ((uint16_t)(((((uint64_t)xid)>>32)&0xFFFF)))
-#define SQN(xid)                                ((uint32_t)(((xid)&0xFFFFFFFF)))
-#define XID(usn,slt,sqn)                        ((((uint64_t)(usn))<<48)|(((uint64_t)(slt))<<32)|((uint64_t)(sqn)))
-#define PRINTXID(xid)                           "0x"<<setfill('0')<<setw(4)<<hex<<USN(xid)<<"."<<setw(3)<<SLT(xid)<<"."<<setw(8)<<SQN(xid)
+#define USN(__xid)                              ((uint16_t)(((uint64_t)(__xid))>>48))
+#define SLT(__xid)                              ((uint16_t)(((((uint64_t)(__xid))>>32)&0xFFFF)))
+#define SQN(__xid)                              ((uint32_t)(((__xid)&0xFFFFFFFF)))
+#define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
+#define PRINTXID(__xid)                         "0x"<<setfill('0')<<setw(4)<<hex<<USN(__xid)<<"."<<setw(3)<<SLT(__xid)<<"."<<setw(8)<<SQN(__xid)
 
-#define BLOCK(uba)                              ((uint32_t)((uba)&0xFFFFFFFF))
-#define SEQUENCE(uba)                           ((uint16_t)((((uint64_t)uba)>>32)&0xFFFF))
-#define RECORD(uba)                             ((uint8_t)((((uint64_t)uba)>>48)&0xFF))
-#define PRINTUBA(uba)                           "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(uba)<<"."<<setfill('0')<<setw(2)<<hex<<(uint32_t)RECORD(uba)
+#define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
+#define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
+#define RECORD(__uba)                           ((uint8_t)((((uint64_t)(__uba))>>48)&0xFF))
+#define PRINTUBA(__uba)                         "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(__uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(__uba)<<"."<<setfill('0')<<setw(2)<<hex<<(uint32_t)RECORD(__uba)
 
-#define SCN(scn1,scn2)                          ((((uint64_t)scn1)<<32)|(scn2))
-#define PRINTSCN48(scn)                         "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((scn)>>32)&0xFFFF)<<"."<<setw(8)<<((scn)&0xFFFFFFFF)
-#define PRINTSCN64(scn)                         "0x"<<setfill('0')<<setw(16)<<hex<<(scn)
+#define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
+#define PRINTSCN48(__scn)                       "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<setw(8)<<((__scn)&0xFFFFFFFF)
+#define PRINTSCN64(__scn)                       "0x"<<setfill('0')<<setw(16)<<hex<<(__scn)
 
 #ifndef TRACEVAR
 #define TRACEVAR
 extern uint64_t trace, trace2;
 #endif
 
-#define ERROR(x)                                {if (trace >= TRACE_ERROR) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [ERROR] " << x << endl; cerr << s.str(); } }
-#define WARNING(x)                              {if (trace >= TRACE_WARNING) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [WARNING] " << x << endl; cerr << s.str();} }
-#define INFO(x)                                 {if (trace >= TRACE_INFO) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [INFO] " << x << endl; cerr << s.str();} }
-#define DEBUG(x)                                {if (trace >= TRACE_DEBUG) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [DEBUG] " << x << endl; cerr << s.str();} }
-#define TRACE(t,x)                              {if ((trace2 & (t)) != 0) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [TRACE] " << x << endl; cerr << s.str();} }
-#define CONFIG_FAIL(x)                          {if (trace >= TRACE_ERROR) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [ERROR] " << x << endl; cerr << s.str(); }; throw ConfigurationException("error");}
-#define NETWORK_FAIL(x)                         {if (trace >= TRACE_ERROR) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [ERROR] " << x << endl; cerr << s.str(); }; throw NetworkException("error");}
-#define REDOLOG_FAIL(x)                         {if (trace >= TRACE_ERROR) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [ERROR] " << x << endl; cerr << s.str(); }; throw RedoLogException("error");}
-#define RUNTIME_FAIL(x)                         {if (trace >= TRACE_ERROR) {stringstream s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); s << str << " [ERROR] " << x << endl; cerr << s.str(); }; throw RuntimeException("error");}
+#define ERROR(__x)                              {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); } }
+#define WARNING(__x)                            {if (trace >= TRACE_WARNING) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [WARNING] " << __x << endl; cerr << __s.str();} }
+#define INFO(__x)                               {if (trace >= TRACE_INFO) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [INFO] " << __x << endl; cerr << __s.str();} }
+#define DEBUG(__x)                              {if (trace >= TRACE_DEBUG) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [DEBUG] " << __x << endl; cerr << __s.str();} }
+#define TRACE(__t,__x)                          {if ((trace2 & (__t)) != 0) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [TRACE] " << __x << endl; cerr << __s.str();} }
+#define CONFIG_FAIL(__x)                        {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw ConfigurationException("error");}
+#define NETWORK_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw NetworkException("error");}
+#define REDOLOG_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RedoLogException("error");}
+#define RUNTIME_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RuntimeException("error");}
 
 #define TYPEINTXLEN                             4
 #define TYPEINTXDIGITS                          77
