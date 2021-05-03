@@ -61,6 +61,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
+#define ZERO_SEQ                                ((typeSEQ)0xFFFFFFFF)
 #define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
 #define MAX_FIELD_LENGTH                        1048576
@@ -150,6 +151,7 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x00000080
 #define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000100
 #define REDO_FLAGS_FLUSH_QUEUE_ON_EXIT          0x00000200
+#define REDO_FLAGS_CHECKPOINT_LEAVE             0x00000400
 
 #define REDO_FLAGS_EXPERIMENTAL_DDL             0x40000000
 #define REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS     0x80000000
