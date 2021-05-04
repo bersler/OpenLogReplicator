@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
             INFO("missing schema for " << oracleAnalyzer->database);
             return false;
         }
-        INFO("reading schema for " << oracleAnalyzer->database);
+        INFO("reading schema for " << oracleAnalyzer->database << " (old style)");
 
         string schemaJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
         Document document;
@@ -160,73 +160,75 @@ namespace OpenLogReplicator {
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
-        oracleAnalyzer->database = databaseJSON.GetString();
+        if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
+            const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
+            oracleAnalyzer->database = databaseJSON.GetString();
 
-        const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-        bool isBigEndian = bigEndianJSON.GetUint64();
-        if (isBigEndian)
-            oracleAnalyzer->setBigEndian();
+            const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
+            bool isBigEndian = bigEndianJSON.GetUint64();
+            if (isBigEndian)
+                oracleAnalyzer->setBigEndian();
 
-        const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-        oracleAnalyzer->resetlogs = resetlogsJSON.GetUint64();
+            const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
+            oracleAnalyzer->resetlogs = resetlogsJSON.GetUint64();
 
-        const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-        oracleAnalyzer->activation = activationJSON.GetUint64();
+            const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
+            oracleAnalyzer->activation = activationJSON.GetUint64();
 
-        const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
-        oracleAnalyzer->context = databaseContextJSON.GetString();
+            const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
+            oracleAnalyzer->context = databaseContextJSON.GetString();
 
-        const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
-        oracleAnalyzer->conId = conIdJSON.GetUint64();
+            const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
+            oracleAnalyzer->conId = conIdJSON.GetUint64();
 
-        const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
-        oracleAnalyzer->conName = conNameJSON.GetString();
+            const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
+            oracleAnalyzer->conName = conNameJSON.GetString();
 
-        const Value& dbBlockChecksumJSON = getJSONfieldD(fileName, document, "db-block-checksum");
-        oracleAnalyzer->dbBlockChecksum = dbBlockChecksumJSON.GetString();
+            const Value& dbBlockChecksumJSON = getJSONfieldD(fileName, document, "db-block-checksum");
+            oracleAnalyzer->dbBlockChecksum = dbBlockChecksumJSON.GetString();
 
-        const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
-        oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
+            const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
+            oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
 
-        if (oracleAnalyzer->logArchiveFormat.length() == 0) {
-            const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
-            oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
-        }
-
-        const Value& logArchiveDestJSON = getJSONfieldD(fileName, document, "log-archive-dest");
-        oracleAnalyzer->logArchiveDest = logArchiveDestJSON.GetString();
-
-        const Value& nlsCharacterSetJSON = getJSONfieldD(fileName, document, "nls-character-set");
-        oracleAnalyzer->nlsCharacterSet = nlsCharacterSetJSON.GetString();
-
-        const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
-        oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
-
-        const Value& onlineRedo = getJSONfieldD(fileName, document, "online-redo");
-        if (!onlineRedo.IsArray()) {
-            CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
-        }
-
-        for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
-            const Value& groupJSON = getJSONfieldV(fileName, onlineRedo[i], "group");
-            uint64_t group = groupJSON.GetInt64();
-
-            const Value& path = onlineRedo[i]["path"];
-            if (!path.IsArray()) {
-                CONFIG_FAIL("bad JSON, path-mapping should be array");
+            if (oracleAnalyzer->logArchiveFormat.length() == 0) {
+                const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
+                oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
-            Reader *onlineReader = oracleAnalyzer->readerCreate(group);
-            for (SizeType j = 0; j < path.Size(); ++j) {
-                const Value& pathVal = path[j];
-                onlineReader->paths.push_back(pathVal.GetString());
-            }
-        }
+            const Value& logArchiveDestJSON = getJSONfieldD(fileName, document, "log-archive-dest");
+            oracleAnalyzer->logArchiveDest = logArchiveDestJSON.GetString();
 
-        if ((oracleAnalyzer->flags & REDO_FLAGS_ARCH_ONLY) == 0)
-            oracleAnalyzer->checkOnlineRedoLogs();
-        oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
+            const Value& nlsCharacterSetJSON = getJSONfieldD(fileName, document, "nls-character-set");
+            oracleAnalyzer->nlsCharacterSet = nlsCharacterSetJSON.GetString();
+
+            const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
+            oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
+
+            const Value& onlineRedo = getJSONfieldD(fileName, document, "online-redo");
+            if (!onlineRedo.IsArray()) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
+            }
+
+            for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
+                const Value& groupJSON = getJSONfieldV(fileName, onlineRedo[i], "group");
+                uint64_t group = groupJSON.GetInt64();
+
+                const Value& path = onlineRedo[i]["path"];
+                if (!path.IsArray()) {
+                    CONFIG_FAIL("bad JSON, path-mapping should be array");
+                }
+
+                Reader *onlineReader = oracleAnalyzer->readerCreate(group);
+                for (SizeType j = 0; j < path.Size(); ++j) {
+                    const Value& pathVal = path[j];
+                    onlineReader->paths.push_back(pathVal.GetString());
+                }
+            }
+
+            if ((oracleAnalyzer->flags & REDO_FLAGS_ARCH_ONLY) == 0)
+                oracleAnalyzer->checkOnlineRedoLogs();
+            oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
+        }
 
         const Value& schema = getJSONfieldD(fileName, document, "schema");
         if (!schema.IsArray()) {
@@ -360,7 +362,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::writeSchema(OracleAnalyzer *oracleAnalyzer) {
-        INFO("writing schema information for " << oracleAnalyzer->database);
+        INFO("writing schema information for " << oracleAnalyzer->database << " (old style)");
 
         string fileName = oracleAnalyzer->database + "-schema.json";
         ofstream outfile;
@@ -371,55 +373,61 @@ namespace OpenLogReplicator {
         }
 
         stringstream ss;
-        ss << "{\"database\":\"" << oracleAnalyzer->database << "\"," <<
-                "\"big-endian\":" << dec << oracleAnalyzer->isBigEndian << "," <<
-                "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
-                "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
-                "\"context\":\"" << oracleAnalyzer->context << "\"," <<
-                "\"con-id\":" << dec << oracleAnalyzer->conId << "," <<
-                "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
-                "\"db-recovery-file-dest\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
-        ss << "\"," << "\"log-archive-dest\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
-        ss << "\"," << "\"db-block-checksum\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->dbBlockChecksum);
-        ss << "\"," << "\"log-archive-format\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->logArchiveFormat);
-        ss << "\"," << "\"nls-character-set\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->nlsCharacterSet);
-        ss << "\"," << "\"nls-nchar-character-set\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->nlsNcharCharacterSet);
+        bool hasPrev = false;
+        ss << "{";
 
-        ss << "\"," << "\"online-redo\":[";
+        if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
+            ss << "\"database\":\"" << oracleAnalyzer->database << "\"," <<
+                    "\"big-endian\":" << dec << oracleAnalyzer->isBigEndian << "," <<
+                    "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
+                    "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
+                    "\"context\":\"" << oracleAnalyzer->context << "\"," <<
+                    "\"con-id\":" << dec << oracleAnalyzer->conId << "," <<
+                    "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
+                    "\"db-recovery-file-dest\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
+            ss << "\"," << "\"log-archive-dest\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
+            ss << "\"," << "\"db-block-checksum\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->dbBlockChecksum);
+            ss << "\"," << "\"log-archive-format\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->logArchiveFormat);
+            ss << "\"," << "\"nls-character-set\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->nlsCharacterSet);
+            ss << "\"," << "\"nls-nchar-character-set\":\"";
+            writeEscapeValue(ss, oracleAnalyzer->nlsNcharCharacterSet);
 
-        bool hasPrev = false, hasPrev2;
-        for (Reader *reader : oracleAnalyzer->readers) {
-            if (reader->group == 0)
-                continue;
+            ss << "\"," << "\"online-redo\":[";
 
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
+            bool hasPrev2;
+            for (Reader *reader : oracleAnalyzer->readers) {
+                if (reader->group == 0)
+                    continue;
 
-            hasPrev2 = false;
-            ss << "{\"group\":" << reader->group << ",\"path\":[";
-            for (string &path : reader->paths) {
-                if (hasPrev2)
+                if (hasPrev)
                     ss << ",";
                 else
-                    hasPrev2 = true;
+                    hasPrev = true;
 
-                ss << "\"";
-                writeEscapeValue(ss, path);
-                ss << "\"";
+                hasPrev2 = false;
+                ss << "{\"group\":" << reader->group << ",\"path\":[";
+                for (string &path : reader->paths) {
+                    if (hasPrev2)
+                        ss << ",";
+                    else
+                        hasPrev2 = true;
+
+                    ss << "\"";
+                    writeEscapeValue(ss, path);
+                    ss << "\"";
+                }
+                ss << "]}";
             }
-            ss << "]}";
+            ss << "],";
         }
-        ss << "]," << "\"schema\":[";
 
         hasPrev = false;
+        ss << "\"schema\":[";
         for (auto it : objectMap) {
             OracleObject *objectTmp = it.second;
 
@@ -480,7 +488,6 @@ namespace OpenLogReplicator {
 
         ss << "]}";
         outfile << ss.rdbuf();
-
         outfile.close();
     }
 
