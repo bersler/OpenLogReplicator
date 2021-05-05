@@ -626,6 +626,41 @@ int main(int argc, char **argv) {
                 oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
             }
 
+            //optional
+            if (sourceJSON.HasMember("checkpoint")) {
+                const Value& checkpointJSON = getJSONfieldV(fileName, sourceJSON, "checkpoint");
+
+                if (checkpointJSON.HasMember("path")) {
+                    const Value& checkpointPathJSON = checkpointJSON["path"];
+                    oracleAnalyzer->checkpointPath = checkpointPathJSON.GetString();
+                }
+
+                if (checkpointJSON.HasMember("interval-s")) {
+                    const Value& checkpointIntervalSJSON = checkpointJSON["interval-s"];
+                    oracleAnalyzer->checkpointIntervalS = checkpointIntervalSJSON.GetUint64();
+                }
+
+                if (checkpointJSON.HasMember("interval-mb")) {
+                    const Value& checkpointIntervalMBJSON = checkpointJSON["interval-mb"];
+                    oracleAnalyzer->checkpointIntervalMB = checkpointIntervalMBJSON.GetUint64();
+                }
+
+                if (checkpointJSON.HasMember("all")) {
+                    const Value& checkpointAllJSON = checkpointJSON["all"];
+                    oracleAnalyzer->checkpointAll = checkpointAllJSON.GetUint64();
+                }
+
+                if (checkpointJSON.HasMember("output-checkpoint")) {
+                    const Value& checkpointOutputCheckpointJSON = checkpointJSON["output-checkpoint"];
+                    oracleAnalyzer->checkpointOutputCheckpoint = checkpointOutputCheckpointJSON.GetUint64();
+                }
+
+                if (checkpointJSON.HasMember("output-log-switch")) {
+                    const Value& checkpointOutputLogSwitchJSON = checkpointJSON["output-log-switch"];
+                    oracleAnalyzer->checkpointOutputLogSwitch = checkpointOutputLogSwitchJSON.GetUint64();
+                }
+            }
+
             if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
                 RUNTIME_FAIL("error spawning thread - oracle analyzer");
             }

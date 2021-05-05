@@ -37,6 +37,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerBatch::start(void) {
+        readCheckpoints();
         initializeSchema();
         context = database;
         if (scn == ZERO_SCN)

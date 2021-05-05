@@ -128,6 +128,7 @@ namespace OpenLogReplicator {
         uint64_t disableChecks;
         vector<string> pathMapping;
         vector<string> redoLogsBatch;
+        set<typeSCN> checkpointScnList;
         uint64_t redoReadSleepUS;
         uint64_t archReadSleepUS;
         uint64_t archReadRetry;
@@ -193,6 +194,9 @@ namespace OpenLogReplicator {
         static void archGetLogPath(OracleAnalyzer *oracleAnalyzer);
         static void archGetLogList(OracleAnalyzer *oracleAnalyzer);
         string applyMapping(string path);
+        bool checkpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
+        void readCheckpoints(void);
+        bool readCheckpointVerify(string &fileName, typeSCN fileScn);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);

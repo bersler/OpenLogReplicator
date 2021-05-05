@@ -833,6 +833,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("getting database scn");
         }
 
+        readCheckpoints();
         initializeSchema();
 
         if (sequence == 0) {

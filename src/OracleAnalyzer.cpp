@@ -434,6 +434,8 @@ namespace OpenLogReplicator {
         if (scn == ZERO_SCN) {
             RUNTIME_FAIL("getting database scn");
         }
+
+        readCheckpoints();
         initializeSchema();
     }
 
@@ -972,6 +974,290 @@ namespace OpenLogReplicator {
         }
 
         return path;
+    }
+
+    bool OracleAnalyzer::checkpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool switchRedo) {
+        if (trace >= TRACE_DEBUG) {
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << dec << scn
+                    << " time: " << dec << time_.getVal()
+                    << " seq: " << sequence
+                    << " offset: " << offset
+                    << " switch: " << switchRedo
+                    << " checkpointLastTime: " << checkpointLastTime.getVal()
+                    << " checkpointLastOffset: " << checkpointLastOffset);
+        }
+
+        if (!checkpointAll &&
+                checkpointLastTime.getVal() >= 0 &&
+                !switchRedo &&
+                (offset - checkpointLastOffset < checkpointIntervalMB * 1024 * 1024 || checkpointIntervalMB == 0)) {
+            if (time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0) {
+                checkpointLastTime = time_;
+                return true;
+            }
+
+            return false;
+        }
+
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) != 0) {
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
+                    sequence << " offset: " << offset << " switch: " << switchRedo);
+            string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json";
+            ofstream outfile;
+            outfile.open(fileName.c_str(), ios::out | ios::trunc);
+
+            if (!outfile.is_open()) {
+                RUNTIME_FAIL("writing checkpoint data to " << fileName);
+            }
+
+            typeSEQ minSequence = ZERO_SEQ;
+            uint64_t minOffset = 0;
+            typeXID minXid;
+
+            for (auto it : xidTransactionMap) {
+                Transaction *transaction = it.second;
+                if (transaction->firstSequence < minSequence) {
+                    minSequence = transaction->firstSequence;
+                    minOffset = transaction->firstOffset;
+                    minXid = transaction->xid;
+                } else if (transaction->firstSequence == minSequence && transaction->firstOffset < minOffset) {
+                    minOffset = transaction->firstOffset;
+                    minXid = transaction->xid;
+                }
+            }
+
+            stringstream ss;
+            ss << "{\"database\":\"" << database
+                    << "\",\"scn\":" << dec << scn
+                    << ",\"resetlogs\":" << dec << resetlogs
+                    << ",\"activation\":" << dec << activation
+                    << ",\"time\":" << dec << time_.getVal()
+                    << ",\"sequence\":" << dec << sequence
+                    << ",\"offset\":" << dec << offset
+                    << ",\"switch\":" << dec << switchRedo;
+
+            if (minSequence != ZERO_SEQ) {
+                ss << ",\"min-tran\":{"
+                        << "\"seq\":" << dec << minSequence
+                        << ",\"offset\":" << dec << minOffset
+                        << ",\"xid:\":\"" << hex << setfill('0') << setw(16) << minXid << "\"}";
+            }
+
+            ss << "}";
+
+            outfile << ss.rdbuf();
+            outfile.close();
+
+            checkpointScnList.insert(scn);
+            if (checkpointScn != ZERO_SCN) {
+                bool unlinkFile = false, firstFound = false;
+                set<typeSCN>::iterator it = checkpointScnList.end();
+
+                while (it != checkpointScnList.begin()) {
+                    --it;
+                    string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
+
+                    unlinkFile = false;
+                    if (*it > checkpointScn) {
+                        continue;
+                    } else {
+                        if (!firstFound)
+                            firstFound = true;
+                        else
+                            unlinkFile = true;
+                    }
+
+                    if (unlinkFile) {
+                        if ((flags & REDO_FLAGS_CHECKPOINT_LEAVE) == 0) {
+                            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " checkpoint scn: " << dec << checkpointScn);
+                            unlink(fileName.c_str());
+                        }
+                        it = checkpointScnList.erase(it);
+                    }
+                }
+            }
+        }
+
+        checkpointLastTime = time_;
+        checkpointLastOffset = offset;
+
+        if (switchRedo) {
+            if (checkpointOutputLogSwitch)
+                return true;
+        } else {
+            return true;
+        }
+
+        return false;
+    }
+
+    void OracleAnalyzer::readCheckpoints(void) {
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) == 0)
+            return;
+
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information on: " << checkpointPath);
+        DIR *dir;
+        if ((dir = opendir(checkpointPath.c_str())) == nullptr) {
+            RUNTIME_FAIL("can't access directory: " << checkpointPath);
+        }
+
+        string newLastCheckedDay;
+        struct dirent *ent;
+        typeSCN fileScnMax = 0;
+        while ((ent = readdir(dir)) != nullptr) {
+            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
+                continue;
+
+            struct stat fileStat;
+            string fileName = ent->d_name;
+
+            string fullName = checkpointPath + "/" + ent->d_name;
+            if (stat(fullName.c_str(), &fileStat)) {
+                WARNING("can't read file information for: " << fullName);
+                continue;
+            }
+
+            if (S_ISDIR(fileStat.st_mode))
+                continue;
+
+            string prefix = database + "-chkpt-";
+            if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()).compare(prefix) != 0)
+                continue;
+
+            string suffix = ".json";
+            if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
+                continue;
+
+            string fileScnStr = fileName.substr(prefix.length(), fileName.length() - suffix.length());
+            typeSCN fileScn;
+            try {
+                fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
+            } catch (exception &e) {
+                //ignore other files
+                continue;
+            }
+
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << checkpointPath << "/" << fileName << " scn: " << dec << fileScn);
+            checkpointScnList.insert(fileScn);
+        }
+        closedir(dir);
+
+        if (scn != ZERO_SCN) {
+            bool unlinkFile = false, finish;
+            set<typeSCN>::iterator it = checkpointScnList.end();
+
+            while (it != checkpointScnList.begin()) {
+                --it;
+                string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
+
+                unlinkFile = false;
+                if (*it > scn) {
+                    unlinkFile = true;
+                } else {
+                    if (readCheckpointVerify(fileName, *it))
+                        unlinkFile = true;
+                }
+
+                if (unlinkFile) {
+                    if ((flags & REDO_FLAGS_CHECKPOINT_LEAVE) == 0) {
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " scn: " << dec << *it);
+                        unlink(fileName.c_str());
+                    }
+                    it = checkpointScnList.erase(it);
+                }
+            }
+        }
+    }
+
+    bool OracleAnalyzer::readCheckpointVerify(string &fileName, typeSCN fileScn) {
+        ifstream infile;
+        infile.open(fileName.c_str(), ios::in);
+
+        if (!infile.is_open()) {
+            INFO("read error for " << fileName);
+            return false;
+        }
+
+        string checkpointJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
+        Document document;
+
+        if (checkpointJSON.length() == 0 || document.Parse(checkpointJSON.c_str()).HasParseError()) {
+            WARNING("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
+                    ", message: " << GetParseError_En(document.GetParseError()) << " - skipping file");
+            return false;
+        }
+
+        const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
+        const char* databaseRead = databaseJSON.GetString();
+        if (database.compare(databaseRead) != 0) {
+            WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << database << " - skipping file");
+            return false;
+        }
+
+        const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
+        typeresetlogs resetlogsRead = resetlogsJSON.GetUint64();
+        if (resetlogs != 0) {
+            if (resetlogs != resetlogsRead) {
+                WARNING("invalid resetlogs for " << fileName << " - " << dec << resetlogsRead << " instead of " << resetlogs << " - skipping file");
+                return false;
+            }
+        } else
+            resetlogs = resetlogsRead;
+
+        const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
+        typeactivation activationRead = activationJSON.GetUint64();
+        if (activation != 0) {
+            if (activation != activationRead) {
+                WARNING("invalid activation for " << fileName << " - " << dec << activationRead << " instead of " << activation << " - skipping file");
+                return false;
+            }
+        } else
+            activation = activationRead;
+
+        const Value& scnJSON = getJSONfieldD(fileName, document, "scn");
+        typeSCN scnRead = scnJSON.GetUint64();
+        if (fileScn != scnRead) {
+            WARNING("invalid scn for " << fileName << " - " << dec << scnRead << " instead of " << fileScn << " - skipping file");
+            return false;
+        }
+
+        const Value& seqJSON = getJSONfieldD(fileName, document, "sequence");
+        typeSEQ seqRead = seqJSON.GetUint64();
+
+        const Value& offsetJSON = getJSONfieldD(fileName, document, "offset");
+        uint64_t offsetRead = offsetJSON.GetUint64();
+
+        typeSEQ minTranSeq = 0;
+        uint64_t minTranOffset = 0;
+
+        if (document.HasMember("min-tran")) {
+            const Value& minTranJSON = getJSONfieldD(fileName, document, "min-tran");
+
+            const Value& minTranSeqJSON = getJSONfieldV(fileName, minTranJSON, "seq");
+            minTranSeq = minTranSeqJSON.GetUint64();
+
+            const Value& minTranOffsetJSON = getJSONfieldV(fileName, minTranJSON, "offset");
+            minTranOffset = minTranOffsetJSON.GetUint64();
+        }
+
+        infile.close();
+
+        if (sequence == 0) {
+            if (minTranSeq > 0) {
+                sequence = minTranSeq;
+                readStartOffset = minTranOffset;
+            } else {
+                sequence = seqRead;
+                readStartOffset = offsetRead;
+            }
+
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << fileName << " scn: " << dec << fileScn << " seq: " << sequence <<
+                    " offset: " << readStartOffset);
+            return false;
+        }
+
+        //file is not needed - can be deleted
+        return true;
     }
 
     uint8_t *OracleAnalyzer::getMemoryChunk(const char *module, bool supp) {
