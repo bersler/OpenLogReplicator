@@ -89,6 +89,8 @@ namespace OpenLogReplicator {
         void checkTableForGrantsFlashback(string tableName, typeSCN scn);
         virtual const char* getModeName(void) const;
         virtual void refreshSchema(void);
+        void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
+        void readSystemDictionaries(string maskSchema, string maskObj, bool trackDDL);
         void addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options);
 
     public:
