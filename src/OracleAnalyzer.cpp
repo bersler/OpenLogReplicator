@@ -442,6 +442,7 @@ namespace OpenLogReplicator {
     void OracleAnalyzer::initializeSchema(void) {
         if ((flags & REDO_FLAGS_SCHEMALESS) != 0) {
             schema->readSchema(this);
+            schema->readSys(this);
             return;
         }
 
@@ -453,6 +454,9 @@ namespace OpenLogReplicator {
         if (!schema->readSchema(this)) {
             refreshSchema();
             schema->writeSchema(this);
+            schema->writeSys(this);
+        } else {
+            schema->readSys(this);
         }
     }
 

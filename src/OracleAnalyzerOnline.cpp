@@ -966,6 +966,24 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::refreshSchema(void) {
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
+            DEBUG("reading dictionaries for scn " << dec << scn);
+            schemaScn = scn;
+
+            readSystemDictionaries("SYS", "CCOL$", false);
+            readSystemDictionaries("SYS", "CDEF$", false);
+            readSystemDictionaries("SYS", "COL$", false);
+            readSystemDictionaries("SYS", "DEFERRED_STG$", false);
+            readSystemDictionaries("SYS", "ECOL$", false);
+            readSystemDictionaries("SYS", "OBJ$", false);
+            readSystemDictionaries("SYS", "SEG$", false);
+            readSystemDictionaries("SYS", "TAB$", false);
+            readSystemDictionaries("SYS", "TABPART$", false);
+            readSystemDictionaries("SYS", "TABCOMPART$", false);
+            readSystemDictionaries("SYS", "TABSUBPART$", false);
+            readSystemDictionaries("SYS", "USER$", false);
+        }
+
         for (SchemaElement *element : schema->elements)
             addTable(element->mask, element->keys, element->keysStr, element->options);
     }
@@ -1402,6 +1420,12 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options) {
+        string::size_type pos = mask.find('.');
+        if (pos == string::npos) {
+            RUNTIME_FAIL("mask " << mask << " is missing \".\" character");
+        }
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0)
+            readSystemDictionaries(mask.substr(0, pos), "", true);
         INFO("- reading table schema for: " << mask);
 
         uint64_t tabCnt = 0;
