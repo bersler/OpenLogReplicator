@@ -28,6 +28,7 @@ namespace OpenLogReplicator {
             uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType) :
         OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
                 unknownType),
+        hasPreviousValue(false),
         hasPreviousRedo(false),
         hasPreviousColumn(false) {
     }
@@ -202,8 +203,12 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::appendHeader(bool first, bool showXid) {
-        bool beforeVal = false;
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
                 outputBufferAppend("\"scns\":\"0x");
                 appendHex(lastScn, 16);
@@ -212,12 +217,13 @@ namespace OpenLogReplicator {
                 outputBufferAppend("\"scn\":");
                 appendDec(lastScn);
             }
-            beforeVal = true;
         }
 
         if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
-            if (beforeVal)
+            if (hasPreviousValue)
                 outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
 
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
                 outputBufferAppend("\"tms\":\"");
@@ -229,13 +235,13 @@ namespace OpenLogReplicator {
                 outputBufferAppend("\"tm\":");
                 appendDec(lastTime.toTime() * 1000);
             }
-
-            beforeVal = true;
         }
 
         if (showXid) {
-            if (beforeVal)
-                 outputBufferAppend(',');
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
 
             if (xidFormat == XID_FORMAT_TEXT) {
                 outputBufferAppend("\"xid\":\"");
@@ -525,12 +531,18 @@ namespace OpenLogReplicator {
 
         outputBufferBegin(0);
         outputBufferAppend('{');
+        hasPreviousValue = false;
         appendHeader(true, true);
 
+        if (hasPreviousValue)
+            outputBufferAppend(',');
+        else
+            hasPreviousValue = true;
+
         if (messageFormat == MESSAGE_FORMAT_FULL)
-            outputBufferAppend(",\"payload\":[");
+            outputBufferAppend("\"payload\":[");
         else {
-            outputBufferAppend(",\"payload\":[{\"op\":\"begin\"}]}");
+            outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}");
             outputBufferCommit();
         }
     }
@@ -541,8 +553,15 @@ namespace OpenLogReplicator {
         else {
             outputBufferBegin(0);
             outputBufferAppend('{');
+            hasPreviousValue = false;
             appendHeader(false, true);
-            outputBufferAppend(",\"payload\":[{\"op\":\"commit\"}]}");
+
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
+            outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}");
         }
         outputBufferCommit();
     }
@@ -559,8 +578,15 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
+            hasPreviousValue = false;
             appendHeader(false, true);
-            outputBufferAppend(",\"payload\":[");
+
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
+            outputBufferAppend("\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"c\",");
@@ -613,8 +639,15 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
+            hasPreviousValue = false;
             appendHeader(false, true);
-            outputBufferAppend(",\"payload\":[");
+
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
+            outputBufferAppend("\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"u\",");
@@ -694,8 +727,15 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
+            hasPreviousValue = false;
             appendHeader(false, true);
-            outputBufferAppend(",\"payload\":[");
+
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
+            outputBufferAppend("\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"d\",");
@@ -748,8 +788,15 @@ namespace OpenLogReplicator {
             else
                 outputBufferBegin(0);
             outputBufferAppend('{');
+            hasPreviousValue = false;
             appendHeader(false, true);
-            outputBufferAppend(",\"payload\":[");
+
+            if (hasPreviousValue)
+                outputBufferAppend(',');
+            else
+                hasPreviousValue = true;
+
+            outputBufferAppend("\"payload\":[");
         }
 
         outputBufferAppend("{\"op\":\"ddl\",");
@@ -769,8 +816,15 @@ namespace OpenLogReplicator {
         lastScn = scn;
         outputBufferBegin(0);
         outputBufferAppend('{');
-        appendHeader(false, false);
-        outputBufferAppend(",\"payload\":[{\"op\":\"chkpt\",\"seq\":");
+        hasPreviousValue = false;
+        appendHeader(true, false);
+
+        if (hasPreviousValue)
+            outputBufferAppend(',');
+        else
+            hasPreviousValue = true;
+
+        outputBufferAppend("\"payload\":[{\"op\":\"chkpt\",\"seq\":");
         appendDec(sequence);
         outputBufferAppend(",\"offset\":");
         appendDec(offset);

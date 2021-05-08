@@ -27,6 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class OutputBufferJson : public OutputBuffer {
     protected:
+        bool hasPreviousValue;
         bool hasPreviousRedo;
         bool hasPreviousColumn;
         virtual void columnNull(OracleObject *object, typeCOL col);
