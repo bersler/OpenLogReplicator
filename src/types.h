@@ -224,6 +224,7 @@ namespace OpenLogReplicator {
         uintX_t& operator=(const char *val);
         uintX_t& set(uint64_t val1, uint64_t val2);
         uintX_t& setStr(const char *val, uint64_t length);
+        bool isSet64(uint64_t mask);
 
         friend ostream& operator<<(ostream& os, const uintX_t& val);
     };

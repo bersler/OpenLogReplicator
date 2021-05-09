@@ -80,10 +80,12 @@ namespace OpenLogReplicator {
     bool RowId::operator<(const RowId& other) const {
         if (other.dataObj < dataObj)
             return true;
-        if (other.dba < dba)
-            return true;
-        if (other.slot < slot)
-            return true;
+        if (other.dataObj == dataObj) {
+            if (other.dba < dba)
+                return true;
+            if (other.dba == dba && other.slot < slot)
+                return true;
+        }
         return false;
     }
 

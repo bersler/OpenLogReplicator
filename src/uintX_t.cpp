@@ -92,6 +92,10 @@ namespace OpenLogReplicator {
         return *this;
     }
 
+    bool uintX_t::isSet64(uint64_t mask) {
+        return data[0] & mask;
+    }
+
     uintX_t& uintX_t::set(uint64_t val1, uint64_t val2) {
         this->data[0] = val1;
         this->data[1] = val2;
