@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <algorithm>
+#include <regex>
 #include <unistd.h>
 
 #include "DatabaseConnection.h"
@@ -205,7 +206,8 @@ namespace OpenLogReplicator {
             "     T.OBJ# = DS.OBJ#"
             " WHERE"
             "   BITAND(O.FLAGS, 128) = 0"
-            "   AND U.NAME || '.' || O.NAME LIKE UPPER(:i)"
+            "   AND REGEXP_LIKE(U.NAME, :i)"
+            "   AND REGEXP_LIKE(O.NAME, :j)"
             " ORDER BY"
             "   4,5");
 
@@ -458,7 +460,7 @@ namespace OpenLogReplicator {
             " FROM"
             "   SYS.OBJ$ AS OF SCN :i O"
             " WHERE"
-            "   O.OWNER# = :j AND O.NAME like :k");
+            "   REGEXP_LIKE(O.OWNER#, :j) AND REGEXP_LIKE(O.NAME, :k)");
 
     const char* OracleAnalyzerOnline::SQL_GET_SYS_SEG_USER(
             "SELECT"
@@ -569,7 +571,7 @@ namespace OpenLogReplicator {
             " FROM"
             "   SYS.USER$ AS OF SCN :i U"
             " WHERE"
-            "   U.NAME LIKE UPPER(:j)");
+            "   REGEXP_LIKE(U.NAME, :j)");
 
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
@@ -985,7 +987,7 @@ namespace OpenLogReplicator {
         }
 
         for (SchemaElement *element : schema->elements)
-            addTable(element->mask, element->keys, element->keysStr, element->options);
+            addTable(element->owner, element->table, element->keys, element->keysStr, element->options);
     }
 
     void OracleAnalyzerOnline::readSystemDictionariesDetails(typeUSER user, typeOBJ obj) {
@@ -1017,10 +1019,10 @@ namespace OpenLogReplicator {
         char colName[129]; stmtCol.defineString(6, colName, sizeof(colName));
         uint64_t colType; stmtCol.defineUInt64(7, colType);
         uint64_t colLength; stmtCol.defineUInt64(8, colLength);
-        int64_t colPrecision; stmtCol.defineInt64(9, colPrecision);
-        int64_t colScale; stmtCol.defineInt64(10, colScale);
-        uint64_t colCharsetForm; stmtCol.defineUInt64(11, colCharsetForm);
-        uint64_t colCharsetId; stmtCol.defineUInt64(12, colCharsetId);
+        int64_t colPrecision = -1; stmtCol.defineInt64(9, colPrecision);
+        int64_t colScale = -1; stmtCol.defineInt64(10, colScale);
+        uint64_t colCharsetForm = 0; stmtCol.defineUInt64(11, colCharsetForm);
+        uint64_t colCharsetId = 0; stmtCol.defineUInt64(12, colCharsetId);
         int64_t colNull; stmtCol.defineInt64(13, colNull);
         uint64_t colProperty1; stmtCol.defineUInt64(14, colProperty1);
         uint64_t colProperty2; stmtCol.defineUInt64(15, colProperty2);
@@ -1029,6 +1031,10 @@ namespace OpenLogReplicator {
         while (colRet) {
             schema->dictSysColAdd(colRowid, colObj, colCol, colSegCol, colIntCol, colName, colType, colLength, colPrecision, colScale, colCharsetForm,
                     colCharsetId, colNull, colProperty1, colProperty2);
+            colPrecision = 0;
+            colScale = 0;
+            colCharsetForm = -1;
+            colCharsetId = -1;
             colRet = stmtCol.next();
         }
 
@@ -1056,11 +1062,12 @@ namespace OpenLogReplicator {
         typeCOL ccolCon; stmtCCol.defineInt16(2, ccolCon);
         typeCOL ccolIntCol; stmtCCol.defineInt16(3, ccolIntCol);
         typeOBJ ccolObj; stmtCCol.defineUInt32(4, ccolObj);
-        uint64_t ccolSpare1; stmtCCol.defineUInt64(5, ccolSpare1);
+        uint64_t ccolSpare1 = 0; stmtCCol.defineUInt64(5, ccolSpare1);
 
         int64_t ccolRet = stmtCCol.executeQuery();
         while (ccolRet) {
             schema->dictSysCColAdd(ccolRowid, ccolCon, ccolIntCol, ccolObj, ccolSpare1);
+            ccolSpare1 = 0;
             ccolRet = stmtCCol.next();
         }
 
@@ -1117,11 +1124,12 @@ namespace OpenLogReplicator {
 
         char deferredStgRowid[19]; stmtDeferredStg.defineString(1, deferredStgRowid, sizeof(deferredStgRowid));
         typeOBJ deferredStgObj; stmtDeferredStg.defineUInt32(2, deferredStgObj);
-        uint64_t deferredStgFlagsStg; stmtDeferredStg.defineUInt64(3, deferredStgFlagsStg);
+        uint64_t deferredStgFlagsStg = 0; stmtDeferredStg.defineUInt64(3, deferredStgFlagsStg);
 
         int64_t deferredStgRet = stmtDeferredStg.executeQuery();
         while (deferredStgRet) {
             schema->dictSysDeferredStgAdd(deferredStgRowid, deferredStgObj, deferredStgFlagsStg);
+            deferredStgFlagsStg = 0;
             deferredStgRet = stmtDeferredStg.next();
         }
 
@@ -1166,13 +1174,15 @@ namespace OpenLogReplicator {
         }
 
         char ecolRowid[19]; stmtECol.defineString(1, ecolRowid, sizeof(ecolRowid));
-        typeOBJ ecolObj; stmtECol.defineUInt32(2, ecolObj);
-        uint32_t ecolColNum; stmtECol.defineUInt32(3, ecolColNum);
-        uint32_t ecolGuardId; stmtECol.defineUInt32(4, ecolGuardId);
+        typeOBJ ecolTabObj; stmtECol.defineUInt32(2, ecolTabObj);
+        uint32_t ecolColNum = 0; stmtECol.defineUInt32(3, ecolColNum);
+        uint32_t ecolGuardId = 0; stmtECol.defineUInt32(4, ecolGuardId);
 
         int64_t ecolRet = stmtECol.executeQuery();
         while (ecolRet) {
-            schema->dictSysEColAdd(ecolRowid, ecolObj, ecolColNum, ecolGuardId);
+            schema->dictSysEColAdd(ecolRowid, ecolTabObj, ecolColNum, ecolGuardId);
+            ecolColNum = 0;
+            ecolGuardId = 0;
             ecolRet = stmtECol.next();
         }
 
@@ -1198,11 +1208,11 @@ namespace OpenLogReplicator {
 
         char tabRowid[19]; stmtTab.defineString(1, tabRowid, sizeof(tabRowid));
         typeOBJ tabObj; stmtTab.defineUInt32(2, tabObj);
-        typeDATAOBJ tabDataObj; stmtTab.defineUInt32(3, tabDataObj);
+        typeDATAOBJ tabDataObj = 0; stmtTab.defineUInt32(3, tabDataObj);
         uint32_t tabTs; stmtTab.defineUInt32(4, tabTs);
         uint32_t tabFile; stmtTab.defineUInt32(5, tabFile);
         uint32_t tabBlock; stmtTab.defineUInt32(6, tabBlock);
-        typeCOL tabCluCols; stmtTab.defineInt16(7, tabCluCols);
+        typeCOL tabCluCols = 0; stmtTab.defineInt16(7, tabCluCols);
         uint64_t tabFlags; stmtTab.defineUInt64(8, tabFlags);
         uint64_t tabProperty1; stmtTab.defineUInt64(9, tabProperty1);
         uint64_t tabProperty2; stmtTab.defineUInt64(10, tabProperty2);
@@ -1210,6 +1220,8 @@ namespace OpenLogReplicator {
         int64_t tabRet = stmtTab.executeQuery();
         while (tabRet) {
             schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabTs, tabFile, tabBlock, tabCluCols, tabFlags, tabProperty1, tabProperty2);
+            tabDataObj = 0;
+            tabCluCols = 0;
             tabRet = stmtTab.next();
         }
 
@@ -1235,12 +1247,13 @@ namespace OpenLogReplicator {
 
         char tabComPartRowid[19]; stmtTabComPart.defineString(1, tabComPartRowid, sizeof(tabComPartRowid));
         typeOBJ tabComPartObj; stmtTabComPart.defineUInt32(2, tabComPartObj);
-        typeDATAOBJ tabComPartDataObj; stmtTabComPart.defineUInt32(3, tabComPartDataObj);
+        typeDATAOBJ tabComPartDataObj = 0; stmtTabComPart.defineUInt32(3, tabComPartDataObj);
         typeOBJ tabComPartBo; stmtTabComPart.defineUInt32(4, tabComPartBo);
 
         int64_t tabComPartRet = stmtTabComPart.executeQuery();
         while (tabComPartRet) {
             schema->dictSysTabComPartAdd(tabComPartRowid, tabComPartObj, tabComPartDataObj, tabComPartBo);
+            tabComPartDataObj = 0;
             tabComPartRet = stmtTabComPart.next();
         }
 
@@ -1272,11 +1285,12 @@ namespace OpenLogReplicator {
         uint32_t segFile; stmtSeg.defineUInt32(2, segFile);
         uint32_t segBlock; stmtSeg.defineUInt32(3, segBlock);
         uint32_t segTs; stmtSeg.defineUInt32(4, segTs);
-        uint64_t segSpare1; stmtSeg.defineUInt64(5, segSpare1);
+        uint64_t segSpare1 = 0; stmtSeg.defineUInt64(5, segSpare1);
 
         int64_t segRet = stmtSeg.executeQuery();
         while (segRet) {
             schema->dictSysSegAdd(segRowid, segFile, segBlock, segTs, segSpare1);
+            segSpare1 = 0;
             segRet = stmtSeg.next();
         }
 
@@ -1302,12 +1316,13 @@ namespace OpenLogReplicator {
 
         char tabPartRowid[19]; stmtTabPart.defineString(1, tabPartRowid, sizeof(tabPartRowid));
         typeOBJ tabPartObj; stmtTabPart.defineUInt32(2, tabPartObj);
-        typeDATAOBJ tabPartDataObj; stmtTabPart.defineUInt32(3, tabPartDataObj);
+        typeDATAOBJ tabPartDataObj = 0; stmtTabPart.defineUInt32(3, tabPartDataObj);
         typeOBJ tabPartBo; stmtTabPart.defineUInt32(4, tabPartBo);
 
         int64_t tabPartRet = stmtTabPart.executeQuery();
         while (tabPartRet) {
             schema->dictSysTabPartAdd(tabPartRowid, tabPartObj, tabPartDataObj, tabPartBo);
+            tabPartDataObj = 0;
             tabPartRet = stmtTabPart.next();
         }
 
@@ -1333,21 +1348,22 @@ namespace OpenLogReplicator {
 
         char tabSubPartRowid[19]; stmtTabSubPart.defineString(1, tabSubPartRowid, sizeof(tabSubPartRowid));
         typeOBJ tabSubPartObj; stmtTabSubPart.defineUInt32(2, tabSubPartObj);
-        typeDATAOBJ tabSubPartDataObj; stmtTabSubPart.defineUInt32(3, tabSubPartDataObj);
+        typeDATAOBJ tabSubPartDataObj = 0; stmtTabSubPart.defineUInt32(3, tabSubPartDataObj);
         typeOBJ tabSubPartPobj; stmtTabSubPart.defineUInt32(4, tabSubPartPobj);
 
         int64_t tabSubPartRet = stmtTabSubPart.executeQuery();
         while (tabSubPartRet) {
             schema->dictSysTabSubPartAdd(tabSubPartRowid, tabSubPartObj, tabSubPartDataObj, tabSubPartPobj);
+            tabSubPartDataObj = 0;
             tabSubPartRet = stmtTabSubPart.next();
         }
     }
 
-    void OracleAnalyzerOnline::readSystemDictionaries(string maskSchema, string maskObj, bool trackDDL) {
-        if (maskObj.length() == 0) {
-            DEBUG("reading dictionaries for " << maskSchema << ".%");
+    void OracleAnalyzerOnline::readSystemDictionaries(string owner, string table, bool trackDDL) {
+        if (table.length() == 0) {
+            DEBUG("reading dictionaries for '" << owner << "'");
         } else {
-            DEBUG("reading dictionaries for " << maskSchema << "." << maskObj);
+            DEBUG("reading dictionaries for '" << owner << "'.'" << table << "'");
         }
 
         try {
@@ -1356,18 +1372,19 @@ namespace OpenLogReplicator {
             //reading SYS.USER$
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_USER);
             TRACE(TRACE2_SQL, "PARAM1: " << schemaScn);
-            TRACE(TRACE2_SQL, "PARAM2: " << maskSchema);
+            TRACE(TRACE2_SQL, "PARAM2: " << owner);
             stmtUser.createStatement(SQL_GET_SYS_USER);
             stmtUser.bindUInt64(1, schemaScn);
-            stmtUser.bindString(2, maskSchema);
+            stmtUser.bindString(2, owner);
             char userRowid[19]; stmtUser.defineString(1, userRowid, sizeof(userRowid));
             typeUSER userUser; stmtUser.defineUInt32(2, userUser);
             char userName[129]; stmtUser.defineString(3, userName, sizeof(userName));
-            uint64_t userSpare1; stmtUser.defineUInt64(4, userSpare1);
+            uint64_t userSpare1 = 0; stmtUser.defineUInt64(4, userSpare1);
 
             int64_t retUser = stmtUser.executeQuery();
             while (retUser) {
                 if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare1)) {
+                    userSpare1 = 0;
                     retUser = stmtUser.next();
                     continue;
                 }
@@ -1385,19 +1402,19 @@ namespace OpenLogReplicator {
                     TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_NAME);
                     TRACE(TRACE2_SQL, "PARAM1: " << schemaScn);
                     TRACE(TRACE2_SQL, "PARAM2: " << userUser);
-                    TRACE(TRACE2_SQL, "PARAM3: " << maskObj);
+                    TRACE(TRACE2_SQL, "PARAM3: " << table);
                     stmtObj.createStatement(SQL_GET_SYS_OBJ_NAME);
                     stmtObj.bindUInt64(1, schemaScn);
                     stmtObj.bindUInt32(2, userUser);
-                    stmtObj.bindString(3, maskObj);
+                    stmtObj.bindString(3, table);
                 }
 
                 char objRowid[19]; stmtObj.defineString(1, objRowid, sizeof(objRowid));
                 typeUSER objOwner; stmtObj.defineUInt32(2, objOwner);
                 typeOBJ objObj; stmtObj.defineUInt32(3, objObj);
-                typeDATAOBJ objDataObj; stmtObj.defineUInt32(4, objDataObj);
+                typeDATAOBJ objDataObj = 0; stmtObj.defineUInt32(4, objDataObj);
                 char objName[129]; stmtObj.defineString(5, objName, sizeof(objName));
-                uint64_t objType; stmtObj.defineUInt64(6, objType);
+                uint64_t objType = 0; stmtObj.defineUInt64(6, objType);
                 uint64_t objFlags; stmtObj.defineUInt64(7, objFlags);
 
                 int64_t objRet = stmtObj.executeQuery();
@@ -1406,12 +1423,15 @@ namespace OpenLogReplicator {
                         if (!trackDDL)
                             readSystemDictionariesDetails(userUser, objObj);
                     }
+                    objDataObj = 0;
+                    objFlags = 0;
                     objRet = stmtObj.next();
                 }
 
                 if (trackDDL)
                     readSystemDictionariesDetails(userUser, 0);
 
+                userSpare1 = 0;
                 retUser = stmtUser.next();
             }
         } catch (RuntimeException &ex) {
@@ -1419,26 +1439,25 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options) {
-        string::size_type pos = mask.find('.');
-        if (pos == string::npos) {
-            RUNTIME_FAIL("mask " << mask << " is missing \".\" character");
-        }
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0)
-            readSystemDictionaries(mask.substr(0, pos), "", true);
-        INFO("- reading table schema for: " << mask);
-
+    void OracleAnalyzerOnline::addTable(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options) {
+        INFO("- reading table schema for owner: " << owner << " table: " << table);
         uint64_t tabCnt = 0;
+        regex regexOwner(owner), regexTable(table);
+
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0)
+            readSystemDictionaries(owner, "", true);
+
         DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
 
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST);
-        TRACE(TRACE2_SQL, "PARAM1: " << mask);
+        TRACE(TRACE2_SQL, "PARAM1: " << owner);
+        TRACE(TRACE2_SQL, "PARAM2: " << table);
         stmt.createStatement(SQL_GET_TABLE_LIST);
         typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
         typeOBJ obj; stmt.defineUInt32(2, obj);
         typeCOL cluCols; stmt.defineInt16(3, cluCols);
-        char owner[129]; stmt.defineString(4, owner, sizeof(owner));
-        char name[129]; stmt.defineString(5, name, sizeof(name));
+            char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
+            char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
         uint64_t clustered; stmt.defineUInt64(6, clustered);
         uint64_t iot; stmt.defineUInt64(7, iot);
         uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
@@ -1452,11 +1471,11 @@ namespace OpenLogReplicator {
 
         if (version12) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: " << obj);
+            TRACE(TRACE2_SQL, "PARAM1: ?");
             stmtCol.createStatement(SQL_GET_COLUMN_LIST);
         } else {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11);
-            TRACE(TRACE2_SQL, "PARAM1: " << obj);
+            TRACE(TRACE2_SQL, "PARAM1: ?");
             stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
         }
         typeCOL colNo; stmtCol.defineInt16(1, colNo);
@@ -1480,8 +1499,8 @@ namespace OpenLogReplicator {
         stmtCol.bindUInt32(1, obj);
 
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST);
-        TRACE(TRACE2_SQL, "PARAM1: " << obj);
-        TRACE(TRACE2_SQL, "PARAM2: " << obj);
+        TRACE(TRACE2_SQL, "PARAM1: ?");
+        TRACE(TRACE2_SQL, "PARAM2: ?");
         stmtPart.createStatement(SQL_GET_PARTITION_LIST);
         typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
         typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
@@ -1489,12 +1508,13 @@ namespace OpenLogReplicator {
         stmtPart.bindUInt32(2, obj);
 
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-        TRACE(TRACE2_SQL, "PARAM1: " << obj);
+        TRACE(TRACE2_SQL, "PARAM1: ?");
         stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
         uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
         stmtSupp.bindUInt32(1, obj);
 
-        stmt.bindString(1, mask.c_str());
+        stmt.bindString(1, owner.c_str());
+        stmt.bindString(2, table.c_str());
         cluCols = 0;
         dataObj = 0;
         int64_t ret = stmt.executeQuery();
@@ -1502,7 +1522,7 @@ namespace OpenLogReplicator {
         while (ret) {
             //skip Index Organized Tables (IOT)
             if (iot) {
-                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - IOT");
+                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - IOT");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -1511,7 +1531,7 @@ namespace OpenLogReplicator {
 
             //skip temporary tables
             if (temporary) {
-                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - temporary table");
+                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - temporary table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -1520,7 +1540,7 @@ namespace OpenLogReplicator {
 
             //skip nested tables
             if (nested) {
-                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - nested table");
+                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - nested table");
                 cluCols = 0;
                 dataObj = 0;
                 ret = stmt.next();
@@ -1529,7 +1549,7 @@ namespace OpenLogReplicator {
 
             //skip compressed tables
             if (compressed) {
-                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - compressed table");
+                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - compressed table");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -1538,7 +1558,7 @@ namespace OpenLogReplicator {
 
             //table already added with another rule
             if (schema->checkDict(obj, dataObj) != nullptr) {
-                INFO("  * skipped: " << owner << "." << name << " (obj: " << dec << obj << ") - already added");
+                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - already added");
                 dataObj = 0;
                 cluCols = 0;
                 ret = stmt.next();
@@ -1548,7 +1568,7 @@ namespace OpenLogReplicator {
             typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
             bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
 
-            schema->object = new OracleObject(obj, dataObj, cluCols, options, owner, name);
+            schema->object = new OracleObject(obj, dataObj, cluCols, options, ownerName, tableName);
             if (schema->object == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
             }
@@ -1589,7 +1609,7 @@ namespace OpenLogReplicator {
                     auto it = outputBuffer->characterMap.find(charmapId);
                     if (it == outputBuffer->characterMap.end()) {
                         WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
-                        RUNTIME_FAIL("table " << owner << "." << name << " - unsupported character set id: " << dec << charmapId <<
+                        RUNTIME_FAIL("table " << ownerName << "." << tableName << " - unsupported character set id: " << dec << charmapId <<
                                 " for column: " << columnName);
                     }
                 }
@@ -1636,11 +1656,11 @@ namespace OpenLogReplicator {
 
             //check if table has all listed columns
             if (keys.size() != keysCnt) {
-                RUNTIME_FAIL("table " << owner << "." << name << " couldn't find all column set (" << keysStr << ")");
+                RUNTIME_FAIL("table " << ownerName << "." << tableName << " couldn't find all column set (" << keysStr << ")");
             }
 
             stringstream ss;
-            ss << "  * found: " << owner << "." << name << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
+            ss << "  * found: " << ownerName << "." << tableName << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
             if (clustered)
                 ss << ", part of cluster";
             if (partitioned)
@@ -1658,11 +1678,11 @@ namespace OpenLogReplicator {
                     else if (!suppLogTablePrimary && !suppLogTableAll &&
                             !suppLogSchemaPrimary && !suppLogSchemaAll &&
                             !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
+                        ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
                 //user defined primary key
                 } else {
                     if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << owner << "." << name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
+                        ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
             INFO(ss.str());

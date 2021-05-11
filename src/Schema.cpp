@@ -731,7 +731,7 @@ namespace OpenLogReplicator {
             uint64_t charsetId = charsetIdJSON.GetUint64();
 
             const Value& nullJSON = getJSONfieldV(fileName, sysCol[i], "null");
-            uint64_t null = nullJSON.GetInt64();
+            uint64_t null_ = nullJSON.GetInt64();
 
             const Value& propertyJSON = getJSONfieldV(fileName, sysCol[i], "property");
             if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
@@ -740,7 +740,7 @@ namespace OpenLogReplicator {
             uint64_t property1 = propertyJSON[0].GetUint64();
             uint64_t property2 = propertyJSON[1].GetUint64();
 
-            dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null, property1, property2);
+            dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null_, property1, property2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << dec << sysCol.Size());
 
@@ -823,7 +823,7 @@ namespace OpenLogReplicator {
             const Value& rowIdJSON = getJSONfieldV(fileName, sysECol[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysECol[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysECol[i], "tab-obj");
             typeOBJ obj = objJSON.GetUint();
 
             const Value& colNumJSON = getJSONfieldV(fileName, sysECol[i], "col-num");
@@ -1165,7 +1165,7 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss << "{\"row-id\":\"" << sysECol->rowId << "\"," <<
-                    "\"obj\":" << dec << sysECol->obj << "," <<
+                    "\"tab-obj\":" << dec << sysECol->tabObj << "," <<
                     "\"col-num\":" << dec << sysECol->colNum << "," <<
                     "\"guard-id\":" << dec << sysECol->guardId << "}";
         }
@@ -1427,14 +1427,14 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ obj, uint32_t colNum, uint32_t guardId) {
+    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, uint32_t colNum, uint32_t guardId) {
         RowId rowId(rowIdStr);
         if (sysEColMap[rowId] != nullptr)
             return false;
 
         SysECol *sysECol = new SysECol();
         sysECol->rowId = rowId;
-        sysECol->obj = obj;
+        sysECol->tabObj = tabObj;
         sysECol->colNum = colNum;
         sysECol->guardId = guardId;
         sysEColMap[rowId] = sysECol;

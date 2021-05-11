@@ -552,9 +552,14 @@ int main(int argc, char **argv) {
             outputBuffer->initialize(oracleAnalyzer);
 
             if (sourceJSON.HasMember("event-table")) {
-                const Value& eventtableJSON = sourceJSON["event-table"];
+                const Value& eventTableJSON = sourceJSON["event-table"];
+                if (!sourceJSON.HasMember("event-owner")) {
+                    CONFIG_FAIL("bad JSON, missing \"event-owner\", but \"event-table\" present");
+                }
+                const Value& eventOwnerJSON = sourceJSON["event-owner"];
                 SchemaElement *element = oracleAnalyzer->schema->addElement();
-                element->mask = eventtableJSON.GetString();
+                element->owner = eventOwnerJSON.GetString();
+                element->table = eventTableJSON.GetString();
                 element->options = 1;
             }
 
@@ -564,9 +569,11 @@ int main(int argc, char **argv) {
             }
 
             for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
+                const Value& ownerJSON = getJSONfieldV(fileName, tablesJSON[j], "owner");
                 const Value& tableJSON = getJSONfieldV(fileName, tablesJSON[j], "table");
                 SchemaElement *element = oracleAnalyzer->schema->addElement();
-                element->mask = tableJSON.GetString();
+                element->owner = ownerJSON.GetString();
+                element->table = tableJSON.GetString();
 
                 if (tablesJSON[j].HasMember("key")) {
                     const Value& key = tablesJSON[j]["key"];

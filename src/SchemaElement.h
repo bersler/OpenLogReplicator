@@ -30,7 +30,8 @@ namespace OpenLogReplicator {
     class SchemaElement {
 
     public:
-        string mask;
+        string owner;
+        string table;
         vector<string> keys;
         string keysStr;
         uint64_t options;

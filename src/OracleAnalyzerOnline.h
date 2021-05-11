@@ -90,8 +90,8 @@ namespace OpenLogReplicator {
         virtual const char* getModeName(void) const;
         virtual void refreshSchema(void);
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
-        void readSystemDictionaries(string maskSchema, string maskObj, bool trackDDL);
-        void addTable(string &mask, vector<string> &keys, string &keysStr, uint64_t options);
+        void readSystemDictionaries(string owner, string table, bool trackDDL);
+        void addTable(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options);
 
     public:
         DatabaseEnvironment *env;

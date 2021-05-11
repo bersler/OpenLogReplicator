@@ -1,5 +1,5 @@
 {
-  "version": "0.8.5",
+  "version": "0.8.7",
   "sources": [
     {
       "alias": "S1",
@@ -16,9 +16,9 @@
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
       "tables": [
-        {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
-        {"table": "OWNER1.TABLENAME2"},
-        {"table": "OWNER2.TAB%"}
+        {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+        {"owner": "OWNER1", "table": "TABLENAME2"},
+        {"owner": "OWNER2", "table": "TAB.*"}
       ]
     }
   ],

@@ -1,5 +1,5 @@
 {
-  "version": "0.8.5",
+  "version": "0.8.7",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -46,11 +46,12 @@
       "arch-read-sleep-us": 10000000,
       "arch-read-retry": 3,
       "redo-verify-delay-us": 50000,
-      "event-table": "SYSTEM.OPENLOGREPLICATOR",
+      "event-owner": "SYSTEM",
+      "event-table": "OPENLOGREPLICATOR",
       "tables": [
-        {"table": "OWNER1.TABLENAME1", "key": "col1, col2, col3"},
-        {"table": "OWNER1.TABLENAME2"},
-        {"table": "OWNER2.TAB%"}
+        {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+        {"owner": "OWNER1", "table": "TABLENAME2"},
+        {"owner": "OWNER2", "table": "TAB.*"}
       ]
     }
   ],
