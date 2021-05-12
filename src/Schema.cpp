@@ -1098,7 +1098,7 @@ namespace OpenLogReplicator {
                     "\"scale\":" << dec << sysCol->scale << "," <<
                     "\"charset-form\":" << dec << sysCol->charsetForm << "," <<
                     "\"charset-id\":" << dec << sysCol->charsetId << "," <<
-                    "\"null\":" << dec << sysCol->null << "," <<
+                    "\"null\":" << dec << sysCol->null_ << "," <<
                     "\"property\":" << sysCol->property << "}";
         }
 
@@ -1357,7 +1357,7 @@ namespace OpenLogReplicator {
     }
 
     bool Schema::dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
-            int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null, uint64_t property1, uint64_t property2) {
+            int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
         if (sysColMap[rowId] != nullptr)
             return false;
@@ -1375,7 +1375,7 @@ namespace OpenLogReplicator {
         sysCol->scale = scale;
         sysCol->charsetForm = charsetForm;
         sysCol->charsetId = charsetId;
-        sysCol->null = null;
+        sysCol->null_ = null_;
         sysCol->property.set(property1, property2);
         sysColMap[rowId] = sysCol;
 

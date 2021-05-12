@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
         int64_t scale;
         uint64_t charsetForm;
         uint64_t charsetId;
-        int64_t null;
+        int64_t null_;
         uintX_t property;
     };
 

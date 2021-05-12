@@ -1823,9 +1823,8 @@ namespace OpenLogReplicator {
                     uint8_t *guardData = values[guardPos][VALUE_BEFORE].data[0];
                     if (guardData != nullptr) {
                         guardPresent = true;
-                        uint64_t guardLength = values[guardPos][VALUE_BEFORE].length[0];
-                        uint64_t guardPos = i / 8;
-                        if (guardPos < guardLength && (values[guardPos][VALUE_BEFORE].data[0][guardPos] & (1 << (i & 7))) != 0) {
+                        if (i / 8 < values[guardPos][VALUE_BEFORE].length[0] &&
+                                (values[guardPos][VALUE_BEFORE].data[0][i / 8] & (1 << (i & 7))) != 0) {
                             values[pos][VALUE_BEFORE].data[0] = (uint8_t*)1;
                             values[pos][VALUE_BEFORE].length[0] = 0;
                         }
@@ -1844,9 +1843,8 @@ namespace OpenLogReplicator {
                     uint8_t *guardData = values[guardPos][VALUE_AFTER].data[0];
                     if (guardData != nullptr) {
                         guardPresent = true;
-                        uint64_t guardLength = values[guardPos][VALUE_AFTER].length[0];
-                        uint64_t guardPos = i / 8;
-                        if (guardPos < guardLength && (values[guardPos][VALUE_AFTER].data[0][guardPos] & (1 << (i & 7))) != 0) {
+                        if (i / 8 < values[guardPos][VALUE_AFTER].length[0] &&
+                                (values[guardPos][VALUE_AFTER].data[0][i / 8] & (1 << (i & 7))) != 0) {
                             values[pos][VALUE_AFTER].data[0] = (uint8_t*)1;
                             values[pos][VALUE_AFTER].length[0] = 0;
                         }

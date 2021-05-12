@@ -272,7 +272,7 @@ namespace OpenLogReplicator {
             ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
             //15: guard column
             ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
-            ",  (SELECT COUNT(*) FROM SYS.COL$ C2 WHERE C2.SEGCOL# > 0 AND C2.SEGCOL# < C.SEGCOL# AND C2.OBJ# = C.OBJ# AND DECODE(BITAND(C2.PROPERTY, 1073741824), 1073741824, 1, 0) = 1)"
+            ",  -1 AS GUARD_ID"
             //17: number of primary key constraints
             ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
             //18: number of supplementary columns
@@ -429,7 +429,7 @@ namespace OpenLogReplicator {
 
     const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL11_USER(
             "SELECT"
-            "   E.ROWID, E.TABOBJ#, E.COLNUM, 0 AS GUARD_ID"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, -1 AS GUARD_ID"
             " FROM"
             "   SYS.OBJ$ AS OF SCN :i O"
             " JOIN"
@@ -440,7 +440,7 @@ namespace OpenLogReplicator {
 
     const char* OracleAnalyzerOnline::SQL_GET_SYS_ECOL11_OBJ(
             "SELECT"
-            "   E.ROWID, E.TABOBJ#, E.COLNUM, 0 AS GUARD_ID"
+            "   E.ROWID, E.TABOBJ#, E.COLNUM, -1 AS GUARD_ID"
             " FROM"
             "   SYS.ECOL$ AS OF SCN :j E"
             " WHERE"
@@ -1176,13 +1176,13 @@ namespace OpenLogReplicator {
         char ecolRowid[19]; stmtECol.defineString(1, ecolRowid, sizeof(ecolRowid));
         typeOBJ ecolTabObj; stmtECol.defineUInt32(2, ecolTabObj);
         uint32_t ecolColNum = 0; stmtECol.defineUInt32(3, ecolColNum);
-        uint32_t ecolGuardId = 0; stmtECol.defineUInt32(4, ecolGuardId);
+        uint32_t ecolGuardId = -1; stmtECol.defineUInt32(4, ecolGuardId);
 
         int64_t ecolRet = stmtECol.executeQuery();
         while (ecolRet) {
             schema->dictSysEColAdd(ecolRowid, ecolTabObj, ecolColNum, ecolGuardId);
             ecolColNum = 0;
-            ecolGuardId = 0;
+            ecolGuardId = -1;
             ecolRet = stmtECol.next();
         }
 
@@ -1456,8 +1456,8 @@ namespace OpenLogReplicator {
         typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
         typeOBJ obj; stmt.defineUInt32(2, obj);
         typeCOL cluCols; stmt.defineInt16(3, cluCols);
-            char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
-            char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
+        char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
+        char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
         uint64_t clustered; stmt.defineUInt64(6, clustered);
         uint64_t iot; stmt.defineUInt64(7, iot);
         uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
@@ -1634,7 +1634,7 @@ namespace OpenLogReplicator {
                         supLogColMissing = true;
                 }
 
-                DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", G: " << dec << guardSegNo << ")");
+                DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
                         charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
