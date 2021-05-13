@@ -1,4 +1,4 @@
-/* Header for OracleObject class
+/* Header for SysObj class
    Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,42 +17,28 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <vector>
+#include "RowId.h"
 
-#include "types.h"
-
-#ifndef ORACLEOBJECT_H_
-#define ORACLEOBJECT_H_
+#ifndef SYSOBJ_H_
+#define SYSOBJ_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
-    class OracleColumn;
-
-    class OracleObject {
+    class SysObj {
     public:
+        SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name, uint32_t flags);
+        bool isTable(void);
+        bool isTemporary(void);
+        bool isDropped(void);
+
+        RowId rowId;
+        typeUSER owner;
         typeOBJ obj;
-        typeDATAOBJ dataObj;
-        typeCOL cluCols;
-        uint64_t totalPk;
-        uint64_t options;
-        typeCOL maxSegCol;
-        typeCOL guardSegNo;
-        string owner;
+        typeDATAOBJ dataObj;        //NULL
+        typeTYPE type;
         string name;
-        vector<OracleColumn*> columns;
-        vector<typeOBJ2> partitions;
-        vector<uint16_t> pk;
-        bool sys;
-
-        void addColumn(OracleColumn *column);
-        void addPartition(typeOBJ partitionObj, typeDATAOBJ partitionDataObj);
-        void updatePK(void);
-
-        OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t options, const char *owner, const char *name);
-        virtual ~OracleObject();
-
-        friend ostream& operator<<(ostream& os, const OracleObject& ors);
+        uint32_t flags;             //NULL
     };
 }
 

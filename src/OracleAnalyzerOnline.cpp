@@ -1444,258 +1444,504 @@ namespace OpenLogReplicator {
         uint64_t tabCnt = 0;
         regex regexOwner(owner), regexTable(table);
 
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0)
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
             readSystemDictionaries(owner, "", true);
 
-        DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
+            for (auto itObj : schema->sysObjMapRowId) {
+                SysObj *sysObj = itObj.second;
+                if (sysObj->isDropped() || !sysObj->isTable())
+                    continue;
 
-        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST);
-        TRACE(TRACE2_SQL, "PARAM1: " << owner);
-        TRACE(TRACE2_SQL, "PARAM2: " << table);
-        stmt.createStatement(SQL_GET_TABLE_LIST);
-        typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
-        typeOBJ obj; stmt.defineUInt32(2, obj);
-        typeCOL cluCols; stmt.defineInt16(3, cluCols);
-        char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
-        char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
-        uint64_t clustered; stmt.defineUInt64(6, clustered);
-        uint64_t iot; stmt.defineUInt64(7, iot);
-        uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
-        uint64_t suppLogSchemaAll; stmt.defineUInt64(9, suppLogSchemaAll);
-        uint64_t partitioned; stmt.defineUInt64(10, partitioned);
-        uint64_t temporary; stmt.defineUInt64(11, temporary);
-        uint64_t nested; stmt.defineUInt64(12, nested);
-        uint64_t rowMovement; stmt.defineUInt64(13, rowMovement);
-        uint64_t dependencies; stmt.defineUInt64(14, dependencies);
-        uint64_t compressed; stmt.defineUInt64(15, compressed);
-
-        if (version12) {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: ?");
-            stmtCol.createStatement(SQL_GET_COLUMN_LIST);
-        } else {
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11);
-            TRACE(TRACE2_SQL, "PARAM1: ?");
-            stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
-        }
-        typeCOL colNo; stmtCol.defineInt16(1, colNo);
-        typeCOL segColNo; stmtCol.defineInt16(2, segColNo);
-        char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
-        uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
-        uint64_t length; stmtCol.defineUInt64(5, length);
-        int64_t precision; stmtCol.defineInt64(6, precision);
-        int64_t scale; stmtCol.defineInt64(7, scale);
-        uint64_t charsetForm; stmtCol.defineUInt64(8, charsetForm);
-        uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
-        int64_t nullable; stmtCol.defineInt64(10, nullable);
-        int64_t invisible; stmtCol.defineInt64(11, invisible);
-        int64_t storedAsLob; stmtCol.defineInt64(12, storedAsLob);
-        int64_t constraint; stmtCol.defineInt64(13, constraint);
-        int64_t added; stmtCol.defineInt64(14, added);
-        int64_t guard; stmtCol.defineInt64(15, guard);
-        typeCOL guardSegNo; stmtCol.defineInt16(16, guardSegNo);
-        typeCOL numPk; stmtCol.defineInt16(17, numPk);
-        typeCOL numSup; stmtCol.defineInt16(18, numSup);
-        stmtCol.bindUInt32(1, obj);
-
-        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST);
-        TRACE(TRACE2_SQL, "PARAM1: ?");
-        TRACE(TRACE2_SQL, "PARAM2: ?");
-        stmtPart.createStatement(SQL_GET_PARTITION_LIST);
-        typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
-        typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
-        stmtPart.bindUInt32(1, obj);
-        stmtPart.bindUInt32(2, obj);
-
-        TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-        TRACE(TRACE2_SQL, "PARAM1: ?");
-        stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-        uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
-        stmtSupp.bindUInt32(1, obj);
-
-        stmt.bindString(1, owner.c_str());
-        stmt.bindString(2, table.c_str());
-        cluCols = 0;
-        dataObj = 0;
-        int64_t ret = stmt.executeQuery();
-
-        while (ret) {
-            //skip Index Organized Tables (IOT)
-            if (iot) {
-                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - IOT");
-                cluCols = 0;
-                dataObj = 0;
-                ret = stmt.next();
-                continue;
-            }
-
-            //skip temporary tables
-            if (temporary) {
-                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - temporary table");
-                cluCols = 0;
-                dataObj = 0;
-                ret = stmt.next();
-                continue;
-            }
-
-            //skip nested tables
-            if (nested) {
-                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - nested table");
-                cluCols = 0;
-                dataObj = 0;
-                ret = stmt.next();
-                continue;
-            }
-
-            //skip compressed tables
-            if (compressed) {
-                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - compressed table");
-                dataObj = 0;
-                cluCols = 0;
-                ret = stmt.next();
-                continue;
-            }
-
-            //table already added with another rule
-            if (schema->checkDict(obj, dataObj) != nullptr) {
-                INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - already added");
-                dataObj = 0;
-                cluCols = 0;
-                ret = stmt.next();
-                continue;
-            }
-
-            typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
-            bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
-
-            schema->object = new OracleObject(obj, dataObj, cluCols, options, ownerName, tableName);
-            if (schema->object == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
-            }
-            ++tabCnt;
-
-            if (partitioned) {
-                int64_t ret2 = stmtPart.executeQuery();
-
-                while (ret2) {
-                    schema->object->addPartition(partitionObj, partitionDataObj);
-                    ret2 = stmtPart.next();
+                SysUser *sysUser = schema->sysUserMapUser[sysObj->owner];
+                if (sysUser == nullptr) {
+                    WARNING("Inconsistent schema, missing SYS.USR$ OWNER: " << dec << sysObj->owner);
+                    continue;
                 }
-            }
 
-            if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
-                int64_t ret2 = stmtSupp.executeQuery();
-
-                while (ret2) {
-                    if (typeNo2 == 14) suppLogTablePrimary = true;
-                    else if (typeNo2 == 17) suppLogTableAll = true;
-                    ret2 = stmtSupp.next();
+                SysTab *sysTab = schema->sysTabMapObj[sysObj->obj];
+                if (sysTab == nullptr) {
+                    WARNING("Inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
+                    continue;
                 }
-            }
 
-            precision = -1;
-            scale = -1;
-            guardSegNo = -1;
-            int64_t ret2 = stmtCol.executeQuery();
+                if (!regex_match(sysUser->name, regexOwner) || !regex_match(sysObj->name, regexTable))
+                    continue;
 
-            while (ret2) {
-                if (charsetForm == 1)
-                    charmapId = outputBuffer->defaultCharacterMapId;
-                else if (charsetForm == 2)
-                    charmapId = outputBuffer->defaultCharacterNcharMapId;
+                //skip Index Organized Tables (IOT)
+                if (sysTab->isIot()) {
+                    INFO("  * skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - IOT");
+                    continue;
+                }
 
-                //check character set for char and varchar2
-                if (typeNo == 1 || typeNo == 96) {
-                    auto it = outputBuffer->characterMap.find(charmapId);
-                    if (it == outputBuffer->characterMap.end()) {
-                        WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
-                        RUNTIME_FAIL("table " << ownerName << "." << tableName << " - unsupported character set id: " << dec << charmapId <<
-                                " for column: " << columnName);
+                //skip temporary tables
+                if (sysObj->isTemporary()) {
+                    INFO("  * skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - temporary table");
+                    continue;
+                }
+
+                //skip nested tables
+                if (sysTab->isNested()) {
+                    INFO("  * skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - nested table");
+                    continue;
+                }
+
+                bool compressed = false;
+                if (sysTab->isPartitioned())
+                    compressed = false;
+                else if (sysTab->isInitial()) {
+                    SysDeferredStg *sysDeferredStg = schema->sysDeferredStgMapObj[sysObj->obj];
+                    if (sysDeferredStg != nullptr)
+                        compressed = sysDeferredStg->isCompressed();
+                } else {
+                    SysSegKey sysSegKey(sysTab->file, sysTab->block, sysTab->ts);
+                    SysSeg *sysSeg = schema->sysSegMapKey[sysSegKey];
+                    if (sysSeg != nullptr)
+                        compressed = sysSeg->isCompressed();
+                }
+                //skip compressed tables
+                if (compressed) {
+                    INFO("  * skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - compressed table");
+                    continue;
+                }
+
+                //table already added with another rule
+                if (schema->checkDict(sysObj->obj, sysTab->dataObj) != nullptr) {
+                    INFO("  * skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - already added");
+                    continue;
+                }
+
+                typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
+                bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
+
+                schema->object = new OracleObject(sysObj->obj, sysTab->dataObj, sysTab->cluCols, options, sysUser->name.c_str(), sysObj->name.c_str());
+                if (schema->object == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
+                }
+                ++tabCnt;
+
+                if (sysTab->isPartitioned()) {
+                    SysTabPartKey sysTabPartKeyFirst(sysObj->obj, 0);
+                    for (auto itTabPart = schema->sysTabPartMapKey.upper_bound(sysTabPartKeyFirst);
+                            itTabPart != schema->sysTabPartMapKey.end() && itTabPart->first.bo == sysObj->obj; ++itTabPart) {
+
+                        SysTabPart *sysTabPart = itTabPart->second;
+                        schema->object->addPartition(sysTabPart->obj, sysTabPart->dataObj);
                     }
-                }
 
-                //column part of defined primary key
-                if (keys.size() > 0) {
-                    //manually defined pk overlaps with table pk
-                    if (numPk > 0 && (suppLogTablePrimary || suppLogSchemaPrimary || suppLogDbPrimary))
-                        numSup = 1;
-                    numPk = 0;
-                    for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
-                        if (strcmp(columnName, it->c_str()) == 0) {
-                            numPk = 1;
-                            ++keysCnt;
-                            if (numSup == 0)
-                                supLogColMissing = true;
-                            break;
+                    SysTabComPartKey sysTabComPartKeyFirst(sysObj->obj, 0);
+                    for (auto itTabComPart = schema->sysTabComPartMapKey.upper_bound(sysTabComPartKeyFirst);
+                            itTabComPart != schema->sysTabComPartMapKey.end() && itTabComPart->first.bo == sysObj->obj; ++itTabComPart) {
+
+                        SysTabSubPartKey sysTabSubPartKeyFirst(itTabComPart->second->obj, 0);
+                        for (auto itTabSubPart = schema->sysTabSubPartMapKey.upper_bound(sysTabSubPartKeyFirst);
+                                itTabSubPart != schema->sysTabSubPartMapKey.end() && itTabSubPart->first.pObj == itTabComPart->second->obj; ++itTabSubPart) {
+
+                            SysTabSubPart *sysTabSubPart = itTabSubPart->second;
+                            schema->object->addPartition(itTabSubPart->second->obj, itTabSubPart->second->dataObj);
                         }
                     }
-                } else {
-                    if (numPk > 0 && numSup == 0)
-                        supLogColMissing = true;
                 }
 
-                DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll &&
+                        !sysUser->isSuppLogAll()) {
 
-                OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
-                        charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
-                if (column == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
+                    SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
+                    for (auto itCDef = schema->sysCDefMapKey.upper_bound(sysCDefKeyFirst);
+                            itCDef != schema->sysCDefMapKey.end() && itCDef->first.obj == sysObj->obj;
+                            ++itCDef) {
+                        SysCDef *sysCDef = itCDef->second;
+                        if (sysCDef->isSupplementalLogPK())
+                            suppLogTablePrimary = true;
+                        else if (sysCDef->isSupplementalLogAll())
+                            suppLogTableAll = true;
+                    }
                 }
 
-                totalPk += numPk;
-                if (segColNo > maxSegCol)
-                    maxSegCol = segColNo;
+                SysColKey sysColKeyFirst(sysObj->obj, 0);
+                for (auto itCol = schema->sysColMapKey.upper_bound(sysColKeyFirst);
+                        itCol != schema->sysColMapKey.end() && itCol->first.obj == sysObj->obj; ++itCol) {
 
-                schema->object->addColumn(column);
+                    SysCol *sysCol = itCol->second;
+                    if (sysCol->segCol == 0)
+                        continue;
+
+                    uint64_t charmapId = 0;
+                    typeCOL numPk = 0, numSup = 0, guardSegNo = -1;
+
+                    SysEColKey sysEColKey(sysObj->obj, sysCol->segCol);
+                    SysECol *sysECol = schema->sysEColMapKey[sysEColKey];
+                    if (sysECol != nullptr)
+                        guardSegNo = sysECol->guardId;
+
+                    if (sysCol->charsetForm == 1)
+                        charmapId = outputBuffer->defaultCharacterMapId;
+                    else if (sysCol->charsetForm == 2)
+                        charmapId = outputBuffer->defaultCharacterNcharMapId;
+                    else
+                        charmapId = sysCol->charsetId;
+
+                    //check character set for char and varchar2
+                    if (sysCol->type == 1 || sysCol->type == 96) {
+                        auto it = outputBuffer->characterMap.find(charmapId);
+                        if (it == outputBuffer->characterMap.end()) {
+                            WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
+                            RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " - unsupported character set id: " << dec << charmapId <<
+                                    " for column: " << sysCol->name);
+                        }
+                    }
+
+                    SysCColKey sysCColKeyFirst(sysObj->obj, sysCol->intCol, 0);
+                    for (auto itCCol = schema->sysCColMapKey.upper_bound(sysCColKeyFirst);
+                            itCCol != schema->sysCColMapKey.end() && itCCol->first.obj == sysObj->obj && itCCol->first.intCol == sysCol->intCol;
+                            ++itCCol) {
+                        SysCCol *sysCCol = itCCol->second;
+
+                        //count number of PK the column is part of
+                        SysCDef* sysCDef = schema->sysCDefMapCDef[sysCCol->con];
+                        if (sysCDef == nullptr) {
+                            WARNING("Inconsistent schema, missing SYS.CDEF$ CON: " << dec << sysCCol->con);
+                            continue;
+                        }
+                        if (sysCDef->isPK())
+                            ++numPk;
+
+                        //supplemental logging
+                        if (sysCCol->spare1 == 0 && sysCDef->isSupplementalLog())
+                            ++numSup;
+                    }
+
+                    //part of defined primary key
+                    if (keys.size() > 0) {
+                        //manually defined pk overlaps with table pk
+                        if (numPk > 0 && (suppLogTablePrimary || sysUser->isSuppLogPrimary() || suppLogDbPrimary))
+                            numSup = 1;
+                        numPk = 0;
+                        for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
+                            if (strcmp(sysCol->name.c_str(), it->c_str()) == 0) {
+                                numPk = 1;
+                                ++keysCnt;
+                                if (numSup == 0)
+                                    supLogColMissing = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if (numPk > 0 && numSup == 0)
+                            supLogColMissing = true;
+                    }
+
+                    DEBUG("    - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
+
+                    OracleColumn *column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
+                            sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, sysCol->null_, sysCol->isInvisible(),
+                            sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
+
+                    if (column == nullptr) {
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
+                    }
+
+                    totalPk += numPk;
+                    if (sysCol->segCol > maxSegCol)
+                        maxSegCol = sysCol->segCol;
+
+                    schema->object->addColumn(column);
+                }
+
+                //check if table has all listed columns
+                if (keys.size() != keysCnt) {
+                    RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " couldn't find all column set (" << keysStr << ")");
+                }
+
+                stringstream ss;
+                ss << "  * found: " << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ")";
+                if (sysTab->isClustered())
+                    ss << ", part of cluster";
+                if (sysTab->isPartitioned())
+                    ss << ", partitioned";
+                if (sysTab->isDependencies())
+                    ss << ", row dependencies";
+                if (sysTab->isRowMovement())
+                    ss << ", row movement enabled";
+
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+                    //use default primary key
+                    if (keys.size() == 0) {
+                        if (totalPk == 0)
+                            ss << " - primary key missing";
+                        else if (!suppLogTablePrimary &&
+                                !suppLogTableAll &&
+                                !sysUser->isSuppLogPrimary() &&
+                                !sysUser->isSuppLogAll() &&
+                                !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
+                            ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
+                    //user defined primary key
+                    } else {
+                        if (!suppLogTableAll &&
+                                !sysUser->isSuppLogAll() &&
+                                !suppLogDbAll &&
+                                supLogColMissing)
+                            ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
+                    }
+                }
+                INFO(ss.str());
+
+                schema->object->maxSegCol = maxSegCol;
+                schema->object->totalPk = totalPk;
+                schema->object->updatePK();
+                schema->addToDict(schema->object);
+                schema->object = nullptr;
+            }
+        } else {
+            DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
+
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: " << owner);
+            TRACE(TRACE2_SQL, "PARAM2: " << table);
+            stmt.createStatement(SQL_GET_TABLE_LIST);
+            typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
+            typeOBJ obj; stmt.defineUInt32(2, obj);
+            typeCOL cluCols; stmt.defineInt16(3, cluCols);
+            char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
+            char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
+            uint64_t clustered; stmt.defineUInt64(6, clustered);
+            uint64_t iot; stmt.defineUInt64(7, iot);
+            uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
+            uint64_t suppLogSchemaAll; stmt.defineUInt64(9, suppLogSchemaAll);
+            uint64_t partitioned; stmt.defineUInt64(10, partitioned);
+            uint64_t temporary; stmt.defineUInt64(11, temporary);
+            uint64_t nested; stmt.defineUInt64(12, nested);
+            uint64_t rowMovement; stmt.defineUInt64(13, rowMovement);
+            uint64_t dependencies; stmt.defineUInt64(14, dependencies);
+            uint64_t compressed; stmt.defineUInt64(15, compressed);
+
+            if (version12) {
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
+                TRACE(TRACE2_SQL, "PARAM1: ?");
+                stmtCol.createStatement(SQL_GET_COLUMN_LIST);
+            } else {
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11);
+                TRACE(TRACE2_SQL, "PARAM1: ?");
+                stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
+            }
+            typeCOL colNo; stmtCol.defineInt16(1, colNo);
+            typeCOL segColNo; stmtCol.defineInt16(2, segColNo);
+            char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
+            uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
+            uint64_t length; stmtCol.defineUInt64(5, length);
+            int64_t precision; stmtCol.defineInt64(6, precision);
+            int64_t scale; stmtCol.defineInt64(7, scale);
+            uint64_t charsetForm; stmtCol.defineUInt64(8, charsetForm);
+            uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
+            int64_t nullable; stmtCol.defineInt64(10, nullable);
+            int64_t invisible; stmtCol.defineInt64(11, invisible);
+            int64_t storedAsLob; stmtCol.defineInt64(12, storedAsLob);
+            int64_t constraint; stmtCol.defineInt64(13, constraint);
+            int64_t added; stmtCol.defineInt64(14, added);
+            int64_t guard; stmtCol.defineInt64(15, guard);
+            typeCOL guardSegNo; stmtCol.defineInt16(16, guardSegNo);
+            typeCOL numPk; stmtCol.defineInt16(17, numPk);
+            typeCOL numSup; stmtCol.defineInt16(18, numSup);
+            stmtCol.bindUInt32(1, obj);
+
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: ?");
+            TRACE(TRACE2_SQL, "PARAM2: ?");
+            stmtPart.createStatement(SQL_GET_PARTITION_LIST);
+            typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
+            typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
+            stmtPart.bindUInt32(1, obj);
+            stmtPart.bindUInt32(2, obj);
+
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE);
+            TRACE(TRACE2_SQL, "PARAM1: ?" );
+            stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
+            uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
+            stmtSupp.bindUInt32(1, obj);
+
+            stmt.bindString(1, owner.c_str());
+            stmt.bindString(2, table.c_str());
+            cluCols = 0;
+            dataObj = 0;
+            int64_t ret = stmt.executeQuery();
+
+            while (ret) {
+                //skip Index Organized Tables (IOT)
+                if (iot) {
+                    INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - IOT");
+                    cluCols = 0;
+                    dataObj = 0;
+                    ret = stmt.next();
+                    continue;
+                }
+
+                //skip temporary tables
+                if (temporary) {
+                    INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - temporary table");
+                    cluCols = 0;
+                    dataObj = 0;
+                    ret = stmt.next();
+                    continue;
+                }
+
+                //skip nested tables
+                if (nested) {
+                    INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - nested table");
+                    cluCols = 0;
+                    dataObj = 0;
+                    ret = stmt.next();
+                    continue;
+                }
+
+                //skip compressed tables
+                if (compressed) {
+                    INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - compressed table");
+                    dataObj = 0;
+                    cluCols = 0;
+                    ret = stmt.next();
+                    continue;
+                }
+
+                //table already added with another rule
+                if (schema->checkDict(obj, dataObj) != nullptr) {
+                    INFO("  * skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - already added");
+                    dataObj = 0;
+                    cluCols = 0;
+                    ret = stmt.next();
+                    continue;
+                }
+
+                typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
+                bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
+
+                schema->object = new OracleObject(obj, dataObj, cluCols, options, ownerName, tableName);
+                if (schema->object == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
+                }
+                ++tabCnt;
+
+                if (partitioned) {
+                    int64_t ret2 = stmtPart.executeQuery();
+
+                    while (ret2) {
+                        schema->object->addPartition(partitionObj, partitionDataObj);
+                        ret2 = stmtPart.next();
+                    }
+                }
+
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
+                    int64_t ret2 = stmtSupp.executeQuery();
+
+                    while (ret2) {
+                        if (typeNo2 == 14) suppLogTablePrimary = true;
+                        else if (typeNo2 == 17) suppLogTableAll = true;
+                        ret2 = stmtSupp.next();
+                    }
+                }
 
                 precision = -1;
                 scale = -1;
                 guardSegNo = -1;
-                ret2 = stmtCol.next();
-            }
+                int64_t ret2 = stmtCol.executeQuery();
 
-            //check if table has all listed columns
-            if (keys.size() != keysCnt) {
-                RUNTIME_FAIL("table " << ownerName << "." << tableName << " couldn't find all column set (" << keysStr << ")");
-            }
+                while (ret2) {
+                    if (charsetForm == 1)
+                        charmapId = outputBuffer->defaultCharacterMapId;
+                    else if (charsetForm == 2)
+                        charmapId = outputBuffer->defaultCharacterNcharMapId;
 
-            stringstream ss;
-            ss << "  * found: " << ownerName << "." << tableName << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
-            if (clustered)
-                ss << ", part of cluster";
-            if (partitioned)
-                ss << ", partitioned";
-            if (dependencies)
-                ss << ", row dependencies";
-            if (rowMovement)
-                ss << ", row movement enabled";
+                    //check character set for char and varchar2
+                    if (typeNo == 1 || typeNo == 96) {
+                        auto it = outputBuffer->characterMap.find(charmapId);
+                        if (it == outputBuffer->characterMap.end()) {
+                            WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
+                            RUNTIME_FAIL("table " << ownerName << "." << tableName << " - unsupported character set id: " << dec << charmapId <<
+                                    " for column: " << columnName);
+                        }
+                    }
 
-            if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
-                //use default primary key
-                if (keys.size() == 0) {
-                    if (totalPk == 0)
-                        ss << " - primary key missing";
-                    else if (!suppLogTablePrimary && !suppLogTableAll &&
-                            !suppLogSchemaPrimary && !suppLogSchemaAll &&
-                            !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
-                //user defined primary key
-                } else {
-                    if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
+                    //column part of defined primary key
+                    if (keys.size() > 0) {
+                        //manually defined pk overlaps with table pk
+                        if (numPk > 0 && (suppLogTablePrimary || suppLogSchemaPrimary || suppLogDbPrimary))
+                            numSup = 1;
+                        numPk = 0;
+                        for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
+                            if (strcmp(columnName, it->c_str()) == 0) {
+                                numPk = 1;
+                                ++keysCnt;
+                                if (numSup == 0)
+                                    supLogColMissing = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        if (numPk > 0 && numSup == 0)
+                            supLogColMissing = true;
+                    }
+
+                    DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
+
+                    OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
+                            charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
+                    if (column == nullptr) {
+                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
+                    }
+
+                    totalPk += numPk;
+                    if (segColNo > maxSegCol)
+                        maxSegCol = segColNo;
+
+                    schema->object->addColumn(column);
+
+                    precision = -1;
+                    scale = -1;
+                    guardSegNo = -1;
+                    ret2 = stmtCol.next();
                 }
+
+                //check if table has all listed columns
+                if (keys.size() != keysCnt) {
+                    RUNTIME_FAIL("table " << ownerName << "." << tableName << " couldn't find all column set (" << keysStr << ")");
+                }
+
+                stringstream ss;
+                ss << "  * found: " << ownerName << "." << tableName << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
+                if (clustered)
+                    ss << ", part of cluster";
+                if (partitioned)
+                    ss << ", partitioned";
+                if (dependencies)
+                    ss << ", row dependencies";
+                if (rowMovement)
+                    ss << ", row movement enabled";
+
+                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+                    //use default primary key
+                    if (keys.size() == 0) {
+                        if (totalPk == 0)
+                            ss << " - primary key missing";
+                        else if (!suppLogTablePrimary && !suppLogTableAll &&
+                                !suppLogSchemaPrimary && !suppLogSchemaAll &&
+                                !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
+                            ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
+                    //user defined primary key
+                    } else {
+                        if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
+                            ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
+                    }
+                }
+                INFO(ss.str());
+
+                schema->object->maxSegCol = maxSegCol;
+                schema->object->totalPk = totalPk;
+                schema->object->updatePK();
+                schema->addToDict(schema->object);
+                schema->object = nullptr;
+
+                dataObj = 0;
+                cluCols = 0;
+                ret = stmt.next();
             }
-            INFO(ss.str());
-
-            schema->object->maxSegCol = maxSegCol;
-            schema->object->totalPk = totalPk;
-            schema->object->updatePK();
-            schema->addToDict(schema->object);
-            schema->object = nullptr;
-
-            dataObj = 0;
-            cluCols = 0;
-            ret = stmt.next();
         }
         INFO("  * total: " << dec << tabCnt << " tables");
     }

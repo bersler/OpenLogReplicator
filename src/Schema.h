@@ -17,10 +17,23 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <functional>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
-#include "RowId.h"
+#include "SysCCol.h"
+#include "SysCDef.h"
+#include "SysCol.h"
+#include "SysDeferredStg.h"
+#include "SysECol.h"
+#include "SysObj.h"
+#include "SysSeg.h"
+#include "SysTab.h"
+#include "SysTabComPart.h"
+#include "SysTabPart.h"
+#include "SysTabSubPart.h"
+#include "SysUser.h"
 
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
@@ -32,129 +45,62 @@ namespace OpenLogReplicator {
     class OracleObject;
     class SchemaElement;
 
-    struct SysUser {
-        RowId rowId;
-        typeUSER user;      //pk
-        string name;
-        uint64_t spare1;
-    };
-
-    struct SysObj {
-        RowId rowId;
-        typeUSER owner;
-        typeOBJ obj;       //pk
-        typeDATAOBJ dataObj;
-        typeTYPE type;
-        string name;
-        uint32_t flags;
-    };
-
-    struct SysCol {
-        RowId rowId;
-        typeOBJ obj;       //pk
-        typeCOL col;
-        typeCOL segCol;
-        typeCOL intCol;     //pk
-        string name;
-        typeTYPE type;
-        uint64_t length;
-        int64_t precision;
-        int64_t scale;
-        uint64_t charsetForm;
-        uint64_t charsetId;
-        int64_t null_;
-        uintX_t property;
-    };
-
-    struct SysCCol {
-        RowId rowId;
-        typeCON con;        //pk
-        typeCOL intCol;     //pk
-        typeOBJ obj;
-        uint64_t spare1;
-    };
-
-    struct SysCDef {
-        RowId rowId;
-        typeCON con;        //pk
-        typeOBJ obj;
-        typeTYPE type;
-    };
-
-    struct SysDeferredStg {
-        RowId rowId;
-        typeOBJ obj;       //pk
-        uint64_t flagsStg;
-    };
-
-    struct SysECol {
-        RowId rowId;
-        typeOBJ tabObj;
-        uint32_t colNum;
-        uint32_t guardId;
-    };
-
-    struct SysSeg {
-        RowId rowId;
-        uint32_t file;
-        uint32_t block;
-        uint32_t ts;
-        uint64_t spare1;
-    };
-
-    struct SysTab {
-        RowId rowId;
-        typeOBJ obj;       //pk
-        typeDATAOBJ dataObj;
-        uint32_t ts;
-        uint32_t file;
-        uint32_t block;
-        typeCOL cluCols;
-        uint64_t flags;
-        uintX_t property;
-    };
-
-    struct SysTabPart {
-        RowId rowId;
-        typeOBJ obj;
-        typeDATAOBJ dataObj;
-        typeOBJ bo;
-    };
-
-    struct SysTabComPart {
-        RowId rowId;
-        typeOBJ obj;
-        typeDATAOBJ dataObj;
-        typeOBJ bo;
-    };
-
-    struct SysTabSubPart {
-        RowId rowId;
-        typeOBJ obj;
-        typeDATAOBJ dataObj;
-        typeOBJ pObj;
-    };
-
     class Schema {
     protected:
         stringstream& writeEscapeValue(stringstream &ss, string &str);
         unordered_map<typeOBJ, OracleObject*> objectMap;
         unordered_map<typeOBJ, OracleObject*> partitionMap;
 
-        unordered_map<RowId, SysUser*> sysUserMap;
-        unordered_map<RowId, SysObj*> sysObjMap;
-        unordered_map<RowId, SysCol*> sysColMap;
-        unordered_map<RowId, SysCCol*> sysCColMap;
-        unordered_map<RowId, SysCDef*> sysCDefMap;
-        unordered_map<RowId, SysDeferredStg*> sysDeferredStgMap;
-        unordered_map<RowId, SysECol*> sysEColMap;
-        unordered_map<RowId, SysSeg*> sysSegMap;
-        unordered_map<RowId, SysTab*> sysTabMap;
-        unordered_map<RowId, SysTabPart*> sysTabPartMap;
-        unordered_map<RowId, SysTabComPart*> sysTabComPartMap;
-        unordered_map<RowId, SysTabSubPart*> sysTabSubPartMap;
-
     public:
+        //SYS.USER$
+        unordered_map<RowId, SysUser*> sysUserMapRowId;
+        unordered_map<typeUSER, SysUser*> sysUserMapUser;
+
+        //SYS.OBJ$
+        unordered_map<RowId, SysObj*> sysObjMapRowId;
+        unordered_map<typeOBJ, SysObj*> sysObjMapObj;
+
+        //SYS.COL$
+        unordered_map<RowId, SysCol*> sysColMapRowId;
+        map<SysColKey, SysCol*> sysColMapKey;
+
+        //SYS.CCOL$
+        unordered_map<RowId, SysCCol*> sysCColMapRowId;
+        map<SysCColKey, SysCCol*> sysCColMapKey;
+
+        //SYS.CDEF$
+        unordered_map<RowId, SysCDef*> sysCDefMapRowId;
+        unordered_map<typeCON, SysCDef*> sysCDefMapCDef;
+        map<SysCDefKey, SysCDef*> sysCDefMapKey;
+
+        //SYS.DEFERREDSTG$
+        unordered_map<RowId, SysDeferredStg*> sysDeferredStgMapRowId;
+        unordered_map<typeOBJ, SysDeferredStg*> sysDeferredStgMapObj;
+
+        //SYS.ECOL$
+        unordered_map<RowId, SysECol*> sysEColMapRowId;
+        unordered_map<SysEColKey, SysECol*> sysEColMapKey;
+
+        //SYS.SEG$
+        unordered_map<RowId, SysSeg*> sysSegMapRowId;
+        unordered_map<SysSegKey, SysSeg*> sysSegMapKey;
+
+        //SYS.TAB$
+        unordered_map<RowId, SysTab*> sysTabMapRowId;
+        unordered_map<typeOBJ, SysTab*> sysTabMapObj;
+
+        //SYS.TABPART$
+        unordered_map<RowId, SysTabPart*> sysTabPartMapRowId;
+        map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
+
+        //SYS.TABCOMPART$
+        unordered_map<RowId, SysTabComPart*> sysTabComPartMapRowId;
+        map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
+
+        //SYS.TABSUBPART$
+        unordered_map<RowId, SysTabSubPart*> sysTabSubPartMapRowId;
+        map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
+
         OracleObject *object;
         vector<SchemaElement*> elements;
 

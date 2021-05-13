@@ -34,6 +34,10 @@ namespace OpenLogReplicator {
         guardSegNo(-1),
         owner(owner),
         name(name) {
+        if (name != nullptr && strncmp(name, "SYS", 3) == 0)
+            sys = true;
+        else
+            sys = false;
     }
 
     OracleObject::~OracleObject() {
