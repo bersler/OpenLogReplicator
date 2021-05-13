@@ -557,11 +557,20 @@ int main(int argc, char **argv) {
                     CONFIG_FAIL("bad JSON, missing \"event-owner\", but \"event-table\" present");
                 }
                 const Value& eventOwnerJSON = sourceJSON["event-owner"];
-                SchemaElement *element = oracleAnalyzer->schema->addElement();
-                element->owner = eventOwnerJSON.GetString();
-                element->table = eventTableJSON.GetString();
-                element->options = 1;
+                oracleAnalyzer->schema->addElement(eventOwnerJSON.GetString(), eventTableJSON.GetString(), OPTIONS_EVENT_TABLE);
             }
+            oracleAnalyzer->schema->addElement("SYS", "CCOL$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "CDEF$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "COL$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "ECOL$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "OBJ$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "SEG$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TAB$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABPART$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABCOMPART$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABSUBPART$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "USER$", OPTIONS_SCHEMA_TABLE);
 
             const Value& tablesJSON = getJSONfieldV(fileName, sourceJSON, "tables");
             if (!tablesJSON.IsArray()) {
@@ -571,9 +580,7 @@ int main(int argc, char **argv) {
             for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
                 const Value& ownerJSON = getJSONfieldV(fileName, tablesJSON[j], "owner");
                 const Value& tableJSON = getJSONfieldV(fileName, tablesJSON[j], "table");
-                SchemaElement *element = oracleAnalyzer->schema->addElement();
-                element->owner = ownerJSON.GetString();
-                element->table = tableJSON.GetString();
+                SchemaElement *element = oracleAnalyzer->schema->addElement(ownerJSON.GetString(), tableJSON.GetString(), 0);
 
                 if (tablesJSON[j].HasMember("key")) {
                     const Value& key = tablesJSON[j]["key"];

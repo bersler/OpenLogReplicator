@@ -816,7 +816,7 @@ namespace OpenLogReplicator {
         redoLogRecord2->object = redoLogRecord1->object;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        if (redoLogRecord1->object != nullptr && redoLogRecord1->object->options == 1 && opCodeLong == 0x05010B02) {
+        if (redoLogRecord1->object != nullptr && redoLogRecord1->object->options == OPTIONS_EVENT_TABLE && opCodeLong == 0x05010B02) {
             INFO("found shutdown command in events table");
             shutdownFound = true;
         }

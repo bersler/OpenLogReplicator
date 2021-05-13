@@ -63,6 +63,7 @@ namespace OpenLogReplicator {
         //SYS.COL$
         unordered_map<RowId, SysCol*> sysColMapRowId;
         map<SysColKey, SysCol*> sysColMapKey;
+        map<SysColSeg, SysCol*> sysColMapSeg;
 
         //SYS.CCOL$
         unordered_map<RowId, SysCCol*> sysCColMapRowId;
@@ -114,7 +115,8 @@ namespace OpenLogReplicator {
         OracleObject *checkDict(typeOBJ obj, typeDATAOBJ dataObj);
         void addToDict(OracleObject *object);
         SchemaElement* addElement(void);
-        bool dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare1);
+        SchemaElement* addElement(const char *owner, const char *table, uint64_t options);
+        bool dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare1, bool trackDDL);
         bool dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name, uint32_t flags);
         bool dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
                 int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_, uint64_t property1, uint64_t property2);

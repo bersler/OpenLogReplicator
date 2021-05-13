@@ -22,6 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
+
+    SchemaElement::SchemaElement(const char *owner, const char *table, uint64_t options) :
+        owner(owner),
+        table(table),
+        options(options) {
+    }
+
     SchemaElement::SchemaElement() :
         options(0) {
     }

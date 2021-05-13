@@ -20,6 +20,25 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCol.h"
 
 namespace OpenLogReplicator {
+    SysColSeg::SysColSeg() :
+            obj(0),
+            segCol(0) {
+    }
+
+    SysColSeg::SysColSeg(typeOBJ obj, typeCOL segCol) :
+            obj(obj),
+            segCol(segCol) {
+    }
+
+
+    bool SysColSeg::operator<(const SysColSeg& other) const {
+        if (other.obj > obj)
+            return true;
+        if (other.obj == obj && other.segCol > segCol)
+            return true;
+        return false;
+    }
+
     SysColKey::SysColKey() :
             obj(0),
             intCol(0) {

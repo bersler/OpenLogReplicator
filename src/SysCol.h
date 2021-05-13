@@ -25,6 +25,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
+    class SysColSeg {
+    public:
+        SysColSeg();
+        SysColSeg(typeOBJ obj, typeCOL segCol);
+        bool operator<(const SysColSeg& other) const;
+
+        typeOBJ obj;
+        typeCOL segCol;
+    };
+
     class SysColKey {
     public:
         SysColKey();

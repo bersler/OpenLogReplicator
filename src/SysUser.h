@@ -27,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare1);
+        SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare1, bool trackDDL);
         bool isSuppLogPrimary(void);
         bool isSuppLogAll(void);
 
@@ -35,6 +35,7 @@ namespace OpenLogReplicator {
         typeUSER user;
         string name;
         uint64_t spare1;            //NULL
+        bool trackDDL;
     };
 }
 

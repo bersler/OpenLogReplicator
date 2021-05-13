@@ -173,6 +173,9 @@ typedef uint64_t typeunicode;
 #define VALUE_BEFORE_SUPP                       2
 #define VALUE_AFTER_SUPP                        3
 
+#define OPTIONS_EVENT_TABLE                     1
+#define OPTIONS_SCHEMA_TABLE                    2
+
 #define USN(__xid)                              ((uint16_t)(((uint64_t)(__xid))>>48))
 #define SLT(__xid)                              ((uint16_t)(((((uint64_t)(__xid))>>32)&0xFFFF)))
 #define SQN(__xid)                              ((uint32_t)(((__xid)&0xFFFFFFFF)))

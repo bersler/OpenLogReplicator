@@ -112,6 +112,7 @@ namespace OpenLogReplicator {
         }
         sysColMapRowId.clear();
         sysColMapKey.clear();
+        sysColMapSeg.clear();
 
         for (auto it : sysCDefMapRowId) {
             SysCDef *sysCDef = it.second;
@@ -664,7 +665,7 @@ namespace OpenLogReplicator {
             const Value& spare1JSON = getJSONfieldV(fileName, sysUser[i], "spare1");
             uint64_t spare1 = spare1JSON.GetUint64();
 
-            dictSysUserAdd(rowId, user, name, spare1);
+            dictSysUserAdd(rowId, user, name, spare1, false);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUser.Size());
 
@@ -1336,12 +1337,29 @@ namespace OpenLogReplicator {
         return element;
     }
 
-    bool Schema::dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare1) {
-        RowId rowId(rowIdStr);
-        if (sysUserMapRowId[rowId] != nullptr)
-            return false;
+    SchemaElement* Schema::addElement(const char *owner, const char *table, uint64_t options) {
+        SchemaElement *element = new SchemaElement(owner, table, options);
+        if (element == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
+        }
+        elements.push_back(element);
+        return element;
+    }
 
-        SysUser *sysUser = new SysUser(rowId, user, name, spare1);
+    bool Schema::dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare1, bool trackDDL) {
+        RowId rowId(rowIdStr);
+        SysUser *sysUser = sysUserMapRowId[rowId];
+        if (sysUser != nullptr) {
+            if (!sysUser->trackDDL) {
+                if (trackDDL)
+                    sysUser->trackDDL = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        sysUser = new SysUser(rowId, user, name, spare1, trackDDL);
         sysUserMapRowId[rowId] = sysUser;
         sysUserMapUser[user] = sysUser;
 
@@ -1371,6 +1389,8 @@ namespace OpenLogReplicator {
         sysColMapRowId[rowId] = sysCol;
         SysColKey sysColKey(obj, intCol);
         sysColMapKey[sysColKey] = sysCol;
+        SysColSeg sysColSeg(obj, segCol);
+        sysColMapSeg[sysColSeg] = sysCol;
 
         return true;
     }
