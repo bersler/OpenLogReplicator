@@ -40,8 +40,9 @@ namespace OpenLogReplicator {
 		lastTc(nullptr),
 		opCodes(0),
 		commitTimestamp(0),
-		isBegin(false),
-		isRollback(false),
+		begin(false),
+		rollback(false),
+		system(false),
 		shutdown(false) {
     }
 
@@ -121,10 +122,17 @@ namespace OpenLogReplicator {
         bool opFlush = false;
         deallocTc = nullptr;
 
-        if (opCodes > 0 && !isRollback) {
+        if (opCodes > 0 && !rollback) {
             TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << *this);
 
-            oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+            if (system) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: BEGIN");
+
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                    oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+            } else {
+                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+            }
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *last501 = nullptr;
 
@@ -313,20 +321,20 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            oracleAnalyzer->outputBuffer->processDML(first1, first2, type);
+                            oracleAnalyzer->outputBuffer->processDML(first1, first2, type, system);
                             opFlush = true;
                         }
                         break;
 
                     //insert multiple rows
                     case 0x05010B0B:
-                        oracleAnalyzer->outputBuffer->processInsertMultiple(redoLogRecord1, redoLogRecord2);
+                        oracleAnalyzer->outputBuffer->processInsertMultiple(redoLogRecord1, redoLogRecord2, system);
                         opFlush = true;
                         break;
 
                     //delete multiple rows
                     case 0x05010B0C:
-                        oracleAnalyzer->outputBuffer->processDeleteMultiple(redoLogRecord1, redoLogRecord2);
+                        oracleAnalyzer->outputBuffer->processDeleteMultiple(redoLogRecord1, redoLogRecord2, system);
                         opFlush = true;
                         break;
 
@@ -345,8 +353,19 @@ namespace OpenLogReplicator {
                     if (oracleAnalyzer->outputBuffer->writer->maxMessageMb > 0 &&
                             oracleAnalyzer->outputBuffer->outputBufferSize() + DATA_BUFFER_SIZE > oracleAnalyzer->outputBuffer->writer->maxMessageMb * 1024 * 1024) {
                         WARNING("big transaction divided (forced commit after " << oracleAnalyzer->outputBuffer->outputBufferSize() << " bytes)");
-                        oracleAnalyzer->outputBuffer->processCommit();
-                        oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+
+                        if (system) {
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: COMMIT");
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: BEGIN");
+
+                            if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                                oracleAnalyzer->outputBuffer->processCommit();
+                                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                            }
+                        } else {
+                            oracleAnalyzer->outputBuffer->processCommit();
+                            oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                        }
                     }
 
                     if (opFlush) {
@@ -385,7 +404,14 @@ namespace OpenLogReplicator {
             lastTc = nullptr;
             opCodes = 0;
 
-            oracleAnalyzer->outputBuffer->processCommit();
+            if (system) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: COMMIT");
+
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                    oracleAnalyzer->outputBuffer->processCommit();
+            } else {
+                oracleAnalyzer->outputBuffer->processCommit();
+            }
         }
     }
 
@@ -402,7 +428,7 @@ namespace OpenLogReplicator {
                 " seq: " << dec << tran.firstSequence <<
                 " offset: " << dec << tran.firstOffset <<
                 " xid: " << PRINTXID(tran.xid) <<
-                " flags: " << dec << tran.isBegin << "/" << tran.isRollback <<
+                " flags: " << dec << tran.begin << "/" << tran.rollback << "/" << tran.system <<
                 " op: " << dec << tran.opCodes <<
                 " chunks: " << dec << tcCount <<
                 " sz: " << tcSumSize;

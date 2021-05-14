@@ -90,6 +90,7 @@ namespace OpenLogReplicator {
         uint64_t valuesMax;
         uint64_t mergesMax;
         uint64_t id;
+        uint64_t transactionType;
 
         void valuesRelease();
         void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb);
@@ -115,6 +116,11 @@ namespace OpenLogReplicator {
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
         virtual void appendHeader(bool first, bool showXid) = 0;
         virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj) = 0;
+        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
+                const char *sql, uint64_t sqlLength) = 0;
 
     public:
         uint64_t defaultCharacterMapId;
@@ -140,13 +146,9 @@ namespace OpenLogReplicator {
 
         virtual void processBegin(typeSCN scn, typetime time_, typeXID xid) = 0;
         virtual void processCommit(void) = 0;
-        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) = 0;
-        void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type);
+        void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
+        void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
+        void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, bool system);
         void processDDLheader(RedoLogRecord *redoLogRecord1);
         virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
     };

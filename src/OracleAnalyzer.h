@@ -139,7 +139,7 @@ namespace OpenLogReplicator {
         string lastCheckedDay;
         typeresetlogs resetlogs;
         typeactivation activation;
-        uint64_t isBigEndian;
+        uint64_t bigEndian;
         uint64_t suppLogSize;
         bool version12;
         void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);

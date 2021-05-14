@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
         conId(0),
         resetlogs(0),
         activation(0),
-        isBigEndian(false),
+        bigEndian(false),
         suppLogSize(0),
         version12(false),
         archGetLog(archGetLogPath),
@@ -402,7 +402,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::setBigEndian(void) {
-        isBigEndian = true;
+        bigEndian = true;
         read16 = read16Big;
         read32 = read32Big;
         read56 = read56Big;
@@ -543,17 +543,17 @@ namespace OpenLogReplicator {
 
                         //keep reading online redo logs while it is possible
                         if (redo == nullptr) {
-                            bool isHigher = false;
+                            bool higher = false;
                             while (!shutdown) {
                                 for (RedoLog *redoTmp : onlineRedoSet) {
                                     if (redoTmp->reader->sequence > sequence)
-                                        isHigher = true;
+                                        higher = true;
                                     if (redoTmp->reader->sequence == sequence)
                                         redo = redoTmp;
                                 }
 
                                 //all so far read, waiting for switch
-                                if (redo == nullptr && !isHigher) {
+                                if (redo == nullptr && !higher) {
                                     usleep(redoReadSleepUS);
                                 } else
                                     break;

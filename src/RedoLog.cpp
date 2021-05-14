@@ -635,6 +635,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionDDL(RedoLogRecord *redoLogRecord) {
+        bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         //track DDL
@@ -643,9 +644,11 @@ namespace OpenLogReplicator {
 
         redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+            if (redoLogRecord->object == nullptr)
                 return;
         }
+        if (redoLogRecord->object != nullptr && (redoLogRecord->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+            system = true;
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -664,10 +667,13 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #ddl");
             }
         }
+        if (system)
+            transaction->system = true;
         transaction->add(redoLogRecord, &zero);
     }
 
     void RedoLog::appendToTransactionUndo(RedoLogRecord *redoLogRecord) {
+        bool isSystem = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
@@ -675,9 +681,11 @@ namespace OpenLogReplicator {
 
         redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (redoLogRecord->object == nullptr || redoLogRecord->object->options != 0)
+            if (redoLogRecord->object == nullptr)
                 return;
         }
+        if (redoLogRecord->object != nullptr && (redoLogRecord->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+            isSystem = true;
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -696,6 +704,8 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
             }
         }
+        if (isSystem)
+            transaction->system = true;
 
         //cluster key
         if ((redoLogRecord->fb & FB_K) != 0)
@@ -726,7 +736,7 @@ namespace OpenLogReplicator {
         }
         oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)] = transaction;
 
-        transaction->isBegin = true;
+        transaction->begin = true;
         transaction->firstSequence = sequence;
         transaction->firstOffset = lwnStartBlock * reader->blockSize;
     }
@@ -747,13 +757,13 @@ namespace OpenLogReplicator {
         transaction->commitTimestamp = lwnTimestamp;
         transaction->commitScn = redoLogRecord->scnRecord;
         if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
-            transaction->isRollback = true;
+            transaction->rollback = true;
 
         if (transaction->commitScn > oracleAnalyzer->scn) {
             if (transaction->shutdown)
                 shutdown = true;
 
-            if (transaction->isBegin)
+            if (transaction->begin)
                 transaction->flush();
             else {
                 INFO("skipping transaction with no begin: " << *transaction);
@@ -767,7 +777,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
-        bool shutdownFound = false;
+        bool shutdownFound = false, isSystem = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1);
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2);
 
@@ -804,6 +814,8 @@ namespace OpenLogReplicator {
             if (redoLogRecord1->object == nullptr)
                 return;
         }
+        if (redoLogRecord1->object != nullptr && (redoLogRecord1->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+            isSystem = true;
 
         //cluster key
         if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
@@ -857,6 +869,8 @@ namespace OpenLogReplicator {
                         RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord1->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #append");
                     }
                 }
+                if (isSystem)
+                    transaction->system = true;
                 transaction->add(redoLogRecord1, redoLogRecord2);
                 transaction->shutdown = shutdownFound;
             }
@@ -894,6 +908,8 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->xidTransactionMap.erase(xidMap);
                     WARNING("no match found for transaction rollback, skipping");
                 }
+                if (isSystem)
+                    transaction->system = true;
             }
 
             break;

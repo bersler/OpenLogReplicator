@@ -65,6 +65,7 @@ namespace OpenLogReplicator {
         valuesMax(0),
         mergesMax(0),
         id(0),
+        transactionType(0),
         defaultCharacterMapId(0),
         defaultCharacterNcharMapId(0),
         writer(nullptr),
@@ -921,6 +922,7 @@ namespace OpenLogReplicator {
 
     void OutputBuffer::outputBufferBegin(uint32_t dictId) {
         messageLength = 0;
+        transactionType = 0;
 
         if (lastBuffer->length + sizeof(struct OutputBufferMsg) >= OUTPUT_BUFFER_DATA_SIZE)
             outputBufferRotate(true);
@@ -1405,7 +1407,7 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0B
-    void OutputBuffer::processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void OutputBuffer::processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
@@ -1455,8 +1457,18 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                    oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
+            if (system) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: INSERT for " << object->owner << "." << object->name);
+
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                    processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                            oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
+                }
+            } else {
+                processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                        oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
+            }
+
             valuesRelease();
 
             fieldPosStart += oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->rowLenghsDelta + r * 2);
@@ -1464,7 +1476,7 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0C
-    void OutputBuffer::processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void OutputBuffer::processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
@@ -1514,15 +1526,25 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                    oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
+            if (system) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE for " << object->owner << "." << object->name);
+
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                    processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                            oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
+                }
+            } else {
+                processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                        oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
+            }
+
             valuesRelease();
 
             fieldPosStart += oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->rowLenghsDelta + r * 2);
         }
     }
 
-    void OutputBuffer::processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type) {
+    void OutputBuffer::processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, bool system) {
         uint8_t fb;
         typeDATAOBJ dataObj;
         typeDBA bdba;
@@ -1925,7 +1947,15 @@ namespace OpenLogReplicator {
                 }
             }
 
-            processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            if (system) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE for " << object->owner << "." << object->name);
+
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                    processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                }
+            } else {
+                processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            }
         } else {
             if (object != nullptr) {
                 //assume null values for all missing columns
@@ -1960,10 +1990,27 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (type == TRANSACTION_INSERT)
-                processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
-            else if (type == TRANSACTION_DELETE)
-                processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            if (type == TRANSACTION_INSERT) {
+                if (system) {
+                    TRACE(TRACE2_SYSTEM, "SYSTEM: INSERT for " << object->owner << "." << object->name);
+
+                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                        processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                    }
+                } else {
+                    processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                }
+            } else if (type == TRANSACTION_DELETE) {
+                if (system) {
+                    TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE for " << object->owner << "." << object->name);
+
+                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
+                        processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                    }
+                } else {
+                    processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                }
+            }
         }
 
         valuesRelease();

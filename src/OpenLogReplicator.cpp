@@ -373,9 +373,9 @@ int main(int argc, char **argv) {
             if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
-                bool isStandby = false;
+                bool standby = false;
                 if (strcmp(readerTypeJSON.GetString(), "online-standby") == 0)
-                    isStandby = true;
+                    standby = true;
 
                 const char *user = "";
                 const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
@@ -390,7 +390,7 @@ int main(int argc, char **argv) {
                 server = serverJSON.GetString();
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, isStandby);
+                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -458,9 +458,9 @@ int main(int argc, char **argv) {
             } else if (strcmp(readerTypeJSON.GetString(), "asm") == 0 ||
                     strcmp(readerTypeJSON.GetString(), "asm-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
-                bool isStandby = false;
+                bool standby = false;
                 if (strcmp(readerTypeJSON.GetString(), "asm-standby") == 0)
-                    isStandby = true;
+                    standby = true;
 
                 const char *user = "";
                 const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
@@ -488,7 +488,7 @@ int main(int argc, char **argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
                         nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server,
-                        userASM, passwordASM, serverASM, isStandby);
+                        userASM, passwordASM, serverASM, standby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");

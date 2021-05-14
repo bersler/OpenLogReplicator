@@ -179,8 +179,8 @@ namespace OpenLogReplicator {
             oracleAnalyzer->database = databaseJSON.GetString();
 
             const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-            bool isBigEndian = bigEndianJSON.GetUint64();
-            if (isBigEndian)
+            bool bigEndian = bigEndianJSON.GetUint64();
+            if (bigEndian)
                 oracleAnalyzer->setBigEndian();
 
             const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
@@ -290,9 +290,6 @@ namespace OpenLogReplicator {
                 const Value& colNoJSON = getJSONfieldV(fileName, columns[j], "col-no");
                 typeCOL colNo = colNoJSON.GetInt();
 
-                const Value& guardSegNoJSON = getJSONfieldV(fileName, columns[j], "guard-seg-no");
-                typeCOL guardSegNo = guardSegNoJSON.GetInt();
-
                 const Value& segColNoJSON = getJSONfieldV(fileName, columns[j], "seg-col-no");
                 typeCOL segColNo = segColNoJSON.GetInt();
                 if (segColNo > 1000) {
@@ -308,35 +305,71 @@ namespace OpenLogReplicator {
                 const Value& lengthJSON = getJSONfieldV(fileName, columns[j], "length");
                 uint64_t length = lengthJSON.GetUint64();
 
-                const Value& precisionJSON = getJSONfieldV(fileName, columns[j], "precision");
-                int64_t precision = precisionJSON.GetInt64();
+                typeCOL guardSegNo = -1;
+                if (columns[j].HasMember("guard-seg-no")) {
+                    const Value& guardSegNoJSON = getJSONfieldV(fileName, columns[j], "guard-seg-no");
+                    guardSegNo = guardSegNoJSON.GetInt();
+                }
 
-                const Value& scaleJSON = getJSONfieldV(fileName, columns[j], "scale");
-                int64_t scale = scaleJSON.GetInt64();
+                int64_t precision = -1;
+                if (columns[j].HasMember("precision")) {
+                    const Value& precisionJSON = getJSONfieldV(fileName, columns[j], "precision");
+                    precision = precisionJSON.GetInt64();
+                }
 
-                const Value& numPkJSON = getJSONfieldV(fileName, columns[j], "num-pk");
-                uint64_t numPk = numPkJSON.GetUint64();
+                int64_t scale =  -1;
+                if (columns[j].HasMember("scale")) {
+                    const Value& scaleJSON = getJSONfieldV(fileName, columns[j], "scale");
+                    scale = scaleJSON.GetInt64();
+                }
 
-                const Value& charsetIdJSON = getJSONfieldV(fileName, columns[j], "charset-id");
-                uint64_t charsetId = charsetIdJSON.GetUint64();
+                uint64_t numPk = 0;
+                if (columns[j].HasMember("num-pk")) {
+                    const Value& numPkJSON = getJSONfieldV(fileName, columns[j], "num-pk");
+                    numPk = numPkJSON.GetUint64();
+                }
 
-                const Value& nullableJSON = getJSONfieldV(fileName, columns[j], "nullable");
-                bool nullable = nullableJSON.GetUint64();
+                uint64_t charsetId = 0;
+                if (columns[j].HasMember("charset-id")) {
+                    const Value& charsetIdJSON = getJSONfieldV(fileName, columns[j], "charset-id");
+                    charsetId = charsetIdJSON.GetUint64();
+                }
 
-                const Value& invisibleJSON = getJSONfieldV(fileName, columns[j], "invisible");
-                bool invisible = invisibleJSON.GetUint64();
+                bool nullable = false;
+                if (columns[j].HasMember("nullable")) {
+                    const Value& nullableJSON = getJSONfieldV(fileName, columns[j], "nullable");
+                    nullable = nullableJSON.GetUint64();
+                }
 
-                const Value& storedAsLobJSON = getJSONfieldV(fileName, columns[j], "stored-as-lob");
-                bool storedAsLob = storedAsLobJSON.GetUint64();
+                bool invisible = false;
+                if (columns[j].HasMember("invisible")) {
+                    const Value& invisibleJSON = getJSONfieldV(fileName, columns[j], "invisible");
+                    invisible = invisibleJSON.GetUint64();
+                }
 
-                const Value& constraintJSON = getJSONfieldV(fileName, columns[j], "constraint");
-                bool constraint = constraintJSON.GetUint64();
+                bool storedAsLob = false;
+                if (columns[j].HasMember("stored-as-lob")) {
+                    const Value& storedAsLobJSON = getJSONfieldV(fileName, columns[j], "stored-as-lob");
+                    storedAsLob = storedAsLobJSON.GetUint64();
+                }
 
-                const Value& addedJSON = getJSONfieldV(fileName, columns[j], "added");
-                bool added = addedJSON.GetUint64();
+                bool constraint = false;
+                if (columns[j].HasMember("constraint")) {
+                    const Value& constraintJSON = getJSONfieldV(fileName, columns[j], "constraint");
+                    constraint = constraintJSON.GetUint64();
+                }
 
-                const Value& guardJSON = getJSONfieldV(fileName, columns[j], "guard");
-                bool guard = guardJSON.GetUint64();
+                bool added = false;
+                if  (columns[j].HasMember("added")) {
+                    const Value& addedJSON = getJSONfieldV(fileName, columns[j], "added");
+                    added = addedJSON.GetUint64();
+                }
+
+                bool guard = false;
+                if (columns[j].HasMember("guard")) {
+                    const Value& guardJSON = getJSONfieldV(fileName, columns[j], "guard");
+                    guard = guardJSON.GetUint64();
+                }
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
                         nullable, invisible, storedAsLob, constraint, added, guard);
@@ -392,7 +425,7 @@ namespace OpenLogReplicator {
 
         if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
             ss << "\"database\":\"" << oracleAnalyzer->database << "\"," <<
-                    "\"big-endian\":" << dec << oracleAnalyzer->isBigEndian << "," <<
+                    "\"big-endian\":" << dec << oracleAnalyzer->bigEndian << "," <<
                     "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
                     "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
                     "\"context\":\"" << oracleAnalyzer->context << "\"," <<
@@ -466,22 +499,34 @@ namespace OpenLogReplicator {
 
                 if (i > 0)
                     ss << ",";
-                ss << "{\"col-no\":" << dec << objectTmp->columns[i]->colNo << "," <<
-                        "\"guard-seg-no\":" << dec << objectTmp->columns[i]->guardSegNo << "," <<
-                        "\"seg-col-no\":" << dec << objectTmp->columns[i]->segColNo << "," <<
-                        "\"name\":\"" << objectTmp->columns[i]->name << "\"," <<
-                        "\"type-no\":" << dec << objectTmp->columns[i]->typeNo << "," <<
-                        "\"length\":" << dec << objectTmp->columns[i]->length << "," <<
-                        "\"precision\":" << dec << objectTmp->columns[i]->precision << "," <<
-                        "\"scale\":" << dec << objectTmp->columns[i]->scale << "," <<
-                        "\"num-pk\":" << dec << objectTmp->columns[i]->numPk << "," <<
-                        "\"charset-id\":" << dec << objectTmp->columns[i]->charsetId << "," <<
-                        "\"nullable\":" << dec << objectTmp->columns[i]->nullable << "," <<
-                        "\"invisible\":" << dec << objectTmp->columns[i]->invisible << "," <<
-                        "\"stored-as-lob\":" << dec << objectTmp->columns[i]->storedAsLob << "," <<
-                        "\"constraint\":" << dec << objectTmp->columns[i]->constraint << "," <<
-                        "\"added\":" << dec << objectTmp->columns[i]->added << "," <<
-                        "\"guard\":" << dec << objectTmp->columns[i]->guard << "}";
+                ss << "{\"col-no\":" << dec << objectTmp->columns[i]->colNo <<
+                        ",\"seg-col-no\":" << dec << objectTmp->columns[i]->segColNo <<
+                        ",\"name\":\"" << objectTmp->columns[i]->name << "\"" <<
+                        ",\"type-no\":" << dec << objectTmp->columns[i]->typeNo <<
+                        ",\"length\":" << dec << objectTmp->columns[i]->length;
+                if (objectTmp->columns[i]->guardSegNo != -1)
+                    ss << ",\"guard-seg-no\":" << dec << objectTmp->columns[i]->guardSegNo;
+                if (objectTmp->columns[i]->precision != -1)
+                    ss << ",\"precision\":" << dec << objectTmp->columns[i]->precision;
+                if (objectTmp->columns[i]->scale != -1)
+                    ss << ",\"scale\":" << dec << objectTmp->columns[i]->scale;
+                if (objectTmp->columns[i]->numPk > 0)
+                    ss << ",\"num-pk\":" << dec << objectTmp->columns[i]->numPk;
+                if (objectTmp->columns[i]->charsetId != 0)
+                    ss << ",\"charset-id\":" << dec << objectTmp->columns[i]->charsetId;
+                if (objectTmp->columns[i]->nullable)
+                    ss << ",\"nullable\":" << dec << objectTmp->columns[i]->nullable;
+                if (objectTmp->columns[i]->invisible)
+                    ss << ",\"invisible\":" << dec << objectTmp->columns[i]->invisible;
+                if (objectTmp->columns[i]->storedAsLob)
+                    ss << ",\"stored-as-lob\":" << dec << objectTmp->columns[i]->storedAsLob;
+                if (objectTmp->columns[i]->constraint)
+                    ss << ",\"constraint\":" << dec << objectTmp->columns[i]->constraint;
+                if (objectTmp->columns[i]->added)
+                    ss << ",\"added\":" << dec << objectTmp->columns[i]->added;
+                if (objectTmp->columns[i]->guard)
+                    ss << ",\"guard\":" << dec << objectTmp->columns[i]->guard;
+                ss << "}";
             }
             ss << "]";
 
@@ -582,8 +627,8 @@ namespace OpenLogReplicator {
         oracleAnalyzer->database = databaseJSON.GetString();
 
         const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-        bool isBigEndian = bigEndianJSON.GetUint64();
-        if (isBigEndian)
+        bool bigEndian = bigEndianJSON.GetUint64();
+        if (bigEndian)
             oracleAnalyzer->setBigEndian();
 
         const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
@@ -1006,7 +1051,7 @@ namespace OpenLogReplicator {
 
         stringstream ss;
         ss << "{\"database\":\"" << oracleAnalyzer->database << "\"," <<
-                "\"big-endian\":" << dec << oracleAnalyzer->isBigEndian << "," <<
+                "\"big-endian\":" << dec << oracleAnalyzer->bigEndian << "," <<
                 "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
                 "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
                 "\"context\":\"" << oracleAnalyzer->context << "\"," <<

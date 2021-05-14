@@ -765,9 +765,9 @@ namespace OpenLogReplicator {
         redoLogRecord->flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
 
         string ktuType = "ktubu", prevObj = "", postObj = "";
-        bool isKtubl = false;
+        bool ktubl = false;
         if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
-            isKtubl = true;
+            ktubl = true;
             ktuType = "ktubl";
             if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                 prevObj = "[";
@@ -881,7 +881,7 @@ namespace OpenLogReplicator {
                 userOnly = " No";
         }
 
-        if (isKtubl) {
+        if (ktubl) {
             //KTUBL
             if (fieldLength < 28) {
                 oracleAnalyzer->dumpStream << "too short field ktubl: " << dec << fieldLength << endl;

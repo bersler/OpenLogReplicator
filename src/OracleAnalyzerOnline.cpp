@@ -575,9 +575,9 @@ namespace OpenLogReplicator {
 
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-            uint64_t disableChecks, const char *user, const char *password, const char *connectString, bool isStandby) :
+            uint64_t disableChecks, const char *user, const char *password, const char *connectString, bool standby) :
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks),
-        isStandby(isStandby),
+        standby(standby),
         user(user),
         password(password),
         connectString(connectString),
@@ -625,7 +625,7 @@ namespace OpenLogReplicator {
             uint64_t supplementalLogMin; stmt.defineUInt64(2, supplementalLogMin);
             stmt.defineUInt64(3, suppLogDbPrimary);
             stmt.defineUInt64(4, suppLogDbAll);
-            stmt.defineUInt64(5, isBigEndian);
+            stmt.defineUInt64(5, bigEndian);
             stmt.defineUInt32(6, currentResetlogs);
             stmt.defineUInt32(7, currentActivation);
             char bannerStr[81]; stmt.defineString(8, bannerStr, sizeof(bannerStr));
@@ -647,7 +647,7 @@ namespace OpenLogReplicator {
                     RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
-                if (isBigEndian)
+                if (bigEndian)
                     setBigEndian();
 
                 if (resetlogs != 0 && currentResetlogs != resetlogs) {
@@ -712,9 +712,9 @@ namespace OpenLogReplicator {
         {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: " << isStandby);
+            TRACE(TRACE2_SQL, "PARAM1: " << standby);
             stmt.createStatement(SQL_GET_LOGFILE_LIST);
-            if (isStandby)
+            if (standby)
                 stmt.bindString(1, "STANDBY");
             else
                 stmt.bindString(1, "ONLINE");
@@ -738,7 +738,7 @@ namespace OpenLogReplicator {
             }
 
             if (readers.size() == 0) {
-                if (isStandby) {
+                if (standby) {
                     RUNTIME_FAIL("failed to find standby redo log files");
                 } else {
                     RUNTIME_FAIL("failed to find online redo log files");
@@ -754,7 +754,7 @@ namespace OpenLogReplicator {
         //position by sequence
         if (startSequence > 0) {
             DatabaseStatement stmt(conn);
-            if (isStandby) {
+            if (standby) {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_SEQUENCE_STANDBY);
                 TRACE(TRACE2_SQL, "PARAM1: " << startSequence);
                 TRACE(TRACE2_SQL, "PARAM2: " << resetlogs);
@@ -784,7 +784,7 @@ namespace OpenLogReplicator {
         //position by time
         } else if (startTime.length() > 0) {
             DatabaseStatement stmt(conn);
-            if (isStandby) {
+            if (standby) {
                 RUNTIME_FAIL("can't position by time for standby database");
             } else {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME);
@@ -801,7 +801,7 @@ namespace OpenLogReplicator {
 
         } else if (startTimeRel > 0) {
             DatabaseStatement stmt(conn);
-            if (isStandby) {
+            if (standby) {
                 RUNTIME_FAIL("can't position by relative time for standby database");
             } else {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME_RELATIVE);
@@ -842,7 +842,7 @@ namespace OpenLogReplicator {
             DEBUG("starting sequence not found - starting with new batch");
 
             DatabaseStatement stmt(conn);
-            if (isStandby) {
+            if (standby) {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
                 TRACE(TRACE2_SQL, "PARAM1: " << scn);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN_STANDBY);

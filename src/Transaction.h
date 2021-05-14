@@ -48,8 +48,9 @@ namespace OpenLogReplicator {
         TransactionChunk *lastTc;
         uint64_t opCodes;
         typetime commitTimestamp;
-        bool isBegin;
-        bool isRollback;
+        bool begin;
+        bool rollback;
+        bool system;
         bool shutdown;
 
         Transaction(OracleAnalyzer *oracleAnalyzer, typeXID xid);

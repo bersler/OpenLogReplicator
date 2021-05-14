@@ -47,6 +47,11 @@ namespace OpenLogReplicator {
         void appendSDec(int64_t value);
         void appendEscape(const char *str, uint64_t length);
         time_t tmToEpoch(struct tm *epoch) const;
+        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
+                const char *sql, uint64_t sqlLength);
     public:
         OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType);
@@ -54,11 +59,6 @@ namespace OpenLogReplicator {
 
         virtual void processBegin(typeSCN scn, typetime time_, typeXID xid);
         virtual void processCommit(void);
-        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
-                const char *sql, uint64_t sqlLength);
         virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo);
     };
 }
