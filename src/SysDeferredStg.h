@@ -27,12 +27,12 @@ using namespace std;
 namespace OpenLogReplicator {
     class SysDeferredStg {
     public:
-        SysDeferredStg(RowId &rowId, typeOBJ obj, uint64_t flagsStg);
+        SysDeferredStg(RowId &rowId, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2);
         bool isCompressed(void);
 
         RowId rowId;
         typeOBJ obj;
-        uint64_t flagsStg;          //NULL
+        uintX_t flagsStg;          //NULL
     };
 }
 

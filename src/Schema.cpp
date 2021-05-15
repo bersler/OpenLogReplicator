@@ -708,9 +708,13 @@ namespace OpenLogReplicator {
             const char *name = nameJSON.GetString();
 
             const Value& spare1JSON = getJSONfieldV(fileName, sysUser[i], "spare1");
-            uint64_t spare1 = spare1JSON.GetUint64();
+            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
+            }
+            uint64_t spare11 = spare1JSON[0].GetUint64();
+            uint64_t spare12 = spare1JSON[1].GetUint64();
 
-            dictSysUserAdd(rowId, user, name, spare1, false);
+            dictSysUserAdd(rowId, user, name, spare11, spare12, false);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUser.Size());
 
@@ -740,9 +744,13 @@ namespace OpenLogReplicator {
             const char *name = nameJSON.GetString();
 
             const Value& flagsJSON = getJSONfieldV(fileName, sysObj[i], "flags");
-            uint32_t flags = flagsJSON.GetUint();
+            if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", flags should be an array");
+            }
+            uint64_t flags1 = flagsJSON[0].GetUint64();
+            uint64_t flags2 = flagsJSON[1].GetUint64();
 
-            dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags);
+            dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags1, flags2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << dec << sysObj.Size());
 
@@ -823,9 +831,13 @@ namespace OpenLogReplicator {
             typeOBJ obj = objJSON.GetUint();
 
             const Value& spare1JSON = getJSONfieldV(fileName, sysCCol[i], "spare1");
-            uint64_t spare1 = spare1JSON.GetUint64();
+            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
+            }
+            uint64_t spare11 = spare1JSON[0].GetUint64();
+            uint64_t spare12 = spare1JSON[1].GetUint64();
 
-            dictSysCColAdd(rowId, con, intCol, obj, spare1);
+            dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << dec << sysCCol.Size());
 
@@ -866,9 +878,13 @@ namespace OpenLogReplicator {
             typeOBJ obj = objJSON.GetUint();
 
             const Value& flagsStgJSON = getJSONfieldV(fileName, sysDeferredStg[i], "flags-stg");
-            uint64_t flagsStg = flagsStgJSON.GetUint64();
+            if (!flagsStgJSON.IsArray() || flagsStgJSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", flags-stg should be an array");
+            }
+            uint64_t flagsStg1 = flagsStgJSON[0].GetUint64();
+            uint64_t flagsStg2 = flagsStgJSON[1].GetUint64();
 
-            dictSysDeferredStgAdd(rowId, obj, flagsStg);
+            dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << dec << sysDeferredStg.Size());
 
@@ -886,7 +902,7 @@ namespace OpenLogReplicator {
             typeOBJ obj = objJSON.GetUint();
 
             const Value& colNumJSON = getJSONfieldV(fileName, sysECol[i], "col-num");
-            typeCON colNum = colNumJSON.GetUint();
+            typeCOL colNum = colNumJSON.GetUint();
 
             const Value& guardIdJSON = getJSONfieldV(fileName, sysECol[i], "guard-id");
             uint64_t guardId = guardIdJSON.GetUint();
@@ -915,9 +931,13 @@ namespace OpenLogReplicator {
             uint32_t ts = tsJSON.GetUint();
 
             const Value& spare1JSON = getJSONfieldV(fileName, sysSeg[i], "spare1");
-            uint64_t spare1 = spare1JSON.GetUint();
+            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
+            }
+            uint64_t spare11 = spare1JSON[0].GetUint64();
+            uint64_t spare12 = spare1JSON[1].GetUint64();
 
-            dictSysSegAdd(rowId, file, block, ts, spare1);
+            dictSysSegAdd(rowId, file, block, ts, spare11, spare12);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.SEG$: " << dec << sysSeg.Size());
 
@@ -950,7 +970,11 @@ namespace OpenLogReplicator {
             typeCOL cluCols = cluColsJSON.GetInt();
 
             const Value& flagsJSON = getJSONfieldV(fileName, sysTab[i], "flags");
-            uint64_t flags = flagsJSON.GetUint64();
+            if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
+                CONFIG_FAIL("bad JSON in " << fileName << ", flags should be an array");
+            }
+            uint64_t flags1 = flagsJSON[0].GetUint64();
+            uint64_t flags2 = flagsJSON[1].GetUint64();
 
             const Value& propertyJSON = getJSONfieldV(fileName, sysTab[i], "property");
             if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
@@ -959,7 +983,7 @@ namespace OpenLogReplicator {
             uint64_t property1 = propertyJSON[0].GetUint64();
             uint64_t property2 = propertyJSON[1].GetUint64();
 
-            dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags, property1, property2);
+            dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTab.Size());
 
@@ -1391,61 +1415,12 @@ namespace OpenLogReplicator {
         return element;
     }
 
-    bool Schema::dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare1, bool trackDDL) {
-        RowId rowId(rowIdStr);
-        SysUser *sysUser = sysUserMapRowId[rowId];
-        if (sysUser != nullptr) {
-            if (!sysUser->trackDDL) {
-                if (trackDDL)
-                    sysUser->trackDDL = true;
-                return true;
-            }
-
-            return false;
-        }
-
-        sysUser = new SysUser(rowId, user, name, spare1, trackDDL);
-        sysUserMapRowId[rowId] = sysUser;
-        sysUserMapUser[user] = sysUser;
-
-        return true;
-    }
-
-    bool Schema::dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name, uint32_t flags) {
-        RowId rowId(rowIdStr);
-        if (sysObjMapRowId[rowId] != nullptr)
-            return false;
-
-        SysObj *sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags);
-        sysObjMapRowId[rowId] = sysObj;
-        sysObjMapObj[obj] = sysObj;
-
-        return true;
-    }
-
-    bool Schema::dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
-            int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_, uint64_t property1, uint64_t property2) {
-        RowId rowId(rowIdStr);
-        if (sysColMapRowId[rowId] != nullptr)
-            return false;
-
-        SysCol *sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
-                null_, property1, property2);
-        sysColMapRowId[rowId] = sysCol;
-        SysColKey sysColKey(obj, intCol);
-        sysColMapKey[sysColKey] = sysCol;
-        SysColSeg sysColSeg(obj, segCol);
-        sysColMapSeg[sysColSeg] = sysCol;
-
-        return true;
-    }
-
-    bool Schema::dictSysCColAdd(const char *rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare1) {
+    bool Schema::dictSysCColAdd(const char *rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
         if (sysCColMapRowId[rowId] != nullptr)
             return false;
 
-        SysCCol *sysCCol = new SysCCol(rowId, con, intCol, obj, spare1);
+        SysCCol *sysCCol = new SysCCol(rowId, con, intCol, obj, spare11, spare12);
         sysCColMapRowId[rowId] = sysCCol;
         SysCColKey sysCColKey(obj, intCol, con);
         sysCColMapKey[sysCColKey] = sysCCol;
@@ -1467,19 +1442,36 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg) {
+    bool Schema::dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
+            int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, bool null_, uint64_t property1, uint64_t property2) {
+        RowId rowId(rowIdStr);
+        if (sysColMapRowId[rowId] != nullptr)
+            return false;
+
+        SysCol *sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
+                null_, property1, property2);
+        sysColMapRowId[rowId] = sysCol;
+        SysColKey sysColKey(obj, intCol);
+        sysColMapKey[sysColKey] = sysCol;
+        SysColSeg sysColSeg(obj, segCol);
+        sysColMapSeg[sysColSeg] = sysCol;
+
+        return true;
+    }
+
+    bool Schema::dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2) {
         RowId rowId(rowIdStr);
         if (sysDeferredStgMapRowId[rowId] != nullptr)
             return false;
 
-        SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg);
+        SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2);
         sysDeferredStgMapRowId[rowId] = sysDeferredStg;
         sysDeferredStgMapObj[obj] = sysDeferredStg;
 
         return true;
     }
 
-    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, uint32_t colNum, uint32_t guardId) {
+    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, uint32_t guardId) {
         RowId rowId(rowIdStr);
         if (sysEColMapRowId[rowId] != nullptr)
             return false;
@@ -1492,12 +1484,25 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare1) {
+    bool Schema::dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
+            uint64_t flags1, uint64_t flags2) {
+        RowId rowId(rowIdStr);
+        if (sysObjMapRowId[rowId] != nullptr)
+            return false;
+
+        SysObj *sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2);
+        sysObjMapRowId[rowId] = sysObj;
+        sysObjMapObj[obj] = sysObj;
+
+        return true;
+    }
+
+    bool Schema::dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
         if (sysSegMapRowId[rowId] != nullptr)
             return false;
 
-        SysSeg *sysSeg = new SysSeg(rowId, file, block, ts, spare1);
+        SysSeg *sysSeg = new SysSeg(rowId, file, block, ts, spare11, spare12);
         sysSegMapRowId[rowId] = sysSeg;
         SysSegKey sysSegKey(file, block, ts);
         sysSegMapKey[sysSegKey] = sysSeg;
@@ -1505,28 +1510,15 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysTabAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
-            uint64_t flags, uint64_t property1, uint64_t property2) {
+    bool Schema::dictSysTabAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
+            typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
         if (sysTabMapRowId[rowId] != nullptr)
             return false;
 
-        SysTab *sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags, property1, property2);
+        SysTab *sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
         sysTabMapRowId[rowId] = sysTab;
         sysTabMapObj[obj] = sysTab;
-
-        return true;
-    }
-
-    bool Schema::dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
-        RowId rowId(rowIdStr);
-        if (sysTabPartMapRowId[rowId] != nullptr)
-            return false;
-
-        SysTabPart *sysTabPart = new SysTabPart(rowId, obj, dataObj, bo);
-        sysTabPartMapRowId[rowId] = sysTabPart;
-        SysTabPartKey sysTabPartKey(bo, obj);
-        sysTabPartMapKey[sysTabPartKey] = sysTabPart;
 
         return true;
     }
@@ -1544,6 +1536,19 @@ namespace OpenLogReplicator {
         return true;
     }
 
+    bool Schema::dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
+        RowId rowId(rowIdStr);
+        if (sysTabPartMapRowId[rowId] != nullptr)
+            return false;
+
+        SysTabPart *sysTabPart = new SysTabPart(rowId, obj, dataObj, bo);
+        sysTabPartMapRowId[rowId] = sysTabPart;
+        SysTabPartKey sysTabPartKey(bo, obj);
+        sysTabPartMapKey[sysTabPartKey] = sysTabPart;
+
+        return true;
+    }
+
     bool Schema::dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj) {
         RowId rowId(rowIdStr);
         if (sysTabSubPartMapRowId[rowId] != nullptr)
@@ -1553,6 +1558,26 @@ namespace OpenLogReplicator {
         sysTabSubPartMapRowId[rowId] = sysTabSubPart;
         SysTabSubPartKey sysTabSubPartKey(pObj, obj);
         sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
+
+        return true;
+    }
+
+    bool Schema::dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool trackDDL) {
+        RowId rowId(rowIdStr);
+        SysUser *sysUser = sysUserMapRowId[rowId];
+        if (sysUser != nullptr) {
+            if (!sysUser->trackDDL) {
+                if (trackDDL)
+                    sysUser->trackDDL = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        sysUser = new SysUser(rowId, user, name, spare11, spare12, trackDDL);
+        sysUserMapRowId[rowId] = sysUser;
+        sysUserMapUser[user] = sysUser;
 
         return true;
     }

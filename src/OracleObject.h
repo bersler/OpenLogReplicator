@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
         vector<OracleColumn*> columns;
         vector<typeOBJ2> partitions;
         vector<uint16_t> pk;
+        uint64_t systemTable;
         bool sys;
 
         void addColumn(OracleColumn *column);

@@ -46,11 +46,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCCol::SysCCol(RowId &rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare1) :
+    SysCCol::SysCCol(RowId &rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12) :
                 rowId(rowId),
                 con(con),
                 intCol(intCol),
-                obj(obj),
-                spare1(spare1) {
+                obj(obj) {
+        spare1.set(spare11, spare12);
     }
 }

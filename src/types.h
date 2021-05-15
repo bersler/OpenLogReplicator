@@ -178,6 +178,19 @@ typedef uint64_t typeunicode;
 #define OPTIONS_EVENT_TABLE                     1
 #define OPTIONS_SCHEMA_TABLE                    2
 
+#define TABLE_SYS_CCOL                          1
+#define TABLE_SYS_CDEF                          2
+#define TABLE_SYS_COL                           3
+#define TABLE_SYS_DEFERRED_STG                  4
+#define TABLE_SYS_ECOL                          5
+#define TABLE_SYS_OBJ                           6
+#define TABLE_SYS_SEG                           7
+#define TABLE_SYS_TAB                           8
+#define TABLE_SYS_TABPART                       9
+#define TABLE_SYS_TABCOMPART                    10
+#define TABLE_SYS_TABSUBPART                    11
+#define TABLE_SYS_USER                          12
+
 #define USN(__xid)                              ((uint16_t)(((uint64_t)(__xid))>>48))
 #define SLT(__xid)                              ((uint16_t)(((((uint64_t)(__xid))>>32)&0xFFFF)))
 #define SQN(__xid)                              ((uint32_t)(((__xid)&0xFFFFFFFF)))
@@ -208,7 +221,7 @@ extern uint64_t trace, trace2;
 #define REDOLOG_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RedoLogException("error");}
 #define RUNTIME_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RuntimeException("error");}
 
-#define TYPEINTXLEN                             4
+#define TYPEINTXLEN                             2
 #define TYPEINTXDIGITS                          77
 
 using namespace std;
@@ -230,6 +243,7 @@ namespace OpenLogReplicator {
         uintX_t& set(uint64_t val1, uint64_t val2);
         uintX_t& setStr(const char *val, uint64_t length);
         bool isSet64(uint64_t mask);
+        bool isZero();
 
         friend ostream& operator<<(ostream& os, const uintX_t& val);
     };

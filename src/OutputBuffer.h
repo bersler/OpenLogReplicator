@@ -121,6 +121,9 @@ namespace OpenLogReplicator {
         virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
         virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
                 const char *sql, uint64_t sqlLength) = 0;
+        void processInsertSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        void processUpdateSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        void processDeleteSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
 
     public:
         uint64_t defaultCharacterMapId;

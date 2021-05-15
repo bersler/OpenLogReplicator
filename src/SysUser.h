@@ -27,14 +27,14 @@ using namespace std;
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare1, bool trackDDL);
+        SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool trackDDL);
         bool isSuppLogPrimary(void);
         bool isSuppLogAll(void);
 
         RowId rowId;
         typeUSER user;
         string name;
-        uint64_t spare1;            //NULL
+        uintX_t spare1;            //NULL
         bool trackDDL;
     };
 }

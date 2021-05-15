@@ -34,9 +34,34 @@ namespace OpenLogReplicator {
         guardSegNo(-1),
         owner(owner),
         name(name) {
-        if (name != nullptr && strncmp(name, "SYS", 3) == 0)
+        systemTable = 0;
+        if (owner != nullptr && strncmp(owner, "SYS", 3) == 0) {
             sys = true;
-        else
+            if (name != nullptr && strncmp(name, "CCOL$", 5) == 0)
+                systemTable = TABLE_SYS_CCOL;
+            else if (name != nullptr && strncmp(name, "CDEF$", 5) == 0)
+                systemTable = TABLE_SYS_CDEF;
+            else if (name != nullptr && strncmp(name, "COL$", 4) == 0)
+                systemTable = TABLE_SYS_COL;
+            else if (name != nullptr && strncmp(name, "DEFERRED_STG$", 13) == 0)
+                systemTable = TABLE_SYS_DEFERRED_STG;
+            else if (name != nullptr && strncmp(name, "ECOL$", 5) == 0)
+                systemTable = TABLE_SYS_ECOL;
+            else if (name != nullptr && strncmp(name, "OBJ$", 4) == 0)
+                systemTable = TABLE_SYS_OBJ;
+            else if (name != nullptr && strncmp(name, "SEG$", 4) == 0)
+                systemTable = TABLE_SYS_SEG;
+            else if (name != nullptr && strncmp(name, "TAB$", 4) == 0)
+                systemTable = TABLE_SYS_TAB;
+            else if (name != nullptr && strncmp(name, "TABPART$", 8) == 0)
+                systemTable = TABLE_SYS_TABPART;
+            else if (name != nullptr && strncmp(name, "TABCOMPART$", 11) == 0)
+                systemTable = TABLE_SYS_TABCOMPART;
+            else if (name != nullptr && strncmp(name, "TABSUBPART$", 11) == 0)
+                systemTable = TABLE_SYS_TABSUBPART;
+            else if (name != nullptr && strncmp(name, "USER$", 5) == 0)
+                systemTable = TABLE_SYS_USER;
+        } else
             sys = false;
     }
 

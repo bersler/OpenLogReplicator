@@ -21,15 +21,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     SysTab::SysTab(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
-            uint64_t flags, uint64_t property1, uint64_t property2) :
+            uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
             ts(ts),
             file(file),
             block(block),
-            cluCols(cluCols),
-            flags(flags) {
+            cluCols(cluCols) {
+        flags.set(flags1, flags2);
         property.set(property1, property2);
     }
 
@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
     }
 
     bool SysTab::isIot(void) {
-        return property.isSet64(512) || ((flags & 536870912) != 0);
+        return property.isSet64(512) || flags.isSet64(536870912);
     }
 
     bool SysTab::isPartitioned(void) {
@@ -50,14 +50,14 @@ namespace OpenLogReplicator {
     }
 
     bool SysTab::isRowMovement(void) {
-        return ((flags & 131072) != 0);
+        return flags.isSet64(131072);
     }
 
     bool SysTab::isDependencies(void) {
-        return ((flags & 8388608) != 0);
+        return flags.isSet64(8388608);
     }
 
     bool SysTab::isInitial(void) {
-        return ((flags & 17179869184) != 0);
+        return flags.isSet64(17179869184);
     }
 }

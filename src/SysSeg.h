@@ -39,14 +39,14 @@ namespace OpenLogReplicator {
 
     class SysSeg {
     public:
-        SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare1);
+        SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12);
         bool isCompressed(void);
 
         RowId rowId;
         uint32_t file;
         uint32_t block;
         uint32_t ts;
-        uint64_t spare1;            //NULL
+        uintX_t spare1;            //NULL
     };
 }
 

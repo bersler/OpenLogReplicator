@@ -38,11 +38,11 @@ namespace OpenLogReplicator {
 
     class SysECol {
     public:
-        SysECol(RowId &rowId, typeOBJ tabObj, uint32_t colNum, uint32_t guardId);
+        SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, uint32_t guardId);
 
         RowId rowId;
         typeOBJ tabObj;
-        uint32_t colNum;            //NULL
+        typeCOL colNum;            //NULL
         uint32_t guardId;           //NULL
     };
 }

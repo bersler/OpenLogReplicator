@@ -20,14 +20,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysObj.h"
 
 namespace OpenLogReplicator {
-    SysObj::SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name, uint32_t flags) :
+    SysObj::SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
+            uint64_t flags1, uint64_t flags2) :
             rowId(rowId),
             owner(owner),
             obj(obj),
             dataObj(dataObj),
             type(type),
-            name(name),
-            flags(flags) {
+            name(name) {
+        flags.set(flags1, flags2);
     }
 
     bool SysObj::isTable(void) {
@@ -35,12 +36,12 @@ namespace OpenLogReplicator {
     }
 
     bool SysObj::isTemporary(void) {
-        return ((flags & 2) == 2) //temporary
-                || ((flags & 16) == 16) //secondary
-                || ((flags & 32) == 32);  //in-memory temp
+        return flags.isSet64(2)         //temporary
+                || flags.isSet64(16)    //secondary
+                || flags.isSet64(32);   //in-memory temp
     }
 
     bool SysObj::isDropped(void) {
-        return ((flags & 128) != 0);
+        return flags.isSet64(128);
     }
 }

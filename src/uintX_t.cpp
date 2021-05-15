@@ -96,6 +96,13 @@ namespace OpenLogReplicator {
         return data[0] & mask;
     }
 
+    bool uintX_t::isZero(void) {
+        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+            if (data[i] != 0)
+                return false;
+        return true;
+    }
+
     uintX_t& uintX_t::set(uint64_t val1, uint64_t val2) {
         this->data[0] = val1;
         this->data[1] = val2;

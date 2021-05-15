@@ -20,19 +20,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysUser.h"
 
 namespace OpenLogReplicator {
-    SysUser::SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare1, bool trackDDL) :
+    SysUser::SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool trackDDL) :
             rowId(rowId),
             user(user),
             name(name),
-            spare1(spare1),
             trackDDL(trackDDL) {
+        spare1.set(spare11, spare12);
     }
 
     bool SysUser::isSuppLogPrimary(void) {
-        return ((spare1 & 1) == 1);
+        return spare1.isSet64(1);
     }
 
     bool SysUser::isSuppLogAll(void) {
-        return ((spare1 & 8) == 8);
+        return spare1.isSet64(8);
     }
 }

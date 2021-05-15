@@ -44,16 +44,16 @@ namespace OpenLogReplicator {
                 (other.ts != ts);
     }
 
-    SysSeg::SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare1) :
+    SysSeg::SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) :
             rowId(rowId),
             file(file),
             block(block),
-            ts(ts),
-            spare1(spare1) {
+            ts(ts) {
+        spare1.set(spare11, spare12);
     }
 
     bool SysSeg::isCompressed(void) {
-        return ((spare1 & 2048) != 0);
+        return spare1.isSet64(2048);
     }
 }
 

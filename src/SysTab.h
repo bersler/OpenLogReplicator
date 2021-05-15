@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
     class SysTab {
     public:
         SysTab(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
-                uint64_t flags, uint64_t property1, uint64_t property2);
+                uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2);
         bool isClustered(void);
         bool isIot(void);
         bool isPartitioned(void);
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         uint32_t file;
         uint32_t block;
         typeCOL cluCols;            //NULL
-        uint64_t flags;
+        uintX_t flags;
         uintX_t property;
     };
 }
