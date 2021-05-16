@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_set>
 
 #include "types.h"
+#include "RowId.h"
 
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
@@ -113,6 +114,7 @@ namespace OpenLogReplicator {
         void valueBufferAppend(uint8_t value);
         void valueBufferAppendHex(typeunicode value, uint64_t length);
         void processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
+        bool parseNumber(const uint8_t *data, uint64_t length);
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
         virtual void appendHeader(bool first, bool showXid) = 0;
         virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj) = 0;

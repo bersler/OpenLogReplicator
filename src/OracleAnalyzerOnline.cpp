@@ -1029,10 +1029,10 @@ namespace OpenLogReplicator {
         while (colRet) {
             schema->dictSysColAdd(colRowid, colObj, colCol, colSegCol, colIntCol, colName, colType, colLength, colPrecision, colScale, colCharsetForm,
                     colCharsetId, colNull, colProperty1, colProperty2);
-            colPrecision = 0;
-            colScale = 0;
-            colCharsetForm = -1;
-            colCharsetId = -1;
+            colPrecision = -1;
+            colScale = -1;
+            colCharsetForm = 0;
+            colCharsetId = 0;
             colRet = stmtCol.next();
         }
 
@@ -1647,7 +1647,7 @@ namespace OpenLogReplicator {
                     DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
                     OracleColumn *column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
-                            sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, sysCol->null_, sysCol->isInvisible(),
+                            sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                             sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
 
                     if (column == nullptr) {

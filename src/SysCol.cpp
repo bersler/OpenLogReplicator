@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
     }
 
     SysCol::SysCol(RowId &rowId, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type,
-        uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, bool null_,
+        uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
         uint64_t property1, uint64_t property2) :
             rowId(rowId),
             obj(obj),

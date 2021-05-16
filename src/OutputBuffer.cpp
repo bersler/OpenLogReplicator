@@ -1013,7 +1013,6 @@ namespace OpenLogReplicator {
     }
 
     void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
-        uint8_t digits;
         CharacterSet *characterSet = nullptr;
 
         if (object == nullptr) {
@@ -1092,139 +1091,10 @@ namespace OpenLogReplicator {
             break;
 
         case 2: //number/float
-            valueLength = 0;
-
-            digits = data[0];
-            //just zero
-            if (digits == 0x80) {
-                valueBufferAppend('0');
-            } else {
-                uint64_t j = 1, jMax = length - 1;
-
-                //positive number
-                if (digits > 0x80 && jMax >= 1) {
-                    uint64_t value, zeros = 0;
-                    //part of the total
-                    if (digits <= 0xC0) {
-                        valueBufferAppend('0');
-                        zeros = 0xC0 - digits;
-                    } else {
-                        digits -= 0xC0;
-                        //part of the total - omitting first zero for first digit
-                        value = data[j] - 1;
-                        if (value < 10)
-                            valueBufferAppend('0' + value);
-                        else {
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                        }
-
-                        ++j;
-                        --digits;
-
-                        while (digits > 0) {
-                            value = data[j] - 1;
-                            if (j <= jMax) {
-                                valueBufferAppend('0' + (value / 10));
-                                valueBufferAppend('0' + (value % 10));
-                                ++j;
-                            } else {
-                                valueBufferAppend('0');
-                                valueBufferAppend('0');
-                            }
-                            --digits;
-                        }
-                    }
-
-                    //fraction part
-                    if (j <= jMax) {
-                        valueBufferAppend('.');
-
-                        while (zeros > 0) {
-                            valueBufferAppend('0');
-                            valueBufferAppend('0');
-                            --zeros;
-                        }
-
-                        while (j <= jMax - 1) {
-                            value = data[j] - 1;
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                            ++j;
-                        }
-
-                        //last digit - omitting 0 at the end
-                        value = data[j] - 1;
-                        valueBufferAppend('0' + (value / 10));
-                        if ((value % 10) != 0)
-                            valueBufferAppend('0' + (value % 10));
-                    }
-                //negative number
-                } else if (digits < 0x80 && jMax >= 1) {
-                    uint64_t value, zeros = 0;
-                    valueBufferAppend('-');
-
-                    if (data[jMax] == 0x66)
-                        --jMax;
-
-                    //part of the total
-                    if (digits >= 0x3F) {
-                        valueBufferAppend('0');
-                        zeros = digits - 0x3F;
-                    } else {
-                        digits = 0x3F - digits;
-
-                        value = 101 - data[j];
-                        if (value < 10)
-                            valueBufferAppend('0' + value);
-                        else {
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                        }
-                        ++j;
-                        --digits;
-
-                        while (digits > 0) {
-                            if (j <= jMax) {
-                                value = 101 - data[j];
-                                valueBufferAppend('0' + (value / 10));
-                                valueBufferAppend('0' + (value % 10));
-                                ++j;
-                            } else {
-                                valueBufferAppend('0');
-                                valueBufferAppend('0');
-                            }
-                            --digits;
-                        }
-                    }
-
-                    if (j <= jMax) {
-                        valueBufferAppend('.');
-
-                        while (zeros > 0) {
-                            valueBufferAppend('0');
-                            valueBufferAppend('0');
-                            --zeros;
-                        }
-
-                        while (j <= jMax - 1) {
-                            value = 101 - data[j];
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                            ++j;
-                        }
-
-                        value = 101 - data[j];
-                        valueBufferAppend('0' + (value / 10));
-                        if ((value % 10) != 0)
-                            valueBufferAppend('0' + (value % 10));
-                    }
-                } else {
-                    columnUnknown(column->name, data, length);
-                    break;
-                }
-            }
-            columnNumber(column->name, column->precision, column->scale);
+            if (parseNumber(data, length))
+                columnNumber(column->name, column->precision, column->scale);
+            else
+                columnUnknown(column->name, data, length);
             break;
 
         case 12:  //date
@@ -1358,6 +1228,259 @@ namespace OpenLogReplicator {
         default:
             if (unknownType == UNKNOWN_TYPE_SHOW)
                 columnUnknown(column->name, data, length);
+        }
+    }
+
+    bool OutputBuffer::parseNumber(const uint8_t *data, uint64_t length) {
+        valueLength = 0;
+
+        uint8_t digits = data[0];
+        //just zero
+        if (digits == 0x80) {
+            valueBufferAppend('0');
+        } else {
+            uint64_t j = 1, jMax = length - 1;
+
+            //positive number
+            if (digits > 0x80 && jMax >= 1) {
+                uint64_t value, zeros = 0;
+                //part of the total
+                if (digits <= 0xC0) {
+                    valueBufferAppend('0');
+                    zeros = 0xC0 - digits;
+                } else {
+                    digits -= 0xC0;
+                    //part of the total - omitting first zero for first digit
+                    value = data[j] - 1;
+                    if (value < 10)
+                        valueBufferAppend('0' + value);
+                    else {
+                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend('0' + (value % 10));
+                    }
+
+                    ++j;
+                    --digits;
+
+                    while (digits > 0) {
+                        value = data[j] - 1;
+                        if (j <= jMax) {
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                            ++j;
+                        } else {
+                            valueBufferAppend('0');
+                            valueBufferAppend('0');
+                        }
+                        --digits;
+                    }
+                }
+
+                //fraction part
+                if (j <= jMax) {
+                    valueBufferAppend('.');
+
+                    while (zeros > 0) {
+                        valueBufferAppend('0');
+                        valueBufferAppend('0');
+                        --zeros;
+                    }
+
+                    while (j <= jMax - 1) {
+                        value = data[j] - 1;
+                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend('0' + (value % 10));
+                        ++j;
+                    }
+
+                    //last digit - omitting 0 at the end
+                    value = data[j] - 1;
+                    valueBufferAppend('0' + (value / 10));
+                    if ((value % 10) != 0)
+                        valueBufferAppend('0' + (value % 10));
+                }
+            //negative number
+            } else if (digits < 0x80 && jMax >= 1) {
+                uint64_t value, zeros = 0;
+                valueBufferAppend('-');
+
+                if (data[jMax] == 0x66)
+                    --jMax;
+
+                //part of the total
+                if (digits >= 0x3F) {
+                    valueBufferAppend('0');
+                    zeros = digits - 0x3F;
+                } else {
+                    digits = 0x3F - digits;
+
+                    value = 101 - data[j];
+                    if (value < 10)
+                        valueBufferAppend('0' + value);
+                    else {
+                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend('0' + (value % 10));
+                    }
+                    ++j;
+                    --digits;
+
+                    while (digits > 0) {
+                        if (j <= jMax) {
+                            value = 101 - data[j];
+                            valueBufferAppend('0' + (value / 10));
+                            valueBufferAppend('0' + (value % 10));
+                            ++j;
+                        } else {
+                            valueBufferAppend('0');
+                            valueBufferAppend('0');
+                        }
+                        --digits;
+                    }
+                }
+
+                if (j <= jMax) {
+                    valueBufferAppend('.');
+
+                    while (zeros > 0) {
+                        valueBufferAppend('0');
+                        valueBufferAppend('0');
+                        --zeros;
+                    }
+
+                    while (j <= jMax - 1) {
+                        value = 101 - data[j];
+                        valueBufferAppend('0' + (value / 10));
+                        valueBufferAppend('0' + (value % 10));
+                        ++j;
+                    }
+
+                    value = 101 - data[j];
+                    valueBufferAppend('0' + (value / 10));
+                    if ((value % 10) != 0)
+                        valueBufferAppend('0' + (value % 10));
+                }
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    void OutputBuffer::updateNumber16(int16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val = strtol(valueBuffer, &retPtr, 10);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << dec << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val = 0;
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateNumber16u(uint16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val = strtoul(valueBuffer, &retPtr, 10);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << dec << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val = 0;
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateNumber32u(uint32_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val = strtoul(valueBuffer, &retPtr, 10);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << dec << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val = 0;
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateNumber64(int64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val = strtol(valueBuffer, &retPtr, 10);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << dec << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val = 0;
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateNumber64u(uint64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val = strtoul(valueBuffer, &retPtr, 10);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << dec << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val = 0;
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                valueBuffer[valueLength] = 0;
+                val.setStr(valueBuffer, valueLength);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val.set(0, 0);
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
+        }
+    }
+
+    void OutputBuffer::updateString(string &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId) {
+        if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
+            char *retPtr;
+            if (object->columns[i]->typeNo == 2 && parseNumber(values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0])) {
+                val.assign(valueBuffer, valueLength);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": " << val);
+            } else {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << " failed");
+            }
+        } else
+        if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
+            val.assign("");
+            TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update " << object->columns[i]->name << ": NULL");
         }
     }
 
