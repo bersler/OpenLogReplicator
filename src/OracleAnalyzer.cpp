@@ -32,6 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogException.h"
 #include "RuntimeException.h"
 #include "Schema.h"
+#include "SystemTransaction.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 
@@ -84,6 +85,7 @@ namespace OpenLogReplicator {
         transactionBuffer(nullptr),
         schema(nullptr),
         outputBuffer(outputBuffer),
+        systemTransaction(nullptr),
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
         flags(0),

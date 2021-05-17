@@ -42,6 +42,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RowId.h"
 #include "RuntimeException.h"
 #include "Schema.h"
+#include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
     const char OutputBuffer::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -1013,8 +1014,6 @@ namespace OpenLogReplicator {
     }
 
     void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
-        CharacterSet *characterSet = nullptr;
-
         if (object == nullptr) {
             string columnName = "COL_" + to_string(col);
             columnRaw(columnName, data, length);
@@ -1038,63 +1037,13 @@ namespace OpenLogReplicator {
         switch(typeNo) {
         case 1: //varchar2/nvarchar2
         case 96: //char/nchar
-            characterSet = characterMap[charsetId];
-            if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
-            }
-            valueLength = 0;
-
-            while (length > 0) {
-                typeunicode unicodeCharacter;
-                uint64_t unicodeCharacterLength;
-
-                if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                    unicodeCharacter = characterSet->decode(data, length);
-                    unicodeCharacterLength = 8;
-                } else {
-                    unicodeCharacter = *data++;
-                    --length;
-                    unicodeCharacterLength = 2;
-                }
-
-                if ((charFormat & CHAR_FORMAT_HEX) != 0) {
-                    valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
-                } else {
-                    //0xxxxxxx
-                    if (unicodeCharacter <= 0x7F) {
-                        valueBufferAppend(unicodeCharacter);
-
-                    //110xxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0x7FF) {
-                        valueBufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
-                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                    //1110xxxx 10xxxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0xFFFF) {
-                        valueBufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
-                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                    //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0x10FFFF) {
-                        valueBufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
-                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
-                        valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                        valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                    } else {
-                        RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
-                    }
-                }
-            }
+            parseString(data, length, charsetId);
             columnString(column->name);
             break;
 
         case 2: //number/float
-            if (parseNumber(data, length))
-                columnNumber(column->name, column->precision, column->scale);
-            else
-                columnUnknown(column->name, data, length);
+            parseNumber(data, length);
+            columnNumber(column->name, column->precision, column->scale);
             break;
 
         case 12:  //date
@@ -1231,7 +1180,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool OutputBuffer::parseNumber(const uint8_t *data, uint64_t length) {
+    void OutputBuffer::parseNumber(const uint8_t *data, uint64_t length) {
         valueLength = 0;
 
         uint8_t digits = data[0];
@@ -1360,225 +1309,60 @@ namespace OpenLogReplicator {
                         valueBufferAppend('0' + (value % 10));
                 }
             } else {
-                return false;
+                RUNTIME_FAIL("got unknown numeric value");
             }
         }
-        return true;
     }
 
-    void OutputBuffer::processInsertSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
-        char str[19];
-        rowId.toString(str);
+    void OutputBuffer::parseString(const uint8_t *data, uint64_t length, uint64_t charsetId) {
+        CharacterSet *characterSet = characterMap[charsetId];
+        if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
+            RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
+        }
+        valueLength = 0;
 
-        TRACE(TRACE2_SYSTEM, "SYSTEM: INSERT TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-    }
+        while (length > 0) {
+            typeunicode unicodeCharacter;
+            uint64_t unicodeCharacterLength;
 
-    void OutputBuffer::processUpdateSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
-        char str[19];
-        rowId.toString(str);
-        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-
-        if (object->systemTable == TABLE_SYS_TAB) {
-            SysTab *sysTab = oracleAnalyzer->schema->sysTabMapRowId[rowId];
-            if (sysTab == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
+            if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
+                unicodeCharacter = characterSet->decode(data, length);
+                unicodeCharacterLength = 8;
+            } else {
+                unicodeCharacter = *data++;
+                --length;
+                unicodeCharacterLength = 2;
             }
 
-            for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+            if ((charFormat & CHAR_FORMAT_HEX) != 0) {
+                valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
+            } else {
+                //0xxxxxxx
+                if (unicodeCharacter <= 0x7F) {
+                    valueBufferAppend(unicodeCharacter);
 
-                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0) {
-                    if (object->columns[i]->name.compare("OBJ#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update obj");
-                        //sysTab->obj = //typeObj
-                    } else if (object->columns[i]->name.compare("DATAOBJ#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update dataObj");
-                        cerr << "update dataObj" << endl;
-                        //sysTab->dataObj = //typeDataObj
-                    } else if (object->columns[i]->name.compare("TS#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update ts");
-                        //sysTab->ts = //uint32_t
-                    } else if (object->columns[i]->name.compare("FILE#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update file");
-                        //sysTab->file = //uint32_t
-                    } else if (object->columns[i]->name.compare("BLOCK#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update block");
-                        //sysTab->block = //uint32_t
-                    } else if (object->columns[i]->name.compare("CLUCOLS") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update cluCols");
-                        //sysTab->cluCols = //typeCOL
-                    } else if (object->columns[i]->name.compare("FLAGS") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update flags");
-                        //sysTab->flags = //uint64_t
-                    } else if (object->columns[i]->name.compare("PROPERTY") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update property");
-                        //sysTab->property = //uintX_t
-                    }
+                //110xxxxx 10xxxxxx
+                } else if (unicodeCharacter <= 0x7FF) {
+                    valueBufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
+                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
-                    //processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-                } else
-                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr) {
-                    if (object->columns[i]->name.compare("DATAOBJ#") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update dataObj to NULL");
-                        sysTab->dataObj = 0;
-                    } else if (object->columns[i]->name.compare("CLUCOLS") == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: UPDATE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " update cluCols to NULL");
-                        sysTab->cluCols = 0;
-                    }
+                //1110xxxx 10xxxxxx 10xxxxxx
+                } else if (unicodeCharacter <= 0xFFFF) {
+                    valueBufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
+                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
+
+                //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                } else if (unicodeCharacter <= 0x10FFFF) {
+                    valueBufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
+                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
+                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
+                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
+
+                } else {
+                    RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
                 }
             }
-        }
-    }
-
-    void OutputBuffer::processDeleteSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
-        char str[19];
-        rowId.toString(str);
-
-        if (object->systemTable == TABLE_SYS_CCOL) {
-            SysCCol *sysCCol = oracleAnalyzer->schema->sysCColMapRowId[rowId];
-            if (sysCCol == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysCColMapRowId.erase(rowId);
-            SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
-            oracleAnalyzer->schema->sysCColMapKey.erase(sysCColKey);
-            delete sysCCol;
-
-        } else if (object->systemTable == TABLE_SYS_CDEF) {
-            SysCDef *sysCDef = oracleAnalyzer->schema->sysCDefMapRowId[rowId];
-            if (sysCDef == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysCDefMapRowId.erase(rowId);
-            SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
-            oracleAnalyzer->schema->sysCDefMapKey.erase(sysCDefKey);
-            delete sysCDef;
-
-        } else if (object->systemTable == TABLE_SYS_COL) {
-            SysCol *sysCol = oracleAnalyzer->schema->sysColMapRowId[rowId];
-            if (sysCol == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysColMapRowId.erase(rowId);
-            SysColKey sysColKey(sysCol->obj, sysCol->intCol);
-            oracleAnalyzer->schema->sysColMapKey.erase(sysColKey);
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
-            oracleAnalyzer->schema->sysColMapSeg.erase(sysColSeg);
-            delete sysCol;
-
-        } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
-            SysDeferredStg *sysDeferredStg = oracleAnalyzer->schema->sysDeferredStgMapRowId[rowId];
-            if (sysDeferredStg == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysDeferredStgMapRowId.erase(rowId);
-            oracleAnalyzer->schema->sysDeferredStgMapObj.erase(sysDeferredStg->obj);
-            delete sysDeferredStg;
-
-        } else if (object->systemTable == TABLE_SYS_ECOL) {
-            SysECol *sysECol = oracleAnalyzer->schema->sysEColMapRowId[rowId];
-            if (sysECol == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysEColMapRowId.erase(rowId);
-            SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
-            oracleAnalyzer->schema->sysEColMapKey.erase(sysEColKey);
-            delete sysECol;
-
-        } else if (object->systemTable == TABLE_SYS_OBJ) {
-            SysObj *sysObj = oracleAnalyzer->schema->sysObjMapRowId[rowId];
-            if (sysObj == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysObjMapRowId.erase(rowId);
-            oracleAnalyzer->schema->sysObjMapObj.erase(sysObj->obj);
-            delete sysObj;
-
-        } else if (object->systemTable == TABLE_SYS_TAB) {
-            SysTab *sysTab = oracleAnalyzer->schema->sysTabMapRowId[rowId];
-            if (sysTab == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysTabMapRowId.erase(rowId);
-            oracleAnalyzer->schema->sysTabMapObj.erase(sysTab->obj);
-            delete sysTab;
-
-        } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
-            SysTabComPart *sysTabComPart = oracleAnalyzer->schema->sysTabComPartMapRowId[rowId];
-            if (sysTabComPart == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysTabComPartMapRowId.erase(rowId);
-            SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
-            oracleAnalyzer->schema->sysTabComPartMapKey.erase(sysTabComPartKey);
-            delete sysTabComPart;
-
-        } else if (object->systemTable == TABLE_SYS_TABPART) {
-            SysTabPart *sysTabPart = oracleAnalyzer->schema->sysTabPartMapRowId[rowId];
-            if (sysTabPart == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysTabPartMapRowId.erase(rowId);
-            SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
-            oracleAnalyzer->schema->sysTabPartMapKey.erase(sysTabPartKey);
-            delete sysTabPart;
-
-        } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
-            SysTabSubPart *sysTabSubPart = oracleAnalyzer->schema->sysTabSubPartMapRowId[rowId];
-            if (sysTabSubPart == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysTabSubPartMapRowId.erase(rowId);
-            SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
-            oracleAnalyzer->schema->sysTabSubPartMapKey.erase(sysTabSubPartKey);
-            delete sysTabSubPart;
-
-        } else if (object->systemTable == TABLE_SYS_USER) {
-            SysUser *sysUser = oracleAnalyzer->schema->sysUserMapRowId[rowId];
-            if (sysUser == nullptr) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId << " no match");
-                return;
-            }
-
-            TRACE(TRACE2_SYSTEM, "SYSTEM: DELETE TABLE:" << object->owner << "." << object->name << " ROWID: " << rowId);
-            oracleAnalyzer->schema->sysUserMapRowId.erase(rowId);
-            oracleAnalyzer->schema->sysUserMapUser.erase(sysUser->user);
-            delete sysUser;
         }
     }
 
@@ -1681,7 +1465,7 @@ namespace OpenLogReplicator {
             }
 
             if (system) {
-                processInsertSystem(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                oracleAnalyzer->systemTransaction->processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                         oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     processInsert(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
@@ -1748,7 +1532,7 @@ namespace OpenLogReplicator {
             }
 
             if (system) {
-                processDeleteSystem(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                oracleAnalyzer->systemTransaction->processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                         oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     processDelete(object, redoLogRecord2->dataObj, redoLogRecord2->bdba,
@@ -1850,7 +1634,7 @@ namespace OpenLogReplicator {
                         if (object != nullptr) {
                             WARNING("table: " << object->owner << "." << object->name << ": out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
                         } else {
-                            WARNING("table: [DATAOBJ:" << redoLogRecord1p->dataObj << "]: out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
+                            WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: out of columns (Undo): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->cc);
                         }
                         break;
                     }
@@ -1903,7 +1687,7 @@ namespace OpenLogReplicator {
                         if (object != nullptr) {
                             RUNTIME_FAIL("table: " << object->owner << "." << object->name << ": out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
                         } else {
-                            RUNTIME_FAIL("table: [DATAOBJ:" << redoLogRecord1p->dataObj << "]: out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
+                            RUNTIME_FAIL("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: out of columns (Supp): " << dec << colNum << "/" << (uint64_t)redoLogRecord1p->suppLogCC);
                         }
                     }
 
@@ -1964,7 +1748,7 @@ namespace OpenLogReplicator {
                         if (object != nullptr) {
                             WARNING("table: " << object->owner << "." << object->name << ": out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
                         } else {
-                            WARNING("table: [DATAOBJ:" << redoLogRecord2p->dataObj << "]: out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
+                            WARNING("table: [DATAOBJ: " << redoLogRecord2p->dataObj << "]: out of columns (Redo): " << dec << colNum << "/" << (uint64_t)redoLogRecord2p->cc);
                         }
                         break;
                     }
@@ -2115,7 +1899,7 @@ namespace OpenLogReplicator {
                             " pk: " << dec << object->columns[i]->numPk);
                 }
             } else {
-                TRACE(TRACE2_DML, "tab: [DATAOBJ:" << redoLogRecord1->dataObj << "] type: " << type);
+                TRACE(TRACE2_DML, "tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type);
 
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
                     uint16_t i = (*it).first;
@@ -2167,7 +1951,7 @@ namespace OpenLogReplicator {
             }
 
             if (system) {
-                processUpdateSystem(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
             } else
@@ -2208,14 +1992,14 @@ namespace OpenLogReplicator {
 
             if (type == TRANSACTION_INSERT) {
                 if (system) {
-                    processInsertSystem(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                    oracleAnalyzer->systemTransaction->processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                         processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
                 } else
                     processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
             } else if (type == TRANSACTION_DELETE) {
                 if (system) {
-                    processDeleteSystem(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                    oracleAnalyzer->systemTransaction->processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                         processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
                 } else

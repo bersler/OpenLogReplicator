@@ -82,6 +82,7 @@ SysTabComPart.cpp \
 SysTabPart.cpp \
 SysTabSubPart.cpp \
 SysUser.cpp \
+SystemTransaction.cpp \
 Thread.cpp \
 TransactionBuffer.cpp \
 Transaction.cpp \

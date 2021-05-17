@@ -22,6 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OutputBuffer.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
+#include "SystemTransaction.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 #include "Writer.h"
@@ -126,7 +127,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << *this);
 
             if (system) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: BEGIN");
+                oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer);
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
@@ -355,8 +356,12 @@ namespace OpenLogReplicator {
                         WARNING("big transaction divided (forced commit after " << oracleAnalyzer->outputBuffer->outputBufferSize() << " bytes)");
 
                         if (system) {
-                            TRACE(TRACE2_SYSTEM, "SYSTEM: COMMIT");
-                            TRACE(TRACE2_SYSTEM, "SYSTEM: BEGIN");
+                            oracleAnalyzer->systemTransaction->commit();
+                            delete oracleAnalyzer->systemTransaction;
+                            oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer);
+
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
                                 oracleAnalyzer->outputBuffer->processCommit();
@@ -405,7 +410,9 @@ namespace OpenLogReplicator {
             opCodes = 0;
 
             if (system) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: COMMIT");
+                oracleAnalyzer->systemTransaction->commit();
+                delete oracleAnalyzer->systemTransaction;
+                oracleAnalyzer->systemTransaction = nullptr;
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     oracleAnalyzer->outputBuffer->processCommit();

@@ -114,7 +114,8 @@ namespace OpenLogReplicator {
         void valueBufferAppend(uint8_t value);
         void valueBufferAppendHex(typeunicode value, uint64_t length);
         void processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
-        bool parseNumber(const uint8_t *data, uint64_t length);
+        void parseNumber(const uint8_t *data, uint64_t length);
+        void parseString(const uint8_t *data, uint64_t length, uint64_t charsetId);
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
         virtual void appendHeader(bool first, bool showXid) = 0;
         virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj) = 0;
@@ -123,9 +124,6 @@ namespace OpenLogReplicator {
         virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
         virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
                 const char *sql, uint64_t sqlLength) = 0;
-        void processInsertSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processUpdateSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processDeleteSystem(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
 
     public:
         uint64_t defaultCharacterMapId;
@@ -156,6 +154,8 @@ namespace OpenLogReplicator {
         void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, bool system);
         void processDDLheader(RedoLogRecord *redoLogRecord1);
         virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
+
+        friend class SystemTransaction;
     };
 }
 

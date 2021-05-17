@@ -153,8 +153,9 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
 	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysSeg.cpp \
 	SysTab.cpp SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp \
-	SysUser.cpp Thread.cpp TransactionBuffer.cpp Transaction.cpp \
-	Writer.cpp WriterFile.cpp uintX_t.cpp DatabaseConnection.cpp \
+	SysUser.cpp SystemTransaction.cpp Thread.cpp \
+	TransactionBuffer.cpp Transaction.cpp Writer.cpp \
+	WriterFile.cpp uintX_t.cpp DatabaseConnection.cpp \
 	DatabaseEnvironment.cpp DatabaseStatement.cpp \
 	OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp \
 	ReaderASM.cpp WriterKafka.cpp OraProtoBuf.pb.cpp \
@@ -203,7 +204,8 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	SysCol.$(OBJEXT) SysDeferredStg.$(OBJEXT) SysECol.$(OBJEXT) \
 	SysObj.$(OBJEXT) SysSeg.$(OBJEXT) SysTab.$(OBJEXT) \
 	SysTabComPart.$(OBJEXT) SysTabPart.$(OBJEXT) \
-	SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) Thread.$(OBJEXT) \
+	SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) \
+	SystemTransaction.$(OBJEXT) Thread.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
 	Writer.$(OBJEXT) WriterFile.$(OBJEXT) uintX_t.$(OBJEXT) \
 	$(am__objects_1) $(am__objects_2) $(am__objects_3) \
@@ -430,9 +432,10 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
 	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysSeg.cpp \
 	SysTab.cpp SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp \
-	SysUser.cpp Thread.cpp TransactionBuffer.cpp Transaction.cpp \
-	Writer.cpp WriterFile.cpp uintX_t.cpp $(am__append_1) \
-	$(am__append_2) $(am__append_3) $(am__append_5)
+	SysUser.cpp SystemTransaction.cpp Thread.cpp \
+	TransactionBuffer.cpp Transaction.cpp Writer.cpp \
+	WriterFile.cpp uintX_t.cpp $(am__append_1) $(am__append_2) \
+	$(am__append_3) $(am__append_5)
 @PROTOBUF_COMPILE_TRUE@StreamClient_SOURCES = StreamClient.cpp \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.cpp NetworkException.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.cpp Stream.cpp \
@@ -612,6 +615,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysTabPart.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysTabSubPart.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysUser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SystemTransaction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Transaction.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/TransactionBuffer.Po@am__quote@

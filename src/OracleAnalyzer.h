@@ -38,6 +38,7 @@ namespace OpenLogReplicator {
     class Reader;
     class RedoLogRecord;
     class Schema;
+    class SystemTransaction;
     class Transaction;
     class TransactionBuffer;
 
@@ -65,6 +66,39 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksMax;
         uint64_t memoryChunksHWM;
         uint64_t memoryChunksSupplemental;
+        string nlsCharacterSet;
+        string nlsNcharCharacterSet;
+        string dbRecoveryFileDest;
+        string dbBlockChecksum;
+        string logArchiveDest;
+        Reader *archReader;
+        set<Reader*> readers;
+        bool waitingForWriter;
+        mutex mtx;
+        condition_variable readerCond;
+        condition_variable sleepingCond;
+        condition_variable analyzerCond;
+        condition_variable memoryCond;
+        condition_variable writerCond;
+        string context;
+        typeSCN checkpointScn;
+        typeSCN schemaScn;
+        typeSCN startScn;
+        typeSEQ startSequence;
+        string startTime;
+        int64_t startTimeRel;
+        uint64_t readStartOffset;
+        uint64_t readBufferMax;
+        unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
+        uint64_t disableChecks;
+        vector<string> pathMapping;
+        vector<string> redoLogsBatch;
+        set<typeSCN> checkpointScnList;
+        typeconid conId;
+        string conName;
+        string lastCheckedDay;
+        uint64_t bigEndian;
+        bool version12;
 
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader *reader);
@@ -80,15 +114,8 @@ namespace OpenLogReplicator {
                 uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
         virtual ~OracleAnalyzer();
 
+        typeSCN scn;
         string database;
-        string nlsCharacterSet;
-        string nlsNcharCharacterSet;
-        string dbRecoveryFileDest;
-        string dbBlockChecksum;
-        string logArchiveFormat;
-        string logArchiveDest;
-        string redoCopyPath;
-        string checkpointPath;
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMB;
         uint64_t checkpointAll;
@@ -96,54 +123,27 @@ namespace OpenLogReplicator {
         uint64_t checkpointOutputLogSwitch;
         typetime checkpointLastTime;
         uint64_t checkpointLastOffset;
-
-        Reader *archReader;
-        set<Reader*> readers;
-        bool waitingForWriter;
-        mutex mtx;
-        condition_variable readerCond;
-        condition_variable sleepingCond;
-        condition_variable analyzerCond;
-        condition_variable memoryCond;
-        condition_variable writerCond;
-        string context;
-        typeSCN scn;
-        typeSCN checkpointScn;
-        typeSCN schemaScn;
-        typeSCN startScn;
-        typeSEQ startSequence;
-        string startTime;
-        int64_t startTimeRel;
-        uint64_t readStartOffset;
-        uint64_t readBufferMax;
-
-        unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
-        TransactionBuffer *transactionBuffer;
-        Schema *schema;
-        OutputBuffer *outputBuffer;
+        string logArchiveFormat;
+        string redoCopyPath;
+        string checkpointPath;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
+        uint64_t version;                   //compatibility level of redo logs
+        uint64_t suppLogSize;
         uint64_t dumpRawData;
+        Schema *schema;
+        OutputBuffer *outputBuffer;
         uint64_t flags;
-        uint64_t disableChecks;
-        vector<string> pathMapping;
-        vector<string> redoLogsBatch;
-        set<typeSCN> checkpointScnList;
         uint64_t redoReadSleepUS;
         uint64_t archReadSleepUS;
         uint64_t archReadRetry;
         uint64_t redoVerifyDelayUS;
-        uint64_t version;                   //compatibility level of redo logs
-        typeconid conId;
-        string conName;
-        string lastCheckedDay;
+        SystemTransaction *systemTransaction;
+        TransactionBuffer *transactionBuffer;
         typeresetlogs resetlogs;
         typeactivation activation;
-        uint64_t bigEndian;
-        uint64_t suppLogSize;
-        bool version12;
-        void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);
 
+        void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
         uint64_t (*read56)(const uint8_t* buf);
@@ -206,6 +206,10 @@ namespace OpenLogReplicator {
         void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
 
         friend ostream& operator<<(ostream& os, const OracleAnalyzer& oracleAnalyzer);
+        friend class Reader;
+        friend class RedoLog;
+        friend class Schema;
+        friend class Writer;
     };
 }
 
