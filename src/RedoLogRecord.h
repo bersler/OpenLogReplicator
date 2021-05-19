@@ -88,7 +88,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    class OracleObject;
     class OracleAnalyzer;
 
     class RedoLogRecord {
@@ -129,7 +128,6 @@ namespace OpenLogReplicator {
         uint32_t tsn;
         uint32_t undo;
         int16_t usn;
-        OracleObject *object;
         typeXID xid;              //transaction id
         typeUBA uba;              //Undo Block Address
         uint32_t pdbId;

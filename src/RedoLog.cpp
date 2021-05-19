@@ -642,12 +642,12 @@ namespace OpenLogReplicator {
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
             return;
 
-        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (redoLogRecord->object == nullptr)
+            if (object == nullptr)
                 return;
         }
-        if (redoLogRecord->object != nullptr && (redoLogRecord->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
             system = true;
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
@@ -679,12 +679,12 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
             return;
 
-        redoLogRecord->object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (redoLogRecord->object == nullptr)
+            if (object == nullptr)
                 return;
         }
-        if (redoLogRecord->object != nullptr && (redoLogRecord->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
             isSystem = true;
 
         Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
@@ -809,12 +809,12 @@ namespace OpenLogReplicator {
             REDOLOG_FAIL("BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
         }
 
-        redoLogRecord1->object = oracleAnalyzer->schema->checkDict(obj, dataObj);
+        OracleObject *object = oracleAnalyzer->schema->checkDict(obj, dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (redoLogRecord1->object == nullptr)
+            if (object == nullptr)
                 return;
         }
-        if (redoLogRecord1->object != nullptr && (redoLogRecord1->object->options & OPTIONS_SCHEMA_TABLE) != 0)
+        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
             isSystem = true;
 
         //cluster key
@@ -825,10 +825,8 @@ namespace OpenLogReplicator {
         if ((redoLogRecord1->suppLogFb & FB_K) != 0 || (redoLogRecord2->suppLogFb & FB_K) != 0)
             return;
 
-        redoLogRecord2->object = redoLogRecord1->object;
-
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        if (redoLogRecord1->object != nullptr && redoLogRecord1->object->options == OPTIONS_EVENT_TABLE && opCodeLong == 0x05010B02) {
+        if (object != nullptr && object->options == OPTIONS_EVENT_TABLE && opCodeLong == 0x05010B02) {
             INFO("found shutdown command in events table");
             shutdownFound = true;
         }

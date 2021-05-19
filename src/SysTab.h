@@ -25,10 +25,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
+    class SysTabKey {
+    public:
+        SysTabKey();
+        SysTabKey(uint32_t file, uint32_t block, uint32_t ts);
+        bool operator!=(const SysTabKey& other) const;
+        bool operator==(const SysTabKey& other) const;
+
+        uint32_t file;
+        uint32_t block;
+        uint32_t ts;
+    };
+
     class SysTab {
     public:
         SysTab(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
-                uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2);
+                uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2, bool touched);
         bool isClustered(void);
         bool isIot(void);
         bool isPartitioned(void);
@@ -46,6 +58,14 @@ namespace OpenLogReplicator {
         typeCOL cluCols;            //NULL
         uintX_t flags;
         uintX_t property;
+        bool touched;
+    };
+}
+
+namespace std {
+    template <>
+    struct hash<OpenLogReplicator::SysTabKey> {
+        size_t operator()(const OpenLogReplicator::SysTabKey &sysTabKey) const;
     };
 }
 

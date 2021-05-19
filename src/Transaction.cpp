@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
                             last2 = redoLogRecord2;
                         } else {
                             if (last1->suppLogBdba == redoLogRecord1->suppLogBdba && last1->suppLogSlot == redoLogRecord1->suppLogSlot &&
-                                    first1->object == redoLogRecord1->object && first2->object == redoLogRecord2->object) {
+                                    first1->obj == redoLogRecord1->obj && first2->obj == redoLogRecord2->obj) {
                                 if (type == TRANSACTION_INSERT) {
                                     redoLogRecord1->next = first1;
                                     redoLogRecord2->next = first2;

@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
 
     class SysCDef {
     public:
-        SysCDef(RowId &rowId, typeCON con, typeOBJ obj, typeTYPE type);
+        SysCDef(RowId &rowId, typeCON con, typeOBJ obj, typeTYPE type, bool touched);
         bool isPK(void);
         bool isSupplementalLog(void);
         bool isSupplementalLogPK(void);
@@ -47,6 +47,7 @@ namespace OpenLogReplicator {
         typeCON con;
         typeOBJ obj;
         typeTYPE type;
+        bool touched;
     };
 }
 

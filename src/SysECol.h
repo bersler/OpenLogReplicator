@@ -38,12 +38,13 @@ namespace OpenLogReplicator {
 
     class SysECol {
     public:
-        SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, uint32_t guardId);
+        SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, uint32_t guardId, bool touched);
 
         RowId rowId;
         typeOBJ tabObj;
         typeCOL colNum;            //NULL
         uint32_t guardId;           //NULL
+        bool touched;
     };
 }
 

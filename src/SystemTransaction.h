@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <set>
+
 #include "types.h"
 #include "RowId.h"
 
@@ -40,6 +42,8 @@ namespace OpenLogReplicator {
         void updateNumber64u(uint64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         void updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         void updateString(string &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        void toRemove(typeOBJ obj);
+        void toAdd(typeOBJ obj);
 
     public:
         SystemTransaction(OracleAnalyzer *oracleAnalyzer, OutputBuffer *outputBuffer);

@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
     public:
         SysCol(RowId &rowId, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type,
                 uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
-                uint64_t property1, uint64_t property2);
+                uint64_t property1, uint64_t property2, bool touched);
         bool isInvisible(void);
         bool isStoredAsLob(void);
         bool isConstraint(void);
@@ -70,6 +70,7 @@ namespace OpenLogReplicator {
         uint64_t charsetId;         //NULL
         int64_t null_;
         uintX_t property;
+        bool touched;
     };
 }
 

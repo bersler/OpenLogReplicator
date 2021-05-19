@@ -21,13 +21,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     SysObj::SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
-            uint64_t flags1, uint64_t flags2) :
+            uint64_t flags1, uint64_t flags2, bool touched) :
             rowId(rowId),
             owner(owner),
             obj(obj),
             dataObj(dataObj),
             type(type),
-            name(name) {
+            name(name),
+            touched(touched) {
         flags.set(flags1, flags2);
     }
 

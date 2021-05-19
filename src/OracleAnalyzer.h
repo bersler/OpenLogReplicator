@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
         virtual const char* getModeName(void) const;
         virtual void checkConnection(void);
         virtual bool continueWithOnline(void);
-        virtual void refreshSchema(void);
+        virtual void loadSchema(void);
 
     public:
         OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias, const char *database,

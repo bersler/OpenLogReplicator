@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
     class SysObj {
     public:
         SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
-                uint64_t flags1, uint64_t flags2);
+                uint64_t flags1, uint64_t flags2, bool touched);
         bool isTable(void);
         bool isTemporary(void);
         bool isDropped(void);
@@ -40,6 +40,7 @@ namespace OpenLogReplicator {
         typeTYPE type;
         string name;
         uintX_t flags;             //NULL
+        bool touched;
     };
 }
 

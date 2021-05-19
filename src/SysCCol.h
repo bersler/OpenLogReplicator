@@ -38,13 +38,14 @@ namespace OpenLogReplicator {
 
     class SysCCol {
     public:
-        SysCCol(RowId &rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12);
+        SysCCol(RowId &rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12, bool touched);
 
         RowId rowId;
         typeCON con;
         typeCOL intCol;
         typeOBJ obj;
         uintX_t spare1;            //NULL
+        bool touched;
     };
 }
 

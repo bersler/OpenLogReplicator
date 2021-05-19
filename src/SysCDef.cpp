@@ -38,11 +38,12 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCDef::SysCDef(RowId &rowId, typeCON con, typeOBJ obj, typeTYPE type) :
+    SysCDef::SysCDef(RowId &rowId, typeCON con, typeOBJ obj, typeTYPE type, bool touched) :
             rowId(rowId),
             con(con),
             obj(obj),
-            type(type) {
+            type(type),
+            touched(touched) {
     }
 
     bool SysCDef::isPK(void) {

@@ -454,7 +454,7 @@ namespace OpenLogReplicator {
             INFO("last confirmed scn: " << dec << scn);
         }
         if (!schema->readSchema(this)) {
-            refreshSchema();
+            loadSchema();
             schema->writeSchema(this);
             schema->writeSys(this);
         } else {
@@ -462,7 +462,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzer::refreshSchema(void) {
+    void OracleAnalyzer::loadSchema(void) {
         RUNTIME_FAIL("schema file missing - required for offline mode");
     }
 

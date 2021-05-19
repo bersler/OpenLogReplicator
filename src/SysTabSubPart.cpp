@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
             obj(obj) {
     }
 
-
     bool SysTabSubPartKey::operator<(const SysTabSubPartKey& other) const {
         if (other.pObj > pObj)
             return true;
@@ -39,10 +38,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabSubPart::SysTabSubPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj) :
+    SysTabSubPart::SysTabSubPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
-            pObj(pObj) {
+            pObj(pObj),
+            touched(touched) {
     }
 }

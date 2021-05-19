@@ -1418,7 +1418,7 @@ namespace OpenLogReplicator {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
-        OracleObject *object = redoLogRecord2->object;
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
             oracleAnalyzer->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength);
@@ -1485,7 +1485,7 @@ namespace OpenLogReplicator {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
-        OracleObject *object = redoLogRecord1->object;
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
             oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
@@ -1553,7 +1553,7 @@ namespace OpenLogReplicator {
         typeDBA bdba;
         typeSLOT slot;
         RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
-        OracleObject *object = redoLogRecord1->object;
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         if (type == TRANSACTION_INSERT) {
             redoLogRecord2p = redoLogRecord2;
@@ -2014,8 +2014,8 @@ namespace OpenLogReplicator {
     void OutputBuffer::processDDLheader(RedoLogRecord *redoLogRecord1) {
         uint64_t fieldPos = 0, fieldNum = 0, sqlLength;
         uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
-        OracleObject *object = redoLogRecord1->object;
         char *sqlText = nullptr;
+        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
         //field: 1

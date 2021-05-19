@@ -39,10 +39,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabComPart::SysTabComPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) :
+    SysTabComPart::SysTabComPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
-            bo(bo) {
+            bo(bo),
+            touched(touched) {
     }
 }

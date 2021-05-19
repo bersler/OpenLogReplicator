@@ -41,11 +41,12 @@ namespace OpenLogReplicator {
                 (other.colNum != colNum);
     }
 
-    SysECol::SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, uint32_t guardId) :
+    SysECol::SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, uint32_t guardId, bool touched) :
             rowId(rowId),
             tabObj(tabObj),
             colNum(colNum),
-            guardId(guardId) {
+            guardId(guardId),
+            touched(touched) {
     }
 }
 
