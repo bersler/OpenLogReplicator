@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << *this);
 
             if (system) {
-                oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer);
+                oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
@@ -358,7 +358,7 @@ namespace OpenLogReplicator {
                         if (system) {
                             oracleAnalyzer->systemTransaction->commit();
                             delete oracleAnalyzer->systemTransaction;
-                            oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer);
+                            oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
 
                             TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
                             TRACE(TRACE2_SYSTEM, "SYSTEM: begin");

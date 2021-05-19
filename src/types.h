@@ -234,7 +234,14 @@ namespace OpenLogReplicator {
         uint64_t data[TYPEINTXLEN];
         static uintX_t BASE10[TYPEINTXDIGITS][10];
     public:
+        uintX_t(uint64_t val);
+        uintX_t();
+        ~uintX_t();
+
         static void initializeBASE10(void);
+
+        bool operator!=(const uintX_t& other) const;
+        bool operator==(const uintX_t& other) const;
         uintX_t& operator+=(const uintX_t &val);
         uintX_t& operator=(const uintX_t &val);
         uintX_t& operator=(uint64_t val);
@@ -242,6 +249,7 @@ namespace OpenLogReplicator {
         uintX_t& operator=(const char *val);
         uintX_t& set(uint64_t val1, uint64_t val2);
         uintX_t& setStr(const char *val, uint64_t length);
+        uint64_t get64(void);
         bool isSet64(uint64_t mask);
         bool isZero();
 

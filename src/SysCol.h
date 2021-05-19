@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSCOL_H_
 #define SYSCOL_H_
 
+#define SYSCOL_PROPERTY_MASK (32|128|256|1073741824|549755813888)
+
 using namespace std;
 
 namespace OpenLogReplicator {

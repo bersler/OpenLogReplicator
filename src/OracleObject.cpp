@@ -24,9 +24,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t options, const char *owner, const char *name) :
+    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, uint64_t options, const char *owner, const char *name) :
         obj(obj),
         dataObj(dataObj),
+        user(user),
         cluCols(cluCols),
         totalPk(0),
         options(options),

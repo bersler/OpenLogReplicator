@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <functional>
 #include <map>
 #include <unordered_map>
+#include <set>
 #include <vector>
 
 #include "SysCCol.h"
@@ -34,6 +35,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTabPart.h"
 #include "SysTabSubPart.h"
 #include "SysUser.h"
+#include "SystemTransaction.h"
 
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
@@ -51,71 +53,78 @@ namespace OpenLogReplicator {
         unordered_map<typeOBJ, OracleObject*> objectMap;
         unordered_map<typeOBJ, OracleObject*> partitionMap;
 
-    public:
         //SYS.CCOL$
         unordered_map<RowId, SysCCol*> sysCColMapRowId;
         map<SysCColKey, SysCCol*> sysCColMapKey;
-        set<SysCCol*> sysCColSetDropped;
+        bool sysCColKeyTouched;
 
         //SYS.CDEF$
         unordered_map<RowId, SysCDef*> sysCDefMapRowId;
-        unordered_map<typeCON, SysCDef*> sysCDefMapCDef;
         map<SysCDefKey, SysCDef*> sysCDefMapKey;
-        set<SysCDef*> sysCDefSetDropped;
+        bool sysCDefKeyTouched;
+        unordered_map<typeCON, SysCDef*> sysCDefMapCon;
+        bool sysCDefConTouched;
 
         //SYS.COL$
         unordered_map<RowId, SysCol*> sysColMapRowId;
         map<SysColKey, SysCol*> sysColMapKey;
+        bool sysColKeyTouched;
         map<SysColSeg, SysCol*> sysColMapSeg;
-        set<SysCol*> sysColSetDropped;
+        bool sysColSegTouched;
 
         //SYS.DEFERREDSTG$
         unordered_map<RowId, SysDeferredStg*> sysDeferredStgMapRowId;
         unordered_map<typeOBJ, SysDeferredStg*> sysDeferredStgMapObj;
-        set<SysDeferredStg*> sysDeferredStgSetDropped;
+        bool sysDeferredStgObjTouched;
 
         //SYS.ECOL$
         unordered_map<RowId, SysECol*> sysEColMapRowId;
         unordered_map<SysEColKey, SysECol*> sysEColMapKey;
-        set<SysECol*> sysEColSetDropped;
+        bool sysEColKeyTouched;
 
         //SYS.OBJ$
         unordered_map<RowId, SysObj*> sysObjMapRowId;
         unordered_map<typeOBJ, SysObj*> sysObjMapObj;
-        set<SysObj*> sysObjSetDropped;
+        bool sysObjObjTouched;
 
         //SYS.SEG$
         unordered_map<RowId, SysSeg*> sysSegMapRowId;
         unordered_map<SysSegKey, SysSeg*> sysSegMapKey;
-        set<SysSeg*> sysSegSetDropped;
+        bool sysSegKeyTouched;
 
         //SYS.TAB$
         unordered_map<RowId, SysTab*> sysTabMapRowId;
         unordered_map<typeOBJ, SysTab*> sysTabMapObj;
+        bool sysTabObjTouched;
         unordered_map<SysTabKey, SysTab*> sysTabMapKey;
-        set<SysTab*> sysTabSetDropped;
+        bool sysTabKeyTouched;
 
         //SYS.TABCOMPART$
         unordered_map<RowId, SysTabComPart*> sysTabComPartMapRowId;
         map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
-        set<SysTabComPart*> sysTabComPartSetDropped;
+        bool sysTabComPartKeyTouched;
 
         //SYS.TABPART$
         unordered_map<RowId, SysTabPart*> sysTabPartMapRowId;
         map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
-        set<SysTabPart*> sysTabPartSetDropped;
+        bool sysTabPartKeyTouched;
 
         //SYS.TABSUBPART$
         unordered_map<RowId, SysTabSubPart*> sysTabSubPartMapRowId;
         map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
-        set<SysTabSubPart*> sysTabSubPartSetDropped;
+        bool sysTabSubPartKeyTouched;
 
         //SYS.USER$
         unordered_map<RowId, SysUser*> sysUserMapRowId;
         unordered_map<typeUSER, SysUser*> sysUserMapUser;
-        set<SysUser*> sysUserSetDropped;
+        bool sysUserUserTouched;
 
-        OracleObject *object;
+        set<typeOBJ> objectsTouched;
+        set<typeUSER> usersTouched;
+        bool touched;
+
+    public:
+        OracleObject *schemaObject;
         vector<SchemaElement*> elements;
 
         Schema();
@@ -127,6 +136,7 @@ namespace OpenLogReplicator {
         void writeSys(OracleAnalyzer *oracleAnalyzer);
         OracleObject *checkDict(typeOBJ obj, typeDATAOBJ dataObj);
         void addToDict(OracleObject *object);
+        void removeFromDict(OracleObject *object);
         void refreshIndexes(void);
         void rebuildMaps(OracleAnalyzer *oracleAnalyzer);
         void buildMaps(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options, OracleAnalyzer *oracleAnalyzer, bool output);
@@ -148,6 +158,10 @@ namespace OpenLogReplicator {
         bool dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
         bool dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);
         bool dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool trackDDL);
+        void touchObj(typeOBJ obj);
+        void touchUser(typeUSER user);
+
+        friend class SystemTransaction;
     };
 }
 

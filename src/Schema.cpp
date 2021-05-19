@@ -42,20 +42,36 @@ extern const Value& getJSONfieldD(string &fileName, const Document& document, co
 
 namespace OpenLogReplicator {
     Schema::Schema() :
-		object(nullptr) {
+        schemaObject(nullptr),
+		sysCColKeyTouched(false),
+		sysCDefKeyTouched(false),
+		sysCDefConTouched(false),
+		sysColKeyTouched(false),
+		sysColSegTouched(false),
+		sysDeferredStgObjTouched(false),
+		sysEColKeyTouched(false),
+		sysObjObjTouched(false),
+		sysSegKeyTouched(false),
+		sysTabObjTouched(false),
+		sysTabKeyTouched(false),
+		sysTabComPartKeyTouched(false),
+        sysTabPartKeyTouched(false),
+		sysTabSubPartKeyTouched(false),
+		sysUserUserTouched(false),
+		touched(false) {
     }
 
     Schema::~Schema() {
-        if (object != nullptr) {
-            delete object;
-            object = nullptr;
+        if (schemaObject != nullptr) {
+            delete schemaObject;
+            schemaObject = nullptr;
         }
 
         partitionMap.clear();
 
         for (auto it : objectMap) {
-            OracleObject *objectTmp = it.second;
-            delete objectTmp;
+            OracleObject *object = it.second;
+            delete object;
         }
         objectMap.clear();
 
@@ -65,16 +81,14 @@ namespace OpenLogReplicator {
         }
         sysCColMapRowId.clear();
         sysCColMapKey.clear();
-        sysCColSetDropped.clear();
 
         for (auto it : sysCDefMapRowId) {
             SysCDef *sysCDef = it.second;
             delete sysCDef;
         }
         sysCDefMapRowId.clear();
-        sysCDefMapCDef.clear();
+        sysCDefMapCon.clear();
         sysCDefMapKey.clear();
-        sysCDefSetDropped.clear();
 
         for (auto it : sysColMapRowId) {
             SysCol *sysCol = it.second;
@@ -83,7 +97,6 @@ namespace OpenLogReplicator {
         sysColMapRowId.clear();
         sysColMapKey.clear();
         sysColMapSeg.clear();
-        sysColSetDropped.clear();
 
         for (auto it : sysDeferredStgMapRowId) {
             SysDeferredStg *sysDeferredStg = it.second;
@@ -91,7 +104,6 @@ namespace OpenLogReplicator {
         }
         sysDeferredStgMapRowId.clear();
         sysDeferredStgMapObj.clear();
-        sysDeferredStgSetDropped.clear();
 
         for (auto it : sysEColMapRowId) {
             SysECol *sysECol = it.second;
@@ -99,7 +111,6 @@ namespace OpenLogReplicator {
         }
         sysEColMapRowId.clear();
         sysEColMapKey.clear();
-        sysEColSetDropped.clear();
 
         for (auto it : sysObjMapRowId) {
             SysObj *sysObj = it.second;
@@ -107,7 +118,6 @@ namespace OpenLogReplicator {
         }
         sysObjMapRowId.clear();
         sysObjMapObj.clear();
-        sysObjSetDropped.clear();
 
         for (auto it : sysSegMapRowId) {
             SysSeg *sysSeg = it.second;
@@ -115,7 +125,6 @@ namespace OpenLogReplicator {
         }
         sysSegMapRowId.clear();
         sysSegMapKey.clear();
-        sysSegSetDropped.clear();
 
         for (auto it : sysTabMapRowId) {
             SysTab *sysTab = it.second;
@@ -124,7 +133,6 @@ namespace OpenLogReplicator {
         sysTabMapRowId.clear();
         sysTabMapObj.clear();
         sysTabMapKey.clear();
-        sysTabSetDropped.clear();
 
         for (auto it : sysTabComPartMapRowId) {
             SysTabComPart *sysTabComPart = it.second;
@@ -132,7 +140,6 @@ namespace OpenLogReplicator {
         }
         sysTabComPartMapRowId.clear();
         sysTabComPartMapKey.clear();
-        sysTabComPartSetDropped.clear();
 
         for (auto it : sysTabPartMapRowId) {
             SysTabPart *sysTabPart = it.second;
@@ -140,7 +147,6 @@ namespace OpenLogReplicator {
         }
         sysTabPartMapRowId.clear();
         sysTabPartMapKey.clear();
-        sysTabPartSetDropped.clear();
 
         for (auto it : sysTabSubPartMapRowId) {
             SysTabSubPart *sysTabSubPart = it.second;
@@ -148,7 +154,6 @@ namespace OpenLogReplicator {
         }
         sysTabSubPartMapRowId.clear();
         sysTabSubPartMapKey.clear();
-        sysTabSubPartSetDropped.clear();
 
         for (auto it : sysUserMapRowId) {
             SysUser *sysUser = it.second;
@@ -156,7 +161,6 @@ namespace OpenLogReplicator {
         }
         sysUserMapRowId.clear();
         sysUserMapUser.clear();
-        sysUserSetDropped.clear();
 
         for (SchemaElement *element : elements) {
             delete element;
@@ -188,21 +192,21 @@ namespace OpenLogReplicator {
             oracleAnalyzer->database = databaseJSON.GetString();
 
             const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-            bool bigEndian = bigEndianJSON.GetUint64();
+            bool bigEndian = bigEndianJSON.GetUint();
             if (bigEndian)
                 oracleAnalyzer->setBigEndian();
 
             const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-            oracleAnalyzer->resetlogs = resetlogsJSON.GetUint64();
+            oracleAnalyzer->resetlogs = resetlogsJSON.GetUint();
 
             const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-            oracleAnalyzer->activation = activationJSON.GetUint64();
+            oracleAnalyzer->activation = activationJSON.GetUint();
 
             const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
             oracleAnalyzer->context = databaseContextJSON.GetString();
 
             const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
-            oracleAnalyzer->conId = conIdJSON.GetUint64();
+            oracleAnalyzer->conId = conIdJSON.GetUint();
 
             const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
             oracleAnalyzer->conName = conNameJSON.GetString();
@@ -234,7 +238,7 @@ namespace OpenLogReplicator {
 
             for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
                 const Value& groupJSON = getJSONfieldV(fileName, onlineRedo[i], "group");
-                uint64_t group = groupJSON.GetInt64();
+                int64_t group = groupJSON.GetInt64();
 
                 const Value& path = onlineRedo[i]["path"];
                 if (!path.IsArray()) {
@@ -260,13 +264,16 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < schema.Size(); ++i) {
             const Value& objJSON = getJSONfieldV(fileName, schema[i], "obj");
-            typeOBJ obj = objJSON.GetInt64();
+            typeOBJ obj = objJSON.GetUint();
             typeDATAOBJ dataObj = 0;
 
             if (schema[i].HasMember("data-obj")) {
                 const Value& dataObjJSON = getJSONfieldV(fileName, schema[i], "data-obj");
-                dataObj = dataObjJSON.GetInt64();
+                dataObj = dataObjJSON.GetUint();
             }
+
+            const Value& userJSON = getJSONfieldV(fileName, schema[i], "user");
+            typeUSER user = userJSON.GetUint();
 
             const Value& cluColsJSON = getJSONfieldV(fileName, schema[i], "clu-cols");
             typeCOL cluCols = cluColsJSON.GetInt();
@@ -275,7 +282,7 @@ namespace OpenLogReplicator {
             typeCOL totalPk = totalPkJSON.GetInt();
 
             const Value& optionsJSON = getJSONfieldV(fileName, schema[i], "options");
-            uint64_t options = optionsJSON.GetInt64();
+            uint64_t options = optionsJSON.GetUint64();
 
             const Value& maxSegColJSON = getJSONfieldV(fileName, schema[i], "max-seg-col");
             typeCOL maxSegCol = maxSegColJSON.GetInt();
@@ -286,9 +293,9 @@ namespace OpenLogReplicator {
             const Value& nameJSON = getJSONfieldV(fileName, schema[i], "name");
             const char *name = nameJSON.GetString();
 
-            object = new OracleObject(obj, dataObj, cluCols, options, owner, name);
-            object->totalPk = totalPk;
-            object->maxSegCol = maxSegCol;
+            schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, owner, name);
+            schemaObject->totalPk = totalPk;
+            schemaObject->maxSegCol = maxSegCol;
 
             const Value& columns = getJSONfieldV(fileName, schema[i], "columns");
             if (!columns.IsArray()) {
@@ -347,46 +354,46 @@ namespace OpenLogReplicator {
                 bool nullable = false;
                 if (columns[j].HasMember("nullable")) {
                     const Value& nullableJSON = getJSONfieldV(fileName, columns[j], "nullable");
-                    nullable = nullableJSON.GetUint64();
+                    nullable = nullableJSON.GetUint();
                 }
 
                 bool invisible = false;
                 if (columns[j].HasMember("invisible")) {
                     const Value& invisibleJSON = getJSONfieldV(fileName, columns[j], "invisible");
-                    invisible = invisibleJSON.GetUint64();
+                    invisible = invisibleJSON.GetUint();
                 }
 
                 bool storedAsLob = false;
                 if (columns[j].HasMember("stored-as-lob")) {
                     const Value& storedAsLobJSON = getJSONfieldV(fileName, columns[j], "stored-as-lob");
-                    storedAsLob = storedAsLobJSON.GetUint64();
+                    storedAsLob = storedAsLobJSON.GetUint();
                 }
 
                 bool constraint = false;
                 if (columns[j].HasMember("constraint")) {
                     const Value& constraintJSON = getJSONfieldV(fileName, columns[j], "constraint");
-                    constraint = constraintJSON.GetUint64();
+                    constraint = constraintJSON.GetUint();
                 }
 
                 bool added = false;
                 if  (columns[j].HasMember("added")) {
                     const Value& addedJSON = getJSONfieldV(fileName, columns[j], "added");
-                    added = addedJSON.GetUint64();
+                    added = addedJSON.GetUint();
                 }
 
                 bool guard = false;
                 if (columns[j].HasMember("guard")) {
                     const Value& guardJSON = getJSONfieldV(fileName, columns[j], "guard");
-                    guard = guardJSON.GetUint64();
+                    guard = guardJSON.GetUint();
                 }
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
                         nullable, invisible, storedAsLob, constraint, added, guard);
 
                 if (column->guard)
-                    object->guardSegNo = column->segColNo - 1;
+                    schemaObject->guardSegNo = column->segColNo - 1;
 
-                object->columns.push_back(column);
+                schemaObject->columns.push_back(column);
             }
 
             if (schema[i].HasMember("partitions")) {
@@ -397,19 +404,19 @@ namespace OpenLogReplicator {
 
                 for (SizeType j = 0; j < partitions.Size(); ++j) {
                     const Value& partitionObjJSON = getJSONfieldV(fileName, partitions[j], "obj");
-                    uint64_t partitionObj = partitionObjJSON.GetUint64();
+                    typeOBJ partitionObj = partitionObjJSON.GetUint();
 
                     const Value& partitionDataObjJSON = getJSONfieldV(fileName, partitions[j], "data-obj");
-                    uint64_t partitionDataObj = partitionDataObjJSON.GetUint64();
+                    typeOBJ partitionDataObj = partitionDataObjJSON.GetUint();
 
                     typeOBJ2 objx = (((typeOBJ2)partitionObj)<<32) | ((typeOBJ2)partitionDataObj);
-                    object->partitions.push_back(objx);
+                    schemaObject->partitions.push_back(objx);
                 }
             }
 
-            object->updatePK();
-            addToDict(object);
-            object = nullptr;
+            schemaObject->updatePK();
+            addToDict(schemaObject);
+            schemaObject = nullptr;
         }
 
         infile.close();
@@ -485,67 +492,68 @@ namespace OpenLogReplicator {
         hasPrev = false;
         ss << "\"schema\":[";
         for (auto it : objectMap) {
-            OracleObject *objectTmp = it.second;
+            OracleObject *object = it.second;
 
             if (hasPrev)
                 ss << ",";
             else
                 hasPrev = true;
 
-            ss << "{\"obj\":" << dec << objectTmp->obj << "," <<
-                    "\"data-obj\":" << dec << objectTmp->dataObj << "," <<
-                    "\"clu-cols\":" << dec << objectTmp->cluCols << "," <<
-                    "\"total-pk\":" << dec << objectTmp->totalPk << "," <<
-                    "\"options\":" << dec << objectTmp->options << "," <<
-                    "\"max-seg-col\":" << dec << objectTmp->maxSegCol << "," <<
-                    "\"owner\":\"" << objectTmp->owner << "\"," <<
-                    "\"name\":\"" << objectTmp->name << "\"," <<
+            ss << "{\"obj\":" << dec << object->obj << "," <<
+                    "\"data-obj\":" << dec << object->dataObj << "," <<
+                    "\"user\":" << dec << object->user << "," <<
+                    "\"clu-cols\":" << dec << object->cluCols << "," <<
+                    "\"total-pk\":" << dec << object->totalPk << "," <<
+                    "\"options\":" << dec << object->options << "," <<
+                    "\"max-seg-col\":" << dec << object->maxSegCol << "," <<
+                    "\"owner\":\"" << object->owner << "\"," <<
+                    "\"name\":\"" << object->name << "\"," <<
                     "\"columns\":[";
 
-            for (uint64_t i = 0; i < objectTmp->columns.size(); ++i) {
-                if (objectTmp->columns[i] == nullptr)
+            for (uint64_t i = 0; i < object->columns.size(); ++i) {
+                if (object->columns[i] == nullptr)
                     continue;
 
                 if (i > 0)
                     ss << ",";
-                ss << "{\"col-no\":" << dec << objectTmp->columns[i]->colNo <<
-                        ",\"seg-col-no\":" << dec << objectTmp->columns[i]->segColNo <<
-                        ",\"name\":\"" << objectTmp->columns[i]->name << "\"" <<
-                        ",\"type-no\":" << dec << objectTmp->columns[i]->typeNo <<
-                        ",\"length\":" << dec << objectTmp->columns[i]->length;
-                if (objectTmp->columns[i]->guardSegNo != -1)
-                    ss << ",\"guard-seg-no\":" << dec << objectTmp->columns[i]->guardSegNo;
-                if (objectTmp->columns[i]->precision != -1)
-                    ss << ",\"precision\":" << dec << objectTmp->columns[i]->precision;
-                if (objectTmp->columns[i]->scale != -1)
-                    ss << ",\"scale\":" << dec << objectTmp->columns[i]->scale;
-                if (objectTmp->columns[i]->numPk > 0)
-                    ss << ",\"num-pk\":" << dec << objectTmp->columns[i]->numPk;
-                if (objectTmp->columns[i]->charsetId != 0)
-                    ss << ",\"charset-id\":" << dec << objectTmp->columns[i]->charsetId;
-                if (objectTmp->columns[i]->nullable)
-                    ss << ",\"nullable\":" << dec << objectTmp->columns[i]->nullable;
-                if (objectTmp->columns[i]->invisible)
-                    ss << ",\"invisible\":" << dec << objectTmp->columns[i]->invisible;
-                if (objectTmp->columns[i]->storedAsLob)
-                    ss << ",\"stored-as-lob\":" << dec << objectTmp->columns[i]->storedAsLob;
-                if (objectTmp->columns[i]->constraint)
-                    ss << ",\"constraint\":" << dec << objectTmp->columns[i]->constraint;
-                if (objectTmp->columns[i]->added)
-                    ss << ",\"added\":" << dec << objectTmp->columns[i]->added;
-                if (objectTmp->columns[i]->guard)
-                    ss << ",\"guard\":" << dec << objectTmp->columns[i]->guard;
+                ss << "{\"col-no\":" << dec << object->columns[i]->colNo <<
+                        ",\"seg-col-no\":" << dec << object->columns[i]->segColNo <<
+                        ",\"name\":\"" << object->columns[i]->name << "\"" <<
+                        ",\"type-no\":" << dec << object->columns[i]->typeNo <<
+                        ",\"length\":" << dec << object->columns[i]->length;
+                if (object->columns[i]->guardSegNo != -1)
+                    ss << ",\"guard-seg-no\":" << dec << object->columns[i]->guardSegNo;
+                if (object->columns[i]->precision != -1)
+                    ss << ",\"precision\":" << dec << object->columns[i]->precision;
+                if (object->columns[i]->scale != -1)
+                    ss << ",\"scale\":" << dec << object->columns[i]->scale;
+                if (object->columns[i]->numPk > 0)
+                    ss << ",\"num-pk\":" << dec << object->columns[i]->numPk;
+                if (object->columns[i]->charsetId != 0)
+                    ss << ",\"charset-id\":" << dec << object->columns[i]->charsetId;
+                if (object->columns[i]->nullable)
+                    ss << ",\"nullable\":" << dec << object->columns[i]->nullable;
+                if (object->columns[i]->invisible)
+                    ss << ",\"invisible\":" << dec << object->columns[i]->invisible;
+                if (object->columns[i]->storedAsLob)
+                    ss << ",\"stored-as-lob\":" << dec << object->columns[i]->storedAsLob;
+                if (object->columns[i]->constraint)
+                    ss << ",\"constraint\":" << dec << object->columns[i]->constraint;
+                if (object->columns[i]->added)
+                    ss << ",\"added\":" << dec << object->columns[i]->added;
+                if (object->columns[i]->guard)
+                    ss << ",\"guard\":" << dec << object->columns[i]->guard;
                 ss << "}";
             }
             ss << "]";
 
-            if (objectTmp->partitions.size() > 0) {
+            if (object->partitions.size() > 0) {
                 ss << ",\"partitions\":[";
-                for (uint64_t i = 0; i < objectTmp->partitions.size(); ++i) {
+                for (uint64_t i = 0; i < object->partitions.size(); ++i) {
                     if (i > 0)
                         ss << ",";
-                    typeOBJ partitionObj = objectTmp->partitions[i] >> 32;
-                    typeDATAOBJ partitionDataObj = objectTmp->partitions[i] & 0xFFFFFFFF;
+                    typeOBJ partitionObj = object->partitions[i] >> 32;
+                    typeDATAOBJ partitionDataObj = object->partitions[i] & 0xFFFFFFFF;
                     ss << "{\"obj\":" << dec << partitionObj << "," <<
                             "\"data-obj\":" << dec << partitionDataObj << "}";
                 }
@@ -636,21 +644,21 @@ namespace OpenLogReplicator {
         oracleAnalyzer->database = databaseJSON.GetString();
 
         const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-        bool bigEndian = bigEndianJSON.GetUint64();
+        bool bigEndian = bigEndianJSON.GetUint();
         if (bigEndian)
             oracleAnalyzer->setBigEndian();
 
         const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-        oracleAnalyzer->resetlogs = resetlogsJSON.GetUint64();
+        oracleAnalyzer->resetlogs = resetlogsJSON.GetUint();
 
         const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-        oracleAnalyzer->activation = activationJSON.GetUint64();
+        oracleAnalyzer->activation = activationJSON.GetUint();
 
         const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
         oracleAnalyzer->context = databaseContextJSON.GetString();
 
         const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
-        oracleAnalyzer->conId = conIdJSON.GetUint64();
+        oracleAnalyzer->conId = conIdJSON.GetUint();
 
         const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
         oracleAnalyzer->conName = conNameJSON.GetString();
@@ -777,13 +785,13 @@ namespace OpenLogReplicator {
             typeOBJ obj = objJSON.GetUint();
 
             const Value& colJSON = getJSONfieldV(fileName, sysCol[i], "col");
-            typeCOL col = colJSON.GetUint();
+            typeCOL col = colJSON.GetInt();
 
             const Value& segColJSON = getJSONfieldV(fileName, sysCol[i], "seg-col");
-            typeCOL segCol = segColJSON.GetUint();
+            typeCOL segCol = segColJSON.GetInt();
 
             const Value& intColJSON = getJSONfieldV(fileName, sysCol[i], "int-col");
-            typeCOL intCol = intColJSON.GetUint();
+            typeCOL intCol = intColJSON.GetInt();
 
             const Value& nameJSON = getJSONfieldV(fileName, sysCol[i], "name");
             const char *name = nameJSON.GetString();
@@ -795,10 +803,10 @@ namespace OpenLogReplicator {
             uint64_t length = lengthJSON.GetUint64();
 
             const Value& precisionJSON = getJSONfieldV(fileName, sysCol[i], "precision");
-            uint64_t precision = precisionJSON.GetInt64();
+            int64_t precision = precisionJSON.GetInt64();
 
             const Value& scaleJSON = getJSONfieldV(fileName, sysCol[i], "scale");
-            uint64_t scale = scaleJSON.GetInt64();
+            int64_t scale = scaleJSON.GetInt64();
 
             const Value& charsetFormJSON = getJSONfieldV(fileName, sysCol[i], "charset-form");
             uint64_t charsetForm = charsetFormJSON.GetUint64();
@@ -807,7 +815,7 @@ namespace OpenLogReplicator {
             uint64_t charsetId = charsetIdJSON.GetUint64();
 
             const Value& nullJSON = getJSONfieldV(fileName, sysCol[i], "null");
-            uint64_t null_ = nullJSON.GetInt64();
+            int64_t null_ = nullJSON.GetInt64();
 
             const Value& propertyJSON = getJSONfieldV(fileName, sysCol[i], "property");
             if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
@@ -911,10 +919,10 @@ namespace OpenLogReplicator {
             typeOBJ obj = objJSON.GetUint();
 
             const Value& colNumJSON = getJSONfieldV(fileName, sysECol[i], "col-num");
-            typeCOL colNum = colNumJSON.GetUint();
+            typeCOL colNum = colNumJSON.GetInt();
 
             const Value& guardIdJSON = getJSONfieldV(fileName, sysECol[i], "guard-id");
-            uint64_t guardId = guardIdJSON.GetUint();
+            uint64_t guardId = guardIdJSON.GetInt();
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
@@ -1360,26 +1368,48 @@ namespace OpenLogReplicator {
     }
 
     void Schema::addToDict(OracleObject *object) {
-        if (objectMap[object->obj] == nullptr) {
-            objectMap[object->obj] = object;
-        } else {
-            CONFIG_FAIL("can't add object obj: " << dec << object->obj << ", dataObj: " << object->dataObj << " - another object with the same id");
+        if (objectMap.find(object->obj) != objectMap.end()) {
+            CONFIG_FAIL("can't add object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
+        objectMap[object->obj] = object;
 
         if (partitionMap[object->obj] == nullptr) {
             partitionMap[object->obj] = object;
         } else {
-            CONFIG_FAIL("can't add object obj: " << dec << object->obj << ", dataObj: " << object->dataObj << " - another object with the same id");
+            CONFIG_FAIL("can't add partition (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
 
         for (typeOBJ2 objx : object->partitions) {
             typeOBJ partitionObj = objx >> 32;
             typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
 
-            if (partitionMap[partitionObj] == nullptr) {
+            if (partitionMap.find(partitionObj) != partitionMap.end()) {
                 partitionMap[partitionObj] = object;
             } else {
-                CONFIG_FAIL("can't add object obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << " - another object with the same id");
+                CONFIG_FAIL("can't add partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
+            }
+        }
+    }
+
+    void Schema::removeFromDict(OracleObject *object) {
+        if (objectMap.find(object->obj) == objectMap.end()) {
+            CONFIG_FAIL("can't remove object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+        }
+        objectMap.erase(object->obj);
+
+        if (partitionMap.find(object->obj) == partitionMap.end()) {
+            CONFIG_FAIL("can't remove partition (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+        }
+        partitionMap.erase(object->obj);
+
+        for (typeOBJ2 objx : object->partitions) {
+            typeOBJ partitionObj = objx >> 32;
+            typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
+
+            if (partitionMap.find(partitionObj) != partitionMap.end()) {
+                partitionMap.erase(partitionObj);
+            } else {
+                CONFIG_FAIL("can't remove partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
             }
         }
     }
@@ -1407,117 +1437,200 @@ namespace OpenLogReplicator {
     }
 
     void Schema::refreshIndexes(void) {
-        sysCColMapKey.clear();
-        sysCColSetDropped.clear();
-        for (auto it : sysCColMapRowId) {
-            SysCCol *sysCCol = it.second;
-            SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
-            sysCColMapKey[sysCColKey] = sysCCol;
-        }
-
-        sysCDefMapCDef.clear();
-        sysCDefMapKey.clear();
-        sysCDefSetDropped.clear();
-        for (auto it : sysCDefMapRowId) {
-            SysCDef *sysCDef = it.second;
-            sysCDefMapCDef[sysCDef->con] = sysCDef;
-            SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
-            sysCDefMapKey[sysCDefKey] = sysCDef;
-        }
-
-        sysColMapKey.clear();
-        sysColMapSeg.clear();
-        sysColSetDropped.clear();
-        for (auto it : sysColMapRowId) {
-            SysCol *sysCol = it.second;
-            SysColKey sysColKey(sysCol->obj, sysCol->intCol);
-            sysColMapKey[sysColKey] = sysCol;
-            SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
-            sysColMapSeg[sysColSeg] = sysCol;
-        }
-
-        sysDeferredStgMapObj.clear();
-        sysDeferredStgSetDropped.clear();
-        for (auto it : sysDeferredStgMapRowId) {
-            SysDeferredStg *sysDeferredStg = it.second;
-            sysDeferredStgMapObj[sysDeferredStg->obj] = sysDeferredStg;
-        }
-
-        sysEColMapKey.clear();
-        sysEColSetDropped.clear();
-        for (auto it : sysEColMapRowId) {
-            SysECol *sysECol = it.second;
-            SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
-            sysEColMapKey[sysEColKey] = sysECol;
-        }
-
-        sysObjMapObj.clear();
-        sysObjSetDropped.clear();
-        for (auto it : sysObjMapRowId) {
-            SysObj *sysObj = it.second;
-            sysObjMapObj[sysObj->obj] = sysObj;
-        }
-
-        sysSegMapKey.clear();
-        sysSegSetDropped.clear();
-        for (auto it : sysSegMapRowId) {
-            SysSeg *sysSeg = it.second;
-            SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-            sysSegMapKey[sysSegKey] = sysSeg;
-        }
-
-        sysTabMapObj.clear();
-        sysTabMapKey.clear();
-        sysTabSetDropped.clear();
-        for (auto it : sysTabMapRowId) {
-            SysTab *sysTab = it.second;
-            sysTabMapObj[sysTab->obj] = sysTab;
-            if (sysTab->file != 0 || sysTab->block != 0) {
-                SysTabKey sysTabKey(sysTab->file, sysTab->block, sysTab->ts);
-                sysTabMapKey[sysTabKey] = sysTab;
+        //SYS.CCOL$
+        if (sysCColKeyTouched) {
+            sysCColMapKey.clear();
+            for (auto it : sysCColMapRowId) {
+                SysCCol *sysCCol = it.second;
+                SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
+                sysCColMapKey[sysCColKey] = sysCCol;
             }
+            sysCColKeyTouched = false;
         }
 
-        sysTabComPartMapKey.clear();
-        sysTabComPartSetDropped.clear();
-        for (auto it : sysTabComPartMapRowId) {
-            SysTabComPart *sysTabComPart = it.second;
-            SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
-            sysTabComPartMapKey[sysTabComPartKey] = sysTabComPart;
+        //SYS.CDEF$
+
+        if (sysCDefKeyTouched) {
+            sysCDefMapKey.clear();
+            for (auto it : sysCDefMapRowId) {
+                SysCDef *sysCDef = it.second;
+                SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
+                sysCDefMapKey[sysCDefKey] = sysCDef;
+            }
+            sysCDefKeyTouched = false;
         }
 
-        sysTabPartMapKey.clear();
-        sysTabPartSetDropped.clear();
-        for (auto it : sysTabPartMapRowId) {
-            SysTabPart *sysTabPart = it.second;
-            SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
-            sysTabPartMapKey[sysTabPartKey] = sysTabPart;
+        if (sysCDefConTouched) {
+            sysCDefMapCon.clear();
+            for (auto it : sysCDefMapRowId) {
+                SysCDef *sysCDef = it.second;
+                sysCDefMapCon[sysCDef->con] = sysCDef;
+            }
+            sysCDefConTouched = false;
         }
 
-        sysTabSubPartMapKey.clear();
-        sysTabSubPartSetDropped.clear();
-        for (auto it : sysTabSubPartMapRowId) {
-            SysTabSubPart *sysTabSubPart = it.second;
-            SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
-            sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
+        //SYS.COL$
+        if (sysColKeyTouched) {
+            sysColMapKey.clear();
+            for (auto it : sysColMapRowId) {
+                SysCol *sysCol = it.second;
+                SysColKey sysColKey(sysCol->obj, sysCol->intCol);
+                sysColMapKey[sysColKey] = sysCol;
+            }
+            sysColKeyTouched = false;
         }
 
-        sysUserMapUser.clear();
-        sysUserSetDropped.clear();
-        for (auto it : sysUserMapRowId) {
-            SysUser *sysUser = it.second;
-            sysUserMapUser[sysUser->user] = sysUser;
+        if (sysColSegTouched) {
+            sysColMapSeg.clear();
+            for (auto it : sysColMapRowId) {
+                SysCol *sysCol = it.second;
+                SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
+                sysColMapSeg[sysColSeg] = sysCol;
+            }
+            sysColSegTouched = false;
         }
+
+        //SYS.DEFERRED_STG$
+        if (sysDeferredStgObjTouched) {
+            sysDeferredStgMapObj.clear();
+            for (auto it : sysDeferredStgMapRowId) {
+                SysDeferredStg *sysDeferredStg = it.second;
+                sysDeferredStgMapObj[sysDeferredStg->obj] = sysDeferredStg;
+            }
+            sysDeferredStgObjTouched = false;
+        }
+
+        //SYS.ECOL$
+        if (sysEColKeyTouched) {
+            sysEColMapKey.clear();
+            for (auto it : sysEColMapRowId) {
+                SysECol *sysECol = it.second;
+                SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
+                sysEColMapKey[sysEColKey] = sysECol;
+            }
+            sysEColKeyTouched = false;
+        }
+
+        //SYS.OBJ$
+        if (sysObjObjTouched) {
+            sysObjMapObj.clear();
+            for (auto it : sysObjMapRowId) {
+                SysObj *sysObj = it.second;
+                sysObjMapObj[sysObj->obj] = sysObj;
+            }
+            sysObjObjTouched = false;
+        }
+
+        //SYS.SEG$
+        if (sysSegKeyTouched) {
+            sysSegMapKey.clear();
+            for (auto it : sysSegMapRowId) {
+                SysSeg *sysSeg = it.second;
+                SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
+                sysSegMapKey[sysSegKey] = sysSeg;
+            }
+            sysSegKeyTouched = false;
+        }
+
+        //SYS.TAB$
+        if (sysTabObjTouched) {
+            sysTabMapObj.clear();
+            for (auto it : sysTabMapRowId) {
+                SysTab *sysTab = it.second;
+                sysTabMapObj[sysTab->obj] = sysTab;
+            }
+            sysTabObjTouched = false;
+        }
+
+        if (sysTabKeyTouched) {
+            sysTabMapKey.clear();
+            for (auto it : sysTabMapRowId) {
+                SysTab *sysTab = it.second;
+                if (sysTab->file != 0 || sysTab->block != 0) {
+                    SysTabKey sysTabKey(sysTab->file, sysTab->block, sysTab->ts);
+                    sysTabMapKey[sysTabKey] = sysTab;
+                }
+            }
+            sysTabKeyTouched = false;
+        }
+
+        //SYS.TABCOMPART$
+        if (sysTabComPartKeyTouched) {
+            sysTabComPartMapKey.clear();
+            for (auto it : sysTabComPartMapRowId) {
+                SysTabComPart *sysTabComPart = it.second;
+                SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
+                sysTabComPartMapKey[sysTabComPartKey] = sysTabComPart;
+            }
+            sysTabComPartKeyTouched = false;
+        }
+
+        if (sysTabPartKeyTouched) {
+            sysTabPartMapKey.clear();
+            for (auto it : sysTabPartMapRowId) {
+                SysTabPart *sysTabPart = it.second;
+                SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
+                sysTabPartMapKey[sysTabPartKey] = sysTabPart;
+            }
+            sysTabPartKeyTouched = false;
+        }
+
+        //SYS.TABSUBPART$
+        if (sysTabSubPartKeyTouched) {
+            sysTabSubPartMapKey.clear();
+            for (auto it : sysTabSubPartMapRowId) {
+                SysTabSubPart *sysTabSubPart = it.second;
+                SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
+                sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
+            }
+            sysTabSubPartKeyTouched = false;
+        }
+
+        //SYS.USER$
+        if (sysUserUserTouched) {
+            sysUserMapUser.clear();
+            for (auto it : sysUserMapRowId) {
+                SysUser *sysUser = it.second;
+                sysUserMapUser[sysUser->user] = sysUser;
+            }
+            sysUserUserTouched = false;
+        }
+
+        touched = false;
     }
 
     void Schema::rebuildMaps(OracleAnalyzer *oracleAnalyzer) {
-        partitionMap.clear();
+        for (typeUSER user : usersTouched) {
+            for (auto it = objectMap.cbegin(); it != objectMap.cend() ; ) {
 
+                OracleObject *object = it->second;
+                if (object->user == user) {
+                    removeFromDict(object);
+                    objectMap.erase(it++);
+                    delete object;
+                } else {
+                    ++it;
+                }
+            }
+        }
+        usersTouched.clear();
+
+        for (typeOBJ obj : objectsTouched) {
+            if (objectMap.find(obj) != objectMap.end()) {
+                OracleObject *object = objectMap[obj];
+                removeFromDict(object);
+                delete object;
+            }
+        }
+        objectsTouched.clear();
+
+        /*partitionMap.clear();
         for (auto it : objectMap) {
-            OracleObject *objectTmp = it.second;
-            delete objectTmp;
+            OracleObject *object = it.second;
+            delete object;
         }
         objectMap.clear();
+        */
 
         for (SchemaElement *element : elements)
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, oracleAnalyzer, false);
@@ -1529,23 +1642,24 @@ namespace OpenLogReplicator {
 
         for (auto itObj : sysObjMapRowId) {
             SysObj *sysObj = itObj.second;
+
             if (sysObj->isDropped() || !sysObj->isTable())
                 continue;
 
             SysUser *sysUser = sysUserMapUser[sysObj->owner];
             if (sysUser == nullptr) {
-                if (output) {
-                    WARNING("Inconsistent schema, missing SYS.USR$ OWNER: " << dec << sysObj->owner);
-                }
+                RUNTIME_FAIL("inconsistent schema, missing SYS.USR$ OWNER: " << dec << sysObj->owner);
+            }
+
+            //table already added with another rule
+            if (objectMap.find(sysObj->obj) != objectMap.end()) {
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - already added");
                 continue;
             }
 
             SysTab *sysTab = sysTabMapObj[sysObj->obj];
             if (sysTab == nullptr) {
-                if (output) {
-                    WARNING("Inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
-                }
-                continue;
+                RUNTIME_FAIL("inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
             }
 
             if (!regex_match(sysUser->name, regexOwner) || !regex_match(sysObj->name, regexTable))
@@ -1588,17 +1702,11 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            //table already added with another rule
-            if (checkDict(sysObj->obj, sysTab->dataObj) != nullptr) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - already added");
-                continue;
-            }
-
             typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
             bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
 
-            object = new OracleObject(sysObj->obj, sysTab->dataObj, sysTab->cluCols, options, sysUser->name.c_str(), sysObj->name.c_str());
-            if (object == nullptr) {
+            schemaObject = new OracleObject(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols, options, sysUser->name.c_str(), sysObj->name.c_str());
+            if (schemaObject == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
             }
             ++tabCnt;
@@ -1609,7 +1717,7 @@ namespace OpenLogReplicator {
                         itTabPart != sysTabPartMapKey.end() && itTabPart->first.bo == sysObj->obj; ++itTabPart) {
 
                     SysTabPart *sysTabPart = itTabPart->second;
-                    object->addPartition(sysTabPart->obj, sysTabPart->dataObj);
+                    schemaObject->addPartition(sysTabPart->obj, sysTabPart->dataObj);
                 }
 
                 SysTabComPartKey sysTabComPartKeyFirst(sysObj->obj, 0);
@@ -1621,7 +1729,7 @@ namespace OpenLogReplicator {
                             itTabSubPart != sysTabSubPartMapKey.end() && itTabSubPart->first.pObj == itTabComPart->second->obj; ++itTabSubPart) {
 
                         SysTabSubPart *sysTabSubPart = itTabSubPart->second;
-                        object->addPartition(itTabSubPart->second->obj, itTabSubPart->second->dataObj);
+                        schemaObject->addPartition(itTabSubPart->second->obj, itTabSubPart->second->dataObj);
                     }
                 }
             }
@@ -1681,10 +1789,9 @@ namespace OpenLogReplicator {
                     SysCCol *sysCCol = itCCol->second;
 
                     //count number of PK the column is part of
-                    SysCDef* sysCDef = sysCDefMapCDef[sysCCol->con];
+                    SysCDef* sysCDef = sysCDefMapCon[sysCCol->con];
                     if (sysCDef == nullptr) {
-                        WARNING("Inconsistent schema, missing SYS.CDEF$ CON: " << dec << sysCCol->con);
-                        continue;
+                        RUNTIME_FAIL("inconsistent schema, missing SYS.CDEF$ CON: " << dec << sysCCol->con);
                     }
                     if (sysCDef->isPK())
                         ++numPk;
@@ -1714,9 +1821,7 @@ namespace OpenLogReplicator {
                         supLogColMissing = true;
                 }
 
-                if (output) {
-                    DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
-                }
+                DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
                 OracleColumn *column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
@@ -1730,7 +1835,7 @@ namespace OpenLogReplicator {
                 if (sysCol->segCol > maxSegCol)
                     maxSegCol = sysCol->segCol;
 
-                object->addColumn(column);
+                schemaObject->addColumn(column);
             }
 
             //check if table has all listed columns
@@ -1738,46 +1843,48 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " couldn't find all column set (" << keysStr << ")");
             }
 
-            if (output) {
-                stringstream ss;
-                ss << "- found: " << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ")";
-                if (sysTab->isClustered())
-                    ss << ", part of cluster";
-                if (sysTab->isPartitioned())
-                    ss << ", partitioned";
-                if (sysTab->isDependencies())
-                    ss << ", row dependencies";
-                if (sysTab->isRowMovement())
-                    ss << ", row movement enabled";
+            stringstream ss;
+            if (output)
+                ss << "- found: ";
+            else
+                ss << "updated schema: ";
+            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ")";
+            if (sysTab->isClustered())
+                ss << ", part of cluster";
+            if (sysTab->isPartitioned())
+                ss << ", partitioned";
+            if (sysTab->isDependencies())
+                ss << ", row dependencies";
+            if (sysTab->isRowMovement())
+                ss << ", row movement enabled";
 
-                if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
-                    //use default primary key
-                    if (keys.size() == 0) {
-                        if (totalPk == 0)
-                            ss << " - primary key missing";
-                        else if (!suppLogTablePrimary &&
-                                !suppLogTableAll &&
-                                !sysUser->isSuppLogPrimary() &&
-                                !sysUser->isSuppLogAll() &&
-                                !oracleAnalyzer->suppLogDbPrimary && !oracleAnalyzer->suppLogDbAll && supLogColMissing)
-                            ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
-                    //user defined primary key
-                    } else {
-                        if (!suppLogTableAll &&
-                                !sysUser->isSuppLogAll() &&
-                                !oracleAnalyzer->suppLogDbAll &&
-                                supLogColMissing)
-                            ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
-                    }
+            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+                //use default primary key
+                if (keys.size() == 0) {
+                    if (totalPk == 0)
+                        ss << " - primary key missing";
+                    else if (!suppLogTablePrimary &&
+                            !suppLogTableAll &&
+                            !sysUser->isSuppLogPrimary() &&
+                            !sysUser->isSuppLogAll() &&
+                            !oracleAnalyzer->suppLogDbPrimary && !oracleAnalyzer->suppLogDbAll && supLogColMissing)
+                        ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;";
+                //user defined primary key
+                } else {
+                    if (!suppLogTableAll &&
+                            !sysUser->isSuppLogAll() &&
+                            !oracleAnalyzer->suppLogDbAll &&
+                            supLogColMissing)
+                        ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
                 }
-                INFO(ss.str());
             }
+            INFO(ss.str());
 
-            object->maxSegCol = maxSegCol;
-            object->totalPk = totalPk;
-            object->updatePK();
-            addToDict(object);
-            object = nullptr;
+            schemaObject->maxSegCol = maxSegCol;
+            schemaObject->totalPk = totalPk;
+            schemaObject->updatePK();
+            addToDict(schemaObject);
+            schemaObject = nullptr;
         }
     }
 
@@ -1819,7 +1926,7 @@ namespace OpenLogReplicator {
 
         SysCDef *sysCDef = new SysCDef(rowId, con, obj, type, false);
         sysCDefMapRowId[rowId] = sysCDef;
-        sysCDefMapCDef[con] = sysCDef;
+        sysCDefMapCon[con] = sysCDef;
         SysCDefKey sysCDefKey(obj, con);
         sysCDefMapKey[sysCDefKey] = sysCDef;
 
@@ -1968,5 +2075,21 @@ namespace OpenLogReplicator {
         sysUserMapUser[user] = sysUser;
 
         return true;
+    }
+
+    void Schema::touchObj(typeOBJ obj) {
+        if (obj == 0)
+            return;
+
+        if (objectsTouched.find(obj) == objectsTouched.end())
+            objectsTouched.insert(obj);
+    }
+
+    void Schema::touchUser(typeUSER user) {
+        if (user == 0)
+            return;
+
+        if (usersTouched.find(user) == usersTouched.end())
+            usersTouched.insert(user);
     }
 }

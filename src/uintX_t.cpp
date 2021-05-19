@@ -22,6 +22,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     uintX_t uintX_t::BASE10[TYPEINTXDIGITS][10];
 
+    uintX_t::uintX_t() {
+        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+            this->data[i] = 0;
+    }
+
+    uintX_t::uintX_t(uint64_t val) {
+        this->data[0] = val;
+        for (uint64_t i = 1; i < TYPEINTXLEN; ++i)
+            this->data[i] = 0;
+    }
+
+    uintX_t::~uintX_t() {
+    }
+
     void uintX_t::initializeBASE10(void) {
         memset(BASE10, 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
@@ -33,6 +47,20 @@ namespace OpenLogReplicator {
                     BASE10[pos][digit] += BASE10[pos - 1][digit];
             }
         }
+    }
+
+    bool uintX_t::operator!=(const uintX_t& other) const {
+        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+            if (this->data[i] != other.data[i])
+                return true;
+        return false;
+    }
+
+    bool uintX_t::operator==(const uintX_t& other) const {
+        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+            if (this->data[i] != other.data[i])
+                return false;
+        return true;
     }
 
     uintX_t& uintX_t::operator+=(const uintX_t &val) {
@@ -90,6 +118,10 @@ namespace OpenLogReplicator {
             ++val;
         }
         return *this;
+    }
+
+    uint64_t uintX_t::get64(void) {
+        return data[0];
     }
 
     bool uintX_t::isSet64(uint64_t mask) {

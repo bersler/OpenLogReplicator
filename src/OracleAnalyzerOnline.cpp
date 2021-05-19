@@ -172,6 +172,7 @@ namespace OpenLogReplicator {
             "SELECT"
             "   T.DATAOBJ#"
             ",  T.OBJ#"
+            ",  O.OWNER#"
             ",  T.CLUCOLS"
             ",  U.NAME"
             ",  O.NAME"
@@ -1473,19 +1474,20 @@ namespace OpenLogReplicator {
             stmt.createStatement(SQL_GET_TABLE_LIST);
             typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
             typeOBJ obj; stmt.defineUInt32(2, obj);
-            typeCOL cluCols; stmt.defineInt16(3, cluCols);
-            char ownerName[129]; stmt.defineString(4, ownerName, sizeof(ownerName));
-            char tableName[129]; stmt.defineString(5, tableName, sizeof(tableName));
-            uint64_t clustered; stmt.defineUInt64(6, clustered);
-            uint64_t iot; stmt.defineUInt64(7, iot);
-            uint64_t suppLogSchemaPrimary; stmt.defineUInt64(8, suppLogSchemaPrimary);
-            uint64_t suppLogSchemaAll; stmt.defineUInt64(9, suppLogSchemaAll);
-            uint64_t partitioned; stmt.defineUInt64(10, partitioned);
-            uint64_t temporary; stmt.defineUInt64(11, temporary);
-            uint64_t nested; stmt.defineUInt64(12, nested);
-            uint64_t rowMovement; stmt.defineUInt64(13, rowMovement);
-            uint64_t dependencies; stmt.defineUInt64(14, dependencies);
-            uint64_t compressed; stmt.defineUInt64(15, compressed);
+            typeUSER user; stmt.defineUInt32(3, user);
+            typeCOL cluCols; stmt.defineInt16(4, cluCols);
+            char ownerName[129]; stmt.defineString(5, ownerName, sizeof(ownerName));
+            char tableName[129]; stmt.defineString(6, tableName, sizeof(tableName));
+            uint64_t clustered; stmt.defineUInt64(7, clustered);
+            uint64_t iot; stmt.defineUInt64(8, iot);
+            uint64_t suppLogSchemaPrimary; stmt.defineUInt64(9, suppLogSchemaPrimary);
+            uint64_t suppLogSchemaAll; stmt.defineUInt64(10, suppLogSchemaAll);
+            uint64_t partitioned; stmt.defineUInt64(11, partitioned);
+            uint64_t temporary; stmt.defineUInt64(12, temporary);
+            uint64_t nested; stmt.defineUInt64(13, nested);
+            uint64_t rowMovement; stmt.defineUInt64(14, rowMovement);
+            uint64_t dependencies; stmt.defineUInt64(15, dependencies);
+            uint64_t compressed; stmt.defineUInt64(16, compressed);
 
             if (version12) {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
@@ -1586,8 +1588,8 @@ namespace OpenLogReplicator {
                 typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
                 bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
 
-                schema->object = new OracleObject(obj, dataObj, cluCols, options, ownerName, tableName);
-                if (schema->object == nullptr) {
+                schema->schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, ownerName, tableName);
+                if (schema->schemaObject == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
                 }
                 ++tabCnt;
@@ -1596,7 +1598,7 @@ namespace OpenLogReplicator {
                     int64_t ret2 = stmtPart.executeQuery();
 
                     while (ret2) {
-                        schema->object->addPartition(partitionObj, partitionDataObj);
+                        schema->schemaObject->addPartition(partitionObj, partitionDataObj);
                         ret2 = stmtPart.next();
                     }
                 }
@@ -1664,7 +1666,7 @@ namespace OpenLogReplicator {
                     if (segColNo > maxSegCol)
                         maxSegCol = segColNo;
 
-                    schema->object->addColumn(column);
+                    schema->schemaObject->addColumn(column);
 
                     precision = -1;
                     scale = -1;
@@ -1705,11 +1707,11 @@ namespace OpenLogReplicator {
                 }
                 INFO(ss.str());
 
-                schema->object->maxSegCol = maxSegCol;
-                schema->object->totalPk = totalPk;
-                schema->object->updatePK();
-                schema->addToDict(schema->object);
-                schema->object = nullptr;
+                schema->schemaObject->maxSegCol = maxSegCol;
+                schema->schemaObject->totalPk = totalPk;
+                schema->schemaObject->updatePK();
+                schema->addToDict(schema->schemaObject);
+                schema->schemaObject = nullptr;
 
                 dataObj = 0;
                 cluCols = 0;

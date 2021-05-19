@@ -29,24 +29,28 @@ namespace OpenLogReplicator {
     class OracleObject;
     class OracleAnalyzer;
     class OutputBuffer;
+    class Schema;
 
     class SystemTransaction {
     protected:
         OracleAnalyzer *oracleAnalyzer;
         OutputBuffer *outputBuffer;
+        Schema *schema;
 
-        void updateNumber16(int16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateNumber16u(uint16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateNumber32u(uint32_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateNumber64(int64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateNumber64u(uint64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        void updateString(string &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumber16(int16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumber16u(uint16_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumber32u(uint32_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumber64(int64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumber64u(uint64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId, uint64_t mask64);
+        bool updateObj(typeOBJ &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateUser(typeUSER &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
+        bool updateString(string &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         void toRemove(typeOBJ obj);
         void toAdd(typeOBJ obj);
 
     public:
-        SystemTransaction(OracleAnalyzer *oracleAnalyzer, OutputBuffer *outputBuffer);
+        SystemTransaction(OracleAnalyzer *oracleAnalyzer, OutputBuffer *outputBuffer, Schema *schema);
         ~SystemTransaction();
         void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
