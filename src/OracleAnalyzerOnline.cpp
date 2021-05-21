@@ -1058,7 +1058,7 @@ namespace OpenLogReplicator {
         }
 
         char ccolRowid[19]; stmtCCol.defineString(1, ccolRowid, sizeof(ccolRowid));
-        typeCOL ccolCon; stmtCCol.defineInt16(2, ccolCon);
+        typeCON ccolCon; stmtCCol.defineUInt32(2, ccolCon);
         typeCOL ccolIntCol; stmtCCol.defineInt16(3, ccolIntCol);
         typeOBJ ccolObj; stmtCCol.defineUInt32(4, ccolObj);
         uint64_t ccolSpare11 = 0; stmtCCol.defineUInt64(5, ccolSpare11);
@@ -1093,7 +1093,7 @@ namespace OpenLogReplicator {
         }
 
         char cdefRowid[19]; stmtCDef.defineString(1, cdefRowid, sizeof(cdefRowid));
-        typeCOL cdefCon; stmtCDef.defineInt16(2, cdefCon);
+        typeCON cdefCon; stmtCDef.defineUInt32(2, cdefCon);
         typeOBJ cdefObj; stmtCDef.defineUInt32(3, cdefObj);
         uint64_t cdefType; stmtCDef.defineUInt64(4, cdefType);
 

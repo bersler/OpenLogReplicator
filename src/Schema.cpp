@@ -1373,21 +1373,19 @@ namespace OpenLogReplicator {
         }
         objectMap[object->obj] = object;
 
-        if (partitionMap[object->obj] == nullptr) {
-            partitionMap[object->obj] = object;
-        } else {
+        if (partitionMap.find(object->obj) != partitionMap.end()) {
             CONFIG_FAIL("can't add partition (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
+        partitionMap[object->obj] = object;
 
         for (typeOBJ2 objx : object->partitions) {
             typeOBJ partitionObj = objx >> 32;
             typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
 
             if (partitionMap.find(partitionObj) != partitionMap.end()) {
-                partitionMap[partitionObj] = object;
-            } else {
                 CONFIG_FAIL("can't add partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
             }
+            partitionMap[partitionObj] = object;
         }
     }
 
@@ -1406,11 +1404,10 @@ namespace OpenLogReplicator {
             typeOBJ partitionObj = objx >> 32;
             typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
 
-            if (partitionMap.find(partitionObj) != partitionMap.end()) {
-                partitionMap.erase(partitionObj);
-            } else {
+            if (partitionMap.find(partitionObj) == partitionMap.end()) {
                 CONFIG_FAIL("can't remove partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
             }
+            partitionMap.erase(partitionObj);
         }
     }
 
