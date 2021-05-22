@@ -34,9 +34,9 @@ namespace OpenLogReplicator {
         string table;
         vector<string> keys;
         string keysStr;
-        uint64_t options;
+        typeOPTIONS options;
 
-        SchemaElement(const char *owner, const char *table, uint64_t options);
+        SchemaElement(const char *owner, const char *table, typeOPTIONS options);
         SchemaElement();
         virtual ~SchemaElement();
     };

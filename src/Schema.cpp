@@ -179,10 +179,10 @@ namespace OpenLogReplicator {
         }
         INFO("reading schema for " << oracleAnalyzer->database << " (old style)");
 
-        string schemaJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
+        string schemaStringJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
         Document document;
 
-        if (schemaJSON.length() == 0 || document.Parse(schemaJSON.c_str()).HasParseError()) {
+        if (schemaStringJSON.length() == 0 || document.Parse(schemaStringJSON.c_str()).HasParseError()) {
             RUNTIME_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
@@ -231,16 +231,16 @@ namespace OpenLogReplicator {
             const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
             oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
 
-            const Value& onlineRedo = getJSONfieldD(fileName, document, "online-redo");
-            if (!onlineRedo.IsArray()) {
+            const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
+            if (!onlineRedoJSON.IsArray()) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
             }
 
-            for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
-                const Value& groupJSON = getJSONfieldV(fileName, onlineRedo[i], "group");
+            for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
+                const Value& groupJSON = getJSONfieldV(fileName, onlineRedoJSON[i], "group");
                 int64_t group = groupJSON.GetInt64();
 
-                const Value& path = onlineRedo[i]["path"];
+                const Value& path = onlineRedoJSON[i]["path"];
                 if (!path.IsArray()) {
                     CONFIG_FAIL("bad JSON, path-mapping should be array");
                 }
@@ -257,133 +257,133 @@ namespace OpenLogReplicator {
             oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
         }
 
-        const Value& schema = getJSONfieldD(fileName, document, "schema");
-        if (!schema.IsArray()) {
+        const Value& schemaJSON = getJSONfieldD(fileName, document, "schema");
+        if (!schemaJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", schema should be an array");
         }
 
-        for (SizeType i = 0; i < schema.Size(); ++i) {
-            const Value& objJSON = getJSONfieldV(fileName, schema[i], "obj");
+        for (SizeType i = 0; i < schemaJSON.Size(); ++i) {
+            const Value& objJSON = getJSONfieldV(fileName, schemaJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
             typeDATAOBJ dataObj = 0;
 
-            if (schema[i].HasMember("data-obj")) {
-                const Value& dataObjJSON = getJSONfieldV(fileName, schema[i], "data-obj");
+            if (schemaJSON[i].HasMember("data-obj")) {
+                const Value& dataObjJSON = getJSONfieldV(fileName, schemaJSON[i], "data-obj");
                 dataObj = dataObjJSON.GetUint();
             }
 
-            const Value& userJSON = getJSONfieldV(fileName, schema[i], "user");
+            const Value& userJSON = getJSONfieldV(fileName, schemaJSON[i], "user");
             typeUSER user = userJSON.GetUint();
 
-            const Value& cluColsJSON = getJSONfieldV(fileName, schema[i], "clu-cols");
+            const Value& cluColsJSON = getJSONfieldV(fileName, schemaJSON[i], "clu-cols");
             typeCOL cluCols = cluColsJSON.GetInt();
 
-            const Value& totalPkJSON = getJSONfieldV(fileName, schema[i], "total-pk");
+            const Value& totalPkJSON = getJSONfieldV(fileName, schemaJSON[i], "total-pk");
             typeCOL totalPk = totalPkJSON.GetInt();
 
-            const Value& optionsJSON = getJSONfieldV(fileName, schema[i], "options");
-            uint64_t options = optionsJSON.GetUint64();
+            const Value& optionsJSON = getJSONfieldV(fileName, schemaJSON[i], "options");
+            typeOPTIONS options = optionsJSON.GetUint();
 
-            const Value& maxSegColJSON = getJSONfieldV(fileName, schema[i], "max-seg-col");
+            const Value& maxSegColJSON = getJSONfieldV(fileName, schemaJSON[i], "max-seg-col");
             typeCOL maxSegCol = maxSegColJSON.GetInt();
 
-            const Value& ownerJSON = getJSONfieldV(fileName, schema[i], "owner");
+            const Value& ownerJSON = getJSONfieldV(fileName, schemaJSON[i], "owner");
             const char *owner = ownerJSON.GetString();
 
-            const Value& nameJSON = getJSONfieldV(fileName, schema[i], "name");
+            const Value& nameJSON = getJSONfieldV(fileName, schemaJSON[i], "name");
             const char *name = nameJSON.GetString();
 
             schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, owner, name);
             schemaObject->totalPk = totalPk;
             schemaObject->maxSegCol = maxSegCol;
 
-            const Value& columns = getJSONfieldV(fileName, schema[i], "columns");
-            if (!columns.IsArray()) {
+            const Value& columnsJSON = getJSONfieldV(fileName, schemaJSON[i], "columns");
+            if (!columnsJSON.IsArray()) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", columns should be an array");
             }
 
-            for (SizeType j = 0; j < columns.Size(); ++j) {
-                const Value& colNoJSON = getJSONfieldV(fileName, columns[j], "col-no");
+            for (SizeType j = 0; j < columnsJSON.Size(); ++j) {
+                const Value& colNoJSON = getJSONfieldV(fileName, columnsJSON[j], "col-no");
                 typeCOL colNo = colNoJSON.GetInt();
 
-                const Value& segColNoJSON = getJSONfieldV(fileName, columns[j], "seg-col-no");
+                const Value& segColNoJSON = getJSONfieldV(fileName, columnsJSON[j], "seg-col-no");
                 typeCOL segColNo = segColNoJSON.GetInt();
                 if (segColNo > 1000) {
                     CONFIG_FAIL("bad JSON in " << fileName << ", invalid seg-col-no value");
                 }
 
-                const Value& columnNameJSON = getJSONfieldV(fileName, columns[j], "name");
+                const Value& columnNameJSON = getJSONfieldV(fileName, columnsJSON[j], "name");
                 const char* columnName = columnNameJSON.GetString();
 
-                const Value& typeNoJSON = getJSONfieldV(fileName, columns[j], "type-no");
+                const Value& typeNoJSON = getJSONfieldV(fileName, columnsJSON[j], "type-no");
                 typeTYPE typeNo = typeNoJSON.GetUint();
 
-                const Value& lengthJSON = getJSONfieldV(fileName, columns[j], "length");
+                const Value& lengthJSON = getJSONfieldV(fileName, columnsJSON[j], "length");
                 uint64_t length = lengthJSON.GetUint64();
 
                 typeCOL guardSegNo = -1;
-                if (columns[j].HasMember("guard-seg-no")) {
-                    const Value& guardSegNoJSON = getJSONfieldV(fileName, columns[j], "guard-seg-no");
+                if (columnsJSON[j].HasMember("guard-seg-no")) {
+                    const Value& guardSegNoJSON = getJSONfieldV(fileName, columnsJSON[j], "guard-seg-no");
                     guardSegNo = guardSegNoJSON.GetInt();
                 }
 
                 int64_t precision = -1;
-                if (columns[j].HasMember("precision")) {
-                    const Value& precisionJSON = getJSONfieldV(fileName, columns[j], "precision");
+                if (columnsJSON[j].HasMember("precision")) {
+                    const Value& precisionJSON = getJSONfieldV(fileName, columnsJSON[j], "precision");
                     precision = precisionJSON.GetInt64();
                 }
 
                 int64_t scale =  -1;
-                if (columns[j].HasMember("scale")) {
-                    const Value& scaleJSON = getJSONfieldV(fileName, columns[j], "scale");
+                if (columnsJSON[j].HasMember("scale")) {
+                    const Value& scaleJSON = getJSONfieldV(fileName, columnsJSON[j], "scale");
                     scale = scaleJSON.GetInt64();
                 }
 
                 uint64_t numPk = 0;
-                if (columns[j].HasMember("num-pk")) {
-                    const Value& numPkJSON = getJSONfieldV(fileName, columns[j], "num-pk");
+                if (columnsJSON[j].HasMember("num-pk")) {
+                    const Value& numPkJSON = getJSONfieldV(fileName, columnsJSON[j], "num-pk");
                     numPk = numPkJSON.GetUint64();
                 }
 
                 uint64_t charsetId = 0;
-                if (columns[j].HasMember("charset-id")) {
-                    const Value& charsetIdJSON = getJSONfieldV(fileName, columns[j], "charset-id");
+                if (columnsJSON[j].HasMember("charset-id")) {
+                    const Value& charsetIdJSON = getJSONfieldV(fileName, columnsJSON[j], "charset-id");
                     charsetId = charsetIdJSON.GetUint64();
                 }
 
                 bool nullable = false;
-                if (columns[j].HasMember("nullable")) {
-                    const Value& nullableJSON = getJSONfieldV(fileName, columns[j], "nullable");
+                if (columnsJSON[j].HasMember("nullable")) {
+                    const Value& nullableJSON = getJSONfieldV(fileName, columnsJSON[j], "nullable");
                     nullable = nullableJSON.GetUint();
                 }
 
                 bool invisible = false;
-                if (columns[j].HasMember("invisible")) {
-                    const Value& invisibleJSON = getJSONfieldV(fileName, columns[j], "invisible");
+                if (columnsJSON[j].HasMember("invisible")) {
+                    const Value& invisibleJSON = getJSONfieldV(fileName, columnsJSON[j], "invisible");
                     invisible = invisibleJSON.GetUint();
                 }
 
                 bool storedAsLob = false;
-                if (columns[j].HasMember("stored-as-lob")) {
-                    const Value& storedAsLobJSON = getJSONfieldV(fileName, columns[j], "stored-as-lob");
+                if (columnsJSON[j].HasMember("stored-as-lob")) {
+                    const Value& storedAsLobJSON = getJSONfieldV(fileName, columnsJSON[j], "stored-as-lob");
                     storedAsLob = storedAsLobJSON.GetUint();
                 }
 
                 bool constraint = false;
-                if (columns[j].HasMember("constraint")) {
-                    const Value& constraintJSON = getJSONfieldV(fileName, columns[j], "constraint");
+                if (columnsJSON[j].HasMember("constraint")) {
+                    const Value& constraintJSON = getJSONfieldV(fileName, columnsJSON[j], "constraint");
                     constraint = constraintJSON.GetUint();
                 }
 
                 bool added = false;
-                if  (columns[j].HasMember("added")) {
-                    const Value& addedJSON = getJSONfieldV(fileName, columns[j], "added");
+                if  (columnsJSON[j].HasMember("added")) {
+                    const Value& addedJSON = getJSONfieldV(fileName, columnsJSON[j], "added");
                     added = addedJSON.GetUint();
                 }
 
                 bool guard = false;
-                if (columns[j].HasMember("guard")) {
-                    const Value& guardJSON = getJSONfieldV(fileName, columns[j], "guard");
+                if (columnsJSON[j].HasMember("guard")) {
+                    const Value& guardJSON = getJSONfieldV(fileName, columnsJSON[j], "guard");
                     guard = guardJSON.GetUint();
                 }
 
@@ -396,20 +396,20 @@ namespace OpenLogReplicator {
                 schemaObject->columns.push_back(column);
             }
 
-            if (schema[i].HasMember("partitions")) {
-                const Value& partitions = getJSONfieldV(fileName, schema[i], "partitions");
-                if (!columns.IsArray()) {
+            if (schemaJSON[i].HasMember("partitions")) {
+                const Value& partitionsJSON = getJSONfieldV(fileName, schemaJSON[i], "partitions");
+                if (!partitionsJSON.IsArray()) {
                     CONFIG_FAIL("bad JSON in " << fileName << ", partitions should be an array");
                 }
 
-                for (SizeType j = 0; j < partitions.Size(); ++j) {
-                    const Value& partitionObjJSON = getJSONfieldV(fileName, partitions[j], "obj");
+                for (SizeType j = 0; j < partitionsJSON.Size(); ++j) {
+                    const Value& partitionObjJSON = getJSONfieldV(fileName, partitionsJSON[j], "obj");
                     typeOBJ partitionObj = partitionObjJSON.GetUint();
 
-                    const Value& partitionDataObjJSON = getJSONfieldV(fileName, partitions[j], "data-obj");
+                    const Value& partitionDataObjJSON = getJSONfieldV(fileName, partitionsJSON[j], "data-obj");
                     typeOBJ partitionDataObj = partitionDataObjJSON.GetUint();
 
-                    typeOBJ2 objx = (((typeOBJ2)partitionObj)<<32) | ((typeOBJ2)partitionDataObj);
+                    typeOBJ2 objx = (((typeOBJ2)partitionObj) << 32) | ((typeOBJ2)partitionDataObj);
                     schemaObject->partitions.push_back(objx);
                 }
             }
@@ -683,16 +683,16 @@ namespace OpenLogReplicator {
         const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
         oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
 
-        const Value& onlineRedo = getJSONfieldD(fileName, document, "online-redo");
-        if (!onlineRedo.IsArray()) {
+        const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
+        if (!onlineRedoJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
         }
 
-        for (SizeType i = 0; i < onlineRedo.Size(); ++i) {
-            const Value& groupJSON = getJSONfieldV(fileName, onlineRedo[i], "group");
+        for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
+            const Value& groupJSON = getJSONfieldV(fileName, onlineRedoJSON[i], "group");
             uint64_t group = groupJSON.GetInt64();
 
-            const Value& path = onlineRedo[i]["path"];
+            const Value& path = onlineRedoJSON[i]["path"];
             if (!path.IsArray()) {
                 CONFIG_FAIL("bad JSON, path-mapping should be array");
             }
@@ -709,22 +709,22 @@ namespace OpenLogReplicator {
         oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
 
         //SYS.USER$
-        const Value& sysUser = getJSONfieldD(fileName, document, "sys-user");
-        if (!sysUser.IsArray()) {
+        const Value& sysUserJSON = getJSONfieldD(fileName, document, "sys-user");
+        if (!sysUserJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-user should be an array");
         }
 
-        for (SizeType i = 0; i < sysUser.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysUser[i], "row-id");
+        for (SizeType i = 0; i < sysUserJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysUserJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& userJSON = getJSONfieldV(fileName, sysUser[i], "user");
+            const Value& userJSON = getJSONfieldV(fileName, sysUserJSON[i], "user");
             typeUSER user = userJSON.GetUint();
 
-            const Value& nameJSON = getJSONfieldV(fileName, sysUser[i], "name");
+            const Value& nameJSON = getJSONfieldV(fileName, sysUserJSON[i], "name");
             const char *name = nameJSON.GetString();
 
-            const Value& spare1JSON = getJSONfieldV(fileName, sysUser[i], "spare1");
+            const Value& spare1JSON = getJSONfieldV(fileName, sysUserJSON[i], "spare1");
             if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
             }
@@ -733,34 +733,34 @@ namespace OpenLogReplicator {
 
             dictSysUserAdd(rowId, user, name, spare11, spare12, false);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUser.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUserJSON.Size());
 
         //SYS.OBJ$
-        const Value& sysObj = getJSONfieldD(fileName, document, "sys-obj");
-        if (!sysObj.IsArray()) {
+        const Value& sysObjJSON = getJSONfieldD(fileName, document, "sys-obj");
+        if (!sysObjJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-obj should be an array");
         }
 
-        for (SizeType i = 0; i < sysObj.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysObj[i], "row-id");
+        for (SizeType i = 0; i < sysObjJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysObjJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& ownerJSON = getJSONfieldV(fileName, sysObj[i], "owner");
+            const Value& ownerJSON = getJSONfieldV(fileName, sysObjJSON[i], "owner");
             typeUSER owner = ownerJSON.GetUint();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysObj[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysObjJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysObj[i], "data-obj");
+            const Value& dataObjJSON = getJSONfieldV(fileName, sysObjJSON[i], "data-obj");
             typeDATAOBJ dataObj = dataObjJSON.GetUint();
 
-            const Value& typeJSON = getJSONfieldV(fileName, sysObj[i], "type");
+            const Value& typeJSON = getJSONfieldV(fileName, sysObjJSON[i], "type");
             typeTYPE type = typeJSON.GetUint();
 
-            const Value& nameJSON = getJSONfieldV(fileName, sysObj[i], "name");
+            const Value& nameJSON = getJSONfieldV(fileName, sysObjJSON[i], "name");
             const char *name = nameJSON.GetString();
 
-            const Value& flagsJSON = getJSONfieldV(fileName, sysObj[i], "flags");
+            const Value& flagsJSON = getJSONfieldV(fileName, sysObjJSON[i], "flags");
             if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", flags should be an array");
             }
@@ -769,55 +769,55 @@ namespace OpenLogReplicator {
 
             dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags1, flags2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << dec << sysObj.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << dec << sysObjJSON.Size());
 
         //SYS.COL$
-        const Value& sysCol = getJSONfieldD(fileName, document, "sys-col");
-        if (!sysCol.IsArray()) {
+        const Value& sysColJSON = getJSONfieldD(fileName, document, "sys-col");
+        if (!sysColJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-col should be an array");
         }
 
-        for (SizeType i = 0; i < sysCol.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysCol[i], "row-id");
+        for (SizeType i = 0; i < sysColJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysColJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysCol[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysColJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& colJSON = getJSONfieldV(fileName, sysCol[i], "col");
+            const Value& colJSON = getJSONfieldV(fileName, sysColJSON[i], "col");
             typeCOL col = colJSON.GetInt();
 
-            const Value& segColJSON = getJSONfieldV(fileName, sysCol[i], "seg-col");
+            const Value& segColJSON = getJSONfieldV(fileName, sysColJSON[i], "seg-col");
             typeCOL segCol = segColJSON.GetInt();
 
-            const Value& intColJSON = getJSONfieldV(fileName, sysCol[i], "int-col");
+            const Value& intColJSON = getJSONfieldV(fileName, sysColJSON[i], "int-col");
             typeCOL intCol = intColJSON.GetInt();
 
-            const Value& nameJSON = getJSONfieldV(fileName, sysCol[i], "name");
+            const Value& nameJSON = getJSONfieldV(fileName, sysColJSON[i], "name");
             const char *name = nameJSON.GetString();
 
-            const Value& typeJSON = getJSONfieldV(fileName, sysCol[i], "type");
+            const Value& typeJSON = getJSONfieldV(fileName, sysColJSON[i], "type");
             typeTYPE type = typeJSON.GetUint();
 
-            const Value& lengthJSON = getJSONfieldV(fileName, sysCol[i], "length");
+            const Value& lengthJSON = getJSONfieldV(fileName, sysColJSON[i], "length");
             uint64_t length = lengthJSON.GetUint64();
 
-            const Value& precisionJSON = getJSONfieldV(fileName, sysCol[i], "precision");
+            const Value& precisionJSON = getJSONfieldV(fileName, sysColJSON[i], "precision");
             int64_t precision = precisionJSON.GetInt64();
 
-            const Value& scaleJSON = getJSONfieldV(fileName, sysCol[i], "scale");
+            const Value& scaleJSON = getJSONfieldV(fileName, sysColJSON[i], "scale");
             int64_t scale = scaleJSON.GetInt64();
 
-            const Value& charsetFormJSON = getJSONfieldV(fileName, sysCol[i], "charset-form");
+            const Value& charsetFormJSON = getJSONfieldV(fileName, sysColJSON[i], "charset-form");
             uint64_t charsetForm = charsetFormJSON.GetUint64();
 
-            const Value& charsetIdJSON = getJSONfieldV(fileName, sysCol[i], "charset-id");
+            const Value& charsetIdJSON = getJSONfieldV(fileName, sysColJSON[i], "charset-id");
             uint64_t charsetId = charsetIdJSON.GetUint64();
 
-            const Value& nullJSON = getJSONfieldV(fileName, sysCol[i], "null");
+            const Value& nullJSON = getJSONfieldV(fileName, sysColJSON[i], "null");
             int64_t null_ = nullJSON.GetInt64();
 
-            const Value& propertyJSON = getJSONfieldV(fileName, sysCol[i], "property");
+            const Value& propertyJSON = getJSONfieldV(fileName, sysColJSON[i], "property");
             if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", property should be an array");
             }
@@ -826,28 +826,28 @@ namespace OpenLogReplicator {
 
             dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null_, property1, property2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << dec << sysCol.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << dec << sysColJSON.Size());
 
         //SYS.CCOL$
-        const Value& sysCCol = getJSONfieldD(fileName, document, "sys-ccol");
-        if (!sysCCol.IsArray()) {
+        const Value& sysCColJSON = getJSONfieldD(fileName, document, "sys-ccol");
+        if (!sysCColJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-ccol should be an array");
         }
 
-        for (SizeType i = 0; i < sysCCol.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysCCol[i], "row-id");
+        for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysCColJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& conJSON = getJSONfieldV(fileName, sysCCol[i], "con");
+            const Value& conJSON = getJSONfieldV(fileName, sysCColJSON[i], "con");
             typeCON con = conJSON.GetUint();
 
-            const Value& intColJSON = getJSONfieldV(fileName, sysCCol[i], "int-col");
+            const Value& intColJSON = getJSONfieldV(fileName, sysCColJSON[i], "int-col");
             typeCON intCol = intColJSON.GetUint();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysCCol[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysCColJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& spare1JSON = getJSONfieldV(fileName, sysCCol[i], "spare1");
+            const Value& spare1JSON = getJSONfieldV(fileName, sysCColJSON[i], "spare1");
             if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
             }
@@ -856,45 +856,45 @@ namespace OpenLogReplicator {
 
             dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << dec << sysCCol.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << dec << sysCColJSON.Size());
 
         //SYS.CDEF$
-        const Value& sysCDef = getJSONfieldD(fileName, document, "sys-cdef");
-        if (!sysCDef.IsArray()) {
+        const Value& sysCDefJSON = getJSONfieldD(fileName, document, "sys-cdef");
+        if (!sysCDefJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-cdef should be an array");
         }
 
-        for (SizeType i = 0; i < sysCDef.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysCDef[i], "row-id");
+        for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysCDefJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& conJSON = getJSONfieldV(fileName, sysCDef[i], "con");
+            const Value& conJSON = getJSONfieldV(fileName, sysCDefJSON[i], "con");
             typeCON con = conJSON.GetUint();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysCDef[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysCDefJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& typeJSON = getJSONfieldV(fileName, sysCDef[i], "type");
+            const Value& typeJSON = getJSONfieldV(fileName, sysCDefJSON[i], "type");
             typeTYPE type = typeJSON.GetUint();
 
             dictSysCDefAdd(rowId, con, obj, type);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CDEF$: " << dec << sysCDef.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CDEF$: " << dec << sysCDefJSON.Size());
 
         //SYS.DEFERRED_STG$
-        const Value& sysDeferredStg = getJSONfieldD(fileName, document, "sys-deferredstg");
-        if (!sysDeferredStg.IsArray()) {
+        const Value& sysDeferredStgJSON = getJSONfieldD(fileName, document, "sys-deferredstg");
+        if (!sysDeferredStgJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-deferredstg should be an array");
         }
 
-        for (SizeType i = 0; i < sysDeferredStg.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysDeferredStg[i], "row-id");
+        for (SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysDeferredStg[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& flagsStgJSON = getJSONfieldV(fileName, sysDeferredStg[i], "flags-stg");
+            const Value& flagsStgJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "flags-stg");
             if (!flagsStgJSON.IsArray() || flagsStgJSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", flags-stg should be an array");
             }
@@ -903,51 +903,51 @@ namespace OpenLogReplicator {
 
             dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << dec << sysDeferredStg.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << dec << sysDeferredStgJSON.Size());
 
         //SYS.ECOL$
-        const Value& sysECol = getJSONfieldD(fileName, document, "sys-ecol");
-        if (!sysECol.IsArray()) {
+        const Value& sysEColJSON = getJSONfieldD(fileName, document, "sys-ecol");
+        if (!sysEColJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-ecol should be an array");
         }
 
-        for (SizeType i = 0; i < sysECol.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysECol[i], "row-id");
+        for (SizeType i = 0; i < sysEColJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysEColJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysECol[i], "tab-obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysEColJSON[i], "tab-obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& colNumJSON = getJSONfieldV(fileName, sysECol[i], "col-num");
+            const Value& colNumJSON = getJSONfieldV(fileName, sysEColJSON[i], "col-num");
             typeCOL colNum = colNumJSON.GetInt();
 
-            const Value& guardIdJSON = getJSONfieldV(fileName, sysECol[i], "guard-id");
+            const Value& guardIdJSON = getJSONfieldV(fileName, sysEColJSON[i], "guard-id");
             typeCOL guardId = guardIdJSON.GetInt();
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << dec << sysECol.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << dec << sysEColJSON.Size());
 
         //SYS.SEG$
-        const Value& sysSeg = getJSONfieldD(fileName, document, "sys-seg");
-        if (!sysSeg.IsArray()) {
+        const Value& sysSegJSON = getJSONfieldD(fileName, document, "sys-seg");
+        if (!sysSegJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-seg should be an array");
         }
 
-        for (SizeType i = 0; i < sysSeg.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysSeg[i], "row-id");
+        for (SizeType i = 0; i < sysSegJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysSegJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& fileJSON = getJSONfieldV(fileName, sysSeg[i], "file");
+            const Value& fileJSON = getJSONfieldV(fileName, sysSegJSON[i], "file");
             uint32_t file = fileJSON.GetUint();
 
-            const Value& blockJSON = getJSONfieldV(fileName, sysSeg[i], "block");
+            const Value& blockJSON = getJSONfieldV(fileName, sysSegJSON[i], "block");
             uint32_t block = blockJSON.GetUint();
 
-            const Value& tsJSON = getJSONfieldV(fileName, sysSeg[i], "ts");
+            const Value& tsJSON = getJSONfieldV(fileName, sysSegJSON[i], "ts");
             uint32_t ts = tsJSON.GetUint();
 
-            const Value& spare1JSON = getJSONfieldV(fileName, sysSeg[i], "spare1");
+            const Value& spare1JSON = getJSONfieldV(fileName, sysSegJSON[i], "spare1");
             if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", spare1 should be an array");
             }
@@ -956,44 +956,44 @@ namespace OpenLogReplicator {
 
             dictSysSegAdd(rowId, file, block, ts, spare11, spare12);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.SEG$: " << dec << sysSeg.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.SEG$: " << dec << sysSegJSON.Size());
 
         //SYS.TAB$
-        const Value& sysTab = getJSONfieldD(fileName, document, "sys-tab");
-        if (!sysTab.IsArray()) {
+        const Value& sysTabJSON = getJSONfieldD(fileName, document, "sys-tab");
+        if (!sysTabJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-tab should be an array");
         }
 
-        for (SizeType i = 0; i < sysTab.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTab[i], "row-id");
+        for (SizeType i = 0; i < sysTabJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysTab[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysTabJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTab[i], "data-obj");
+            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabJSON[i], "data-obj");
             typeDATAOBJ dataObj = dataObjJSON.GetUint();
 
-            const Value& tsJSON = getJSONfieldV(fileName, sysTab[i], "ts");
+            const Value& tsJSON = getJSONfieldV(fileName, sysTabJSON[i], "ts");
             uint32_t ts = tsJSON.GetUint();
 
-            const Value& fileJSON = getJSONfieldV(fileName, sysTab[i], "file");
+            const Value& fileJSON = getJSONfieldV(fileName, sysTabJSON[i], "file");
             uint32_t file = fileJSON.GetUint();
 
-            const Value& blockJSON = getJSONfieldV(fileName, sysTab[i], "block");
+            const Value& blockJSON = getJSONfieldV(fileName, sysTabJSON[i], "block");
             uint32_t block = blockJSON.GetUint();
 
-            const Value& cluColsJSON = getJSONfieldV(fileName, sysTab[i], "clu-cols");
+            const Value& cluColsJSON = getJSONfieldV(fileName, sysTabJSON[i], "clu-cols");
             typeCOL cluCols = cluColsJSON.GetInt();
 
-            const Value& flagsJSON = getJSONfieldV(fileName, sysTab[i], "flags");
+            const Value& flagsJSON = getJSONfieldV(fileName, sysTabJSON[i], "flags");
             if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", flags should be an array");
             }
             uint64_t flags1 = flagsJSON[0].GetUint64();
             uint64_t flags2 = flagsJSON[1].GetUint64();
 
-            const Value& propertyJSON = getJSONfieldV(fileName, sysTab[i], "property");
+            const Value& propertyJSON = getJSONfieldV(fileName, sysTabJSON[i], "property");
             if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
                 CONFIG_FAIL("bad JSON in " << fileName << ", property should be an array");
             }
@@ -1002,76 +1002,76 @@ namespace OpenLogReplicator {
 
             dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTab.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTabJSON.Size());
 
         //SYS.TABPART$
-        const Value& sysTabPart = getJSONfieldD(fileName, document, "sys-tabpart");
-        if (!sysTabPart.IsArray()) {
+        const Value& sysTabPartJSON = getJSONfieldD(fileName, document, "sys-tabpart");
+        if (!sysTabPartJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-tabpart should be an array");
         }
 
-        for (SizeType i = 0; i < sysTabPart.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabPart[i], "row-id");
+        for (SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysTabPart[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabPart[i], "data-obj");
+            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "data-obj");
             typeDATAOBJ dataObj = dataObjJSON.GetUint();
 
-            const Value& boJSON = getJSONfieldV(fileName, sysTabPart[i], "bo");
+            const Value& boJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "bo");
             typeOBJ bo = boJSON.GetUint();
 
             dictSysTabPartAdd(rowId, obj, dataObj, bo);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABPART$: " << dec << sysTabPart.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABPART$: " << dec << sysTabPartJSON.Size());
 
         //SYS.TABCOMPART$
-        const Value& sysTabComPart = getJSONfieldD(fileName, document, "sys-tabcompart");
-        if (!sysTabComPart.IsArray()) {
+        const Value& sysTabComPartJSON = getJSONfieldD(fileName, document, "sys-tabcompart");
+        if (!sysTabComPartJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-tabcompart should be an array");
         }
 
-        for (SizeType i = 0; i < sysTabComPart.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabComPart[i], "row-id");
+        for (SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysTabComPart[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabComPart[i], "data-obj");
+            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "data-obj");
             typeDATAOBJ dataObj = dataObjJSON.GetUint();
 
-            const Value& boJSON = getJSONfieldV(fileName, sysTabComPart[i], "bo");
+            const Value& boJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "bo");
             typeOBJ bo = boJSON.GetUint();
 
             dictSysTabComPartAdd(rowId, obj, dataObj, bo);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABCOMPART$: " << dec << sysTabComPart.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABCOMPART$: " << dec << sysTabComPartJSON.Size());
 
         //SYS.TABSUBPART$
-        const Value& sysTabSubPart = getJSONfieldD(fileName, document, "sys-tabsubpart");
-        if (!sysTabSubPart.IsArray()) {
+        const Value& sysTabSubPartJSON = getJSONfieldD(fileName, document, "sys-tabsubpart");
+        if (!sysTabSubPartJSON.IsArray()) {
             CONFIG_FAIL("bad JSON in " << fileName << ", sys-tabsubpart should be an array");
         }
 
-        for (SizeType i = 0; i < sysTabSubPart.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabSubPart[i], "row-id");
+        for (SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
+            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "row-id");
             const char *rowId = rowIdJSON.GetString();
 
-            const Value& objJSON = getJSONfieldV(fileName, sysTabSubPart[i], "obj");
+            const Value& objJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "obj");
             typeOBJ obj = objJSON.GetUint();
 
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabSubPart[i], "data-obj");
+            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "data-obj");
             typeDATAOBJ dataObj = dataObjJSON.GetUint();
 
-            const Value& pObjJSON = getJSONfieldV(fileName, sysTabSubPart[i], "p-obj");
+            const Value& pObjJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "p-obj");
             typeOBJ pObj = pObjJSON.GetUint();
 
             dictSysTabComPartAdd(rowId, obj, dataObj, pObj);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPart.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
 
         infile.close();
 
@@ -1111,7 +1111,7 @@ namespace OpenLogReplicator {
         ss << "\"," << "\"nls-nchar-character-set\":\"";
         writeEscapeValue(ss, oracleAnalyzer->nlsNcharCharacterSet);
 
-        ss << "\"," << "\"online-redo\":[";
+        ss << "\"," SCHEMA_ENDL << "\"online-redo\":[";
 
         bool hasPrev = false, hasPrev2;
         for (Reader *reader : oracleAnalyzer->readers) {
@@ -1139,7 +1139,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.USER$
-        ss << "]," << endl << "\"sys-user\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-user\":[";
         hasPrev = false;
         for (auto it : sysUserMapRowId) {
             SysUser *sysUser = it.second;
@@ -1156,7 +1156,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.OBJ$
-        ss << "]," << endl << "\"sys-obj\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-obj\":[";
         hasPrev = false;
         for (auto it : sysObjMapRowId) {
             SysObj *sysObj = it.second;
@@ -1176,7 +1176,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.COL$
-        ss << "]," << endl << "\"sys-col\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-col\":[";
         hasPrev = false;
         for (auto it : sysColMapRowId) {
             SysCol *sysCol = it.second;
@@ -1203,7 +1203,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.CCOL$
-        ss << "]," << endl << "\"sys-ccol\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-ccol\":[";
         hasPrev = false;
         for (auto it : sysCColMapRowId) {
             SysCCol *sysCCol = it.second;
@@ -1221,7 +1221,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.CDEF$
-        ss << "]," << endl << "\"sys-cdef\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-cdef\":[";
         hasPrev = false;
         for (auto it : sysCDefMapRowId) {
             SysCDef *sysCDef = it.second;
@@ -1238,7 +1238,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.DEFERRED_STG$
-        ss << "]," << endl << "\"sys-deferredstg\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-deferredstg\":[";
         hasPrev = false;
         for (auto it : sysDeferredStgMapRowId) {
             SysDeferredStg *sysDeferredStg = it.second;
@@ -1254,7 +1254,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.ECOL$
-        ss << "]," << endl << "\"sys-ecol\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-ecol\":[";
         hasPrev = false;
         for (auto it : sysEColMapRowId) {
             SysECol *sysECol = it.second;
@@ -1271,7 +1271,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.SEG$
-        ss << "]," << endl << "\"sys-seg\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-seg\":[";
         hasPrev = false;
         for (auto it : sysSegMapRowId) {
             SysSeg *sysSeg = it.second;
@@ -1289,7 +1289,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.TAB$
-        ss << "]," << endl << "\"sys-tab\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-tab\":[";
         hasPrev = false;
         for (auto it : sysTabMapRowId) {
             SysTab *sysTab = it.second;
@@ -1311,7 +1311,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.TABPART$
-        ss << "]," << endl << "\"sys-tabpart\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-tabpart\":[";
         hasPrev = false;
         for (auto it : sysTabPartMapRowId) {
             SysTabPart *sysTabPart = it.second;
@@ -1328,7 +1328,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.TABCOMPART$
-        ss << "]," << endl << "\"sys-tabcompart\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-tabcompart\":[";
         hasPrev = false;
         for (auto it : sysTabComPartMapRowId) {
             SysTabComPart *sysTabComPart = it.second;
@@ -1345,7 +1345,7 @@ namespace OpenLogReplicator {
         }
 
         //SYS.TABSUBPART$
-        ss << "]," << endl << "\"sys-tabsubpart\":[";
+        ss << "]," SCHEMA_ENDL << "\"sys-tabsubpart\":[";
         hasPrev = false;
         for (auto it : sysTabSubPartMapRowId) {
             SysTabSubPart *sysTabSubPart = it.second;

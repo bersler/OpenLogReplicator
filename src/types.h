@@ -56,6 +56,7 @@ typedef int16_t typeCOL;
 typedef uint16_t typeTYPE;
 typedef uint32_t typeCON;
 typedef uint32_t typeUSER;
+typedef uint8_t  typeOPTIONS;
 
 typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
