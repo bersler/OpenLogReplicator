@@ -148,7 +148,7 @@ namespace OpenLogReplicator {
                 typeTYPE type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
                 bool null_, uint64_t property1, uint64_t property2);
         bool dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2);
-        bool dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, uint32_t guardId);
+        bool dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId);
         bool dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
                 uint64_t flags1, uint64_t flags2);
         bool dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12);

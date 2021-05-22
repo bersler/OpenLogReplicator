@@ -922,7 +922,7 @@ namespace OpenLogReplicator {
             typeCOL colNum = colNumJSON.GetInt();
 
             const Value& guardIdJSON = getJSONfieldV(fileName, sysECol[i], "guard-id");
-            uint64_t guardId = guardIdJSON.GetInt();
+            typeCOL guardId = guardIdJSON.GetInt();
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
@@ -1621,14 +1621,6 @@ namespace OpenLogReplicator {
         }
         objectsTouched.clear();
 
-        /*partitionMap.clear();
-        for (auto it : objectMap) {
-            OracleObject *object = it.second;
-            delete object;
-        }
-        objectMap.clear();
-        */
-
         for (SchemaElement *element : elements)
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, oracleAnalyzer, false);
     }
@@ -1643,10 +1635,9 @@ namespace OpenLogReplicator {
             if (sysObj->isDropped() || !sysObj->isTable())
                 continue;
 
+            if (sysUserMapUser.find(sysObj->owner) == sysUserMapUser.end())
+                continue;
             SysUser *sysUser = sysUserMapUser[sysObj->owner];
-            if (sysUser == nullptr) {
-                RUNTIME_FAIL("inconsistent schema, missing SYS.USR$ OWNER: " << dec << sysObj->owner);
-            }
 
             //table already added with another rule
             if (objectMap.find(sysObj->obj) != objectMap.end()) {
@@ -1654,10 +1645,10 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            SysTab *sysTab = sysTabMapObj[sysObj->obj];
-            if (sysTab == nullptr) {
+            if (sysTabMapObj.find(sysObj->obj) == sysTabMapObj.end()) {
                 RUNTIME_FAIL("inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
             }
+            SysTab *sysTab = sysTabMapObj[sysObj->obj];
 
             if (!regex_match(sysUser->name, regexOwner) || !regex_match(sysObj->name, regexTable))
                 continue;
@@ -1959,7 +1950,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, uint32_t guardId) {
+    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId) {
         RowId rowId(rowIdStr);
         if (sysEColMapRowId[rowId] != nullptr)
             return false;

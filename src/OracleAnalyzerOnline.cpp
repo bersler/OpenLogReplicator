@@ -1178,8 +1178,8 @@ namespace OpenLogReplicator {
 
         char ecolRowid[19]; stmtECol.defineString(1, ecolRowid, sizeof(ecolRowid));
         typeOBJ ecolTabObj; stmtECol.defineUInt32(2, ecolTabObj);
-        uint32_t ecolColNum = 0; stmtECol.defineUInt32(3, ecolColNum);
-        uint32_t ecolGuardId = -1; stmtECol.defineUInt32(4, ecolGuardId);
+        typeCOL ecolColNum = 0; stmtECol.defineInt16(3, ecolColNum);
+        typeCOL ecolGuardId = -1; stmtECol.defineInt16(4, ecolGuardId);
 
         int64_t ecolRet = stmtECol.executeQuery();
         while (ecolRet) {

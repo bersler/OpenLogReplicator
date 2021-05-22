@@ -425,7 +425,7 @@ namespace OpenLogReplicator {
                 else if (object->columns[i]->name.compare("COLNUM") == 0)
                     updateNumber16(sysECol->colNum, i, pos, object, rowId);
                 else if (object->columns[i]->name.compare("GUARD_ID") == 0)
-                    updateNumber32u(sysECol->guardId, i, pos, object, rowId);
+                    updateNumber16(sysECol->guardId, i, pos, object, rowId);
             }
 
             schema->sysEColMapRowId[rowId] = sysECol;
@@ -789,7 +789,7 @@ namespace OpenLogReplicator {
                         schema->sysEColKeyTouched = true;
                     }
                 } else if (object->columns[i]->name.compare("GUARD_ID") == 0) {
-                    if (updateNumber32u(sysECol->guardId, i, pos, object, rowId))
+                    if (updateNumber16(sysECol->guardId, i, pos, object, rowId))
                         schema->touched = true;
                 }
             }
