@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         virtual void loadSchema(void);
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
         void readSystemDictionaries(string owner, string table);
-        void addTable(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options);
+        void addTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options);
 
     public:
         DatabaseEnvironment *env;

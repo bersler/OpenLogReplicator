@@ -1625,7 +1625,7 @@ namespace OpenLogReplicator {
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, oracleAnalyzer, false);
     }
 
-    void Schema::buildMaps(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options, OracleAnalyzer *oracleAnalyzer, bool output) {
+    void Schema::buildMaps(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options, OracleAnalyzer *oracleAnalyzer, bool output) {
         uint64_t tabCnt = 0;
         regex regexOwner(owner), regexTable(table);
 
@@ -1876,16 +1876,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    SchemaElement* Schema::addElement(void) {
-        SchemaElement *element = new SchemaElement();
-        if (element == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
-        }
-        elements.push_back(element);
-        return element;
-    }
-
-    SchemaElement* Schema::addElement(const char *owner, const char *table, uint64_t options) {
+    SchemaElement* Schema::addElement(const char *owner, const char *table, typeOPTIONS options) {
         SchemaElement *element = new SchemaElement(owner, table, options);
         if (element == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");

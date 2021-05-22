@@ -1451,7 +1451,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::addTable(string &owner, string &table, vector<string> &keys, string &keysStr, uint64_t options) {
+    void OracleAnalyzerOnline::addTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
         DEBUG("- reading table schema for owner: " << owner << " table: " << table);
         uint64_t tabCnt = 0;
         regex regexOwner(owner), regexTable(table);
