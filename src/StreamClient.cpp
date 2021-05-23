@@ -81,6 +81,10 @@ int main(int argc, char** argv) {
         } else {
             RUNTIME_FAIL("incorrect transport");
         }
+        if (stream == nullptr) {
+            ERROR("couldn't create stream");
+            exit(0);
+        }
         stream->initializeClient(&shutdown);
 
         request.set_code(pb::RequestCode::INFO);

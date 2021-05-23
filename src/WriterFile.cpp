@@ -37,6 +37,9 @@ namespace OpenLogReplicator {
             output = &cout;
         } else {
             output = new ofstream();
+            if (output == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ofstream) << " bytes memory (for: ostream)");
+            }
             ((ofstream*)output)->open(this->name.c_str(),  ofstream::out | std::ofstream::app);
             if (((ofstream*)output)->fail()) {
                 RUNTIME_FAIL("error opening file to write: " << dec << this->name);

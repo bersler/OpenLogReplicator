@@ -216,6 +216,16 @@ namespace OpenLogReplicator {
         characterMap[1002] = new CharacterSet8bit("TIMESTEN8", CharacterSet8bit::unicode_map_TIMESTEN8);
         characterMap[2000] = new CharacterSetAL16UTF16();
 
+        uint64_t characterMapIds[138] = {1, 2, 3, 4, 10, 11, 13, 14, 15, 16, 17, 21, 25, 28, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44, 45, 46,
+                47, 48, 49, 50, 51, 52, 61, 81, 82, 110, 113, 114, 140, 150, 152, 153, 154, 155, 156, 159, 160, 161, 162, 163, 164, 165, 166, 167, 170,
+                171, 172, 173, 174, 175, 176, 177, 178, 179, 190, 191, 192, 193, 195, 196, 197, 202, 203, 204, 206, 205, 207, 241, 251, 261, 352, 354,
+                368, 380, 382, 383, 384, 385, 386, 390, 401, 500, 504, 505, 506, 507, 508, 509, 511, 514, 554, 555, 556, 557, 558, 559, 560, 561, 563,
+                566, 590, 829, 830, 831, 832, 834, 837, 838, 840, 845, 846, 850, 852, 854, 860, 863, 865, 866, 867, 868, 871, 873, 992, 1002, 2000};
+        for (uint64_t i = 0; i < 138; ++i)
+            if (characterMap.find(characterMapIds[i]) == characterMap.end()) {
+                RUNTIME_FAIL("couldn't allocate memory (for: character set id: " << dec << characterMapIds[i] << ")");
+            }
+
         timeZoneMap[0x80a8] = "Africa/Abidjan";
         timeZoneMap[0x80c8] = "Africa/Accra";
         timeZoneMap[0x80bc] = "Africa/Addis_Ababa";

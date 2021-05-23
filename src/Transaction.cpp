@@ -128,6 +128,9 @@ namespace OpenLogReplicator {
 
             if (system) {
                 oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
+                if (oracleAnalyzer->systemTransaction == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction)");
+                }
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                     oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
@@ -356,11 +359,14 @@ namespace OpenLogReplicator {
                         WARNING("big transaction divided (forced commit after " << oracleAnalyzer->outputBuffer->outputBufferSize() << " bytes)");
 
                         if (system) {
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
                             oracleAnalyzer->systemTransaction->commit();
                             delete oracleAnalyzer->systemTransaction;
                             oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
+                            if (oracleAnalyzer->systemTransaction == nullptr) {
+                                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");
+                            }
 
-                            TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
                             TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {

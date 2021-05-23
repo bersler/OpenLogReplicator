@@ -294,6 +294,9 @@ namespace OpenLogReplicator {
             const char *name = nameJSON.GetString();
 
             schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, owner, name);
+            if (schemaObject == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
+            }
             schemaObject->totalPk = totalPk;
             schemaObject->maxSegCol = maxSegCol;
 
@@ -389,6 +392,9 @@ namespace OpenLogReplicator {
 
                 OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
                         nullable, invisible, storedAsLob, constraint, added, guard);
+                if (column == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation1)");
+                }
 
                 if (column->guard)
                     schemaObject->guardSegNo = column->segColNo - 1;
@@ -1695,7 +1701,7 @@ namespace OpenLogReplicator {
 
             schemaObject = new OracleObject(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols, options, sysUser->name.c_str(), sysObj->name.c_str());
             if (schemaObject == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation2)");
             }
             ++tabCnt;
 
@@ -1814,9 +1820,8 @@ namespace OpenLogReplicator {
                 OracleColumn *column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                         sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
-
                 if (column == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation3)");
                 }
 
                 totalPk += numPk;
@@ -1887,10 +1892,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysCColAdd(const char *rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
-        if (sysCColMapRowId[rowId] != nullptr)
+        if (sysCColMapRowId.find(rowId) != sysCColMapRowId.end())
             return false;
 
         SysCCol *sysCCol = new SysCCol(rowId, con, intCol, obj, spare11, spare12, false);
+        if (sysCCol == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
+        }
         sysCColMapRowId[rowId] = sysCCol;
         SysCColKey sysCColKey(obj, intCol, con);
         sysCColMapKey[sysCColKey] = sysCCol;
@@ -1900,10 +1908,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysCDefAdd(const char *rowIdStr, typeCON con, typeOBJ obj, typeTYPE type) {
         RowId rowId(rowIdStr);
-        if (sysCDefMapRowId[rowId] != nullptr)
+        if (sysCDefMapRowId.find(rowId) != sysCDefMapRowId.end())
             return false;
 
         SysCDef *sysCDef = new SysCDef(rowId, con, obj, type, false);
+        if (sysCDef == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
+        }
         sysCDefMapRowId[rowId] = sysCDef;
         sysCDefMapCon[con] = sysCDef;
         SysCDefKey sysCDefKey(obj, con);
@@ -1915,11 +1926,14 @@ namespace OpenLogReplicator {
     bool Schema::dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
             int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, bool null_, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
-        if (sysColMapRowId[rowId] != nullptr)
+        if (sysColMapRowId.find(rowId) != sysColMapRowId.end())
             return false;
 
         SysCol *sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
                 null_, property1, property2, false);
+        if (sysCol == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
+        }
         sysColMapRowId[rowId] = sysCol;
         SysColKey sysColKey(obj, intCol);
         sysColMapKey[sysColKey] = sysCol;
@@ -1931,10 +1945,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2) {
         RowId rowId(rowIdStr);
-        if (sysDeferredStgMapRowId[rowId] != nullptr)
+        if (sysDeferredStgMapRowId.find(rowId) != sysDeferredStgMapRowId.end())
             return false;
 
         SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2, false);
+        if (sysDeferredStg == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
+        }
         sysDeferredStgMapRowId[rowId] = sysDeferredStg;
         sysDeferredStgMapObj[obj] = sysDeferredStg;
 
@@ -1943,10 +1960,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId) {
         RowId rowId(rowIdStr);
-        if (sysEColMapRowId[rowId] != nullptr)
+        if (sysEColMapRowId.find(rowId) != sysEColMapRowId.end())
             return false;
 
         SysECol *sysECol = new SysECol(rowId, tabObj, colNum, guardId, false);
+        if (sysECol == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
+        }
         sysEColMapRowId[rowId] = sysECol;
         SysEColKey sysEColKey(tabObj, colNum);
         sysEColMapKey[sysEColKey] = sysECol;
@@ -1957,10 +1977,13 @@ namespace OpenLogReplicator {
     bool Schema::dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
             uint64_t flags1, uint64_t flags2) {
         RowId rowId(rowIdStr);
-        if (sysObjMapRowId[rowId] != nullptr)
+        if (sysObjMapRowId.find(rowId) != sysObjMapRowId.end())
             return false;
 
         SysObj *sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, false);
+        if (sysObj == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
+        }
         sysObjMapRowId[rowId] = sysObj;
         sysObjMapObj[obj] = sysObj;
 
@@ -1969,10 +1992,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
-        if (sysSegMapRowId[rowId] != nullptr)
+        if (sysSegMapRowId.find(rowId) != sysSegMapRowId.end())
             return false;
 
         SysSeg *sysSeg = new SysSeg(rowId, file, block, ts, spare11, spare12, false);
+        if (sysSeg == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
+        }
         sysSegMapRowId[rowId] = sysSeg;
         SysSegKey sysSegKey(file, block, ts);
         sysSegMapKey[sysSegKey] = sysSeg;
@@ -1983,10 +2009,13 @@ namespace OpenLogReplicator {
     bool Schema::dictSysTabAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
             typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
-        if (sysTabMapRowId[rowId] != nullptr)
+        if (sysTabMapRowId.find(rowId) != sysTabMapRowId.end())
             return false;
 
         SysTab *sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2, false);
+        if (sysTab == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
+        }
         sysTabMapRowId[rowId] = sysTab;
         sysTabMapObj[obj] = sysTab;
         if (file != 0 || block != 0) {
@@ -1999,10 +2028,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysTabComPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
         RowId rowId(rowIdStr);
-        if (sysTabComPartMapRowId[rowId] != nullptr)
+        if (sysTabComPartMapRowId.find(rowId) != sysTabComPartMapRowId.end())
             return false;
 
         SysTabComPart *sysTabComPart = new SysTabComPart(rowId, obj, dataObj, bo, false);
+        if (sysTabComPart == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
+        }
         sysTabComPartMapRowId[rowId] = sysTabComPart;
         SysTabComPartKey sysTabComPartKey(bo, obj);
         sysTabComPartMapKey[sysTabComPartKey] = sysTabComPart;
@@ -2012,10 +2044,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
         RowId rowId(rowIdStr);
-        if (sysTabPartMapRowId[rowId] != nullptr)
+        if (sysTabPartMapRowId.find(rowId) != sysTabPartMapRowId.end())
             return false;
 
         SysTabPart *sysTabPart = new SysTabPart(rowId, obj, dataObj, bo, false);
+        if (sysTabPart == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
+        }
         sysTabPartMapRowId[rowId] = sysTabPart;
         SysTabPartKey sysTabPartKey(bo, obj);
         sysTabPartMapKey[sysTabPartKey] = sysTabPart;
@@ -2025,10 +2060,13 @@ namespace OpenLogReplicator {
 
     bool Schema::dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj) {
         RowId rowId(rowIdStr);
-        if (sysTabSubPartMapRowId[rowId] != nullptr)
+        if (sysTabSubPartMapRowId.find(rowId) != sysTabSubPartMapRowId.end())
             return false;
 
         SysTabSubPart *sysTabSubPart = new SysTabSubPart(rowId, obj, dataObj, pObj, false);
+        if (sysTabSubPart == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
+        }
         sysTabSubPartMapRowId[rowId] = sysTabSubPart;
         SysTabSubPartKey sysTabSubPartKey(pObj, obj);
         sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
@@ -2050,6 +2088,9 @@ namespace OpenLogReplicator {
         }
 
         sysUser = new SysUser(rowId, user, name, spare11, spare12, trackDDL, false);
+        if (sysUser == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
+        }
         sysUserMapRowId[rowId] = sysUser;
         sysUserMapUser[user] = sysUser;
 

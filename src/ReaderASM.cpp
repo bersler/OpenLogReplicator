@@ -118,6 +118,10 @@ namespace OpenLogReplicator {
         try {
             if (stmtRead == nullptr) {
                 stmtRead = new DatabaseStatement(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
+                if (stmtRead == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseStatement) << " bytes memory (for: database statement for ASM)");
+                }
+
                 TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_READ);
                 TRACE(TRACE2_SQL, "PARAM1: " << fileDes);
                 TRACE(TRACE2_SQL, "PARAM2: " << offset);

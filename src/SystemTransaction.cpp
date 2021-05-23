@@ -304,6 +304,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.CCOL$: (rowid: " << rowId << ") for insert");
             }
             SysCCol *sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
+            if (sysCCol == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -328,6 +331,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEF$: (rowid: " << rowId << ") for insert");
             }
             SysCDef *sysCDef = new SysCDef(rowId, 0, 0, 0, true);
+            if (sysCDef == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -351,6 +357,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.COL$: (rowid: " << rowId << ")for insert");
             }
             SysCol *sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
+            if (sysCol == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -394,6 +403,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEFERRED_STG$: (rowid: " << rowId << ") for insert");
             }
             SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
+            if (sysDeferredStg == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -415,6 +427,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.ECOL$: (rowid: " << rowId << ") for insert");
             }
             SysECol *sysECol = new SysECol(rowId, 0, 0, -1, true);
+            if (sysECol == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -438,6 +453,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.OBJ$: (rowid: " << rowId << ") for insert");
             }
             sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, true);
+            if (sysObj == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -466,6 +484,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.SEG$: (rowid: " << rowId << ") for insert");
             }
             SysSeg *sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
+            if (sysSeg == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -490,6 +511,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.TAB$: (rowid: " << rowId << ") for insert");
             }
             SysTab *sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            if (sysTab == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -523,6 +547,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABCOMPART$: (rowid: " << rowId << ") for insert");
             }
             SysTabComPart *sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
+            if (sysTabComPart == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -545,6 +572,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABPART$: (rowid: " << rowId << ") for insert");
             }
             SysTabPart *sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
+            if (sysTabPart == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -567,6 +597,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABSUBPART$: (rowid: " << rowId << ") for insert");
             }
             SysTabSubPart *sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
+            if (sysTabSubPart == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;
@@ -589,6 +622,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("DDL: duplicate SYS.USER$: (rowid: " << rowId << ") for insert");
             }
             SysUser *sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
+            if (sysUser == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
+            }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
                 uint16_t i = (*it).first;

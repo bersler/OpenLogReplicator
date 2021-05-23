@@ -596,6 +596,9 @@ namespace OpenLogReplicator {
         keepConnection(false) {
 
         env = new DatabaseEnvironment();
+        if (env == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseEnvironment) << " bytes memory (for: database environment)");
+        }
     }
 
     OracleAnalyzerOnline::~OracleAnalyzerOnline() {
