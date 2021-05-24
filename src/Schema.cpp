@@ -510,7 +510,7 @@ namespace OpenLogReplicator {
                     "\"user\":" << dec << object->user << "," <<
                     "\"clu-cols\":" << dec << object->cluCols << "," <<
                     "\"total-pk\":" << dec << object->totalPk << "," <<
-                    "\"options\":" << dec << object->options << "," <<
+                    "\"options\":" << dec << (uint64_t)object->options << "," <<
                     "\"max-seg-col\":" << dec << object->maxSegCol << "," <<
                     "\"owner\":\"" << object->owner << "\"," <<
                     "\"name\":\"" << object->name << "\"," <<
