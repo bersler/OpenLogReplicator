@@ -597,8 +597,8 @@ namespace OpenLogReplicator {
 
         hasPreviousColumn = false;
         for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = (*it).first;
-            uint16_t pos = (*it).second;
+            uint16_t i = it->first;
+            uint16_t pos = it->second;
 
             if (object != nullptr) {
                 if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
@@ -658,8 +658,8 @@ namespace OpenLogReplicator {
 
         hasPreviousColumn = false;
         for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = (*it).first;
-            uint16_t pos = (*it).second;
+            uint16_t i = it->first;
+            uint16_t pos = it->second;
 
             if (object != nullptr) {
                 if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
@@ -685,8 +685,8 @@ namespace OpenLogReplicator {
 
         hasPreviousColumn = false;
         for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = (*it).first;
-            uint16_t pos = (*it).second;
+            uint16_t i = it->first;
+            uint16_t pos = it->second;
 
             if (object != nullptr) {
                 if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
@@ -746,8 +746,8 @@ namespace OpenLogReplicator {
 
         hasPreviousColumn = false;
         for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = (*it).first;
-            uint16_t pos = (*it).second;
+            uint16_t i = it->first;
+            uint16_t pos = it->second;
 
             if (object != nullptr) {
                 if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)

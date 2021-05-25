@@ -362,12 +362,12 @@ namespace OpenLogReplicator {
                             TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
                             oracleAnalyzer->systemTransaction->commit();
                             delete oracleAnalyzer->systemTransaction;
+
+                            TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
                             oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                             if (oracleAnalyzer->systemTransaction == nullptr) {
                                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");
                             }
-
-                            TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
                                 oracleAnalyzer->outputBuffer->processCommit();

@@ -993,6 +993,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::readSystemDictionariesDetails(typeUSER user, typeOBJ obj) {
+        DEBUG("read dictionaries for user: " << dec << user << ", object: " << obj);
+
         //reading SYS.COL$
         DatabaseStatement stmtCol(conn);
         if (obj != 0) {
@@ -1455,7 +1457,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::addTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
-        DEBUG("- reading table schema for owner: " << owner << " table: " << table);
+        DEBUG("- reading table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options);
         uint64_t tabCnt = 0;
         regex regexOwner(owner), regexTable(table);
 

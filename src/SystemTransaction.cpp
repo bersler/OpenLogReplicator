@@ -309,8 +309,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("CON#") == 0)
                     updateNumber32u(sysCCol->con, i, pos, object, rowId);
@@ -336,8 +336,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("CON#") == 0)
                     updateNumber32u(sysCDef->con, i, pos, object, rowId);
@@ -362,8 +362,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0)
                     updateObj(sysCol->obj, i, pos, object, rowId);
@@ -408,8 +408,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     updateObj(sysDeferredStg->obj, i, pos, object, rowId);
@@ -432,8 +432,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("TABOBJ#") == 0)
                     updateObj(sysECol->tabObj, i, pos, object, rowId);
@@ -458,8 +458,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OWNER#") == 0)
                     updateNumber32u(sysObj->owner, i, pos, object, rowId);
@@ -489,8 +489,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("FILE#") == 0)
                     updateNumber32u(sysSeg->file, i, pos, object, rowId);
@@ -516,8 +516,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0)
                     updateObj(sysTab->obj, i, pos, object, rowId);
@@ -552,8 +552,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0)
                     updateObj(sysTabComPart->obj, i, pos, object, rowId);
@@ -577,8 +577,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0)
                     updateNumber32u(sysTabPart->obj, i, pos, object, rowId);
@@ -602,8 +602,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0)
                     updateNumber32u(sysTabSubPart->obj, i, pos, object, rowId);
@@ -627,8 +627,8 @@ namespace OpenLogReplicator {
             }
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("USER#") == 0)
                     updateUser(sysUser->user, i, pos, object, rowId);
@@ -661,8 +661,8 @@ namespace OpenLogReplicator {
             sysCCol->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("CON#") == 0) {
                     if (updateNumber32u(sysCCol->con, i, pos, object, rowId)) {
@@ -695,8 +695,8 @@ namespace OpenLogReplicator {
             sysCDef->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("CON#") == 0) {
                     if (updateNumber32u(sysCDef->con, i, pos, object, rowId)) {
@@ -725,8 +725,8 @@ namespace OpenLogReplicator {
             sysCol->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateObj(sysCol->obj, i, pos, object, rowId)) {
@@ -787,8 +787,8 @@ namespace OpenLogReplicator {
             sysDeferredStg->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateObj(sysDeferredStg->obj, i, pos, object, rowId)) {
@@ -811,8 +811,8 @@ namespace OpenLogReplicator {
             sysECol->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("TABOBJ#") == 0) {
                     if (updateObj(sysECol->tabObj, i, pos, object, rowId)) {
@@ -840,8 +840,8 @@ namespace OpenLogReplicator {
             sysObj->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OWNER#") == 0) {
                     if (updateNumber32u(sysObj->owner, i, pos, object, rowId))
@@ -876,8 +876,8 @@ namespace OpenLogReplicator {
             sysSeg->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("FILE#") == 0) {
                     if (updateNumber32u(sysSeg->file, i, pos, object, rowId)) {
@@ -910,8 +910,8 @@ namespace OpenLogReplicator {
             sysTab->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateObj(sysTab->obj, i, pos, object, rowId)) {
@@ -958,8 +958,8 @@ namespace OpenLogReplicator {
             sysTabComPart->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateNumber32u(sysTabComPart->obj, i, pos, object, rowId)) {
@@ -987,8 +987,8 @@ namespace OpenLogReplicator {
             sysTabPart->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateNumber32u(sysTabPart->obj, i, pos, object, rowId)) {
@@ -1016,8 +1016,8 @@ namespace OpenLogReplicator {
             sysTabSubPart->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("OBJ#") == 0) {
                     if (updateNumber32u(sysTabSubPart->obj, i, pos, object, rowId)) {
@@ -1045,8 +1045,8 @@ namespace OpenLogReplicator {
             sysUser->touched = true;
 
             for (auto it = outputBuffer->valuesMap.cbegin(); it != outputBuffer->valuesMap.cend(); ++it) {
-                uint16_t i = (*it).first;
-                uint16_t pos = (*it).second;
+                uint16_t i = it->first;
+                uint16_t pos = it->second;
 
                 if (object->columns[i]->name.compare("USER#") == 0) {
                     if (updateUser(sysUser->user, i, pos, object, rowId)) {
@@ -1071,11 +1071,12 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SYSTEM, "SYSTEM: delete table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")");
 
         if (object->systemTable == TABLE_SYS_CCOL) {
-            if (schema->sysCColMapRowId.find(rowId) == schema->sysCColMapRowId.end()) {
+            auto sysCColIt = schema->sysCColMapRowId.find(rowId);
+            if (sysCColIt == schema->sysCColMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCCol *sysCCol = schema->sysCColMapRowId[rowId];
+            SysCCol *sysCCol = sysCColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCCol->con << ", INTCOL#: " << sysCCol->intCol << ", OBJ#: " <<
                     sysCCol->obj << ", SPARE1: " << sysCCol->spare1 << ")");
             schema->sysCColMapRowId.erase(rowId);
@@ -1085,11 +1086,12 @@ namespace OpenLogReplicator {
             delete sysCCol;
 
         } else if (object->systemTable == TABLE_SYS_CDEF) {
-            if (schema->sysCDefMapRowId.find(rowId) == schema->sysCDefMapRowId.end()) {
+            auto sysCDefIt = schema->sysCDefMapRowId.find(rowId);
+            if (sysCDefIt == schema->sysCDefMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCDef *sysCDef = schema->sysCDefMapRowId[rowId];
+            SysCDef *sysCDef = sysCDefIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCDef->con << ", OBJ#: " << sysCDef->obj << ", type: " << sysCDef->type << ")");
             schema->sysCDefMapRowId.erase(rowId);
             schema->sysCDefKeyTouched = true;
@@ -1099,11 +1101,12 @@ namespace OpenLogReplicator {
             delete sysCDef;
 
         } else if (object->systemTable == TABLE_SYS_COL) {
-            if (schema->sysColMapRowId.find(rowId) == schema->sysColMapRowId.end()) {
+            auto sysColIt = schema->sysColMapRowId.find(rowId);
+            if (sysColIt == schema->sysColMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCol *sysCol = schema->sysColMapRowId[rowId];
+            SysCol *sysCol = sysColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysCol->obj << ", COL#: " << sysCol->col << ", SEGCOL#: " << sysCol->segCol <<
                     ", INTCOL#: " << sysCol->intCol << ", NAME: '" << sysCol->name << "', TYPE#: " << sysCol->type << ", LENGTH: " << sysCol->length <<
                     ", PRECISION#: " << sysCol->precision << ", SCALE: " << sysCol->scale << ", CHARSETFORM: " << sysCol->charsetForm <<
@@ -1116,11 +1119,12 @@ namespace OpenLogReplicator {
             delete sysCol;
 
         } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
-            if (schema->sysDeferredStgMapRowId.find(rowId) == schema->sysDeferredStgMapRowId.end()) {
+            auto sysDeferredStgIt = schema->sysDeferredStgMapRowId.find(rowId);
+            if (sysDeferredStgIt == schema->sysDeferredStgMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysDeferredStg *sysDeferredStg = schema->sysDeferredStgMapRowId[rowId];
+            SysDeferredStg *sysDeferredStg = sysDeferredStgIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysDeferredStg->obj << ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
             schema->sysDeferredStgMapRowId.erase(rowId);
             schema->sysDeferredStgObjTouched = true;
@@ -1129,11 +1133,12 @@ namespace OpenLogReplicator {
             delete sysDeferredStg;
 
         } else if (object->systemTable == TABLE_SYS_ECOL) {
-            if (schema->sysEColMapRowId.find(rowId) == schema->sysEColMapRowId.end()) {
+            auto sysEColIt = schema->sysEColMapRowId.find(rowId);
+            if (sysEColIt == schema->sysEColMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysECol *sysECol = schema->sysEColMapRowId[rowId];
+            SysECol *sysECol = sysEColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (TABOBJ#: " << dec << sysECol->tabObj << ", COLNUM: " << sysECol->colNum << ", GUARD_ID: " <<
                     sysECol->guardId << ")");
             schema->sysEColMapRowId.erase(rowId);
@@ -1143,11 +1148,12 @@ namespace OpenLogReplicator {
             delete sysECol;
 
         } else if (object->systemTable == TABLE_SYS_OBJ) {
-            if (schema->sysObjMapRowId.find(rowId) == schema->sysObjMapRowId.end()) {
+            auto sysObjIt = schema->sysObjMapRowId.find(rowId);
+            if (sysObjIt == schema->sysObjMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysObj *sysObj = schema->sysObjMapRowId[rowId];
+            SysObj *sysObj = sysObjIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OWNER#: " << dec << sysObj->owner << ", OBJ#: " << sysObj->obj << ", DATAOBJ#: " <<
                     sysObj->dataObj << ", TYPE#: " << sysObj->type << ", NAME: '" << sysObj->name << "', FLAGS: " << sysObj->flags << ")");
             schema->sysObjMapRowId.erase(rowId);
@@ -1157,25 +1163,34 @@ namespace OpenLogReplicator {
             delete sysObj;
 
         } else if (object->systemTable == TABLE_SYS_SEG) {
-            if (schema->sysSegMapRowId.find(rowId) == schema->sysSegMapRowId.end()) {
+            auto sysSegIt = schema->sysSegMapRowId.find(rowId);
+            if (sysSegIt == schema->sysSegMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysSeg *sysSeg = schema->sysSegMapRowId[rowId];
+            SysSeg *sysSeg = sysSegIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (FILE#: " << dec << sysSeg->file << ", BLOCK#: " << sysSeg->block << ", TS#: " <<
                     sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
             schema->sysSegMapRowId.erase(rowId);
             schema->sysSegKeyTouched = true;
             schema->touched = true;
-            //FIXME: schema->touchObj(sysCCol->obj);
+            if (sysSeg->file != 0 || sysSeg->block != 0) {
+                SysTabKey sysTabKey(sysSeg->file, sysSeg->block, sysSeg->ts);
+                auto sysTabMapKeyIt = schema->sysTabMapKey.find(sysTabKey);
+                if (sysTabMapKeyIt != schema->sysTabMapKey.end()) {
+                    SysTab* sysTab = sysTabMapKeyIt->second;
+                    schema->touchObj(sysTab->obj);
+                }
+            }
             delete sysSeg;
 
         } else if (object->systemTable == TABLE_SYS_TAB) {
-            if (schema->sysTabMapRowId.find(rowId) == schema->sysTabMapRowId.end()) {
+            auto sysTabIt = schema->sysTabMapRowId.find(rowId);
+            if (sysTabIt == schema->sysTabMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTab *sysTab = schema->sysTabMapRowId[rowId];
+            SysTab *sysTab = sysTabIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", TS#: " <<
                     sysTab->ts << ", FILE#: " << sysTab->file << ", BLOCK#: " << sysTab->block << ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " <<
                     sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
@@ -1187,11 +1202,12 @@ namespace OpenLogReplicator {
             delete sysTab;
 
         } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
-            if (schema->sysTabComPartMapRowId.find(rowId) == schema->sysTabComPartMapRowId.end()) {
+            auto sysTabComPartIt = schema->sysTabComPartMapRowId.find(rowId);
+            if (sysTabComPartIt == schema->sysTabComPartMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabComPart *sysTabComPart = schema->sysTabComPartMapRowId[rowId];
+            SysTabComPart *sysTabComPart = sysTabComPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabComPart->obj << ", DATAOBJ#: " << sysTabComPart->dataObj << ", BO#: " <<
                     sysTabComPart->bo << ")");
             schema->sysTabComPartMapRowId.erase(rowId);
@@ -1201,11 +1217,12 @@ namespace OpenLogReplicator {
             delete sysTabComPart;
 
         } else if (object->systemTable == TABLE_SYS_TABPART) {
-            if (schema->sysTabPartMapRowId.find(rowId) == schema->sysTabPartMapRowId.end()) {
+            auto sysTabPartIt = schema->sysTabPartMapRowId.find(rowId);
+            if (sysTabPartIt == schema->sysTabPartMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabPart *sysTabPart = schema->sysTabPartMapRowId[rowId];
+            SysTabPart *sysTabPart = sysTabPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " << sysTabPart->dataObj << ", BO#: " <<
                     sysTabPart->bo << ")");
             schema->sysTabPartMapRowId.erase(rowId);
@@ -1215,11 +1232,12 @@ namespace OpenLogReplicator {
             delete sysTabPart;
 
         } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
-            if (schema->sysTabSubPartMapRowId.find(rowId) == schema->sysTabSubPartMapRowId.end()) {
+            auto sysTabSubPartIt = schema->sysTabSubPartMapRowId.find(rowId);
+            if (sysTabSubPartIt == schema->sysTabSubPartMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabSubPart *sysTabSubPart = schema->sysTabSubPartMapRowId[rowId];
+            SysTabSubPart *sysTabSubPart = sysTabSubPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " << sysTabSubPart->dataObj << ", POBJ#: " <<
                     sysTabSubPart->pObj << ")");
             schema->sysTabSubPartMapRowId.erase(rowId);
@@ -1229,11 +1247,12 @@ namespace OpenLogReplicator {
             delete sysTabSubPart;
 
         } else if (object->systemTable == TABLE_SYS_USER) {
-            if (schema->sysUserMapRowId.find(rowId) == schema->sysUserMapRowId.end()) {
+            auto sysUserIt = schema->sysUserMapRowId.find(rowId);
+            if (sysUserIt == schema->sysUserMapRowId.end()) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysUser *sysUser = schema->sysUserMapRowId[rowId];
+            SysUser *sysUser = sysUserIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (USER#: " << dec << sysUser->user << ", NAME: " << sysUser->name << ", SPARE1: " <<
                     sysUser->spare1 << ")");
             schema->sysUserMapRowId.erase(rowId);

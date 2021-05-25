@@ -865,7 +865,7 @@ namespace OpenLogReplicator {
 
         //not set yet
         if (it != valuesMap.end()) {
-            uint16_t valuePos = (*it).second;
+            uint16_t valuePos = it->second;
             value = &values[valuePos][type];
         } else {
             memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
@@ -1175,7 +1175,7 @@ namespace OpenLogReplicator {
                     uint16_t tzkey = (data[11] << 8) | data[12];
                     auto it = timeZoneMap.find(tzkey);
                     if (it != timeZoneMap.end())
-                        tz = (*it).second;
+                        tz = it->second;
                     else
                         tz = "TZ?";
                 }
@@ -1806,12 +1806,12 @@ namespace OpenLogReplicator {
         if (object != nullptr && object->guardSegNo != -1) {
             auto it = valuesMap.find(object->guardSegNo);
             if (it != valuesMap.end())
-                guardPos = (*it).second;
+                guardPos = it->second;
         }
 
         for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = (*it).first;
-            uint16_t pos = (*it).second;
+            uint16_t i = it->first;
+            uint16_t pos = it->second;
 
             for (uint64_t j = 0; j < 4; ++j) {
                 if (values[pos][j].merge) {
@@ -1898,8 +1898,8 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
 
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                    uint16_t i = (*it).first;
-                    uint16_t pos = (*it).second;
+                    uint16_t i = it->first;
+                    uint16_t pos = it->second;
 
                     TRACE(TRACE2_DML, dec << i << ": " <<
                             " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
@@ -1912,8 +1912,8 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_DML, "tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type);
 
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                    uint16_t i = (*it).first;
-                    uint16_t pos = (*it).second;
+                    uint16_t i = it->first;
+                    uint16_t pos = it->second;
 
                     TRACE(TRACE2_DML, dec << i << ": " <<
                             " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
@@ -1927,8 +1927,8 @@ namespace OpenLogReplicator {
         if (type == TRANSACTION_UPDATE) {
             if (object != nullptr && (columnFormat & COLUMN_FORMAT_FULL_UPD) == 0) {
                 for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ) {
-                    uint16_t i = (*it).first;
-                    uint16_t pos = (*it).second;
+                    uint16_t i = it->first;
+                    uint16_t pos = it->second;
 
                     //remove unchanged column values - only for tables with defined primary key
                     if (object->columns[i]->numPk == 0 && values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] == values[pos][VALUE_AFTER].length[0]) {

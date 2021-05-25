@@ -957,7 +957,6 @@ namespace OpenLogReplicator {
             firstScn = reader->firstScn;
             nextScn = reader->nextScn;
         }
-        INFO("processing redo log: " << *this);
         oracleAnalyzer->suppLogSize = 0;
 
         if (reader->bufferStart == reader->blockSize * 2) {
@@ -990,6 +989,7 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->readStartOffset = 0;
             }
         }
+        INFO("processing redo log: " << *this << " offset: " << dec << reader->bufferStart);
 
         if (lwnConfirmedBlock == 2)
             oracleAnalyzer->checkpointLastOffset = 0;

@@ -1421,7 +1421,7 @@ namespace OpenLogReplicator {
         auto it = partitionMap.find(obj);
         if (it == partitionMap.end())
             return nullptr;
-        return (*it).second;
+        return it->second;
     }
 
     stringstream& Schema::writeEscapeValue(stringstream &ss, string &str) {
@@ -1619,8 +1619,9 @@ namespace OpenLogReplicator {
         usersTouched.clear();
 
         for (typeOBJ obj : objectsTouched) {
-            if (objectMap.find(obj) != objectMap.end()) {
-                OracleObject *object = objectMap[obj];
+            auto objectMapIt = objectMap.find(obj);
+            if (objectMapIt != objectMap.end()) {
+                OracleObject *object = objectMapIt->second;
                 removeFromDict(object);
                 delete object;
             }
@@ -1641,9 +1642,10 @@ namespace OpenLogReplicator {
             if (sysObj->isDropped() || !sysObj->isTable())
                 continue;
 
-            if (sysUserMapUser.find(sysObj->owner) == sysUserMapUser.end())
+            auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
+            if (sysUserMapUserIt == sysUserMapUser.end())
                 continue;
-            SysUser *sysUser = sysUserMapUser[sysObj->owner];
+            SysUser *sysUser = sysUserMapUserIt->second;
 
             //table already added with another rule
             if (objectMap.find(sysObj->obj) != objectMap.end()) {
@@ -1651,10 +1653,11 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            if (sysTabMapObj.find(sysObj->obj) == sysTabMapObj.end()) {
+            auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
+            if (sysTabMapObjIt == sysTabMapObj.end()) {
                 RUNTIME_FAIL("inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
             }
-            SysTab *sysTab = sysTabMapObj[sysObj->obj];
+            SysTab *sysTab = sysTabMapObjIt->second;
 
             if (!regex_match(sysUser->name, regexOwner) || !regex_match(sysObj->name, regexTable))
                 continue;
