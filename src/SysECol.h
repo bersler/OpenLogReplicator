@@ -45,6 +45,7 @@ namespace OpenLogReplicator {
         typeCOL colNum;            //NULL
         typeCOL guardId;           //NULL
         bool touched;
+        bool saved;
     };
 }
 

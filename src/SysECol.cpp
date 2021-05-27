@@ -46,7 +46,8 @@ namespace OpenLogReplicator {
             tabObj(tabObj),
             colNum(colNum),
             guardId(guardId),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
     }
 }
 

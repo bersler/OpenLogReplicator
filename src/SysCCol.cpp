@@ -51,7 +51,8 @@ namespace OpenLogReplicator {
                 con(con),
                 intCol(intCol),
                 obj(obj),
-                touched(touched) {
+                touched(touched),
+                saved(false) {
         spare1.set(spare11, spare12);
     }
 }

@@ -43,7 +43,8 @@ namespace OpenLogReplicator {
             con(con),
             obj(obj),
             type(type),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
     }
 
     bool SysCDef::isPK(void) {

@@ -49,7 +49,8 @@ namespace OpenLogReplicator {
             file(file),
             block(block),
             ts(ts),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
         spare1.set(spare11, spare12);
     }
 

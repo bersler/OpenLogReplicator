@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
         vector<string> pathMapping;
         vector<string> redoLogsBatch;
         set<typeSCN> checkpointScnList;
-        typeconid conId;
+        typeCONID conId;
         string conName;
         string lastCheckedDay;
         uint64_t bigEndian;
@@ -107,17 +107,18 @@ namespace OpenLogReplicator {
         virtual const char* getModeName(void) const;
         virtual void checkConnection(void);
         virtual bool continueWithOnline(void);
-        virtual void loadSchema(void);
+        virtual void createSchema(void);
 
     public:
         OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias, const char *database,
                 uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
         virtual ~OracleAnalyzer();
 
-        typeSCN scn;
+        typeSCN firstScn;
         string database;
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMB;
+        uint64_t checkpointFirst;
         uint64_t checkpointAll;
         uint64_t checkpointOutputCheckpoint;
         uint64_t checkpointOutputLogSwitch;
@@ -196,7 +197,7 @@ namespace OpenLogReplicator {
         string applyMapping(string path);
         bool checkpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
-        bool readCheckpointVerify(string &fileName, typeSCN fileScn);
+        bool readCheckpointFile(string &fileName, typeSCN fileScn);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
         void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
@@ -209,6 +210,7 @@ namespace OpenLogReplicator {
         friend class Reader;
         friend class RedoLog;
         friend class Schema;
+        friend class SystemTransaction;
         friend class Writer;
     };
 }

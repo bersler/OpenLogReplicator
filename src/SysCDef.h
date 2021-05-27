@@ -48,6 +48,7 @@ namespace OpenLogReplicator {
         typeOBJ obj;
         typeTYPE type;
         bool touched;
+        bool saved;
     };
 }
 

@@ -48,6 +48,7 @@ namespace OpenLogReplicator {
         typeOBJ obj;
         uintX_t spare1;            //NULL
         bool touched;
+        bool saved;
     };
 }
 

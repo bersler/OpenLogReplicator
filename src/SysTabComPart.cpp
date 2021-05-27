@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
             obj(obj),
             dataObj(dataObj),
             bo(bo),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
     }
 }

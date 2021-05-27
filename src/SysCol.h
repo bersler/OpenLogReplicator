@@ -73,6 +73,7 @@ namespace OpenLogReplicator {
         int64_t null_;
         uintX_t property;
         bool touched;
+        bool saved;
     };
 }
 

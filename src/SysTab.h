@@ -62,6 +62,7 @@ namespace OpenLogReplicator {
         uintX_t flags;
         uintX_t property;
         bool touched;
+        bool saved;
     };
 }
 

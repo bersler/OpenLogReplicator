@@ -36,6 +36,7 @@ namespace OpenLogReplicator {
         typeOBJ obj;
         uintX_t flagsStg;          //NULL
         bool touched;
+        bool saved;
     };
 }
 

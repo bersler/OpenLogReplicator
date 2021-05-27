@@ -35,10 +35,10 @@ typedef uint32_t typeresetlogs;
 typedef uint32_t typeactivation;
 typedef uint16_t typeop1;
 typedef uint32_t typeop2;
-typedef uint16_t typeconid;
 typedef uint8_t typeslt;
 typedef uint8_t typerci;
 
+typedef int16_t typeCONID;
 typedef uint64_t typeUBA;
 typedef uint32_t typeSEQ;
 typedef uint64_t typeSCN;
@@ -155,6 +155,7 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000200
 #define REDO_FLAGS_FLUSH_QUEUE_ON_EXIT          0x00000400
 #define REDO_FLAGS_CHECKPOINT_LEAVE             0x00000800
+#define REDO_FLAGS_SCHEMA_LEAVE                 0x00001000
 
 #define REDO_FLAGS_EXPERIMENTAL_DDL             0x40000000
 #define REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS     0x80000000

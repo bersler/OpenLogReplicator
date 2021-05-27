@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
             return;
         //field: 12
 
-        if (validDDL && redoLogRecord->scn > oracleAnalyzer->scn)
+        if (validDDL && redoLogRecord->scn > oracleAnalyzer->firstScn)
             redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
     }
 }

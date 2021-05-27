@@ -50,6 +50,7 @@ namespace OpenLogReplicator {
         uint32_t ts;
         uintX_t spare1;            //NULL
         bool touched;
+        bool saved;
     };
 }
 

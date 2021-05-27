@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
         uint32_t rbl;
         uint8_t seq;
         uint8_t typ;
-        typeconid conId;
+        typeCONID conId;
         uint32_t flgRecord;
         uint32_t vectorNo;
         typeOBJ recordObj;

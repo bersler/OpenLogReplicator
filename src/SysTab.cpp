@@ -53,7 +53,8 @@ namespace OpenLogReplicator {
             file(file),
             block(block),
             cluCols(cluCols),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
         flags.set(flags1, flags2);
         property.set(property1, property2);
     }

@@ -66,6 +66,7 @@ namespace OpenLogReplicator {
         checkpointPath("checkpoint"),
         checkpointIntervalS(600),
         checkpointIntervalMB(100),
+        checkpointFirst(1),
         checkpointAll(0),
         checkpointOutputCheckpoint(1),
         checkpointOutputLogSwitch(1),
@@ -74,7 +75,7 @@ namespace OpenLogReplicator {
         archReader(nullptr),
         waitingForWriter(false),
         context(""),
-        scn(ZERO_SCN),
+        firstScn(ZERO_SCN),
         checkpointScn(ZERO_SCN),
         schemaScn(ZERO_SCN),
         startScn(ZERO_SCN),
@@ -95,7 +96,7 @@ namespace OpenLogReplicator {
         archReadRetry(3),
         redoVerifyDelayUS(50000),
         version(0),
-        conId(0),
+        conId(-1),
         resetlogs(0),
         activation(0),
         bigEndian(false),
@@ -135,7 +136,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
         }
 
-        schema = new Schema();
+        schema = new Schema(this);
         if (schema == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Schema) << " bytes memory (for: schema)");
         }
@@ -433,7 +434,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("startup scn is not provided");
         }
 
-        if (scn == ZERO_SCN) {
+        if (firstScn == ZERO_SCN) {
             RUNTIME_FAIL("getting database scn");
         }
 
@@ -443,26 +444,32 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::initializeSchema(void) {
         if ((flags & REDO_FLAGS_SCHEMALESS) != 0) {
-            schema->readSchema(this);
-            schema->readSys(this);
+            if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0)
+                schema->readSchemaOld();
+            else
+                schema->readSchema();
             return;
         }
 
-        if (scn == ZERO_SCN) {
+        if (firstScn == ZERO_SCN) {
             INFO("last confirmed scn: <none>");
         } else {
-            INFO("last confirmed scn: " << dec << scn);
+            INFO("last confirmed scn: " << dec << firstScn);
         }
-        if (!schema->readSchema(this)) {
-            loadSchema();
-            schema->writeSchema(this);
-            schema->writeSys(this);
+        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
+            if (!schema->readSchemaOld()) {
+                createSchema();
+                schema->writeSchemaOld();
+            }
         } else {
-            schema->readSys(this);
+            if (!schema->readSchema()) {
+                createSchema();
+                schema->writeSchema();
+            }
         }
     }
 
-    void OracleAnalyzer::loadSchema(void) {
+    void OracleAnalyzer::createSchema(void) {
         RUNTIME_FAIL("schema file missing - required for offline mode");
     }
 
@@ -471,7 +478,7 @@ namespace OpenLogReplicator {
 
         try {
             initialize();
-            while (scn == ZERO_SCN) {
+            while (firstScn == ZERO_SCN) {
                 {
                     unique_lock<mutex> lck(mtx);
                     if (startScn == ZERO_SCN)
@@ -996,6 +1003,7 @@ namespace OpenLogReplicator {
         if (!checkpointAll &&
                 checkpointLastTime.getVal() >= 0 &&
                 !switchRedo &&
+                !checkpointFirst &&
                 (offset - checkpointLastOffset < checkpointIntervalMB * 1024 * 1024 || checkpointIntervalMB == 0)) {
             if (time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0) {
                 checkpointLastTime = time_;
@@ -1004,6 +1012,7 @@ namespace OpenLogReplicator {
 
             return false;
         }
+        checkpointFirst = 0;
 
         if ((flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) != 0) {
             TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
@@ -1148,7 +1157,7 @@ namespace OpenLogReplicator {
         }
         closedir(dir);
 
-        if (scn != ZERO_SCN) {
+        if (firstScn != ZERO_SCN) {
             bool unlinkFile = false, finish;
             set<typeSCN>::iterator it = checkpointScnList.end();
 
@@ -1157,10 +1166,10 @@ namespace OpenLogReplicator {
                 string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
 
                 unlinkFile = false;
-                if (*it > scn) {
+                if (*it > firstScn) {
                     unlinkFile = true;
                 } else {
-                    if (readCheckpointVerify(fileName, *it))
+                    if (readCheckpointFile(fileName, *it))
                         unlinkFile = true;
                 }
 
@@ -1175,7 +1184,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool OracleAnalyzer::readCheckpointVerify(string &fileName, typeSCN fileScn) {
+    bool OracleAnalyzer::readCheckpointFile(string &fileName, typeSCN fileScn) {
+        //checkpoint file is read, can delete rest
+        if (sequence == 0)
+            return true;
+
         ifstream infile;
         infile.open(fileName.c_str(), ios::in);
 
@@ -1248,22 +1261,17 @@ namespace OpenLogReplicator {
 
         infile.close();
 
-        if (sequence == 0) {
-            if (minTranSeq > 0) {
-                sequence = minTranSeq;
-                readStartOffset = minTranOffset;
-            } else {
-                sequence = seqRead;
-                readStartOffset = offsetRead;
-            }
-
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << fileName << " scn: " << dec << fileScn << " seq: " << sequence <<
-                    " offset: " << readStartOffset);
-            return false;
+        if (minTranSeq > 0) {
+            sequence = minTranSeq;
+            readStartOffset = minTranOffset;
+        } else {
+            sequence = seqRead;
+            readStartOffset = offsetRead;
         }
 
-        //file is not needed - can be deleted
-        return true;
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << fileName << " scn: " << dec << fileScn << " seq: " << sequence <<
+                " offset: " << readStartOffset);
+        return false;
     }
 
     uint8_t *OracleAnalyzer::getMemoryChunk(const char *module, bool supp) {

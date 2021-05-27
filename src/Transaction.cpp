@@ -360,7 +360,7 @@ namespace OpenLogReplicator {
 
                         if (system) {
                             TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
-                            oracleAnalyzer->systemTransaction->commit();
+                            oracleAnalyzer->systemTransaction->commit(commitScn);
                             delete oracleAnalyzer->systemTransaction;
 
                             TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
@@ -416,7 +416,7 @@ namespace OpenLogReplicator {
             opCodes = 0;
 
             if (system) {
-                oracleAnalyzer->systemTransaction->commit();
+                oracleAnalyzer->systemTransaction->commit(commitScn);
                 delete oracleAnalyzer->systemTransaction;
                 oracleAnalyzer->systemTransaction = nullptr;
 

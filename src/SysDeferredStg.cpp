@@ -23,7 +23,8 @@ namespace OpenLogReplicator {
     SysDeferredStg::SysDeferredStg(RowId &rowId, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched) :
             rowId(rowId),
             obj(obj),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
         flagsStg.set(flagsStg1, flagsStg2);
     }
 

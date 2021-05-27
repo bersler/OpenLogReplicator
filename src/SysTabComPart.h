@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         typeDATAOBJ dataObj;        //NULL
         typeOBJ bo;
         bool touched;
+        bool saved;
     };
 }
 

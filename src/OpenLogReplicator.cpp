@@ -514,36 +514,36 @@ int main(int argc, char **argv) {
 
             } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
 
-                 //optional
-                 typeconid conId = 0;
-                 if (readerJSON.HasMember("con-id")) {
-                     const Value& conIdJSON = readerJSON["con-id"];
-                     conId = conIdJSON.GetUint();
-                 }
+                //optional
+                typeCONID conId = 0;
+                if (readerJSON.HasMember("con-id")) {
+                    const Value& conIdJSON = readerJSON["con-id"];
+                    conId = conIdJSON.GetInt();
+                }
 
-                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                         nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
-                 oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
+                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
+                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
+                oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
-                 if (oracleAnalyzer == nullptr) {
-                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
-                 }
+                if (oracleAnalyzer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
+                }
 
-                 if (!readerJSON.HasMember("redo-logs")) {
-                     CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
-                 }
+                if (!readerJSON.HasMember("redo-logs")) {
+                    CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
+                }
 
-                 const Value& redoLogsBatch = readerJSON["redo-logs"];
-                 if (!redoLogsBatch.IsArray()) {
-                     CONFIG_FAIL("bad JSON, \"redo-logs\" field should be array");
-                 }
+                const Value& redoLogsBatch = readerJSON["redo-logs"];
+                if (!redoLogsBatch.IsArray()) {
+                    CONFIG_FAIL("bad JSON, \"redo-logs\" field should be array");
+                }
 
-                 for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
-                     const Value& path = redoLogsBatch[j];
-                     oracleAnalyzer->addRedoLogsBatch(path.GetString());
-                 }
+                for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
+                    const Value& path = redoLogsBatch[j];
+                    oracleAnalyzer->addRedoLogsBatch(path.GetString());
+                }
 
-                 oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
+                oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
 
             } else {
                 CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());

@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (oracleAnalyzer->scn != ZERO_SCN)
+        if (oracleAnalyzer->firstScn != ZERO_SCN)
             DEBUG("client requested scn: " << dec << startScn);
     }
 
@@ -70,9 +70,9 @@ namespace OpenLogReplicator {
         response.Clear();
         if (request.database_name().compare(oracleAnalyzer->database) != 0) {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (oracleAnalyzer->scn != ZERO_SCN) {
+        } else if (oracleAnalyzer->firstScn != ZERO_SCN) {
             response.set_code(pb::ResponseCode::STARTED);
-            response.set_scn(oracleAnalyzer->scn);
+            response.set_scn(oracleAnalyzer->firstScn);
         } else {
             response.set_code(pb::ResponseCode::READY);
         }
@@ -82,9 +82,9 @@ namespace OpenLogReplicator {
         response.Clear();
         if (request.database_name().compare(oracleAnalyzer->database) != 0) {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (oracleAnalyzer->scn != ZERO_SCN) {
+        } else if (oracleAnalyzer->firstScn != ZERO_SCN) {
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
-            response.set_scn(oracleAnalyzer->scn);
+            response.set_scn(oracleAnalyzer->firstScn);
         } else {
             startScn = 0;
             startSequence = 0;
@@ -117,9 +117,9 @@ namespace OpenLogReplicator {
                     break;
             }
 
-            if (oracleAnalyzer->scn != ZERO_SCN) {
+            if (oracleAnalyzer->firstScn != ZERO_SCN) {
                 response.set_code(pb::ResponseCode::STARTED);
-                response.set_scn(oracleAnalyzer->scn);
+                response.set_scn(oracleAnalyzer->firstScn);
             } else {
                 response.set_code(pb::ResponseCode::FAILED_START);
             }

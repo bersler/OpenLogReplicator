@@ -27,7 +27,7 @@ extern void stopMain();
 namespace OpenLogReplicator {
     OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias,
             const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
-            typeconid conId) :
+            typeCONID conId) :
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks) {
 
         this->conId = conId;
@@ -40,8 +40,8 @@ namespace OpenLogReplicator {
         readCheckpoints();
         initializeSchema();
         context = database;
-        if (scn == ZERO_SCN)
-            scn = 0;
+        if (firstScn == ZERO_SCN)
+            firstScn = 0;
     }
 
     const char* OracleAnalyzerBatch::getModeName(void) const {

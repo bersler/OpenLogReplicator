@@ -759,7 +759,7 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
-        if (transaction->commitScn > oracleAnalyzer->scn) {
+        if (transaction->commitScn > oracleAnalyzer->firstScn) {
             if (transaction->shutdown)
                 shutdown = true;
 

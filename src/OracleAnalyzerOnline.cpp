@@ -682,7 +682,7 @@ namespace OpenLogReplicator {
                     DatabaseStatement stmt2(conn);
                     TRACE(TRACE2_SQL, "SQL: " << SQL_GET_CON_INFO);
                     stmt2.createStatement(SQL_GET_CON_INFO);
-                    stmt2.defineUInt16(1, conId);
+                    stmt2.defineInt16(1, conId);
                     char conNameChar[81];
                     stmt2.defineString(2, conNameChar, sizeof(conNameChar));
                     if (stmt2.executeQuery())
@@ -787,7 +787,7 @@ namespace OpenLogReplicator {
             stmt.bindUInt32(2, resetlogs);
             stmt.bindUInt32(3, activation);
             stmt.bindUInt32(4, startSequence);
-            stmt.defineUInt64(1, scn);
+            stmt.defineUInt64(1, firstScn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find redo sequence " << dec << startSequence);
@@ -806,7 +806,7 @@ namespace OpenLogReplicator {
             }
             stringstream ss;
             stmt.bindString(1, startTime);
-            stmt.defineUInt64(1, scn);
+            stmt.defineUInt64(1, firstScn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find scn for: " << startTime);
@@ -823,28 +823,28 @@ namespace OpenLogReplicator {
             }
 
             stmt.bindInt64(1, startTimeRel);
-            stmt.defineUInt64(1, scn);
+            stmt.defineUInt64(1, firstScn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find scn for " << dec << startTime);
             }
 
         } else if (startScn > 0) {
-            scn = startScn;
+            firstScn = startScn;
 
         //NOW
         } else {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
-            stmt.defineUInt64(1, scn);
+            stmt.defineUInt64(1, firstScn);
 
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("can't find database current scn");
             }
         }
 
-        if (scn == ZERO_SCN) {
+        if (firstScn == ZERO_SCN) {
             RUNTIME_FAIL("getting database scn");
         }
 
@@ -857,18 +857,18 @@ namespace OpenLogReplicator {
             DatabaseStatement stmt(conn);
             if (standby) {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
-                TRACE(TRACE2_SQL, "PARAM1: " << scn);
+                TRACE(TRACE2_SQL, "PARAM1: " << firstScn);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN_STANDBY);
             } else {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN);
-                TRACE(TRACE2_SQL, "PARAM1: " << scn);
+                TRACE(TRACE2_SQL, "PARAM1: " << firstScn);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN);
             }
-            stmt.bindUInt64(1, scn);
+            stmt.bindUInt64(1, firstScn);
             stmt.defineUInt32(1, sequence);
 
             if (!stmt.executeQuery()) {
-                RUNTIME_FAIL("getting database sequence for scn: " << dec << scn);
+                RUNTIME_FAIL("getting database sequence for scn: " << dec << firstScn);
             }
         }
 
@@ -980,16 +980,16 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::loadSchema(void) {
+    void OracleAnalyzerOnline::createSchema(void) {
         if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
-            INFO("reading dictionaries for scn " << dec << scn);
-            schemaScn = scn;
+            INFO("reading dictionaries for scn " << dec << firstScn);
+            schemaScn = firstScn;
         } else {
             INFO("reading dictionaries");
         }
 
         for (SchemaElement *element : schema->elements)
-            addTable(element->owner, element->table, element->keys, element->keysStr, element->options);
+            createSchemaForTable(element->owner, element->table, element->keys, element->keysStr, element->options);
     }
 
     void OracleAnalyzerOnline::readSystemDictionariesDetails(typeUSER user, typeOBJ obj) {
@@ -1371,12 +1371,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::readSystemDictionaries(string owner, string table) {
+    void OracleAnalyzerOnline::readSystemDictionaries(string owner, string table, typeOPTIONS options) {
         string ownerRegexp = "^" + owner + "$";
         string tableRegexp = "^" + table + "$";
-        bool trackDDL = false;
-        if (table.length() == 0)
-            trackDDL = true;
+        bool single = (options != 0);
+
+        DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << dec << (uint64_t)options);
 
         try {
             DatabaseStatement stmtUser(conn);
@@ -1396,7 +1396,7 @@ namespace OpenLogReplicator {
 
             int64_t retUser = stmtUser.executeQuery();
             while (retUser) {
-                if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12, trackDDL)) {
+                if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12, options)) {
                     userSpare11 = 0;
                     userSpare12 = 0;
                     retUser = stmtUser.next();
@@ -1405,7 +1405,7 @@ namespace OpenLogReplicator {
 
                 DatabaseStatement stmtObj(conn);
                 //reading SYS.OBJ$
-                if (trackDDL) {
+                if (options == 0) {
                     TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_USER);
                     TRACE(TRACE2_SQL, "PARAM1: " << schemaScn);
                     TRACE(TRACE2_SQL, "PARAM2: " << userUser);
@@ -1434,8 +1434,8 @@ namespace OpenLogReplicator {
 
                 int64_t objRet = stmtObj.executeQuery();
                 while (objRet) {
-                    if (schema->dictSysObjAdd(objRowid, objOwner, objObj, objDataObj, objType, objName, objFlags1, objFlags2)) {
-                        if (!trackDDL)
+                    if (schema->dictSysObjAdd(objRowid, objOwner, objObj, objDataObj, objType, objName, objFlags1, objFlags2, single)) {
+                        if (single)
                             readSystemDictionariesDetails(userUser, objObj);
                     }
                     objDataObj = 0;
@@ -1444,7 +1444,7 @@ namespace OpenLogReplicator {
                     objRet = stmtObj.next();
                 }
 
-                if (trackDDL)
+                if (!single)
                     readSystemDictionariesDetails(userUser, 0);
 
                 userSpare11 = 0;
@@ -1456,18 +1456,15 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::addTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
-        DEBUG("- reading table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options);
+    void OracleAnalyzerOnline::createSchemaForTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
+        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options);
         uint64_t tabCnt = 0;
-        regex regexOwner(owner), regexTable(table);
 
         if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
-            if (options == 0)
-                readSystemDictionaries(owner, "");
-            else
-                readSystemDictionaries(owner, table);
-
-            schema->buildMaps(owner, table, keys, keysStr, options, this, true);
+            readSystemDictionaries(owner, table, options);
+            schema->buildMaps(owner, table, keys, keysStr, options, true);
+            if ((options & OPTIONS_SCHEMA_TABLE) == 0 && schema->users.find(owner) == schema->users.end())
+                schema->users.insert(owner);
         } else {
             DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
 

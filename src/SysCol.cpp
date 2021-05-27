@@ -74,7 +74,8 @@ namespace OpenLogReplicator {
             charsetForm(charsetForm),
             charsetId(charsetId),
             null_(null_),
-            touched(touched) {
+            touched(touched),
+            saved(false) {
         property.set(property1, property2);
     }
 
