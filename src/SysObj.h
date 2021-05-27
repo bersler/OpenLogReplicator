@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSOBJ_H_
 #define SYSOBJ_H_
 
-#define SYSOBJ_FLAGS_MASK (2|16|32|128)
-
 using namespace std;
 
 namespace OpenLogReplicator {

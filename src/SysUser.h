@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSUSER_H_
 #define SYSUSER_H_
 
-#define SYSUSER_SPARE1_MASK (1|8)
-
 using namespace std;
 
 namespace OpenLogReplicator {

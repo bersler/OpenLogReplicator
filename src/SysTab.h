@@ -22,9 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSTAB_H_
 #define SYSTAB_H_
 
-#define SYSTAB_PROPERTY_MASK (32|512|1024|8192|536870912)
-#define SYSTAB_FLAGS_MASK (131072|8388608|17179869184)
-
 using namespace std;
 
 namespace OpenLogReplicator {

@@ -46,18 +46,18 @@ namespace OpenLogReplicator {
     Schema::Schema(OracleAnalyzer *oracleAnalyzer) :
         oracleAnalyzer(oracleAnalyzer),
         schemaObject(nullptr),
-		sysCColTouched(false),
-		sysCDefTouched(false),
-		sysColTouched(false),
-		sysDeferredStgTouched(false),
-		sysEColTouched(false),
-		sysObjTouched(false),
-		sysSegTouched(false),
-		sysTabTouched(false),
-		sysTabComPartTouched(false),
+        sysCColTouched(false),
+        sysCDefTouched(false),
+        sysColTouched(false),
+        sysDeferredStgTouched(false),
+        sysEColTouched(false),
+        sysObjTouched(false),
+        sysSegTouched(false),
+        sysTabTouched(false),
+        sysTabComPartTouched(false),
         sysTabPartTouched(false),
-		sysTabSubPartTouched(false),
-		sysUserTouched(false),
+        sysTabSubPartTouched(false),
+        sysUserTouched(false),
 		touched(false),
         savedDeleted(false) {
     }
@@ -1638,6 +1638,7 @@ namespace OpenLogReplicator {
             sysObjMapObj.clear();
             for (auto it : sysObjMapRowId) {
                 SysObj *sysObj = it.second;
+
                 auto sysUserIt = sysUserMapUser.find(sysObj->owner);
                 if (sysUserIt != sysUserMapUser.end()) {
                     SysUser *sysUser = sysUserIt->second;
@@ -2236,20 +2237,20 @@ namespace OpenLogReplicator {
                 //use default primary key
                 if (keys.size() == 0) {
                     if (totalPk == 0)
-                        ss << " - primary key missing";
+                        ss << ", primary key missing";
                     else if (!suppLogTablePrimary &&
                             !suppLogTableAll &&
                             !sysUser->isSuppLogPrimary() &&
                             !sysUser->isSuppLogAll() &&
                             !oracleAnalyzer->suppLogDbPrimary && !oracleAnalyzer->suppLogDbAll && supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;";
+                        ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;";
                 //user defined primary key
                 } else {
                     if (!suppLogTableAll &&
                             !sysUser->isSuppLogAll() &&
                             !oracleAnalyzer->suppLogDbAll &&
                             supLogColMissing)
-                        ss << " - supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
+                        ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
             INFO(ss.str());

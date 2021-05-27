@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSDEFERREDSTG_H_
 #define SYSDEFERREDSTG_H_
 
-#define SYSDEFERREDSTG_FLAGSSTG_MASK (4)
-
 using namespace std;
 
 namespace OpenLogReplicator {

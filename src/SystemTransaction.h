@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         bool updateNumber32u(uint32_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         bool updateNumber64(int64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         bool updateNumber64u(uint64_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
-        bool updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId, uint64_t mask64);
+        bool updateNumberXu(uintX_t &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         bool updateObj(typeOBJ &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         bool updateUser(typeUSER &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
         bool updateString(string &val, uint16_t i, uint16_t pos, OracleObject *object, RowId &rowId);
