@@ -814,12 +814,12 @@ int main(int argc, char **argv) {
                 }
 
                 //optional
-                uint64_t enableIdempocence = 1;
-                if (writerJSON.HasMember("enable-idempocence")) {
-                    const Value& enableIdempocenceJSON = writerJSON["enable-idempocence"];
-                    enableIdempocence = enableIdempocenceJSON.GetUint64();
-                    if (enableIdempocence > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"enable-idempocence\" value: " << enableIdempocenceJSON.GetString() << ", expected values {0, 1}");
+                uint64_t enableidempotence = 1;
+                if (writerJSON.HasMember("enable-idempotence")) {
+                    const Value& enableidempotenceJSON = writerJSON["enable-idempotence"];
+                    enableidempotence = enableidempotenceJSON.GetUint64();
+                    if (enableidempotence > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"enable-idempotence\" value: " << enableidempotenceJSON.GetString() << ", expected values {0, 1}");
                     }
                 }
 
@@ -828,7 +828,7 @@ int main(int argc, char **argv) {
 
                 writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyzer, brokersJSON.GetString(),
                         topicJSON.GetString(), maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS, queueSize,
-                        startScn, startSequence, startTime, startTimeRel, enableIdempocence);
+                        startScn, startSequence, startTime, startTimeRel, enableidempotence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
