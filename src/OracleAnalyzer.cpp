@@ -1083,7 +1083,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (unlinkFile) {
-                        if ((flags & REDO_FLAGS_CHECKPOINT_LEAVE) == 0) {
+                        if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
                             TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " checkpoint scn: " << dec << checkpointScn);
                             unlink(fileName.c_str());
                         }
@@ -1174,7 +1174,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (unlinkFile) {
-                    if ((flags & REDO_FLAGS_CHECKPOINT_LEAVE) == 0) {
+                    if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
                         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " scn: " << dec << *it);
                         unlink(fileName.c_str());
                     }

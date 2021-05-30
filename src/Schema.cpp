@@ -64,6 +64,10 @@ namespace OpenLogReplicator {
 
     Schema::~Schema() {
         dropSchema();
+        for (SchemaElement *element : elements)
+            delete element;
+        elements.clear();
+        users.clear();
     }
 
     void Schema::dropSchema(void) {
@@ -166,12 +170,6 @@ namespace OpenLogReplicator {
         }
         sysUserMapRowId.clear();
         sysUserMapUser.clear();
-
-        for (SchemaElement *element : elements) {
-            delete element;
-        }
-        elements.clear();
-        users.clear();
     }
 
     bool Schema::readSchemaOld(void) {
@@ -236,6 +234,8 @@ namespace OpenLogReplicator {
 
             const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
             oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
+
+            oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
 
             const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
             if (!onlineRedoJSON.IsArray()) {
@@ -622,8 +622,8 @@ namespace OpenLogReplicator {
                 //ignore other files
                 continue;
             }
-            //if (fileScn < oracleAnalyzer->firstScn && fileScn > fileScnMax)
-            //    fileScnMax = fileScn;
+            if ((fileScn < oracleAnalyzer->firstScn || oracleAnalyzer->firstScn == 0) && fileScn > fileScnMax)
+                fileScnMax = fileScn;
             schemaScnList.insert(fileScn);
         }
         closedir(dir);
@@ -643,7 +643,7 @@ namespace OpenLogReplicator {
             string fileName = oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json";
 
             unlinkFile = false;
-            if (*it > oracleAnalyzer->firstScn) {
+            if (*it > oracleAnalyzer->firstScn && oracleAnalyzer->firstScn != 0) {
                 unlinkFile = true;
             } else {
                 if (readSchemaFile(fileName, *it))
@@ -651,7 +651,7 @@ namespace OpenLogReplicator {
             }
 
             if (unlinkFile) {
-                if ((oracleAnalyzer->flags & REDO_FLAGS_CHECKPOINT_LEAVE) == 0) {
+                if ((oracleAnalyzer->flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
                     TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " scn: " << dec << *it);
                     unlink(fileName.c_str());
                 }
@@ -1090,6 +1090,9 @@ namespace OpenLogReplicator {
 
         const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
         typeresetlogs resetlogsRead = resetlogsJSON.GetUint64();
+        if (oracleAnalyzer->resetlogs == 0)
+            oracleAnalyzer->resetlogs = resetlogsRead;
+
         if (oracleAnalyzer->resetlogs != resetlogsRead) {
             WARNING("invalid resetlogs for " << fileName << " - " << dec << resetlogsRead << " instead of " << oracleAnalyzer->resetlogs << " - skipping file");
             return false;
@@ -1097,6 +1100,9 @@ namespace OpenLogReplicator {
 
         const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
         typeactivation activationRead = activationJSON.GetUint();
+        if (oracleAnalyzer->activation == 0)
+            oracleAnalyzer->activation = activationRead;
+
         if (oracleAnalyzer->activation != activationRead) {
             WARNING("invalid activation for " << fileName << " - " << dec << activationRead << " instead of " << oracleAnalyzer->activation << " - skipping file");
             return false;
@@ -1142,6 +1148,8 @@ namespace OpenLogReplicator {
 
         const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
         oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
+
+        oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
 
         const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
         if (!onlineRedoJSON.IsArray()) {
@@ -1523,7 +1531,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (unlinkFile) {
-                    if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMA_LEAVE) == 0) {
+                    if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMA_KEEP) == 0) {
                         TRACE(TRACE2_SYSTEM, "SYSTEM: delete file: " << fileName << " schema scn: " << dec << *it);
                         unlink(fileName.c_str());
                     }
@@ -2154,7 +2162,7 @@ namespace OpenLogReplicator {
                     if (it == oracleAnalyzer->outputBuffer->characterMap.end()) {
                         WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
                         RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " - unsupported character set id: " << dec << charmapId <<
-                                " for column: " << sysCol->name);
+                                " for column: " << sysObj->name << "." << sysCol->name);
                     }
                 }
 

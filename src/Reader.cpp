@@ -297,7 +297,7 @@ namespace OpenLogReplicator {
         if (ret != REDO_OK)
             return ret;
 
-        if (oracleAnalyzer->resetlogs == 0 && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+        if (oracleAnalyzer->resetlogs == 0)
             oracleAnalyzer->resetlogs = resetlogsHeader;
 
         if (resetlogsHeader != oracleAnalyzer->resetlogs) {
@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        if (oracleAnalyzer->activation == 0 && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+        if (oracleAnalyzer->activation == 0)
             oracleAnalyzer->activation = activationHeader;
 
         if (activationHeader != 0 && activationHeader != oracleAnalyzer->activation) {

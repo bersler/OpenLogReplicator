@@ -38,10 +38,10 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzerBatch::start(void) {
         readCheckpoints();
-        initializeSchema();
-        context = database;
         if (firstScn == ZERO_SCN)
             firstScn = 0;
+        initializeSchema();
+        context = database;
     }
 
     const char* OracleAnalyzerBatch::getModeName(void) const {
