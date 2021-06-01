@@ -182,14 +182,14 @@ namespace OpenLogReplicator {
         static void writeSCNBig(uint8_t* buf, typeSCN val);
 
         void setBigEndian(void);
-        virtual void start(void);
+        virtual void positionReader(void);
         virtual void initialize(void);
-        void initializeSchema(void);
         void *run(void);
         virtual Reader *readerCreate(int64_t group);
         void checkOnlineRedoLogs();
         bool readerUpdateRedoLog(Reader *reader);
         virtual void doShutdown(void);
+        virtual void goStandby(void);
         void addPathMapping(const char* source, const char* target);
         void addRedoLogsBatch(string path);
         static void archGetLogPath(OracleAnalyzer *oracleAnalyzer);

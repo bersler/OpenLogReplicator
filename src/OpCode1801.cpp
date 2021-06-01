@@ -47,18 +47,12 @@ namespace OpenLogReplicator {
         uint16_t tmp = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 16);
         //uint16_t seq = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 18);
         //uint16_t cnt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
-        if (type == 85 // truncate table
-                //|| type == 1 //create table
-                || type == 12 // drop table
-                || type == 15 // alter table
-                || type == 86 // truncate partition
-        )
-            validDDL = true;
 
         //temporary object
-        if (tmp == 4 || tmp == 5 || tmp == 6 || tmp == 8 || tmp == 9 || tmp == 10) {
+        if (tmp == 4 || tmp == 5 || tmp == 6 || tmp == 8 || tmp == 9 || tmp == 10)
             validDDL = false;
-        }
+        else
+            validDDL = true;
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
             return;
@@ -104,7 +98,7 @@ namespace OpenLogReplicator {
             return;
         //field: 12
 
-        if (validDDL && redoLogRecord->scn > oracleAnalyzer->firstScn)
+        if (validDDL)
             redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
     }
 }

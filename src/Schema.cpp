@@ -172,413 +172,6 @@ namespace OpenLogReplicator {
         sysUserMapUser.clear();
     }
 
-    bool Schema::readSchemaOld(void) {
-        ifstream infile;
-        string fileName = oracleAnalyzer->database + "-schema.json";
-        infile.open(fileName.c_str(), ios::in);
-
-        if (!infile.is_open()) {
-            INFO("missing schema for " << oracleAnalyzer->database);
-            return false;
-        }
-        INFO("reading schema for " << oracleAnalyzer->database << " (old style)");
-
-        string schemaStringJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
-        Document document;
-
-        if (schemaStringJSON.length() == 0 || document.Parse(schemaStringJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
-                    ", message: " << GetParseError_En(document.GetParseError()));
-        }
-
-        if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
-            const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
-            oracleAnalyzer->database = databaseJSON.GetString();
-
-            const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-            bool bigEndian = bigEndianJSON.GetUint();
-            if (bigEndian)
-                oracleAnalyzer->setBigEndian();
-
-            const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-            oracleAnalyzer->resetlogs = resetlogsJSON.GetUint();
-
-            const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-            oracleAnalyzer->activation = activationJSON.GetUint();
-
-            const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
-            oracleAnalyzer->context = databaseContextJSON.GetString();
-
-            const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
-            oracleAnalyzer->conId = conIdJSON.GetInt();
-
-            const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
-            oracleAnalyzer->conName = conNameJSON.GetString();
-
-            const Value& dbBlockChecksumJSON = getJSONfieldD(fileName, document, "db-block-checksum");
-            oracleAnalyzer->dbBlockChecksum = dbBlockChecksumJSON.GetString();
-
-            const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
-            oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
-
-            if (oracleAnalyzer->logArchiveFormat.length() == 0) {
-                const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
-                oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
-            }
-
-            const Value& logArchiveDestJSON = getJSONfieldD(fileName, document, "log-archive-dest");
-            oracleAnalyzer->logArchiveDest = logArchiveDestJSON.GetString();
-
-            const Value& nlsCharacterSetJSON = getJSONfieldD(fileName, document, "nls-character-set");
-            oracleAnalyzer->nlsCharacterSet = nlsCharacterSetJSON.GetString();
-
-            const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
-            oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
-
-            oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
-
-            const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
-            if (!onlineRedoJSON.IsArray()) {
-                CONFIG_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
-            }
-
-            for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
-                const Value& groupJSON = getJSONfieldV(fileName, onlineRedoJSON[i], "group");
-                int64_t group = groupJSON.GetInt64();
-
-                const Value& path = onlineRedoJSON[i]["path"];
-                if (!path.IsArray()) {
-                    CONFIG_FAIL("bad JSON, path-mapping should be array");
-                }
-
-                Reader *onlineReader = oracleAnalyzer->readerCreate(group);
-                for (SizeType j = 0; j < path.Size(); ++j) {
-                    const Value& pathVal = path[j];
-                    onlineReader->paths.push_back(pathVal.GetString());
-                }
-            }
-
-            if ((oracleAnalyzer->flags & REDO_FLAGS_ARCH_ONLY) == 0)
-                oracleAnalyzer->checkOnlineRedoLogs();
-            oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
-        }
-
-        const Value& schemaJSON = getJSONfieldD(fileName, document, "schema");
-        if (!schemaJSON.IsArray()) {
-            CONFIG_FAIL("bad JSON in " << fileName << ", schema should be an array");
-        }
-
-        for (SizeType i = 0; i < schemaJSON.Size(); ++i) {
-            const Value& objJSON = getJSONfieldV(fileName, schemaJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-            typeDATAOBJ dataObj = 0;
-
-            if (schemaJSON[i].HasMember("data-obj")) {
-                const Value& dataObjJSON = getJSONfieldV(fileName, schemaJSON[i], "data-obj");
-                dataObj = dataObjJSON.GetUint();
-            }
-
-            const Value& userJSON = getJSONfieldV(fileName, schemaJSON[i], "user");
-            typeUSER user = userJSON.GetUint();
-
-            const Value& cluColsJSON = getJSONfieldV(fileName, schemaJSON[i], "clu-cols");
-            typeCOL cluCols = cluColsJSON.GetInt();
-
-            const Value& totalPkJSON = getJSONfieldV(fileName, schemaJSON[i], "total-pk");
-            typeCOL totalPk = totalPkJSON.GetInt();
-
-            const Value& optionsJSON = getJSONfieldV(fileName, schemaJSON[i], "options");
-            typeOPTIONS options = optionsJSON.GetUint();
-
-            const Value& maxSegColJSON = getJSONfieldV(fileName, schemaJSON[i], "max-seg-col");
-            typeCOL maxSegCol = maxSegColJSON.GetInt();
-
-            const Value& ownerJSON = getJSONfieldV(fileName, schemaJSON[i], "owner");
-            const char *owner = ownerJSON.GetString();
-
-            const Value& nameJSON = getJSONfieldV(fileName, schemaJSON[i], "name");
-            const char *name = nameJSON.GetString();
-
-            schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, owner, name);
-            if (schemaObject == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
-            }
-            schemaObject->totalPk = totalPk;
-            schemaObject->maxSegCol = maxSegCol;
-
-            const Value& columnsJSON = getJSONfieldV(fileName, schemaJSON[i], "columns");
-            if (!columnsJSON.IsArray()) {
-                CONFIG_FAIL("bad JSON in " << fileName << ", columns should be an array");
-            }
-
-            for (SizeType j = 0; j < columnsJSON.Size(); ++j) {
-                const Value& colNoJSON = getJSONfieldV(fileName, columnsJSON[j], "col-no");
-                typeCOL colNo = colNoJSON.GetInt();
-
-                const Value& segColNoJSON = getJSONfieldV(fileName, columnsJSON[j], "seg-col-no");
-                typeCOL segColNo = segColNoJSON.GetInt();
-                if (segColNo > 1000) {
-                    CONFIG_FAIL("bad JSON in " << fileName << ", invalid seg-col-no value");
-                }
-
-                const Value& columnNameJSON = getJSONfieldV(fileName, columnsJSON[j], "name");
-                const char* columnName = columnNameJSON.GetString();
-
-                const Value& typeNoJSON = getJSONfieldV(fileName, columnsJSON[j], "type-no");
-                typeTYPE typeNo = typeNoJSON.GetUint();
-
-                const Value& lengthJSON = getJSONfieldV(fileName, columnsJSON[j], "length");
-                uint64_t length = lengthJSON.GetUint64();
-
-                typeCOL guardSegNo = -1;
-                if (columnsJSON[j].HasMember("guard-seg-no")) {
-                    const Value& guardSegNoJSON = getJSONfieldV(fileName, columnsJSON[j], "guard-seg-no");
-                    guardSegNo = guardSegNoJSON.GetInt();
-                }
-
-                int64_t precision = -1;
-                if (columnsJSON[j].HasMember("precision")) {
-                    const Value& precisionJSON = getJSONfieldV(fileName, columnsJSON[j], "precision");
-                    precision = precisionJSON.GetInt64();
-                }
-
-                int64_t scale =  -1;
-                if (columnsJSON[j].HasMember("scale")) {
-                    const Value& scaleJSON = getJSONfieldV(fileName, columnsJSON[j], "scale");
-                    scale = scaleJSON.GetInt64();
-                }
-
-                uint64_t numPk = 0;
-                if (columnsJSON[j].HasMember("num-pk")) {
-                    const Value& numPkJSON = getJSONfieldV(fileName, columnsJSON[j], "num-pk");
-                    numPk = numPkJSON.GetUint64();
-                }
-
-                uint64_t charsetId = 0;
-                if (columnsJSON[j].HasMember("charset-id")) {
-                    const Value& charsetIdJSON = getJSONfieldV(fileName, columnsJSON[j], "charset-id");
-                    charsetId = charsetIdJSON.GetUint64();
-                }
-
-                bool nullable = false;
-                if (columnsJSON[j].HasMember("nullable")) {
-                    const Value& nullableJSON = getJSONfieldV(fileName, columnsJSON[j], "nullable");
-                    nullable = nullableJSON.GetUint();
-                }
-
-                bool invisible = false;
-                if (columnsJSON[j].HasMember("invisible")) {
-                    const Value& invisibleJSON = getJSONfieldV(fileName, columnsJSON[j], "invisible");
-                    invisible = invisibleJSON.GetUint();
-                }
-
-                bool storedAsLob = false;
-                if (columnsJSON[j].HasMember("stored-as-lob")) {
-                    const Value& storedAsLobJSON = getJSONfieldV(fileName, columnsJSON[j], "stored-as-lob");
-                    storedAsLob = storedAsLobJSON.GetUint();
-                }
-
-                bool constraint = false;
-                if (columnsJSON[j].HasMember("constraint")) {
-                    const Value& constraintJSON = getJSONfieldV(fileName, columnsJSON[j], "constraint");
-                    constraint = constraintJSON.GetUint();
-                }
-
-                bool added = false;
-                if  (columnsJSON[j].HasMember("added")) {
-                    const Value& addedJSON = getJSONfieldV(fileName, columnsJSON[j], "added");
-                    added = addedJSON.GetUint();
-                }
-
-                bool guard = false;
-                if (columnsJSON[j].HasMember("guard")) {
-                    const Value& guardJSON = getJSONfieldV(fileName, columnsJSON[j], "guard");
-                    guard = guardJSON.GetUint();
-                }
-
-                OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk, charsetId,
-                        nullable, invisible, storedAsLob, constraint, added, guard);
-                if (column == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation1)");
-                }
-
-                if (column->guard)
-                    schemaObject->guardSegNo = column->segColNo - 1;
-
-                schemaObject->columns.push_back(column);
-            }
-
-            if (schemaJSON[i].HasMember("partitions")) {
-                const Value& partitionsJSON = getJSONfieldV(fileName, schemaJSON[i], "partitions");
-                if (!partitionsJSON.IsArray()) {
-                    CONFIG_FAIL("bad JSON in " << fileName << ", partitions should be an array");
-                }
-
-                for (SizeType j = 0; j < partitionsJSON.Size(); ++j) {
-                    const Value& partitionObjJSON = getJSONfieldV(fileName, partitionsJSON[j], "obj");
-                    typeOBJ partitionObj = partitionObjJSON.GetUint();
-
-                    const Value& partitionDataObjJSON = getJSONfieldV(fileName, partitionsJSON[j], "data-obj");
-                    typeOBJ partitionDataObj = partitionDataObjJSON.GetUint();
-
-                    typeOBJ2 objx = (((typeOBJ2)partitionObj) << 32) | ((typeOBJ2)partitionDataObj);
-                    schemaObject->partitions.push_back(objx);
-                }
-            }
-
-            schemaObject->updatePK();
-            addToDict(schemaObject);
-            schemaObject = nullptr;
-        }
-
-        infile.close();
-
-        return true;
-    }
-
-    void Schema::writeSchemaOld(void) {
-        INFO("writing schema information for " << oracleAnalyzer->database << " (old style)");
-
-        string fileName = oracleAnalyzer->database + "-schema.json";
-        ofstream outfile;
-        outfile.open(fileName.c_str(), ios::out | ios::trunc);
-
-        if (!outfile.is_open()) {
-            RUNTIME_FAIL("writing schema data");
-        }
-
-        stringstream ss;
-        bool hasPrev = false;
-        ss << "{";
-
-        if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
-            ss << "\"database\":\"" << oracleAnalyzer->database << "\"," <<
-                    "\"big-endian\":" << dec << oracleAnalyzer->bigEndian << "," <<
-                    "\"resetlogs\":" << dec << oracleAnalyzer->resetlogs << "," <<
-                    "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
-                    "\"context\":\"" << oracleAnalyzer->context << "\"," <<
-                    "\"con-id\":" << dec << oracleAnalyzer->conId << "," <<
-                    "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
-                    "\"db-recovery-file-dest\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
-            ss << "\"," << "\"log-archive-dest\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
-            ss << "\"," << "\"db-block-checksum\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->dbBlockChecksum);
-            ss << "\"," << "\"log-archive-format\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->logArchiveFormat);
-            ss << "\"," << "\"nls-character-set\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->nlsCharacterSet);
-            ss << "\"," << "\"nls-nchar-character-set\":\"";
-            writeEscapeValue(ss, oracleAnalyzer->nlsNcharCharacterSet);
-
-            ss << "\"," << "\"online-redo\":[";
-
-            bool hasPrev2;
-            for (Reader *reader : oracleAnalyzer->readers) {
-                if (reader->group == 0)
-                    continue;
-
-                if (hasPrev)
-                    ss << ",";
-                else
-                    hasPrev = true;
-
-                hasPrev2 = false;
-                ss << "{\"group\":" << reader->group << ",\"path\":[";
-                for (string &path : reader->paths) {
-                    if (hasPrev2)
-                        ss << ",";
-                    else
-                        hasPrev2 = true;
-
-                    ss << "\"";
-                    writeEscapeValue(ss, path);
-                    ss << "\"";
-                }
-                ss << "]}";
-            }
-            ss << "],";
-        }
-
-        hasPrev = false;
-        ss << "\"schema\":[";
-        for (auto it : objectMap) {
-            OracleObject *object = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss << "{\"obj\":" << dec << object->obj << "," <<
-                    "\"data-obj\":" << dec << object->dataObj << "," <<
-                    "\"user\":" << dec << object->user << "," <<
-                    "\"clu-cols\":" << dec << object->cluCols << "," <<
-                    "\"total-pk\":" << dec << object->totalPk << "," <<
-                    "\"options\":" << dec << (uint64_t)object->options << "," <<
-                    "\"max-seg-col\":" << dec << object->maxSegCol << "," <<
-                    "\"owner\":\"" << object->owner << "\"," <<
-                    "\"name\":\"" << object->name << "\"," <<
-                    "\"columns\":[";
-
-            for (uint64_t i = 0; i < object->columns.size(); ++i) {
-                if (object->columns[i] == nullptr)
-                    continue;
-
-                if (i > 0)
-                    ss << ",";
-                ss << "{\"col-no\":" << dec << object->columns[i]->colNo <<
-                        ",\"seg-col-no\":" << dec << object->columns[i]->segColNo <<
-                        ",\"name\":\"" << object->columns[i]->name << "\"" <<
-                        ",\"type-no\":" << dec << object->columns[i]->typeNo <<
-                        ",\"length\":" << dec << object->columns[i]->length;
-                if (object->columns[i]->guardSegNo != -1)
-                    ss << ",\"guard-seg-no\":" << dec << object->columns[i]->guardSegNo;
-                if (object->columns[i]->precision != -1)
-                    ss << ",\"precision\":" << dec << object->columns[i]->precision;
-                if (object->columns[i]->scale != -1)
-                    ss << ",\"scale\":" << dec << object->columns[i]->scale;
-                if (object->columns[i]->numPk > 0)
-                    ss << ",\"num-pk\":" << dec << object->columns[i]->numPk;
-                if (object->columns[i]->charsetId != 0)
-                    ss << ",\"charset-id\":" << dec << object->columns[i]->charsetId;
-                if (object->columns[i]->nullable)
-                    ss << ",\"nullable\":" << dec << object->columns[i]->nullable;
-                if (object->columns[i]->invisible)
-                    ss << ",\"invisible\":" << dec << object->columns[i]->invisible;
-                if (object->columns[i]->storedAsLob)
-                    ss << ",\"stored-as-lob\":" << dec << object->columns[i]->storedAsLob;
-                if (object->columns[i]->constraint)
-                    ss << ",\"constraint\":" << dec << object->columns[i]->constraint;
-                if (object->columns[i]->added)
-                    ss << ",\"added\":" << dec << object->columns[i]->added;
-                if (object->columns[i]->guard)
-                    ss << ",\"guard\":" << dec << object->columns[i]->guard;
-                ss << "}";
-            }
-            ss << "]";
-
-            if (object->partitions.size() > 0) {
-                ss << ",\"partitions\":[";
-                for (uint64_t i = 0; i < object->partitions.size(); ++i) {
-                    if (i > 0)
-                        ss << ",";
-                    typeOBJ partitionObj = object->partitions[i] >> 32;
-                    typeDATAOBJ partitionDataObj = object->partitions[i] & 0xFFFFFFFF;
-                    ss << "{\"obj\":" << dec << partitionObj << "," <<
-                            "\"data-obj\":" << dec << partitionDataObj << "}";
-                }
-                ss << "]";
-            }
-            ss << "}";
-        }
-
-        ss << "]}";
-        outfile << ss.rdbuf();
-        outfile.close();
-    }
-
     bool Schema::readSchema(void) {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: searching for previous schema on: " << oracleAnalyzer->checkpointPath);
         DIR *dir;
@@ -588,7 +181,7 @@ namespace OpenLogReplicator {
 
         string newLastCheckedDay;
         struct dirent *ent;
-        typeSCN fileScnMax = 0;
+        typeSCN fileScnMax = ZERO_SCN;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
@@ -622,17 +215,14 @@ namespace OpenLogReplicator {
                 //ignore other files
                 continue;
             }
-            if ((fileScn < oracleAnalyzer->firstScn || oracleAnalyzer->firstScn == 0) && fileScn > fileScnMax)
+            if (fileScn <= oracleAnalyzer->firstScn && (fileScn > fileScnMax || fileScnMax == ZERO_SCN))
                 fileScnMax = fileScn;
             schemaScnList.insert(fileScn);
         }
         closedir(dir);
 
         //none found
-        if (fileScnMax == 0)
-            return false;
-
-        if (oracleAnalyzer->firstScn == ZERO_SCN)
+        if (fileScnMax == ZERO_SCN)
             return false;
 
         bool unlinkFile = false, firstFound = false;
@@ -643,7 +233,7 @@ namespace OpenLogReplicator {
             string fileName = oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json";
 
             unlinkFile = false;
-            if (*it > oracleAnalyzer->firstScn && oracleAnalyzer->firstScn != 0) {
+            if (*it > oracleAnalyzer->firstScn && oracleAnalyzer->firstScn != ZERO_SCN) {
                 unlinkFile = true;
             } else {
                 if (readSchemaFile(fileName, *it))
@@ -1825,45 +1415,6 @@ namespace OpenLogReplicator {
             sysEColTouched = false;
         }
 
-        //SYS.SEG$
-        if (sysSegTouched) {
-            sysSegMapKey.clear();
-
-            for (auto it : sysSegMapRowId) {
-                SysSeg *sysSeg = it.second;
-
-                //non-zero segment
-                if (sysSeg->file != 0 || sysSeg->block != 0) {
-                    SysTabKey sysTabKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-                    //find SYS.TAB$
-                    auto sysTabMapKeyIt = sysTabMapKey.find(sysTabKey);
-                    if (sysTabMapKeyIt != sysTabMapKey.end()) {
-                        SysTab* sysTab = sysTabMapKeyIt->second;
-                        //find SYS.OBJ$
-                        if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end()) {
-                            SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-                            sysSegMapKey[sysSegKey] = sysSeg;
-                            if (sysSeg->touched) {
-                                sysSeg->touched = false;
-                                changedSchema = true;
-                            }
-                            continue;
-                        }
-                    }
-                }
-
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", FILE#: " << dec << sysSeg->file << ", BLOCK#: " <<
-                        sysSeg->block << ", TS#: " << sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
-                removeRowId.push_back(it.first);
-                delete sysSeg;
-            }
-
-            for (RowId rowId: removeRowId)
-                sysSegMapRowId.erase(rowId);
-            removeRowId.clear();
-            sysSegTouched = false;
-        }
-
         //SYS.TAB$
         if (sysTabTouched) {
             sysTabMapObj.clear();
@@ -1983,6 +1534,45 @@ namespace OpenLogReplicator {
                 sysTabSubPartMapRowId.erase(rowId);
             removeRowId.clear();
             sysTabSubPartTouched = false;
+        }
+
+        //SYS.SEG$
+        if (sysSegTouched) {
+            sysSegMapKey.clear();
+
+            for (auto it : sysSegMapRowId) {
+                SysSeg *sysSeg = it.second;
+
+                //non-zero segment
+                if (sysSeg->file != 0 || sysSeg->block != 0) {
+                    SysTabKey sysTabKey(sysSeg->file, sysSeg->block, sysSeg->ts);
+                    //find SYS.TAB$
+                    auto sysTabMapKeyIt = sysTabMapKey.find(sysTabKey);
+                    if (sysTabMapKeyIt != sysTabMapKey.end()) {
+                        SysTab* sysTab = sysTabMapKeyIt->second;
+                        //find SYS.OBJ$
+                        if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end()) {
+                            SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
+                            sysSegMapKey[sysSegKey] = sysSeg;
+                            if (sysSeg->touched) {
+                                sysSeg->touched = false;
+                                changedSchema = true;
+                            }
+                            continue;
+                        }
+                    }
+                }
+
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", FILE#: " << dec << sysSeg->file << ", BLOCK#: " <<
+                        sysSeg->block << ", TS#: " << sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
+                removeRowId.push_back(it.first);
+                delete sysSeg;
+            }
+
+            for (RowId rowId: removeRowId)
+                sysSegMapRowId.erase(rowId);
+            removeRowId.clear();
+            sysSegTouched = false;
         }
 
         touched = false;

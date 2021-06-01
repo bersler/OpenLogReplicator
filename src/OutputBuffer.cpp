@@ -69,6 +69,7 @@ namespace OpenLogReplicator {
         mergesMax(0),
         id(0),
         transactionType(0),
+        newTran(false),
         defaultCharacterMapId(0),
         defaultCharacterNcharMapId(0),
         writer(nullptr),
@@ -1421,6 +1422,13 @@ namespace OpenLogReplicator {
         if (defaultCharacterNcharMapId == 0) {
             RUNTIME_FAIL("unsupported NLS_NCHAR_CHARACTERSET value");
         }
+    }
+
+    void OutputBuffer::processBegin(typeSCN scn, typetime time_, typeXID xid) {
+        lastTime = time_;
+        lastScn = scn;
+        lastXid = xid;
+        newTran = true;
     }
 
     //0x05010B0B

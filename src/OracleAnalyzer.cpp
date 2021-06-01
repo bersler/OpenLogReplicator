@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
     OracleAnalyzer::OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias,
             const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks) :
         Thread(alias),
-        sequence(0),
+        sequence(ZERO_SEQ),
         suppLogDbPrimary(0),
         suppLogDbAll(0),
         memoryMinMb(memoryMinMb),
@@ -423,54 +423,24 @@ namespace OpenLogReplicator {
         archReader = readerCreate(0);
     }
 
-    void OracleAnalyzer::start(void) {
+    void OracleAnalyzer::positionReader(void) {
         if (startSequence > 0) {
-            RUNTIME_FAIL("starting by scn is not supported for offline mode");
+            sequence = startSequence;
+            firstScn = 0;
         } else if (startTime.length() > 0) {
             RUNTIME_FAIL("starting by time is not supported for offline mode");
         } else if (startTimeRel > 0) {
             RUNTIME_FAIL("starting by relative time is not supported for offline mode");
         } else if (startScn != ZERO_SCN) {
-            RUNTIME_FAIL("startup scn is not provided");
-        }
-
-        if (firstScn == ZERO_SCN) {
-            RUNTIME_FAIL("getting database scn");
-        }
-
-        readCheckpoints();
-        initializeSchema();
-    }
-
-    void OracleAnalyzer::initializeSchema(void) {
-        if ((flags & REDO_FLAGS_SCHEMALESS) != 0) {
-            if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0)
-                schema->readSchemaOld();
-            else
-                schema->readSchema();
-            return;
-        }
-
-        if (firstScn == ZERO_SCN) {
-            INFO("last confirmed scn: <none>");
-        } else {
-            INFO("last confirmed scn: " << dec << firstScn);
-        }
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) == 0) {
-            if (!schema->readSchemaOld()) {
-                createSchema();
-                schema->writeSchemaOld();
-            }
-        } else {
-            if (!schema->readSchema()) {
-                createSchema();
-                schema->writeSchema();
-            }
+            sequence = 0;
+            firstScn = startScn;
         }
     }
 
     void OracleAnalyzer::createSchema(void) {
-        RUNTIME_FAIL("schema file missing - required for offline mode");
+        if ((flags & REDO_FLAGS_SCHEMALESS) == 0) {
+            RUNTIME_FAIL("schema file missing");
+        }
     }
 
     void *OracleAnalyzer::run(void) {
@@ -495,13 +465,13 @@ namespace OpenLogReplicator {
 
                 string starting;
                 if (startSequence > 0)
-                    starting = "seq:" + to_string(startSequence);
+                    starting = "seq: " + to_string(startSequence);
                 else if (startTime.length() > 0)
-                    starting = "time:" + startTime;
+                    starting = "time: " + startTime;
                 else if (startTimeRel > 0)
-                    starting = "time-rel:" + to_string(startTimeRel);
+                    starting = "time-rel: " + to_string(startTimeRel);
                 else if (startScn > 0)
-                    starting = "scn:" + to_string(startScn);
+                    starting = "scn: " + to_string(startScn);
                 else
                     starting = "now";
 
@@ -510,7 +480,19 @@ namespace OpenLogReplicator {
                 if (shutdown)
                     return 0;
 
-                start();
+                positionReader();
+                readCheckpoints();
+                if (!schema->readSchema()) {
+                    createSchema();
+                    schema->writeSchema();
+                }
+                goStandby();
+
+                if (firstScn == ZERO_SCN) {
+                    INFO("last confirmed scn: <none>, starting sequence: " << dec << sequence << ", offset: " << readStartOffset);
+                } else {
+                    INFO("last confirmed scn: " << dec << firstScn << ", starting sequence: " << dec << sequence << ", offset: " << readStartOffset);
+                }
 
                 if ((dbBlockChecksum.compare("OFF") == 0 || dbBlockChecksum.compare("FALSE") == 0) &&
                         (disableChecks & DISABLE_CHECK_BLOCK_SUM) == 0) {
@@ -1014,81 +996,79 @@ namespace OpenLogReplicator {
         }
         checkpointFirst = 0;
 
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) != 0) {
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
-                    sequence << " offset: " << offset << " switch: " << switchRedo);
-            string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json";
-            ofstream outfile;
-            outfile.open(fileName.c_str(), ios::out | ios::trunc);
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
+                sequence << " offset: " << offset << " switch: " << switchRedo);
+        string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json";
+        ofstream outfile;
+        outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
-            if (!outfile.is_open()) {
-                RUNTIME_FAIL("writing checkpoint data to " << fileName);
+        if (!outfile.is_open()) {
+            RUNTIME_FAIL("writing checkpoint data to " << fileName);
+        }
+
+        typeSEQ minSequence = ZERO_SEQ;
+        uint64_t minOffset = 0;
+        typeXID minXid;
+
+        for (auto it : xidTransactionMap) {
+            Transaction *transaction = it.second;
+            if (transaction->firstSequence < minSequence) {
+                minSequence = transaction->firstSequence;
+                minOffset = transaction->firstOffset;
+                minXid = transaction->xid;
+            } else if (transaction->firstSequence == minSequence && transaction->firstOffset < minOffset) {
+                minOffset = transaction->firstOffset;
+                minXid = transaction->xid;
             }
+        }
 
-            typeSEQ minSequence = ZERO_SEQ;
-            uint64_t minOffset = 0;
-            typeXID minXid;
+        stringstream ss;
+        ss << "{\"database\":\"" << database
+                << "\",\"scn\":" << dec << scn
+                << ",\"resetlogs\":" << dec << resetlogs
+                << ",\"activation\":" << dec << activation
+                << ",\"time\":" << dec << time_.getVal()
+                << ",\"sequence\":" << dec << sequence
+                << ",\"offset\":" << dec << offset
+                << ",\"switch\":" << dec << switchRedo;
 
-            for (auto it : xidTransactionMap) {
-                Transaction *transaction = it.second;
-                if (transaction->firstSequence < minSequence) {
-                    minSequence = transaction->firstSequence;
-                    minOffset = transaction->firstOffset;
-                    minXid = transaction->xid;
-                } else if (transaction->firstSequence == minSequence && transaction->firstOffset < minOffset) {
-                    minOffset = transaction->firstOffset;
-                    minXid = transaction->xid;
+        if (minSequence != ZERO_SEQ) {
+            ss << ",\"min-tran\":{"
+                    << "\"seq\":" << dec << minSequence
+                    << ",\"offset\":" << dec << minOffset
+                    << ",\"xid:\":\"" << hex << setfill('0') << setw(16) << minXid << "\"}";
+        }
+
+        ss << "}";
+
+        outfile << ss.rdbuf();
+        outfile.close();
+
+        checkpointScnList.insert(scn);
+        if (checkpointScn != ZERO_SCN) {
+            bool unlinkFile = false, firstFound = false;
+            set<typeSCN>::iterator it = checkpointScnList.end();
+
+            while (it != checkpointScnList.begin()) {
+                --it;
+                string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
+
+                unlinkFile = false;
+                if (*it > checkpointScn) {
+                    continue;
+                } else {
+                    if (!firstFound)
+                        firstFound = true;
+                    else
+                        unlinkFile = true;
                 }
-            }
 
-            stringstream ss;
-            ss << "{\"database\":\"" << database
-                    << "\",\"scn\":" << dec << scn
-                    << ",\"resetlogs\":" << dec << resetlogs
-                    << ",\"activation\":" << dec << activation
-                    << ",\"time\":" << dec << time_.getVal()
-                    << ",\"sequence\":" << dec << sequence
-                    << ",\"offset\":" << dec << offset
-                    << ",\"switch\":" << dec << switchRedo;
-
-            if (minSequence != ZERO_SEQ) {
-                ss << ",\"min-tran\":{"
-                        << "\"seq\":" << dec << minSequence
-                        << ",\"offset\":" << dec << minOffset
-                        << ",\"xid:\":\"" << hex << setfill('0') << setw(16) << minXid << "\"}";
-            }
-
-            ss << "}";
-
-            outfile << ss.rdbuf();
-            outfile.close();
-
-            checkpointScnList.insert(scn);
-            if (checkpointScn != ZERO_SCN) {
-                bool unlinkFile = false, firstFound = false;
-                set<typeSCN>::iterator it = checkpointScnList.end();
-
-                while (it != checkpointScnList.begin()) {
-                    --it;
-                    string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
-
-                    unlinkFile = false;
-                    if (*it > checkpointScn) {
-                        continue;
-                    } else {
-                        if (!firstFound)
-                            firstFound = true;
-                        else
-                            unlinkFile = true;
+                if (unlinkFile) {
+                    if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " checkpoint scn: " << dec << checkpointScn);
+                        unlink(fileName.c_str());
                     }
-
-                    if (unlinkFile) {
-                        if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " checkpoint scn: " << dec << checkpointScn);
-                            unlink(fileName.c_str());
-                        }
-                        it = checkpointScnList.erase(it);
-                    }
+                    it = checkpointScnList.erase(it);
                 }
             }
         }
@@ -1107,9 +1087,6 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::readCheckpoints(void) {
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) == 0)
-            return;
-
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information on: " << checkpointPath);
         DIR *dir;
         if ((dir = opendir(checkpointPath.c_str())) == nullptr) {
@@ -1157,7 +1134,7 @@ namespace OpenLogReplicator {
         }
         closedir(dir);
 
-        if (firstScn != ZERO_SCN) {
+        if (firstScn != ZERO_SCN && firstScn != 0) {
             bool unlinkFile = false, finish;
             set<typeSCN>::iterator it = checkpointScnList.end();
 
@@ -1186,7 +1163,7 @@ namespace OpenLogReplicator {
 
     bool OracleAnalyzer::readCheckpointFile(string &fileName, typeSCN fileScn) {
         //checkpoint file is read, can delete rest
-        if (sequence == 0)
+        if (sequence != ZERO_SEQ && sequence > 0)
             return true;
 
         ifstream infile;
@@ -1333,6 +1310,9 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::checkConnection(void) {
+    }
+
+    void OracleAnalyzer::goStandby(void) {
     }
 
     bool OracleAnalyzer::continueWithOnline(void) {

@@ -157,9 +157,6 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_CHECKPOINT_KEEP              0x00000800
 #define REDO_FLAGS_SCHEMA_KEEP                  0x00001000
 
-#define REDO_FLAGS_EXPERIMENTAL_DDL             0x40000000
-#define REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS     0x80000000
-
 #define DISABLE_CHECK_GRANTS                    0x00000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x00000002
 #define DISABLE_CHECK_BLOCK_SUM                 0x00000004

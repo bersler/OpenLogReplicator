@@ -972,22 +972,20 @@ namespace OpenLogReplicator {
             }
         }
 
-        if ((oracleAnalyzer->flags & REDO_FLAGS_EXPERIMENTAL_CHECKPOINTS) != 0) {
-            if (oracleAnalyzer->readStartOffset > 0) {
-                lwnConfirmedBlock = oracleAnalyzer->readStartOffset / reader->blockSize;
-                TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << dec << oracleAnalyzer->readStartOffset << " (block " << dec << lwnConfirmedBlock << ")");
+        if (oracleAnalyzer->readStartOffset > 0) {
+            lwnConfirmedBlock = oracleAnalyzer->readStartOffset / reader->blockSize;
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << dec << oracleAnalyzer->readStartOffset << " (block " << dec << lwnConfirmedBlock << ")");
 
-                reader->bufferStart = oracleAnalyzer->readStartOffset;
-                reader->bufferEnd = oracleAnalyzer->readStartOffset;
+            reader->bufferStart = oracleAnalyzer->readStartOffset;
+            reader->bufferEnd = oracleAnalyzer->readStartOffset;
 
-                while (lwnAllocated > 1)
-                    oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
-                uint64_t *length = (uint64_t *)lwnChunks[0];
-                *length = sizeof(uint64_t);
-                lwnRecords = 0;
+            while (lwnAllocated > 1)
+                oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
+            uint64_t *length = (uint64_t *)lwnChunks[0];
+            *length = sizeof(uint64_t);
+            lwnRecords = 0;
 
-                oracleAnalyzer->readStartOffset = 0;
-            }
+            oracleAnalyzer->readStartOffset = 0;
         }
         INFO("processing redo log: " << *this << " offset: " << dec << reader->bufferStart);
 

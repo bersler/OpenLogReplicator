@@ -297,10 +297,8 @@ namespace OpenLogReplicator {
         buf[length] = 0;
     }
 
-    void OutputBufferProtobuf::processBegin(typeSCN scn, typetime time_, typeXID xid) {
-        lastTime = time_;
-        lastScn = scn;
-        lastXid = xid;
+    void OutputBufferProtobuf::processBegin(void) {
+        newTran = false;
         outputBufferBegin(0);
 
         if (redoResponsePB != nullptr) {
@@ -331,6 +329,12 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processCommit(void) {
+        //skip empty transaction
+        if (newTran) {
+            newTran = false;
+            return;
+        }
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("PB commit processing failed, message missing, internal error");
@@ -364,6 +368,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("PB insert processing failed, message missing, internal error");
@@ -442,6 +449,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("PB update processing failed, message missing, internal error");
@@ -555,6 +565,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("PB delete processing failed, message missing, internal error");
@@ -633,6 +646,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (redoResponsePB == nullptr) {
                 RUNTIME_FAIL("PB commit processing failed, message missing, internal error");

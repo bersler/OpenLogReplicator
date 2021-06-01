@@ -92,6 +92,7 @@ namespace OpenLogReplicator {
         uint64_t mergesMax;
         uint64_t id;
         uint64_t transactionType;
+        bool newTran;
 
         void valuesRelease();
         void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb);
@@ -124,6 +125,7 @@ namespace OpenLogReplicator {
         virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
         virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
                 const char *sql, uint64_t sqlLength) = 0;
+        virtual void processBegin(void) = 0;
 
     public:
         uint64_t defaultCharacterMapId;
@@ -147,7 +149,7 @@ namespace OpenLogReplicator {
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
 
-        virtual void processBegin(typeSCN scn, typetime time_, typeXID xid) = 0;
+        void processBegin(typeSCN scn, typetime time_, typeXID xid);
         virtual void processCommit(void) = 0;
         void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
         void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);

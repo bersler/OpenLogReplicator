@@ -133,8 +133,6 @@ namespace OpenLogReplicator {
         virtual ~Schema();
 
         void dropSchema(void);
-        bool readSchemaOld(void);
-        void writeSchemaOld(void);
         bool readSchema(void);
         bool readSchemaFile(string &fileName, typeSCN fileScn);
         void writeSchema(void);

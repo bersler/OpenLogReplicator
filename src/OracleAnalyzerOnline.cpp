@@ -168,153 +168,6 @@ namespace OpenLogReplicator {
             ",  LF.IS_RECOVERY_DEST_FILE DESC"
             ",  LF.MEMBER ASC");
 
-    const char* OracleAnalyzerOnline::SQL_GET_TABLE_LIST(
-            "SELECT"
-            "   T.DATAOBJ#"
-            ",  T.OBJ#"
-            ",  O.OWNER#"
-            ",  T.CLUCOLS"
-            ",  U.NAME"
-            ",  O.NAME"
-            ",  DECODE(BITAND(T.PROPERTY, 1024), 0, 0, 1)"
-            //7: IOT overflow segment
-            ",  DECODE((BITAND(T.PROPERTY, 512)+BITAND(T.FLAGS, 536870912)), 0, 0, 1)"
-            ",  DECODE(BITAND(U.SPARE1, 1), 1, 1, 0)"
-            ",  DECODE(BITAND(U.SPARE1, 8), 8, 1, 0)"
-            //10: partitioned
-            ",  CASE WHEN BITAND(T.PROPERTY, 32) = 32 THEN 1 ELSE 0 END"
-            //11: temporary, secondary, in-memory temp
-            ",  DECODE(BITAND(O.FLAGS,2)+BITAND(O.FLAGS,16)+BITAND(O.FLAGS,32), 0, 0, 1)"
-            //12: nested
-            ",  DECODE(BITAND(T.PROPERTY, 8192), 8192, 1, 0)"
-            ",  DECODE(BITAND(T.FLAGS, 131072), 131072, 1, 0)"
-            ",  DECODE(BITAND(T.FLAGS, 8388608), 8388608, 1, 0)"
-            //15: compressed
-            ",  CASE WHEN (BITAND(T.PROPERTY, 32) = 32) THEN 0 WHEN (BITAND(T.PROPERTY, 17179869184) = 17179869184) THEN DECODE(BITAND(DS.FLAGS_STG, 4), 4, 1, 0) ELSE DECODE(BITAND(S.SPARE1, 2048), 2048, 1, 0) END "
-            " FROM"
-            "   SYS.OBJ$ O"
-            " JOIN"
-            "   SYS.TAB$ T ON"
-            "     T.OBJ# = O.OBJ#"
-            " JOIN"
-            "   SYS.USER$ U ON"
-            "     O.OWNER# = U.USER#"
-            " LEFT OUTER JOIN"
-            "   SYS.SEG$ S ON "
-            "     T.FILE# = S.FILE# AND T.BLOCK# = S.BLOCK# AND T.TS# = S.TS#"
-            " LEFT OUTER JOIN"
-            "   SYS.DEFERRED_STG$ DS ON"
-            "     T.OBJ# = DS.OBJ#"
-            " WHERE"
-            "   BITAND(O.FLAGS, 128) = 0"
-            "   AND REGEXP_LIKE(U.NAME, :i)"
-            "   AND REGEXP_LIKE(O.NAME, :j)"
-            " ORDER BY"
-            "   4,5");
-
-    const char* OracleAnalyzerOnline::SQL_GET_COLUMN_LIST(
-            "SELECT"
-            "   C.COL#"
-            ",  C.SEGCOL#"
-            ",  C.NAME"
-            ",  C.TYPE#"
-            ",  C.LENGTH"
-            ",  C.PRECISION#"
-            ",  C.SCALE"
-            ",  C.CHARSETFORM"
-            ",  C.CHARSETID"
-            ",  C.NULL$"
-            //11: invisible
-            ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
-            //12: stored as lob
-            ",  DECODE(BITAND(C.PROPERTY, 128), 128, 1, 0)"
-            //13: constraint
-            ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
-            //14: added column
-            ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
-            //15: guard column
-            ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
-            ",  E.GUARD_ID"
-            //17: number of primary key constraints
-            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
-            //18: number of supplementary columns
-            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
-            " FROM"
-            "   SYS.COL$ C"
-            " LEFT OUTER JOIN"
-            "   SYS.ECOL$ E ON"
-            "     E.TABOBJ# = C.OBJ#"
-            "     AND E.COLNUM = C.SEGCOL#"
-            " WHERE"
-            "   C.SEGCOL# > 0"
-            "   AND C.OBJ# = :i"
-            " ORDER BY"
-            "   2");
-
-    const char* OracleAnalyzerOnline::SQL_GET_COLUMN_LIST11(
-            "SELECT"
-            "   C.COL#"
-            ",  C.SEGCOL#"
-            ",  C.NAME"
-            ",  C.TYPE#"
-            ",  C.LENGTH"
-            ",  C.PRECISION#"
-            ",  C.SCALE"
-            ",  C.CHARSETFORM"
-            ",  C.CHARSETID"
-            ",  C.NULL$"
-            //11: invisible
-            ",  DECODE(BITAND(C.PROPERTY, 32), 32, 1, 0)"
-            //12: stored as lob
-            ",  DECODE(BITAND(C.PROPERTY, 128), 128, 1, 0)"
-            //13: constraint
-            ",  DECODE(BITAND(C.PROPERTY, 256), 256, 1, 0)"
-            //14: added column
-            ",  DECODE(BITAND(C.PROPERTY, 1073741824), 1073741824, 1, 0)"
-            //15: guard column
-            ",  DECODE(BITAND(C.PROPERTY, 549755813888), 549755813888, 1, 0)"
-            ",  -1 AS GUARD_ID"
-            //17: number of primary key constraints
-            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L JOIN SYS.CDEF$ D ON D.CON# = L.CON# AND D.TYPE# = 2 WHERE L.INTCOL# = C.INTCOL# and L.OBJ# = C.OBJ#)"
-            //18: number of supplementary columns
-            ",  (SELECT COUNT(*) FROM SYS.CCOL$ L, SYS.CDEF$ D WHERE D.TYPE# = 12 AND D.CON# = L.CON# AND L.OBJ# = C.OBJ# AND L.INTCOL# = C.INTCOL# AND L.SPARE1 = 0)"
-            " FROM"
-            "   SYS.COL$ C"
-            " WHERE"
-            "   C.SEGCOL# > 0"
-            "   AND C.OBJ# = :i"
-            " ORDER BY"
-            "   2");
-
-    const char* OracleAnalyzerOnline::SQL_GET_PARTITION_LIST(
-            "SELECT"
-            "   TP.OBJ#"
-            ",  TP.DATAOBJ#"
-            " FROM"
-            "   SYS.TABPART$ TP"
-            " WHERE"
-            "   TP.BO# = :1"
-            " UNION ALL"
-            " SELECT"
-            "   TSP.OBJ#"
-            ",  TSP.DATAOBJ#"
-            " FROM"
-            "   SYS.TABSUBPART$ TSP"
-            " JOIN"
-            "   SYS.TABCOMPART$ TCP ON"
-            "     TCP.OBJ# = TSP.POBJ#"
-            " WHERE"
-            "   TCP.BO# = :i");
-
-    const char* OracleAnalyzerOnline::SQL_GET_SUPPLEMNTAL_LOG_TABLE(
-            "SELECT"
-            "   D.TYPE#"
-            " FROM"
-            "   SYS.CDEF$ D"
-            " WHERE"
-            "   D.OBJ# = :i"
-            "   AND (D.TYPE# = 14 OR D.TYPE# = 17)");
-
     const char* OracleAnalyzerOnline::SQL_GET_PARAMETER(
             "SELECT"
             "   VALUE"
@@ -763,7 +616,7 @@ namespace OpenLogReplicator {
         archReader = readerCreate(0);
     }
 
-    void OracleAnalyzerOnline::start(void) {
+    void OracleAnalyzerOnline::positionReader(void) {
         //position by sequence
         if (startSequence > 0) {
             DatabaseStatement stmt(conn);
@@ -848,10 +701,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("getting database scn");
         }
 
-        readCheckpoints();
-        initializeSchema();
-
-        if (sequence == 0) {
+        if (sequence == ZERO_SEQ) {
             DEBUG("starting sequence not found - starting with new batch");
 
             DatabaseStatement stmt(conn);
@@ -871,11 +721,6 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("getting database sequence for scn: " << dec << firstScn);
             }
         }
-
-        DEBUG("start SEQ: " << dec << sequence);
-
-        if (!keepConnection)
-            closeConnection();
     }
 
     void OracleAnalyzerOnline::checkConnection(void) {
@@ -896,6 +741,12 @@ namespace OpenLogReplicator {
             sleep(5);
         }
     }
+
+    void OracleAnalyzerOnline::goStandby(void) {
+        if (keepConnection)
+            closeConnection();
+    }
+
 
     void OracleAnalyzerOnline::closeConnection(void) {
         if (conn != nullptr) {
@@ -981,12 +832,9 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::createSchema(void) {
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
-            INFO("reading dictionaries for scn " << dec << firstScn);
-            schemaScn = firstScn;
-        } else {
-            INFO("reading dictionaries");
-        }
+        checkConnection();
+        INFO("reading dictionaries for scn: " << dec << firstScn);
+        schemaScn = firstScn;
 
         for (SchemaElement *element : schema->elements)
             createSchemaForTable(element->owner, element->table, element->keys, element->keysStr, element->options);
@@ -1458,269 +1306,11 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzerOnline::createSchemaForTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
         DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options);
-        uint64_t tabCnt = 0;
 
-        if ((flags & REDO_FLAGS_EXPERIMENTAL_DDL) != 0) {
-            readSystemDictionaries(owner, table, options);
-            schema->buildMaps(owner, table, keys, keysStr, options, true);
-            if ((options & OPTIONS_SCHEMA_TABLE) == 0 && schema->users.find(owner) == schema->users.end())
-                schema->users.insert(owner);
-        } else {
-            DatabaseStatement stmt(conn), stmtCol(conn), stmtPart(conn), stmtSupp(conn);
-
-            string ownerRegexp = "^" + owner + "$";
-            string tableRegexp = "^" + table + "$";
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_TABLE_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: " << ownerRegexp);
-            TRACE(TRACE2_SQL, "PARAM2: " << tableRegexp);
-            stmt.createStatement(SQL_GET_TABLE_LIST);
-            typeDATAOBJ dataObj; stmt.defineUInt32(1, dataObj);
-            typeOBJ obj; stmt.defineUInt32(2, obj);
-            typeUSER user; stmt.defineUInt32(3, user);
-            typeCOL cluCols; stmt.defineInt16(4, cluCols);
-            char ownerName[129]; stmt.defineString(5, ownerName, sizeof(ownerName));
-            char tableName[129]; stmt.defineString(6, tableName, sizeof(tableName));
-            uint64_t clustered; stmt.defineUInt64(7, clustered);
-            uint64_t iot; stmt.defineUInt64(8, iot);
-            uint64_t suppLogSchemaPrimary; stmt.defineUInt64(9, suppLogSchemaPrimary);
-            uint64_t suppLogSchemaAll; stmt.defineUInt64(10, suppLogSchemaAll);
-            uint64_t partitioned; stmt.defineUInt64(11, partitioned);
-            uint64_t temporary; stmt.defineUInt64(12, temporary);
-            uint64_t nested; stmt.defineUInt64(13, nested);
-            uint64_t rowMovement; stmt.defineUInt64(14, rowMovement);
-            uint64_t dependencies; stmt.defineUInt64(15, dependencies);
-            uint64_t compressed; stmt.defineUInt64(16, compressed);
-
-            if (version12) {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST);
-                TRACE(TRACE2_SQL, "PARAM1: ?");
-                stmtCol.createStatement(SQL_GET_COLUMN_LIST);
-            } else {
-                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_COLUMN_LIST11);
-                TRACE(TRACE2_SQL, "PARAM1: ?");
-                stmtCol.createStatement(SQL_GET_COLUMN_LIST11);
-            }
-            typeCOL colNo; stmtCol.defineInt16(1, colNo);
-            typeCOL segColNo; stmtCol.defineInt16(2, segColNo);
-            char columnName[129]; stmtCol.defineString(3, columnName, sizeof(columnName));
-            uint64_t typeNo; stmtCol.defineUInt64(4, typeNo);
-            uint64_t length; stmtCol.defineUInt64(5, length);
-            int64_t precision; stmtCol.defineInt64(6, precision);
-            int64_t scale; stmtCol.defineInt64(7, scale);
-            uint64_t charsetForm; stmtCol.defineUInt64(8, charsetForm);
-            uint64_t charmapId; stmtCol.defineUInt64(9, charmapId);
-            int64_t nullable; stmtCol.defineInt64(10, nullable);
-            int64_t invisible; stmtCol.defineInt64(11, invisible);
-            int64_t storedAsLob; stmtCol.defineInt64(12, storedAsLob);
-            int64_t constraint; stmtCol.defineInt64(13, constraint);
-            int64_t added; stmtCol.defineInt64(14, added);
-            int64_t guard; stmtCol.defineInt64(15, guard);
-            typeCOL guardSegNo; stmtCol.defineInt16(16, guardSegNo);
-            typeCOL numPk; stmtCol.defineInt16(17, numPk);
-            typeCOL numSup; stmtCol.defineInt16(18, numSup);
-            stmtCol.bindUInt32(1, obj);
-
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARTITION_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: ?");
-            TRACE(TRACE2_SQL, "PARAM2: ?");
-            stmtPart.createStatement(SQL_GET_PARTITION_LIST);
-            typeOBJ partitionObj; stmtPart.defineUInt32(1, partitionObj);
-            typeDATAOBJ partitionDataObj; stmtPart.defineUInt32(2, partitionDataObj);
-            stmtPart.bindUInt32(1, obj);
-            stmtPart.bindUInt32(2, obj);
-
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-            TRACE(TRACE2_SQL, "PARAM1: ?" );
-            stmtSupp.createStatement(SQL_GET_SUPPLEMNTAL_LOG_TABLE);
-            uint64_t typeNo2; stmtSupp.defineUInt64(1, typeNo2);
-            stmtSupp.bindUInt32(1, obj);
-
-            stmt.bindString(1, ownerRegexp.c_str());
-            stmt.bindString(2, tableRegexp.c_str());
-            cluCols = 0;
-            dataObj = 0;
-            int64_t ret = stmt.executeQuery();
-
-            while (ret) {
-                //skip Index Organized Tables (IOT)
-                if (iot) {
-                    DEBUG("- skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - IOT");
-                    cluCols = 0;
-                    dataObj = 0;
-                    ret = stmt.next();
-                    continue;
-                }
-
-                //skip temporary tables
-                if (temporary) {
-                    DEBUG("- skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - temporary table");
-                    cluCols = 0;
-                    dataObj = 0;
-                    ret = stmt.next();
-                    continue;
-                }
-
-                //skip nested tables
-                if (nested) {
-                    DEBUG("- skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - nested table");
-                    cluCols = 0;
-                    dataObj = 0;
-                    ret = stmt.next();
-                    continue;
-                }
-
-                //skip compressed tables
-                if (compressed) {
-                    DEBUG("- skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - compressed table");
-                    dataObj = 0;
-                    cluCols = 0;
-                    ret = stmt.next();
-                    continue;
-                }
-
-                //table already added with another rule
-                if (schema->checkDict(obj, dataObj) != nullptr) {
-                    DEBUG("- skipped: " << ownerName << "." << tableName << " (obj: " << dec << obj << ") - already added");
-                    dataObj = 0;
-                    cluCols = 0;
-                    ret = stmt.next();
-                    continue;
-                }
-
-                typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
-                bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
-
-                schema->schemaObject = new OracleObject(obj, dataObj, user, cluCols, options, ownerName, tableName);
-                if (schema->schemaObject == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation)");
-                }
-                ++tabCnt;
-
-                if (partitioned) {
-                    int64_t ret2 = stmtPart.executeQuery();
-
-                    while (ret2) {
-                        schema->schemaObject->addPartition(partitionObj, partitionDataObj);
-                        ret2 = stmtPart.next();
-                    }
-                }
-
-                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !suppLogDbAll && !suppLogSchemaAll && !suppLogSchemaAll) {
-                    int64_t ret2 = stmtSupp.executeQuery();
-
-                    while (ret2) {
-                        if (typeNo2 == 14) suppLogTablePrimary = true;
-                        else if (typeNo2 == 17) suppLogTableAll = true;
-                        ret2 = stmtSupp.next();
-                    }
-                }
-
-                precision = -1;
-                scale = -1;
-                guardSegNo = -1;
-                int64_t ret2 = stmtCol.executeQuery();
-
-                while (ret2) {
-                    if (charsetForm == 1)
-                        charmapId = outputBuffer->defaultCharacterMapId;
-                    else if (charsetForm == 2)
-                        charmapId = outputBuffer->defaultCharacterNcharMapId;
-
-                    //check character set for char and varchar2
-                    if (typeNo == 1 || typeNo == 96) {
-                        auto it = outputBuffer->characterMap.find(charmapId);
-                        if (it == outputBuffer->characterMap.end()) {
-                            WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
-                            RUNTIME_FAIL("table " << ownerName << "." << tableName << " - unsupported character set id: " << dec << charmapId <<
-                                    " for column: " << columnName);
-                        }
-                    }
-
-                    //column part of defined primary key
-                    if (keys.size() > 0) {
-                        //manually defined pk overlaps with table pk
-                        if (numPk > 0 && (suppLogTablePrimary || suppLogSchemaPrimary || suppLogDbPrimary))
-                            numSup = 1;
-                        numPk = 0;
-                        for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
-                            if (strcmp(columnName, it->c_str()) == 0) {
-                                numPk = 1;
-                                ++keysCnt;
-                                if (numSup == 0)
-                                    supLogColMissing = true;
-                                break;
-                            }
-                        }
-                    } else {
-                        if (numPk > 0 && numSup == 0)
-                            supLogColMissing = true;
-                    }
-
-                    DEBUG("    - col: " << dec << segColNo << ": " << columnName << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
-
-                    OracleColumn *column = new OracleColumn(colNo, guardSegNo, segColNo, columnName, typeNo, length, precision, scale, numPk,
-                            charmapId, nullable, invisible, storedAsLob, constraint, added, guard);
-                    if (column == nullptr) {
-                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation)");
-                    }
-
-                    totalPk += numPk;
-                    if (segColNo > maxSegCol)
-                        maxSegCol = segColNo;
-
-                    schema->schemaObject->addColumn(column);
-
-                    precision = -1;
-                    scale = -1;
-                    guardSegNo = -1;
-                    ret2 = stmtCol.next();
-                }
-
-                //check if table has all listed columns
-                if (keys.size() != keysCnt) {
-                    RUNTIME_FAIL("table " << ownerName << "." << tableName << " couldn't find all column set (" << keysStr << ")");
-                }
-
-                stringstream ss;
-                ss << "- found: " << ownerName << "." << tableName << " (dataobj: " << dec << dataObj << ", obj: " << dec << obj << ")";
-                if (clustered)
-                    ss << ", part of cluster";
-                if (partitioned)
-                    ss << ", partitioned";
-                if (dependencies)
-                    ss << ", row dependencies";
-                if (rowMovement)
-                    ss << ", row movement enabled";
-
-                if ((disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
-                    //use default primary key
-                    if (keys.size() == 0) {
-                        if (totalPk == 0)
-                            ss << " - primary key missing";
-                        else if (!suppLogTablePrimary && !suppLogTableAll &&
-                                !suppLogSchemaPrimary && !suppLogSchemaAll &&
-                                !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
-                            ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP DATA (PRIMARY KEY) COLUMNS;";
-                    //user defined primary key
-                    } else {
-                        if (!suppLogTableAll && !suppLogSchemaAll && !suppLogDbAll && supLogColMissing)
-                            ss << " - supplemental log missing, try: ALTER TABLE " << ownerName << "." << tableName << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << obj << " (" << keysStr << ") ALWAYS;";
-                    }
-                }
-                INFO(ss.str());
-
-                schema->schemaObject->maxSegCol = maxSegCol;
-                schema->schemaObject->totalPk = totalPk;
-                schema->schemaObject->updatePK();
-                schema->addToDict(schema->schemaObject);
-                schema->schemaObject = nullptr;
-
-                dataObj = 0;
-                cluCols = 0;
-                ret = stmt.next();
-            }
-        }
-        DEBUG("- total: " << dec << tabCnt << " tables");
+        readSystemDictionaries(owner, table, options);
+        schema->buildMaps(owner, table, keys, keysStr, options, true);
+        if ((options & OPTIONS_SCHEMA_TABLE) == 0 && schema->users.find(owner) == schema->users.end())
+            schema->users.insert(owner);
     }
 
     void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer *oracleAnalyzer) {
@@ -1759,9 +1349,7 @@ namespace OpenLogReplicator {
                 ret = stmt.next();
             }
         }
-
-        if (!((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection)
-            ((OracleAnalyzerOnline*)oracleAnalyzer)->closeConnection();
+        oracleAnalyzer->goStandby();
     }
 
     const char* OracleAnalyzerOnline::getModeName(void) const {

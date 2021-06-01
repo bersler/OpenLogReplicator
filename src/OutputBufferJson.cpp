@@ -523,10 +523,8 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void OutputBufferJson::processBegin(typeSCN scn, typetime time_, typeXID xid) {
-        lastTime = time_;
-        lastScn = scn;
-        lastXid = xid;
+    void OutputBufferJson::processBegin(void) {
+        newTran = false;
         hasPreviousRedo = false;
 
         outputBufferBegin(0);
@@ -548,6 +546,12 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processCommit(void) {
+        //skip empty transaction
+        if (newTran) {
+            newTran = false;
+            return;
+        }
+
         if (messageFormat == MESSAGE_FORMAT_FULL)
             outputBufferAppend("]}");
         else {
@@ -567,6 +571,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
@@ -628,6 +635,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
@@ -716,6 +726,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
@@ -777,6 +790,9 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
+        if (newTran)
+            processBegin();
+
         if (messageFormat == MESSAGE_FORMAT_FULL) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');

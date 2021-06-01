@@ -419,10 +419,10 @@ int main(int argc, char **argv) {
                         oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
                     else if (strcmp(archJSON.GetString(), "online") == 0) {
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
-                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
-                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0)
+                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0) {
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
-                    else {
+                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = true;
+                    } else {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
                     }
                 }

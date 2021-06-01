@@ -41,11 +41,6 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SEQUENCE_FROM_SCN;
         static const char* SQL_GET_SEQUENCE_FROM_SCN_STANDBY;
         static const char* SQL_GET_LOGFILE_LIST;
-        static const char* SQL_GET_TABLE_LIST;
-        static const char* SQL_GET_COLUMN_LIST;
-        static const char* SQL_GET_COLUMN_LIST11;
-        static const char* SQL_GET_PARTITION_LIST;
-        static const char* SQL_GET_SUPPLEMNTAL_LOG_TABLE;
         static const char* SQL_GET_PARAMETER;
         static const char* SQL_GET_PROPERTY;
         static const char* SQL_GET_SYS_CCOL_USER;
@@ -79,7 +74,7 @@ namespace OpenLogReplicator {
         string password;
         string connectString;
 
-        virtual void start(void);
+        virtual void positionReader(void);
         virtual void initialize(void);
         virtual void checkConnection(void);
         void closeConnection(void);
@@ -102,6 +97,7 @@ namespace OpenLogReplicator {
                 const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
                 const char *user, const char *password, const char *connectString, bool standby);
         virtual ~OracleAnalyzerOnline();
+        virtual void goStandby(void);
 
         static void archGetLogOnline(OracleAnalyzer *oracleAnalyzer);
     };

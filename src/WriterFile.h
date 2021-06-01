@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
 
     public:
         WriterFile(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *name, uint64_t pollIntervalUS,
-                uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSeq, const char* startTime,
+                uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
                 uint64_t startTimeRel);
         virtual ~WriterFile();
     };

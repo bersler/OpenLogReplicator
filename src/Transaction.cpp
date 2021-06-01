@@ -270,13 +270,6 @@ namespace OpenLogReplicator {
                                 type = TRANSACTION_UPDATE;
                         }
 
-                        /*
-                        if (redoLogRecord1->suppLogType == 0) {
-                            WARNING("HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
-                            WARNING("HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
-                            RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing");
-                        }*/
-
                         if (first1 == nullptr) {
                             first1 = redoLogRecord1;
                             first2 = redoLogRecord2;
