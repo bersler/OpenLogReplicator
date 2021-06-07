@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
         //field: 1
         ktub(fieldPos, fieldLength);
         redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;

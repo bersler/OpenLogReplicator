@@ -200,8 +200,8 @@ namespace OpenLogReplicator {
         bool readCheckpointFile(string &fileName, typeSCN fileScn);
 
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
+        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code);
+        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code);
 
         uint8_t *getMemoryChunk(const char *module, bool supp);
         void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);

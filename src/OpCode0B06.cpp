@@ -36,11 +36,11 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0601);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0602))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         redoLogRecord->rowData = fieldNum + 1;
         //fields: 3 .. to 3 + cc - 1
         for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
-            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0603);
 
             if (oracleAnalyzer->dumpRedoLog >= 1)
                 dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);

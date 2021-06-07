@@ -675,7 +675,7 @@ namespace OpenLogReplicator {
 
         INFO("Oracle analyzer for: " << database << " is shutting down");
 
-        DEBUG(*this);
+        DEBUG("state at stop: " << *this);
         uint64_t buffersMax = readerDropAll();
 
         INFO("Oracle analyzer for: " << database << " is shut down, allocated at most " << dec <<
@@ -905,7 +905,7 @@ namespace OpenLogReplicator {
         redoLogsBatch.push_back(path);
     }
 
-    void OracleAnalyzer::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+    void OracleAnalyzer::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
         ++fieldNum;
         if (fieldNum > redoLogRecord->fieldCnt) {
             REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
@@ -914,7 +914,9 @@ namespace OpenLogReplicator {
                     ", dataObj: " << dec << redoLogRecord->dataObj <<
                     ", op: " << hex << redoLogRecord->opCode <<
                     ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
-                    ", suppCC: " << dec << redoLogRecord->suppLogCC);
+                    ", suppCC: " << dec << redoLogRecord->suppLogCC <<
+                    ", fieldLength: " << dec << fieldLength <<
+                    ", code: " << hex << code);
         }
 
         if (fieldNum == 1)
@@ -925,11 +927,15 @@ namespace OpenLogReplicator {
 
         if (fieldPos + fieldLength > redoLogRecord->length) {
             REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                    ", pos: " << dec << fieldPos << ", length:" << fieldLength << " max: " << redoLogRecord->length);
+                    ", pos: " << dec << fieldPos <<
+                    ", length:" << fieldLength <<
+                    ", max: " << redoLogRecord->length <<
+                    ", code: " << hex << code);
         }
     }
 
-    bool OracleAnalyzer::nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+    bool OracleAnalyzer::nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength,
+            uint32_t code) {
         if (fieldNum >= redoLogRecord->fieldCnt)
             return false;
 
@@ -943,7 +949,10 @@ namespace OpenLogReplicator {
 
         if (fieldPos + fieldLength > redoLogRecord->length) {
             REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                    ", pos: " << dec << fieldPos << ", length:" << fieldLength << " max: " << redoLogRecord->length);
+                    ", pos: " << dec << fieldPos <<
+                    ", length:" << fieldLength <<
+                    ", max: " << redoLogRecord->length <<
+                    ", code: " << hex << code);
         }
         return true;
     }
@@ -1134,6 +1143,7 @@ namespace OpenLogReplicator {
         }
         closedir(dir);
 
+        DEBUG("first scn found: " << dec << firstScn);
         if (firstScn != ZERO_SCN && firstScn != 0) {
             bool unlinkFile = false, finish;
             set<typeSCN>::iterator it = checkpointScnList.end();

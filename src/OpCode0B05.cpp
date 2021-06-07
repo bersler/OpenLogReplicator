@@ -36,25 +36,25 @@ namespace OpenLogReplicator {
         uint64_t fieldNum = 0, fieldPos = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0501);
         //field: 1
         ktbRedo(fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0502))
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
         redoLogRecord->nullsDelta = fieldPos + 26;
         uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0503))
             return;
         //field: 3
         redoLogRecord->colNumsDelta = fieldPos;
         uint8_t *colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
 
         if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
-            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0504);
             //field: 4
             redoLogRecord->rowData = fieldNum;
             if (oracleAnalyzer->dumpRedoLog >= 1)
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
 
             //fields: 4 + cc .. 4 + cc - 1
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0505);
 
                 if (oracleAnalyzer->dumpRedoLog >= 1)
                     dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);

@@ -1439,7 +1439,7 @@ namespace OpenLogReplicator {
         OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
-            oracleAnalyzer->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength);
+            oracleAnalyzer->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength, 0x000001);
 
         fieldPosStart = fieldPos;
 
@@ -1506,7 +1506,7 @@ namespace OpenLogReplicator {
         OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
-            oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+            oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000002);
 
         fieldPosStart = fieldPos;
 
@@ -1645,7 +1645,7 @@ namespace OpenLogReplicator {
                 }
 
                 for (uint64_t i = fieldNum; i < redoLogRecord1p->rowData - 1; ++i)
-                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000003);
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
@@ -1678,7 +1678,7 @@ namespace OpenLogReplicator {
                         colLength = 0;
                     else {
                         oracleAnalyzer->skipEmptyFields(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
-                        oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                        oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000004);
                         colLength = fieldLength;
                     }
 
@@ -1695,7 +1695,7 @@ namespace OpenLogReplicator {
             //supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
                 for (uint64_t i = fieldNum; i < redoLogRecord1p->suppLogRowData - 1; ++i)
-                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000005);
 
                 colNums = redoLogRecord1p->data + redoLogRecord1p->suppLogNumsDelta;
                 uint8_t* colSizes = redoLogRecord1p->data + redoLogRecord1p->suppLogLenDelta;
@@ -1709,7 +1709,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength);
+                    oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000006);
                     colNum = oracleAnalyzer->read16(colNums) - 1;
 
                     if (object != nullptr && colNum >= object->maxSegCol) {
@@ -1759,7 +1759,7 @@ namespace OpenLogReplicator {
                 }
 
                 for (uint64_t i = fieldNum; i < redoLogRecord2p->rowData - 1; ++i)
-                    oracleAnalyzer->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
+                    oracleAnalyzer->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength, 0x000007);
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
                     if (fieldNum + 1 > redoLogRecord2p->fieldCnt) {
@@ -1777,7 +1777,7 @@ namespace OpenLogReplicator {
                     if (i == redoLogRecord2p->cc - 1 && (redoLogRecord2p->fb & FB_N) != 0)
                         fb |= FB_N;
 
-                    oracleAnalyzer->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength);
+                    oracleAnalyzer->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength, 0x000008);
 
                     if (colNums != nullptr) {
                         colNum = oracleAnalyzer->read16(colNums) + colShift;
@@ -2035,37 +2035,37 @@ namespace OpenLogReplicator {
         char *sqlText = nullptr;
         OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength);
+        oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);
         //field: 1
         type = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 12);
         seq = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 18);
         cnt = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 20);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000A))
             return;
         //field: 2
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000B))
             return;
         //field: 3
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000C))
             return;
         //field: 4
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000D))
             return;
         //field: 5
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000E))
             return;
         //field: 6
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000F))
             return;
         //field: 7
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength))
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000011))
             return;
         //field: 8
         sqlLength = fieldLength;
