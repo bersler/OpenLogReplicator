@@ -51,8 +51,6 @@ namespace OpenLogReplicator {
             sequence = 0;
             firstScn = 0;
         }
-
-        context = database;
     }
 
     const char* OracleAnalyzerBatch::getModeName(void) const {

@@ -1821,7 +1821,7 @@ namespace OpenLogReplicator {
                 ss << "- found: ";
             else
                 ss << "updated schema: ";
-            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ")";
+            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ", cols: " << dec << maxSegCol << ")";
             if (sysTab->isClustered())
                 ss << ", part of cluster";
             if (sysTab->isPartitioned())

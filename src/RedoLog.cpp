@@ -962,7 +962,7 @@ namespace OpenLogReplicator {
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
                 stringstream name;
-                name << oracleAnalyzer->context.c_str() << "-" << dec << sequence << ".logdump";
+                name << oracleAnalyzer->database.c_str() << "-" << dec << sequence << ".logdump";
                 oracleAnalyzer->dumpStream.open(name.str());
                 if (!oracleAnalyzer->dumpStream.is_open()) {
                     WARNING("can't open " << name.str() << " for write. Aborting log dump.");
