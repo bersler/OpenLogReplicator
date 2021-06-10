@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
                 goStandby();
 
                 if (sequence == ZERO_SEQ) {
-                    RUNTIME_FAIL("staring sequence if unknown, failing");
+                    RUNTIME_FAIL("starting sequence if unknown, failing");
                 }
 
                 if (firstScn == ZERO_SCN) {
@@ -859,10 +859,9 @@ namespace OpenLogReplicator {
             analyzerCond.wait(lck);
         }
 
-        if (reader->ret == REDO_OK) {
-
+        if (reader->ret == REDO_OK)
             return true;
-        } else
+        else
             return false;
     }
 
@@ -1343,7 +1342,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("missing location of archived redo logs for offline mode");
         }
 
-        string mappedPath = oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->database + "/archivelog");
+        string mappedPath = oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog");
         TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
         DIR *dir;

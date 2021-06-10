@@ -580,7 +580,17 @@ namespace OpenLogReplicator {
         }
 
         dbRecoveryFileDest = getParameterValue("db_recovery_file_dest");
+        if (dbRecoveryFileDest.length() > 0 && dbRecoveryFileDest.back() == '/') {
+            while (dbRecoveryFileDest.length() > 0 && dbRecoveryFileDest.back() == '/')
+                dbRecoveryFileDest.pop_back();
+            WARNING("stripping trailing '/' from db_recovery_file_dest parameter; new value: " << dbRecoveryFileDest);
+        }
         logArchiveDest = getParameterValue("log_archive_dest");
+        if (logArchiveDest.length() > 0 && logArchiveDest.back() == '/') {
+            while (logArchiveDest.length() > 0 && logArchiveDest.back() == '/')
+                logArchiveDest.pop_back();
+            WARNING("stripping trailing '/' from log_archive_dest parameter; new value: " << logArchiveDest);
+        }
         dbBlockChecksum = getParameterValue("db_block_checksum");
         std::transform(dbBlockChecksum.begin(), dbBlockChecksum.end(), dbBlockChecksum.begin(), ::toupper);
         if (logArchiveFormat.length() == 0 && dbRecoveryFileDest.length() == 0)

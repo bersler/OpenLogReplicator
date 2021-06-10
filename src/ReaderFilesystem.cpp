@@ -50,6 +50,7 @@ namespace OpenLogReplicator {
         int ret = stat(pathMapped.c_str(), &fileStat);
         TRACE(TRACE2_FILE, "FILE: stat for " << pathMapped << " returns " << dec << ret << ", errno = " << errno);
         if (ret != 0) {
+            ERROR("file stat failed (code: " << dec << ret << ", errno: " << dec << errno << "): "<< pathMapped);
             return REDO_ERROR;
         }
 
@@ -65,13 +66,17 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_FILE, "FILE: open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
-            if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0)
+            if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0) {
+                ERROR("file open in direct mode failed (errno: " << dec << errno << "): "<< pathMapped);
                 return REDO_ERROR;
+            }
 
             flags &= (~O_DIRECT);
             fileDes = open(pathMapped.c_str(), flags);
-            if (fileDes == -1)
+            if (fileDes == -1) {
+                ERROR("file open failed (errno: " << dec << errno << "): "<< pathMapped);
                 return REDO_ERROR;
+            }
 
             DEBUG("file system does not support direct read for: " << pathMapped);
         }

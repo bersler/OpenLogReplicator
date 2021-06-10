@@ -425,7 +425,8 @@ int main(int argc, char **argv) {
                     } else {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
                     }
-                }
+                } else
+                    oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
 #else
                 RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
 #endif /*LINK_LIBRARY_OCI*/
