@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         try {
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_CLOSE);
-            TRACE(TRACE2_SQL, "PARAM1: " << fileDes);
+            TRACE(TRACE2_SQL, "PARAM1: " << dec << fileDes);
             stmt.createStatement(SQL_ASM_CLOSE);
             stmt.bindInt32(1, fileDes);
             stmt.executeQuery();
@@ -71,9 +71,9 @@ namespace OpenLogReplicator {
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_GETFILEATR);
             TRACE(TRACE2_SQL, "PARAM1: " << pathMapped);
-            TRACE(TRACE2_SQL, "PARAM2: " << fileType);
-            TRACE(TRACE2_SQL, "PARAM3: " << fileSize);
-            TRACE(TRACE2_SQL, "PARAM4: " << blockSize);
+            TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
+            TRACE(TRACE2_SQL, "PARAM3: " << dec << fileSize);
+            TRACE(TRACE2_SQL, "PARAM4: " << dec << blockSize);
             stmt.createStatement(SQL_ASM_GETFILEATR);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -84,11 +84,11 @@ namespace OpenLogReplicator {
             physicalBlockSize = -1;
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_OPEN);
             TRACE(TRACE2_SQL, "PARAM1: " << pathMapped);
-            TRACE(TRACE2_SQL, "PARAM2: " << fileType);
-            TRACE(TRACE2_SQL, "PARAM3: " << blockSize);
-            TRACE(TRACE2_SQL, "PARAM4: " << fileDes);
-            TRACE(TRACE2_SQL, "PARAM5: " << physicalBlockSize);
-            TRACE(TRACE2_SQL, "PARAM6: " << fileSize);
+            TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
+            TRACE(TRACE2_SQL, "PARAM3: " << dec << blockSize);
+            TRACE(TRACE2_SQL, "PARAM4: " << dec << fileDes);
+            TRACE(TRACE2_SQL, "PARAM5: " << dec << physicalBlockSize);
+            TRACE(TRACE2_SQL, "PARAM6: " << dec << fileSize);
             stmt.createStatement(SQL_ASM_OPEN);
             stmt.bindString(1, pathMapped);
             stmt.bindUInt64(2, fileType);
@@ -123,9 +123,9 @@ namespace OpenLogReplicator {
                 }
 
                 TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_READ);
-                TRACE(TRACE2_SQL, "PARAM1: " << fileDes);
-                TRACE(TRACE2_SQL, "PARAM2: " << offset);
-                TRACE(TRACE2_SQL, "PARAM3: " << size);
+                TRACE(TRACE2_SQL, "PARAM1: " << dec << fileDes);
+                TRACE(TRACE2_SQL, "PARAM2: " << dec << offset);
+                TRACE(TRACE2_SQL, "PARAM3: " << dec << size);
                 stmtRead->createStatement(SQL_ASM_READ);
             } else
                 stmtRead->unbindAll();

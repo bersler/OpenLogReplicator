@@ -1615,14 +1615,15 @@ namespace OpenLogReplicator {
 
         for (auto itObj : sysObjMapRowId) {
             SysObj *sysObj = itObj.second;
-
-            if (sysObj->isDropped() || !sysObj->isTable())
+            if (sysObj->isDropped() || !sysObj->isTable() || !regex_match(sysObj->name, regexTable))
                 continue;
 
             auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
             if (sysUserMapUserIt == sysUserMapUser.end())
                 continue;
             SysUser *sysUser = sysUserMapUserIt->second;
+            if (!regex_match(sysUser->name, regexOwner))
+                continue;
 
             //table already added with another rule
             if (objectMap.find(sysObj->obj) != objectMap.end()) {
@@ -1635,9 +1636,6 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
             }
             SysTab *sysTab = sysTabMapObjIt->second;
-
-            if (!regex_match(sysUser->name, regexOwner) || !regex_match(sysObj->name, regexTable))
-                continue;
 
             //skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {

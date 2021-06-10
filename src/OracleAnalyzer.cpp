@@ -151,8 +151,8 @@ namespace OpenLogReplicator {
             delete redoTmp;
         }
 
-        for (RedoLog *redoLog : onlineRedoSet)
-            delete redoLog;
+        for (RedoLog *onlineRedo : onlineRedoSet)
+            delete onlineRedo;
         onlineRedoSet.clear();
 
         for (auto it : xidTransactionMap) {
@@ -184,14 +184,14 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::updateOnlineLogs(void) {
-        for (RedoLog *redoLog : onlineRedoSet) {
-            redoLog->resetRedo();
-            if (!readerUpdateRedoLog(redoLog->reader)) {
-                RUNTIME_FAIL("updating failed for " << dec << redoLog->path);
+        for (RedoLog *onlineRedo : onlineRedoSet) {
+            onlineRedo->resetRedo();
+            if (!readerUpdateRedoLog(onlineRedo->reader)) {
+                RUNTIME_FAIL("updating failed for " << dec << onlineRedo->path);
             } else {
-                redoLog->sequence = redoLog->reader->sequence;
-                redoLog->firstScn = redoLog->reader->firstScn;
-                redoLog->nextScn = redoLog->reader->nextScn;
+                onlineRedo->sequence = onlineRedo->reader->sequence;
+                onlineRedo->firstScn = onlineRedo->reader->firstScn;
+                onlineRedo->nextScn = onlineRedo->reader->nextScn;
             }
         }
     }
@@ -488,6 +488,10 @@ namespace OpenLogReplicator {
                 }
                 goStandby();
 
+                if (sequence == ZERO_SEQ) {
+                    RUNTIME_FAIL("staring sequence if unknown, failing");
+                }
+
                 if (firstScn == ZERO_SCN) {
                     INFO("last confirmed scn: <none>, starting sequence: " << dec << sequence << ", offset: " << readStartOffset);
                 } else {
@@ -518,7 +522,7 @@ namespace OpenLogReplicator {
                 //ONLINE REDO LOGS READ
                 //
                 if ((flags & REDO_FLAGS_ARCH_ONLY) == 0) {
-                    TRACE(TRACE2_REDO, "REDO: checking online redo logs");
+                    TRACE(TRACE2_REDO, "REDO: checking online redo logs, seq: " << dec << sequence);
                     updateOnlineLogs();
 
                     while (!shutdown) {
@@ -526,10 +530,10 @@ namespace OpenLogReplicator {
                         TRACE(TRACE2_REDO, "REDO: searching online redo log for seq: " << dec << sequence);
 
                         //find the candidate to read
-                        for (RedoLog *redoLog : onlineRedoSet) {
-                            if (redoLog->sequence == sequence)
-                                redo = redoLog;
-                            TRACE(TRACE2_REDO, "REDO: " << redoLog->path << " is " << dec << redoLog->sequence);
+                        for (RedoLog *onlineRedo : onlineRedoSet) {
+                            if (onlineRedo->sequence == sequence)
+                                redo = onlineRedo;
+                            TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << dec << onlineRedo->sequence << ", scn: " << dec << onlineRedo->firstScn);
                         }
 
                         //keep reading online redo logs while it is possible
@@ -588,7 +592,7 @@ namespace OpenLogReplicator {
                 //
                 if (shutdown)
                     break;
-                TRACE(TRACE2_REDO, "REDO: checking archived redo logs");
+                TRACE(TRACE2_REDO, "REDO: checking archived redo logs, seq: " << dec << sequence);
                 archGetLog(this);
 
                 if (archiveRedoQueue.empty()) {
@@ -600,10 +604,11 @@ namespace OpenLogReplicator {
                     }
                 }
 
+                TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << dec << sequence);
                 while (!archiveRedoQueue.empty() && !shutdown) {
                     RedoLog *redoPrev = redo;
                     redo = archiveRedoQueue.top();
-                    TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << dec << sequence);
+                    TRACE(TRACE2_REDO, "REDO: " << redo->path << " is seq: " << dec << redo->sequence << ", scn: " << dec << redo->firstScn);
 
                     //when no checkpoint exists start processing from first file
                     if (sequence == 0)
