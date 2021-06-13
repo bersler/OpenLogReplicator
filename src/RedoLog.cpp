@@ -766,10 +766,10 @@ namespace OpenLogReplicator {
             if (transaction->begin)
                 transaction->flush();
             else {
-                INFO("skipping transaction with no begin: " << *transaction);
+                WARNING("skipping transaction with no begin: " << *transaction);
             }
         } else {
-            INFO("skipping transaction already committed: " << *transaction);
+            DEBUG("skipping transaction already committed: " << *transaction);
         }
 
         oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));

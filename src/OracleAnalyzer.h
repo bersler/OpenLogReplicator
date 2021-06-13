@@ -82,6 +82,7 @@ namespace OpenLogReplicator {
         condition_variable writerCond;
         string context;
         typeSCN checkpointScn;
+        typeSCN schemaFirstScn;
         typeSCN schemaScn;
         typeSCN startScn;
         typeSEQ startSequence;

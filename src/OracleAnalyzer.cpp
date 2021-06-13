@@ -78,6 +78,7 @@ namespace OpenLogReplicator {
         firstScn(ZERO_SCN),
         checkpointScn(ZERO_SCN),
         schemaScn(ZERO_SCN),
+        schemaFirstScn(ZERO_SCN),
         startScn(ZERO_SCN),
         startSequence(0),
         startTimeRel(0),
@@ -438,9 +439,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::createSchema(void) {
-        if ((flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            RUNTIME_FAIL("schema file missing");
-        }
+        if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
+            return;
+
+        RUNTIME_FAIL("schema file missing");
     }
 
     void *OracleAnalyzer::run(void) {

@@ -188,7 +188,6 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             string fileName = ent->d_name;
-            TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: found previous schema: " << oracleAnalyzer->checkpointPath << "/" << fileName);
 
             string fullName = oracleAnalyzer->checkpointPath + "/" + ent->d_name;
             if (stat(fullName.c_str(), &fileStat)) {
@@ -207,6 +206,7 @@ namespace OpenLogReplicator {
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
                 continue;
 
+            TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: found previous schema: " << oracleAnalyzer->checkpointPath << "/" << fileName);
             string fileScnStr = fileName.substr(prefix.length(), fileName.length() - suffix.length());
             typeSCN fileScn;
             try {
@@ -217,6 +217,8 @@ namespace OpenLogReplicator {
             }
             if (fileScn <= oracleAnalyzer->firstScn && (fileScn > fileScnMax || fileScnMax == ZERO_SCN))
                 fileScnMax = fileScn;
+            if (oracleAnalyzer->schemaFirstScn == ZERO_SCN || oracleAnalyzer->schemaFirstScn > fileScn)
+                oracleAnalyzer->schemaFirstScn = fileScn;
             schemaScnList.insert(fileScn);
         }
         closedir(dir);

@@ -53,6 +53,18 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OracleAnalyzerBatch::createSchema(void) {
+        if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
+            return;
+
+        WARNING("HINT: if you don't have earlier schema, try with schema-less mode (\"flags\": 2)");
+        if (schemaFirstScn != ZERO_SCN) {
+            WARNING("HINT: you can also set start SCN for writer: \"start-scn\": " << dec << schemaFirstScn);
+        }
+
+        RUNTIME_FAIL("schema file missing");
+    }
+
     const char* OracleAnalyzerBatch::getModeName(void) const {
         return "batch";
     }
