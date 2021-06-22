@@ -80,7 +80,7 @@ namespace OpenLogReplicator {
         schemaScn(ZERO_SCN),
         schemaFirstScn(ZERO_SCN),
         startScn(ZERO_SCN),
-        startSequence(0),
+        startSequence(ZERO_SEQ),
         startTimeRel(0),
         readStartOffset(0),
         readBufferMax(readBufferMax),
@@ -100,6 +100,10 @@ namespace OpenLogReplicator {
         conId(-1),
         resetlogs(0),
         activation(0),
+        stopLogSwitches(0),
+        stopCheckpoints(0),
+        stopTransactions(0),
+        stopFlushBuffer(false),
         bigEndian(false),
         suppLogSize(0),
         version12(false),
@@ -425,17 +429,21 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::positionReader(void) {
-        if (startSequence > 0) {
-            sequence = startSequence;
-            firstScn = 0;
-        } else if (startTime.length() > 0) {
+        if (startTime.length() > 0) {
             RUNTIME_FAIL("starting by time is not supported for offline mode");
         } else if (startTimeRel > 0) {
             RUNTIME_FAIL("starting by relative time is not supported for offline mode");
-        } else if (startScn != ZERO_SCN) {
-            sequence = 0;
-            firstScn = startScn;
         }
+
+        if (startSequence != ZERO_SEQ)
+            sequence = startSequence;
+        else
+            sequence = 0;
+
+        if (startScn != ZERO_SCN)
+            firstScn = startScn;
+        else
+            firstScn = 0;
     }
 
     void OracleAnalyzer::createSchema(void) {
@@ -466,9 +474,7 @@ namespace OpenLogReplicator {
                 }
 
                 string starting;
-                if (startSequence > 0)
-                    starting = "seq: " + to_string(startSequence);
-                else if (startTime.length() > 0)
+                if (startTime.length() > 0)
                     starting = "time: " + startTime;
                 else if (startTimeRel > 0)
                     starting = "time-rel: " + to_string(startTimeRel);
@@ -477,7 +483,11 @@ namespace OpenLogReplicator {
                 else
                     starting = "now";
 
-                INFO("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting);
+                string startingSeq;
+                if (startSequence != ZERO_SEQ)
+                    startingSeq = ", seq: " + to_string(startSequence);
+
+                INFO("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting << startingSeq);
 
                 if (shutdown)
                     return 0;
@@ -586,6 +596,15 @@ namespace OpenLogReplicator {
                             }
                         }
                         ++sequence;
+
+                        if (stopLogSwitches > 0) {
+                            --stopLogSwitches;
+                            if (stopLogSwitches == 0) {
+                                INFO("shutdown initiated by number of log switches");
+                                stopMain();
+                                shutdown = true;
+                            }
+                        }
                     }
                 }
 
@@ -663,6 +682,15 @@ namespace OpenLogReplicator {
                     archiveRedoQueue.pop();
                     delete redo;
                     redo = nullptr;
+
+                    if (stopLogSwitches > 0) {
+                        --stopLogSwitches;
+                        if (stopLogSwitches == 0) {
+                            INFO("shutdown started - exhausted number of log switches");
+                            stopMain();
+                            shutdown = true;
+                        }
+                    }
                 }
 
                 if (shutdown)

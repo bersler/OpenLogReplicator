@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
             }
 
             //optional
-            uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION;
+            uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
             if (formatJSON.HasMember("unknown")) {
                 const Value& unknownFormatJSON = formatJSON["unknown"];
                 unknownFormat = unknownFormatJSON.GetUint64();
@@ -552,14 +552,55 @@ int main(int argc, char **argv) {
 
             outputBuffer->initialize(oracleAnalyzer);
 
-            if (sourceJSON.HasMember("event-table")) {
-                const Value& eventTableJSON = sourceJSON["event-table"];
-                if (!sourceJSON.HasMember("event-owner")) {
-                    CONFIG_FAIL("bad JSON, missing \"event-owner\", but \"event-table\" present");
+            //optional
+            if (sourceJSON.HasMember("debug")) {
+                const Value& debugJSON = getJSONfieldV(fileName, sourceJSON, "debug");
+
+                //optional
+                if (debugJSON.HasMember("stop-log-switches")) {
+                    const Value& stopLogSwitchesJSON = debugJSON["stop-log-switches"];
+                    oracleAnalyzer->stopLogSwitches = stopLogSwitchesJSON.GetUint64();
+                    INFO("will shutdown after " << dec << oracleAnalyzer->stopLogSwitches << " log switches");
                 }
-                const Value& eventOwnerJSON = sourceJSON["event-owner"];
-                oracleAnalyzer->schema->addElement(eventOwnerJSON.GetString(), eventTableJSON.GetString(), OPTIONS_EVENT_TABLE);
+
+                //optional
+                if (debugJSON.HasMember("stop-checkpoints")) {
+                    const Value& stopCheckpointsJSON = debugJSON["stop-checkpoints"];
+                    oracleAnalyzer->stopCheckpoints = stopCheckpointsJSON.GetUint64();
+                    INFO("will shutdown after " << dec << oracleAnalyzer->stopCheckpoints << " checkpoints");
+                }
+
+                //optional
+                if (debugJSON.HasMember("stop-transactions")) {
+                    const Value& stopTransactionsJSON = debugJSON["stop-transactions"];
+                    oracleAnalyzer->stopTransactions = stopTransactionsJSON.GetUint64();
+                    INFO("will shutdown after " << dec << oracleAnalyzer->stopTransactions << " transactions");
+                }
+
+                //optional
+                if (debugJSON.HasMember("flush-buffer")) {
+                    const Value& stopFlushBufferJSON = debugJSON["flush-buffer"];
+                    uint64_t stopFlushBuffer = stopFlushBufferJSON.GetUint64();
+                    if (stopFlushBuffer == 1) {
+                        oracleAnalyzer->stopFlushBuffer = true;
+                    } else
+                    if (stopFlushBuffer > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value, expected one of (0, 1)");
+                    }
+                }
+
+
+                if (debugJSON.HasMember("table")) {
+                    const Value& debugTableJSON = debugJSON["table"];
+                    if (!debugJSON.HasMember("owner")) {
+                        CONFIG_FAIL("bad JSON, \"debug\" contains \"table\" but missing \"owner\"");
+                    }
+                    const Value& debugOwnerJSON = debugJSON["owner"];
+                    oracleAnalyzer->schema->addElement(debugOwnerJSON.GetString(), debugTableJSON.GetString(), OPTIONS_DEBUG_TABLE);
+                    INFO("will shutdown after committed DML in " << debugOwnerJSON.GetString() << "." << debugTableJSON.GetString());
+                }
             }
+
             oracleAnalyzer->schema->addElement("SYS", "CCOL$", OPTIONS_SCHEMA_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "CDEF$", OPTIONS_SCHEMA_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "COL$", OPTIONS_SCHEMA_TABLE);
@@ -718,16 +759,16 @@ int main(int argc, char **argv) {
             }
 
             //optional
-            typeSCN startScn = 0;
+            typeSCN startScn = ZERO_SCN;
             if (writerJSON.HasMember("start-scn")) {
                 const Value& startScnJSON = writerJSON["start-scn"];
                 startScn = startScnJSON.GetUint64();
             }
 
             //optional
-            typeSEQ startSequence = 0;
+            typeSEQ startSequence = ZERO_SEQ;
             if (writerJSON.HasMember("start-seq")) {
-                if (startScn > 0) {
+                if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-seq\"");
                 }
                 const Value& startSequenceJSON = writerJSON["start-seq"];
@@ -737,11 +778,8 @@ int main(int argc, char **argv) {
             //optional
             int64_t startTimeRel = 0;
             if (writerJSON.HasMember("start-time-rel")) {
-                if (startScn > 0) {
+                if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time-rel\"");
-                }
-                if (startSequence > 0) {
-                    CONFIG_FAIL("bad JSON, \"start-seq\" used together with \"start-time-rel\"");
                 }
                 const Value& startTimeRelJSON = writerJSON["start-time-rel"];
                 startTimeRel = startTimeRelJSON.GetInt64();
@@ -750,11 +788,8 @@ int main(int argc, char **argv) {
             //optional
             const char *startTime = "";
             if (writerJSON.HasMember("start-time")) {
-                if (startScn > 0) {
+                if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time\"");
-                }
-                if (startSequence > 0) {
-                    CONFIG_FAIL("bad JSON, \"start-seq\" used together with \"start-time\"");
                 }
                 if (startTimeRel > 0) {
                     CONFIG_FAIL("bad JSON, \"start-time-rel\" used together with \"start-time\"");
@@ -910,7 +945,7 @@ int main(int argc, char **argv) {
     //shut down writers
     for (Writer *writer : writers) {
         writer->doStop();
-        if ((writer->oracleAnalyzer->flags & REDO_FLAGS_FLUSH_QUEUE_ON_EXIT) == 0)
+        if (writer->oracleAnalyzer->stopFlushBuffer == 0)
             writer->doShutdown();
     }
     for (OutputBuffer *outputBuffer : buffers) {

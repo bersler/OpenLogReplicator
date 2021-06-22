@@ -812,10 +812,10 @@ namespace OpenLogReplicator {
                 "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
                 "\"db-recovery-file-dest\":\"";
         writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
-        ss << "\"," << "\"log-archive-dest\":\"";
-        writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
         ss << "\"," << "\"db-block-checksum\":\"";
         writeEscapeValue(ss, oracleAnalyzer->dbBlockChecksum);
+        ss << "\"," << "\"log-archive-dest\":\"";
+        writeEscapeValue(ss, oracleAnalyzer->logArchiveDest);
         ss << "\"," << "\"log-archive-format\":\"";
         writeEscapeValue(ss, oracleAnalyzer->logArchiveFormat);
         ss << "\"," << "\"nls-character-set\":\"";
@@ -836,7 +836,7 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             hasPrev2 = false;
-            ss << "{\"group\":" << reader->group << ",\"path\":[";
+            ss SCHEMA_ENDL << "{\"group\":" << reader->group << ",\"path\":[";
             for (string &path : reader->paths) {
                 if (hasPrev2)
                     ss << ",";
@@ -857,77 +857,9 @@ namespace OpenLogReplicator {
                 ss << ",";
             else
                 hasPrev = true;
-            ss << "\"" << user << "\"";
+            ss SCHEMA_ENDL << "\"" << user << "\"";
         }
 
-        //SYS.USER$
-        ss << "]," SCHEMA_ENDL << "\"sys-user\":[";
-        hasPrev = false;
-        for (auto it : sysUserMapRowId) {
-            SysUser *sysUser = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysUser->rowId << "\"," <<
-                    "\"user\":" << dec << sysUser->user << "," <<
-                    "\"name\":\"" << sysUser->name << "\"," <<
-                    "\"spare1\":" << dec << sysUser->spare1 << "," <<
-                    "\"single\":" << dec << (uint64_t)sysUser->single << "}";
-            sysUser->saved = true;
-        }
-
-        //SYS.OBJ$
-        ss << "]," SCHEMA_ENDL << "\"sys-obj\":[";
-        hasPrev = false;
-        for (auto it : sysObjMapRowId) {
-            SysObj *sysObj = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysObj->rowId << "\"," <<
-                    "\"owner\":" << dec << sysObj->owner << "," <<
-                    "\"obj\":" << dec << sysObj->obj << "," <<
-                    "\"data-obj\":" << dec << sysObj->dataObj << "," <<
-                    "\"type\":" << dec << sysObj->type << "," <<
-                    "\"name\":\"" << sysObj->name << "\"," <<
-                    "\"flags\":" << dec << sysObj->flags << "," <<
-                    "\"single\":" << dec << (uint64_t)sysObj->single <<"}";
-            sysObj->saved = true;
-        }
-
-        //SYS.COL$
-        ss << "]," SCHEMA_ENDL << "\"sys-col\":[";
-        hasPrev = false;
-        for (auto it : sysColMapRowId) {
-            SysCol *sysCol = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysCol->rowId << "\"," <<
-                    "\"obj\":" << dec << sysCol->obj << "," <<
-                    "\"col\":" << dec << sysCol->col << "," <<
-                    "\"seg-col\":" << dec << sysCol->segCol << "," <<
-                    "\"int-col\":" << dec << sysCol->intCol << "," <<
-                    "\"name\":\"" << sysCol->name << "\"," <<
-                    "\"type\":" << dec << sysCol->type << "," <<
-                    "\"length\":" << dec << sysCol->length << "," <<
-                    "\"precision\":" << dec << sysCol->precision << "," <<
-                    "\"scale\":" << dec << sysCol->scale << "," <<
-                    "\"charset-form\":" << dec << sysCol->charsetForm << "," <<
-                    "\"charset-id\":" << dec << sysCol->charsetId << "," <<
-                    "\"null\":" << dec << sysCol->null_ << "," <<
-                    "\"property\":" << sysCol->property << "}";
-            sysCol->saved = true;
-        }
 
         //SYS.CCOL$
         ss << "]," SCHEMA_ENDL << "\"sys-ccol\":[";
@@ -966,6 +898,34 @@ namespace OpenLogReplicator {
             sysCDef->saved = true;
         }
 
+        //SYS.COL$
+        ss << "]," SCHEMA_ENDL << "\"sys-col\":[";
+        hasPrev = false;
+        for (auto it : sysColMapRowId) {
+            SysCol *sysCol = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysCol->rowId << "\"," <<
+                    "\"obj\":" << dec << sysCol->obj << "," <<
+                    "\"col\":" << dec << sysCol->col << "," <<
+                    "\"seg-col\":" << dec << sysCol->segCol << "," <<
+                    "\"int-col\":" << dec << sysCol->intCol << "," <<
+                    "\"name\":\"" << sysCol->name << "\"," <<
+                    "\"type\":" << dec << sysCol->type << "," <<
+                    "\"length\":" << dec << sysCol->length << "," <<
+                    "\"precision\":" << dec << sysCol->precision << "," <<
+                    "\"scale\":" << dec << sysCol->scale << "," <<
+                    "\"charset-form\":" << dec << sysCol->charsetForm << "," <<
+                    "\"charset-id\":" << dec << sysCol->charsetId << "," <<
+                    "\"null\":" << dec << sysCol->null_ << "," <<
+                    "\"property\":" << sysCol->property << "}";
+            sysCol->saved = true;
+        }
+
         //SYS.DEFERRED_STG$
         ss << "]," SCHEMA_ENDL << "\"sys-deferredstg\":[";
         hasPrev = false;
@@ -999,6 +959,28 @@ namespace OpenLogReplicator {
                     "\"col-num\":" << dec << sysECol->colNum << "," <<
                     "\"guard-id\":" << dec << sysECol->guardId << "}";
             sysECol->saved = true;
+        }
+
+        //SYS.OBJ$
+        ss << "]," SCHEMA_ENDL << "\"sys-obj\":[";
+        hasPrev = false;
+        for (auto it : sysObjMapRowId) {
+            SysObj *sysObj = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysObj->rowId << "\"," <<
+                    "\"owner\":" << dec << sysObj->owner << "," <<
+                    "\"obj\":" << dec << sysObj->obj << "," <<
+                    "\"data-obj\":" << dec << sysObj->dataObj << "," <<
+                    "\"name\":\"" << sysObj->name << "\"," <<
+                    "\"type\":" << dec << sysObj->type << "," <<
+                    "\"flags\":" << dec << sysObj->flags << "," <<
+                    "\"single\":" << dec << (uint64_t)sysObj->single <<"}";
+            sysObj->saved = true;
         }
 
         //SYS.SEG$
@@ -1043,24 +1025,6 @@ namespace OpenLogReplicator {
             sysTab->saved = true;
         }
 
-        //SYS.TABPART$
-        ss << "]," SCHEMA_ENDL << "\"sys-tabpart\":[";
-        hasPrev = false;
-        for (auto it : sysTabPartMapRowId) {
-            SysTabPart *sysTabPart = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTabPart->rowId << "\"," <<
-                    "\"obj\":" << dec << sysTabPart->obj << "," <<
-                    "\"data-obj\":" << dec << sysTabPart->dataObj << "," <<
-                    "\"bo\":" << dec << sysTabPart->bo << "}";
-            sysTabPart->saved = true;
-        }
-
         //SYS.TABCOMPART$
         ss << "]," SCHEMA_ENDL << "\"sys-tabcompart\":[";
         hasPrev = false;
@@ -1079,6 +1043,24 @@ namespace OpenLogReplicator {
             sysTabComPart->saved = true;
         }
 
+        //SYS.TABPART$
+        ss << "]," SCHEMA_ENDL << "\"sys-tabpart\":[";
+        hasPrev = false;
+        for (auto it : sysTabPartMapRowId) {
+            SysTabPart *sysTabPart = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTabPart->rowId << "\"," <<
+                    "\"obj\":" << dec << sysTabPart->obj << "," <<
+                    "\"data-obj\":" << dec << sysTabPart->dataObj << "," <<
+                    "\"bo\":" << dec << sysTabPart->bo << "}";
+            sysTabPart->saved = true;
+        }
+
         //SYS.TABSUBPART$
         ss << "]," SCHEMA_ENDL << "\"sys-tabsubpart\":[";
         hasPrev = false;
@@ -1095,6 +1077,25 @@ namespace OpenLogReplicator {
                     "\"data-obj\":" << dec << sysTabSubPart->dataObj << "," <<
                     "\"p-obj\":" << dec << sysTabSubPart->pObj << "}";
             sysTabSubPart->saved = true;
+        }
+
+        //SYS.USER$
+        ss << "]," SCHEMA_ENDL << "\"sys-user\":[";
+        hasPrev = false;
+        for (auto it : sysUserMapRowId) {
+            SysUser *sysUser = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysUser->rowId << "\"," <<
+                    "\"user\":" << dec << sysUser->user << "," <<
+                    "\"name\":\"" << sysUser->name << "\"," <<
+                    "\"spare1\":" << dec << sysUser->spare1 << "," <<
+                    "\"single\":" << dec << (uint64_t)sysUser->single << "}";
+            sysUser->saved = true;
         }
 
         ss << "]}";
@@ -1191,7 +1192,7 @@ namespace OpenLogReplicator {
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
                 //skip
-            } else if (*c_str == '"' || *c_str == '\\' || *c_str == '/') {
+            } else if (*c_str == '"' || *c_str == '\\' /* || *c_str == '/' */) {
                 ss << '\\' << *c_str;
             } else {
                 ss << *c_str;
@@ -1708,8 +1709,8 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0 && !oracleAnalyzer->suppLogDbAll &&
-                    !sysUser->isSuppLogAll()) {
+            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SCHEMA_TABLE) == 0 &&
+                    !oracleAnalyzer->suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
                 for (auto itCDef = sysCDefMapKey.upper_bound(sysCDefKeyFirst);
@@ -1831,7 +1832,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && options == 0) {
+            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SCHEMA_TABLE) == 0) {
                 //use default primary key
                 if (keys.size() == 0) {
                     if (totalPk == 0)

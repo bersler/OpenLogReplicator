@@ -34,8 +34,6 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_DATABASE_INFORMATION;
         static const char* SQL_GET_DATABASE_SCN;
         static const char* SQL_GET_CON_INFO;
-        static const char* SQL_GET_SCN_FROM_SEQUENCE;
-        static const char* SQL_GET_SCN_FROM_SEQUENCE_STANDBY;
         static const char* SQL_GET_SCN_FROM_TIME;
         static const char* SQL_GET_SCN_FROM_TIME_RELATIVE;
         static const char* SQL_GET_SEQUENCE_FROM_SCN;
@@ -68,6 +66,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_TABSUBPART_USER;
         static const char* SQL_GET_SYS_TABSUBPART_OBJ;
         static const char* SQL_GET_SYS_USER;
+        static const char* SQL_CHECK_CONNECTION;
 
         bool standby;
         string user;

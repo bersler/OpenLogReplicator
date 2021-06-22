@@ -1387,9 +1387,8 @@ class RedoRequest PROTOBUF_FINAL :
 
   enum TmValCase {
     kScn = 3,
-    kSeq = 4,
-    kTms = 5,
-    kTmRel = 6,
+    kTms = 4,
+    kTmRel = 5,
     TM_VAL_NOT_SET = 0,
   };
 
@@ -1473,10 +1472,10 @@ class RedoRequest PROTOBUF_FINAL :
     kSchemaFieldNumber = 7,
     kDatabaseNameFieldNumber = 2,
     kCodeFieldNumber = 1,
+    kSeqFieldNumber = 6,
     kScnFieldNumber = 3,
-    kSeqFieldNumber = 4,
-    kTmsFieldNumber = 5,
-    kTmRelFieldNumber = 6,
+    kTmsFieldNumber = 4,
+    kTmRelFieldNumber = 5,
   };
   // repeated .OpenLogReplicator.pb.SchemaRequest schema = 7;
   int schema_size() const;
@@ -1521,6 +1520,19 @@ class RedoRequest PROTOBUF_FINAL :
   void _internal_set_code(::OpenLogReplicator::pb::RequestCode value);
   public:
 
+  // uint64 seq = 6;
+  bool has_seq() const;
+  private:
+  bool _internal_has_seq() const;
+  public:
+  void clear_seq();
+  ::PROTOBUF_NAMESPACE_ID::uint64 seq() const;
+  void set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_seq() const;
+  void _internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // uint64 scn = 3;
   private:
   bool _internal_has_scn() const;
@@ -1533,19 +1545,7 @@ class RedoRequest PROTOBUF_FINAL :
   void _internal_set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
-  // uint64 seq = 4;
-  private:
-  bool _internal_has_seq() const;
-  public:
-  void clear_seq();
-  ::PROTOBUF_NAMESPACE_ID::uint64 seq() const;
-  void set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
-  private:
-  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_seq() const;
-  void _internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value);
-  public:
-
-  // string tms = 5;
+  // string tms = 4;
   private:
   bool _internal_has_tms() const;
   public:
@@ -1564,7 +1564,7 @@ class RedoRequest PROTOBUF_FINAL :
   std::string* _internal_mutable_tms();
   public:
 
-  // int64 tm_rel = 6;
+  // int64 tm_rel = 5;
   private:
   bool _internal_has_tm_rel() const;
   public:
@@ -1582,7 +1582,6 @@ class RedoRequest PROTOBUF_FINAL :
  private:
   class _Internal;
   void set_has_scn();
-  void set_has_seq();
   void set_has_tms();
   void set_has_tm_rel();
 
@@ -1592,17 +1591,18 @@ class RedoRequest PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::SchemaRequest > schema_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr database_name_;
   int code_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 seq_;
   union TmValUnion {
     TmValUnion() {}
     ::PROTOBUF_NAMESPACE_ID::uint64 scn_;
-    ::PROTOBUF_NAMESPACE_ID::uint64 seq_;
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr tms_;
     ::PROTOBUF_NAMESPACE_ID::int64 tm_rel_;
   } tm_val_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
 
   friend struct ::TableStruct_OraProtoBuf_2eproto;
@@ -3439,42 +3439,7 @@ inline void RedoRequest::set_scn(::PROTOBUF_NAMESPACE_ID::uint64 value) {
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.scn)
 }
 
-// uint64 seq = 4;
-inline bool RedoRequest::_internal_has_seq() const {
-  return tm_val_case() == kSeq;
-}
-inline void RedoRequest::set_has_seq() {
-  _oneof_case_[0] = kSeq;
-}
-inline void RedoRequest::clear_seq() {
-  if (_internal_has_seq()) {
-    tm_val_.seq_ = PROTOBUF_ULONGLONG(0);
-    clear_has_tm_val();
-  }
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RedoRequest::_internal_seq() const {
-  if (_internal_has_seq()) {
-    return tm_val_.seq_;
-  }
-  return PROTOBUF_ULONGLONG(0);
-}
-inline void RedoRequest::_internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  if (!_internal_has_seq()) {
-    clear_tm_val();
-    set_has_seq();
-  }
-  tm_val_.seq_ = value;
-}
-inline ::PROTOBUF_NAMESPACE_ID::uint64 RedoRequest::seq() const {
-  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoRequest.seq)
-  return _internal_seq();
-}
-inline void RedoRequest::set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
-  _internal_set_seq(value);
-  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.seq)
-}
-
-// string tms = 5;
+// string tms = 4;
 inline bool RedoRequest::_internal_has_tms() const {
   return tm_val_case() == kTms;
 }
@@ -3580,7 +3545,7 @@ inline void RedoRequest::set_allocated_tms(std::string* tms) {
   // @@protoc_insertion_point(field_set_allocated:OpenLogReplicator.pb.RedoRequest.tms)
 }
 
-// int64 tm_rel = 6;
+// int64 tm_rel = 5;
 inline bool RedoRequest::_internal_has_tm_rel() const {
   return tm_val_case() == kTmRel;
 }
@@ -3613,6 +3578,34 @@ inline ::PROTOBUF_NAMESPACE_ID::int64 RedoRequest::tm_rel() const {
 inline void RedoRequest::set_tm_rel(::PROTOBUF_NAMESPACE_ID::int64 value) {
   _internal_set_tm_rel(value);
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.tm_rel)
+}
+
+// uint64 seq = 6;
+inline bool RedoRequest::_internal_has_seq() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool RedoRequest::has_seq() const {
+  return _internal_has_seq();
+}
+inline void RedoRequest::clear_seq() {
+  seq_ = PROTOBUF_ULONGLONG(0);
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 RedoRequest::_internal_seq() const {
+  return seq_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 RedoRequest::seq() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.RedoRequest.seq)
+  return _internal_seq();
+}
+inline void RedoRequest::_internal_set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _has_bits_[0] |= 0x00000001u;
+  seq_ = value;
+}
+inline void RedoRequest::set_seq(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_seq(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.RedoRequest.seq)
 }
 
 // repeated .OpenLogReplicator.pb.SchemaRequest schema = 7;

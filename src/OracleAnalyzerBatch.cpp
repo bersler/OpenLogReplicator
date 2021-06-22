@@ -37,20 +37,21 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerBatch::positionReader(void) {
-        if (startSequence > 0) {
-            sequence = startSequence;
-            firstScn = 0;
-        } else if (startTime.length() > 0) {
+        if (startTime.length() > 0) {
             RUNTIME_FAIL("starting by time is not supported for batch mode");
         } else if (startTimeRel > 0) {
             RUNTIME_FAIL("starting by relative time is not supported for batch mode");
-        } else if (startScn != ZERO_SCN) {
-            sequence = 0;
-            firstScn = startScn;
-        } else {
-            sequence = 0;
-            firstScn = 0;
         }
+
+        if (startSequence != ZERO_SEQ)
+            sequence = startSequence;
+        else
+            sequence = 0;
+
+        if (startScn != ZERO_SCN)
+            firstScn = startScn;
+        else
+            firstScn = 0;
     }
 
     void OracleAnalyzerBatch::createSchema(void) {

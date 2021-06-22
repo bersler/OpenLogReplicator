@@ -760,12 +760,23 @@ namespace OpenLogReplicator {
             transaction->rollback = true;
 
         if (transaction->commitScn > oracleAnalyzer->firstScn) {
-            if (transaction->shutdown)
+            if (transaction->shutdown) {
+                INFO("shutdown started - initiated by debug transaction " << PRINTXID(transaction->xid));
                 shutdown = true;
+            }
 
-            if (transaction->begin)
+            if (transaction->begin) {
                 transaction->flush();
-            else {
+
+                if (oracleAnalyzer->stopTransactions > 0) {
+                    --oracleAnalyzer->stopTransactions;
+                    if (oracleAnalyzer->stopTransactions == 0) {
+                        INFO("shutdown started - exhausted number of transactions");
+                        shutdown = true;
+                    }
+                }
+
+            } else {
                 WARNING("skipping transaction with no begin: " << *transaction);
             }
         } else {
@@ -826,10 +837,8 @@ namespace OpenLogReplicator {
             return;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        if (object != nullptr && object->options == OPTIONS_EVENT_TABLE && opCodeLong == 0x05010B02) {
-            INFO("found shutdown command in events table");
+        if (object != nullptr && (object->options & OPTIONS_DEBUG_TABLE) != 0 && opCodeLong == 0x05010B02)
             shutdownFound = true;
-        }
 
         switch (opCodeLong) {
 
@@ -1117,8 +1126,17 @@ namespace OpenLogReplicator {
 
                         bool switchRedo = (tmpBufferStart == reader->bufferEnd) && (reader->ret == REDO_FINISHED);
                         if (oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
-                                oracleAnalyzer->checkpointOutputCheckpoint > 0)
+                                oracleAnalyzer->checkpointOutputCheckpoint > 0) {
                             oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
+
+                            if (oracleAnalyzer->stopCheckpoints > 0) {
+                                --oracleAnalyzer->stopCheckpoints;
+                                if (oracleAnalyzer->stopCheckpoints == 0) {
+                                    INFO("shutdown started - exhausted number of checkpoints");
+                                    shutdown = true;
+                                }
+                            }
+                        }
                     } catch (RedoLogException &ex) {
                         if ((oracleAnalyzer->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
                             RUNTIME_FAIL("runtime error, aborting further redo log processing");
@@ -1152,8 +1170,10 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                if (shutdown)
+                if (shutdown) {
                     stopMain();
+                    oracleAnalyzer->shutdown = true;
+                }
             }
 
             {

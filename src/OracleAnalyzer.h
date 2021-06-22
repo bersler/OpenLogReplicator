@@ -144,6 +144,10 @@ namespace OpenLogReplicator {
         TransactionBuffer *transactionBuffer;
         typeresetlogs resetlogs;
         typeactivation activation;
+        uint64_t stopLogSwitches;
+        uint64_t stopCheckpoints;
+        uint64_t stopTransactions;
+        bool stopFlushBuffer;
 
         void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);
         uint16_t (*read16)(const uint8_t* buf);

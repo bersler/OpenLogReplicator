@@ -102,7 +102,7 @@ typedef uint64_t typeunicode;
 #define XID_FORMAT_TEXT                         0
 #define XID_FORMAT_NUMERIC                      1
 
-#define UNKNOWN_FORMAT_QUESTION                 0
+#define UNKNOWN_FORMAT_QUESTION_MARK            0
 #define UNKNOWN_FORMAT_DUMP                     1
 
 #define SCHEMA_FORMAT_NAME                      0
@@ -153,9 +153,8 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x00000080
 #define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000100
 #define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000200
-#define REDO_FLAGS_FLUSH_QUEUE_ON_EXIT          0x00000400
-#define REDO_FLAGS_CHECKPOINT_KEEP              0x00000800
-#define REDO_FLAGS_SCHEMA_KEEP                  0x00001000
+#define REDO_FLAGS_CHECKPOINT_KEEP              0x00000400
+#define REDO_FLAGS_SCHEMA_KEEP                  0x00000800
 
 #define DISABLE_CHECK_GRANTS                    0x00000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x00000002
@@ -174,7 +173,7 @@ typedef uint64_t typeunicode;
 #define VALUE_BEFORE_SUPP                       2
 #define VALUE_AFTER_SUPP                        3
 
-#define OPTIONS_EVENT_TABLE                     1
+#define OPTIONS_DEBUG_TABLE                     1
 #define OPTIONS_SCHEMA_TABLE                    2
 
 #define TABLE_SYS_CCOL                          1

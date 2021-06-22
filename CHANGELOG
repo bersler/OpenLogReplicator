@@ -1,0 +1,15 @@
+0.9.1-beta
+- added scrips/gencfg.sql file - to create schema file for offline mode
+- OpenLogReplicator.json: added debug parameters to allow instrumented shutdown during tests: shutdown after reaching defined number of checkpoints, transactions or redo log switches
+- OpenLogReplicator.json: flush on shutdown parameter rearrangement
+- OpenLogReplicator.json: moved instrumented table to debug section
+- protobuf request format: moved seq outside tm_val
+- allowed initial start with defined both SEQ & SCN
+- minor format changes in JSON schema files
+- online mode: added connection check & reconnect in case connection is closed
+- online mode: minor SQL fixes
+- online mode: fix getting log_archive_format parameter for non-FRA databases
+- minor code fixes/enhancements/code cleanup
+
+0.9.0-beta
+- initial beta version

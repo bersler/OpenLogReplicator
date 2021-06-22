@@ -1,5 +1,5 @@
 {
-  "version": "0.8.12",
+  "version": "0.9.1-beta",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -37,6 +37,15 @@
         "output-checkpoint": 1,
         "output-log-switch": 1
       },
+      "debug": {
+        "owner": "SYSTEM",
+        "table": "OPENLOGREPLICATOR",
+        "stop-log-switches": 0
+        "stop-checkpoints": 0
+        "stop-transactions": 0,
+        "stop-dmls": 0,
+        "flush-buffer": 0
+      },
       "arch": "online",
       "flags": 0,
       "memory-min-mb": 64,
@@ -46,8 +55,6 @@
       "arch-read-sleep-us": 10000000,
       "arch-read-retry": 3,
       "redo-verify-delay-us": 50000,
-      "event-owner": "SYSTEM",
-      "event-table": "OPENLOGREPLICATOR",
       "tables": [
         {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
         {"owner": "OWNER1", "table": "TABLENAME2"},

@@ -383,7 +383,7 @@ namespace OpenLogReplicator {
         //started earlier - continue work & ignore default startup parameters
         const Value& scnJSON = getJSONfieldD(fileName, document, "scn");
         startScn = scnJSON.GetUint64();
-        startSequence = 0;
+        startSequence = ZERO_SEQ;
         startTime.clear();
         startTimeRel = 0;
         INFO("checkpoint - reading scn: " << dec << startScn);
@@ -393,6 +393,9 @@ namespace OpenLogReplicator {
     }
 
     void Writer::startReader(void) {
+        if (startScn == ZERO_SCN && startSequence == ZERO_SEQ && startTime.length() == 0 && startTimeRel == 0)
+            startScn = 0;
+
         oracleAnalyzer->startSequence = startSequence;
         oracleAnalyzer->startScn = startScn;
         oracleAnalyzer->startTime = startTime;

@@ -11,7 +11,7 @@ Please mind that the code has 2 branches:
 Updating Protobuf code:
 1. cd proto
 2. export PATH=/opt/protobuf/bin:$PATH
-3. protoc OraProtoBuf.proto --cpp_out=.
+3. protoc OraProtoBuf.proto --cpp_out=. --experimental_allow_proto3_optional
 4. mv OraProtoBuf.pb.cc ../src/OraProtoBuf.pb.cpp
 5. mv OraProtoBuf.pb.h ../src/OraProtoBuf.pb.h
 

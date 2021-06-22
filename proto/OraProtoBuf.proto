@@ -131,10 +131,10 @@ message RedoRequest {
     string database_name = 2;
     oneof tm_val {
         uint64 scn = 3;
-        uint64 seq = 4;
-        string tms = 5;
-        int64 tm_rel = 6;
+        string tms = 4;
+        int64 tm_rel = 5;
     }
+    optional uint64 seq = 6;
     repeated SchemaRequest schema = 7;
 }
 

@@ -87,18 +87,16 @@ namespace OpenLogReplicator {
             response.set_scn(oracleAnalyzer->firstScn);
         } else {
             startScn = 0;
-            startSequence = 0;
+            if (request.has_seq())
+                startSequence = request.seq();
+            else
+                startSequence = ZERO_SEQ;
             startTime.clear();
             startTimeRel = 0;
 
             switch (request.tm_val_case()) {
                 case pb::RedoRequest::TmValCase::kScn:
                     startScn = request.scn();
-                    startReader();
-                    break;
-
-                case pb::RedoRequest::TmValCase::kSeq:
-                    startSequence = request.seq();
                     startReader();
                     break;
 
