@@ -1,5 +1,5 @@
 {
-  "version": "0.9.1-beta",
+  "version": "0.9.2-beta",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -24,10 +24,12 @@
         "timestamp": 0,
         "char": 0,
         "scn": 0,
+        "rid": 0,
         "unknown": 0,
         "schema": 0,
         "column": 0,
-        "unknown-type": 0
+        "unknown-type": 0,
+        "flush-buffer": 1048576
       },
       "checkpoint": {
         "path": "checkpoint",

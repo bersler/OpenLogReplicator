@@ -39,6 +39,12 @@ namespace OpenLogReplicator {
         return ret;
     }
 
+    time_t Thread::getTime(void) {
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+        return (1000000 * tv.tv_sec) + tv.tv_usec;
+    }
+
     void Thread::doShutdown(void) {
         shutdown = true;
     }

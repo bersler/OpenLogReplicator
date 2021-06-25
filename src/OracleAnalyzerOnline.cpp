@@ -643,7 +643,7 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("can't find scn for " << dec << startTime);
             }
 
-        } else if (startScn > 0) {
+        } else if (startScn != ZERO_SCN && startScn != 0) {
             firstScn = startScn;
 
         //NOW

@@ -40,7 +40,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 #include "RedoLogRecord.h"
 #include "RowId.h"
-#include "RuntimeException.h"
 #include "Schema.h"
 #include "SystemTransaction.h"
 
@@ -48,10 +47,11 @@ namespace OpenLogReplicator {
     const char OutputBuffer::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     const char OutputBuffer::map16[17] = "0123456789abcdef";
 
-    OutputBuffer::OutputBuffer(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
-            uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType) :
+    OutputBuffer::OutputBuffer(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat,
+            uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer) :
         oracleAnalyzer(nullptr),
         messageFormat(messageFormat),
+        ridFormat(ridFormat),
         xidFormat(xidFormat),
         timestampFormat(timestampFormat),
         charFormat(charFormat),
@@ -60,7 +60,9 @@ namespace OpenLogReplicator {
         schemaFormat(schemaFormat),
         columnFormat(columnFormat),
         unknownType(unknownType),
+        unconfirmedLength(0),
         messageLength(0),
+        flushBuffer(flushBuffer),
         valueLength(0),
         lastTime(0),
         lastScn(0),
@@ -822,6 +824,10 @@ namespace OpenLogReplicator {
         timeZoneMap[0x85b4] = "WET";
         timeZoneMap[0x8e48] = "W-SU";
         timeZoneMap[0xa070] = "Zulu";
+        memset(valuesSet, 0, sizeof(valuesSet));
+        memset(valuesMerge, 0, sizeof(valuesMerge));
+        memset(values, 0, sizeof(values));
+        memset(valuesPart, 0, sizeof(valuesPart));
     }
 
     OutputBuffer::~OutputBuffer() {
@@ -842,186 +848,16 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::valuesRelease() {
-        valuesMap.clear();
-        for (uint64_t i = 0; i < mergesMax; ++i)
-            delete[] merges[i];
-        mergesMax = 0;
-        valuesMax = 0;
-    }
+    void OutputBuffer::initialize(OracleAnalyzer *oracleAnalyzer) {
+        this->oracleAnalyzer = oracleAnalyzer;
 
-    void OutputBuffer::valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb) {
-        ColumnValue *value;
-        auto it = valuesMap.find(column);
-
-        if ((trace2 & TRACE2_DML) != 0) {
-            stringstream strStr;
-            strStr << "value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
-                    setfill('0') << setw(2) << hex << (uint64_t)fb << " to: ";
-            for (uint64_t i = 0; i < length && i < 10; ++i) {
-                strStr << "0x" << setfill('0') << setw(2) << hex << (uint64_t)data[i] << ", ";
-            }
-            TRACE(TRACE2_DML, strStr.str());
-        }
-
-        //not set yet
-        if (it != valuesMap.end()) {
-            uint16_t valuePos = it->second;
-            value = &values[valuePos][type];
-        } else {
-            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
-            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
-            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
-            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
-            value = &values[valuesMax][type];
-            valuesMap[column] = valuesMax++;
-        }
-
-        switch (fb & (FB_P | FB_N)) {
-        case 0:
-            value->length[0] = length;
-            value->data[0] = data;
-            break;
-
-        case FB_N:
-            value->length[1] = length;
-            value->data[1] = data;
-            value->merge = true;
-            break;
-
-        case FB_P | FB_N:
-            value->length[2] = length;
-            value->data[2] = data;
-            value->merge = true;
-            break;
-
-        case FB_P:
-            value->length[3] = length;
-            value->data[3] = data;
-            value->merge = true;
-            break;
-        }
-    }
-
-    void OutputBuffer::outputBufferRotate(bool copy) {
-        OutputBufferQueue *nextBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", true);
-        nextBuffer->next = nullptr;
-        nextBuffer->id = lastBuffer->id + 1;
-        nextBuffer->data = ((uint8_t*)nextBuffer) + sizeof(struct OutputBufferQueue);
-
-        //message could potentially fit in one buffer
-        if (copy && msg != nullptr && sizeof(struct OutputBufferMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
-            memcpy(nextBuffer->data, msg, sizeof(struct OutputBufferMsg) + messageLength);
-            msg = (OutputBufferMsg*)nextBuffer->data;
-            msg->data = nextBuffer->data + sizeof(struct OutputBufferMsg);
-            nextBuffer->length = sizeof(struct OutputBufferMsg) + messageLength;
-            lastBuffer->length -= sizeof(struct OutputBufferMsg) + messageLength;
-        } else
-            nextBuffer->length = 0;
-
-        {
-            unique_lock<mutex> lck(mtx);
-            lastBuffer->next = nextBuffer;
-            ++buffersAllocated;
-            lastBuffer = nextBuffer;
-        }
-    }
-
-    void OutputBuffer::outputBufferShift(uint64_t bytes, bool copy) {
-        lastBuffer->length += bytes;
-
-        if (lastBuffer->length >= OUTPUT_BUFFER_DATA_SIZE)
-            outputBufferRotate(copy);
-    }
-
-    void OutputBuffer::outputBufferBegin(uint32_t dictId) {
-        messageLength = 0;
-        transactionType = 0;
-
-        if (lastBuffer->length + sizeof(struct OutputBufferMsg) >= OUTPUT_BUFFER_DATA_SIZE)
-            outputBufferRotate(true);
-
-        msg = (OutputBufferMsg*)(lastBuffer->data + lastBuffer->length);
-        outputBufferShift(sizeof(struct OutputBufferMsg), true);
-        msg->scn = lastScn;
-        msg->length = 0;
-        msg->id = id++;
-        msg->dictId = dictId;
-        msg->oracleAnalyzer = oracleAnalyzer;
-        msg->pos = 0;
-        msg->flags = 0;
-        msg->data = lastBuffer->data + lastBuffer->length;
-    }
-
-    void OutputBuffer::outputBufferCommit(void) {
-        if (messageLength == 0) {
-            WARNING("JSON buffer - commit of empty transaction");
-        }
-
-        msg->queueId = lastBuffer->id;
-        outputBufferShift((8 - (messageLength & 7)) & 7, false);
-        {
-            unique_lock<mutex> lck(mtx);
-            msg->length = messageLength;
-            writersCond.notify_all();
-        }
-        msg = nullptr;
-    }
-
-    void OutputBuffer::outputBufferAppend(char character) {
-        lastBuffer->data[lastBuffer->length] = character;
-        ++messageLength;
-        outputBufferShift(1, true);
-    }
-
-    void OutputBuffer::outputBufferAppend(string &str) {
-        const char *charstr = str.c_str();
-        uint64_t length = str.length();
-        for (uint i = 0; i < length; ++i)
-            outputBufferAppend(*charstr++);
-    }
-
-    void OutputBuffer::outputBufferAppend(const char *str) {
-        char character = *str++;
-        while (character != 0) {
-            outputBufferAppend(character);
-            character = *str++;
-        }
-    }
-
-    void OutputBuffer::outputBufferAppend(const char *str, uint64_t length) {
-        for (uint i = 0; i < length; ++i)
-            outputBufferAppend(*str++);
-    }
-
-    void OutputBuffer::columnUnknown(string &columnName, const uint8_t *data, uint64_t length) {
-        valueBuffer[0] = '?';
-        valueLength = 1;
-        columnString(columnName);
-        if (unknownFormat == UNKNOWN_FORMAT_DUMP) {
-            stringstream ss;
-            for (uint64_t j = 0; j < length; ++j)
-                ss << " " << hex << setfill('0') << setw(2) << (uint64_t) data[j];
-            WARNING("unknown value (column: " << columnName << "): " << dec << length << " - " << ss.str());
-        }
-    }
-
-    void OutputBuffer::valueBufferAppend(uint8_t value) {
-        if (valueLength >= MAX_FIELD_LENGTH) {
-            RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
-        }
-        valueBuffer[valueLength++] = value;
-    }
-
-    void OutputBuffer::valueBufferAppendHex(typeunicode value, uint64_t length) {
-        uint64_t j = (length - 1) * 4;
-        for (uint64_t i = 0; i < length; ++i) {
-            if (valueLength >= MAX_FIELD_LENGTH) {
-                RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
-            }
-            valueBuffer[valueLength++] = map16[(value >> j) & 0xF];
-            j -= 4;
-        };
+        buffersAllocated = 1;
+        firstBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", false);
+        firstBuffer->id = 0;
+        firstBuffer->next = nullptr;
+        firstBuffer->data = ((uint8_t*)firstBuffer) + sizeof(struct OutputBufferQueue);
+        firstBuffer->length = 0;
+        lastBuffer = firstBuffer;
     }
 
     void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
@@ -1189,205 +1025,31 @@ namespace OpenLogReplicator {
             if (unknownType == UNKNOWN_TYPE_SHOW)
                 columnUnknown(column->name, data, length);
         }
-    }
+    };
 
-    void OutputBuffer::parseNumber(const uint8_t *data, uint64_t length) {
-        valueLength = 0;
+    void OutputBuffer::outputBufferRotate(bool copy) {
+        OutputBufferQueue *nextBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", true);
+        nextBuffer->next = nullptr;
+        nextBuffer->id = lastBuffer->id + 1;
+        nextBuffer->data = ((uint8_t*)nextBuffer) + sizeof(struct OutputBufferQueue);
 
-        uint8_t digits = data[0];
-        //just zero
-        if (digits == 0x80) {
-            valueBufferAppend('0');
-        } else {
-            uint64_t j = 1, jMax = length - 1;
+        //message could potentially fit in one buffer
+        if (copy && msg != nullptr && sizeof(struct OutputBufferMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
+            memcpy(nextBuffer->data, msg, sizeof(struct OutputBufferMsg) + messageLength);
+            msg = (OutputBufferMsg*)nextBuffer->data;
+            msg->data = nextBuffer->data + sizeof(struct OutputBufferMsg);
+            nextBuffer->length = sizeof(struct OutputBufferMsg) + messageLength;
+            lastBuffer->length -= sizeof(struct OutputBufferMsg) + messageLength;
+        } else
+            nextBuffer->length = 0;
 
-            //positive number
-            if (digits > 0x80 && jMax >= 1) {
-                uint64_t value, zeros = 0;
-                //part of the total
-                if (digits <= 0xC0) {
-                    valueBufferAppend('0');
-                    zeros = 0xC0 - digits;
-                } else {
-                    digits -= 0xC0;
-                    //part of the total - omitting first zero for first digit
-                    value = data[j] - 1;
-                    if (value < 10)
-                        valueBufferAppend('0' + value);
-                    else {
-                        valueBufferAppend('0' + (value / 10));
-                        valueBufferAppend('0' + (value % 10));
-                    }
-
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        value = data[j] - 1;
-                        if (j <= jMax) {
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                            ++j;
-                        } else {
-                            valueBufferAppend('0');
-                            valueBufferAppend('0');
-                        }
-                        --digits;
-                    }
-                }
-
-                //fraction part
-                if (j <= jMax) {
-                    valueBufferAppend('.');
-
-                    while (zeros > 0) {
-                        valueBufferAppend('0');
-                        valueBufferAppend('0');
-                        --zeros;
-                    }
-
-                    while (j <= jMax - 1) {
-                        value = data[j] - 1;
-                        valueBufferAppend('0' + (value / 10));
-                        valueBufferAppend('0' + (value % 10));
-                        ++j;
-                    }
-
-                    //last digit - omitting 0 at the end
-                    value = data[j] - 1;
-                    valueBufferAppend('0' + (value / 10));
-                    if ((value % 10) != 0)
-                        valueBufferAppend('0' + (value % 10));
-                }
-            //negative number
-            } else if (digits < 0x80 && jMax >= 1) {
-                uint64_t value, zeros = 0;
-                valueBufferAppend('-');
-
-                if (data[jMax] == 0x66)
-                    --jMax;
-
-                //part of the total
-                if (digits >= 0x3F) {
-                    valueBufferAppend('0');
-                    zeros = digits - 0x3F;
-                } else {
-                    digits = 0x3F - digits;
-
-                    value = 101 - data[j];
-                    if (value < 10)
-                        valueBufferAppend('0' + value);
-                    else {
-                        valueBufferAppend('0' + (value / 10));
-                        valueBufferAppend('0' + (value % 10));
-                    }
-                    ++j;
-                    --digits;
-
-                    while (digits > 0) {
-                        if (j <= jMax) {
-                            value = 101 - data[j];
-                            valueBufferAppend('0' + (value / 10));
-                            valueBufferAppend('0' + (value % 10));
-                            ++j;
-                        } else {
-                            valueBufferAppend('0');
-                            valueBufferAppend('0');
-                        }
-                        --digits;
-                    }
-                }
-
-                if (j <= jMax) {
-                    valueBufferAppend('.');
-
-                    while (zeros > 0) {
-                        valueBufferAppend('0');
-                        valueBufferAppend('0');
-                        --zeros;
-                    }
-
-                    while (j <= jMax - 1) {
-                        value = 101 - data[j];
-                        valueBufferAppend('0' + (value / 10));
-                        valueBufferAppend('0' + (value % 10));
-                        ++j;
-                    }
-
-                    value = 101 - data[j];
-                    valueBufferAppend('0' + (value / 10));
-                    if ((value % 10) != 0)
-                        valueBufferAppend('0' + (value % 10));
-                }
-            } else {
-                RUNTIME_FAIL("got unknown numeric value");
-            }
+        {
+            unique_lock<mutex> lck(mtx);
+            lastBuffer->next = nextBuffer;
+            ++buffersAllocated;
+            lastBuffer = nextBuffer;
         }
-    }
-
-    void OutputBuffer::parseString(const uint8_t *data, uint64_t length, uint64_t charsetId) {
-        CharacterSet *characterSet = characterMap[charsetId];
-        if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-            RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
-        }
-        valueLength = 0;
-
-        while (length > 0) {
-            typeunicode unicodeCharacter;
-            uint64_t unicodeCharacterLength;
-
-            if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                unicodeCharacter = characterSet->decode(data, length);
-                unicodeCharacterLength = 8;
-            } else {
-                unicodeCharacter = *data++;
-                --length;
-                unicodeCharacterLength = 2;
-            }
-
-            if ((charFormat & CHAR_FORMAT_HEX) != 0) {
-                valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
-            } else {
-                //0xxxxxxx
-                if (unicodeCharacter <= 0x7F) {
-                    valueBufferAppend(unicodeCharacter);
-
-                //110xxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x7FF) {
-                    valueBufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
-                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //1110xxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0xFFFF) {
-                    valueBufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
-                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                } else if (unicodeCharacter <= 0x10FFFF) {
-                    valueBufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
-                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));
-                    valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
-                    valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
-
-                } else {
-                    RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
-                }
-            }
-        }
-    }
-
-    void OutputBuffer::initialize(OracleAnalyzer *oracleAnalyzer) {
-        this->oracleAnalyzer = oracleAnalyzer;
-
-        buffersAllocated = 1;
-        firstBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", false);
-        firstBuffer->id = 0;
-        firstBuffer->next = nullptr;
-        firstBuffer->data = ((uint8_t*)firstBuffer) + sizeof(struct OutputBufferQueue);
-        firstBuffer->length = 0;
-        lastBuffer = firstBuffer;
-    }
+    };
 
     uint64_t OutputBuffer::outputBufferSize(void) const {
         return ((messageLength + 7) & 0xFFFFFFFFFFFFFFF8) + sizeof(struct OutputBufferMsg);
@@ -1811,160 +1473,191 @@ namespace OpenLogReplicator {
         }
 
         int16_t guardPos = -1;
-        if (object != nullptr && object->guardSegNo != -1) {
-            auto it = valuesMap.find(object->guardSegNo);
-            if (it != valuesMap.end())
-                guardPos = it->second;
-        }
+        if (object != nullptr && object->guardSegNo != -1)
+            guardPos = object->guardSegNo;
 
-        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = it->first;
-            uint16_t pos = it->second;
+        uint64_t column, baseMax = valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            column = base << 6;
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (valuesSet[base] < mask)
+                    break;
+                if ((valuesSet[base] & mask) == 0)
+                    continue;
 
-            for (uint64_t j = 0; j < 4; ++j) {
-                if (values[pos][j].merge) {
-                    uint64_t length = 0;
+                //merge column values
+                if ((valuesMerge[base] & mask) != 0) {
+                    for (uint64_t j = 0; j < 4; ++j) {
+                        uint64_t length = 0;
 
-                    if (values[pos][j].data[1] != nullptr)
-                        length += values[pos][j].length[1];
-                    if (values[pos][j].data[2] != nullptr)
-                        length += values[pos][j].length[2];
-                    if (values[pos][j].data[3] != nullptr)
-                        length += values[pos][j].length[3];
+                        if (valuesPart[0][column][j] != nullptr)
+                            length += lengthsPart[0][column][j];
+                        if (valuesPart[1][column][j] != nullptr)
+                            length += lengthsPart[1][column][j];
+                        if (valuesPart[column][j] != nullptr)
+                            length += lengthsPart[2][column][j];
 
-                    if (values[pos][j].data[0] != nullptr) {
-                        RUNTIME_FAIL("value for " << j << " is already set when merging");
-                    }
+                        if (values[column] != nullptr) {
+                            RUNTIME_FAIL("value for " << j << " is already set when merging");
+                        }
 
-                    uint8_t *buffer = new uint8_t[length];
-                    if (buffer == nullptr) {
-                        RUNTIME_FAIL("couldn't allocate " << dec << (length) << " bytes memory (for: big before image)");
-                    }
-                    merges[mergesMax++] = buffer;
+                        uint8_t *buffer = new uint8_t[length];
+                        if (buffer == nullptr) {
+                            RUNTIME_FAIL("couldn't allocate " << dec << (length) << " bytes memory (for: big before image)");
+                        }
+                        merges[mergesMax++] = buffer;
 
-                    values[pos][j].data[0] = buffer;
-                    values[pos][j].length[0] = length;
+                        values[column][j] = buffer;
+                        lengths[column][j] = length;
 
-                    if (values[pos][j].data[1] != nullptr) {
-                        memcpy(buffer, values[pos][j].data[1], values[pos][j].length[1]);
-                        buffer += values[pos][j].length[1];
-                    }
-                    if (values[pos][j].data[2] != nullptr) {
-                        memcpy(buffer, values[pos][j].data[2], values[pos][j].length[2]);
-                        buffer += values[pos][j].length[2];
-                    }
-                    if (values[pos][j].data[3] != nullptr) {
-                        memcpy(buffer, values[pos][j].data[3], values[pos][j].length[3]);
-                        buffer += values[pos][j].length[3];
-                    }
-                }
-            }
-
-            if (values[pos][VALUE_BEFORE].data[0] == nullptr) {
-                bool guardPresent = false;
-                if (object != nullptr && object->columns[i]->guardSegNo != -1 && guardPos != -1) {
-                    uint8_t *guardData = values[guardPos][VALUE_BEFORE].data[0];
-                    if (guardData != nullptr) {
-                        guardPresent = true;
-                        if (i / 8 < values[guardPos][VALUE_BEFORE].length[0] &&
-                                (values[guardPos][VALUE_BEFORE].data[0][i / 8] & (1 << (i & 7))) != 0) {
-                            values[pos][VALUE_BEFORE].data[0] = (uint8_t*)1;
-                            values[pos][VALUE_BEFORE].length[0] = 0;
+                        if (valuesPart[0][column][j] != nullptr) {
+                            memcpy(buffer, valuesPart[0][column][j], lengthsPart[0][column][j]);
+                            buffer += lengthsPart[0][column][j];
+                            valuesPart[0][column][j] = nullptr;
+                        }
+                        if (valuesPart[1][column][j] != nullptr) {
+                            memcpy(buffer, valuesPart[1][column][j], lengthsPart[1][column][j]);
+                            buffer += lengthsPart[1][column][j];
+                            valuesPart[1][column][j] = nullptr;
+                        }
+                        if (valuesPart[2][column][j] != nullptr) {
+                            memcpy(buffer, valuesPart[2][column][j], lengthsPart[2][column][j]);
+                            buffer += lengthsPart[2][column][j];
+                            valuesPart[2][column][j] = nullptr;
                         }
                     }
                 }
 
-                if (!guardPresent && values[pos][VALUE_BEFORE_SUPP].data[0] != nullptr) {
-                    values[pos][VALUE_BEFORE].data[0] = values[pos][VALUE_BEFORE_SUPP].data[0];
-                    values[pos][VALUE_BEFORE].length[0] = values[pos][VALUE_BEFORE_SUPP].length[0];
-                }
-            }
-
-            if (values[pos][VALUE_AFTER].data[0] == nullptr) {
-                bool guardPresent = false;
-                if (object != nullptr && object->columns[i]->guardSegNo != -1 && guardPos != -1) {
-                    uint8_t *guardData = values[guardPos][VALUE_AFTER].data[0];
-                    if (guardData != nullptr) {
-                        guardPresent = true;
-                        if (i / 8 < values[guardPos][VALUE_AFTER].length[0] &&
-                                (values[guardPos][VALUE_AFTER].data[0][i / 8] & (1 << (i & 7))) != 0) {
-                            values[pos][VALUE_AFTER].data[0] = (uint8_t*)1;
-                            values[pos][VALUE_AFTER].length[0] = 0;
+                if (values[column][VALUE_BEFORE] == nullptr) {
+                    bool guardPresent = false;
+                    if (guardPos != -1 && object->columns[column]->guardSegNo != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
+                        typeCOL column2 = object->columns[column]->guardSegNo;
+                        uint8_t *guardData = values[guardPos][VALUE_BEFORE];
+                        if (guardData != nullptr && column2 / 8 < lengths[guardPos][VALUE_BEFORE]) {
+                            guardPresent = true;
+                            if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
+                                values[column][VALUE_BEFORE] = (uint8_t*)1;
+                                lengths[column][VALUE_BEFORE] = 0;
+                            }
                         }
+                    }
+
+                    if (!guardPresent && values[column][VALUE_BEFORE_SUPP] != nullptr) {
+                        values[column][VALUE_BEFORE] = values[column][VALUE_BEFORE_SUPP];
+                        lengths[column][VALUE_BEFORE] = lengths[column][VALUE_BEFORE_SUPP];
                     }
                 }
 
-                if (!guardPresent && values[pos][VALUE_AFTER_SUPP].data[0] != nullptr) {
-                    values[pos][VALUE_AFTER].data[0] = values[pos][VALUE_AFTER_SUPP].data[0];
-                    values[pos][VALUE_AFTER].length[0] = values[pos][VALUE_AFTER_SUPP].length[0];
+                if (values[column][VALUE_AFTER] == nullptr) {
+                    bool guardPresent = false;
+                    if (guardPos != -1 && object->columns[column]->guardSegNo != -1 && values[guardPos][VALUE_AFTER] != nullptr) {
+                        typeCOL column2 = object->columns[column]->guardSegNo;
+                        uint8_t *guardData = values[guardPos][VALUE_AFTER];
+                        if (guardData != nullptr && column2 / 8 < lengths[guardPos][VALUE_AFTER]) {
+                            guardPresent = true;
+                            if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
+                                values[column][VALUE_AFTER] = (uint8_t*)1;
+                                lengths[column][VALUE_AFTER] = 0;
+                            }
+                        }
+                    }
+
+                    if (!guardPresent && values[column][VALUE_AFTER_SUPP] != nullptr) {
+                        values[column][VALUE_AFTER] = values[column][VALUE_AFTER_SUPP];
+                        lengths[column][VALUE_AFTER] = lengths[column][VALUE_AFTER_SUPP];
+                    }
                 }
             }
         }
 
         if ((trace2 & TRACE2_DML) != 0) {
             if (object != nullptr) {
-                TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type);
+                TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type << " columns: " << valuesMax);
 
-                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                    uint16_t i = it->first;
-                    uint16_t pos = it->second;
+                uint64_t column, baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
+                            continue;
 
-                    TRACE(TRACE2_DML, dec << i << ": " <<
-                            " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
-                            " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
-                            " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
-                            " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")" <<
-                            " pk: " << dec << object->columns[i]->numPk);
+                        TRACE(TRACE2_DML, dec << (column + 1) << ": " <<
+                                " B(" << dec << lengths[column][VALUE_BEFORE] << ")" <<
+                                " A(" << dec << lengths[column][VALUE_AFTER] << ")" <<
+                                " BS(" << dec << lengths[column][VALUE_BEFORE_SUPP] << ")" <<
+                                " AS(" << dec << lengths[column][VALUE_AFTER_SUPP] << ")" <<
+                                " pk: " << dec << object->columns[column]->numPk);
+                    }
                 }
             } else {
-                TRACE(TRACE2_DML, "tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type);
+                TRACE(TRACE2_DML, "tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type << " columns: " << valuesMax);
 
-                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-                    uint16_t i = it->first;
-                    uint16_t pos = it->second;
+                uint64_t column, baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
+                            continue;
 
-                    TRACE(TRACE2_DML, dec << i << ": " <<
-                            " B(" << dec << values[pos][VALUE_BEFORE].length[0] << ")" <<
-                            " A(" << dec << values[pos][VALUE_AFTER].length[0] << ")" <<
-                            " BS(" << dec << values[pos][VALUE_BEFORE_SUPP].length[0] << ")" <<
-                            " AS(" << dec << values[pos][VALUE_AFTER_SUPP].length[0] << ")");
+                        TRACE(TRACE2_DML, dec << (column + 1) << ": " <<
+                                " B(" << dec << lengths[column][VALUE_BEFORE] << ")" <<
+                                " A(" << dec << lengths[column][VALUE_AFTER] << ")" <<
+                                " BS(" << dec << lengths[column][VALUE_BEFORE_SUPP] << ")" <<
+                                " AS(" << dec << lengths[column][VALUE_AFTER_SUPP] << ")");
+                    }
                 }
             }
         }
 
         if (type == TRANSACTION_UPDATE) {
             if (object != nullptr && (columnFormat & COLUMN_FORMAT_FULL_UPD) == 0) {
-                for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ) {
-                    uint16_t i = it->first;
-                    uint16_t pos = it->second;
-
-                    //remove unchanged column values - only for tables with defined primary key
-                    if (object->columns[i]->numPk == 0 && values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] == values[pos][VALUE_AFTER].length[0]) {
-                        if (values[pos][VALUE_BEFORE].length[0] == 0 || memcmp(values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_AFTER].data[0], values[pos][VALUE_BEFORE].length[0]) == 0) {
-                            it = valuesMap.erase(it);
+                uint64_t column, baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
                             continue;
-                        }
-                    }
 
-                    //remove columns additionally present, but not modified
-                    if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] == 0 && values[pos][VALUE_AFTER].data[0] == nullptr) {
-                        if (object->columns[i]->numPk == 0) {
-                            values[pos][VALUE_BEFORE].data[0] = nullptr;
-                        } else {
-                            values[pos][VALUE_AFTER].data[0] = values[pos][VALUE_BEFORE].data[0];
-                            values[pos][VALUE_AFTER].length[0] = values[pos][VALUE_BEFORE].length[0];
+                        //remove unchanged column values - only for tables with defined primary key
+                        if (object->columns[column]->numPk == 0 &&
+                                values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] != nullptr &&
+                                lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER]) {
+                            if (lengths[column][VALUE_BEFORE] == 0 ||
+                                    memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
+                                valuesSet[base] &= ~mask;
+                                values[column][VALUE_BEFORE] = nullptr;
+                                values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                values[column][VALUE_AFTER] = nullptr;
+                                values[column][VALUE_AFTER_SUPP] = nullptr;
+                                continue;
+                            }
                         }
-                    }
 
-                    if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] == 0 && values[pos][VALUE_BEFORE].data[0] == nullptr) {
-                        if (object->columns[i]->numPk == 0) {
-                            values[pos][VALUE_AFTER].data[0] = nullptr;
-                        } else {
-                            values[pos][VALUE_BEFORE].data[0] = values[pos][VALUE_AFTER].data[0];
-                            values[pos][VALUE_BEFORE].length[0] = values[pos][VALUE_AFTER].length[0];
+                        //remove columns additionally present, but not modified
+                        if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                            if (object->columns[column]->numPk == 0) {
+                                values[column][VALUE_BEFORE] = nullptr;
+                            } else {
+                                values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
+                                lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
+                            }
+                        }
+
+                        if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
+                            if (object->columns[column]->numPk == 0) {
+                                values[column][VALUE_AFTER] = nullptr;
+                            } else {
+                                values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                            }
                         }
                     }
-                    ++it;
                 }
             }
 
@@ -1979,30 +1672,28 @@ namespace OpenLogReplicator {
                 //assume null values for all missing columns
                 if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
                     uint16_t maxCol = object->columns.size();
-                    for (uint16_t i = 0; i < maxCol; ++i) {
-                        auto it = valuesMap.find(i);
-                        if (it == valuesMap.end()) {
-                            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
-                            values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
-                            values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
-                            valuesMap[i] = valuesMax++;
+                    for (uint16_t column = 0; column < maxCol; ++column) {
+                        uint64_t base = column >> 6;
+                        uint64_t mask = ((uint64_t)1) << (column & 0x3F);
+                        if ((valuesSet[base] & mask) == 0) {
+                            valuesSet[base] |= mask;
+                            values[column][VALUE_BEFORE] = (uint8_t*)1;
+                            lengths[column][VALUE_BEFORE] = 0;
+                            values[column][VALUE_AFTER] = (uint8_t*)1;
+                            lengths[column][VALUE_AFTER] = 0;
                         }
                     }
                 } else {
                     //assume null values for pk missing columns
-                    for (uint16_t i: object->pk) {
-                        auto it = valuesMap.find(i);
-                        if (it == valuesMap.end()) {
-                            memset(&values[valuesMax][VALUE_BEFORE], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_AFTER], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_BEFORE_SUPP], 0, sizeof(struct ColumnValue));
-                            memset(&values[valuesMax][VALUE_AFTER_SUPP], 0, sizeof(struct ColumnValue));
-                            values[valuesMax][VALUE_BEFORE].data[0] = (uint8_t*)1;
-                            values[valuesMax][VALUE_AFTER].data[0] = (uint8_t*)1;
-                            valuesMap[i] = valuesMax++;
+                    for (uint16_t column: object->pk) {
+                        uint64_t base = column >> 6;
+                        uint64_t mask = ((uint64_t)1) << (column & 0x3F);
+                        if ((valuesSet[base] & mask) == 0) {
+                            valuesSet[base] |= mask;
+                            values[column][VALUE_BEFORE] = (uint8_t*)1;
+                            lengths[column][VALUE_BEFORE] = 0;
+                            values[column][VALUE_AFTER] = (uint8_t*)1;
+                            lengths[column][VALUE_AFTER] = 0;
                         }
                     }
                 }

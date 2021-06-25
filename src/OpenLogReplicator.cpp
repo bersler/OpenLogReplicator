@@ -257,6 +257,16 @@ int main(int argc, char **argv) {
             }
 
             //optional
+            uint64_t ridFormat = RID_FORMAT_SKIP;
+            if (formatJSON.HasMember("rid")) {
+                const Value& ridFormatJSON = formatJSON["rid"];
+                ridFormat = ridFormatJSON.GetUint64();
+                if (ridFormat > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << ridFormatJSON.GetString() << ", expected one of: {0, 1}");
+                }
+            }
+
+            //optional
             uint64_t xidFormat = XID_FORMAT_TEXT;
             if (formatJSON.HasMember("xid")) {
                 const Value& xidFormatJSON = formatJSON["xid"];
@@ -336,16 +346,23 @@ int main(int argc, char **argv) {
                 }
             }
 
+            //optional
+            uint64_t flushBuffer = 1048576;
+            if (formatJSON.HasMember("flush-buffer")) {
+                const Value& flushBufferJSON = formatJSON["flush-buffer"];
+                flushBuffer = flushBufferJSON.GetUint64();
+            }
+
             const Value& formatTypeJSON = getJSONfieldV(fileName, formatJSON, "type");
 
             OutputBuffer *outputBuffer = nullptr;
             if (strcmp("json", formatTypeJSON.GetString()) == 0) {
-                outputBuffer = new OutputBufferJson(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
-                        schemaFormat, columnFormat, unknownType);
+                outputBuffer = new OutputBufferJson(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                        schemaFormat, columnFormat, unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                outputBuffer = new OutputBufferProtobuf(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
-                        schemaFormat, columnFormat, unknownType);
+                outputBuffer = new OutputBufferProtobuf(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                        schemaFormat, columnFormat, unknownType, flushBuffer);
 #else
                 RUNTIME_FAIL("format \"protobuf\" is not compiled, exiting");
 #endif /* LINK_LIBRARY_PROTOBUF */
@@ -768,9 +785,6 @@ int main(int argc, char **argv) {
             //optional
             typeSEQ startSequence = ZERO_SEQ;
             if (writerJSON.HasMember("start-seq")) {
-                if (startScn != ZERO_SCN) {
-                    CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-seq\"");
-                }
                 const Value& startSequenceJSON = writerJSON["start-seq"];
                 startSequence = startSequenceJSON.GetUint64();
             }

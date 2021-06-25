@@ -21,7 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <fcntl.h>
 #include <thread>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #include "OracleAnalyzer.h"
@@ -331,12 +330,6 @@ namespace OpenLogReplicator {
         }
 
         return ret;
-    }
-
-    time_t Reader::getTime(void) {
-        struct timeval tv;
-        gettimeofday(&tv, nullptr);
-        return (1000000 * tv.tv_sec) + tv.tv_usec;
     }
 
     typesum Reader::calcChSum(uint8_t *buffer, uint64_t size) const {

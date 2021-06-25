@@ -1,3 +1,14 @@
+0.9.2-beta
+- added parameter "rid" for "format"
+- by default row id is not included in the output
+- online mode: fixed startup by seq
+- updated protobuf output module to be in sync with json code
+- rewritten column handling to avoid performance issues due to memory allocation/deallocation
+- decreased contention on locks, internal buffer is flushed less often
+- inlining code to create output stream in json format
+- inlining some code for red log parsing
+- corrected performance measuring throughput
+
 0.9.1-beta
 - added scrips/gencfg.sql file - to create schema file for offline mode
 - OpenLogReplicator.json: added debug parameters to allow instrumented shutdown during tests: shutdown after reaching defined number of checkpoints, transactions or redo log switches

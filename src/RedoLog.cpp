@@ -1001,7 +1001,7 @@ namespace OpenLogReplicator {
         if (lwnConfirmedBlock == 2)
             oracleAnalyzer->checkpointLastOffset = 0;
 
-        clock_t cStart = clock();
+        time_t cStart = oracleAnalyzer->getTime();
         {
             unique_lock<mutex> lck(oracleAnalyzer->mtx);
             reader->status = READER_STATUS_READ;
@@ -1194,8 +1194,8 @@ namespace OpenLogReplicator {
         }
 
         if ((trace2 & TRACE2_PERFORMANCE) != 0) {
-            clock_t cEnd = clock();
-            double mySpeed = 0, myTime = 1000.0 * (cEnd - cStart) / CLOCKS_PER_SEC, suppLogPercent = 0.0;
+            time_t cEnd = oracleAnalyzer->getTime();
+            double mySpeed = 0, myTime = (cEnd - cStart) / 1000.0, suppLogPercent = 0.0;
             if (currentBlock != startBlock)
                 suppLogPercent = 100.0 * oracleAnalyzer->suppLogSize / ((currentBlock - startBlock) * reader->blockSize);
             if (myTime > 0)

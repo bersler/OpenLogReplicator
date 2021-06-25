@@ -25,6 +25,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unordered_map>
 #include <vector>
 
+#include "RedoLogException.h"
+#include "RedoLogRecord.h"
 #include "Thread.h"
 
 #ifndef ORACLEANALYZER_H_
@@ -203,13 +205,60 @@ namespace OpenLogReplicator {
         bool checkpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
         bool readCheckpointFile(string &fileName, typeSCN fileScn);
-
         void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code);
-        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code);
-
         uint8_t *getMemoryChunk(const char *module, bool supp);
         void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
+
+        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
+            if (fieldNum >= redoLogRecord->fieldCnt)
+                return false;
+
+            ++fieldNum;
+
+            if (fieldNum == 1)
+                fieldPos = redoLogRecord->fieldPos;
+            else
+                fieldPos += (fieldLength + 3) & 0xFFFC;
+            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+
+            if (fieldPos + fieldLength > redoLogRecord->length) {
+                REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", pos: " << dec << fieldPos <<
+                        ", length:" << fieldLength <<
+                        ", max: " << redoLogRecord->length <<
+                        ", code: " << hex << code);
+            }
+            return true;
+        };
+
+        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
+            ++fieldNum;
+            if (fieldNum > redoLogRecord->fieldCnt) {
+                REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", data: " << dec << redoLogRecord->rowData <<
+                        ", obj: " << dec << redoLogRecord->obj <<
+                        ", dataObj: " << dec << redoLogRecord->dataObj <<
+                        ", op: " << hex << redoLogRecord->opCode <<
+                        ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
+                        ", suppCC: " << dec << redoLogRecord->suppLogCC <<
+                        ", fieldLength: " << dec << fieldLength <<
+                        ", code: " << hex << code);
+            }
+
+            if (fieldNum == 1)
+                fieldPos = redoLogRecord->fieldPos;
+            else
+                fieldPos += (fieldLength + 3) & 0xFFFC;
+            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+
+            if (fieldPos + fieldLength > redoLogRecord->length) {
+                REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", pos: " << dec << fieldPos <<
+                        ", length:" << fieldLength <<
+                        ", max: " << redoLogRecord->length <<
+                        ", code: " << hex << code);
+            }
+        };
 
         friend ostream& operator<<(ostream& os, const OracleAnalyzer& oracleAnalyzer);
         friend class Reader;

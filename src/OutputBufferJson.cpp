@@ -24,10 +24,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RowId.h"
 
 namespace OpenLogReplicator {
-    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat,
-            uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType) :
-        OutputBuffer(messageFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
-                unknownType),
+    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
+            uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
+            uint64_t flushBuffer) :
+        OutputBuffer(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
+                unknownType, flushBuffer),
         hasPreviousValue(false),
         hasPreviousRedo(false),
         hasPreviousColumn(false) {
@@ -194,10 +195,13 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
+        if (ridFormat == RID_FORMAT_SKIP)
+            return;
+
         RowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        outputBufferAppend("\"rid\":\"");
+        outputBufferAppend(",\"rid\":\"");
         outputBufferAppend(str);
         outputBufferAppend('"');
     }
@@ -289,8 +293,8 @@ namespace OpenLogReplicator {
             outputBufferAppend(",\"columns\":[");
 
             bool hasPrev = false;
-            for (uint64_t i = 0; i < object->columns.size(); ++i) {
-                if (object->columns[i] == nullptr)
+            for (typeCOL column = 0; column < object->columns.size(); ++column) {
+                if (object->columns[column] == nullptr)
                     continue;
 
                 if (hasPrev)
@@ -299,20 +303,20 @@ namespace OpenLogReplicator {
                     hasPrev = true;
 
                 outputBufferAppend("{\"name\":\"");
-                outputBufferAppend(object->columns[i]->name);
+                outputBufferAppend(object->columns[column]->name);
 
                 outputBufferAppend("\",\"type\":");
-                switch(object->columns[i]->typeNo) {
+                switch(object->columns[column]->typeNo) {
                 case 1: //varchar2(n), nvarchar(n)
                     outputBufferAppend("\"varchar2\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 2: //number(p, s), float(p)
                     outputBufferAppend("\"number\",\"precision\":");
-                    appendSDec(object->columns[i]->precision);
+                    appendSDec(object->columns[column]->precision);
                     outputBufferAppend(",\"scale\":");
-                    appendSDec(object->columns[i]->scale);
+                    appendSDec(object->columns[column]->scale);
                     break;
 
                 case 8: //long, not supported
@@ -325,7 +329,7 @@ namespace OpenLogReplicator {
 
                 case 23: //raw(n)
                     outputBufferAppend("\"raw\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 24: //long raw, not supported
@@ -338,7 +342,7 @@ namespace OpenLogReplicator {
 
                 case 96: //char(n), nchar(n)
                     outputBufferAppend("\"char\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 100: //binary_float
@@ -359,32 +363,32 @@ namespace OpenLogReplicator {
 
                 case 180: //timestamp(n)
                     outputBufferAppend("\"timestamp\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 181: //timestamp with time zone(n)
                     outputBufferAppend("\"timestamp with time zone\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 182: //interval year to month(n)
                     outputBufferAppend("\"interval year to month\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 183: //interval day to second(n)
                     outputBufferAppend("\"interval day to second\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 208: //urawid(n)
                     outputBufferAppend("\"urawid\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 case 231: //timestamp with local time zone(n), not supported
                     outputBufferAppend("\"timestamp with local time zone\",\"length\":");
-                    appendDec(object->columns[i]->length);
+                    appendDec(object->columns[column]->length);
                     break;
 
                 default:
@@ -393,7 +397,7 @@ namespace OpenLogReplicator {
                 }
 
                 outputBufferAppend(",\"nullable\":");
-                if (object->columns[i]->nullable)
+                if (object->columns[column]->nullable)
                     outputBufferAppend('1');
                 else
                     outputBufferAppend('0');
@@ -541,7 +545,7 @@ namespace OpenLogReplicator {
             outputBufferAppend("\"payload\":[");
         else {
             outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}");
-            outputBufferCommit();
+            outputBufferCommit(false);
         }
     }
 
@@ -567,7 +571,7 @@ namespace OpenLogReplicator {
 
             outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}");
         }
-        outputBufferCommit();
+        outputBufferCommit(true);
     }
 
     void OutputBufferJson::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
@@ -584,6 +588,7 @@ namespace OpenLogReplicator {
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
+
             outputBufferAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
@@ -598,39 +603,45 @@ namespace OpenLogReplicator {
 
         outputBufferAppend("{\"op\":\"c\",");
         appendSchema(object, dataObj);
-        outputBufferAppend(',');
         appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"after\":{");
 
         hasPreviousColumn = false;
-        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = it->first;
-            uint16_t pos = it->second;
-
-            if (object != nullptr) {
-                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+        typeCOL column;
+        uint64_t baseMax = valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            column = base << 6;
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (valuesSet[base] < mask)
+                    break;
+                if ((valuesSet[base] & mask) == 0)
                     continue;
-                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                    continue;
 
-                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                    processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-                else
-                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0)
-                    columnNull(object, i);
-            } else {
-                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                    processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
-                else
-                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
-                    columnNull(nullptr, i);
+                if (object != nullptr) {
+                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                        continue;
+
+                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
+                    else
+                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0)
+                        columnNull(object, column);
+                } else {
+                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
+                    else
+                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
+                        columnNull(nullptr, column);
+                }
             }
         }
         outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             outputBufferAppend("]}");
-            outputBufferCommit();
+            outputBufferCommit(false);
         }
     }
 
@@ -662,66 +673,78 @@ namespace OpenLogReplicator {
 
         outputBufferAppend("{\"op\":\"u\",");
         appendSchema(object, dataObj);
-        outputBufferAppend(',');
         appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
-        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = it->first;
-            uint16_t pos = it->second;
-
-            if (object != nullptr) {
-                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+        typeCOL column;
+        uint64_t baseMax = valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            column = base << 6;
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (valuesSet[base] < mask)
+                    break;
+                if ((valuesSet[base] & mask) == 0)
                     continue;
-                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                    continue;
 
-                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                    processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-                else
-                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                    columnNull(object, i);
-            } else {
-                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                    processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
-                else
-                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                    columnNull(nullptr, i);
+                if (object != nullptr) {
+                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                        continue;
+
+                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
+                    else
+                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
+                        columnNull(object, column);
+                } else {
+                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
+                    else
+                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
+                        columnNull(nullptr, column);
+                }
             }
         }
 
         outputBufferAppend("},\"after\":{");
 
         hasPreviousColumn = false;
-        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = it->first;
-            uint16_t pos = it->second;
-
-            if (object != nullptr) {
-                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                    continue;
-                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            column = base << 6;
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (valuesSet[base] < mask)
+                    break;
+                if ((valuesSet[base] & mask) == 0)
                     continue;
 
-                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                    processValue(object, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-                else
-                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                    columnNull(object, i);
-            } else {
-                if (values[pos][VALUE_AFTER].data[0] != nullptr && values[pos][VALUE_AFTER].length[0] > 0)
-                    processValue(nullptr, i, values[pos][VALUE_AFTER].data[0], values[pos][VALUE_AFTER].length[0], 0, 0);
-                else
-                if (values[pos][VALUE_AFTER].data[0] != nullptr || values[pos][VALUE_BEFORE].data[0] != nullptr)
-                    columnNull(nullptr, i);
+                if (object != nullptr) {
+                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                        continue;
+
+                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
+                    else
+                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
+                        columnNull(object, column);
+                } else {
+                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
+                    else
+                    if (values[column][VALUE_AFTER] != nullptr ||
+                            values[column][VALUE_BEFORE] != nullptr)
+                        columnNull(nullptr, column);
+                }
             }
         }
         outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             outputBufferAppend("]}");
-            outputBufferCommit();
+            outputBufferCommit(false);
         }
     }
 
@@ -753,39 +776,45 @@ namespace OpenLogReplicator {
 
         outputBufferAppend("{\"op\":\"d\",");
         appendSchema(object, dataObj);
-        outputBufferAppend(',');
         appendRowid(dataObj, bdba, slot);
         outputBufferAppend(",\"before\":{");
 
         hasPreviousColumn = false;
-        for (auto it = valuesMap.cbegin(); it != valuesMap.cend(); ++it) {
-            uint16_t i = it->first;
-            uint16_t pos = it->second;
-
-            if (object != nullptr) {
-                if (object->columns[i]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+        typeCOL column;
+        uint64_t baseMax = valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            column = base << 6;
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (valuesSet[base] < mask)
+                    break;
+                if ((valuesSet[base] & mask) == 0)
                     continue;
-                if (object->columns[i]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                    continue;
 
-                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                    processValue(object, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], object->columns[i]->typeNo, object->columns[i]->charsetId);
-                else
-                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[i]->numPk > 0)
-                    columnNull(object, i);
-            } else {
-                if (values[pos][VALUE_BEFORE].data[0] != nullptr && values[pos][VALUE_BEFORE].length[0] > 0)
-                    processValue(nullptr, i, values[pos][VALUE_BEFORE].data[0], values[pos][VALUE_BEFORE].length[0], 0, 0);
-                else
-                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
-                    columnNull(nullptr, i);
+                if (object != nullptr) {
+                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+                        continue;
+
+                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
+                    else
+                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0)
+                        columnNull(object, column);
+                } else {
+                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
+                    else
+                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
+                        columnNull(nullptr, column);
+                }
             }
         }
         outputBufferAppend("}}");
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             outputBufferAppend("]}");
-            outputBufferCommit();
+            outputBufferCommit(false);
         }
     }
 
@@ -823,7 +852,7 @@ namespace OpenLogReplicator {
 
         if (messageFormat == MESSAGE_FORMAT_SHORT) {
             outputBufferAppend("]}");
-            outputBufferCommit();
+            outputBufferCommit(true);
         }
     }
 
@@ -847,6 +876,6 @@ namespace OpenLogReplicator {
         if (redo)
             outputBufferAppend(",\"redo\":true");
         outputBufferAppend("}]}");
-        outputBufferCommit();
+        outputBufferCommit(true);
     }
 }

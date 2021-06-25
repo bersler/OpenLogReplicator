@@ -51,8 +51,8 @@ namespace OpenLogReplicator {
                 const char *sql, uint64_t sqlLength);
         virtual void processBegin(void);
     public:
-        OutputBufferProtobuf(uint64_t messageFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
-                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType);
+        OutputBufferProtobuf(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat,
+                uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
         virtual ~OutputBufferProtobuf();
 
         virtual void processCommit(void);

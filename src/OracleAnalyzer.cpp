@@ -461,7 +461,7 @@ namespace OpenLogReplicator {
             while (firstScn == ZERO_SCN) {
                 {
                     unique_lock<mutex> lck(mtx);
-                    if (startScn == ZERO_SCN)
+                    if (startScn == ZERO_SCN && startSequence == ZERO_SEQ && startTime.length() == 0 && startTimeRel == 0)
                         writerCond.wait(lck);
                 }
 
@@ -478,7 +478,7 @@ namespace OpenLogReplicator {
                     starting = "time: " + startTime;
                 else if (startTimeRel > 0)
                     starting = "time-rel: " + to_string(startTimeRel);
-                else if (startScn > 0)
+                else if (startScn != ZERO_SCN)
                     starting = "scn: " + to_string(startScn);
                 else
                     starting = "now";
@@ -937,58 +937,6 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::addRedoLogsBatch(string path) {
         redoLogsBatch.push_back(path);
-    }
-
-    void OracleAnalyzer::nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
-        ++fieldNum;
-        if (fieldNum > redoLogRecord->fieldCnt) {
-            REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                    ", data: " << dec << redoLogRecord->rowData <<
-                    ", obj: " << dec << redoLogRecord->obj <<
-                    ", dataObj: " << dec << redoLogRecord->dataObj <<
-                    ", op: " << hex << redoLogRecord->opCode <<
-                    ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
-                    ", suppCC: " << dec << redoLogRecord->suppLogCC <<
-                    ", fieldLength: " << dec << fieldLength <<
-                    ", code: " << hex << code);
-        }
-
-        if (fieldNum == 1)
-            fieldPos = redoLogRecord->fieldPos;
-        else
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
-
-        if (fieldPos + fieldLength > redoLogRecord->length) {
-            REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                    ", pos: " << dec << fieldPos <<
-                    ", length:" << fieldLength <<
-                    ", max: " << redoLogRecord->length <<
-                    ", code: " << hex << code);
-        }
-    }
-
-    bool OracleAnalyzer::nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength,
-            uint32_t code) {
-        if (fieldNum >= redoLogRecord->fieldCnt)
-            return false;
-
-        ++fieldNum;
-
-        if (fieldNum == 1)
-            fieldPos = redoLogRecord->fieldPos;
-        else
-            fieldPos += (fieldLength + 3) & 0xFFFC;
-        fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
-
-        if (fieldPos + fieldLength > redoLogRecord->length) {
-            REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                    ", pos: " << dec << fieldPos <<
-                    ", length:" << fieldLength <<
-                    ", max: " << redoLogRecord->length <<
-                    ", code: " << hex << code);
-        }
-        return true;
     }
 
     string OracleAnalyzer::applyMapping(string path) {

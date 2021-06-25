@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <atomic>
+#include <sys/time.h>
 #include "types.h"
 
 #ifndef THREAD_H_
@@ -41,6 +42,7 @@ namespace OpenLogReplicator {
 
         virtual void doShutdown(void);
         virtual void doStop(void);
+        time_t getTime(void);
 
         Thread(const char *alias);
         virtual ~Thread();

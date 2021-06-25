@@ -73,7 +73,6 @@ namespace OpenLogReplicator {
 
         uint64_t checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum);
         uint64_t reloadHeader(void);
-        time_t getTime(void);
 
     public:
         static char* REDO_CODE[6];
