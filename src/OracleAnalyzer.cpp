@@ -742,7 +742,7 @@ namespace OpenLogReplicator {
     }
 
     uint64_t OracleAnalyzer::readerDropAll(void) {
-        uint64_t buffersMax = 0;
+        uint64_t buffersMaxUsed = 0;
         {
             unique_lock<mutex> lck(mtx);
             for (Reader *reader : readers)
@@ -753,13 +753,13 @@ namespace OpenLogReplicator {
         for (Reader *reader : readers) {
             if (reader->started)
                 pthread_join(reader->pthread, nullptr);
-            if (reader->buffersMax > buffersMax)
-                buffersMax = reader->buffersMax;
+            if (reader->buffersMaxUsed > buffersMaxUsed)
+                buffersMaxUsed = reader->buffersMaxUsed;
             delete reader;
         }
         archReader = nullptr;
         readers.clear();
-        return buffersMax;
+        return buffersMaxUsed;
     }
 
     Reader *OracleAnalyzer::readerCreate(int64_t group) {

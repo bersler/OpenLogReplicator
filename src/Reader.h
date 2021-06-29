@@ -53,6 +53,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_BUFFER_FULL_SLEEP  1000
 #define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
 
+#define NUM_BLOCK_ONLINE        ((typeBLK)0xFFFFFFFF)
+
 using namespace std;
 
 namespace OpenLogReplicator {
@@ -103,7 +105,8 @@ namespace OpenLogReplicator {
         atomic<uint64_t> bufferStart;
         atomic<uint64_t> bufferEnd;
         atomic<uint64_t> buffersFree;
-        uint64_t buffersMax;
+        uint64_t bufferSizeMax;
+        uint64_t buffersMaxUsed;
 
         Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group);
         virtual ~Reader();

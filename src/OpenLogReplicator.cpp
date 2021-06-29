@@ -227,8 +227,8 @@ int main(int argc, char **argv) {
 
             //optional
             uint64_t readBufferMax = memoryMaxMb / 4 / MEMORY_CHUNK_SIZE_MB;
-            if (readBufferMax > 256 / MEMORY_CHUNK_SIZE_MB)
-                readBufferMax = 256 / MEMORY_CHUNK_SIZE_MB;
+            if (readBufferMax > 32 / MEMORY_CHUNK_SIZE_MB)
+                readBufferMax = 32 / MEMORY_CHUNK_SIZE_MB;
 
             if (sourceJSON.HasMember("read-buffer-max-mb")) {
                 const Value& readBufferMaxMbJSON = sourceJSON["read-buffer-max-mb"];

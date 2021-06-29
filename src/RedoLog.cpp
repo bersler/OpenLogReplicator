@@ -1193,7 +1193,8 @@ namespace OpenLogReplicator {
             }
         }
 
-        if ((trace2 & TRACE2_PERFORMANCE) != 0) {
+        //print processing time for archived redo logs
+        if ((trace2 & TRACE2_PERFORMANCE) != 0 && group == 0) {
             time_t cEnd = oracleAnalyzer->getTime();
             double mySpeed = 0, myTime = (cEnd - cStart) / 1000.0, suppLogPercent = 0.0;
             if (currentBlock != startBlock)

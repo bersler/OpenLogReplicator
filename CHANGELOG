@@ -1,3 +1,7 @@
+0.9.3-beta
+- performance improvements
+- changed default disk read buffer size to 32MB
+
 0.9.2-beta
 - added parameter "rid" for "format"
 - by default row id is not included in the output

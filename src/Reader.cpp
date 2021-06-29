@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         group(group),
         sequence(0),
         blockSize(0),
-        numBlocksHeader(0xFFFFFFFF),
+        numBlocksHeader(NUM_BLOCK_ONLINE),
         numBlocks(0),
         firstScn(ZERO_SCN),
         nextScn(ZERO_SCN),
@@ -56,8 +56,9 @@ namespace OpenLogReplicator {
         status(READER_STATUS_SLEEPING),
         bufferStart(0),
         bufferEnd(0),
+        bufferSizeMax(oracleAnalyzer->readBufferMax * MEMORY_CHUNK_SIZE),
         buffersFree(oracleAnalyzer->readBufferMax),
-        buffersMax(0) {
+        buffersMaxUsed(0) {
 
         redoBufferList = new uint8_t*[oracleAnalyzer->readBufferMax];
         if (redoBufferList == nullptr) {
@@ -355,7 +356,8 @@ namespace OpenLogReplicator {
 
                 if (status == READER_STATUS_SLEEPING && !shutdown) {
                     oracleAnalyzer->sleepingCond.wait(lck);
-                } else if (status == READER_STATUS_READ && !shutdown && (bufferEnd % MEMORY_CHUNK_SIZE) == 0 && buffersFree == 0) {
+                } else if (status == READER_STATUS_READ && !shutdown && bufferStart + bufferSizeMax == bufferEnd) {
+                    //buffer full
                     oracleAnalyzer->readerCond.wait(lck);
                 }
             }
@@ -410,18 +412,18 @@ namespace OpenLogReplicator {
                     read1Time = 0;
                     read2Time = 0;
 
-                    //buffer full?
-                    if (bufferEnd == bufferScan) {
-                        unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                        if ((bufferEnd % MEMORY_CHUNK_SIZE) == 0 && buffersFree == 0) {
-                            oracleAnalyzer->readerCond.wait(lck);
-                            continue;
-                        }
-                    }
-
                     if (bufferEnd == fileSize) {
                         ret = REDO_FINISHED;
                         break;
+                    }
+
+                    //buffer full?
+                    if (bufferStart + bufferSizeMax == bufferEnd) {
+                        unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                        if (!shutdown && bufferStart + bufferSizeMax == bufferEnd) {
+                            oracleAnalyzer->readerCond.wait(lck);
+                            continue;
+                        }
                     }
 
                     //#2 read
@@ -493,7 +495,7 @@ namespace OpenLogReplicator {
                                 ++goodBlocks;
                             }
 
-                            //verify header for online redo logs after every successfull read
+                            //verify header for online redo logs after every successful read
                             if (tmpRet == REDO_OK && group > 0)
                                 tmpRet = reloadHeader();
 
@@ -511,11 +513,11 @@ namespace OpenLogReplicator {
                     }
 
                     //#1 read
-                    if (bufferScan < fileSize && bufferStart + MEMORY_CHUNK_SIZE > bufferScan
+                    if (bufferScan < fileSize && bufferStart + bufferSizeMax > bufferScan
                             && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUS < loopTime)) {
                         uint64_t toRead = readSize(lastRead);
-                        if (bufferScan + toRead - bufferStart > MEMORY_CHUNK_SIZE)
-                            toRead = MEMORY_CHUNK_SIZE - bufferScan + bufferStart;
+                        if (bufferScan + toRead - bufferStart > bufferSizeMax)
+                            toRead = bufferSizeMax - bufferScan + bufferStart;
 
                         if (bufferScan + toRead > fileSize)
                             toRead = fileSize - bufferScan;
@@ -604,7 +606,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    if (numBlocksHeader != 0xFFFFFFFF && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
+                    if (numBlocksHeader != NUM_BLOCK_ONLINE && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
                         ret = REDO_FINISHED;
                         break;
                     }
@@ -652,8 +654,8 @@ namespace OpenLogReplicator {
             {
                 unique_lock<mutex> lck(oracleAnalyzer->mtx);
                 --buffersFree;
-                if (oracleAnalyzer->readBufferMax - buffersFree > buffersMax)
-                    buffersMax = oracleAnalyzer->readBufferMax - buffersFree;
+                if (oracleAnalyzer->readBufferMax - buffersFree > buffersMaxUsed)
+                    buffersMaxUsed = oracleAnalyzer->readBufferMax - buffersFree;
             }
         }
     }
