@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         virtual uint64_t readSize(uint64_t lastRead);
         virtual uint64_t reloadHeaderRead(void);
 
-        uint64_t checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum);
+        uint64_t checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum, bool showHint);
         uint64_t reloadHeader(void);
 
     public:

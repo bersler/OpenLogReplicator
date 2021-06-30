@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum) {
+    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum, bool showHint) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
@@ -138,16 +138,18 @@ namespace OpenLogReplicator {
             typesum chSum = oracleAnalyzer->read16(buffer + 14);
             typesum chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
-                WARNING("header sum for block number for block " << dec << blockNumber <<
-                        ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
-                        ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
-                if (!hintDisplayed) {
-                    if (oracleAnalyzer->dbBlockChecksum.compare("OFF") == 0 || oracleAnalyzer->dbBlockChecksum.compare("FALSE") == 0) {
-                        WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
-                                " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
-                                << dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
+                if (showHint) {
+                    WARNING("header sum for block number: " << dec << blockNumber <<
+                            ", should be: 0x" << setfill('0') << setw(4) << hex << chSum <<
+                            ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
+                    if (!hintDisplayed) {
+                        if (oracleAnalyzer->dbBlockChecksum.compare("OFF") == 0 || oracleAnalyzer->dbBlockChecksum.compare("FALSE") == 0) {
+                            WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
+                                    " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
+                                    << dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
+                        }
+                        hintDisplayed = true;
                     }
-                    hintDisplayed = true;
                 }
                 return REDO_BAD_CRC;
             }
@@ -277,17 +279,16 @@ namespace OpenLogReplicator {
         nextScnHeader = oracleAnalyzer->readSCN(headerBuffer + blockSize + 192);
 
         uint64_t badBlockCrcCount = 0;
-        ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
+        ret = checkBlockHeader(headerBuffer + blockSize, 1, true, false);
         TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
 
         while (ret == REDO_BAD_CRC) {
-            WARNING("CRC error during header check: " << pathMapped);
             ++badBlockCrcCount;
             if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
                 return REDO_ERROR;
 
             usleep(oracleAnalyzer->redoReadSleepUS);
-            ret = checkBlockHeader(headerBuffer + blockSize, 1, true);
+            ret = checkBlockHeader(headerBuffer + blockSize, 1, true, false);
             TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
         }
 
@@ -356,7 +357,7 @@ namespace OpenLogReplicator {
 
                 if (status == READER_STATUS_SLEEPING && !shutdown) {
                     oracleAnalyzer->sleepingCond.wait(lck);
-                } else if (status == READER_STATUS_READ && !shutdown && bufferStart + bufferSizeMax == bufferEnd) {
+                } else if (status == READER_STATUS_READ && !shutdown && buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
                     //buffer full
                     oracleAnalyzer->readerCond.wait(lck);
                 }
@@ -487,7 +488,8 @@ namespace OpenLogReplicator {
 
                             //check which blocks are good
                             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock, false);
+                                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
+                                        false, true);
                                 TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << tmpRet);
 
                                 if (tmpRet != REDO_OK)
@@ -513,11 +515,9 @@ namespace OpenLogReplicator {
                     }
 
                     //#1 read
-                    if (bufferScan < fileSize && bufferStart + bufferSizeMax > bufferScan
+                    if (bufferScan < fileSize && (buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
                             && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUS < loopTime)) {
                         uint64_t toRead = readSize(lastRead);
-                        if (bufferScan + toRead - bufferStart > bufferSizeMax)
-                            toRead = bufferSizeMax - bufferScan + bufferStart;
 
                         if (bufferScan + toRead > fileSize)
                             toRead = fileSize - bufferScan;
@@ -558,7 +558,8 @@ namespace OpenLogReplicator {
 
                         //check which blocks are good
                         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock, false);
+                            tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
+                                    false, oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0);
                             TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
 
                             if (tmpRet != REDO_OK)
@@ -647,7 +648,7 @@ namespace OpenLogReplicator {
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
             redoBufferList[num] = oracleAnalyzer->getMemoryChunk("DISK", false);
-            if (redoBufferList[num] == nullptr) {
+            if (redoBufferList[num] == nullptr || buffersFree == 0) {
                 RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE << " bytes memory (for: read buffer)");
             }
 

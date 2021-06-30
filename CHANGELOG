@@ -1,3 +1,7 @@
+0.9.4-beta
+- changed conditions for displaying warning of CRC error
+- fixed bug in reader module introduced in version 0.9.3-beta which could lead to core dump
+
 0.9.3-beta
 - performance improvements
 - changed default disk read buffer size to 32MB
