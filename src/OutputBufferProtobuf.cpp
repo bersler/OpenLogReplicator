@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         if (object != nullptr)
             valuePB->set_name(object->columns[col]->name);
         else {
-            string columnName = "COL_" + to_string(col);
+            string columnName("COL_" + to_string(col));
             valuePB->set_name(columnName);
         }
     }
@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::appendSchema(OracleObject *object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
-            string objectName = "OBJ_" + to_string(dataObj);
+            string objectName("OBJ_" + to_string(dataObj));
             schemaPB->set_name(objectName);
             return;
         }

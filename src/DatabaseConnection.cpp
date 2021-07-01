@@ -24,11 +24,11 @@ using namespace std;
 
 namespace OpenLogReplicator {
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM) :
-		env(env),
-		errhp(nullptr),
-		srvhp(nullptr),
-		svchp(nullptr),
-		authp(nullptr) {
+        env(env),
+        errhp(nullptr),
+        srvhp(nullptr),
+        svchp(nullptr),
+        authp(nullptr) {
 
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&errhp, OCI_HTYPE_ERROR, 0, nullptr);
         OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&srvhp, OCI_HTYPE_SERVER, 0, nullptr);

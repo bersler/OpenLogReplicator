@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         if (object != nullptr)
             outputBufferAppend(object->columns[col]->name);
         else {
-            string columnName = "COL_" + to_string(col);
+            string columnName("COL_" + to_string(col));
             outputBufferAppend(columnName);
         }
         outputBufferAppend("\":null");
@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
 
         stringstream valStringStream;
         valStringStream << value;
-        string valString = valStringStream.str();
+        string valString(valStringStream.str());
         outputBufferAppend(valString);
     }
 
@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
 
         stringstream valStringStream;
         valStringStream << value;
-        string valString = valStringStream.str();
+        string valString(valStringStream.str());
         outputBufferAppend(valString);
     }
 
@@ -265,7 +265,7 @@ namespace OpenLogReplicator {
     void OutputBufferJson::appendSchema(OracleObject *object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
             outputBufferAppend("\"schema\":{\"table\":\"");
-            string objectName = "OBJ_" + to_string(dataObj);
+            string objectName("OBJ_" + to_string(dataObj));
             outputBufferAppend(objectName);
             outputBufferAppend('"');
             return;

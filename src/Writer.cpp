@@ -331,7 +331,7 @@ namespace OpenLogReplicator {
             return;
 
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
-        string fileName = oracleAnalyzer->database + "-chkpt.json";
+        string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-chkpt.json");
         ofstream outfile;
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
@@ -354,7 +354,7 @@ namespace OpenLogReplicator {
 
     void Writer::readCheckpoint(void) {
         ifstream infile;
-        string fileName = oracleAnalyzer->database + "-chkpt.json";
+        string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-chkpt.json");
         infile.open(fileName.c_str(), ios::in);
         if (!infile.is_open()) {
             startReader();

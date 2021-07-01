@@ -696,8 +696,8 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->dumpStream << "DEBUG op: " << dec << (uint64_t)(redoLogRecord->op & 0x1F) << endl;
             }
 
-            string xtype = "0";
-            string rtype = "";
+            string xtype("0");
+            string rtype("");
             switch (redoLogRecord->flags & 0x03) {
             case FLAGS_XA:
                 xtype = "XA"; //redo
@@ -714,7 +714,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0)
                 rtype = "xtype KDO_KDOM2";
 
-            string rowDependencies = "Disabled";
+            string rowDependencies("Disabled");
             if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0)
                 rowDependencies = "Enabled";
 
@@ -764,7 +764,7 @@ namespace OpenLogReplicator {
         redoLogRecord->rci = redoLogRecord->data[fieldPos + 19];
         redoLogRecord->flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
 
-        string ktuType = "ktubu", prevObj = "", postObj = "";
+        string ktuType("ktubu"), prevObj(""), postObj("");
         bool ktubl = false;
         if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
             ktubl = true;
@@ -871,7 +871,7 @@ namespace OpenLogReplicator {
                 tablespaceUndo = " No";
         }
 
-        string userOnly = " No";
+        string userOnly(" No");
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {

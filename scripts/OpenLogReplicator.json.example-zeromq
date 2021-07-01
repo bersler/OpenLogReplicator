@@ -1,5 +1,5 @@
 {
-  "version": "0.9.4-beta",
+  "version": "0.9.5-beta",
   "sources": [
     {
       "alias": "S1",
@@ -11,7 +11,7 @@
         "server": "//host:1521/SERVICE"
       },
       "format": {
-        "type": "json"
+        "type": "protobuf"
       },
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
@@ -27,9 +27,8 @@
       "alias": "K1", 
       "source": "S1",
       "writer": {
-        "type": "file",
-        "name": "transactions.json",
-        "start-seq": 100
+        "type": "zeromq",
+        "uri": "tcp://0.0.0.0:50000"
       }
     }
   ]

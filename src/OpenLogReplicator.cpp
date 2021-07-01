@@ -117,6 +117,19 @@ int main(int argc, char **argv) {
 
     INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
+    string fileName("scripts/OpenLogReplicator.json");
+    if (argc == 2) {
+        // print banner and exit
+        if (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)
+            return 0;
+        else
+        // custom config path
+            fileName = argv[2];
+    } else if (argc > 2) {
+        CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version | CONFIG]  default path for CONFIG file is " << fileName);
+    }
+
+
     list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
@@ -127,7 +140,6 @@ int main(int argc, char **argv) {
 
     try {
         struct stat fileStat;
-        string fileName = "OpenLogReplicator.json";
         fid = open(fileName.c_str(), O_RDONLY);
         if (fid == -1) {
             CONFIG_FAIL("can't open file " << fileName);
@@ -247,7 +259,7 @@ int main(int argc, char **argv) {
             const Value& formatJSON = getJSONfieldV(fileName, sourceJSON, "format");
 
             //optional
-            uint64_t messageFormat = 0;
+            uint64_t messageFormat = MESSAGE_FORMAT_SHORT;
             if (formatJSON.HasMember("message")) {
                 const Value& messageFormatJSON = formatJSON["message"];
                 messageFormat = messageFormatJSON.GetUint64();

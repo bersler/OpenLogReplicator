@@ -1,17 +1,14 @@
 {
-  "version": "0.9-4-beta",
+  "version": "0.9.5-beta",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "asm",
+        "type": "online", 
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE"
-        "user-asm": "sysasm",
-        "password-asm": "Password1",
-        "server-asm": "//host:1521/+ASM"
       },
       "format": {
         "type": "json"

@@ -862,7 +862,7 @@ namespace OpenLogReplicator {
 
     void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
         if (object == nullptr) {
-            string columnName = "COL_" + to_string(col);
+            string columnName("COL_" + to_string(col));
             columnRaw(columnName, data, length);
             return;
         }

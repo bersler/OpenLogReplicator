@@ -800,7 +800,7 @@ namespace OpenLogReplicator {
             if (!foundPath) {
                 uint64_t badGroup = reader->group;
                 for (string &path : reader->paths) {
-                    string pathMapped = applyMapping(path);
+                    string pathMapped(applyMapping(path));
                     ERROR("can't read: " << pathMapped);
                 }
                 readerDropAll();
@@ -909,7 +909,7 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::addPathMapping(const char* source, const char* target) {
         TRACE(TRACE2_FILE, "FILE: added mapping [" << source << "] -> [" << target << "]");
-        string sourceMaping = source, targetMapping = target;
+        string sourceMaping(source), targetMapping(target);
         pathMapping.push_back(sourceMaping);
         pathMapping.push_back(targetMapping);
     }
@@ -989,7 +989,7 @@ namespace OpenLogReplicator {
 
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
                 sequence << " offset: " << offset << " switch: " << switchRedo);
-        string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json";
+        string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json");
         ofstream outfile;
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
@@ -1042,7 +1042,7 @@ namespace OpenLogReplicator {
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
+                string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json");
 
                 unlinkFile = false;
                 if (*it > checkpointScn) {
@@ -1092,9 +1092,9 @@ namespace OpenLogReplicator {
                 continue;
 
             struct stat fileStat;
-            string fileName = ent->d_name;
+            string fileName(ent->d_name);
 
-            string fullName = checkpointPath + "/" + ent->d_name;
+            string fullName(checkpointPath + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
                 WARNING("can't read file information for: " << fullName);
                 continue;
@@ -1103,15 +1103,15 @@ namespace OpenLogReplicator {
             if (S_ISDIR(fileStat.st_mode))
                 continue;
 
-            string prefix = database + "-chkpt-";
+            string prefix(database + "-chkpt-");
             if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
 
-            string suffix = ".json";
+            string suffix(".json");
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
                 continue;
 
-            string fileScnStr = fileName.substr(prefix.length(), fileName.length() - suffix.length());
+            string fileScnStr(fileName.substr(prefix.length(), fileName.length() - suffix.length()));
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
@@ -1132,7 +1132,7 @@ namespace OpenLogReplicator {
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string fileName = checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json";
+                string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json");
 
                 unlinkFile = false;
                 if (*it > firstScn) {
@@ -1320,7 +1320,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("missing location of archived redo logs for offline mode");
         }
 
-        string mappedPath = oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog");
+        string mappedPath(oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog"));
         TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
         DIR *dir;
@@ -1335,7 +1335,7 @@ namespace OpenLogReplicator {
                 continue;
 
             struct stat fileStat;
-            string mappedSubPath = mappedPath + "/" + ent->d_name;
+            string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat)) {
                 WARNING("can't read file information for: " << mappedSubPath);
                 continue;
@@ -1350,7 +1350,7 @@ namespace OpenLogReplicator {
 
             TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath << "/" << ent->d_name);
 
-            string mappedPathWithFile = mappedPath + "/" + ent->d_name;
+            string mappedPathWithFile(mappedPath + "/" + ent->d_name);
             DIR *dir2;
             if ((dir2 = opendir(mappedPathWithFile.c_str())) == nullptr) {
                 closedir(dir);
@@ -1362,7 +1362,7 @@ namespace OpenLogReplicator {
                 if (strcmp(ent2->d_name, ".") == 0 || strcmp(ent2->d_name, "..") == 0)
                     continue;
 
-                string fileName = mappedPath + "/" + ent->d_name + "/" + ent2->d_name;
+                string fileName(mappedPath + "/" + ent->d_name + "/" + ent2->d_name);
                 TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << fileName);
 
                 uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent2->d_name);
@@ -1448,7 +1448,7 @@ namespace OpenLogReplicator {
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                         continue;
 
-                    string fileName = mappedPath + "/" + ent->d_name;
+                    string fileName(mappedPath + "/" + ent->d_name);
                     TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << fileName);
 
                     uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent->d_name);

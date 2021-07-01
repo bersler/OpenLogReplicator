@@ -1,17 +1,17 @@
 {
-  "version": "0.9.4-beta",
+  "version": "0.9.5-beta",
   "sources": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "online", 
+        "type": "online-standby",
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE"
       },
       "format": {
-        "type": "protobuf"
+        "type": "json"
       },
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
@@ -27,8 +27,9 @@
       "alias": "K1", 
       "source": "S1",
       "writer": {
-        "type": "zeromq",
-        "uri": "tcp://0.0.0.0:50000"
+        "type": "kafka",
+        "topic": "O112A",
+        "brokers": "localhost:9092"
       }
     }
   ]

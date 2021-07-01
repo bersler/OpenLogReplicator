@@ -1205,8 +1205,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::readSystemDictionaries(string owner, string table, typeOPTIONS options) {
-        string ownerRegexp = "^" + owner + "$";
-        string tableRegexp = "^" + table + "$";
+        string ownerRegexp("^" + owner + "$");
+        string tableRegexp("^" + table + "$");
         bool single = ((options & OPTIONS_SCHEMA_TABLE) != 0);
         DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << dec << (uint64_t)options);
 
@@ -1320,7 +1320,7 @@ namespace OpenLogReplicator {
             int64_t ret = stmt.executeQuery();
 
             while (ret) {
-                string mappedPath = oracleAnalyzer->applyMapping(path);
+                string mappedPath(oracleAnalyzer->applyMapping(path));
 
                 RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
                 if (redo == nullptr) {

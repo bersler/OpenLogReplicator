@@ -187,9 +187,9 @@ namespace OpenLogReplicator {
                 continue;
 
             struct stat fileStat;
-            string fileName = ent->d_name;
+            string fileName(ent->d_name);
 
-            string fullName = oracleAnalyzer->checkpointPath + "/" + ent->d_name;
+            string fullName(oracleAnalyzer->checkpointPath + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
                 WARNING("can't read file information for: " << fullName);
                 continue;
@@ -198,16 +198,16 @@ namespace OpenLogReplicator {
             if (S_ISDIR(fileStat.st_mode))
                 continue;
 
-            string prefix = oracleAnalyzer->database + "-schema-";
+            string prefix(oracleAnalyzer->database + "-schema-");
             if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
 
-            string suffix = ".json";
+            string suffix(".json");
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
                 continue;
 
             TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: found previous schema: " << oracleAnalyzer->checkpointPath << "/" << fileName);
-            string fileScnStr = fileName.substr(prefix.length(), fileName.length() - suffix.length());
+            string fileScnStr(fileName.substr(prefix.length(), fileName.length() - suffix.length()));
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
@@ -232,7 +232,7 @@ namespace OpenLogReplicator {
 
         while (it != schemaScnList.begin()) {
             --it;
-            string fileName = oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json";
+            string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json");
 
             unlinkFile = false;
             if (*it > oracleAnalyzer->firstScn && oracleAnalyzer->firstScn != ZERO_SCN) {
@@ -701,7 +701,7 @@ namespace OpenLogReplicator {
         }
 
         const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
-        string contextRead = databaseContextJSON.GetString();
+        string contextRead(databaseContextJSON.GetString());
         if (oracleAnalyzer->context.length() == 0)
             oracleAnalyzer->context = contextRead;
         else if (oracleAnalyzer->context.compare(contextRead) != 0) {
@@ -793,7 +793,7 @@ namespace OpenLogReplicator {
     }
 
     void Schema::writeSchema(void) {
-        string fileName = oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(oracleAnalyzer->schemaScn) + ".json";
+        string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(oracleAnalyzer->schemaScn) + ".json");
         TRACE(TRACE2_SYSTEM, "SYSTEM: writing file: " << fileName << " scn: " << dec << oracleAnalyzer->schemaScn);
         ofstream outfile;
         outfile.open(fileName.c_str(), ios::out | ios::trunc);
@@ -1111,7 +1111,7 @@ namespace OpenLogReplicator {
 
             while (it != schemaScnList.begin()) {
                 --it;
-                string fileName = oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json";
+                string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(*it) + ".json");
 
                 unlinkFile = false;
                 if (*it > oracleAnalyzer->schemaScn) {
@@ -1634,9 +1634,11 @@ namespace OpenLogReplicator {
                 continue;
             }
 
+            //object without SYS.TAB$
             auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
             if (sysTabMapObjIt == sysTabMapObj.end()) {
-                RUNTIME_FAIL("inconsistent schema, missing SYS.OBJ$ OBJ: " << dec << sysObj->obj);
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - SYS.TAB$ entry missing");
+                continue;
             }
             SysTab *sysTab = sysTabMapObjIt->second;
 
@@ -1766,7 +1768,8 @@ namespace OpenLogReplicator {
                     //count number of PK the column is part of
                     SysCDef* sysCDef = sysCDefMapCon[sysCCol->con];
                     if (sysCDef == nullptr) {
-                        RUNTIME_FAIL("inconsistent schema, missing SYS.CDEF$ CON: " << dec << sysCCol->con);
+                        DEBUG("SYS.CDEF$ missing for CON: " << sysCCol->con);
+                        continue;
                     }
                     if (sysCDef->isPK())
                         ++numPk;

@@ -44,8 +44,8 @@ namespace OpenLogReplicator {
             CONFIG_FAIL("Kafka failed to create configuration, message: " << errstr);
         }
 
-        string maxMessageMbStr = to_string(maxMessageMb * 1024 * 1024);
-        string maxMessagesStr = to_string(maxMessages);
+        string maxMessageMbStr(to_string(maxMessageMb * 1024 * 1024));
+        string maxMessagesStr(to_string(maxMessages));
         if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             (enableIdempotence && rd_kafka_conf_set(conf, "enable.idempotence", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) ||
             rd_kafka_conf_set(conf, "client.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||

@@ -1,3 +1,11 @@
+0.9.5-beta
+- objects where SYS.OBJ$ is present but SYS.TAB$ entry missing are ignored
+- minor optimizations
+- moved config file location: OpenLogReplicator.json to scripts/OpenLogReplicator.json 
+- moved checkpoint file location: <database>-chkpt.json to checkpoints/<database>-chkpt.json
+- ./OpenLogReplicator -v|--version - to print banner and exit
+- ./OpenLogReplicator custom_path/config.json - to run with custom config file location
+
 0.9.4-beta
 - changed conditions for displaying warning of CRC error
 - fixed bug in reader module introduced in version 0.9.3-beta which could lead to core dump
