@@ -209,7 +209,7 @@ namespace OpenLogReplicator {
                 ss << "request data[" << dec << length << "]: ";
                 for (uint64_t i = 0; i < length; ++i)
                     ss << hex  << setw(2) << setfill('0') << (uint64_t)msgR[i] << " ";
-                WARNING(ss);
+                WARNING(ss.str());
             }
 
         } else if (length == 0) {

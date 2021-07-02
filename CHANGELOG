@@ -1,3 +1,7 @@
+0.9.6-beta
+- added checks for OpenLogReplicator.json content
+- fixed compilation errors when newer gcc version is used
+
 0.9.5-beta
 - objects where SYS.OBJ$ is present but SYS.TAB$ entry missing are ignored
 - minor optimizations

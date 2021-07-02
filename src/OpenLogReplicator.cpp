@@ -649,8 +649,23 @@ int main(int argc, char **argv) {
             }
 
             for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
+                if (!tablesJSON[j].HasMember("owner")) {
+                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"owner\" value");
+                }
                 const Value& ownerJSON = getJSONfieldV(fileName, tablesJSON[j], "owner");
+                uint64_t ownerLength = strnlen(ownerJSON.GetString(), 32768);
+                if (ownerLength == 0) {
+                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"owner\" value");
+                }
+
+                if (!tablesJSON[j].HasMember("table")) {
+                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"table\" value");
+                }
                 const Value& tableJSON = getJSONfieldV(fileName, tablesJSON[j], "table");
+                uint64_t tableLength = strnlen(tableJSON.GetString(), 32768);
+                if (tableLength == 0) {
+                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"table\" value");
+                }
                 SchemaElement *element = oracleAnalyzer->schema->addElement(ownerJSON.GetString(), tableJSON.GetString(), 0);
 
                 if (tablesJSON[j].HasMember("key")) {
