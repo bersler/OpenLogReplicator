@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
             return 0;
         else
         // custom config path
-            fileName = argv[2];
+            fileName = argv[1];
     } else if (argc > 2) {
         CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version | CONFIG]  default path for CONFIG file is " << fileName);
     }

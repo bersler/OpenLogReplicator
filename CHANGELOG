@@ -1,3 +1,6 @@
+0.9.7-beta
+- fixed small bug with passing config OpenLogReplicator.json path at startup
+
 0.9.6-beta
 - added checks for OpenLogReplicator.json content
 - fixed compilation errors when newer gcc version is used
