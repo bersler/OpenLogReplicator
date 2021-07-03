@@ -421,7 +421,7 @@ namespace OpenLogReplicator {
     void OutputBufferJson::appendDec(uint64_t value, uint64_t length) {
         char buffer[21];
 
-        for (uint i = 0; i < length; ++i) {
+        for (uint64_t i = 0; i < length; ++i) {
             buffer[i] = '0' + (value % 10);
             value /= 10;
         }

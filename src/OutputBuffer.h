@@ -227,7 +227,7 @@ namespace OpenLogReplicator {
         };
 
         void outputBufferAppend(const char* str, uint64_t length) {
-            for (uint i = 0; i < length; ++i)
+            for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(*str++);
         };
 
@@ -242,7 +242,7 @@ namespace OpenLogReplicator {
         void outputBufferAppend(string &str) {
             const char *charstr = str.c_str();
             uint64_t length = str.length();
-            for (uint i = 0; i < length; ++i)
+            for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(*charstr++);
         };
 

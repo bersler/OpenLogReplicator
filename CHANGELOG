@@ -1,3 +1,6 @@
+0.9.8-beta
+- fixed compilation errors when g++ is used
+
 0.9.7-beta
 - fixed small bug with passing config OpenLogReplicator.json path at startup
 
