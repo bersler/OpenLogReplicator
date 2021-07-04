@@ -663,7 +663,7 @@ namespace OpenLogReplicator {
             const Value& pObjJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "p-obj");
             typeOBJ pObj = pObjJSON.GetUint();
 
-            dictSysTabComPartAdd(rowId, obj, dataObj, pObj);
+            dictSysTabSubPartAdd(rowId, obj, dataObj, pObj);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
 
@@ -1688,6 +1688,7 @@ namespace OpenLogReplicator {
             }
             ++tabCnt;
 
+            uint64_t partitions = 0;
             if (sysTab->isPartitioned()) {
                 SysTabPartKey sysTabPartKeyFirst(sysObj->obj, 0);
                 for (auto itTabPart = sysTabPartMapKey.upper_bound(sysTabPartKeyFirst);
@@ -1695,6 +1696,7 @@ namespace OpenLogReplicator {
 
                     SysTabPart *sysTabPart = itTabPart->second;
                     schemaObject->addPartition(sysTabPart->obj, sysTabPart->dataObj);
+                    ++partitions;
                 }
 
                 SysTabComPartKey sysTabComPartKeyFirst(sysObj->obj, 0);
@@ -1707,6 +1709,7 @@ namespace OpenLogReplicator {
 
                         SysTabSubPart *sysTabSubPart = itTabSubPart->second;
                         schemaObject->addPartition(itTabSubPart->second->obj, itTabSubPart->second->dataObj);
+                        ++partitions;
                     }
                 }
             }
@@ -1829,7 +1832,7 @@ namespace OpenLogReplicator {
             if (sysTab->isClustered())
                 ss << ", part of cluster";
             if (sysTab->isPartitioned())
-                ss << ", partitioned";
+                ss << ", partitioned(" << dec << partitions << ")";
             if (sysTab->isDependencies())
                 ss << ", row dependencies";
             if (sysTab->isRowMovement())

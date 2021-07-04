@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     SystemTransaction::~SystemTransaction() {
     }
 
-    bool SystemTransaction::updateNumber16(int16_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber16(int16_t &val, int16_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
             if (object->columns[column]->typeNo != 2) {
@@ -56,17 +56,17 @@ namespace OpenLogReplicator {
             }
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
+            if (val != defVal) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
                 schema->touched = true;
-                val = 0;
+                val = defVal;
                 return true;
             }
         }
         return false;
     }
 
-    bool SystemTransaction::updateNumber16u(uint16_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber16u(uint16_t &val, uint16_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
             if (object->columns[column]->typeNo != 2) {
@@ -86,17 +86,17 @@ namespace OpenLogReplicator {
             }
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
+            if (val != defVal) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
                 schema->touched = true;
-                val = 0;
+                val = defVal;
                 return true;
             }
         }
         return false;
     }
 
-    bool SystemTransaction::updateNumber32u(uint32_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber32u(uint32_t &val, uint32_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
             if (object->columns[column]->typeNo != 2) {
@@ -116,10 +116,10 @@ namespace OpenLogReplicator {
             }
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
+            if (val != defVal) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
                 schema->touched = true;
-                val = 0;
+                val = defVal;
                 return true;
             }
         }
@@ -192,7 +192,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber64(int64_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber64(int64_t &val, int64_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
             if (object->columns[column]->typeNo != 2) {
@@ -212,17 +212,17 @@ namespace OpenLogReplicator {
             }
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
+            if (val != defVal) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
                 schema->touched = true;
-                val = 0;
+                val = defVal;
                 return true;
             }
         }
         return false;
     }
 
-    bool SystemTransaction::updateNumber64u(uint64_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber64u(uint64_t &val, uint64_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
             if (object->columns[column]->typeNo != 2) {
@@ -242,10 +242,10 @@ namespace OpenLogReplicator {
             }
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
+            if (val != defVal) {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
                 schema->touched = true;
-                val = 0;
+                val = defVal;
                 return true;
             }
         }
@@ -336,9 +336,9 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("CON#") == 0)
-                        updateNumber32u(sysCCol->con, column, object, rowId);
+                        updateNumber32u(sysCCol->con, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("INTCOL#") == 0)
-                        updateNumber16(sysCCol->intCol, column, object, rowId);
+                        updateNumber16(sysCCol->intCol, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysCCol->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("SPARE1") == 0)
@@ -369,11 +369,11 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("CON#") == 0)
-                        updateNumber32u(sysCDef->con, column, object, rowId);
+                        updateNumber32u(sysCDef->con, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysCDef->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("TYPE#") == 0)
-                        updateNumber16u(sysCDef->type, column, object, rowId);
+                        updateNumber16u(sysCDef->type, 0, column, object, rowId);
                 }
             }
 
@@ -402,27 +402,27 @@ namespace OpenLogReplicator {
                     if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysCol->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("COL#") == 0)
-                        updateNumber16(sysCol->col, column, object, rowId);
+                        updateNumber16(sysCol->col, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("SEGCOL#") == 0)
-                        updateNumber16(sysCol->segCol, column, object, rowId);
+                        updateNumber16(sysCol->segCol, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("INTCOL#") == 0)
-                        updateNumber16(sysCol->intCol, column, object, rowId);
+                        updateNumber16(sysCol->intCol, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("NAME") == 0)
                         updateString(sysCol->name, column, object, rowId);
                     else if (object->columns[column]->name.compare("TYPE#") == 0)
-                        updateNumber16u(sysCol->type, column, object, rowId);
+                        updateNumber16u(sysCol->type, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("LENGTH") == 0)
-                        updateNumber64u(sysCol->length, column, object, rowId);
+                        updateNumber64u(sysCol->length, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("PRECISION#") == 0)
-                        updateNumber64(sysCol->precision, column, object, rowId);
+                        updateNumber64(sysCol->precision, -1, column, object, rowId);
                     else if (object->columns[column]->name.compare("SCALE") == 0)
-                        updateNumber64(sysCol->scale, column, object, rowId);
+                        updateNumber64(sysCol->scale, -1, column, object, rowId);
                     else if (object->columns[column]->name.compare("CHARSETFORM") == 0)
-                        updateNumber64u(sysCol->charsetForm, column, object, rowId);
+                        updateNumber64u(sysCol->charsetForm, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("CHARSETID") == 0)
-                        updateNumber64u(sysCol->charsetId, column, object, rowId);
+                        updateNumber64u(sysCol->charsetId, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("NULL$") == 0)
-                        updateNumber64(sysCol->null_, column, object, rowId);
+                        updateNumber64(sysCol->null_, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("PROPERTY") == 0)
                         updateNumberXu(sysCol->property, column, object, rowId);
                 }
@@ -483,9 +483,9 @@ namespace OpenLogReplicator {
                     if (object->columns[column]->name.compare("TABOBJ#") == 0)
                         updateObj(sysECol->tabObj, column, object, rowId);
                     else if (object->columns[column]->name.compare("COLNUM") == 0)
-                        updateNumber16(sysECol->colNum, column, object, rowId);
+                        updateNumber16(sysECol->colNum, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("GUARD_ID") == 0)
-                        updateNumber16(sysECol->guardId, column, object, rowId);
+                        updateNumber16(sysECol->guardId, -1, column, object, rowId);
                 }
             }
 
@@ -513,15 +513,15 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OWNER#") == 0)
-                        updateNumber32u(sysObj->owner, column, object, rowId);
+                        updateNumber32u(sysObj->owner, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysObj->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
-                        updateNumber32u(sysObj->dataObj, column, object, rowId);
+                        updateNumber32u(sysObj->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("NAME") == 0)
                         updateString(sysObj->name, column, object, rowId);
                     else if (object->columns[column]->name.compare("TYPE#") == 0)
-                        updateNumber16u(sysObj->type, column, object, rowId);
+                        updateNumber16u(sysObj->type, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("FLAGS") == 0)
                         updateNumberXu(sysObj->flags, column, object, rowId);
                 }
@@ -550,11 +550,11 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("FILE#") == 0)
-                        updateNumber32u(sysSeg->file, column, object, rowId);
+                        updateNumber32u(sysSeg->file, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("BLOCK#") == 0)
-                        updateNumber32u(sysSeg->block, column, object, rowId);
+                        updateNumber32u(sysSeg->block, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("TS#") == 0)
-                        updateNumber32u(sysSeg->ts, column, object, rowId);
+                        updateNumber32u(sysSeg->ts, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("SPARE1") == 0)
                         updateNumberXu(sysSeg->spare1, column, object, rowId);
                 }
@@ -585,15 +585,15 @@ namespace OpenLogReplicator {
                     if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysTab->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
-                        updateNumber32u(sysTab->dataObj, column, object, rowId);
+                        updateNumber32u(sysTab->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("TS#") == 0)
-                        updateNumber32u(sysTab->ts, column, object, rowId);
+                        updateNumber32u(sysTab->ts, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("FILE#") == 0)
-                        updateNumber32u(sysTab->file, column, object, rowId);
+                        updateNumber32u(sysTab->file, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("BLOCK#") == 0)
-                        updateNumber32u(sysTab->block, column, object, rowId);
+                        updateNumber32u(sysTab->block, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("CLUCOLS") == 0)
-                        updateNumber16(sysTab->cluCols, column, object, rowId);
+                        updateNumber16(sysTab->cluCols, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("FLAGS") == 0)
                         updateNumberXu(sysTab->flags, column, object, rowId);
                     else if (object->columns[column]->name.compare("PROPERTY") == 0)
@@ -626,9 +626,9 @@ namespace OpenLogReplicator {
                     if (object->columns[column]->name.compare("OBJ#") == 0)
                         updateObj(sysTabComPart->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
-                        updateNumber32u(sysTabComPart->dataObj, column, object, rowId);
+                        updateNumber32u(sysTabComPart->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("BO#") == 0)
-                        updateNumber32u(sysTabComPart->bo, column, object, rowId);
+                        updateNumber32u(sysTabComPart->bo, 0, column, object, rowId);
                 }
             }
 
@@ -655,9 +655,9 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OBJ#") == 0)
-                        updateNumber32u(sysTabPart->obj, column, object, rowId);
+                        updateNumber32u(sysTabPart->obj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
-                        updateNumber32u(sysTabPart->dataObj, column, object, rowId);
+                        updateNumber32u(sysTabPart->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("BO#") == 0)
                         updateObj(sysTabPart->bo, column, object, rowId);
                 }
@@ -686,9 +686,9 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OBJ#") == 0)
-                        updateNumber32u(sysTabSubPart->obj, column, object, rowId);
+                        updateNumber32u(sysTabSubPart->obj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
-                        updateNumber32u(sysTabSubPart->dataObj, column, object, rowId);
+                        updateNumber32u(sysTabSubPart->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("POBJ#") == 0)
                         updateObj(sysTabSubPart->pObj, column, object, rowId);
                 }
@@ -756,12 +756,12 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("CON#") == 0) {
-                        if (updateNumber32u(sysCCol->con, column, object, rowId)) {
+                        if (updateNumber32u(sysCCol->con, 0, column, object, rowId)) {
                             sysCCol->touched = true;
                             schema->sysCColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("INTCOL#") == 0) {
-                        if (updateNumber16(sysCCol->intCol, column, object, rowId)) {
+                        if (updateNumber16(sysCCol->intCol, 0, column, object, rowId)) {
                             sysCCol->touched = true;
                             schema->sysCColTouched = true;
                         }
@@ -798,7 +798,7 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("CON#") == 0) {
-                        if (updateNumber32u(sysCDef->con, column, object, rowId)) {
+                        if (updateNumber32u(sysCDef->con, 0, column, object, rowId)) {
                             sysCDef->touched = true;
                             schema->sysCDefTouched = true;
                         }
@@ -808,7 +808,7 @@ namespace OpenLogReplicator {
                             schema->sysCDefTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysCDef->type, column, object, rowId)) {
+                        if (updateNumber16u(sysCDef->type, 0, column, object, rowId)) {
                             sysCDef->touched = true;
                             schema->sysCDefTouched = true;
                         }
@@ -840,17 +840,17 @@ namespace OpenLogReplicator {
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("COL#") == 0) {
-                        if (updateNumber16(sysCol->col, column, object, rowId)) {
+                        if (updateNumber16(sysCol->col, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("SEGCOL#") == 0) {
-                        if (updateNumber16(sysCol->segCol, column, object, rowId)) {
+                        if (updateNumber16(sysCol->segCol, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("INTCOL#") == 0) {
-                        if (updateNumber16(sysCol->intCol, column, object, rowId)) {
+                        if (updateNumber16(sysCol->intCol, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
@@ -860,37 +860,37 @@ namespace OpenLogReplicator {
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysCol->type, column, object, rowId)) {
+                        if (updateNumber16u(sysCol->type, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched= true;
                         }
                     } else if (object->columns[column]->name.compare("LENGTH") == 0) {
-                        if (updateNumber64u(sysCol->length, column, object, rowId)) {
+                        if (updateNumber64u(sysCol->length, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("PRECISION#") == 0) {
-                        if (updateNumber64(sysCol->precision, column, object, rowId)) {
+                        if (updateNumber64(sysCol->precision, -1, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("SCALE") == 0) {
-                        if (updateNumber64(sysCol->scale, column, object, rowId)) {
+                        if (updateNumber64(sysCol->scale, -1, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("CHARSETFORM") == 0) {
-                        if (updateNumber64u(sysCol->charsetForm, column, object, rowId)) {
+                        if (updateNumber64u(sysCol->charsetForm, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("CHARSETID") == 0) {
-                        if (updateNumber64u(sysCol->charsetId, column, object, rowId)) {
+                        if (updateNumber64u(sysCol->charsetId, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("NULL$") == 0) {
-                        if (updateNumber64(sysCol->null_, column, object, rowId)) {
+                        if (updateNumber64(sysCol->null_, 0, column, object, rowId)) {
                             sysCol->touched = true;
                             schema->sysColTouched = true;
                         }
@@ -959,12 +959,12 @@ namespace OpenLogReplicator {
                             schema->sysEColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("COLNUM") == 0) {
-                        if (updateNumber16(sysECol->colNum, column, object, rowId)) {
+                        if (updateNumber16(sysECol->colNum, 0, column, object, rowId)) {
                             sysECol->touched = true;
                             schema->sysEColTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("GUARD_ID") == 0) {
-                        if (updateNumber16(sysECol->guardId, column, object, rowId)) {
+                        if (updateNumber16(sysECol->guardId, -1, column, object, rowId)) {
                             sysECol->touched = true;
                             schema->sysEColTouched = true;
                         }
@@ -991,7 +991,7 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OWNER#") == 0) {
-                        if (updateNumber32u(sysObj->owner, column, object, rowId)) {
+                        if (updateNumber32u(sysObj->owner, 0, column, object, rowId)) {
                             sysObj->touched = true;
                             schema->sysObjTouched = true;
                         }
@@ -1001,7 +1001,7 @@ namespace OpenLogReplicator {
                             schema->sysObjTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysObj->dataObj, column, object, rowId)) {
+                        if (updateNumber32u(sysObj->dataObj, 0, column, object, rowId)) {
                             sysObj->touched = true;
                             schema->sysObjTouched = true;
                         }
@@ -1011,7 +1011,7 @@ namespace OpenLogReplicator {
                             schema->sysObjTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysObj->type, column, object, rowId)) {
+                        if (updateNumber16u(sysObj->type, 0, column, object, rowId)) {
                             sysObj->touched = true;
                             schema->sysObjTouched = true;
                         }
@@ -1043,17 +1043,17 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("FILE#") == 0) {
-                        if (updateNumber32u(sysSeg->file, column, object, rowId)) {
+                        if (updateNumber32u(sysSeg->file, 0, column, object, rowId)) {
                             sysSeg->touched = true;
                             schema->sysSegTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("BLOCK#") == 0) {
-                        if (updateNumber32u(sysSeg->block, column, object, rowId)) {
+                        if (updateNumber32u(sysSeg->block, 0, column, object, rowId)) {
                             sysSeg->touched = true;
                             schema->sysSegTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("TS#") == 0) {
-                        if (updateNumber32u(sysSeg->ts, column, object, rowId)) {
+                        if (updateNumber32u(sysSeg->ts, 0, column, object, rowId)) {
                             sysSeg->touched = true;
                             schema->sysSegTouched = true;
                         }
@@ -1090,31 +1090,31 @@ namespace OpenLogReplicator {
                             schema->sysTabTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTab->dataObj, column, object, rowId)) {
+                        if (updateNumber32u(sysTab->dataObj, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
                         }
                     } else if (object->columns[column]->name.compare("TS#") == 0) {
-                        if (updateNumber32u(sysTab->ts, column, object, rowId)) {
+                        if (updateNumber32u(sysTab->ts, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
                         }
                     } else if (object->columns[column]->name.compare("FILE#") == 0) {
-                        if (updateNumber32u(sysTab->file, column, object, rowId)) {
+                        if (updateNumber32u(sysTab->file, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
                         }
                     } else if (object->columns[column]->name.compare("BLOCK#") == 0) {
-                        if (updateNumber32u(sysTab->block, column, object, rowId)) {
+                        if (updateNumber32u(sysTab->block, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
                         }
                     } else if (object->columns[column]->name.compare("CLUCOLS") == 0) {
-                        if (updateNumber16(sysTab->cluCols, column, object, rowId)) {
+                        if (updateNumber16(sysTab->cluCols, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
@@ -1154,12 +1154,12 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabComPart->obj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabComPart->obj, 0, column, object, rowId)) {
                             sysTabComPart->touched = true;
                             schema->sysTabComPartTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabComPart->dataObj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabComPart->dataObj, 0, column, object, rowId)) {
                             sysTabComPart->touched = true;
                             schema->sysTabComPartTouched = true;
                         }
@@ -1191,12 +1191,12 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabPart->obj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabPart->obj, 0, column, object, rowId)) {
                             sysTabPart->touched = true;
                             schema->sysTabPartTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabPart->dataObj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabPart->dataObj, 0, column, object, rowId)) {
                             sysTabPart->touched = true;
                             schema->sysTabPartTouched = true;
                         }
@@ -1228,12 +1228,12 @@ namespace OpenLogReplicator {
                         continue;
 
                     if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabSubPart->obj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabSubPart->obj, 0, column, object, rowId)) {
                             sysTabSubPart->touched = true;
                             schema->sysTabSubPartTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabSubPart->dataObj, column, object, rowId)) {
+                        if (updateNumber32u(sysTabSubPart->dataObj, 0, column, object, rowId)) {
                             sysTabSubPart->touched = true;
                             schema->sysTabSubPartTouched = true;
                         }

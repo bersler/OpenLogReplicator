@@ -37,11 +37,11 @@ namespace OpenLogReplicator {
         OutputBuffer *outputBuffer;
         Schema *schema;
 
-        bool updateNumber16(int16_t &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber16u(uint16_t &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber32u(uint32_t &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber64(int64_t &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber64u(uint64_t &val, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber16(int16_t &val, int16_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber16u(uint16_t &val, uint16_t devVal, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber32u(uint32_t &val, uint32_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber64(int64_t &val, int64_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber64u(uint64_t &val, uint64_t devVal, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateNumberXu(uintX_t &val, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateObj(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateUser(typeUSER &val, typeCOL column, OracleObject *object, RowId &rowId);
