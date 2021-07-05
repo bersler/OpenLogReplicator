@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
         typeXID xid;
         typeSEQ firstSequence;
         uint64_t firstOffset;
+        typeSEQ commitSequence;
         typeSCN commitScn;
         TransactionChunk *firstTc;
         TransactionChunk *lastTc;

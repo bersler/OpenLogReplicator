@@ -52,6 +52,7 @@ namespace OpenLogReplicator {
         uint64_t queueId;
         uint64_t length;
         typeSCN scn;
+        typeSEQ sequence;
         OracleAnalyzer *oracleAnalyzer;
         uint8_t* data;
         uint32_t dictId;
@@ -83,6 +84,7 @@ namespace OpenLogReplicator {
         unordered_set<OracleObject*> objects;
         typetime lastTime;
         typeSCN lastScn;
+        typeSEQ lastSequence;
         typeXID lastXid;
 
         uint64_t valuesSet[MAX_NO_COLUMNS / sizeof(uint64_t)];
@@ -191,6 +193,7 @@ namespace OpenLogReplicator {
             msg = (OutputBufferMsg*)(lastBuffer->data + lastBuffer->length);
             outputBufferShift(sizeof(struct OutputBufferMsg), true);
             msg->scn = lastScn;
+            msg->sequence = lastSequence;
             msg->length = 0;
             msg->id = id++;
             msg->dictId = dictId;
@@ -501,7 +504,7 @@ namespace OpenLogReplicator {
         void setWriter(Writer *writer);
         void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
 
-        void processBegin(typeSCN scn, typetime time_, typeXID xid);
+        void processBegin(typeSCN scn, typetime time_, typeSEQ sequence, typeXID xid);
         virtual void processCommit(void) = 0;
         void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
         void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);

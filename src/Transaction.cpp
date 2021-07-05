@@ -36,6 +36,7 @@ namespace OpenLogReplicator {
 		xid(xid),
 		firstSequence(0),
 		firstOffset(0),
+		commitSequence(0),
 		commitScn(0),
 		firstTc(nullptr),
 		lastTc(nullptr),
@@ -133,9 +134,9 @@ namespace OpenLogReplicator {
                 }
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
-                    oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                    oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, commitSequence, xid);
             } else {
-                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, commitSequence, xid);
             }
             uint64_t pos, type = 0;
             RedoLogRecord *first1 = nullptr, *first2 = nullptr, *last1 = nullptr, *last2 = nullptr, *last501 = nullptr;
@@ -365,11 +366,11 @@ namespace OpenLogReplicator {
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
                                 oracleAnalyzer->outputBuffer->processCommit();
-                                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                                oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, commitSequence, xid);
                             }
                         } else {
                             oracleAnalyzer->outputBuffer->processCommit();
-                            oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, xid);
+                            oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, commitSequence, xid);
                         }
                     }
 

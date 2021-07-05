@@ -142,7 +142,7 @@ typedef uint64_t typeunicode;
 #define TRACE2_REDO                             0x00000400
 #define TRACE2_ARCHIVE_LIST                     0x00000800
 #define TRACE2_SCHEMA_LIST                      0x00001000
-#define TRACE2_KAFKA                            0x00002000
+#define TRACE2_WRITER                           0x00002000
 #define TRACE2_CHECKPOINT                       0x00004000
 #define TRACE2_SYSTEM                           0x00008000
 

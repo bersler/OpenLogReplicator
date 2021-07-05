@@ -1,3 +1,13 @@
+0.9.10-beta
+- change "name" to "output" for writer file mode
+- added "max-size", "new-line", "format", "append" elements to writer file mode
+- file output can rotate output file with defined max size
+- internally changed identifier 0 value to -1 for file descriptor
+- fixed DDL tracking for some commands (alter table modify column, alter table add subpartition, etc.)
+- fix creating log groups multipliction in schema file
+- added displaying error information for errno code
+- added disk read retry
+
 0.9.9-beta
 - fixed subpartition schema load/save
 - fixed DDL tracking for columns

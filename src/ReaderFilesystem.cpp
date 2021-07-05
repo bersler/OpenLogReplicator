@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -29,7 +30,7 @@ using namespace std;
 namespace OpenLogReplicator {
     ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
         Reader(alias, oracleAnalyzer, group),
-        fileDes(0),
+        fileDes(-1),
         flags(0) {
     }
 
@@ -38,9 +39,9 @@ namespace OpenLogReplicator {
     }
 
     void ReaderFilesystem::redoClose(void) {
-        if (fileDes > 0) {
+        if (fileDes != -1) {
             close(fileDes);
-            fileDes = 0;
+            fileDes = -1;
         }
     }
 
@@ -48,9 +49,9 @@ namespace OpenLogReplicator {
         struct stat fileStat;
 
         int ret = stat(pathMapped.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "FILE: stat for " << pathMapped << " returns " << dec << ret << ", errno = " << errno);
+        TRACE(TRACE2_FILE, "FILE: stat for file: " << pathMapped << " - " << strerror(errno));
         if (ret != 0) {
-            ERROR("file stat failed (code: " << dec << ret << ", errno: " << dec << errno << "): "<< pathMapped);
+            WARNING("reading information for file: " << pathMapped << " - " << strerror(errno));
             return REDO_ERROR;
         }
 
@@ -67,14 +68,14 @@ namespace OpenLogReplicator {
 
         if (fileDes == -1) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0) {
-                ERROR("file open in direct mode failed (errno: " << dec << errno << "): "<< pathMapped);
+                ERROR("opening in direct read mode file: " << dec << pathMapped << " - " << strerror(errno));
                 return REDO_ERROR;
             }
 
             flags &= (~O_DIRECT);
             fileDes = open(pathMapped.c_str(), flags);
             if (fileDes == -1) {
-                ERROR("file open failed (errno: " << dec << errno << "): "<< pathMapped);
+                ERROR("opening in read mode file: " << dec << pathMapped << " - " << strerror(errno));
                 return REDO_ERROR;
             }
 
@@ -89,13 +90,29 @@ namespace OpenLogReplicator {
         if ((trace2 & TRACE2_PERFORMANCE) != 0)
             startTime = getTime();
 
-        int64_t bytes = pread(fileDes, buf, size, offset);
-        TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
+        int64_t bytes, retry = oracleAnalyzer->archReadRetry;
+        while (retry > 0 && !shutdown) {
+            bytes = pread(fileDes, buf, size, offset);
+            TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
+
+            if (bytes > 0)
+                break;
+
+            //retry for SSHFS broken connection: Transport endpoint is not connected
+            if (bytes == -1 && errno != ENOTCONN)
+                break;
+
+            ERROR("reading file: " << pathMapped << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUS << " us");
+            usleep(oracleAnalyzer->archReadSleepUS);
+            --retry;
+        }
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
             flags &= ~O_DIRECT;
-            fcntl(fileDes, F_SETFL, flags);
+            if (fcntl(fileDes, F_SETFL, flags) == -1) {
+                ERROR("setting control information for file: " << pathMapped << " - " << strerror(errno));
+            }
 
             //disable direct read and re-try the read
             bytes = pread(fileDes, buf, size, offset);

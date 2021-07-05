@@ -93,6 +93,7 @@ namespace OpenLogReplicator {
 
         //SYS.TABCOMPART$
         map<RowId, SysTabComPart*> sysTabComPartMapRowId;
+        unordered_map<typeOBJ, SysTabComPart*> sysTabComPartMapObj;
         map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
 
         //SYS.TABPART$
@@ -107,6 +108,7 @@ namespace OpenLogReplicator {
         map<RowId, SysUser*> sysUserMapRowId;
         unordered_map<typeUSER, SysUser*> sysUserMapUser;
 
+        set<typeOBJ> partitionsTouched;
         set<typeOBJ> objectsTouched;
         set<typeUSER> usersTouched;
         OracleObject *schemaObject;
@@ -160,6 +162,7 @@ namespace OpenLogReplicator {
         bool dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);
         bool dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool single);
         void touchObj(typeOBJ obj);
+        void touchPart(typeOBJ obj);
         void touchUser(typeUSER user);
 
         friend class SystemTransaction;

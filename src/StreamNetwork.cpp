@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -66,17 +67,17 @@ namespace OpenLogReplicator {
         addressC.sin_port = htons(atoi(port.c_str()));
 
         if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-            RUNTIME_FAIL("socket creation failed");
+            RUNTIME_FAIL("socket creation failed - " << strerror(errno));
         }
 
         struct hostent *server = gethostbyname(host.c_str());
         if (server == NULL) {
-            RUNTIME_FAIL("error resolving host name: " << host);
+            RUNTIME_FAIL("resolving host name: " << host << " - " << strerror(errno));
         }
 
         memcpy((char *)&addressC.sin_addr.s_addr, (char *)server->h_addr, server->h_length);
         if (connect(socketFD, (struct sockaddr *) &addressC, sizeof(addressC)) < 0) {
-            RUNTIME_FAIL("error connecting to uri: " << uri);
+            RUNTIME_FAIL("connecting to uri: " << uri << " - " << strerror(errno));
         }
     }
 
@@ -92,27 +93,27 @@ namespace OpenLogReplicator {
 
         serverFD = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (serverFD == 0) {
-            RUNTIME_FAIL("socket creation failed");
+            RUNTIME_FAIL("socket creation failed - " << strerror(errno));
         }
 
         int flags = fcntl(serverFD, F_GETFL);
         if (flags < 0) {
-            RUNTIME_FAIL("error getting socket flags");
+            RUNTIME_FAIL("getting socket flags - " << strerror(errno));
         }
         if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0) {
-            RUNTIME_FAIL("error setting socket flags");
+            RUNTIME_FAIL("setting socket flags - " << strerror(errno));
         }
 
         int64_t opt = 1;
         if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-            RUNTIME_FAIL("socket reusing failed");
+            RUNTIME_FAIL("socket reusing failed - " << strerror(errno));
         }
 
         if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0) {
-            RUNTIME_FAIL("error binding uri: " << uri);
+            RUNTIME_FAIL("binding uri: " << uri << " - " << strerror(errno));
         }
         if (listen(serverFD, 1) < 0) {
-            RUNTIME_FAIL("error starting listener");
+            RUNTIME_FAIL("starting listener - " << strerror(errno));
         }
     }
 
@@ -145,7 +146,7 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send error");
+                       NETWORK_FAIL("network send - " << strerror(errno));
                    }
                 }
                 sent += r;
@@ -167,7 +168,7 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send error");
+                       NETWORK_FAIL("network send - " << strerror(errno));
                    }
                 }
                 sent += r;
@@ -188,7 +189,7 @@ namespace OpenLogReplicator {
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send error");
+                       NETWORK_FAIL("network send - " << strerror(errno));
                    }
                 }
                 sent += r;
@@ -211,7 +212,7 @@ namespace OpenLogReplicator {
                else {
                    close(socketFD);
                    socketFD = -1;
-                   NETWORK_FAIL("network send error");
+                   NETWORK_FAIL("network send - " << strerror(errno));
                }
             }
             sent += r;
@@ -237,7 +238,7 @@ namespace OpenLogReplicator {
             } else {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("network receive error");
+                NETWORK_FAIL("network receive - " << strerror(errno));
             }
         }
 
@@ -268,7 +269,7 @@ namespace OpenLogReplicator {
                 } else {
                     close(socketFD);
                     socketFD = -1;
-                    NETWORK_FAIL("network receive error");
+                    NETWORK_FAIL("network receive - " << strerror(errno));
                 }
             }
 
@@ -295,7 +296,7 @@ namespace OpenLogReplicator {
             } else {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("network receive error");
+                NETWORK_FAIL("network receive - " << strerror(errno) );
             }
         }
 
@@ -405,15 +406,15 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK)
                 return false;
 
-            RUNTIME_FAIL("socket accept failed");
+            RUNTIME_FAIL("socket accept failed - " << strerror(errno));
         }
 
         int flags = fcntl(socketFD, F_GETFL);
         if (flags < 0) {
-            RUNTIME_FAIL("error getting socket flags");
+            RUNTIME_FAIL("getting socket flags - " << strerror(errno));
         }
         if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0) {
-            RUNTIME_FAIL("error setting socket flags");
+            RUNTIME_FAIL("setting socket flags - " << strerror(errno));
         }
 
         if (socketFD != -1)

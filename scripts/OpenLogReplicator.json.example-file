@@ -1,5 +1,5 @@
 {
-  "version": "0.9.9-beta",
+  "version": "0.9.10-beta",
   "sources": [
     {
       "alias": "S1",
@@ -28,8 +28,11 @@
       "source": "S1",
       "writer": {
         "type": "file",
-        "name": "transactions.json",
-        "start-seq": 100
+        "output": "output-%t.json",
+        "format": "%F-%T",
+        "new-line": 1,
+        "max-size": 1073741824,
+        "append": 0
       }
     }
   ]

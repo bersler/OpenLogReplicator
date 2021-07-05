@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 #include <thread>
@@ -94,7 +95,7 @@ namespace OpenLogReplicator {
         disableChecks(disableChecks),
         redoReadSleepUS(10000),
         archReadSleepUS(10000000),
-        archReadRetry(3),
+        archReadRetry(10),
         redoVerifyDelayUS(50000),
         version(0),
         conId(-1),
@@ -763,6 +764,10 @@ namespace OpenLogReplicator {
     }
 
     Reader *OracleAnalyzer::readerCreate(int64_t group) {
+        for (Reader *reader : readers)
+            if (reader->group == group)
+                return nullptr;
+
         ReaderFilesystem *readerFS = new ReaderFilesystem(alias.c_str(), this, group);
         if (readerFS == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
@@ -1096,7 +1101,7 @@ namespace OpenLogReplicator {
 
             string fullName(checkpointPath + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
-                WARNING("can't read file information for: " << fullName);
+                WARNING("reading information for file: " << fullName << " - " << strerror(errno));
                 continue;
             }
 
@@ -1337,7 +1342,7 @@ namespace OpenLogReplicator {
             struct stat fileStat;
             string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat)) {
-                WARNING("can't read file information for: " << mappedSubPath);
+                WARNING("reading information for file: " << mappedSubPath << " - " << strerror(errno));
                 continue;
             }
 
@@ -1404,7 +1409,7 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             if (stat(mappedPath.c_str(), &fileStat)) {
-                WARNING("can't read file information for: " << mappedPath);
+                WARNING("reading information for file: " << mappedPath << " - " << strerror(errno));
                 continue;
             }
 

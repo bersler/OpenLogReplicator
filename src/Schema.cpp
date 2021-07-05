@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <list>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -148,6 +149,7 @@ namespace OpenLogReplicator {
             delete sysTabComPart;
         }
         sysTabComPartMapRowId.clear();
+        sysTabComPartMapObj.clear();
         sysTabComPartMapKey.clear();
 
         for (auto it : sysTabPartMapRowId) {
@@ -191,7 +193,7 @@ namespace OpenLogReplicator {
 
             string fullName(oracleAnalyzer->checkpointPath + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
-                WARNING("can't read file information for: " << fullName);
+                WARNING("reading information for file: " << fullName << " - " << strerror(errno));
                 continue;
             }
 
@@ -203,7 +205,7 @@ namespace OpenLogReplicator {
                 continue;
 
             string suffix(".json");
-            if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
+            if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length()).compare(suffix) != 0)
                 continue;
 
             TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: found previous schema: " << oracleAnalyzer->checkpointPath << "/" << fileName);
@@ -758,9 +760,11 @@ namespace OpenLogReplicator {
             }
 
             Reader *onlineReader = oracleAnalyzer->readerCreate(group);
-            for (SizeType j = 0; j < path.Size(); ++j) {
-                const Value& pathVal = path[j];
-                onlineReader->paths.push_back(pathVal.GetString());
+            if (onlineReader != nullptr) {
+                for (SizeType j = 0; j < path.Size(); ++j) {
+                    const Value& pathVal = path[j];
+                    onlineReader->paths.push_back(pathVal.GetString());
+                }
             }
         }
 
@@ -1216,6 +1220,7 @@ namespace OpenLogReplicator {
                 if (sysUser->single || users.find(sysUser->name) != users.end()) {
                     sysUserMapUser[sysUser->user] = sysUser;
                     if (sysUser->touched) {
+                        touchUser(sysUser->user);
                         sysUser->touched = false;
                         changedSchema = true;
                     }
@@ -1246,6 +1251,7 @@ namespace OpenLogReplicator {
                     if (!sysUser->single || sysObj->single) {
                         sysObjMapObj[sysObj->obj] = sysObj;
                         if (sysObj->touched) {
+                            touchObj(sysObj->obj);
                             sysObj->touched = false;
                             changedSchema = true;
                         }
@@ -1277,6 +1283,7 @@ namespace OpenLogReplicator {
                     SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
                     sysCColMapKey[sysCColKey] = sysCCol;
                     if (sysCCol->touched) {
+                        touchObj(sysCCol->obj);
                         sysCCol->touched = false;
                         changedSchema = true;
                     }
@@ -1308,6 +1315,7 @@ namespace OpenLogReplicator {
                     sysCDefMapKey[sysCDefKey] = sysCDef;
                     sysCDefMapCon[sysCDef->con] = sysCDef;
                     if (sysCDef->touched) {
+                        touchObj(sysCDef->obj);
                         sysCDef->touched = false;
                         changedSchema = true;
                     }
@@ -1340,6 +1348,7 @@ namespace OpenLogReplicator {
                     SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
                     sysColMapSeg[sysColSeg] = sysCol;
                     if (sysCol->touched) {
+                        touchObj(sysCol->obj);
                         sysCol->touched = false;
                         changedSchema = true;
                     }
@@ -1371,6 +1380,7 @@ namespace OpenLogReplicator {
                 if (sysObjMapObj.find(sysDeferredStg->obj) != sysObjMapObj.end()) {
                     sysDeferredStgMapObj[sysDeferredStg->obj] = sysDeferredStg;
                     if (sysDeferredStg->touched) {
+                        touchObj(sysDeferredStg->obj);
                         sysDeferredStg->touched = false;
                         changedSchema = true;
                     }
@@ -1400,6 +1410,7 @@ namespace OpenLogReplicator {
                     SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
                     sysEColMapKey[sysEColKey] = sysECol;
                     if (sysECol->touched) {
+                        touchObj(sysECol->tabObj);
                         sysECol->touched = false;
                         changedSchema = true;
                     }
@@ -1433,6 +1444,7 @@ namespace OpenLogReplicator {
                         sysTabMapKey[sysTabKey] = sysTab;
                     }
                     if (sysTab->touched) {
+                        touchObj(sysTab->obj);
                         sysTab->touched = false;
                         changedSchema = true;
                     }
@@ -1455,14 +1467,17 @@ namespace OpenLogReplicator {
         //SYS.TABCOMPART$
         if (sysTabComPartTouched) {
             sysTabComPartMapKey.clear();
+            sysTabComPartMapObj.clear();
 
             for (auto it : sysTabComPartMapRowId) {
                 SysTabComPart *sysTabComPart = it.second;
 
+                sysTabComPartMapObj[sysTabComPart->obj] = sysTabComPart;
                 if (sysObjMapObj.find(sysTabComPart->obj) != sysObjMapObj.end()) {
                     SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
                     sysTabComPartMapKey[sysTabComPartKey] = sysTabComPart;
                     if (sysTabComPart->touched) {
+                        touchObj(sysTabComPart->bo);
                         sysTabComPart->touched = false;
                         changedSchema = true;
                     }
@@ -1492,6 +1507,7 @@ namespace OpenLogReplicator {
                     SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
                     sysTabPartMapKey[sysTabPartKey] = sysTabPart;
                     if (sysTabPart->touched) {
+                        touchObj(sysTabPart->bo);
                         sysTabPart->touched = false;
                         changedSchema = true;
                     }
@@ -1521,6 +1537,13 @@ namespace OpenLogReplicator {
                     SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
                     sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
                     if (sysTabSubPart->touched) {
+                        //find SYS.TABCOMPART$
+                        auto it = sysTabComPartMapObj.find(sysTabSubPart->pObj);
+                        if (it != sysTabComPartMapObj.end()) {
+                            SysTabComPart *sysTabComPart = it->second;
+                            touchObj(sysTabComPart->bo);
+                        }
+
                         sysTabSubPart->touched = false;
                         changedSchema = true;
                     }
@@ -1558,6 +1581,7 @@ namespace OpenLogReplicator {
                             SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
                             sysSegMapKey[sysSegKey] = sysSeg;
                             if (sysSeg->touched) {
+                                touchObj(sysTab->obj);
                                 sysSeg->touched = false;
                                 changedSchema = true;
                             }
@@ -1597,6 +1621,15 @@ namespace OpenLogReplicator {
             }
         }
         usersTouched.clear();
+
+        for (typeOBJ obj : partitionsTouched) {
+            auto objectMapIt = partitionMap.find(obj);
+            if (objectMapIt != partitionMap.end()) {
+                OracleObject *object = objectMapIt->second;
+                touchObj(object->obj);
+            }
+        }
+        partitionsTouched.clear();
 
         for (typeOBJ obj : objectsTouched) {
             auto objectMapIt = objectMap.find(obj);
@@ -2033,6 +2066,7 @@ namespace OpenLogReplicator {
         sysTabComPartMapRowId[rowId] = sysTabComPart;
         SysTabComPartKey sysTabComPartKey(bo, obj);
         sysTabComPartMapKey[sysTabComPartKey] = sysTabComPart;
+        sysTabComPartMapObj[sysTabComPart->obj] = sysTabComPart;
 
         return true;
     }
@@ -2102,6 +2136,14 @@ namespace OpenLogReplicator {
 
         if (objectsTouched.find(obj) == objectsTouched.end())
             objectsTouched.insert(obj);
+    }
+
+    void Schema::touchPart(typeOBJ obj) {
+        if (obj == 0)
+            return;
+
+        if (partitionsTouched.find(obj) == partitionsTouched.end())
+            partitionsTouched.insert(obj);
     }
 
     void Schema::touchUser(typeUSER user) {

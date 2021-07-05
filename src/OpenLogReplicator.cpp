@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <algorithm>
+#include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <list>
@@ -129,7 +130,6 @@ int main(int argc, char **argv) {
         CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version | CONFIG]  default path for CONFIG file is " << fileName);
     }
 
-
     list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
@@ -142,16 +142,16 @@ int main(int argc, char **argv) {
         struct stat fileStat;
         fid = open(fileName.c_str(), O_RDONLY);
         if (fid == -1) {
-            CONFIG_FAIL("can't open file " << fileName);
+            CONFIG_FAIL("opening in read mode file: " << fileName << " - " << strerror(errno));
         }
 
         if (flock(fid, LOCK_EX | LOCK_NB)) {
-            CONFIG_FAIL("can't lock file " << fileName << ", another process may be running");
+            CONFIG_FAIL("locking file: " << fileName << ", another process may be running - " << strerror(errno));
         }
 
         int ret = stat(fileName.c_str(), &fileStat);
         if (ret != 0) {
-            CONFIG_FAIL("can't check file size of " << fileName);
+            CONFIG_FAIL("reading information for file: " << fileName << " - " << strerror(errno));
         }
         if (fileStat.st_size == 0) {
             CONFIG_FAIL("file " << fileName << " is empty");
@@ -762,7 +762,7 @@ int main(int argc, char **argv) {
             }
 
             if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
-                RUNTIME_FAIL("error spawning thread - oracle analyzer");
+                RUNTIME_FAIL("spawning thread - oracle analyzer");
             }
 
             analyzers.push_back(oracleAnalyzer);
@@ -857,14 +857,52 @@ int main(int argc, char **argv) {
             }
 
             if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
-                const char *name = "";
-                if (writerJSON.HasMember("name")) {
-                    const Value& nameJSON = writerJSON["name"];
-                    name = nameJSON.GetString();
+                //optional
+                uint64_t maxSize = 0;
+                if (writerJSON.HasMember("max-size")) {
+                    const Value& maxSizeJSON = writerJSON["max-size"];
+                    maxSize = maxSizeJSON.GetUint64();
                 }
 
-                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, name, pollIntervalUS, checkpointIntervalS, queueSize,
-                        startScn, startSequence, startTime, startTimeRel);
+                //optional
+                const char *format = "%F_%T";
+                if (writerJSON.HasMember("format")) {
+                    const Value& formatJSON = writerJSON["format"];
+                    format = formatJSON.GetString();
+                }
+
+                //optional
+                const char *output = "";
+                if (writerJSON.HasMember("output")) {
+                    const Value& outputJSON = writerJSON["output"];
+                    output = outputJSON.GetString();
+                } else
+                if (maxSize > 0) {
+                    RUNTIME_FAIL("parameter \"max-size\" should be 0 when \"output\" is not set (for: file writer)");
+                }
+
+                //optional
+                uint64_t newLine = 1;
+                if (writerJSON.HasMember("new-line")) {
+                    const Value& newLineJSON = writerJSON["new-line"];
+                    newLine = newLineJSON.GetUint64();
+                    if (newLine > 2) {
+                        CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << newLineJSON.GetString() << ", expected one of: {0, 1, 2}");
+                    }
+                }
+
+                //optional
+                uint64_t append = 1;
+                if (writerJSON.HasMember("append")) {
+                    const Value& appendJSON = writerJSON["append"];
+                    append = appendJSON.GetUint64();
+                    if (append > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"append\" value: " << appendJSON.GetString() << ", expected one of: {0, 1}");
+                    }
+                }
+
+                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, output, format, maxSize, newLine, append, pollIntervalUS,
+                        checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
@@ -952,7 +990,7 @@ int main(int argc, char **argv) {
 
             oracleAnalyzer->outputBuffer->setWriter(writer);
             if (pthread_create(&writer->pthread, nullptr, &Thread::runStatic, (void*)writer)) {
-                RUNTIME_FAIL("error spawning thread - kafka writer");
+                RUNTIME_FAIL("spawning thread - kafka writer");
             }
 
             writers.push_back(writer);

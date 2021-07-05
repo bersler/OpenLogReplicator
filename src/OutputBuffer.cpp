@@ -66,6 +66,7 @@ namespace OpenLogReplicator {
         valueLength(0),
         lastTime(0),
         lastScn(0),
+        lastSequence(0),
         lastXid(0),
         valuesMax(0),
         mergesMax(0),
@@ -1086,9 +1087,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::processBegin(typeSCN scn, typetime time_, typeXID xid) {
+    void OutputBuffer::processBegin(typeSCN scn, typetime time_, typeSEQ sequence, typeXID xid) {
         lastTime = time_;
         lastScn = scn;
+        lastSequence = sequence;
         lastXid = xid;
         newTran = true;
     }

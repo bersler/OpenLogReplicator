@@ -756,6 +756,7 @@ namespace OpenLogReplicator {
 
         transaction->commitTimestamp = lwnTimestamp;
         transaction->commitScn = redoLogRecord->scnRecord;
+        transaction->commitSequence = redoLogRecord->sequence;
         if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 

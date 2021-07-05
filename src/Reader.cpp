@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),
         hintDisplayed(false),
-        fileCopyDes(0),
+        fileCopyDes(-1),
         fileCopySequence(0),
         group(group),
         sequence(0),
@@ -93,9 +93,9 @@ namespace OpenLogReplicator {
             headerBuffer = nullptr;
         }
 
-        if (fileCopyDes > 0) {
+        if (fileCopyDes != -1) {
             close(fileCopyDes);
-            fileCopyDes = 0;
+            fileCopyDes = -1;
         }
     }
 
@@ -172,7 +172,7 @@ namespace OpenLogReplicator {
     uint64_t Reader::reloadHeaderRead(void) {
         int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
         if (bytes < 512) {
-            ERROR("read error (read: " << dec << bytes << ", expected: " << (blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2) << "): " << pathMapped);
+            ERROR("reading file: " << pathMapped << " - " << strerror(errno));
             return REDO_ERROR;
         }
 
@@ -207,7 +207,7 @@ namespace OpenLogReplicator {
         }
 
         if (bytes < ((int64_t)blockSize * 2)) {
-            ERROR("read error (read: " << dec << bytes << ", expected: " << (blockSize * 2) << "): " << pathMapped);
+            ERROR("reading file: " << pathMapped << " - " << strerror(errno));
             return REDO_ERROR;
         }
 
@@ -217,17 +217,17 @@ namespace OpenLogReplicator {
 
             typeSEQ sequenceHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 8);
             if (fileCopySequence != sequenceHeader) {
-                if (fileCopyDes > 0) {
+                if (fileCopyDes != -1) {
                     close(fileCopyDes);
-                    fileCopyDes = 0;
+                    fileCopyDes = -1;
                 }
             }
 
-            if (fileCopyDes == 0) {
+            if (fileCopyDes == -1) {
                 pathMappedWrite = oracleAnalyzer->redoCopyPath + "/" + oracleAnalyzer->database + "_" + to_string(sequenceHeader) + ".arc";
                 fileCopyDes = open(pathMappedWrite.c_str(), O_CREAT | O_WRONLY | O_LARGEFILE, S_IRUSR | S_IWUSR);
                 if (fileCopyDes == -1) {
-                    ERROR("file open error for write: " << pathMappedWrite);
+                    ERROR("opening in write mode file: " << dec << pathMappedWrite << " - " << strerror(errno));
                     return REDO_ERROR;
                 }
                 INFO("writing redo log copy to: " << pathMappedWrite);
@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
 
             int64_t bytesWritten = pwrite(fileCopyDes, headerBuffer, bytes, 0);
             if (bytesWritten != bytes) {
-                ERROR("write error (written: " << dec << bytesWritten << ", expected: " << bytes << "): " << pathMappedWrite);
+                ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
                 return REDO_ERROR;
             }
         }
@@ -379,9 +379,9 @@ namespace OpenLogReplicator {
                 continue;
 
             } else if (status == READER_STATUS_UPDATE) {
-                if (fileCopyDes > 0) {
+                if (fileCopyDes != -1) {
                     close(fileCopyDes);
-                    fileCopyDes = 0;
+                    fileCopyDes = -1;
                 }
 
                 sumRead = 0;
@@ -469,14 +469,14 @@ namespace OpenLogReplicator {
 
                             TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                             if (actualRead < 0) {
-                                ERROR("error reading (code: " << dec << actualRead << "): " << pathMapped);
+                                ERROR("reading file: " << pathMapped << " - " << strerror(errno));
                                 ret = REDO_ERROR;
                                 break;
                             }
-                            if (actualRead > 0 && fileCopyDes > 0) {
+                            if (actualRead > 0 && fileCopyDes != -1) {
                                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                 if (bytesWritten != actualRead) {
-                                    ERROR("write error (written: " << dec << bytesWritten << ", expected: " << actualRead << "): " << pathMappedWrite);
+                                    ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
                                     ret = REDO_ERROR;
                                     break;
                                 }
@@ -542,10 +542,10 @@ namespace OpenLogReplicator {
                             ret = REDO_ERROR;
                             break;
                         }
-                        if (actualRead > 0 && fileCopyDes > 0 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
+                        if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
                             int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                             if (bytesWritten != actualRead) {
-                                ERROR("write error (written: " << dec << bytesWritten << ", expected: " << actualRead << "): " << pathMappedWrite);
+                                ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
                                 ret = REDO_ERROR;
                                 break;
                             }
@@ -636,9 +636,9 @@ namespace OpenLogReplicator {
         }
 
         redoClose();
-        if (fileCopyDes > 0) {
+        if (fileCopyDes != -1) {
             close(fileCopyDes);
-            fileCopyDes = 0;
+            fileCopyDes = -1;
         }
 
         TRACE(TRACE2_THREADS, "THREADS: READER (" << hex << this_thread::get_id() << ") STOP");

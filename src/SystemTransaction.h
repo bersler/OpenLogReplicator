@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         bool updateNumber64u(uint64_t &val, uint64_t devVal, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateNumberXu(uintX_t &val, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateObj(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updatePart(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateUser(typeUSER &val, typeCOL column, OracleObject *object, RowId &rowId);
         bool updateString(string &val, typeCOL column, OracleObject *object, RowId &rowId);
         void toRemove(typeOBJ obj);

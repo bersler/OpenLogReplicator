@@ -859,6 +859,7 @@ namespace OpenLogReplicator {
     void OutputBufferJson::processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) {
         lastTime = time_;
         lastScn = scn;
+        lastSequence = sequence;
         outputBufferBegin(0);
         outputBufferAppend('{');
         hasPreviousValue = false;

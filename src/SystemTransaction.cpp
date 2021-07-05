@@ -159,6 +159,39 @@ namespace OpenLogReplicator {
         return false;
     }
 
+    bool SystemTransaction::updatePart(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId) {
+        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+            char *retPtr;
+            if (object->columns[column]->typeNo != 2) {
+                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
+            }
+            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
+            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
+            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
+                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
+            }
+            typeOBJ newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (newVal != val) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                schema->touched = true;
+                schema->touchPart(val);
+                schema->touchPart(newVal);
+                val = newVal;
+                return true;
+            }
+        } else
+        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+            if (val != 0) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                schema->touched = true;
+                schema->touchPart(val);
+                val = 0;
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool SystemTransaction::updateUser(typeUSER &val, typeCOL column, OracleObject *object, RowId &rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char *retPtr;
@@ -690,7 +723,7 @@ namespace OpenLogReplicator {
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
                         updateNumber32u(sysTabSubPart->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("POBJ#") == 0)
-                        updateObj(sysTabSubPart->pObj, column, object, rowId);
+                        updatePart(sysTabSubPart->pObj, column, object, rowId);
                 }
             }
 
@@ -1238,7 +1271,7 @@ namespace OpenLogReplicator {
                             schema->sysTabSubPartTouched = true;
                         }
                     } else if (object->columns[column]->name.compare("POBJ#") == 0) {
-                        if (updateObj(sysTabSubPart->pObj, column, object, rowId)) {
+                        if (updatePart(sysTabSubPart->pObj, column, object, rowId)) {
                             sysTabSubPart->touched = true;
                             schema->sysTabSubPartTouched = true;
                         }
@@ -1481,7 +1514,7 @@ namespace OpenLogReplicator {
             schema->touched = true;
             schema->sysTabSubPartMapRowId.erase(rowId);
             schema->sysTabSubPartTouched = true;
-            schema->touchObj(sysTabSubPart->pObj);
+            schema->touchPart(sysTabSubPart->pObj);
             if (sysTabSubPart->saved)
                 schema->savedDeleted = true;
             delete sysTabSubPart;
