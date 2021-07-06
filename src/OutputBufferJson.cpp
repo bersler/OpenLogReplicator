@@ -267,7 +267,7 @@ namespace OpenLogReplicator {
             outputBufferAppend("\"schema\":{\"table\":\"");
             string objectName("OBJ_" + to_string(dataObj));
             outputBufferAppend(objectName);
-            outputBufferAppend('"');
+            outputBufferAppend('"}');
             return;
         }
 

@@ -57,7 +57,6 @@ namespace OpenLogReplicator {
         }
 
         if (this->output.length() == 0) {
-            this->output = "stdout";
             outputDes = STDOUT_FILENO;
             return;
         }
@@ -291,7 +290,11 @@ namespace OpenLogReplicator {
             if (outputDes == -1) {
                 RUNTIME_FAIL("opening in write mode file: " << outputFile << " - " << strerror(errno));
             }
-            if (append > 0 && statRet == 0)
+            if (lseek(outputDes, 0, SEEK_END) == -1) {
+                RUNTIME_FAIL("seeking to end of file: " << outputFile << " - " << strerror(errno));
+            }
+
+            if (statRet == 0)
                 outputSize = fileStat.st_size;
             else
                 outputSize = 0;
@@ -304,14 +307,14 @@ namespace OpenLogReplicator {
         else
             checkFile(msg->scn, msg->sequence, msg->length);
 
-        int64_t bytesWritten = pwrite(outputDes, (const char*)msg->data, msg->length, outputSize);
+        int64_t bytesWritten = write(outputDes, (const char*)msg->data, msg->length);
         if (bytesWritten != msg->length) {
             RUNTIME_FAIL("writing file: " << outputFile << " - " << strerror(errno));
         }
         outputSize += bytesWritten;
 
         if (newLine > 0) {
-            bytesWritten = pwrite(outputDes, newLineMsg, newLine, outputSize);
+            bytesWritten = write(outputDes, newLineMsg, newLine);
             if (bytesWritten != newLine) {
                 RUNTIME_FAIL("writing file: " << outputFile << " - " << strerror(errno));
             }
@@ -322,7 +325,10 @@ namespace OpenLogReplicator {
     }
 
     string WriterFile::getName() const {
-        return "file:" + outputPath + "/" + outputFileMask;
+        if (outputDes == STDOUT_FILENO)
+            return "stdout";
+        else
+            return "file:" + outputPath + "/" + outputFileMask;
     }
 
     void WriterFile::pollQueue(void) {

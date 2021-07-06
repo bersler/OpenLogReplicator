@@ -719,6 +719,7 @@ namespace OpenLogReplicator {
         if (redoResponsePB == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response7)");
         }
+        outputBufferBegin(0);
         appendHeader(true, true);
 
         redoResponsePB->add_payload();
@@ -737,7 +738,6 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("PB commit processing failed, error serializing to string");
         }
         outputBufferAppend(output);
-
         outputBufferCommit(true);
     }
 }

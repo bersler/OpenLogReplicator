@@ -797,6 +797,9 @@ namespace OpenLogReplicator {
     }
 
     void Schema::writeSchema(void) {
+        if (oracleAnalyzer->schemaScn == ZERO_SCN && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+            return;
+
         string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-schema-" + to_string(oracleAnalyzer->schemaScn) + ".json");
         TRACE(TRACE2_SYSTEM, "SYSTEM: writing file: " << fileName << " scn: " << dec << oracleAnalyzer->schemaScn);
         ofstream outfile;

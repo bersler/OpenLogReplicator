@@ -130,7 +130,7 @@ namespace OpenLogReplicator {
         void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb) {
             if ((trace2 & TRACE2_DML) != 0) {
                 stringstream strStr;
-                strStr << "value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
+                strStr << "DML: value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
                         setfill('0') << setw(2) << hex << (uint64_t)fb << " to: ";
                 for (uint64_t i = 0; i < length && i < 10; ++i) {
                     strStr << "0x" << setfill('0') << setw(2) << hex << (uint64_t)data[i] << ", ";

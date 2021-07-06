@@ -1496,11 +1496,15 @@ namespace OpenLogReplicator {
                             length += lengthsPart[0][column][j];
                         if (valuesPart[1][column][j] != nullptr)
                             length += lengthsPart[1][column][j];
-                        if (valuesPart[column][j] != nullptr)
+                        if (valuesPart[2][column][j] != nullptr)
                             length += lengthsPart[2][column][j];
 
-                        if (values[column] != nullptr) {
-                            RUNTIME_FAIL("value for " << j << " is already set when merging");
+                        if (values[column][j] != nullptr) {
+                            ERROR("values: (" << dec << (uint64_t)valuesPart[0][column][j] << "," << (uint64_t)valuesPart[1][column][j] <<
+                                    "," << (uint64_t)valuesPart[2][column][j] << ")-" << (uint64_t)values[column][j] <<
+                                    " lengths: (" << dec << (uint64_t)lengthsPart[0][column][j] << "," << (uint64_t)lengthsPart[1][column][j] <<
+                                    "," << (uint64_t)lengthsPart[2][column][j] << ")-" << (uint64_t)lengths[column][j]);
+                            RUNTIME_FAIL("value for " << dec << column << "/" << j << " is already set when merging");
                         }
 
                         uint8_t *buffer = new uint8_t[length];
@@ -1528,6 +1532,7 @@ namespace OpenLogReplicator {
                             valuesPart[2][column][j] = nullptr;
                         }
                     }
+                    valuesMerge[base] &= ~mask;
                 }
 
                 if (values[column][VALUE_BEFORE] == nullptr) {
@@ -1574,7 +1579,7 @@ namespace OpenLogReplicator {
 
         if ((trace2 & TRACE2_DML) != 0) {
             if (object != nullptr) {
-                TRACE(TRACE2_DML, "tab: " << object->owner << "." << object->name << " type: " << type << " columns: " << valuesMax);
+                TRACE(TRACE2_DML, "DML: tab: " << object->owner << "." << object->name << " type: " << type << " columns: " << valuesMax);
 
                 uint64_t column, baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1585,7 +1590,7 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        TRACE(TRACE2_DML, dec << (column + 1) << ": " <<
+                        TRACE(TRACE2_DML, "DML: " << dec << (column + 1) << ": " <<
                                 " B(" << dec << lengths[column][VALUE_BEFORE] << ")" <<
                                 " A(" << dec << lengths[column][VALUE_AFTER] << ")" <<
                                 " BS(" << dec << lengths[column][VALUE_BEFORE_SUPP] << ")" <<
@@ -1594,7 +1599,7 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                TRACE(TRACE2_DML, "tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type << " columns: " << valuesMax);
+                TRACE(TRACE2_DML, "DML: tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type << " columns: " << valuesMax);
 
                 uint64_t column, baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1605,7 +1610,7 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        TRACE(TRACE2_DML, dec << (column + 1) << ": " <<
+                        TRACE(TRACE2_DML, "DML: " << dec << (column + 1) << ": " <<
                                 " B(" << dec << lengths[column][VALUE_BEFORE] << ")" <<
                                 " A(" << dec << lengths[column][VALUE_AFTER] << ")" <<
                                 " BS(" << dec << lengths[column][VALUE_BEFORE_SUPP] << ")" <<
