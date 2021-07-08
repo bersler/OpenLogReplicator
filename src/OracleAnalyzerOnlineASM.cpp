@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
     Reader *OracleAnalyzerOnlineASM::readerCreate(int64_t group) {
         for (Reader *reader : readers)
             if (reader->group == group)
-                return nullptr;
+                return reader;
 
         ReaderASM *readerASM = new ReaderASM(alias.c_str(), this, group);
         if (readerASM == nullptr) {

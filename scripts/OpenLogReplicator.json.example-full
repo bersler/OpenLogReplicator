@@ -1,5 +1,5 @@
 {
-  "version": "0.9.11-beta",
+  "version": "0.9.12-beta",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,

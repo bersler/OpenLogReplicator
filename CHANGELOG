@@ -1,3 +1,6 @@
+0.9.12-beta
+- fixed bug, when schema file is present reading from archived redo log cause stacktrace
+
 0.9.11-beta
 - fixed protobuf checkpoint code (#23)
 - fixed sending output to stdout instead of file for "file" mode
