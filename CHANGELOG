@@ -1,3 +1,7 @@
+0.9.13-beta
+- updated example files names
+- fixed JSON output for DDL commands
+
 0.9.12-beta
 - fixed bug, when schema file is present reading from archived redo log cause stacktrace
 

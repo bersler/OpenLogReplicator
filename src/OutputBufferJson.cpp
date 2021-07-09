@@ -844,9 +844,7 @@ namespace OpenLogReplicator {
             outputBufferAppend("\"payload\":[");
         }
 
-        outputBufferAppend("{\"op\":\"ddl\",");
-        appendSchema(object, dataObj);
-        outputBufferAppend(",\"sql\":\"");
+        outputBufferAppend("{\"op\":\"ddl\",\"sql\":\"");
         appendEscape(sql, sqlLength);
         outputBufferAppend("\"}");
 
