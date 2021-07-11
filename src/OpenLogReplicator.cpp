@@ -136,14 +136,12 @@ int main(int argc, char **argv) {
         }
 
         string fileName("scripts/OpenLogReplicator.json");
-        if (argc == 3) {
+        if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
             // print banner and exit
-            if (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)
-                return 0;
-            else
-            if (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)
+            return 0;
+        } else if (argc == 2 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
             // custom config path
-                fileName = argv[2];
+            fileName = argv[2];
         } else if (argc > 1) {
             CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " << fileName);
         }
