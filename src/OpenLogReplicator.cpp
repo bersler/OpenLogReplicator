@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
         if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
             // print banner and exit
             return 0;
-        } else if (argc == 2 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
+        } else if (argc == 3 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
             // custom config path
             fileName = argv[2];
         } else if (argc > 1) {
