@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
             " FROM"
             "   SYS.OBJ$ AS OF SCN :i O"
             " WHERE"
-            "   O.OWNER# = :j AND O.NAME = :k");
+            "   O.OWNER# = :j AND REGEXP_LIKE(O.NAME, :k)");
 
     const char* OracleAnalyzerOnline::SQL_GET_SYS_SEG_USER(
             "SELECT"
@@ -1253,7 +1253,7 @@ namespace OpenLogReplicator {
                     stmtObj.createStatement(SQL_GET_SYS_OBJ_NAME);
                     stmtObj.bindUInt64(1, schemaScn);
                     stmtObj.bindUInt32(2, userUser);
-                    stmtObj.bindString(3, table);
+                    stmtObj.bindString(3, tableRegexp);
                 }
 
                 char objRowid[19]; stmtObj.defineString(1, objRowid, sizeof(objRowid));

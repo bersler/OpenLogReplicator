@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <list>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
+#include <regex>
 #include <signal.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -118,18 +119,6 @@ int main(int argc, char **argv) {
 
     INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
-    string fileName("scripts/OpenLogReplicator.json");
-    if (argc == 2) {
-        // print banner and exit
-        if (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)
-            return 0;
-        else
-        // custom config path
-            fileName = argv[1];
-    } else if (argc > 2) {
-        CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version | CONFIG]  default path for CONFIG file is " << fileName);
-    }
-
     list<OracleAnalyzer *> analyzers;
     list<Writer *> writers;
     list<OutputBuffer *> buffers;
@@ -139,6 +128,26 @@ int main(int argc, char **argv) {
     char *configFileBuffer = nullptr;
 
     try {
+        regex regexTest(".*");
+        string regexString("check if matches!");
+        bool regexWorks = regex_search(regexString, regexTest);
+        if (!regexWorks) {
+            CONFIG_FAIL("binaries are build with no regex implementation, please check if you have gcc version >= 4.9");
+        }
+
+        string fileName("scripts/OpenLogReplicator.json");
+        if (argc == 3) {
+            // print banner and exit
+            if (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)
+                return 0;
+            else
+            if (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)
+            // custom config path
+                fileName = argv[2];
+        } else if (argc > 1) {
+            CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " << fileName);
+        }
+
         struct stat fileStat;
         fid = open(fileName.c_str(), O_RDONLY);
         if (fid == -1) {
@@ -630,18 +639,18 @@ int main(int argc, char **argv) {
                 }
             }
 
-            oracleAnalyzer->schema->addElement("SYS", "CCOL$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "CDEF$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "COL$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "ECOL$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "OBJ$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "SEG$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TAB$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABPART$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABCOMPART$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABSUBPART$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "USER$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "CCOL\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "CDEF\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "COL\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "ECOL\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "OBJ\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "SEG\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TAB\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABPART\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABCOMPART\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABSUBPART\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "USER\\$", OPTIONS_SCHEMA_TABLE);
 
             const Value& tablesJSON = getJSONfieldV(fileName, sourceJSON, "tables");
             if (!tablesJSON.IsArray()) {

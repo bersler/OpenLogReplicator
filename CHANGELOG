@@ -1,3 +1,9 @@
+0.9.14-beta
+- fixed bug: sometimes hanged during shutdown while running OCI
+- fixed bug: regex might used improperly
+- added check for GCC 4.9
+- changed run argument, use -f for specifying custom file
+
 0.9.13-beta
 - updated example files names
 - fixed JSON output for DDL commands

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 # libtool - Provide generalized library-building support services.
-# Generated automatically by config.status (openlogreplicator) 0.9.13-beta
+# Generated automatically by config.status (openlogreplicator) 0.9.14-beta
 # Libtool was configured on host demawend.localdomain:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 #
@@ -90,7 +90,7 @@ EGREP="/usr/bin/grep -E"
 FGREP="/usr/bin/grep -F"
 
 # A BSD- or MS-compatible name lister.
-NM="/usr/bin/nm -B"
+NM="/opt/rh/devtoolset-8/root/usr/bin/nm -B"
 
 # Whether we need soft or hard links.
 LN_S="ln -s"
@@ -272,7 +272,7 @@ finish_eval=""
 hardcode_into_libs=yes
 
 # Compile-time system search path for libraries.
-sys_lib_search_path_spec="/usr/lib/gcc/x86_64-redhat-linux/4.8.5 /usr/lib64 /lib64 "
+sys_lib_search_path_spec="/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8 /opt/rh/devtoolset-8/root/usr/lib64 /lib64 /usr/lib64 "
 
 # Run-time system search path for libraries.
 sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib /usr/lib64/atlas /usr/lib64//bind9-export/ /usr/lib64/dyninst /usr/lib64/mysql /usr/lib64/qt-3.3/lib "
@@ -292,7 +292,7 @@ striplib="strip --strip-unneeded"
 
 
 # The linker used to build libraries.
-LD="/usr/bin/ld -m elf_x86_64"
+LD="/opt/rh/devtoolset-8/root/usr/libexec/gcc/x86_64-redhat-linux/8/ld -m elf_x86_64"
 
 # How to create reloadable object files.
 reload_flag=" -r"
@@ -10093,7 +10093,7 @@ build_old_libs=`case $build_libtool_libs in yes) echo no;; *) echo yes;; esac`
 # ### BEGIN LIBTOOL TAG CONFIG: CXX
 
 # The linker used to build libraries.
-LD="/usr/bin/ld -m elf_x86_64"
+LD="/opt/rh/devtoolset-8/root/usr/libexec/gcc/x86_64-redhat-linux/8/ld -m elf_x86_64"
 
 # How to create reloadable object files.
 reload_flag=" -r"
@@ -10224,17 +10224,17 @@ file_list_spec=""
 hardcode_action=immediate
 
 # The directories searched by this compiler when creating a shared library.
-compiler_lib_search_dirs="/usr/lib/gcc/x86_64-redhat-linux/4.8.5 /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64 /lib/../lib64 /usr/lib/../lib64 /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../.."
+compiler_lib_search_dirs="/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8 /opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/../../../../lib64 /lib/../lib64 /usr/lib/../lib64 /opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/../../.."
 
 # Dependencies to place before and after the objects being linked to
 # create a shared library.
-predep_objects="/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtbeginS.o"
-postdep_objects="/usr/lib/gcc/x86_64-redhat-linux/4.8.5/crtendS.o /usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/crtn.o"
+predep_objects="/lib/../lib64/crti.o /opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/crtbeginS.o"
+postdep_objects="/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/crtendS.o /lib/../lib64/crtn.o"
 predeps=""
 postdeps="-lstdc++ -lm -lgcc_s -lc -lgcc_s"
 
 # The library search path used internally by the compiler when linking
 # a shared library.
-compiler_lib_search_path="-L/usr/lib/gcc/x86_64-redhat-linux/4.8.5 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../.."
+compiler_lib_search_path="-L/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8 -L/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/opt/rh/devtoolset-8/root/usr/lib/gcc/x86_64-redhat-linux/8/../../.."
 
 # ### END LIBTOOL TAG CONFIG: CXX

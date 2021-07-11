@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
     }
 
     DatabaseConnection::~DatabaseConnection() {
-        OCISessionEnd(svchp, errhp, authp, OCI_DEFAULT);
+        OCISessionEnd(svchp, errhp, nullptr, OCI_DEFAULT);
         OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
 
         if (authp != nullptr) {
