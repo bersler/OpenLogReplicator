@@ -1616,6 +1616,8 @@ namespace OpenLogReplicator {
                 OracleObject *object = it->second;
                 if (object->user == user) {
                     removeFromDict(object);
+                    INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
+                            << ", " << object->obj << ")");
                     objectMap.erase(it++);
                     delete object;
                 } else {
@@ -1639,6 +1641,8 @@ namespace OpenLogReplicator {
             if (objectMapIt != objectMap.end()) {
                 OracleObject *object = objectMapIt->second;
                 removeFromDict(object);
+                INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
+                        << ", " << object->obj << ")");
                 delete object;
             }
         }
@@ -1864,7 +1868,7 @@ namespace OpenLogReplicator {
                 ss << "- found: ";
             else
                 ss << "updated schema: ";
-            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ", cols: " << dec << maxSegCol << ")";
+            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ", columns: " << dec << maxSegCol << ")";
             if (sysTab->isClustered())
                 ss << ", part of cluster";
             if (sysTab->isPartitioned())

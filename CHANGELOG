@@ -1,3 +1,9 @@
+0.9.15-beta
+- version is no longer used in schema file, instead is used config schema version, currently "0.9.15"
+- removed call OCITerminate on exit which caused memory leak from OCI
+- added iformation about schema dropped schema for dropped (or altered) tables
+- added check to prevent run as root
+
 0.9.14-beta
 - fixed bug: sometimes hanged during shutdown while running OCI
 - fixed bug: regex might used improperly

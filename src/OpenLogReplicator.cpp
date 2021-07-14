@@ -30,6 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
+#include <zconf.h>
 
 uint64_t trace = 3, trace2 = 0;
 #define TRACEVAR
@@ -146,6 +147,10 @@ int main(int argc, char **argv) {
             CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " << fileName);
         }
 
+        if (getuid() == 0) {
+            CONFIG_FAIL("program is run as root, you should never do that");
+        }
+
         struct stat fileStat;
         fid = open(fileName.c_str(), O_RDONLY);
         if (fid == -1) {
@@ -180,8 +185,8 @@ int main(int argc, char **argv) {
         }
 
         const Value& versionJSON = getJSONfieldD(fileName, document, "version");
-        if (strcmp(versionJSON.GetString(), PACKAGE_VERSION) != 0) {
-            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << PACKAGE_VERSION << ", got: " << versionJSON.GetString());
+        if (strcmp(versionJSON.GetString(), CONFIG_SCHEMA_VERSION) != 0) {
+            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << CONFIG_SCHEMA_VERSION << ", got: " << versionJSON.GetString());
         }
 
         //optional

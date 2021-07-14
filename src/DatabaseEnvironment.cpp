@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     DatabaseEnvironment::~DatabaseEnvironment() {
         if (envhp != nullptr)
             OCIHandleFree(envhp, OCI_HTYPE_ENV);
-        OCITerminate(OCI_DEFAULT);
+        //OCITerminate(OCI_DEFAULT);
     }
 
     void DatabaseEnvironment::checkErr(OCIError *errhp, sword status) {
