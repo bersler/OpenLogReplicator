@@ -164,6 +164,7 @@ namespace OpenLogReplicator {
         void touchObj(typeOBJ obj);
         void touchPart(typeOBJ obj);
         void touchUser(typeUSER user);
+        bool checkNameCase(const char *name);
 
         friend class SystemTransaction;
         friend class OracleAnalyzer;

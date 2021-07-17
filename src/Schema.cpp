@@ -788,7 +788,10 @@ namespace OpenLogReplicator {
             DEBUG("- creating table schema for owner: " << element->owner << " table: " << element->table << " options: " <<
                     (uint64_t) element->options);
 
-            regex regexOwner(element->owner), regexTable(element->table);
+            if ((element->options & OPTIONS_SCHEMA_TABLE) == 0 && users.find(element->owner) == users.end()) {
+                RUNTIME_FAIL("owner \"" << element->owner << "\" is missing in schema file: " <<
+                        fileName << " - recreate schema file (delete old file and force creation of new)");
+            }
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, true);
         }
         oracleAnalyzer->schemaScn = fileScn;
@@ -1909,6 +1912,12 @@ namespace OpenLogReplicator {
     }
 
     SchemaElement* Schema::addElement(const char *owner, const char *table, typeOPTIONS options) {
+        if (!checkNameCase(owner)) {
+            RUNTIME_FAIL("owner \"" << owner << "\" contains lower case characters, value must be upper case");
+        }
+        if (!checkNameCase(table)) {
+            RUNTIME_FAIL("table \"" << table << "\" contains lower case characters, value must be upper case");
+        }
         SchemaElement *element = new SchemaElement(owner, table, options);
         if (element == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
@@ -2159,5 +2168,20 @@ namespace OpenLogReplicator {
 
         if (usersTouched.find(user) == usersTouched.end())
             usersTouched.insert(user);
+    }
+
+    bool Schema::checkNameCase(const char *name) {
+        uint64_t num = 0;
+        while (*(name + num) != 0) {
+            if (islower((unsigned char)*(name + num)))
+                return false;
+
+            if (num == 1024) {
+                RUNTIME_FAIL("\"" << name << "\" is too long");
+            }
+            ++num;
+        }
+
+        return true;
     }
 }

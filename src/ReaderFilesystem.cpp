@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
     }
 
     ReaderFilesystem::~ReaderFilesystem() {
-        redoClose();
+        ReaderFilesystem::redoClose();
     }
 
     void ReaderFilesystem::redoClose(void) {

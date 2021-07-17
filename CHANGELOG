@@ -1,7 +1,12 @@
+0.9.16-beta
+- added check of schema file for changing list of owners of replicated tables
+- added check for schema/table name entered in upper case
+- minor fixes
+
 0.9.15-beta
 - version is no longer used in schema file, instead is used config schema version, currently "0.9.15"
 - removed call OCITerminate on exit which caused memory leak from OCI
-- added iformation about schema dropped schema for dropped (or altered) tables
+- added information about schema dropped schema for dropped (or altered) tables
 - added check to prevent run as root
 
 0.9.14-beta

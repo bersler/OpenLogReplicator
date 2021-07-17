@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
     }
 
     ReaderASM::~ReaderASM() {
-        redoClose();
+        ReaderASM::redoClose();
     }
 
     void ReaderASM::redoClose(void) {
