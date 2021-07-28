@@ -12,8 +12,8 @@
 - OpenLogReplicator.json: renamed "targets" to "target"
 - OpenLogReplicator.json: renamed "redo-logs" to "redo-log"
 - OpenLogReplicator.json: protobuf/json output: added optional payload numbering ("message" = 2)
-- OpenLogReplicator.json: optional begin tran for output ("message" = 4)
-- OpenLogReplicator.json: optional commit tran for output ("message" = 8)
+- OpenLogReplicator.json: optional begin transaction for output ("message" = 4)
+- OpenLogReplicator.json: optional commit transaction for output ("message" = 8)
 - OpenLogReplicator.json: new element in "source": "filter"
 - OpenLogReplicator.json: moved "tables" to "filter" and renamed to "table"
 - OpenLogReplicator.json: added transaction filtering based on XID ("skip-xid")
