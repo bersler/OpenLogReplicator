@@ -504,7 +504,7 @@ int main(int argc, char** argv) {
                 if (debugJSON.HasMember("flush-buffer")) {
                     uint64_t stopFlushBuffer = getJSONfieldU(fileName, debugJSON, "flush-buffer");
                     if (stopFlushBuffer == 1) {
-                        oracleAnalyzer->stopFlushBuffer = true;
+                        oracleAnalyzer->stopFlushBuffer = stopFlushBuffer;
                     } else
                     if (stopFlushBuffer > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value: " << dec << stopFlushBuffer << ", expected one of: {0, 1}");
@@ -707,8 +707,8 @@ int main(int argc, char** argv) {
 
                 if (checkpointJSON.HasMember("all")) {
                     uint64_t all = getJSONfieldU(fileName, checkpointJSON, "all");
-                    if (all == 1)
-                        oracleAnalyzer->checkpointAll = true;
+                    if (all <= 1)
+                        oracleAnalyzer->checkpointAll = all;
                     else if (all > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"all\" value: " << dec << all << ", expected one of: {0, 1}");
                     }
@@ -716,8 +716,8 @@ int main(int argc, char** argv) {
 
                 if (checkpointJSON.HasMember("output-checkpoint")) {
                     uint64_t outputCheckpoint = getJSONfieldU(fileName, checkpointJSON, "output-checkpoint");
-                    if (outputCheckpoint == 1)
-                        oracleAnalyzer->checkpointOutputCheckpoint = true;
+                    if (outputCheckpoint <= 1)
+                        oracleAnalyzer->checkpointOutputCheckpoint = outputCheckpoint;
                     else if (outputCheckpoint > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"output-checkpoint\" value: " << dec << outputCheckpoint << ", expected one of: {0, 1}");
                     }
@@ -725,8 +725,8 @@ int main(int argc, char** argv) {
 
                 if (checkpointJSON.HasMember("output-log-switch")) {
                     uint64_t outputLogSwitch = getJSONfieldU(fileName, checkpointJSON, "output-log-switch");
-                    if (outputLogSwitch == 1)
-                        oracleAnalyzer->checkpointOutputLogSwitch = true;
+                    if (outputLogSwitch <= 1)
+                        oracleAnalyzer->checkpointOutputLogSwitch = outputLogSwitch;
                     else if (outputLogSwitch > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"output-log-switch\" value: " << dec << outputLogSwitch << ", expected one of: {0, 1}");
                     }
@@ -854,7 +854,7 @@ int main(int argc, char** argv) {
                 if (writerJSON.HasMember("max-message-mb")) {
                     maxMessageMb = getJSONfieldU(fileName, writerJSON, "max-message-mb");
                     if (maxMessageMb < 1 || maxMessageMb > MAX_KAFKA_MESSAGE_MB) {
-                        CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << >"}");
+                        CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << "}");
                     }
                 }
 
@@ -862,7 +862,7 @@ int main(int argc, char** argv) {
                 if (writerJSON.HasMember("max-messages")) {
                     maxMessages = getJSONfieldU(fileName, writerJSON, "max-messages");
                     if (maxMessages < 1 || maxMessages > MAX_KAFKA_MAX_MESSAGES) {
-                        CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << >"}");
+                        CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << "}");
                     }
                 }
 
