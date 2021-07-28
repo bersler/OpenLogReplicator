@@ -17,11 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
 #include <thread>
 #include <unistd.h>
 
+#include "global.h"
 #include "ConfigurationException.h"
 #include "NetworkException.h"
 #include "OracleAnalyzer.h"
@@ -32,11 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 using namespace rapidjson;
 
-extern void stopMain();
-extern const Value& getJSONfieldD(string &fileName, const Document& document, const char* field);
-
 namespace OpenLogReplicator {
-    Writer::Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
+    Writer::Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
             uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
             int64_t startTimeRel) :
         Thread(alias),
@@ -72,7 +68,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Writer::createMessage(OutputBufferMsg *msg) {
+    void Writer::createMessage(OutputBufferMsg* msg) {
         ++sentMessages;
 
         queue[tmpQueueSize++] = msg;
@@ -84,7 +80,7 @@ namespace OpenLogReplicator {
         if (tmpQueueSize == 0)
             return;
 
-        OutputBufferMsg **oldQueue = queue;
+        OutputBufferMsg** oldQueue = queue;
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
@@ -118,7 +114,7 @@ namespace OpenLogReplicator {
         oldQueue = nullptr;
     }
 
-    void Writer::confirmMessage(OutputBufferMsg *msg) {
+    void Writer::confirmMessage(OutputBufferMsg* msg) {
         msg->flags |= OUTPUT_BUFFER_CONFIRMED;
         if (msg->flags & OUTPUT_BUFFER_ALLOCATED) {
             delete[] msg->data;
@@ -155,7 +151,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        OutputBufferQueue *tmpFirstBuffer = nullptr;
+        OutputBufferQueue* tmpFirstBuffer = nullptr;
         {
             unique_lock<mutex> lck(outputBuffer->mtx);
             tmpFirstBuffer = outputBuffer->firstBuffer;
@@ -167,7 +163,7 @@ namespace OpenLogReplicator {
 
         if (tmpFirstBuffer != nullptr) {
             while (tmpFirstBuffer->id < maxId) {
-                OutputBufferQueue *nextBuffer = tmpFirstBuffer->next;
+                OutputBufferQueue* nextBuffer = tmpFirstBuffer->next;
                 oracleAnalyzer->freeMemoryChunk("KAFKA", (uint8_t*)tmpFirstBuffer, true);
                 tmpFirstBuffer = nextBuffer;
             }
@@ -178,7 +174,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void *Writer::run(void) {
+    void* Writer::run(void) {
         TRACE(TRACE2_THREADS, "THREADS: WRITER (" << hex << this_thread::get_id() << ") START");
 
         INFO("writer is starting: " << getName());
@@ -190,8 +186,8 @@ namespace OpenLogReplicator {
                     //client connected
                     readCheckpoint();
 
-                    OutputBufferMsg *msg = nullptr;
-                    OutputBufferQueue *curBuffer = outputBuffer->firstBuffer;
+                    OutputBufferMsg* msg = nullptr;
+                    OutputBufferQueue* curBuffer = outputBuffer->firstBuffer;
                     uint64_t curLength = 0, tmpLength = 0;
                     tmpQueueSize = 0;
 
@@ -214,7 +210,7 @@ namespace OpenLogReplicator {
                                 }
 
                                 //found something
-                                msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+                                msg = (OutputBufferMsg*) (curBuffer->data + curLength);
 
                                 if (curBuffer->length > curLength + sizeof(struct OutputBufferMsg) && msg->length > 0) {
                                     oracleAnalyzer->waitingForWriter = true;
@@ -242,7 +238,7 @@ namespace OpenLogReplicator {
 
                         //send message
                         while (curLength + sizeof(struct OutputBufferMsg) < tmpLength && !shutdown) {
-                            msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+                            msg = (OutputBufferMsg*) (curBuffer->data + curLength);
                             if (msg->length == 0)
                                 break;
 
@@ -266,7 +262,7 @@ namespace OpenLogReplicator {
                                 createMessage(msg);
                                 sendMessage(msg);
                                 curLength += length8;
-                                msg = (OutputBufferMsg *)(curBuffer->data + curLength);
+                                msg = (OutputBufferMsg*) (curBuffer->data + curLength);
 
                             //message in many parts - copy
                             } else {
@@ -303,15 +299,15 @@ namespace OpenLogReplicator {
 
                     writeCheckpoint(true);
 
-                } catch (NetworkException &ex) {
+                } catch (NetworkException& ex) {
                     streaming = false;
                     //client got disconnected
                 }
             }
 
-        } catch (ConfigurationException &ex) {
+        } catch (ConfigurationException& ex) {
             stopMain();
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             stopMain();
         }
 
@@ -369,20 +365,16 @@ namespace OpenLogReplicator {
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
-        if (oracleAnalyzer->database.compare(databaseJSON.GetString()) != 0) {
+        const char* database = getJSONfieldS(fileName, document, "database");
+        if (oracleAnalyzer->database.compare(database) != 0) {
             RUNTIME_FAIL("parsing of " << fileName << " - invalid database name");
         }
 
-        const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-        oracleAnalyzer->resetlogs = resetlogsJSON.GetUint64();
-
-        const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-        oracleAnalyzer->activation = activationJSON.GetUint64();
+        oracleAnalyzer->resetlogs = getJSONfieldU(fileName, document, "resetlogs");
+        oracleAnalyzer->activation = getJSONfieldU(fileName, document, "activation");
 
         //started earlier - continue work & ignore default startup parameters
-        const Value& scnJSON = getJSONfieldD(fileName, document, "scn");
-        startScn = scnJSON.GetUint64();
+        startScn = getJSONfieldU(fileName, document, "scn");
         startSequence = ZERO_SEQ;
         startTime.clear();
         startTimeRel = 0;

@@ -1,10 +1,10 @@
 {
-  "version": "0.9.15",
+  "version": "0.9.16",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
   "trace2": 0,
-  "sources": [
+  "source": [
     {
       "alias": "S1",
       "name": "O112A",
@@ -57,14 +57,18 @@
       "arch-read-sleep-us": 10000000,
       "arch-read-retry": 3,
       "redo-verify-delay-us": 50000,
-      "tables": [
-        {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
-        {"owner": "OWNER1", "table": "TABLENAME2"},
-        {"owner": "OWNER2", "table": "TAB.*"}
-      ]
+      "filter": {
+        "table": [
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER2", "table": "TAB.*"}
+        ],
+        "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"],
+        "transaction-max-mb": 1000
+      }
     }
   ],
-  "targets": [
+  "target": [
     {
       "alias": "K1", 
       "source": "S1",

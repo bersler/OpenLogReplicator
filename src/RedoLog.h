@@ -43,14 +43,14 @@ namespace OpenLogReplicator {
 
     class RedoLog {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
-        OpCode *opCodes[VECTOR_MAX_LENGTH];
+        OracleAnalyzer* oracleAnalyzer;
+        OpCode* opCodes[VECTOR_MAX_LENGTH];
         RedoLogRecord zero;
         uint64_t vectors;
         uint64_t lwnConfirmedBlock;
-        uint8_t *lwnChunks[MAX_LWN_CHUNKS];
+        uint8_t* lwnChunks[MAX_LWN_CHUNKS];
         uint64_t lwnAllocated;
-        typetime lwnTimestamp;
+        typeTIME lwnTimestamp;
         typeSCN lwnScn;
         typeSCN lwnScnMax;
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
@@ -60,12 +60,12 @@ namespace OpenLogReplicator {
 
         void printHeaderInfo(void) const;
         void analyzeLwn(LwnMember* lwnMember);
-        void appendToTransactionDDL(RedoLogRecord *redoLogRecord);
-        void appendToTransactionUndo(RedoLogRecord *redoLogRecord);
-        void appendToTransactionBegin(RedoLogRecord *redoLogRecord);
-        void appendToTransactionCommit(RedoLogRecord *redoLogRecord);
-        void appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void dumpRedoVector(uint8_t *data, uint64_t recordLength4) const;
+        void appendToTransactionDDL(RedoLogRecord* redoLogRecord);
+        void appendToTransactionUndo(RedoLogRecord* redoLogRecord);
+        void appendToTransactionBegin(RedoLogRecord* redoLogRecord);
+        void appendToTransactionCommit(RedoLogRecord* redoLogRecord);
+        void appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void dumpRedoVector(uint8_t* data, uint64_t recordLength4) const;
 
     public:
         int64_t group;
@@ -73,12 +73,12 @@ namespace OpenLogReplicator {
         typeSEQ sequence;
         typeSCN firstScn;
         typeSCN nextScn;
-        Reader *reader;
+        Reader* reader;
 
         void resetRedo(void);
-        void continueRedo(RedoLog *prev);
+        void continueRedo(RedoLog* prev);
         uint64_t processLog(void);
-        RedoLog(OracleAnalyzer *oracleAnalyzer, int64_t group, const char *path);
+        RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, const char* path);
         virtual ~RedoLog(void);
 
         friend ostream& operator<<(ostream& os, const RedoLog& ors);

@@ -34,10 +34,10 @@ namespace OpenLogReplicator {
 
     class Transaction {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         vector<uint8_t*> merges;
-        TransactionChunk *deallocTc;
-        void mergeBlocks(uint8_t *buffer, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        TransactionChunk* deallocTc;
+        void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
 
     public:
         typeXID xid;
@@ -45,22 +45,25 @@ namespace OpenLogReplicator {
         uint64_t firstOffset;
         typeSEQ commitSequence;
         typeSCN commitScn;
-        TransactionChunk *firstTc;
-        TransactionChunk *lastTc;
+        TransactionChunk* firstTc;
+        TransactionChunk* lastTc;
         uint64_t opCodes;
-        typetime commitTimestamp;
+        typeTIME commitTimestamp;
         bool begin;
         bool rollback;
         bool system;
         bool shutdown;
+        string name;
+        uint64_t size;
 
-        Transaction(OracleAnalyzer *oracleAnalyzer, typeXID xid);
+        Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid);
         virtual ~Transaction();
 
-        void add(RedoLogRecord *redoLogRecord);
-        void add(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
+        void add(RedoLogRecord* redoLogRecord);
+        void add(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void rollbackLastOp(typeSCN scn);
         void flush(void);
+        void purge(void);
         friend ostream& operator<<(ostream& os, const Transaction& tran);
     };
 }

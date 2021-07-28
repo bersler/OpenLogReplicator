@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OpCode0506::OpCode0506(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+    OpCode0506::OpCode0506(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
 
         uint64_t fieldPos = redoLogRecord->fieldPos;

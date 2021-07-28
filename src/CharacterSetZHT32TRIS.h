@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         CharacterSetZHT32TRIS();
         virtual ~CharacterSetZHT32TRIS();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
+        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
     };
 }
 

@@ -71,6 +71,7 @@ namespace OpenLogReplicator {
         valuesMax(0),
         mergesMax(0),
         id(0),
+        num(0),
         transactionType(0),
         newTran(false),
         defaultCharacterMapId(0),
@@ -834,7 +835,7 @@ namespace OpenLogReplicator {
     OutputBuffer::~OutputBuffer() {
         valuesRelease();
         for (auto it : characterMap) {
-            CharacterSet *cs = it.second;
+            CharacterSet* cs = it.second;
             delete cs;
         }
         characterMap.clear();
@@ -843,17 +844,17 @@ namespace OpenLogReplicator {
 
         while (firstBuffer != nullptr) {
             OutputBufferQueue* nextBuffer = firstBuffer->next;
-            oracleAnalyzer->freeMemoryChunk("BUFFER", (uint8_t*)firstBuffer, true);
+            oracleAnalyzer->freeMemoryChunk("output buffer", (uint8_t*)firstBuffer, true);
             firstBuffer = nextBuffer;
             --buffersAllocated;
         }
     }
 
-    void OutputBuffer::initialize(OracleAnalyzer *oracleAnalyzer) {
+    void OutputBuffer::initialize(OracleAnalyzer* oracleAnalyzer) {
         this->oracleAnalyzer = oracleAnalyzer;
 
         buffersAllocated = 1;
-        firstBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", false);
+        firstBuffer = (OutputBufferQueue*) oracleAnalyzer->getMemoryChunk("output buffer", false);
         firstBuffer->id = 0;
         firstBuffer->next = nullptr;
         firstBuffer->data = ((uint8_t*)firstBuffer) + sizeof(struct OutputBufferQueue);
@@ -861,13 +862,13 @@ namespace OpenLogReplicator {
         lastBuffer = firstBuffer;
     }
 
-    void OutputBuffer::processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+    void OutputBuffer::processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
         if (object == nullptr) {
             string columnName("COL_" + to_string(col));
             columnRaw(columnName, data, length);
             return;
         }
-        OracleColumn *column = object->columns[col];
+        OracleColumn* column = object->columns[col];
 
         if (length == 0) {
             RUNTIME_FAIL("trying to output null data for column: " << column->name);
@@ -934,14 +935,14 @@ namespace OpenLogReplicator {
 
         case 100: //binary_float
             if (length == 4) {
-                columnFloat(column->name, *((float *)data));
+                columnFloat(column->name, *((float*) data));
             } else
                 columnUnknown(column->name, data, length);
             break;
 
         case 101: //binary_double
             if (length == 8) {
-                columnDouble(column->name, *((double *)data));
+                columnDouble(column->name, *((double*) data));
             } else
                 columnUnknown(column->name, data, length);
             break;
@@ -976,7 +977,7 @@ namespace OpenLogReplicator {
                 if (length == 13)
                     fraction = oracleAnalyzer->read32Big(data + 7);
 
-                const char *tz = nullptr;
+                const char* tz = nullptr;
                 char tz2[7];
 
                 if (data[11] >= 5 && data[11] <= 36) {
@@ -1029,7 +1030,7 @@ namespace OpenLogReplicator {
     };
 
     void OutputBuffer::outputBufferRotate(bool copy) {
-        OutputBufferQueue *nextBuffer = (OutputBufferQueue *)oracleAnalyzer->getMemoryChunk("BUFFER", true);
+        OutputBufferQueue* nextBuffer = (OutputBufferQueue*) oracleAnalyzer->getMemoryChunk("output buffer", true);
         nextBuffer->next = nullptr;
         nextBuffer->id = lastBuffer->id + 1;
         nextBuffer->data = ((uint8_t*)nextBuffer) + sizeof(struct OutputBufferQueue);
@@ -1056,11 +1057,11 @@ namespace OpenLogReplicator {
         return ((messageLength + 7) & 0xFFFFFFFFFFFFFFF8) + sizeof(struct OutputBufferMsg);
     }
 
-    void OutputBuffer::setWriter(Writer *writer) {
+    void OutputBuffer::setWriter(Writer* writer) {
         this->writer = writer;
     }
 
-    void OutputBuffer::setNlsCharset(string &nlsCharset, string &nlsNcharCharset) {
+    void OutputBuffer::setNlsCharset(string& nlsCharset, string& nlsNcharCharset) {
         INFO("loading character mapping for " << nlsCharset);
 
         for (auto elem: characterMap) {
@@ -1087,7 +1088,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::processBegin(typeSCN scn, typetime time_, typeSEQ sequence, typeXID xid) {
+    void OutputBuffer::processBegin(typeSCN scn, typeTIME time_, typeSEQ sequence, typeXID xid) {
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
@@ -1096,11 +1097,11 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0B
-    void OutputBuffer::processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system) {
+    void OutputBuffer::processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
             oracleAnalyzer->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength, 0x000001);
@@ -1163,11 +1164,11 @@ namespace OpenLogReplicator {
     }
 
     //0x05010B0C
-    void OutputBuffer::processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system) {
+    void OutputBuffer::processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
         uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
             oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000002);
@@ -1229,13 +1230,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBuffer::processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, bool system) {
+    void OutputBuffer::processDML(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system) {
         uint8_t fb;
         typeDATAOBJ dataObj;
         typeDBA bdba;
         typeSLOT slot;
-        RedoLogRecord *redoLogRecord1p, *redoLogRecord2p = nullptr;
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+        RedoLogRecord* redoLogRecord1p;
+        RedoLogRecord* redoLogRecord2p = nullptr;
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         if (type == TRANSACTION_INSERT) {
             redoLogRecord2p = redoLogRecord2;
@@ -1279,7 +1281,9 @@ namespace OpenLogReplicator {
 
         uint64_t fieldPos, fieldNum, colNum, colShift, rowDeps;
         uint16_t fieldLength, colLength;
-        uint8_t *nulls, bits, *colNums;
+        uint8_t* nulls;
+        uint8_t bits;
+        uint8_t* colNums;
 
         //data in UNDO
         redoLogRecord1p = redoLogRecord1;
@@ -1507,7 +1511,7 @@ namespace OpenLogReplicator {
                             RUNTIME_FAIL("value for " << dec << column << "/" << j << " is already set when merging");
                         }
 
-                        uint8_t *buffer = new uint8_t[length];
+                        uint8_t* buffer = new uint8_t[length];
                         if (buffer == nullptr) {
                             RUNTIME_FAIL("couldn't allocate " << dec << (length) << " bytes memory (for: big before image)");
                         }
@@ -1539,7 +1543,7 @@ namespace OpenLogReplicator {
                     bool guardPresent = false;
                     if (guardPos != -1 && object->columns[column]->guardSegNo != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
                         typeCOL column2 = object->columns[column]->guardSegNo;
-                        uint8_t *guardData = values[guardPos][VALUE_BEFORE];
+                        uint8_t* guardData = values[guardPos][VALUE_BEFORE];
                         if (guardData != nullptr && column2 / 8 < lengths[guardPos][VALUE_BEFORE]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
@@ -1559,7 +1563,7 @@ namespace OpenLogReplicator {
                     bool guardPresent = false;
                     if (guardPos != -1 && object->columns[column]->guardSegNo != -1 && values[guardPos][VALUE_AFTER] != nullptr) {
                         typeCOL column2 = object->columns[column]->guardSegNo;
-                        uint8_t *guardData = values[guardPos][VALUE_AFTER];
+                        uint8_t* guardData = values[guardPos][VALUE_AFTER];
                         if (guardData != nullptr && column2 / 8 < lengths[guardPos][VALUE_AFTER]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
@@ -1727,11 +1731,11 @@ namespace OpenLogReplicator {
     }
 
     //0x18010000
-    void OutputBuffer::processDDLheader(RedoLogRecord *redoLogRecord1) {
+    void OutputBuffer::processDDLheader(RedoLogRecord* redoLogRecord1) {
         uint64_t fieldPos = 0, fieldNum = 0, sqlLength;
         uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
-        char *sqlText = nullptr;
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+        char* sqlText = nullptr;
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);
         //field: 1

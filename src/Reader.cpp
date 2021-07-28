@@ -32,7 +32,7 @@ using namespace std;
 namespace OpenLogReplicator {
     char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "ERROR", "FINISHED", "EMPTY", "BAD CRC"};
 
-    Reader::Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group) :
+    Reader::Reader(const char* alias, OracleAnalyzer* oracleAnalyzer, int64_t group) :
         Thread(alias),
         oracleAnalyzer(oracleAnalyzer),
         hintDisplayed(false),
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->redoCopyPath.length() > 0) {
-            DIR *dir;
+            DIR* dir;
             if ((dir = opendir(oracleAnalyzer->redoCopyPath.c_str())) == nullptr) {
                 RUNTIME_FAIL("can't access directory: " << oracleAnalyzer->redoCopyPath);
             }
@@ -99,7 +99,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t Reader::checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum, bool showHint) {
+    uint64_t Reader::checkBlockHeader(uint8_t* buffer, typeBLK blockNumber, bool checkSum, bool showHint) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
 
@@ -135,8 +135,8 @@ namespace OpenLogReplicator {
         }
 
         if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_BLOCK_SUM) == 0) {
-            typesum chSum = oracleAnalyzer->read16(buffer + 14);
-            typesum chSum2 = calcChSum(buffer, blockSize);
+            typeSUM chSum = oracleAnalyzer->read16(buffer + 14);
+            typeSUM chSum2 = calcChSum(buffer, blockSize);
             if (chSum != chSum2) {
                 if (showHint) {
                     WARNING("header sum for block number: " << dec << blockNumber <<
@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
                             ", calculated: 0x" << setfill('0') << setw(4) << hex << chSum2);
                     if (!hintDisplayed) {
                         if (oracleAnalyzer->dbBlockChecksum.compare("OFF") == 0 || oracleAnalyzer->dbBlockChecksum.compare("FALSE") == 0) {
-                            WARNING("HINT please set DB_BLOCK_CHECKSUM = TYPICAL on the database"
+                            WARNING("HINT: set DB_BLOCK_CHECKSUM = TYPICAL on the database"
                                     " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
                                     << dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
                         }
@@ -334,8 +334,8 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    typesum Reader::calcChSum(uint8_t *buffer, uint64_t size) const {
-        typesum oldChSum = oracleAnalyzer->read16(buffer + 14);
+    typeSUM Reader::calcChSum(uint8_t* buffer, uint64_t size) const {
+        typeSUM oldChSum = oracleAnalyzer->read16(buffer + 14);
         uint64_t sum = 0;
 
         for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)
@@ -347,114 +347,184 @@ namespace OpenLogReplicator {
         return sum & 0xFFFF;
     }
 
-    void *Reader::run(void) {
+    void* Reader::run(void) {
         TRACE(TRACE2_THREADS, "THREADS: READER (" << hex << this_thread::get_id() << ") START");
 
-        while (!shutdown) {
-            {
-                unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                oracleAnalyzer->analyzerCond.notify_all();
-
-                if (status == READER_STATUS_SLEEPING && !shutdown) {
-                    oracleAnalyzer->sleepingCond.wait(lck);
-                } else if (status == READER_STATUS_READ && !shutdown && buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
-                    //buffer full
-                    oracleAnalyzer->readerCond.wait(lck);
-                }
-            }
-
-            if (shutdown)
-                break;
-
-            if (status == READER_STATUS_CHECK) {
-                TRACE(TRACE2_FILE, "FILE: trying to open: " << pathMapped);
-                redoClose();
-                uint64_t tmpRet = redoOpen();
+        try {
+            while (!shutdown) {
                 {
                     unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                    ret = tmpRet;
-                    status = READER_STATUS_SLEEPING;
                     oracleAnalyzer->analyzerCond.notify_all();
-                }
-                continue;
 
-            } else if (status == READER_STATUS_UPDATE) {
-                if (fileCopyDes != -1) {
-                    close(fileCopyDes);
-                    fileCopyDes = -1;
-                }
-
-                sumRead = 0;
-                sumTime = 0;
-                uint64_t tmpRet = reloadHeader();
-                if (tmpRet == REDO_OK) {
-                    bufferStart = blockSize * 2;
-                    bufferEnd = blockSize * 2;
-                }
-
-                for (uint64_t num = 0; num < oracleAnalyzer->readBufferMax; ++num)
-                    bufferFree(num);
-
-                {
-                    unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                    ret = tmpRet;
-                    status = READER_STATUS_SLEEPING;
-                    oracleAnalyzer->analyzerCond.notify_all();
-                }
-            } else if (status == READER_STATUS_READ) {
-                TRACE(TRACE2_DISK, "DISK: reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
-                uint64_t lastRead = blockSize;
-                clock_t lastReadTime = 0, read1Time = 0, read2Time = 0;
-                uint64_t bufferScan = bufferEnd;
-                bool reachedZero = false;
-
-                while (!shutdown && status == READER_STATUS_READ) {
-                    clock_t loopTime = getTime();
-                    read1Time = 0;
-                    read2Time = 0;
-
-                    if (bufferEnd == fileSize) {
-                        ret = REDO_FINISHED;
-                        break;
+                    if (status == READER_STATUS_SLEEPING && !shutdown) {
+                        oracleAnalyzer->sleepingCond.wait(lck);
+                    } else if (status == READER_STATUS_READ && !shutdown && buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
+                        //buffer full
+                        oracleAnalyzer->readerCond.wait(lck);
                     }
+                }
 
-                    //buffer full?
-                    if (bufferStart + bufferSizeMax == bufferEnd) {
+                if (shutdown)
+                    break;
+
+                if (status == READER_STATUS_CHECK) {
+                    TRACE(TRACE2_FILE, "FILE: trying to open: " << pathMapped);
+                    redoClose();
+                    uint64_t tmpRet = redoOpen();
+                    {
                         unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                        if (!shutdown && bufferStart + bufferSizeMax == bufferEnd) {
-                            oracleAnalyzer->readerCond.wait(lck);
-                            continue;
-                        }
+                        ret = tmpRet;
+                        status = READER_STATUS_SLEEPING;
+                        oracleAnalyzer->analyzerCond.notify_all();
+                    }
+                    continue;
+
+                } else if (status == READER_STATUS_UPDATE) {
+                    if (fileCopyDes != -1) {
+                        close(fileCopyDes);
+                        fileCopyDes = -1;
                     }
 
-                    //#2 read
-                    if (bufferEnd < bufferScan) {
-                        uint64_t maxNumBlock = (bufferScan - bufferEnd) / blockSize;
-                        uint64_t goodBlocks = 0;
-                        if (maxNumBlock > REDO_READ_VERIFY_MAX_BLOCKS)
-                            maxNumBlock = REDO_READ_VERIFY_MAX_BLOCKS;
+                    sumRead = 0;
+                    sumTime = 0;
+                    uint64_t tmpRet = reloadHeader();
+                    if (tmpRet == REDO_OK) {
+                        bufferStart = blockSize * 2;
+                        bufferEnd = blockSize * 2;
+                    }
 
-                        for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
-                            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+                    for (uint64_t num = 0; num < oracleAnalyzer->readBufferMax; ++num)
+                        bufferFree(num);
 
-                            time_t *readTime = (time_t*)(redoBufferList[redoBufferNum] + redoBufferPos);
-                            if (*readTime + oracleAnalyzer->redoVerifyDelayUS < loopTime)
-                                ++goodBlocks;
-                            else {
-                                read2Time = *readTime + oracleAnalyzer->redoVerifyDelayUS;
-                                break;
+                    {
+                        unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                        ret = tmpRet;
+                        status = READER_STATUS_SLEEPING;
+                        oracleAnalyzer->analyzerCond.notify_all();
+                    }
+                } else if (status == READER_STATUS_READ) {
+                    TRACE(TRACE2_DISK, "DISK: reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
+                    uint64_t lastRead = blockSize;
+                    clock_t lastReadTime = 0, read1Time = 0, read2Time = 0;
+                    uint64_t bufferScan = bufferEnd;
+                    bool reachedZero = false;
+
+                    while (!shutdown && status == READER_STATUS_READ) {
+                        clock_t loopTime = getTime();
+                        read1Time = 0;
+                        read2Time = 0;
+
+                        if (bufferEnd == fileSize) {
+                            ret = REDO_FINISHED;
+                            break;
+                        }
+
+                        //buffer full?
+                        if (bufferStart + bufferSizeMax == bufferEnd) {
+                            unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                            if (!shutdown && bufferStart + bufferSizeMax == bufferEnd) {
+                                oracleAnalyzer->readerCond.wait(lck);
+                                continue;
                             }
                         }
 
-                        if (goodBlocks > 0) {
-                            uint64_t toRead = readSize(goodBlocks * blockSize);
-                            if (toRead > goodBlocks * blockSize)
-                                toRead = goodBlocks * blockSize;
+                        //#2 read
+                        if (bufferEnd < bufferScan) {
+                            uint64_t maxNumBlock = (bufferScan - bufferEnd) / blockSize;
+                            uint64_t goodBlocks = 0;
+                            if (maxNumBlock > REDO_READ_VERIFY_MAX_BLOCKS)
+                                maxNumBlock = REDO_READ_VERIFY_MAX_BLOCKS;
 
-                            uint64_t redoBufferPos = bufferEnd % MEMORY_CHUNK_SIZE;
-                            uint64_t redoBufferNum = (bufferEnd / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+                            for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+                                uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
+                                uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
 
+                                time_t* readTime = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
+                                if (*readTime + oracleAnalyzer->redoVerifyDelayUS < loopTime)
+                                    ++goodBlocks;
+                                else {
+                                    read2Time = *readTime + oracleAnalyzer->redoVerifyDelayUS;
+                                    break;
+                                }
+                            }
+
+                            if (goodBlocks > 0) {
+                                uint64_t toRead = readSize(goodBlocks * blockSize);
+                                if (toRead > goodBlocks * blockSize)
+                                    toRead = goodBlocks * blockSize;
+
+                                uint64_t redoBufferPos = bufferEnd % MEMORY_CHUNK_SIZE;
+                                uint64_t redoBufferNum = (bufferEnd / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+
+                                if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
+                                    toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
+
+                                if (toRead == 0) {
+                                    ERROR("zero to read (start: " << dec << bufferStart << ", end: " << bufferEnd << ", scan: " << bufferScan << "): " << pathMapped);
+                                    ret = REDO_ERROR;
+                                    break;
+                                }
+
+                                TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
+                                int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
+
+                                TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
+                                if (actualRead < 0) {
+                                    ERROR("reading file: " << pathMapped << " - " << strerror(errno));
+                                    ret = REDO_ERROR;
+                                    break;
+                                }
+                                if (actualRead > 0 && fileCopyDes != -1) {
+                                    int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
+                                    if (bytesWritten != actualRead) {
+                                        ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
+                                        ret = REDO_ERROR;
+                                        break;
+                                    }
+                                }
+
+                                uint64_t tmpRet = REDO_OK;
+                                typeBLK maxNumBlock = actualRead / blockSize;
+                                typeBLK bufferEndBlock = bufferEnd / blockSize;
+
+                                //check which blocks are good
+                                for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
+                                    tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
+                                            false, true);
+                                    TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << tmpRet);
+
+                                    if (tmpRet != REDO_OK)
+                                        break;
+                                    ++goodBlocks;
+                                }
+
+                                //verify header for online redo logs after every successful read
+                                if (tmpRet == REDO_OK && group > 0)
+                                    tmpRet = reloadHeader();
+
+                                if (tmpRet != REDO_OK) {
+                                    ret = tmpRet;
+                                    break;
+                                }
+
+                                {
+                                    unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                                    bufferEnd += actualRead;
+                                    oracleAnalyzer->analyzerCond.notify_all();
+                                }
+                            }
+                        }
+
+                        //#1 read
+                        if (bufferScan < fileSize && (buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
+                                && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUS < loopTime)) {
+                            uint64_t toRead = readSize(lastRead);
+
+                            if (bufferScan + toRead > fileSize)
+                                toRead = fileSize - bufferScan;
+
+                            uint64_t redoBufferPos = bufferScan % MEMORY_CHUNK_SIZE;
+                            uint64_t redoBufferNum = (bufferScan / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
                             if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
                                 toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
 
@@ -464,16 +534,16 @@ namespace OpenLogReplicator {
                                 break;
                             }
 
-                            TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
-                            int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
+                            bufferAllocate(redoBufferNum);
+                            TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
+                            int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
 
-                            TRACE(TRACE2_DISK, "DISK: reading#2 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
+                            TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                             if (actualRead < 0) {
-                                ERROR("reading file: " << pathMapped << " - " << strerror(errno));
                                 ret = REDO_ERROR;
                                 break;
                             }
-                            if (actualRead > 0 && fileCopyDes != -1) {
+                            if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
                                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                 if (bytesWritten != actualRead) {
                                     ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
@@ -482,157 +552,90 @@ namespace OpenLogReplicator {
                                 }
                             }
 
-                            uint64_t tmpRet = REDO_OK;
                             typeBLK maxNumBlock = actualRead / blockSize;
-                            typeBLK bufferEndBlock = bufferEnd / blockSize;
+                            typeBLK bufferScanBlock = bufferScan / blockSize;
+                            uint64_t goodBlocks = 0;
+                            uint64_t tmpRet = REDO_OK;
 
                             //check which blocks are good
                             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
-                                        false, true);
-                                TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferEndBlock + numBlock) << " check: " << tmpRet);
+                                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
+                                        false, oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0);
+                                TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
 
                                 if (tmpRet != REDO_OK)
                                     break;
                                 ++goodBlocks;
                             }
 
-                            //verify header for online redo logs after every successful read
-                            if (tmpRet == REDO_OK && group > 0)
+                            //treat bad blocks as empty
+                            if (tmpRet == REDO_BAD_CRC && oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0)
+                                tmpRet = REDO_EMPTY;
+
+                            if (tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
+                                ret = tmpRet;
+                                break;
+                            }
+
+                            //check for log switch
+                            if (goodBlocks == 0 && tmpRet == REDO_EMPTY) {
                                 tmpRet = reloadHeader();
+                                if (tmpRet != REDO_OK) {
+                                    ret = tmpRet;
+                                    break;
+                                }
+                                reachedZero = true;
+                                read1Time = lastReadTime + oracleAnalyzer->redoReadSleepUS;
+                            } else
+                                reachedZero = false;
 
-                            if (tmpRet != REDO_OK) {
-                                ret = tmpRet;
-                                break;
-                            }
+                            lastRead = goodBlocks * blockSize;
+                            lastReadTime = getTime();
+                            if (goodBlocks > 0) {
+                                if (oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0) {
+                                    bufferScan += goodBlocks * blockSize;
 
-                            {
-                                unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                                bufferEnd += actualRead;
-                                oracleAnalyzer->analyzerCond.notify_all();
+                                    for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
+                                        time_t* readTime = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
+                                        *readTime = lastReadTime;
+                                    }
+                                } else {
+                                    unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                                    bufferEnd += goodBlocks * blockSize;
+                                    bufferScan = bufferEnd;
+                                    oracleAnalyzer->analyzerCond.notify_all();
+                                }
                             }
                         }
-                    }
 
-                    //#1 read
-                    if (bufferScan < fileSize && (buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
-                            && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUS < loopTime)) {
-                        uint64_t toRead = readSize(lastRead);
-
-                        if (bufferScan + toRead > fileSize)
-                            toRead = fileSize - bufferScan;
-
-                        uint64_t redoBufferPos = bufferScan % MEMORY_CHUNK_SIZE;
-                        uint64_t redoBufferNum = (bufferScan / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
-                        if (redoBufferPos + toRead > MEMORY_CHUNK_SIZE)
-                            toRead = MEMORY_CHUNK_SIZE - redoBufferPos;
-
-                        if (toRead == 0) {
-                            ERROR("zero to read (start: " << dec << bufferStart << ", end: " << bufferEnd << ", scan: " << bufferScan << "): " << pathMapped);
-                            ret = REDO_ERROR;
+                        if (numBlocksHeader != NUM_BLOCK_ONLINE && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
+                            ret = REDO_FINISHED;
                             break;
                         }
 
-                        bufferAllocate(redoBufferNum);
-                        TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << dec << toRead);
-                        int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
-
-                        TRACE(TRACE2_DISK, "DISK: reading#1 " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
-                        if (actualRead < 0) {
-                            ret = REDO_ERROR;
-                            break;
-                        }
-                        if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
-                            int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
-                            if (bytesWritten != actualRead) {
-                                ERROR("writing file: " << pathMappedWrite << " - " << strerror(errno));
-                                ret = REDO_ERROR;
-                                break;
-                            }
-                        }
-
-                        typeBLK maxNumBlock = actualRead / blockSize;
-                        typeBLK bufferScanBlock = bufferScan / blockSize;
-                        uint64_t goodBlocks = 0;
-                        uint64_t tmpRet = REDO_OK;
-
-                        //check which blocks are good
-                        for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                            tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
-                                    false, oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0);
-                            TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
-
-                            if (tmpRet != REDO_OK)
-                                break;
-                            ++goodBlocks;
-                        }
-
-                        //treat bad blocks as empty
-                        if (tmpRet == REDO_BAD_CRC && oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0)
-                            tmpRet = REDO_EMPTY;
-
-                        if (tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
-                            ret = tmpRet;
-                            break;
-                        }
-
-                        //check for log switch
-                        if (goodBlocks == 0 && tmpRet == REDO_EMPTY) {
-                            tmpRet = reloadHeader();
-                            if (tmpRet != REDO_OK) {
-                                ret = tmpRet;
-                                break;
-                            }
-                            reachedZero = true;
-                            read1Time = lastReadTime + oracleAnalyzer->redoReadSleepUS;
-                        } else
-                            reachedZero = false;
-
-                        lastRead = goodBlocks * blockSize;
-                        lastReadTime = getTime();
-                        if (goodBlocks > 0) {
-                            if (oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0) {
-                                bufferScan += goodBlocks * blockSize;
-
-                                for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
-                                    time_t *readTime = (time_t*)(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
-                                    *readTime = lastReadTime;
+                        //sleep some time
+                        if (read1Time > 0) {
+                            clock_t nowTime = getTime();
+                            if (read1Time < read2Time || read2Time == 0) {
+                                if (read1Time > nowTime) {
+                                    usleep(read1Time - nowTime);
                                 }
                             } else {
-                                unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                                bufferEnd += goodBlocks * blockSize;
-                                bufferScan = bufferEnd;
-                                oracleAnalyzer->analyzerCond.notify_all();
+                                if (read2Time > nowTime) {
+                                    usleep(read2Time - nowTime);
+                                }
                             }
                         }
                     }
 
-                    if (numBlocksHeader != NUM_BLOCK_ONLINE && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
-                        ret = REDO_FINISHED;
-                        break;
+                    {
+                        unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                        status = READER_STATUS_SLEEPING;
+                        oracleAnalyzer->analyzerCond.notify_all();
                     }
-
-                    //sleep some time
-                    if (read1Time > 0) {
-                        clock_t nowTime = getTime();
-                        if (read1Time < read2Time || read2Time == 0) {
-                            if (read1Time > nowTime) {
-                                usleep(read1Time - nowTime);
-                            }
-                        } else {
-                            if (read2Time > nowTime) {
-                                usleep(read2Time - nowTime);
-                            }
-                        }
-                    }
-                }
-
-                {
-                    unique_lock<mutex> lck(oracleAnalyzer->mtx);
-                    status = READER_STATUS_SLEEPING;
-                    oracleAnalyzer->analyzerCond.notify_all();
                 }
             }
+        } catch (RuntimeException& ex) {
         }
 
         redoClose();
@@ -647,7 +650,7 @@ namespace OpenLogReplicator {
 
     void Reader::bufferAllocate(uint64_t num) {
         if (redoBufferList[num] == nullptr) {
-            redoBufferList[num] = oracleAnalyzer->getMemoryChunk("DISK", false);
+            redoBufferList[num] = oracleAnalyzer->getMemoryChunk("disk read buffer", false);
             if (redoBufferList[num] == nullptr || buffersFree == 0) {
                 RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE << " bytes memory (for: read buffer)");
             }
@@ -663,7 +666,7 @@ namespace OpenLogReplicator {
 
     void Reader::bufferFree(uint64_t num) {
         if (redoBufferList[num] != nullptr) {
-            oracleAnalyzer->freeMemoryChunk("DISK", redoBufferList[num], false);
+            oracleAnalyzer->freeMemoryChunk("disk read buffer", redoBufferList[num], false);
             redoBufferList[num] = nullptr;
             {
                 unique_lock<mutex> lck(oracleAnalyzer->mtx);

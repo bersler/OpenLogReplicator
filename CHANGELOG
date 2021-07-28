@@ -1,3 +1,24 @@
+0.9.17-beta
+- code cleanup to be become more compliant
+- fixed memory leak on abnormal exit
+- fixed startup based on checkpoint data
+- fixed schema tracking after restart
+- fixed bug: sometimes log switch checkpoint was missing
+- minor code cleanup & fixes
+- OpenLogReplicator.json: updated format version to 0.9.16
+- OpenLogReplicator.json: enhanced content validation, fixed and extended syntax checking
+- OpenLogReplicator.json: increased default of redo-verify-delay-us to 250000
+- OpenLogReplicator.json: renamed "sources" to "source"
+- OpenLogReplicator.json: renamed "targets" to "target"
+- OpenLogReplicator.json: renamed "redo-logs" to "redo-log"
+- OpenLogReplicator.json: protobuf/json output: added optional payload numbering ("message" = 2)
+- OpenLogReplicator.json: optional begin tran for output ("message" = 4)
+- OpenLogReplicator.json: optional commit tran for output ("message" = 8)
+- OpenLogReplicator.json: new element in "source": "filter"
+- OpenLogReplicator.json: moved "tables" to "filter" and renamed to "table"
+- OpenLogReplicator.json: added transaction filtering based on XID ("skip-xid")
+- OpenLogReplicator.json: added transaction filtering based on size ("transaction-max-mb")
+
 0.9.16-beta
 - added check of schema file for changing list of owners of replicated tables
 - added check for schema/table name entered in upper case

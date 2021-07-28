@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    StreamNetwork::StreamNetwork(const char *uri, uint64_t pollInterval) :
+    StreamNetwork::StreamNetwork(const char* uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
         socketFD(-1),
         serverFD(-1),
@@ -59,10 +59,10 @@ namespace OpenLogReplicator {
         return "Network:" + uri;
     }
 
-    void StreamNetwork::initializeClient(atomic<bool> *shutdown) {
+    void StreamNetwork::initializeClient(atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         struct sockaddr_in addressC;
-        memset((uint8_t*)&addressC, 0, sizeof(addressC));
+        memset((uint8_t*) &addressC, 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
 
@@ -70,20 +70,21 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("socket creation failed - " << strerror(errno));
         }
 
-        struct hostent *server = gethostbyname(host.c_str());
+        struct hostent* server = gethostbyname(host.c_str());
         if (server == NULL) {
             RUNTIME_FAIL("resolving host name: " << host << " - " << strerror(errno));
         }
 
-        memcpy((char *)&addressC.sin_addr.s_addr, (char *)server->h_addr, server->h_length);
-        if (connect(socketFD, (struct sockaddr *) &addressC, sizeof(addressC)) < 0) {
+        memcpy((char*) &addressC.sin_addr.s_addr, (char*) server->h_addr, server->h_length);
+        if (connect(socketFD, (struct sockaddr*) &addressC, sizeof(addressC)) < 0) {
             RUNTIME_FAIL("connecting to uri: " << uri << " - " << strerror(errno));
         }
     }
 
-    void StreamNetwork::initializeServer(atomic<bool> *shutdown) {
+    void StreamNetwork::initializeServer(atomic<bool>* shutdown) {
         this->shutdown = shutdown;
-        struct addrinfo hints, *res;
+        struct addrinfo hints;
+        struct addrinfo *res;
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
@@ -117,7 +118,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamNetwork::sendMessage(const void *msg, uint64_t length) {
+    void StreamNetwork::sendMessage(const void* msg, uint64_t length) {
         uint32_t length32 = length;
         uint64_t sent = 0;
 
@@ -139,7 +140,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 //blocking select
                 select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*)&length32) + sent, sizeof(uint32_t) - sent);
+                int r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -161,7 +162,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 //blocking select
                 select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*)&length32) + sent, sizeof(uint32_t) - sent);
+                int r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -182,7 +183,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 //blocking select
                 select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*)&length) + sent, sizeof(uint64_t) - sent);
+                int r = write(socketFD, ((uint8_t*) &length) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -219,7 +220,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t StreamNetwork::receiveMessage(void *msg, uint64_t length) {
+    uint64_t StreamNetwork::receiveMessage(void* msg, uint64_t length) {
         uint64_t recvd = 0;
 
         //read message length
@@ -244,11 +245,11 @@ namespace OpenLogReplicator {
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
             //32-bit message length
-            if (length < *((uint32_t*)msg)) {
+            if (length < *((uint32_t*) msg)) {
                 RUNTIME_FAIL("read buffer too small");
             }
 
-            length = *((uint32_t*)msg);
+            length = *((uint32_t*) msg);
             recvd = 0;
         } else {
             //64-bit message length
@@ -273,11 +274,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *((uint64_t*)msg)) {
+            if (length < *((uint64_t*) msg)) {
                 RUNTIME_FAIL("read buffer too small");
             }
 
-            length = *((uint64_t*)msg);
+            length = *((uint64_t*) msg);
             recvd = 0;
         }
 
@@ -303,7 +304,7 @@ namespace OpenLogReplicator {
         return recvd;
     }
 
-    uint64_t StreamNetwork::receiveMessageNB(void *msg, uint64_t length) {
+    uint64_t StreamNetwork::receiveMessageNB(void* msg, uint64_t length) {
         uint64_t recvd = 0;
 
         //read message length
@@ -333,11 +334,11 @@ namespace OpenLogReplicator {
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
             //32-bit message length
-            if (length < *((uint32_t*)msg)) {
+            if (length < *((uint32_t*) msg)) {
                 RUNTIME_FAIL("read buffer too small");
             }
 
-            length = *((uint32_t*)msg);
+            length = *((uint32_t*) msg);
             recvd = 0;
         } else {
             //64-bit message length
@@ -367,11 +368,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *((uint64_t*)msg)) {
+            if (length < *((uint64_t*) msg)) {
                 RUNTIME_FAIL("read buffer too small");
             }
 
-            length = *((uint64_t*)msg);
+            length = *((uint64_t*) msg);
             recvd = 0;
         }
 
@@ -401,7 +402,7 @@ namespace OpenLogReplicator {
             return true;
 
         int64_t addrlen = sizeof(address);
-        socketFD = accept(serverFD, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+        socketFD = accept(serverFD, (struct sockaddr*) &address, (socklen_t*) &addrlen);
         if (socketFD < 0) {
             if (errno == EWOULDBLOCK)
                 return false;

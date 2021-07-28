@@ -33,29 +33,29 @@ namespace OpenLogReplicator {
 
     class SystemTransaction {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
-        OutputBuffer *outputBuffer;
-        Schema *schema;
+        OracleAnalyzer* oracleAnalyzer;
+        OutputBuffer* outputBuffer;
+        Schema* schema;
 
-        bool updateNumber16(int16_t &val, int16_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber16u(uint16_t &val, uint16_t devVal, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber32u(uint32_t &val, uint32_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber64(int64_t &val, int64_t defVal, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumber64u(uint64_t &val, uint64_t devVal, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateNumberXu(uintX_t &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateObj(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updatePart(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateUser(typeUSER &val, typeCOL column, OracleObject *object, RowId &rowId);
-        bool updateString(string &val, typeCOL column, OracleObject *object, RowId &rowId);
+        bool updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateNumber32u(uint32_t& val, uint32_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateNumber64(int64_t& val, int64_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateNumber64u(uint64_t& val, uint64_t devVal, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateNumberXu(uintX_t& val, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateObj(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updatePart(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateUser(typeUSER& val, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateString(string& val, typeCOL column, OracleObject* object, RowId& rowId);
         void toRemove(typeOBJ obj);
         void toAdd(typeOBJ obj);
 
     public:
-        SystemTransaction(OracleAnalyzer *oracleAnalyzer, OutputBuffer *outputBuffer, Schema *schema);
+        SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema);
         ~SystemTransaction();
-        void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         void commit(typeSCN scn);
     };
 }

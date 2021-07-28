@@ -31,12 +31,12 @@ namespace OpenLogReplicator {
 
     class DatabaseEnvironment {
     public:
-        OCIEnv *envhp;
+        OCIEnv* envhp;
 
         DatabaseEnvironment();
         virtual ~DatabaseEnvironment();
 
-        void checkErr(OCIError *errhp, sword status);
+        void checkErr(OCIError* errhp, sword status);
     };
 }
 

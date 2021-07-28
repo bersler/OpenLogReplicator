@@ -33,13 +33,13 @@ namespace OpenLogReplicator {
     protected:
 
     public:
-        DatabaseEnvironment *env;
-        OCIError *errhp;
-        OCIServer *srvhp;
-        OCISvcCtx *svchp;
-        OCISession *authp;
+        DatabaseEnvironment* env;
+        OCIError* errhp;
+        OCIServer* srvhp;
+        OCISvcCtx* svchp;
+        OCISession* authp;
 
-        DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM);
+        DatabaseConnection(DatabaseEnvironment* env, string& user, string& password, string& server, bool sysASM);
         virtual ~DatabaseConnection();
     };
 }

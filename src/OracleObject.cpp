@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, const char *owner, const char *name) :
+    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, const char* owner, const char* name) :
         obj(obj),
         dataObj(dataObj),
         user(user),
@@ -67,14 +67,14 @@ namespace OpenLogReplicator {
     }
 
     OracleObject::~OracleObject() {
-        for (OracleColumn *column: columns)
+        for (OracleColumn* column: columns)
             delete column;
         pk.clear();
         columns.clear();
         partitions.clear();
     }
 
-    void OracleObject::addColumn(OracleColumn *column) {
+    void OracleObject::addColumn(OracleColumn* column) {
         if (column->segColNo < columns.size() + 1) {
             CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJ: " << dec << obj << ", DATAOBJ: " << dec << dataObj <<
                 ") column: " << column->name << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
@@ -108,7 +108,7 @@ namespace OpenLogReplicator {
     ostream& operator<<(ostream& os, const OracleObject& object) {
         os << "(\"" << object.owner << "\".\"" << object.name << "\", " << dec << object.obj << ", " <<
                 object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
-        for (OracleColumn *column : object.columns)
+        for (OracleColumn* column : object.columns)
             os << "     - " << *column << endl;
         return os;
     }

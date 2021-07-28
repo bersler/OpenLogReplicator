@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    uintX_t& uintX_t::operator+=(const uintX_t &val) {
+    uintX_t& uintX_t::operator+=(const uintX_t& val) {
         uint64_t carry = 0;
 
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
@@ -78,7 +78,7 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(const uintX_t &val) {
+    uintX_t& uintX_t::operator=(const uintX_t& val) {
         if (&val != this) {
             for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
                 this->data[i] = val.data[i];
@@ -93,15 +93,15 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(const string &val) {
+    uintX_t& uintX_t::operator=(const string& val) {
         return setStr(val.c_str(), val.length());
     }
 
-    uintX_t& uintX_t::operator=(const char *val) {
+    uintX_t& uintX_t::operator=(const char* val) {
         return setStr(val, strlen(val));
     }
 
-    uintX_t& uintX_t::setStr(const char *val, uint64_t length) {
+    uintX_t& uintX_t::setStr(const char* val, uint64_t length) {
         *this = (uint64_t)0;
         if (length > TYPEINTXDIGITS) {
             ERROR("incorrect conversion of string: " << val);

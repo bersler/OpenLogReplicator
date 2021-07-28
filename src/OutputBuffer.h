@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <condition_variable>
-#include <mutex>
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
@@ -44,7 +42,7 @@ namespace OpenLogReplicator {
         uint64_t id;
         uint64_t length;
         uint8_t* data;
-        OutputBufferQueue *next;
+        OutputBufferQueue* next;
     };
 
     struct OutputBufferMsg {
@@ -53,9 +51,9 @@ namespace OpenLogReplicator {
         uint64_t length;
         typeSCN scn;
         typeSEQ sequence;
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         uint8_t* data;
-        uint32_t dictId;
+        typeOBJ obj;
         uint16_t pos;
         uint16_t flags;
     };
@@ -64,7 +62,7 @@ namespace OpenLogReplicator {
     protected:
         static const char map64[65];
         static const char map16[17];
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         uint64_t messageFormat;
         uint64_t ridFormat;
         uint64_t xidFormat;
@@ -82,7 +80,7 @@ namespace OpenLogReplicator {
         uint64_t valueLength;
         unordered_map<uint16_t, const char*> timeZoneMap;
         unordered_set<OracleObject*> objects;
-        typetime lastTime;
+        typeTIME lastTime;
         typeSCN lastScn;
         typeSEQ lastSequence;
         typeXID lastXid;
@@ -90,18 +88,19 @@ namespace OpenLogReplicator {
         uint64_t valuesSet[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t valuesMerge[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t lengths[MAX_NO_COLUMNS][4];
-        uint8_t *values[MAX_NO_COLUMNS][4];
+        uint8_t* values[MAX_NO_COLUMNS][4];
         uint64_t lengthsPart[3][MAX_NO_COLUMNS][4];
-        uint8_t *valuesPart[3][MAX_NO_COLUMNS][4];
+        uint8_t* valuesPart[3][MAX_NO_COLUMNS][4];
         uint64_t valuesMax;
-        uint8_t *merges[MAX_NO_COLUMNS*4];
+        uint8_t* merges[MAX_NO_COLUMNS*4];
         uint64_t mergesMax;
         uint64_t id;
+        uint64_t num;
         uint64_t transactionType;
         bool newTran;
 
         void outputBufferRotate(bool copy);
-        void processValue(OracleObject *object, typeCOL col, const uint8_t *data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
+        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
 
         void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)
@@ -127,7 +126,7 @@ namespace OpenLogReplicator {
             valuesMax = 0;
         };
 
-        void valueSet(uint64_t type, uint16_t column, uint8_t *data, uint16_t length, uint8_t fb) {
+        void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {
             if ((trace2 & TRACE2_DML) != 0) {
                 stringstream strStr;
                 strStr << "DML: value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
@@ -183,7 +182,7 @@ namespace OpenLogReplicator {
                 outputBufferRotate(copy);
         };
 
-        void outputBufferBegin(uint32_t dictId) {
+        void outputBufferBegin(typeOBJ obj) {
             messageLength = 0;
             transactionType = 0;
 
@@ -196,7 +195,7 @@ namespace OpenLogReplicator {
             msg->sequence = lastSequence;
             msg->length = 0;
             msg->id = id++;
-            msg->dictId = dictId;
+            msg->obj = obj;
             msg->oracleAnalyzer = oracleAnalyzer;
             msg->pos = 0;
             msg->flags = 0;
@@ -242,14 +241,14 @@ namespace OpenLogReplicator {
             }
         };
 
-        void outputBufferAppend(string &str) {
-            const char *charstr = str.c_str();
+        void outputBufferAppend(string& str) {
+            const char* charstr = str.c_str();
             uint64_t length = str.length();
             for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(*charstr++);
         };
 
-        void columnUnknown(string &columnName, const uint8_t *data, uint64_t length) {
+        void columnUnknown(string& columnName, const uint8_t* data, uint64_t length) {
             valueBuffer[0] = '?';
             valueLength = 1;
             columnString(columnName);
@@ -279,7 +278,7 @@ namespace OpenLogReplicator {
             };
         };
 
-        void parseNumber(const uint8_t *data, uint64_t length) {
+        void parseNumber(const uint8_t* data, uint64_t length) {
             valueLength = 0;
 
             uint8_t digits = data[0];
@@ -413,8 +412,8 @@ namespace OpenLogReplicator {
             }
         };
 
-        void parseString(const uint8_t *data, uint64_t length, uint64_t charsetId) {
-            CharacterSet *characterSet = characterMap[charsetId];
+        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId) {
+            CharacterSet* characterSet = characterMap[charsetId];
             if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
                 RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
             }
@@ -465,52 +464,52 @@ namespace OpenLogReplicator {
             }
         };
 
-        virtual void columnNull(OracleObject *object, typeCOL col) = 0;
-        virtual void columnFloat(string &columnName, float value) = 0;
-        virtual void columnDouble(string &columnName, double value) = 0;
-        virtual void columnString(string &columnName) = 0;
-        virtual void columnNumber(string &columnName, uint64_t precision, uint64_t scale) = 0;
-        virtual void columnRaw(string &columnName, const uint8_t *data, uint64_t length) = 0;
-        virtual void columnTimestamp(string &columnName, struct tm &time_, uint64_t fraction, const char *tz) = 0;
+        virtual void columnNull(OracleObject* object, typeCOL col) = 0;
+        virtual void columnFloat(string& columnName, float value) = 0;
+        virtual void columnDouble(string& columnName, double value) = 0;
+        virtual void columnString(string& columnName) = 0;
+        virtual void columnNumber(string& columnName, uint64_t precision, uint64_t scale) = 0;
+        virtual void columnRaw(string& columnName, const uint8_t* data, uint64_t length) = 0;
+        virtual void columnTimestamp(string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
         virtual void appendHeader(bool first, bool showXid) = 0;
-        virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj) = 0;
-        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
-                const char *sql, uint64_t sqlLength) = 0;
+        virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj) = 0;
+        virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
+        virtual void processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation,
+                const char* sql, uint64_t sqlLength) = 0;
         virtual void processBegin(void) = 0;
 
     public:
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
         unordered_map<uint64_t, CharacterSet*> characterMap;
-        Writer *writer;
+        Writer* writer;
         mutex mtx;
         condition_variable writersCond;
 
         uint64_t buffersAllocated;
-        OutputBufferQueue *firstBuffer;
-        OutputBufferQueue *lastBuffer;
-        OutputBufferMsg *msg;
+        OutputBufferQueue* firstBuffer;
+        OutputBufferQueue* lastBuffer;
+        OutputBufferMsg* msg;
 
         OutputBuffer(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
         virtual ~OutputBuffer();
 
-        void initialize(OracleAnalyzer *oracleAnalyzer);
+        void initialize(OracleAnalyzer* oracleAnalyzer);
         uint64_t outputBufferSize(void) const;
-        void setWriter(Writer *writer);
-        void setNlsCharset(string &nlsCharset, string &nlsNcharCharset);
+        void setWriter(Writer* writer);
+        void setNlsCharset(string& nlsCharset, string& nlsNcharCharset);
 
-        void processBegin(typeSCN scn, typetime time_, typeSEQ sequence, typeXID xid);
+        void processBegin(typeSCN scn, typeTIME time_, typeSEQ sequence, typeXID xid);
         virtual void processCommit(void) = 0;
-        void processInsertMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
-        void processDeleteMultiple(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, bool system);
-        void processDML(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2, uint64_t type, bool system);
-        void processDDLheader(RedoLogRecord *redoLogRecord1);
-        virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
+        void processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
+        void processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
+        void processDML(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system);
+        void processDDLheader(RedoLogRecord* redoLogRecord1);
+        virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
 
         friend class SystemTransaction;
     };

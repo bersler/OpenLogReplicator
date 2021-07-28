@@ -119,6 +119,7 @@ message Payload {
     uint32 seq = 7;
     uint64 offset = 8;
     bool redo = 9;
+    optional uint64 num = 10;
 }
 
 message SchemaRequest {

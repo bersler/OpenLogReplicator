@@ -27,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class SysObj {
     public:
-        SysObj(RowId &rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
+        SysObj(RowId& rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
                 uint64_t flags1, uint64_t flags2, bool single, bool touched);
         bool isTable(void);
         bool isTemporary(void);

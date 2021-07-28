@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
 
     class WriterStream : public Writer {
     protected:
-        Stream *stream;
+        Stream* stream;
         pb::RedoRequest request;
         pb::RedoResponse response;
 
@@ -42,12 +42,12 @@ namespace OpenLogReplicator {
         void processRedo(void);
         void processConfirm(void);
         virtual void pollQueue(void);
-        virtual void sendMessage(OutputBufferMsg *msg);
+        virtual void sendMessage(OutputBufferMsg* msg);
 
     public:
-        WriterStream(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+        WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
-                Stream *stream);
+                Stream* stream);
         virtual ~WriterStream();
     };
 }

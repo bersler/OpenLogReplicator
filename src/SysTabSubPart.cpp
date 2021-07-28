@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabSubPart::SysTabSubPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj, bool touched) :
+    SysTabSubPart::SysTabSubPart(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),

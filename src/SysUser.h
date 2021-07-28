@@ -27,7 +27,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(RowId &rowId, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool single, bool touched);
+        SysUser(RowId& rowId, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched);
         bool isSuppLogPrimary(void);
         bool isSuppLogAll(void);
 

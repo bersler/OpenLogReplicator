@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 
 namespace OpenLogReplicator {
-    OracleColumn::OracleColumn(typeCOL colNo, typeCOL guardSegNo, typeCOL segColNo, const char *name, uint64_t typeNo, uint64_t length, int64_t precision,
+    OracleColumn::OracleColumn(typeCOL colNo, typeCOL guardSegNo, typeCOL segColNo, const char* name, uint64_t typeNo, uint64_t length, int64_t precision,
             int64_t scale, typeCOL numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint, bool added, bool guard) :
 		colNo(colNo),
 		guardSegNo(guardSegNo),

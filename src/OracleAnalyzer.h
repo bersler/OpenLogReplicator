@@ -17,9 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <condition_variable>
 #include <fstream>
-#include <mutex>
 #include <queue>
 #include <set>
 #include <unordered_map>
@@ -61,7 +59,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogDbPrimary, suppLogDbAll;
         uint64_t memoryMinMb;
         uint64_t memoryMaxMb;
-        uint8_t **memoryChunks;
+        uint8_t** memoryChunks;
         uint64_t memoryChunksMin;
         uint64_t memoryChunksAllocated;
         uint64_t memoryChunksFree;
@@ -73,7 +71,7 @@ namespace OpenLogReplicator {
         string dbRecoveryFileDest;
         string dbBlockChecksum;
         string logArchiveDest;
-        Reader *archReader;
+        Reader* archReader;
         set<Reader*> readers;
         bool waitingForWriter;
         mutex mtx;
@@ -104,16 +102,16 @@ namespace OpenLogReplicator {
         bool version12;
 
         void updateOnlineLogs(void);
-        bool readerCheckRedoLog(Reader *reader);
+        bool readerCheckRedoLog(Reader* reader);
         uint64_t readerDropAll(void);
-        static uint64_t getSequenceFromFileName(OracleAnalyzer *oracleAnalyzer, const string &file);
+        static uint64_t getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const string& file);
         virtual const char* getModeName(void) const;
         virtual void checkConnection(void);
         virtual bool continueWithOnline(void);
         virtual void createSchema(void);
 
     public:
-        OracleAnalyzer(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias, const char *database,
+        OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias, const char* database,
                 uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
         virtual ~OracleAnalyzer();
 
@@ -122,10 +120,10 @@ namespace OpenLogReplicator {
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMB;
         uint64_t checkpointFirst;
-        uint64_t checkpointAll;
-        uint64_t checkpointOutputCheckpoint;
-        uint64_t checkpointOutputLogSwitch;
-        typetime checkpointLastTime;
+        bool checkpointAll;
+        bool checkpointOutputCheckpoint;
+        bool checkpointOutputLogSwitch;
+        typeTIME checkpointLastTime;
         uint64_t checkpointLastOffset;
         string logArchiveFormat;
         string redoCopyPath;
@@ -135,23 +133,25 @@ namespace OpenLogReplicator {
         uint64_t version;                   //compatibility level of redo logs
         uint64_t suppLogSize;
         uint64_t dumpRawData;
-        Schema *schema;
-        OutputBuffer *outputBuffer;
+        Schema* schema;
+        OutputBuffer* outputBuffer;
         uint64_t flags;
         uint64_t redoReadSleepUS;
         uint64_t archReadSleepUS;
         uint64_t archReadRetry;
         uint64_t redoVerifyDelayUS;
-        SystemTransaction *systemTransaction;
-        TransactionBuffer *transactionBuffer;
-        typeresetlogs resetlogs;
-        typeactivation activation;
+        SystemTransaction* systemTransaction;
+        TransactionBuffer* transactionBuffer;
+        typeRESETLOGS resetlogs;
+        typeACTIVATION activation;
         uint64_t stopLogSwitches;
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
+        uint64_t transactionMax;
+        set<typeXID> skipXidList;
         bool stopFlushBuffer;
 
-        void (*archGetLog)(OracleAnalyzer *oracleAnalyzer);
+        void (*archGetLog)(OracleAnalyzer* oracleAnalyzer);
         uint16_t (*read16)(const uint8_t* buf);
         uint32_t (*read32)(const uint8_t* buf);
         uint64_t (*read56)(const uint8_t* buf);
@@ -191,25 +191,25 @@ namespace OpenLogReplicator {
         void setBigEndian(void);
         virtual void positionReader(void);
         virtual void initialize(void);
-        void *run(void);
-        virtual Reader *readerCreate(int64_t group);
+        void* run(void);
+        virtual Reader* readerCreate(int64_t group);
         void checkOnlineRedoLogs();
-        bool readerUpdateRedoLog(Reader *reader);
+        bool readerUpdateRedoLog(Reader* reader);
         virtual void doShutdown(void);
         virtual void goStandby(void);
         void addPathMapping(const char* source, const char* target);
         void addRedoLogsBatch(string path);
-        static void archGetLogPath(OracleAnalyzer *oracleAnalyzer);
-        static void archGetLogList(OracleAnalyzer *oracleAnalyzer);
+        static void archGetLogPath(OracleAnalyzer* oracleAnalyzer);
+        static void archGetLogList(OracleAnalyzer* oracleAnalyzer);
         string applyMapping(string path);
-        bool checkpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
+        bool checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
-        bool readCheckpointFile(string &fileName, typeSCN fileScn);
-        void skipEmptyFields(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength);
-        uint8_t *getMemoryChunk(const char *module, bool supp);
-        void freeMemoryChunk(const char *module, uint8_t *chunk, bool supp);
+        bool readCheckpointFile(string& fileName, typeSCN fileScn);
+        void skipEmptyFields(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        uint8_t* getMemoryChunk(const char* module, bool supp);
+        void freeMemoryChunk(const char* module, uint8_t* chunk, bool supp);
 
-        bool nextFieldOpt(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
+        bool nextFieldOpt(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             if (fieldNum >= redoLogRecord->fieldCnt)
                 return false;
 
@@ -231,7 +231,7 @@ namespace OpenLogReplicator {
             return true;
         };
 
-        void nextField(RedoLogRecord *redoLogRecord, uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength, uint32_t code) {
+        void nextField(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             ++fieldNum;
             if (fieldNum > redoLogRecord->fieldCnt) {
                 REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<

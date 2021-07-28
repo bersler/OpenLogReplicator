@@ -43,13 +43,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "Schema.h"
 #include "Transaction.h"
+#include "TransactionBuffer.h"
 
 using namespace std;
 
 extern void stopMain();
 
 namespace OpenLogReplicator {
-    RedoLog::RedoLog(OracleAnalyzer *oracleAnalyzer, int64_t group, const char *path) :
+    RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, const char* path) :
 		oracleAnalyzer(oracleAnalyzer),
 		vectors(0),
 		lwnConfirmedBlock(2),
@@ -69,15 +70,15 @@ namespace OpenLogReplicator {
 
         memset(&zero, 0, sizeof(struct RedoLogRecord));
 
-        lwnChunks[0] = oracleAnalyzer->getMemoryChunk("LWN", false);
-        uint64_t *length = (uint64_t *)lwnChunks[0];
+        lwnChunks[0] = oracleAnalyzer->getMemoryChunk("LWN transaction chunk", false);
+        uint64_t* length = (uint64_t*) lwnChunks[0];
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
     }
 
     RedoLog::~RedoLog() {
         while (lwnAllocated > 0)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
+            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
 
         for (uint64_t i = 0; i < vectors; ++i) {
             if (opCodes[i] != nullptr) {
@@ -136,19 +137,19 @@ namespace OpenLogReplicator {
                     " dis: " << dec << (uint64_t)dis << endl;
 
             typeSCN resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
-            typeresetlogs prevResetlogsCnt = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 292);
+            typeRESETLOGS prevResetlogsCnt = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 292);
             typeSCN prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
-            typetime firstTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 188));
-            typetime nextTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 200));
+            typeTIME firstTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 188));
+            typeTIME nextTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 200));
             typeSCN enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
-            typetime enabledTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 216));
+            typeTIME enabledTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 216));
             typeSCN threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
-            typetime threadClosedTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 228));
+            typeTIME threadClosedTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 228));
             typeSCN termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
-            typetime termialRecTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 248));
+            typeTIME termialRecTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 248));
             typeSCN mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
-            typesum chSum = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 14);
-            typesum chSum2 = reader->calcChSum(reader->headerBuffer + reader->blockSize, reader->blockSize);
+            typeSUM chSum = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 14);
+            typeSUM chSum2 = reader->calcChSum(reader->headerBuffer + reader->blockSize, reader->blockSize);
 
             if (oracleAnalyzer->version < REDO_VERSION_12_2) {
                 oracleAnalyzer->dumpStream <<
@@ -240,7 +241,7 @@ namespace OpenLogReplicator {
             if (standbyApplyDelay > 0)
                 oracleAnalyzer->dumpStream << " Standby Apply Delay: " << dec << standbyApplyDelay << " minute(s) " << endl;
 
-            typetime standbyLogCloseTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 304));
+            typeTIME standbyLogCloseTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 304));
             if (standbyLogCloseTime.getVal() > 0)
                 oracleAnalyzer->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << endl;
 
@@ -263,7 +264,7 @@ namespace OpenLogReplicator {
         uint64_t vectorsUndo = 0;
         uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
         uint64_t vectorsRedo = 0;
-        uint8_t *data = ((uint8_t *)lwnMember) + sizeof(struct LwnMember);
+        uint8_t* data = ((uint8_t*) lwnMember) + sizeof(struct LwnMember);
 
         TRACE(TRACE2_LWN, "LWN: analyze length: " << dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
         for (uint64_t i = 0; i < vectors; ++i) {
@@ -370,7 +371,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].rbl = 0; //FIXME
             redoLogRecord[vectors].seq = data[offset + 20];
             redoLogRecord[vectors].typ = data[offset + 21];
-            int16_t usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
+            typeUSN usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
             if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
@@ -389,9 +390,9 @@ namespace OpenLogReplicator {
                                     ": position of field list (" << dec << (offset + fieldOffset + 1) << ") outside of record, length: " << recordLength);
             }
 
-            uint8_t *fieldList = data + offset + fieldOffset;
+            uint8_t* fieldList = data + offset + fieldOffset;
 
-            redoLogRecord[vectors].opCode = (((typeop1)data[offset + 0]) << 8) |
+            redoLogRecord[vectors].opCode = (((typeOP1)data[offset + 0]) << 8) |
                     data[offset + 1];
             redoLogRecord[vectors].length = fieldOffset + ((oracleAnalyzer->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectors].sequence = sequence;
@@ -634,7 +635,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::appendToTransactionDDL(RedoLogRecord *redoLogRecord) {
+    void RedoLog::appendToTransactionDDL(RedoLogRecord* redoLogRecord) {
         bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
@@ -642,7 +643,11 @@ namespace OpenLogReplicator {
         if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
             return;
 
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+        //skip list
+        if (oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
+            return;
+
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
             if (object == nullptr)
                 return;
@@ -650,7 +655,7 @@ namespace OpenLogReplicator {
         if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
             system = true;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
+        Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
                 oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
@@ -667,19 +672,33 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #ddl");
             }
         }
+
         if (system)
             transaction->system = true;
+
+        //transaction size limit
+        if (oracleAnalyzer->transactionMax > 0 &&
+                transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
+            oracleAnalyzer->skipXidList.insert(transaction->xid);
+            transaction->purge();
+            return;
+        }
+
         transaction->add(redoLogRecord, &zero);
     }
 
-    void RedoLog::appendToTransactionUndo(RedoLogRecord *redoLogRecord) {
+    void RedoLog::appendToTransactionUndo(RedoLogRecord* redoLogRecord) {
         bool isSystem = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
             return;
 
-        OracleObject *object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+        //skip list
+        if (oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
+            return;
+
+        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
             if (object == nullptr)
                 return;
@@ -687,7 +706,7 @@ namespace OpenLogReplicator {
         if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
             isSystem = true;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
+        Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
                 oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
@@ -704,6 +723,7 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
             }
         }
+
         if (isSystem)
             transaction->system = true;
 
@@ -715,17 +735,25 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->suppLogFb & FB_K) != 0)
             return;
 
+        //transaction size limit
+        if (oracleAnalyzer->transactionMax > 0 &&
+                transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
+            oracleAnalyzer->skipXidList.insert(transaction->xid);
+            transaction->purge();
+            return;
+        }
+
         transaction->add(redoLogRecord);
     }
 
-    void RedoLog::appendToTransactionBegin(RedoLogRecord *redoLogRecord) {
+    void RedoLog::appendToTransactionBegin(RedoLogRecord* redoLogRecord) {
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         //skip SQN cleanup
         if (SQN(redoLogRecord->xid) == 0)
             return;
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
+        Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction != nullptr) {
             RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #begin");
         }
@@ -741,15 +769,23 @@ namespace OpenLogReplicator {
         transaction->firstOffset = lwnStartBlock * reader->blockSize;
     }
 
-    void RedoLog::appendToTransactionCommit(RedoLogRecord *redoLogRecord) {
+    void RedoLog::appendToTransactionCommit(RedoLogRecord* redoLogRecord) {
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
-        Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
+        //skip list
+        auto it = oracleAnalyzer->skipXidList.find(redoLogRecord->xid);
+        if (it != oracleAnalyzer->skipXidList.end()) {
+            WARNING("skipping transaction: " << PRINTXID(redoLogRecord->xid));
+            oracleAnalyzer->skipXidList.erase(it);
+        }
+
+        Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
             //unknown transaction
             oracleAnalyzer->xidTransactionMap.erase((redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32));
             return;
         }
+
         if (transaction->xid != redoLogRecord->xid) {
             RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #commit");
         }
@@ -760,7 +796,9 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
-        if (transaction->commitScn > oracleAnalyzer->firstScn) {
+        if ((transaction->commitScn > oracleAnalyzer->firstScn && transaction->system == false) ||
+            (transaction->commitScn > oracleAnalyzer->schemaScn && transaction->system == true)) {
+
             if (transaction->shutdown) {
                 INFO("shutdown started - initiated by debug transaction " << PRINTXID(transaction->xid));
                 shutdown = true;
@@ -788,7 +826,7 @@ namespace OpenLogReplicator {
         delete transaction;
     }
 
-    void RedoLog::appendToTransaction(RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2) {
+    void RedoLog::appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
         bool shutdownFound = false, isSystem = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1);
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2);
@@ -800,6 +838,10 @@ namespace OpenLogReplicator {
 
         if (oracleAnalyzer->conId > 0 && redoLogRecord1->conId != oracleAnalyzer->conId &&
                 (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
+            return;
+
+        //skip list
+        if (oracleAnalyzer->skipXidList.find(redoLogRecord1->xid) != oracleAnalyzer->skipXidList.end())
             return;
 
         typeOBJ obj;
@@ -821,7 +863,7 @@ namespace OpenLogReplicator {
             REDOLOG_FAIL("BDBA does not match (0x" << hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
         }
 
-        OracleObject *object = oracleAnalyzer->schema->checkDict(obj, dataObj);
+        OracleObject* object = oracleAnalyzer->schema->checkDict(obj, dataObj);
         if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
             if (object == nullptr)
                 return;
@@ -860,7 +902,7 @@ namespace OpenLogReplicator {
         //supp log for update
         case 0x05010B10:
             {
-                Transaction *transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32)];
+                Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32)];
                 if (transaction == nullptr) {
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0) {
                         oracleAnalyzer->xidTransactionMap.erase((redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32));
@@ -879,6 +921,19 @@ namespace OpenLogReplicator {
                 }
                 if (isSystem)
                     transaction->system = true;
+
+                //skip list
+                if (oracleAnalyzer->skipXidList.find(redoLogRecord1->xid) != oracleAnalyzer->skipXidList.end())
+                    return;
+
+                //transaction size limit
+                if (oracleAnalyzer->transactionMax > 0 &&
+                        transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
+                    oracleAnalyzer->skipXidList.insert(transaction->xid);
+                    transaction->purge();
+                    return;
+                }
+
                 transaction->add(redoLogRecord1, redoLogRecord2);
                 transaction->shutdown = shutdownFound;
             }
@@ -907,7 +962,11 @@ namespace OpenLogReplicator {
         case 0x0B10050B:
             {
                 typeXIDMAP xidMap = (((uint32_t)redoLogRecord2->usn) << 16) | (redoLogRecord2->slt) | (((uint64_t)redoLogRecord2->conId) << 32);
-                Transaction *transaction = oracleAnalyzer->xidTransactionMap[xidMap];
+                Transaction* transaction = oracleAnalyzer->xidTransactionMap[xidMap];
+
+                //skip list
+                if (oracleAnalyzer->skipXidList.find(redoLogRecord1->xid) != oracleAnalyzer->skipXidList.end())
+                    return;
 
                 //match
                 if (transaction != nullptr) {
@@ -924,7 +983,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::dumpRedoVector(uint8_t *data, uint64_t recordLength) const {
+    void RedoLog::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
         if (trace >= TRACE_WARNING) {
             stringstream ss;
             ss << "dumping redo vector" << endl;
@@ -944,20 +1003,20 @@ namespace OpenLogReplicator {
         lwnConfirmedBlock = 2;
 
         while (lwnAllocated > 1)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
-        uint64_t *length = (uint64_t *)lwnChunks[0];
+            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
+        uint64_t* length = (uint64_t*) lwnChunks[0];
         *length = sizeof(uint64_t);
         lwnRecords = 0;
     }
 
-    void RedoLog::continueRedo(RedoLog *prev) {
+    void RedoLog::continueRedo(RedoLog* prev) {
         lwnConfirmedBlock = prev->lwnConfirmedBlock;
         reader->bufferStart = prev->lwnConfirmedBlock * prev->reader->blockSize;
         reader->bufferEnd = prev->lwnConfirmedBlock * prev->reader->blockSize;
 
         while (lwnAllocated > 1)
-            oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
-        uint64_t *length = (uint64_t *)lwnChunks[0];
+            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
+        uint64_t* length = (uint64_t*) lwnChunks[0];
         *length = sizeof(uint64_t);
         lwnRecords = 0;
     }
@@ -990,8 +1049,8 @@ namespace OpenLogReplicator {
             reader->bufferEnd = oracleAnalyzer->readStartOffset;
 
             while (lwnAllocated > 1)
-                oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[--lwnAllocated], false);
-            uint64_t *length = (uint64_t *)lwnChunks[0];
+                oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
+            uint64_t* length = (uint64_t*) lwnChunks[0];
             *length = sizeof(uint64_t);
             lwnRecords = 0;
 
@@ -1009,18 +1068,19 @@ namespace OpenLogReplicator {
             oracleAnalyzer->readerCond.notify_all();
             oracleAnalyzer->sleepingCond.notify_all();
         }
-        LwnMember *lwnMember;
+        LwnMember* lwnMember;
         uint64_t currentBlock = lwnConfirmedBlock, blockOffset = 16, startBlock = lwnConfirmedBlock, tmpBufferStart = reader->bufferStart,
                 recordLength4 = 0, recordPos = 0, recordLeftToCopy = 0, lwnEndBlock = lwnConfirmedBlock;
         uint16_t lwnNum = 0, lwnNumMax = 0, lwnNumCnt = 0;
         lwnStartBlock = lwnConfirmedBlock;
+        bool switchRedo = false;
 
         while (!oracleAnalyzer->shutdown) {
             //there is some work to do
             while (tmpBufferStart < reader->bufferEnd) {
                 uint64_t redoBufferPos = (currentBlock * reader->blockSize) % MEMORY_CHUNK_SIZE;
                 uint64_t redoBufferNum = ((currentBlock * reader->blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
-                uint8_t *redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
+                uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
                 blockOffset = 16;
                 //new LWN block
@@ -1050,15 +1110,15 @@ namespace OpenLogReplicator {
 
                         recordLength4 = (((uint64_t)oracleAnalyzer->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
                         if (recordLength4 > 0) {
-                            uint64_t *length = (uint64_t*)(lwnChunks[lwnAllocated - 1]);
+                            uint64_t* length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
 
                             if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
                                 if (lwnAllocated == MAX_LWN_CHUNKS) {
                                     RUNTIME_FAIL("all " << dec << MAX_LWN_CHUNKS << " LWN buffers allocated");
                                 }
 
-                                lwnChunks[lwnAllocated++] = oracleAnalyzer->getMemoryChunk("LWN", false);
-                                length = (uint64_t*)(lwnChunks[lwnAllocated - 1]);
+                                lwnChunks[lwnAllocated++] = oracleAnalyzer->getMemoryChunk("LWN transaction chunk", false);
+                                length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
                                 *length = sizeof(uint64_t);
                             }
 
@@ -1066,7 +1126,7 @@ namespace OpenLogReplicator {
                                 RUNTIME_FAIL("Too big redo log record, length: " << recordLength4);
                             }
 
-                            lwnMember = (struct LwnMember*)(lwnChunks[lwnAllocated - 1] + *length);
+                            lwnMember = (struct LwnMember*) (lwnChunks[lwnAllocated - 1] + *length);
                             *length += (sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8;
                             lwnMember->scn = oracleAnalyzer->read32(redoBlock + blockOffset + 8) |
                                     ((uint64_t)(oracleAnalyzer->read16(redoBlock + blockOffset + 6)) << 32);
@@ -1125,9 +1185,9 @@ namespace OpenLogReplicator {
                                 lwnScnMax = lwnMembers[i]->scn;
                         }
 
-                        bool switchRedo = (tmpBufferStart == reader->bufferEnd) && (reader->ret == REDO_FINISHED);
+                        switchRedo = (tmpBufferStart == reader->bufferEnd) && (reader->ret == REDO_FINISHED);
                         if (oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
-                                oracleAnalyzer->checkpointOutputCheckpoint > 0) {
+                                oracleAnalyzer->checkpointOutputCheckpoint) {
                             oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
 
                             if (oracleAnalyzer->stopCheckpoints > 0) {
@@ -1138,7 +1198,7 @@ namespace OpenLogReplicator {
                                 }
                             }
                         }
-                    } catch (RedoLogException &ex) {
+                    } catch (RedoLogException& ex) {
                         if ((oracleAnalyzer->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
                             RUNTIME_FAIL("runtime error, aborting further redo log processing");
                         } else
@@ -1147,10 +1207,10 @@ namespace OpenLogReplicator {
 
                     TRACE(TRACE2_LWN, "LWN: scn: " << dec << lwnScnMax);
                     for (uint64_t i = 1; i < lwnAllocated; ++i)
-                        oracleAnalyzer->freeMemoryChunk("LWN", lwnChunks[i], false);
+                        oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[i], false);
                     lwnNumCnt = 0;
                     lwnAllocated = 1;
-                    uint64_t *length = (uint64_t *)lwnChunks[0];
+                    uint64_t* length = (uint64_t*) lwnChunks[0];
                     *length = sizeof(uint64_t);
                     lwnRecords = 0;
                     lwnConfirmedBlock = currentBlock;
@@ -1175,6 +1235,12 @@ namespace OpenLogReplicator {
                     stopMain();
                     oracleAnalyzer->shutdown = true;
                 }
+            }
+
+            if (!switchRedo && tmpBufferStart == reader->bufferEnd && reader->ret == REDO_FINISHED &&
+                    oracleAnalyzer->checkpointOutputCheckpoint) {
+                switchRedo = true;
+                oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
             }
 
             {

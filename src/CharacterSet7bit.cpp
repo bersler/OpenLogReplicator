@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    CharacterSet7bit::CharacterSet7bit(const char *name, const typeunicode16 *map) :
+    CharacterSet7bit::CharacterSet7bit(const char* name, const typeunicode16* map) :
         CharacterSet(name),
         map(map) {
     }
@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     CharacterSet7bit::~CharacterSet7bit() {
     }
 
-    typeunicode CharacterSet7bit::decode(const uint8_t* &str, uint64_t &length) const {
+    typeunicode CharacterSet7bit::decode(const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         return readMap(byte1 & 0x7F);

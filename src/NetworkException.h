@@ -29,7 +29,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class NetworkException: public exception {
     public:
-        const char *msg;
+        const char* msg;
 
         NetworkException(const char* msg);
         virtual ~NetworkException();

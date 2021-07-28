@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
 
     class SysSeg {
     public:
-        SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12, bool touched);
+        SysSeg(RowId& rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12, bool touched);
         bool isCompressed(void);
 
         RowId rowId;
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
 namespace std {
     template <>
     struct hash<OpenLogReplicator::SysSegKey> {
-        size_t operator()(const OpenLogReplicator::SysSegKey &sysSegKey) const;
+        size_t operator()(const OpenLogReplicator::SysSegKey& sysSegKey) const;
     };
 }
 

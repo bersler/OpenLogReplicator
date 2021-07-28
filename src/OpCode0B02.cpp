@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OpCode0B02::OpCode0B02(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+    OpCode0B02::OpCode0B02(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
         redoLogRecord->nullsDelta = fieldPos + 45;
-        uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+        uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
         redoLogRecord->rowData = fieldNum + 1;
         uint8_t bits = 1;

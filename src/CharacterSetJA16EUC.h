@@ -44,10 +44,10 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetJA16EUC();
-        CharacterSetJA16EUC(const char *name);
+        CharacterSetJA16EUC(const char* name);
         virtual ~CharacterSetJA16EUC();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
+        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
     };
 }
 

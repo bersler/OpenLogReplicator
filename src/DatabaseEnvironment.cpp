@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
         //OCITerminate(OCI_DEFAULT);
     }
 
-    void DatabaseEnvironment::checkErr(OCIError *errhp, sword status) {
+    void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {
         sb4 errcode = 0;
         uint64_t len;
         text errbuf1[512];

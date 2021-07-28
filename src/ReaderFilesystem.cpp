@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    ReaderFilesystem::ReaderFilesystem(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
+    ReaderFilesystem::ReaderFilesystem(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t group) :
         Reader(alias, oracleAnalyzer, group),
         fileDes(-1),
         flags(0) {
@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
         return REDO_OK;
     }
 
-    int64_t ReaderFilesystem::redoRead(uint8_t *buf, uint64_t offset, uint64_t size) {
+    int64_t ReaderFilesystem::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         uint64_t startTime = 0;
         if ((trace2 & TRACE2_PERFORMANCE) != 0)
             startTime = getTime();

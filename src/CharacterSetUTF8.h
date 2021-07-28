@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         CharacterSetUTF8();
         virtual ~CharacterSetUTF8();
 
-        virtual typeunicode decode(const uint8_t* &str, uint64_t &length) const;
+        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
     };
 }
 

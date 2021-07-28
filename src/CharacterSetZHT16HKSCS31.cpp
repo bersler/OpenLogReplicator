@@ -23,7 +23,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
     CharacterSetZHT16HKSCS31::CharacterSetZHT16HKSCS31() :
-        CharacterSet16bit("ZHT16HKSCS31", (const typeunicode16 *)unicode_map_ZHT16HKSCS31_2b, ZHT16HKSCS31_b1_min, ZHT16HKSCS31_b1_max,
+        CharacterSet16bit("ZHT16HKSCS31", (const typeunicode16*) unicode_map_ZHT16HKSCS31_2b, ZHT16HKSCS31_b1_min, ZHT16HKSCS31_b1_max,
                 ZHT16HKSCS31_b2_min, ZHT16HKSCS31_b2_max) {
     }
 

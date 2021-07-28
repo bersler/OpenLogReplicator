@@ -37,12 +37,12 @@ namespace OpenLogReplicator {
         uint64_t badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5, uint64_t byte6) const;
 
     public:
-        const char *name;
+        const char* name;
 
-        CharacterSet(const char *name);
+        CharacterSet(const char* name);
         virtual ~CharacterSet();
 
-        virtual uint64_t decode(const uint8_t* &str, uint64_t &length) const = 0;
+        virtual uint64_t decode(const uint8_t*& str, uint64_t& length) const = 0;
     };
 }
 

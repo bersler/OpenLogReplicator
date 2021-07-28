@@ -37,14 +37,14 @@ namespace OpenLogReplicator {
 
     public:
         virtual string getName(void) const;
-        virtual void initializeClient(atomic<bool> *shutdown);
-        virtual void initializeServer(atomic<bool> *shutdown);
-        virtual void sendMessage(const void *msg, uint64_t length);
-        virtual uint64_t receiveMessage(void *msg, uint64_t length);
-        virtual uint64_t receiveMessageNB(void *msg, uint64_t length);
+        virtual void initializeClient(atomic<bool>* shutdown);
+        virtual void initializeServer(atomic<bool>* shutdown);
+        virtual void sendMessage(const void* msg, uint64_t length);
+        virtual uint64_t receiveMessage(void* msg, uint64_t length);
+        virtual uint64_t receiveMessageNB(void* msg, uint64_t length);
         virtual bool connected(void);
 
-        StreamNetwork(const char *uri, uint64_t pollInterval);
+        StreamNetwork(const char* uri, uint64_t pollInterval);
         virtual ~StreamNetwork();
     };
 }

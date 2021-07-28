@@ -26,23 +26,25 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <time.h>
 
 #include "../config.h"
+#include "global.h"
 
 #ifndef TYPES_H_
 #define TYPES_H_
 
-typedef uint16_t typesum;
-typedef uint32_t typeresetlogs;
-typedef uint32_t typeactivation;
-typedef uint16_t typeop1;
-typedef uint32_t typeop2;
-typedef uint8_t typeslt;
-typedef uint8_t typerci;
-
+typedef uint32_t typeRESETLOGS;
+typedef uint32_t typeACTIVATION;
+typedef uint16_t typeSUM;
+typedef uint16_t typeOP1;
+typedef uint32_t typeOP2;
 typedef int16_t typeCONID;
 typedef uint64_t typeUBA;
 typedef uint32_t typeSEQ;
 typedef uint64_t typeSCN;
 typedef uint16_t typeSubSCN;
+typedef uint8_t typeSLT;
+typedef uint32_t typeSQN;
+typedef uint8_t typeRCI;
+typedef int16_t typeUSN;
 typedef uint64_t typeXID;
 typedef uint64_t typeXIDMAP;
 typedef uint16_t typeAFN;
@@ -62,7 +64,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.15"
+#define CONFIG_SCHEMA_VERSION                   "0.9.16"
 #define ZERO_SEQ                                ((typeSEQ)0xFFFFFFFF)
 #define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
@@ -85,8 +87,12 @@ typedef uint64_t typeunicode;
 #define ARCH_LOG_ONLINE_KEEP                    2
 #define ARCH_LOG_LIST                           3
 
-#define MESSAGE_FORMAT_SHORT                    0
+#define MESSAGE_FORMAT_DEFAULT                  0
 #define MESSAGE_FORMAT_FULL                     1
+#define MESSAGE_FORMAT_ADD_SEQUENCES            2
+//JSON only:
+#define MESSAGE_FORMAT_SKIP_BEGIN               4
+#define MESSAGE_FORMAT_SKIP_COMMIT              8
 
 #define TIMESTAMP_FORMAT_UNIX                   0
 #define TIMESTAMP_FORMAT_ISO8601                1
@@ -193,11 +199,11 @@ typedef uint64_t typeunicode;
 #define TABLE_SYS_TABSUBPART                    11
 #define TABLE_SYS_USER                          12
 
-#define USN(__xid)                              ((uint16_t)(((uint64_t)(__xid))>>48))
-#define SLT(__xid)                              ((uint16_t)(((((uint64_t)(__xid))>>32)&0xFFFF)))
-#define SQN(__xid)                              ((uint32_t)(((__xid)&0xFFFFFFFF)))
+#define USN(__xid)                              ((typeUSN)(((uint64_t)(__xid))>>48))
+#define SLT(__xid)                              ((typeSLT)(((((uint64_t)(__xid))>>32)&0xFFFF)))
+#define SQN(__xid)                              ((typeSQN)(((__xid)&0xFFFFFFFF)))
 #define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
-#define PRINTXID(__xid)                         "0x"<<setfill('0')<<setw(4)<<hex<<USN(__xid)<<"."<<setw(3)<<SLT(__xid)<<"."<<setw(8)<<SQN(__xid)
+#define PRINTXID(__xid)                         "0x"<<setfill('0')<<setw(4)<<hex<<USN(__xid)<<"."<<setw(3)<<(uint64_t)SLT(__xid)<<"."<<setw(8)<<SQN(__xid)
 
 #define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
@@ -207,11 +213,6 @@ typedef uint64_t typeunicode;
 #define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<setfill('0')<<setw(16)<<hex<<(__scn)
-
-#ifndef TRACEVAR
-#define TRACEVAR
-extern uint64_t trace, trace2;
-#endif
 
 #define ERROR(__x)                              {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); } }
 #define WARNING(__x)                            {if (trace >= TRACE_WARNING) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [WARNING] " << __x << endl; cerr << __s.str();} }
@@ -307,13 +308,13 @@ namespace OpenLogReplicator {
 
         bool operator!=(const uintX_t& other) const;
         bool operator==(const uintX_t& other) const;
-        uintX_t& operator+=(const uintX_t &val);
-        uintX_t& operator=(const uintX_t &val);
+        uintX_t& operator+=(const uintX_t& val);
+        uintX_t& operator=(const uintX_t& val);
         uintX_t& operator=(uint64_t val);
-        uintX_t& operator=(const string &val);
-        uintX_t& operator=(const char *val);
+        uintX_t& operator=(const string& val);
+        uintX_t& operator=(const char* val);
         uintX_t& set(uint64_t val1, uint64_t val2);
-        uintX_t& setStr(const char *val, uint64_t length);
+        uintX_t& setStr(const char* val, uint64_t length);
         uint64_t get64(void);
         bool isSet64(uint64_t mask);
         bool isZero();
@@ -321,14 +322,14 @@ namespace OpenLogReplicator {
         friend ostream& operator<<(ostream& os, const uintX_t& val);
     };
 
-    class typetime {
+    class typeTIME {
         uint32_t val;
     public:
-        typetime(void) :
+        typeTIME(void) :
             val(0) {
         }
 
-        typetime(uint32_t val) :
+        typeTIME(uint32_t val) :
             val(val) {
         }
 
@@ -336,14 +337,14 @@ namespace OpenLogReplicator {
             return this->val;
         }
 
-        typetime& operator= (uint32_t val) {
+        typeTIME& operator= (uint32_t val) {
             this->val = val;
             return *this;
         }
 
         time_t toTime(void) {
             struct tm epochtime = {0};
-            memset((void*)&epochtime, 0, sizeof(epochtime));
+            memset((void*) &epochtime, 0, sizeof(epochtime));
             uint64_t rest = val;
             epochtime.tm_sec = rest % 60; rest /= 60;
             epochtime.tm_min = rest % 60; rest /= 60;
@@ -354,7 +355,7 @@ namespace OpenLogReplicator {
             return mktime(&epochtime);
         }
 
-        void toISO8601(char *buffer) {
+        void toISO8601(char* buffer) {
             uint64_t rest = val;
             uint64_t ss = rest % 60; rest /= 60;
             uint64_t mi = rest % 60; rest /= 60;
@@ -387,7 +388,7 @@ namespace OpenLogReplicator {
             //YYYY-MM-DDThh:mm:ssZ
         }
 
-        friend ostream& operator<<(ostream& os, const typetime& time_) {
+        friend ostream& operator<<(ostream& os, const typeTIME& time_) {
             uint64_t rest = time_.val;
             uint64_t ss = rest % 60; rest /= 60;
             uint64_t mi = rest % 60; rest /= 60;

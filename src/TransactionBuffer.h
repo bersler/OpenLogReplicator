@@ -25,11 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRANSACTIONBUFFER_H_
 
 #define ROW_HEADER_OP       (0)
-#define ROW_HEADER_REDO1    (sizeof(typeop2))
-#define ROW_HEADER_REDO2    (sizeof(typeop2)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_DATA     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_SIZE     (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_TOTAL    (sizeof(typeop2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t))
+#define ROW_HEADER_REDO1    (sizeof(typeOP2))
+#define ROW_HEADER_REDO2    (sizeof(typeOP2)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_DATA     (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_SIZE     (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
+#define ROW_HEADER_TOTAL    (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t))
 
 #define FULL_BUFFER_SIZE    65536
 #define HEADER_BUFFER_SIZE  (sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint8_t*)+sizeof(TransactionChunk*)+sizeof(TransactionChunk*))
@@ -46,27 +46,27 @@ namespace OpenLogReplicator {
         uint64_t elements;
         uint64_t size;
         uint64_t pos;
-        uint8_t *header;
-        TransactionChunk *prev;
-        TransactionChunk *next;
+        uint8_t* header;
+        TransactionChunk* prev;
+        TransactionChunk* next;
         uint8_t buffer[DATA_BUFFER_SIZE];
     };
 
     class TransactionBuffer {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         uint8_t buffer[DATA_BUFFER_SIZE];
 
     public:
         unordered_map<uint8_t*,uint64_t> partiallyFullChunks;
 
-        TransactionBuffer(OracleAnalyzer *oracleAnalyzer);
+        TransactionBuffer(OracleAnalyzer* oracleAnalyzer);
         virtual ~TransactionBuffer();
 
-        TransactionChunk* newTransactionChunk(void);
-        void addTransactionChunk(Transaction *transaction, RedoLogRecord *redoLogRecord1);
-        void addTransactionChunk(Transaction *transaction, RedoLogRecord *redoLogRecord1, RedoLogRecord *redoLogRecord2);
-        void rollbackTransactionChunk(Transaction *transaction);
+        TransactionChunk* newTransactionChunk(Transaction* transaction);
+        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1);
+        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void rollbackTransactionChunk(Transaction* transaction);
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc);
     };

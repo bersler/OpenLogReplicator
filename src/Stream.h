@@ -30,20 +30,20 @@ using namespace std;
 namespace OpenLogReplicator {
     class Stream {
     protected:
-        atomic<bool> *shutdown;
+        atomic<bool>* shutdown;
         uint64_t pollInterval;
         string uri;
 
     public:
         virtual string getName(void) const = 0;
-        virtual void initializeClient(atomic<bool> *shutdown) = 0;
-        virtual void initializeServer(atomic<bool> *shutdown) = 0;
-        virtual void sendMessage(const void *msg, uint64_t length) = 0;
-        virtual uint64_t receiveMessage(void *msg, uint64_t length) = 0;
-        virtual uint64_t receiveMessageNB(void *msg, uint64_t length) = 0;
+        virtual void initializeClient(atomic<bool>* shutdown) = 0;
+        virtual void initializeServer(atomic<bool>* shutdown) = 0;
+        virtual void sendMessage(const void* msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessage(void* msg, uint64_t length) = 0;
+        virtual uint64_t receiveMessageNB(void* msg, uint64_t length) = 0;
         virtual bool connected(void) = 0;
 
-        Stream(const char *uri, uint64_t pollInterval);
+        Stream(const char* uri, uint64_t pollInterval);
         virtual ~Stream();
     };
 }

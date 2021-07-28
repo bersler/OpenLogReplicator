@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
                 (other.ts != ts);
     }
 
-    SysTab::SysTab(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
+    SysTab::SysTab(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
             uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2, bool touched) :
             rowId(rowId),
             obj(obj),

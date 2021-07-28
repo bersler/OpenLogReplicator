@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OpCode0501::OpCode0501(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+    OpCode0501::OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
 
         uint64_t fieldNum = 0, fieldPos = 0;
@@ -75,7 +75,8 @@ namespace OpenLogReplicator {
             kteoputrn(fieldPos, fieldLength);
         }
 
-        uint8_t *colNums = nullptr, *nulls = nullptr;
+        uint8_t* colNums = nullptr;
+        uint8_t* nulls = nullptr;
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050106))
             return;
@@ -252,7 +253,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::suppLog(uint64_t &fieldNum, uint64_t &fieldPos, uint16_t &fieldLength) {
+    void OpCode0501::suppLog(uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         uint64_t suppLogSize = 0;
         uint64_t suppLogFieldCnt = 0;
         oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
@@ -298,7 +299,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord->suppLogNumsDelta = fieldPos;
-        uint8_t *colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
+        uint8_t* colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050112)) {
             oracleAnalyzer->suppLogSize += suppLogSize;

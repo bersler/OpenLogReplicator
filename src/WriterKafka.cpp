@@ -26,9 +26,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    WriterKafka::WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic,
+    WriterKafka::WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, const char* brokers, const char* topic,
             uint64_t maxMessageMb, uint64_t maxMessages, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize,
-            typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence) :
+            typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, bool enableIdempotence) :
         Writer(alias, oracleAnalyzer, maxMessageMb, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSequence, startTime,
                 startTimeRel),
         brokers(brokers),
@@ -83,9 +83,9 @@ namespace OpenLogReplicator {
         INFO("Kafka producer exit code: " << dec << err);
     }
 
-    void WriterKafka::dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque) {
-        OutputBufferMsg *msg = (OutputBufferMsg *)rkmessage->_private;
-        OracleAnalyzer *oracleAnalyzer = msg->oracleAnalyzer;
+    void WriterKafka::dr_msg_cb(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage, void* opaque) {
+        OutputBufferMsg* msg = (OutputBufferMsg*) rkmessage->_private;
+        OracleAnalyzer* oracleAnalyzer = msg->oracleAnalyzer;
         if (rkmessage->err) {
             WARNING("Kafka: " << msg->id << " delivery failed: " << rd_kafka_err2str(rkmessage->err));
         } else {
@@ -93,8 +93,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void WriterKafka::error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque) {
-        OracleAnalyzer *oracleAnalyzer = (OracleAnalyzer*)opaque;
+    void WriterKafka::error_cb(rd_kafka_t* rk, int err, const char* reason, void* opaque) {
+        OracleAnalyzer* oracleAnalyzer = (OracleAnalyzer*)opaque;
 
         WARNING("Kafka: " << rd_kafka_err2name((rd_kafka_resp_err_t)err) << ", reason: " << reason);
 
@@ -106,11 +106,11 @@ namespace OpenLogReplicator {
         RUNTIME_FAIL("Kafka: fatal error: " << rd_kafka_err2name(orig_err) << ", reason: " << errstr);
     }
 
-    void WriterKafka::logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf) {
+    void WriterKafka::logger_cb(const rd_kafka_t* rk, int level, const char* fac, const char* buf) {
         TRACE(TRACE2_WRITER, "WRITER: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
     }
 
-    void WriterKafka::sendMessage(OutputBufferMsg *msg) {
+    void WriterKafka::sendMessage(OutputBufferMsg* msg) {
         for(;;) {
             rd_kafka_resp_err_t err = rd_kafka_producev(rk, RD_KAFKA_V_TOPIC(topic.c_str()), RD_KAFKA_V_VALUE(msg->data, msg->length),
                     RD_KAFKA_V_OPAQUE(msg), RD_KAFKA_V_END);

@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
     RowId::RowId() : dataObj(0), dba(0), slot(0) {
     }
 
-    RowId::RowId(const char *rowid) {
+    RowId::RowId(const char* rowid) {
         if (strlen(rowid) != 18) {
             ERROR("RowID: incorrect format: " << rowid);
         }
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
                 (other.slot != slot);
     }
 
-    void RowId::toString(char *str) const {
+    void RowId::toString(char* str) const {
         typeAFN afn = dba >> 22;
         typeDBA bdba = dba & 0x003FFFFF;
 
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
 }
 
 namespace std {
-    size_t std::hash<OpenLogReplicator::RowId>::operator()(const OpenLogReplicator::RowId &rowId) const {
+    size_t std::hash<OpenLogReplicator::RowId>::operator()(const OpenLogReplicator::RowId& rowId) const {
         return hash<typeDATAOBJ>()(rowId.dataObj) ^
                 hash<typeDBA>()(rowId.dba) ^
                 hash<typeSLOT>()(rowId.slot);

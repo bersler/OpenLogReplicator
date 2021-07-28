@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
 
     class OpCode0B05: public OpCode {
     public:
-        OpCode0B05(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
+        OpCode0B05(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
         virtual ~OpCode0B05();
 
         virtual void process(void);

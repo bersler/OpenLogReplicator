@@ -30,28 +30,28 @@ namespace OpenLogReplicator {
         bool hasPreviousValue;
         bool hasPreviousRedo;
         bool hasPreviousColumn;
-        virtual void columnNull(OracleObject *object, typeCOL col);
-        virtual void columnFloat(string &columnName, float value);
-        virtual void columnDouble(string &columnName, double value);
-        virtual void columnString(string &columnName);
-        virtual void columnNumber(string &columnName, uint64_t precision, uint64_t scale);
-        virtual void columnRaw(string &columnName, const uint8_t *data, uint64_t length);
-        virtual void columnTimestamp(string &columnName, struct tm &epochtime, uint64_t fraction, const char *tz);
+        virtual void columnNull(OracleObject* object, typeCOL col);
+        virtual void columnFloat(string& columnName, float value);
+        virtual void columnDouble(string& columnName, double value);
+        virtual void columnString(string& columnName);
+        virtual void columnNumber(string& columnName, uint64_t precision, uint64_t scale);
+        virtual void columnRaw(string& columnName, const uint8_t* data, uint64_t length);
+        virtual void columnTimestamp(string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz);
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
         virtual void appendHeader(bool first, bool showXid);
-        virtual void appendSchema(OracleObject *object, typeDATAOBJ dataObj);
+        virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
 
         void appendHex(uint64_t value, uint64_t length);
         void appendDec(uint64_t value, uint64_t length);
         void appendDec(uint64_t value);
         void appendSDec(int64_t value);
-        void appendEscape(const char *str, uint64_t length);
-        time_t tmToEpoch(struct tm *epoch) const;
-        virtual void processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation,
-                const char *sql, uint64_t sqlLength);
+        void appendEscape(const char* str, uint64_t length);
+        time_t tmToEpoch(struct tm* epoch) const;
+        virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
+        virtual void processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation,
+                const char* sql, uint64_t sqlLength);
         virtual void processBegin(void);
     public:
         OutputBufferJson(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
         virtual ~OutputBufferJson();
 
         virtual void processCommit(void);
-        virtual void processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo);
+        virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo);
     };
 }
 

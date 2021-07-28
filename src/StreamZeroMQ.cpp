@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    StreamZeroMQ::StreamZeroMQ(const char *uri, uint64_t pollInterval) :
+    StreamZeroMQ::StreamZeroMQ(const char* uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
         socket(nullptr),
         context(nullptr) {
@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         return "ZeroMQ:" + uri;
     }
 
-    void StreamZeroMQ::initializeClient(atomic<bool> *shutdown) {
+    void StreamZeroMQ::initializeClient(atomic<bool>* shutdown) {
         this->shutdown = shutdown;
 
         if (zmq_connect(socket, uri.c_str()) != 0) {
@@ -59,14 +59,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamZeroMQ::initializeServer(atomic<bool> *shutdown) {
+    void StreamZeroMQ::initializeServer(atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         if (zmq_bind(socket, uri.c_str()) != 0) {
             RUNTIME_FAIL("ZeroMQ bind to " << uri << " error (errno: " << dec << errno << ")");
         }
     }
 
-    void StreamZeroMQ::sendMessage(const void *msg, uint64_t length) {
+    void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
         int64_t ret = 0;
         while (!*shutdown) {
             ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    uint64_t StreamZeroMQ::receiveMessage(void *msg, uint64_t length) {
+    uint64_t StreamZeroMQ::receiveMessage(void* msg, uint64_t length) {
         int64_t ret = zmq_recv(socket, msg, length, 0);
 
         if (ret < 0) {
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    uint64_t StreamZeroMQ::receiveMessageNB(void *msg, uint64_t length) {
+    uint64_t StreamZeroMQ::receiveMessageNB(void* msg, uint64_t length) {
         int64_t ret = zmq_recv(socket, msg, length, ZMQ_DONTWAIT);
         if (ret < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN)

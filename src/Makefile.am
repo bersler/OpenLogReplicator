@@ -88,6 +88,7 @@ TransactionBuffer.cpp \
 Transaction.cpp \
 Writer.cpp \
 WriterFile.cpp \
+global.cpp \
 uintX_t.cpp
 
 if OCI_COMPILE

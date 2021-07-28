@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    Thread::Thread(const char *alias) :
+    Thread::Thread(const char* alias) :
         stop(false),
         shutdown(false),
         started(false),
@@ -33,9 +33,9 @@ namespace OpenLogReplicator {
     Thread::~Thread() {
     }
 
-    void *Thread::runStatic(void *context){
-        ((Thread *) context)->started = true;
-        void *ret = ((Thread *) context)->run();
+    void* Thread::runStatic(void* context){
+        ((Thread*) context)->started = true;
+        void* ret = ((Thread*) context)->run();
         return ret;
     }
 

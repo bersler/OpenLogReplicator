@@ -77,28 +77,28 @@ namespace OpenLogReplicator {
         virtual void initialize(void);
         virtual void checkConnection(void);
         void closeConnection(void);
-        string getParameterValue(const char *parameter);
-        string getPropertyValue(const char *property);
+        string getParameterValue(const char* parameter);
+        string getPropertyValue(const char* property);
         void checkTableForGrants(string tableName);
         void checkTableForGrantsFlashback(string tableName, typeSCN scn);
         virtual const char* getModeName(void) const;
         virtual void createSchema(void);
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
         void readSystemDictionaries(string owner, string table, typeOPTIONS options);
-        void createSchemaForTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options);
+        void createSchemaForTable(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options);
 
     public:
-        DatabaseEnvironment *env;
-        DatabaseConnection *conn;
+        DatabaseEnvironment* env;
+        DatabaseConnection* conn;
         bool keepConnection;
 
-        OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias,
-                const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
-                const char *user, const char *password, const char *connectString, bool standby);
+        OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
+                const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
+                const char* user, const char* password, const char* connectString, bool standby);
         virtual ~OracleAnalyzerOnline();
         virtual void goStandby(void);
 
-        static void archGetLogOnline(OracleAnalyzer *oracleAnalyzer);
+        static void archGetLogOnline(OracleAnalyzer* oracleAnalyzer);
     };
 }
 

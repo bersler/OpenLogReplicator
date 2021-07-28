@@ -32,35 +32,35 @@ namespace OpenLogReplicator {
 
     class DatabaseStatement {
     protected:
-        DatabaseConnection *conn;
+        DatabaseConnection* conn;
         bool isExecuted;
-        OCIStmt *stmthp;
-        vector<OCIBind *> binds;
-        vector<OCIDefine *> defines;
+        OCIStmt* stmthp;
+        vector<OCIBind*> binds;
+        vector<OCIDefine*> defines;
 
     public:
-        DatabaseStatement(DatabaseConnection *conn);
+        DatabaseStatement(DatabaseConnection* conn);
         virtual ~DatabaseStatement();
 
-        void createStatement(const char *sql);
+        void createStatement(const char* sql);
         void unbindAll(void);
         int64_t executeQuery(void);
         int64_t next(void);
 
-        void bindString(uint64_t col, const char *val);
-        void bindString(uint64_t col, string &val);
-        void bindInt32(uint64_t col, int32_t &val);
-        void bindUInt32(uint64_t col, uint32_t &val);
-        void bindInt64(uint64_t col, int64_t &val);
-        void bindUInt64(uint64_t col, uint64_t &val);
-        void bindBinary(uint64_t col, uint8_t *buf, uint64_t size);
-        void defineString(uint64_t col, char *val, uint64_t len);
-        void defineUInt16(uint64_t col, uint16_t &val);
-        void defineInt16(uint64_t col, int16_t &val);
-        void defineUInt32(uint64_t col, uint32_t &val);
-        void defineInt32(uint64_t col, int32_t &val);
-        void defineUInt64(uint64_t col, uint64_t &val);
-        void defineInt64(uint64_t col, int64_t &val);
+        void bindString(uint64_t col, const char* val);
+        void bindString(uint64_t col, string& val);
+        void bindInt32(uint64_t col, int32_t& val);
+        void bindUInt32(uint64_t col, uint32_t& val);
+        void bindInt64(uint64_t col, int64_t& val);
+        void bindUInt64(uint64_t col, uint64_t& val);
+        void bindBinary(uint64_t col, uint8_t* buf, uint64_t size);
+        void defineString(uint64_t col, char* val, uint64_t len);
+        void defineUInt16(uint64_t col, uint16_t& val);
+        void defineInt16(uint64_t col, int16_t& val);
+        void defineUInt32(uint64_t col, uint32_t& val);
+        void defineInt32(uint64_t col, int32_t& val);
+        void defineUInt64(uint64_t col, uint64_t& val);
+        void defineInt64(uint64_t col, int64_t& val);
         bool isNull(uint64_t col);
     };
 }

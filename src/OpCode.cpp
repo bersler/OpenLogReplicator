@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OpCode::OpCode(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord):
+    OpCode::OpCode(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord):
 		oracleAnalyzer(oracleAnalyzer),
 		redoLogRecord(redoLogRecord) {
     }
@@ -399,7 +399,7 @@ namespace OpenLogReplicator {
             else
                 oracleAnalyzer->dumpStream << " ";
 
-            uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)
@@ -607,7 +607,7 @@ namespace OpenLogReplicator {
             else
                 oracleAnalyzer->dumpStream << " ";
 
-            uint8_t *nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)
@@ -759,7 +759,7 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
         redoLogRecord->tsn = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 8);
         redoLogRecord->undo = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
-        redoLogRecord->opc = (((typeop1)redoLogRecord->data[fieldPos + 16]) << 8) | redoLogRecord->data[fieldPos + 17];
+        redoLogRecord->opc = (((typeOP1)redoLogRecord->data[fieldPos + 16]) << 8) | redoLogRecord->data[fieldPos + 17];
         redoLogRecord->slt = redoLogRecord->data[fieldPos + 18];
         redoLogRecord->rci = redoLogRecord->data[fieldPos + 19];
         redoLogRecord->flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
@@ -1036,7 +1036,7 @@ namespace OpenLogReplicator {
         return "";
     }
 
-    void OpCode::dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength) const {
+    void OpCode::dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const {
         uint64_t pos = 0;
 
         oracleAnalyzer->dumpStream << "Vector content: " << endl;
@@ -1058,7 +1058,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const {
+    void OpCode::dumpCols(uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const {
         if (isNull) {
             oracleAnalyzer->dumpStream << "col " << setfill(' ') << setw(2) << dec << colnum << ": *NULL*" << endl;
         } else {
@@ -1080,7 +1080,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpRows(uint8_t *data) const {
+    void OpCode::dumpRows(uint8_t* data) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint64_t pos = 0;
             char fbStr[9] = "--------";
@@ -1124,7 +1124,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg) const {
+    void OpCode::dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char* msg) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             oracleAnalyzer->dumpStream << msg;
             for (uint64_t i = 0; i < fieldLength; ++i)
@@ -1133,7 +1133,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::processFbFlags(uint8_t fb, char *fbStr) const {
+    void OpCode::processFbFlags(uint8_t fb, char* fbStr) const {
         if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; //Last column continues in Next piece
         if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; //First column continues from Previous piece
         if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last data piece

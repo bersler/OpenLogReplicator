@@ -1044,6 +1044,7 @@ class Payload final :
     kOpFieldNumber = 1,
     kSeqFieldNumber = 7,
     kOffsetFieldNumber = 8,
+    kNumFieldNumber = 10,
     kRedoFieldNumber = 9,
   };
   // repeated .OpenLogReplicator.pb.Value before = 4;
@@ -1155,6 +1156,19 @@ class Payload final :
   void _internal_set_offset(::PROTOBUF_NAMESPACE_ID::uint64 value);
   public:
 
+  // optional uint64 num = 10;
+  bool has_num() const;
+  private:
+  bool _internal_has_num() const;
+  public:
+  void clear_num();
+  ::PROTOBUF_NAMESPACE_ID::uint64 num() const;
+  void set_num(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  private:
+  ::PROTOBUF_NAMESPACE_ID::uint64 _internal_num() const;
+  void _internal_set_num(::PROTOBUF_NAMESPACE_ID::uint64 value);
+  public:
+
   // bool redo = 9;
   void clear_redo();
   bool redo() const;
@@ -1171,6 +1185,8 @@ class Payload final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value > before_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::OpenLogReplicator::pb::Value > after_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr rid_;
@@ -1179,8 +1195,8 @@ class Payload final :
   int op_;
   ::PROTOBUF_NAMESPACE_ID::uint32 seq_;
   ::PROTOBUF_NAMESPACE_ID::uint64 offset_;
+  ::PROTOBUF_NAMESPACE_ID::uint64 num_;
   bool redo_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_OraProtoBuf_2eproto;
 };
 // -------------------------------------------------------------------
@@ -3045,6 +3061,34 @@ inline void Payload::_internal_set_redo(bool value) {
 inline void Payload::set_redo(bool value) {
   _internal_set_redo(value);
   // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.redo)
+}
+
+// optional uint64 num = 10;
+inline bool Payload::_internal_has_num() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool Payload::has_num() const {
+  return _internal_has_num();
+}
+inline void Payload::clear_num() {
+  num_ = uint64_t{0u};
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::_internal_num() const {
+  return num_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::uint64 Payload::num() const {
+  // @@protoc_insertion_point(field_get:OpenLogReplicator.pb.Payload.num)
+  return _internal_num();
+}
+inline void Payload::_internal_set_num(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _has_bits_[0] |= 0x00000001u;
+  num_ = value;
+}
+inline void Payload::set_num(::PROTOBUF_NAMESPACE_ID::uint64 value) {
+  _internal_set_num(value);
+  // @@protoc_insertion_point(field_set:OpenLogReplicator.pb.Payload.num)
 }
 
 // -------------------------------------------------------------------

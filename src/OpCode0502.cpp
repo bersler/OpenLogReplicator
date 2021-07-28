@@ -25,7 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OpCode0502::OpCode0502(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord) :
+    OpCode0502::OpCode0502(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
     }
 
@@ -107,7 +107,7 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 28));
 
             oracleAnalyzer->dumpStream << "ktudh redo:" <<
-                    " slt: 0x" << setfill('0') << setw(4) << hex << SLT(redoLogRecord->xid) <<
+                    " slt: 0x" << setfill('0') << setw(4) << hex << (uint64_t)SLT(redoLogRecord->xid) <<
                     " sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
                     " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
                     " siz: " << dec << siz <<

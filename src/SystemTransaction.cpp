@@ -29,7 +29,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    SystemTransaction::SystemTransaction(OracleAnalyzer *oracleAnalyzer, OutputBuffer *outputBuffer, Schema *schema) :
+    SystemTransaction::SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema) :
                 oracleAnalyzer(oracleAnalyzer),
                 outputBuffer(outputBuffer),
                 schema(schema) {
@@ -39,9 +39,9 @@ namespace OpenLogReplicator {
     SystemTransaction::~SystemTransaction() {
     }
 
-    bool SystemTransaction::updateNumber16(int16_t &val, int16_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -66,9 +66,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber16u(uint16_t &val, uint16_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -96,9 +96,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber32u(uint32_t &val, uint32_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -126,9 +126,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateObj(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateObj(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -159,9 +159,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updatePart(typeOBJ &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updatePart(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -192,9 +192,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateUser(typeUSER &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateUser(typeUSER& val, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -225,9 +225,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber64(int64_t &val, int64_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -255,9 +255,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber64u(uint64_t &val, uint64_t defVal, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -285,9 +285,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumberXu(uintX_t &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateNumberXu(uintX_t& val, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 2) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -316,9 +316,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateString(string &val, typeCOL column, OracleObject *object, RowId &rowId) {
+    bool SystemTransaction::updateString(string& val, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char *retPtr;
+            char* retPtr;
             if (object->columns[column]->typeNo != 1 && object->columns[column]->typeNo != 96) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
@@ -342,7 +342,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    void SystemTransaction::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void SystemTransaction::processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         RowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
@@ -353,7 +353,7 @@ namespace OpenLogReplicator {
             if (schema->sysCColMapRowId.find(rowId) != schema->sysCColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.CCOL$: (rowid: " << rowId << ") for insert");
             }
-            SysCCol *sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
+            SysCCol* sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
             if (sysCCol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
             }
@@ -386,7 +386,7 @@ namespace OpenLogReplicator {
             if (schema->sysCDefMapRowId.find(rowId) != schema->sysCDefMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEF$: (rowid: " << rowId << ") for insert");
             }
-            SysCDef *sysCDef = new SysCDef(rowId, 0, 0, 0, true);
+            SysCDef* sysCDef = new SysCDef(rowId, 0, 0, 0, true);
             if (sysCDef == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
             }
@@ -417,7 +417,7 @@ namespace OpenLogReplicator {
             if (schema->sysColMapRowId.find(rowId) != schema->sysColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.COL$: (rowid: " << rowId << ")for insert");
             }
-            SysCol *sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
+            SysCol* sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
             if (sysCol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
             }
@@ -468,7 +468,7 @@ namespace OpenLogReplicator {
             if (schema->sysDeferredStgMapRowId.find(rowId) != schema->sysDeferredStgMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEFERRED_STG$: (rowid: " << rowId << ") for insert");
             }
-            SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
+            SysDeferredStg* sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
             if (sysDeferredStg == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
             }
@@ -498,7 +498,7 @@ namespace OpenLogReplicator {
             if (schema->sysEColMapRowId.find(rowId) != schema->sysEColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.ECOL$: (rowid: " << rowId << ") for insert");
             }
-            SysECol *sysECol = new SysECol(rowId, 0, 0, -1, true);
+            SysECol* sysECol = new SysECol(rowId, 0, 0, -1, true);
             if (sysECol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
             }
@@ -526,7 +526,7 @@ namespace OpenLogReplicator {
             schema->sysEColTouched = true;
 
         } else if (object->systemTable == TABLE_SYS_OBJ) {
-            SysObj *sysObj = schema->sysObjMapRowId[rowId];
+            SysObj* sysObj = schema->sysObjMapRowId[rowId];
             if (sysObj != nullptr) {
                 RUNTIME_FAIL("DDL: duplicate SYS.OBJ$: (rowid: " << rowId << ") for insert");
             }
@@ -567,7 +567,7 @@ namespace OpenLogReplicator {
             if (schema->sysSegMapRowId.find(rowId) != schema->sysSegMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.SEG$: (rowid: " << rowId << ") for insert");
             }
-            SysSeg *sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
+            SysSeg* sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
             if (sysSeg == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
             }
@@ -600,7 +600,7 @@ namespace OpenLogReplicator {
             if (schema->sysTabMapRowId.find(rowId) != schema->sysTabMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TAB$: (rowid: " << rowId << ") for insert");
             }
-            SysTab *sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            SysTab* sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
             if (sysTab == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
             }
@@ -641,7 +641,7 @@ namespace OpenLogReplicator {
             if (schema->sysTabComPartMapRowId.find(rowId) != schema->sysTabComPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABCOMPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabComPart *sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
+            SysTabComPart* sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
             if (sysTabComPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
             }
@@ -672,7 +672,7 @@ namespace OpenLogReplicator {
             if (schema->sysTabPartMapRowId.find(rowId) != schema->sysTabPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabPart *sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
+            SysTabPart* sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
             if (sysTabPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
             }
@@ -703,7 +703,7 @@ namespace OpenLogReplicator {
             if (schema->sysTabSubPartMapRowId.find(rowId) != schema->sysTabSubPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABSUBPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabSubPart *sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
+            SysTabSubPart* sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
             if (sysTabSubPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
             }
@@ -734,7 +734,7 @@ namespace OpenLogReplicator {
             if (schema->sysUserMapRowId.find(rowId) != schema->sysUserMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.USER$: (rowid: " << rowId << ") for insert");
             }
-            SysUser *sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
+            SysUser* sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
             if (sysUser == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
             }
@@ -764,7 +764,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void SystemTransaction::processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         RowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
@@ -776,7 +776,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCCol *sysCCol = sysCColIt->second;
+            SysCCol* sysCCol = sysCColIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -818,7 +818,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCDef *sysCDef = sysCDefIt->second;
+            SysCDef* sysCDef = sysCDefIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -855,7 +855,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCol *sysCol = sysColIt->second;
+            SysCol* sysCol = sysColIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -942,7 +942,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysDeferredStg *sysDeferredStg = sysDeferredStgIt->second;
+            SysDeferredStg* sysDeferredStg = sysDeferredStgIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -974,7 +974,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysECol *sysECol = sysEColIt->second;
+            SysECol* sysECol = sysEColIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1011,7 +1011,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysObj *sysObj = sysObjIt->second;
+            SysObj* sysObj = sysObjIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1063,7 +1063,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysSeg *sysSeg = sysSegIt->second;
+            SysSeg* sysSeg = sysSegIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1105,7 +1105,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTab *sysTab = sysTabIt->second;
+            SysTab* sysTab = sysTabIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1174,7 +1174,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabComPart *sysTabComPart = sysTabComPartIt->second;
+            SysTabComPart* sysTabComPart = sysTabComPartIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1211,7 +1211,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabPart *sysTabPart = sysTabPartIt->second;
+            SysTabPart* sysTabPart = sysTabPartIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1248,7 +1248,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabSubPart *sysTabSubPart = sysTabSubPartIt->second;
+            SysTabSubPart* sysTabSubPart = sysTabSubPartIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1285,7 +1285,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysUser *sysUser = sysUserIt->second;
+            SysUser* sysUser = sysUserIt->second;
 
             typeCOL column;
             uint64_t baseMax = outputBuffer->valuesMax >> 6;
@@ -1318,7 +1318,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void SystemTransaction::processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         RowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
@@ -1330,7 +1330,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCCol *sysCCol = sysCColIt->second;
+            SysCCol* sysCCol = sysCColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCCol->con << ", INTCOL#: " << sysCCol->intCol << ", OBJ#: " <<
                     sysCCol->obj << ", SPARE1: " << sysCCol->spare1 << ")");
             schema->touched = true;
@@ -1347,7 +1347,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCDef *sysCDef = sysCDefIt->second;
+            SysCDef* sysCDef = sysCDefIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCDef->con << ", OBJ#: " << sysCDef->obj << ", type: " << sysCDef->type << ")");
             schema->touched = true;
             schema->sysCDefMapRowId.erase(rowId);
@@ -1363,7 +1363,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysCol *sysCol = sysColIt->second;
+            SysCol* sysCol = sysColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysCol->obj << ", COL#: " << sysCol->col << ", SEGCOL#: " << sysCol->segCol <<
                     ", INTCOL#: " << sysCol->intCol << ", NAME: '" << sysCol->name << "', TYPE#: " << sysCol->type << ", LENGTH: " << sysCol->length <<
                     ", PRECISION#: " << sysCol->precision << ", SCALE: " << sysCol->scale << ", CHARSETFORM: " << sysCol->charsetForm <<
@@ -1382,7 +1382,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysDeferredStg *sysDeferredStg = sysDeferredStgIt->second;
+            SysDeferredStg* sysDeferredStg = sysDeferredStgIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysDeferredStg->obj << ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
             schema->touched = true;
             schema->sysDeferredStgMapRowId.erase(rowId);
@@ -1398,7 +1398,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysECol *sysECol = sysEColIt->second;
+            SysECol* sysECol = sysEColIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (TABOBJ#: " << dec << sysECol->tabObj << ", COLNUM: " << sysECol->colNum << ", GUARD_ID: " <<
                     sysECol->guardId << ")");
             schema->touched = true;
@@ -1415,7 +1415,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysObj *sysObj = sysObjIt->second;
+            SysObj* sysObj = sysObjIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OWNER#: " << dec << sysObj->owner << ", OBJ#: " << sysObj->obj << ", DATAOBJ#: " <<
                     sysObj->dataObj << ", TYPE#: " << sysObj->type << ", NAME: '" << sysObj->name << "', FLAGS: " << sysObj->flags << ")");
             schema->touched = true;
@@ -1432,7 +1432,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysSeg *sysSeg = sysSegIt->second;
+            SysSeg* sysSeg = sysSegIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (FILE#: " << dec << sysSeg->file << ", BLOCK#: " << sysSeg->block << ", TS#: " <<
                     sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
             schema->touched = true;
@@ -1456,7 +1456,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTab *sysTab = sysTabIt->second;
+            SysTab* sysTab = sysTabIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", TS#: " <<
                     sysTab->ts << ", FILE#: " << sysTab->file << ", BLOCK#: " << sysTab->block << ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " <<
                     sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
@@ -1474,7 +1474,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabComPart *sysTabComPart = sysTabComPartIt->second;
+            SysTabComPart* sysTabComPart = sysTabComPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabComPart->obj << ", DATAOBJ#: " << sysTabComPart->dataObj << ", BO#: " <<
                     sysTabComPart->bo << ")");
             schema->touched = true;
@@ -1491,7 +1491,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabPart *sysTabPart = sysTabPartIt->second;
+            SysTabPart* sysTabPart = sysTabPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " << sysTabPart->dataObj << ", BO#: " <<
                     sysTabPart->bo << ")");
             schema->touched = true;
@@ -1508,7 +1508,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysTabSubPart *sysTabSubPart = sysTabSubPartIt->second;
+            SysTabSubPart* sysTabSubPart = sysTabSubPartIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " << sysTabSubPart->dataObj << ", POBJ#: " <<
                     sysTabSubPart->pObj << ")");
             schema->touched = true;
@@ -1525,7 +1525,7 @@ namespace OpenLogReplicator {
                 TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
                 return;
             }
-            SysUser *sysUser = sysUserIt->second;
+            SysUser* sysUser = sysUserIt->second;
             TRACE(TRACE2_SYSTEM, "SYSTEM: delete (USER#: " << dec << sysUser->user << ", NAME: " << sysUser->name << ", SPARE1: " <<
                     sysUser->spare1 << ")");
             schema->touched = true;

@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
 
     class SysECol {
     public:
-        SysECol(RowId &rowId, typeOBJ tabObj, typeCOL colNum, typeCOL guardId, bool touched);
+        SysECol(RowId& rowId, typeOBJ tabObj, typeCOL colNum, typeCOL guardId, bool touched);
 
         RowId rowId;
         typeOBJ tabObj;
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
 namespace std {
     template <>
     struct hash<OpenLogReplicator::SysEColKey> {
-        size_t operator()(const OpenLogReplicator::SysEColKey &sysEColKey) const;
+        size_t operator()(const OpenLogReplicator::SysEColKey& sysEColKey) const;
     };
 }
 

@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
 
     class Writer : public Thread {
     protected:
-        OutputBuffer *outputBuffer;
+        OutputBuffer* outputBuffer;
         uint64_t confirmedMessages;
         uint64_t sentMessages;
         uint64_t pollIntervalUS;
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         uint64_t queueSize;
         uint64_t tmpQueueSize;
         uint64_t maxQueueSize;
-        OutputBufferMsg **queue;
+        OutputBufferMsg** queue;
         typeSCN confirmedScn;
         typeSCN startScn;
         typeSEQ startSequence;
@@ -49,25 +49,25 @@ namespace OpenLogReplicator {
         int64_t startTimeRel;
         bool streaming;
 
-        void createMessage(OutputBufferMsg *msg);
-        virtual void sendMessage(OutputBufferMsg *msg) = 0;
+        void createMessage(OutputBufferMsg* msg);
+        virtual void sendMessage(OutputBufferMsg* msg) = 0;
         virtual string getName(void) const = 0;
         virtual void pollQueue(void) = 0;
-        virtual void *run(void);
+        virtual void* run(void);
         virtual void writeCheckpoint(bool force);
         virtual void readCheckpoint(void);
         void startReader(void);
         void sortQueue(void);
 
     public:
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         uint64_t maxMessageMb;      //maximum message size able to handle by writer
 
-        Writer(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
+        Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
                 uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
                 int64_t startTimeRel);
         virtual ~Writer();
-        void confirmMessage(OutputBufferMsg *msg);
+        void confirmMessage(OutputBufferMsg* msg);
     };
 }
 

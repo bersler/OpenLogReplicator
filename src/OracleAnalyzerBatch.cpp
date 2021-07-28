@@ -25,8 +25,8 @@ using namespace std;
 extern void stopMain();
 
 namespace OpenLogReplicator {
-    OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char *alias,
-            const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
+    OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
+            const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
             typeCONID conId) :
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks) {
 
@@ -47,20 +47,15 @@ namespace OpenLogReplicator {
             sequence = startSequence;
         else
             sequence = 0;
-
-        if (startScn != ZERO_SCN)
-            firstScn = startScn;
-        else
-            firstScn = 0;
     }
 
     void OracleAnalyzerBatch::createSchema(void) {
         if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
             return;
 
-        WARNING("HINT: if you don't have earlier schema, try with schema-less mode (\"flags\": 2)");
+        ERROR("HINT: if you don't have earlier schema, try with schema-less mode (\"flags\": 2)");
         if (schemaFirstScn != ZERO_SCN) {
-            WARNING("HINT: you can also set start SCN for writer: \"start-scn\": " << dec << schemaFirstScn);
+            ERROR("HINT: you can also set start SCN for writer: \"start-scn\": " << dec << schemaFirstScn);
         }
 
         RUNTIME_FAIL("schema file missing");

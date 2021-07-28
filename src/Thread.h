@@ -29,7 +29,7 @@ using namespace std;
 namespace OpenLogReplicator {
     class Thread {
     protected:
-        virtual void *run(void) = 0;
+        virtual void* run(void) = 0;
 
     public:
         atomic<bool> stop;
@@ -38,13 +38,13 @@ namespace OpenLogReplicator {
         pthread_t pthread;
         string alias;
 
-        static void *runStatic(void *context);
+        static void* runStatic(void* context);
 
         virtual void doShutdown(void);
         virtual void doStop(void);
         time_t getTime(void);
 
-        Thread(const char *alias);
+        Thread(const char* alias);
         virtual ~Thread();
     };
 }

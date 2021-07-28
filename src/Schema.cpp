@@ -20,12 +20,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <dirent.h>
 #include <errno.h>
 #include <list>
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
 #include <regex>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "global.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleColumn.h"
@@ -40,11 +39,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace rapidjson;
 using namespace std;
 
-extern const Value& getJSONfieldV(string &fileName, const Value& value, const char* field);
-extern const Value& getJSONfieldD(string &fileName, const Document& document, const char* field);
-
 namespace OpenLogReplicator {
-    Schema::Schema(OracleAnalyzer *oracleAnalyzer) :
+    Schema::Schema(OracleAnalyzer* oracleAnalyzer) :
         oracleAnalyzer(oracleAnalyzer),
         schemaObject(nullptr),
         sysCColTouched(false),
@@ -65,7 +61,7 @@ namespace OpenLogReplicator {
 
     Schema::~Schema() {
         dropSchema();
-        for (SchemaElement *element : elements)
+        for (SchemaElement* element : elements)
             delete element;
         elements.clear();
         users.clear();
@@ -80,20 +76,20 @@ namespace OpenLogReplicator {
         partitionMap.clear();
 
         for (auto it : objectMap) {
-            OracleObject *object = it.second;
+            OracleObject* object = it.second;
             delete object;
         }
         objectMap.clear();
 
         for (auto it : sysCColMapRowId) {
-            SysCCol *sysCCol = it.second;
+            SysCCol* sysCCol = it.second;
             delete sysCCol;
         }
         sysCColMapRowId.clear();
         sysCColMapKey.clear();
 
         for (auto it : sysCDefMapRowId) {
-            SysCDef *sysCDef = it.second;
+            SysCDef* sysCDef = it.second;
             delete sysCDef;
         }
         sysCDefMapRowId.clear();
@@ -101,7 +97,7 @@ namespace OpenLogReplicator {
         sysCDefMapKey.clear();
 
         for (auto it : sysColMapRowId) {
-            SysCol *sysCol = it.second;
+            SysCol* sysCol = it.second;
             delete sysCol;
         }
         sysColMapRowId.clear();
@@ -109,35 +105,35 @@ namespace OpenLogReplicator {
         sysColMapSeg.clear();
 
         for (auto it : sysDeferredStgMapRowId) {
-            SysDeferredStg *sysDeferredStg = it.second;
+            SysDeferredStg* sysDeferredStg = it.second;
             delete sysDeferredStg;
         }
         sysDeferredStgMapRowId.clear();
         sysDeferredStgMapObj.clear();
 
         for (auto it : sysEColMapRowId) {
-            SysECol *sysECol = it.second;
+            SysECol* sysECol = it.second;
             delete sysECol;
         }
         sysEColMapRowId.clear();
         sysEColMapKey.clear();
 
         for (auto it : sysObjMapRowId) {
-            SysObj *sysObj = it.second;
+            SysObj* sysObj = it.second;
             delete sysObj;
         }
         sysObjMapRowId.clear();
         sysObjMapObj.clear();
 
         for (auto it : sysSegMapRowId) {
-            SysSeg *sysSeg = it.second;
+            SysSeg* sysSeg = it.second;
             delete sysSeg;
         }
         sysSegMapRowId.clear();
         sysSegMapKey.clear();
 
         for (auto it : sysTabMapRowId) {
-            SysTab *sysTab = it.second;
+            SysTab* sysTab = it.second;
             delete sysTab;
         }
         sysTabMapRowId.clear();
@@ -145,7 +141,7 @@ namespace OpenLogReplicator {
         sysTabMapKey.clear();
 
         for (auto it : sysTabComPartMapRowId) {
-            SysTabComPart *sysTabComPart = it.second;
+            SysTabComPart* sysTabComPart = it.second;
             delete sysTabComPart;
         }
         sysTabComPartMapRowId.clear();
@@ -153,21 +149,21 @@ namespace OpenLogReplicator {
         sysTabComPartMapKey.clear();
 
         for (auto it : sysTabPartMapRowId) {
-            SysTabPart *sysTabPart = it.second;
+            SysTabPart* sysTabPart = it.second;
             delete sysTabPart;
         }
         sysTabPartMapRowId.clear();
         sysTabPartMapKey.clear();
 
         for (auto it : sysTabSubPartMapRowId) {
-            SysTabSubPart *sysTabSubPart = it.second;
+            SysTabSubPart* sysTabSubPart = it.second;
             delete sysTabSubPart;
         }
         sysTabSubPartMapRowId.clear();
         sysTabSubPartMapKey.clear();
 
         for (auto it : sysUserMapRowId) {
-            SysUser *sysUser = it.second;
+            SysUser* sysUser = it.second;
             delete sysUser;
         }
         sysUserMapRowId.clear();
@@ -176,13 +172,13 @@ namespace OpenLogReplicator {
 
     bool Schema::readSchema(void) {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: searching for previous schema on: " << oracleAnalyzer->checkpointPath);
-        DIR *dir;
+        DIR* dir;
         if ((dir = opendir(oracleAnalyzer->checkpointPath.c_str())) == nullptr) {
             RUNTIME_FAIL("can't access directory: " << oracleAnalyzer->checkpointPath);
         }
 
         string newLastCheckedDay;
-        struct dirent *ent;
+        struct dirent* ent;
         typeSCN fileScnMax = ZERO_SCN;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
@@ -213,7 +209,7 @@ namespace OpenLogReplicator {
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
-            } catch (exception &e) {
+            } catch (exception& e) {
                 //ignore other files
                 continue;
             }
@@ -256,7 +252,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::readSchemaFile(string &fileName, typeSCN fileScn) {
+    bool Schema::readSchemaFile(string& fileName, typeSCN fileScn) {
         if (oracleAnalyzer->schemaScn != ZERO_SCN)
             return true;
         dropSchema();
@@ -279,210 +275,122 @@ namespace OpenLogReplicator {
         }
 
         //SYS.USER$
-        const Value& sysUserJSON = getJSONfieldD(fileName, document, "sys-user");
-        if (!sysUserJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-user should be an array");
-            return false;
-        }
+        const Value& sysUserJSON = getJSONfieldA(fileName, document, "sys-user");
 
         for (SizeType i = 0; i < sysUserJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysUserJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
+            const char* rowId = getJSONfieldS(fileName, sysUserJSON[i], "row-id");
+            typeUSER user = getJSONfieldU(fileName, sysUserJSON[i], "user");
+            const char* name = getJSONfieldS(fileName, sysUserJSON[i], "name");
 
-            const Value& userJSON = getJSONfieldV(fileName, sysUserJSON[i], "user");
-            typeUSER user = userJSON.GetUint();
-
-            const Value& nameJSON = getJSONfieldV(fileName, sysUserJSON[i], "name");
-            const char *name = nameJSON.GetString();
-
-            const Value& spare1JSON = getJSONfieldV(fileName, sysUserJSON[i], "spare1");
-            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", spare1 should be an array");
+            const Value& spare1JSON = getJSONfieldA(fileName, sysUserJSON[i], "spare1");
+            if (spare1JSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = spare1JSON[0].GetUint64();
-            uint64_t spare12 = spare1JSON[1].GetUint64();
-
-            const Value& singleJSON = getJSONfieldV(fileName, sysUserJSON[i], "single");
-            uint64_t single = singleJSON.GetUint();
+            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
+            uint64_t single = getJSONfieldU(fileName, sysUserJSON[i], "single");
 
             dictSysUserAdd(rowId, user, name, spare11, spare12, single);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUserJSON.Size());
 
         //SYS.OBJ$
-        const Value& sysObjJSON = getJSONfieldD(fileName, document, "sys-obj");
-        if (!sysObjJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-obj should be an array");
-            return false;
-        }
+        const Value& sysObjJSON = getJSONfieldA(fileName, document, "sys-obj");
 
         for (SizeType i = 0; i < sysObjJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysObjJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
+            const char* rowId = getJSONfieldS(fileName, sysObjJSON[i], "row-id");
+            typeUSER owner = getJSONfieldU(fileName, sysObjJSON[i], "owner");
+            typeOBJ obj = getJSONfieldU(fileName, sysObjJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysObjJSON[i], "data-obj");
+            typeTYPE type = getJSONfieldU(fileName, sysObjJSON[i], "type");
+            const char* name = getJSONfieldS(fileName, sysObjJSON[i], "name");
 
-            const Value& ownerJSON = getJSONfieldV(fileName, sysObjJSON[i], "owner");
-            typeUSER owner = ownerJSON.GetUint();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysObjJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysObjJSON[i], "data-obj");
-            typeDATAOBJ dataObj = dataObjJSON.GetUint();
-
-            const Value& typeJSON = getJSONfieldV(fileName, sysObjJSON[i], "type");
-            typeTYPE type = typeJSON.GetUint();
-
-            const Value& nameJSON = getJSONfieldV(fileName, sysObjJSON[i], "name");
-            const char *name = nameJSON.GetString();
-
-            const Value& flagsJSON = getJSONfieldV(fileName, sysObjJSON[i], "flags");
-            if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", flags should be an array");
+            const Value& flagsJSON = getJSONfieldA(fileName, sysObjJSON[i], "flags");
+            if (flagsJSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", flags should be an array with 2 elements");
                 return false;
             }
-            uint64_t flags1 = flagsJSON[0].GetUint64();
-            uint64_t flags2 = flagsJSON[1].GetUint64();
-
-            const Value& singleJSON = getJSONfieldV(fileName, sysObjJSON[i], "single");
-            uint64_t single = singleJSON.GetUint();
+            uint64_t flags1 = getJSONfieldU(fileName, flagsJSON, "flags", 0);
+            uint64_t flags2 = getJSONfieldU(fileName, flagsJSON, "flags", 1);
+            uint64_t single = getJSONfieldU(fileName, sysObjJSON[i], "single");
 
             dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags1, flags2, single);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << dec << sysObjJSON.Size());
 
         //SYS.COL$
-        const Value& sysColJSON = getJSONfieldD(fileName, document, "sys-col");
-        if (!sysColJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-col should be an array");
-            return false;
-        }
+        const Value& sysColJSON = getJSONfieldA(fileName, document, "sys-col");
 
         for (SizeType i = 0; i < sysColJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysColJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysColJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& colJSON = getJSONfieldV(fileName, sysColJSON[i], "col");
-            typeCOL col = colJSON.GetInt();
-
-            const Value& segColJSON = getJSONfieldV(fileName, sysColJSON[i], "seg-col");
-            typeCOL segCol = segColJSON.GetInt();
-
-            const Value& intColJSON = getJSONfieldV(fileName, sysColJSON[i], "int-col");
-            typeCOL intCol = intColJSON.GetInt();
-
-            const Value& nameJSON = getJSONfieldV(fileName, sysColJSON[i], "name");
-            const char *name = nameJSON.GetString();
-
-            const Value& typeJSON = getJSONfieldV(fileName, sysColJSON[i], "type");
-            typeTYPE type = typeJSON.GetUint();
-
-            const Value& lengthJSON = getJSONfieldV(fileName, sysColJSON[i], "length");
-            uint64_t length = lengthJSON.GetUint64();
-
-            const Value& precisionJSON = getJSONfieldV(fileName, sysColJSON[i], "precision");
-            int64_t precision = precisionJSON.GetInt64();
-
-            const Value& scaleJSON = getJSONfieldV(fileName, sysColJSON[i], "scale");
-            int64_t scale = scaleJSON.GetInt64();
-
-            const Value& charsetFormJSON = getJSONfieldV(fileName, sysColJSON[i], "charset-form");
-            uint64_t charsetForm = charsetFormJSON.GetUint64();
-
-            const Value& charsetIdJSON = getJSONfieldV(fileName, sysColJSON[i], "charset-id");
-            uint64_t charsetId = charsetIdJSON.GetUint64();
-
-            const Value& nullJSON = getJSONfieldV(fileName, sysColJSON[i], "null");
-            int64_t null_ = nullJSON.GetInt64();
-
-            const Value& propertyJSON = getJSONfieldV(fileName, sysColJSON[i], "property");
-            if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", property should be an array");
+            const char* rowId = getJSONfieldS(fileName, sysColJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysColJSON[i], "obj");
+            typeCOL col = getJSONfieldI(fileName, sysColJSON[i], "col");
+            typeCOL segCol = getJSONfieldI(fileName, sysColJSON[i], "seg-col");
+            typeCOL intCol = getJSONfieldI(fileName, sysColJSON[i], "int-col");
+            const char* name = getJSONfieldS(fileName, sysColJSON[i], "name");
+            typeTYPE type = getJSONfieldU(fileName, sysColJSON[i], "type");
+            uint64_t length = getJSONfieldU(fileName, sysColJSON[i], "length");
+            int64_t precision = getJSONfieldI(fileName, sysColJSON[i], "precision");
+            int64_t scale = getJSONfieldI(fileName, sysColJSON[i], "scale");
+            uint64_t charsetForm = getJSONfieldU(fileName, sysColJSON[i], "charset-form");
+            uint64_t charsetId = getJSONfieldU(fileName, sysColJSON[i], "charset-id");
+            int64_t null_ = getJSONfieldI(fileName, sysColJSON[i], "null");
+            const Value& propertyJSON = getJSONfieldA(fileName, sysColJSON[i], "property");
+            if (propertyJSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", property should be an array with 2 elements");
                 return false;
             }
-            uint64_t property1 = propertyJSON[0].GetUint64();
-            uint64_t property2 = propertyJSON[1].GetUint64();
+            uint64_t property1 = getJSONfieldU(fileName, propertyJSON, "property", 0);
+            uint64_t property2 = getJSONfieldU(fileName, propertyJSON, "property", 1);
 
             dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null_, property1, property2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << dec << sysColJSON.Size());
 
         //SYS.CCOL$
-        const Value& sysCColJSON = getJSONfieldD(fileName, document, "sys-ccol");
-        if (!sysCColJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-ccol should be an array");
-            return false;
-        }
+        const Value& sysCColJSON = getJSONfieldA(fileName, document, "sys-ccol");
 
         for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysCColJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& conJSON = getJSONfieldV(fileName, sysCColJSON[i], "con");
-            typeCON con = conJSON.GetUint();
-
-            const Value& intColJSON = getJSONfieldV(fileName, sysCColJSON[i], "int-col");
-            typeCON intCol = intColJSON.GetUint();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysCColJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& spare1JSON = getJSONfieldV(fileName, sysCColJSON[i], "spare1");
-            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", spare1 should be an array");
+            const char* rowId = getJSONfieldS(fileName, sysCColJSON[i], "row-id");
+            typeCON con = getJSONfieldI(fileName, sysCColJSON[i], "con");
+            typeCON intCol = getJSONfieldI(fileName, sysCColJSON[i], "int-col");
+            typeOBJ obj = getJSONfieldU(fileName, sysCColJSON[i], "obj");
+            const Value& spare1JSON = getJSONfieldA(fileName, sysCColJSON[i], "spare1");
+            if (spare1JSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = spare1JSON[0].GetUint64();
-            uint64_t spare12 = spare1JSON[1].GetUint64();
+            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
 
             dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << dec << sysCColJSON.Size());
 
         //SYS.CDEF$
-        const Value& sysCDefJSON = getJSONfieldD(fileName, document, "sys-cdef");
-        if (!sysCDefJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-cdef should be an array");
-            return false;
-        }
+        const Value& sysCDefJSON = getJSONfieldA(fileName, document, "sys-cdef");
 
         for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysCDefJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& conJSON = getJSONfieldV(fileName, sysCDefJSON[i], "con");
-            typeCON con = conJSON.GetUint();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysCDefJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& typeJSON = getJSONfieldV(fileName, sysCDefJSON[i], "type");
-            typeTYPE type = typeJSON.GetUint();
+            const char* rowId = getJSONfieldS(fileName, sysCDefJSON[i], "row-id");
+            typeCON con = getJSONfieldI(fileName, sysCDefJSON[i], "con");
+            typeOBJ obj = getJSONfieldU(fileName, sysCDefJSON[i], "obj");
+            typeTYPE type = getJSONfieldU(fileName, sysCDefJSON[i], "type");
 
             dictSysCDefAdd(rowId, con, obj, type);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CDEF$: " << dec << sysCDefJSON.Size());
 
         //SYS.DEFERRED_STG$
-        const Value& sysDeferredStgJSON = getJSONfieldD(fileName, document, "sys-deferredstg");
-        if (!sysDeferredStgJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-deferredstg should be an array");
-            return false;
-        }
+        const Value& sysDeferredStgJSON = getJSONfieldA(fileName, document, "sys-deferredstg");
 
         for (SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
+            const char* rowId = getJSONfieldS(fileName, sysDeferredStgJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysDeferredStgJSON[i], "obj");
 
-            const Value& objJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& flagsStgJSON = getJSONfieldV(fileName, sysDeferredStgJSON[i], "flags-stg");
-            if (!flagsStgJSON.IsArray() || flagsStgJSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", flags-stg should be an array");
+            const Value& flagsStgJSON = getJSONfieldA(fileName, sysDeferredStgJSON[i], "flags-stg");
+            if (flagsStgJSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", flags-stg should be an array with 2 elements");
                 return false;
             }
             uint64_t flagsStg1 = flagsStgJSON[0].GetUint64();
@@ -493,197 +401,122 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << dec << sysDeferredStgJSON.Size());
 
         //SYS.ECOL$
-        const Value& sysEColJSON = getJSONfieldD(fileName, document, "sys-ecol");
-        if (!sysEColJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-ecol should be an array");
-            return false;
-        }
+        const Value& sysEColJSON = getJSONfieldA(fileName, document, "sys-ecol");
 
         for (SizeType i = 0; i < sysEColJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysEColJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysEColJSON[i], "tab-obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& colNumJSON = getJSONfieldV(fileName, sysEColJSON[i], "col-num");
-            typeCOL colNum = colNumJSON.GetInt();
-
-            const Value& guardIdJSON = getJSONfieldV(fileName, sysEColJSON[i], "guard-id");
-            typeCOL guardId = guardIdJSON.GetInt();
+            const char* rowId = getJSONfieldS(fileName, sysEColJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysEColJSON[i], "tab-obj");
+            typeCOL colNum = getJSONfieldI(fileName, sysEColJSON[i], "col-num");
+            typeCOL guardId = getJSONfieldI(fileName, sysEColJSON[i], "guard-id");
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << dec << sysEColJSON.Size());
 
         //SYS.SEG$
-        const Value& sysSegJSON = getJSONfieldD(fileName, document, "sys-seg");
-        if (!sysSegJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-seg should be an array");
-            return false;
-        }
+        const Value& sysSegJSON = getJSONfieldA(fileName, document, "sys-seg");
 
         for (SizeType i = 0; i < sysSegJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysSegJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
+            const char* rowId = getJSONfieldS(fileName, sysSegJSON[i], "row-id");
+            uint32_t file = getJSONfieldU(fileName, sysSegJSON[i], "file");
+            uint32_t block = getJSONfieldU(fileName, sysSegJSON[i], "block");
+            uint32_t ts = getJSONfieldU(fileName, sysSegJSON[i], "ts");
 
-            const Value& fileJSON = getJSONfieldV(fileName, sysSegJSON[i], "file");
-            uint32_t file = fileJSON.GetUint();
-
-            const Value& blockJSON = getJSONfieldV(fileName, sysSegJSON[i], "block");
-            uint32_t block = blockJSON.GetUint();
-
-            const Value& tsJSON = getJSONfieldV(fileName, sysSegJSON[i], "ts");
-            uint32_t ts = tsJSON.GetUint();
-
-            const Value& spare1JSON = getJSONfieldV(fileName, sysSegJSON[i], "spare1");
-            if (!spare1JSON.IsArray() || spare1JSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", spare1 should be an array");
+            const Value& spare1JSON = getJSONfieldA(fileName, sysSegJSON[i], "spare1");
+            if (spare1JSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = spare1JSON[0].GetUint64();
-            uint64_t spare12 = spare1JSON[1].GetUint64();
+            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
 
             dictSysSegAdd(rowId, file, block, ts, spare11, spare12);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.SEG$: " << dec << sysSegJSON.Size());
 
         //SYS.TAB$
-        const Value& sysTabJSON = getJSONfieldD(fileName, document, "sys-tab");
-        if (!sysTabJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-tab should be an array");
-            return false;
-        }
+        const Value& sysTabJSON = getJSONfieldA(fileName, document, "sys-tab");
 
         for (SizeType i = 0; i < sysTabJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
+            const char* rowId = getJSONfieldS(fileName, sysTabJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysTabJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabJSON[i], "data-obj");
+            uint32_t ts = getJSONfieldU(fileName, sysTabJSON[i], "ts");
+            uint32_t file = getJSONfieldU(fileName, sysTabJSON[i], "file");
+            uint32_t block = getJSONfieldU(fileName, sysTabJSON[i], "block");
+            typeCOL cluCols = getJSONfieldI(fileName, sysTabJSON[i], "clu-cols");
 
-            const Value& objJSON = getJSONfieldV(fileName, sysTabJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabJSON[i], "data-obj");
-            typeDATAOBJ dataObj = dataObjJSON.GetUint();
-
-            const Value& tsJSON = getJSONfieldV(fileName, sysTabJSON[i], "ts");
-            uint32_t ts = tsJSON.GetUint();
-
-            const Value& fileJSON = getJSONfieldV(fileName, sysTabJSON[i], "file");
-            uint32_t file = fileJSON.GetUint();
-
-            const Value& blockJSON = getJSONfieldV(fileName, sysTabJSON[i], "block");
-            uint32_t block = blockJSON.GetUint();
-
-            const Value& cluColsJSON = getJSONfieldV(fileName, sysTabJSON[i], "clu-cols");
-            typeCOL cluCols = cluColsJSON.GetInt();
-
-            const Value& flagsJSON = getJSONfieldV(fileName, sysTabJSON[i], "flags");
-            if (!flagsJSON.IsArray() || flagsJSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", flags should be an array");
+            const Value& flagsJSON = getJSONfieldA(fileName, sysTabJSON[i], "flags");
+            if (flagsJSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", flags should be an array with 2 elements");
                 return false;
             }
-            uint64_t flags1 = flagsJSON[0].GetUint64();
-            uint64_t flags2 = flagsJSON[1].GetUint64();
+            uint64_t flags1 = getJSONfieldU(fileName, flagsJSON, "flags", 0);
+            uint64_t flags2 = getJSONfieldU(fileName, flagsJSON, "flags", 1);
 
-            const Value& propertyJSON = getJSONfieldV(fileName, sysTabJSON[i], "property");
-            if (!propertyJSON.IsArray() || propertyJSON.Size() < 2) {
-                WARNING("bad JSON in " << fileName << ", property should be an array");
+            const Value& propertyJSON = getJSONfieldA(fileName, sysTabJSON[i], "property");
+            if (propertyJSON.Size() != 2) {
+                WARNING("bad JSON in " << fileName << ", property should be an array with 2 elements");
                 return false;
             }
-            uint64_t property1 = propertyJSON[0].GetUint64();
-            uint64_t property2 = propertyJSON[1].GetUint64();
+            uint64_t property1 = getJSONfieldU(fileName, propertyJSON, "property", 0);
+            uint64_t property2 = getJSONfieldU(fileName, propertyJSON, "property", 1);
 
             dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTabJSON.Size());
 
         //SYS.TABPART$
-        const Value& sysTabPartJSON = getJSONfieldD(fileName, document, "sys-tabpart");
-        if (!sysTabPartJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-tabpart should be an array");
-            return false;
-        }
+        const Value& sysTabPartJSON = getJSONfieldA(fileName, document, "sys-tabpart");
 
         for (SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "data-obj");
-            typeDATAOBJ dataObj = dataObjJSON.GetUint();
-
-            const Value& boJSON = getJSONfieldV(fileName, sysTabPartJSON[i], "bo");
-            typeOBJ bo = boJSON.GetUint();
+            const char* rowId = getJSONfieldS(fileName, sysTabPartJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysTabPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabPartJSON[i], "data-obj");
+            typeOBJ bo = getJSONfieldU(fileName, sysTabPartJSON[i], "bo");
 
             dictSysTabPartAdd(rowId, obj, dataObj, bo);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABPART$: " << dec << sysTabPartJSON.Size());
 
         //SYS.TABCOMPART$
-        const Value& sysTabComPartJSON = getJSONfieldD(fileName, document, "sys-tabcompart");
-        if (!sysTabComPartJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-tabcompart should be an array");
-            return false;
-        }
+        const Value& sysTabComPartJSON = getJSONfieldA(fileName, document, "sys-tabcompart");
 
         for (SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "data-obj");
-            typeDATAOBJ dataObj = dataObjJSON.GetUint();
-
-            const Value& boJSON = getJSONfieldV(fileName, sysTabComPartJSON[i], "bo");
-            typeOBJ bo = boJSON.GetUint();
+            const char* rowId = getJSONfieldS(fileName, sysTabComPartJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysTabComPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabComPartJSON[i], "data-obj");
+            typeOBJ bo = getJSONfieldU(fileName, sysTabComPartJSON[i], "bo");
 
             dictSysTabComPartAdd(rowId, obj, dataObj, bo);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABCOMPART$: " << dec << sysTabComPartJSON.Size());
 
         //SYS.TABSUBPART$
-        const Value& sysTabSubPartJSON = getJSONfieldD(fileName, document, "sys-tabsubpart");
-        if (!sysTabSubPartJSON.IsArray()) {
-            WARNING("bad JSON in " << fileName << ", sys-tabsubpart should be an array");
-            return false;
-        }
+        const Value& sysTabSubPartJSON = getJSONfieldA(fileName, document, "sys-tabsubpart");
 
         for (SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
-            const Value& rowIdJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "row-id");
-            const char *rowId = rowIdJSON.GetString();
-
-            const Value& objJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "obj");
-            typeOBJ obj = objJSON.GetUint();
-
-            const Value& dataObjJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "data-obj");
-            typeDATAOBJ dataObj = dataObjJSON.GetUint();
-
-            const Value& pObjJSON = getJSONfieldV(fileName, sysTabSubPartJSON[i], "p-obj");
-            typeOBJ pObj = pObjJSON.GetUint();
+            const char* rowId = getJSONfieldS(fileName, sysTabSubPartJSON[i], "row-id");
+            typeOBJ obj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "data-obj");
+            typeOBJ pObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "p-obj");
 
             dictSysTabSubPartAdd(rowId, obj, dataObj, pObj);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
 
         //database metadata
-        const Value& databaseJSON = getJSONfieldD(fileName, document, "database");
-        const char* databaseRead = databaseJSON.GetString();
+        const char* databaseRead = getJSONfieldS(fileName, document, "database");
         if (oracleAnalyzer->database.compare(databaseRead) != 0) {
             WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << oracleAnalyzer->database << " - skipping file");
             return false;
         }
 
-        const Value& bigEndianJSON = getJSONfieldD(fileName, document, "big-endian");
-        bool bigEndian = bigEndianJSON.GetUint();
+        bool bigEndian = getJSONfieldU(fileName, document, "big-endian");
         if (bigEndian)
             oracleAnalyzer->setBigEndian();
 
-        const Value& resetlogsJSON = getJSONfieldD(fileName, document, "resetlogs");
-        typeresetlogs resetlogsRead = resetlogsJSON.GetUint64();
+        typeRESETLOGS resetlogsRead = getJSONfieldU(fileName, document, "resetlogs");
         if (oracleAnalyzer->resetlogs == 0)
             oracleAnalyzer->resetlogs = resetlogsRead;
 
@@ -692,8 +525,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const Value& activationJSON = getJSONfieldD(fileName, document, "activation");
-        typeactivation activationRead = activationJSON.GetUint();
+        typeACTIVATION activationRead = getJSONfieldU(fileName, document, "activation");
         if (oracleAnalyzer->activation == 0)
             oracleAnalyzer->activation = activationRead;
 
@@ -702,8 +534,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const Value& databaseContextJSON = getJSONfieldD(fileName, document, "context");
-        string contextRead(databaseContextJSON.GetString());
+        string contextRead(getJSONfieldS(fileName, document, "context"));
         if (oracleAnalyzer->context.length() == 0)
             oracleAnalyzer->context = contextRead;
         else if (oracleAnalyzer->context.compare(contextRead) != 0) {
@@ -711,8 +542,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const Value& conIdJSON = getJSONfieldD(fileName, document, "con-id");
-        typeCONID conIdRead = conIdJSON.GetInt();
+        typeCONID conIdRead = getJSONfieldI(fileName, document, "con-id");
         if (oracleAnalyzer->conId == -1)
             oracleAnalyzer->conId = conIdRead;
         else if (oracleAnalyzer->conId != conIdRead) {
@@ -720,46 +550,30 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const Value& conNameJSON = getJSONfieldD(fileName, document, "con-name");
-        oracleAnalyzer->conName = conNameJSON.GetString();
+        oracleAnalyzer->conName = getJSONfieldS(fileName, document, "con-name");
+        oracleAnalyzer->dbRecoveryFileDest = getJSONfieldS(fileName, document, "db-recovery-file-dest");
+        oracleAnalyzer->dbBlockChecksum = getJSONfieldS(fileName, document, "db-block-checksum");
 
-        const Value& dbRecoveryFileDestJSON = getJSONfieldD(fileName, document, "db-recovery-file-dest");
-        oracleAnalyzer->dbRecoveryFileDest = dbRecoveryFileDestJSON.GetString();
+        if (oracleAnalyzer->logArchiveFormat.length() == 0)
+            oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, document, "log-archive-format");
 
-        const Value& dbBlockChecksumJSON = getJSONfieldD(fileName, document, "db-block-checksum");
-        oracleAnalyzer->dbBlockChecksum = dbBlockChecksumJSON.GetString();
-
-        if (oracleAnalyzer->logArchiveFormat.length() == 0) {
-            const Value& logArchiveFormatJSON = getJSONfieldD(fileName, document, "log-archive-format");
-            oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
-        }
-
-        const Value& logArchiveDestJSON = getJSONfieldD(fileName, document, "log-archive-dest");
-        oracleAnalyzer->logArchiveDest = logArchiveDestJSON.GetString();
-
-        const Value& nlsCharacterSetJSON = getJSONfieldD(fileName, document, "nls-character-set");
-        oracleAnalyzer->nlsCharacterSet = nlsCharacterSetJSON.GetString();
-
-        const Value& nlsNcharCharacterSetJSON = getJSONfieldD(fileName, document, "nls-nchar-character-set");
-        oracleAnalyzer->nlsNcharCharacterSet = nlsNcharCharacterSetJSON.GetString();
+        oracleAnalyzer->logArchiveDest = getJSONfieldS(fileName, document, "log-archive-dest");
+        oracleAnalyzer->nlsCharacterSet = getJSONfieldS(fileName, document, "nls-character-set");
+        oracleAnalyzer->nlsNcharCharacterSet = getJSONfieldS(fileName, document, "nls-nchar-character-set");
 
         oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
 
-        const Value& onlineRedoJSON = getJSONfieldD(fileName, document, "online-redo");
-        if (!onlineRedoJSON.IsArray()) {
-            RUNTIME_FAIL("bad JSON in " << fileName << ", online-redo should be an array");
-        }
+        const Value& onlineRedoJSON = getJSONfieldA(fileName, document, "online-redo");
 
         for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
-            const Value& groupJSON = getJSONfieldV(fileName, onlineRedoJSON[i], "group");
-            uint64_t group = groupJSON.GetInt64();
+            uint64_t group = getJSONfieldI(fileName, onlineRedoJSON[i], "group");
 
             const Value& path = onlineRedoJSON[i]["path"];
             if (!path.IsArray()) {
                 RUNTIME_FAIL("bad JSON, path-mapping should be array");
             }
 
-            Reader *onlineReader = oracleAnalyzer->readerCreate(group);
+            Reader* onlineReader = oracleAnalyzer->readerCreate(group);
             if (onlineReader != nullptr) {
                 for (SizeType j = 0; j < path.Size(); ++j) {
                     const Value& pathVal = path[j];
@@ -772,10 +586,8 @@ namespace OpenLogReplicator {
             oracleAnalyzer->checkOnlineRedoLogs();
         oracleAnalyzer->archReader = oracleAnalyzer->readerCreate(0);
 
-        const Value& usersJSON = getJSONfieldD(fileName, document, "users");
-        if (!usersJSON.IsArray()) {
-            RUNTIME_FAIL("bad JSON in " << fileName << ", users should be an array");
-        }
+        const Value& usersJSON = getJSONfieldA(fileName, document, "users");
+
         for (SizeType i = 0; i < usersJSON.Size(); ++i) {
             const Value& userJSON = usersJSON[i];;
             users.insert(userJSON.GetString());
@@ -784,7 +596,7 @@ namespace OpenLogReplicator {
         infile.close();
 
         //rebuild object structures
-        for (SchemaElement *element : elements) {
+        for (SchemaElement* element : elements) {
             DEBUG("- creating table schema for owner: " << element->owner << " table: " << element->table << " options: " <<
                     (uint64_t) element->options);
 
@@ -836,7 +648,7 @@ namespace OpenLogReplicator {
         ss << "\"," SCHEMA_ENDL << "\"online-redo\":[";
 
         bool hasPrev = false, hasPrev2;
-        for (Reader *reader : oracleAnalyzer->readers) {
+        for (Reader* reader : oracleAnalyzer->readers) {
             if (reader->group == 0)
                 continue;
 
@@ -847,7 +659,7 @@ namespace OpenLogReplicator {
 
             hasPrev2 = false;
             ss SCHEMA_ENDL << "{\"group\":" << reader->group << ",\"path\":[";
-            for (string &path : reader->paths) {
+            for (string& path : reader->paths) {
                 if (hasPrev2)
                     ss << ",";
                 else
@@ -875,7 +687,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-ccol\":[";
         hasPrev = false;
         for (auto it : sysCColMapRowId) {
-            SysCCol *sysCCol = it.second;
+            SysCCol* sysCCol = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -894,7 +706,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-cdef\":[";
         hasPrev = false;
         for (auto it : sysCDefMapRowId) {
-            SysCDef *sysCDef = it.second;
+            SysCDef* sysCDef = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -912,7 +724,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-col\":[";
         hasPrev = false;
         for (auto it : sysColMapRowId) {
-            SysCol *sysCol = it.second;
+            SysCol* sysCol = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -940,7 +752,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-deferredstg\":[";
         hasPrev = false;
         for (auto it : sysDeferredStgMapRowId) {
-            SysDeferredStg *sysDeferredStg = it.second;
+            SysDeferredStg* sysDeferredStg = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -957,7 +769,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-ecol\":[";
         hasPrev = false;
         for (auto it : sysEColMapRowId) {
-            SysECol *sysECol = it.second;
+            SysECol* sysECol = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -975,7 +787,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-obj\":[";
         hasPrev = false;
         for (auto it : sysObjMapRowId) {
-            SysObj *sysObj = it.second;
+            SysObj* sysObj = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -997,7 +809,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-seg\":[";
         hasPrev = false;
         for (auto it : sysSegMapRowId) {
-            SysSeg *sysSeg = it.second;
+            SysSeg* sysSeg = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1016,7 +828,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-tab\":[";
         hasPrev = false;
         for (auto it : sysTabMapRowId) {
-            SysTab *sysTab = it.second;
+            SysTab* sysTab = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1039,7 +851,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-tabcompart\":[";
         hasPrev = false;
         for (auto it : sysTabComPartMapRowId) {
-            SysTabComPart *sysTabComPart = it.second;
+            SysTabComPart* sysTabComPart = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1057,7 +869,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-tabpart\":[";
         hasPrev = false;
         for (auto it : sysTabPartMapRowId) {
-            SysTabPart *sysTabPart = it.second;
+            SysTabPart* sysTabPart = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1075,7 +887,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-tabsubpart\":[";
         hasPrev = false;
         for (auto it : sysTabSubPartMapRowId) {
-            SysTabSubPart *sysTabSubPart = it.second;
+            SysTabSubPart* sysTabSubPart = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1093,7 +905,7 @@ namespace OpenLogReplicator {
         ss << "]," SCHEMA_ENDL << "\"sys-user\":[";
         hasPrev = false;
         for (auto it : sysUserMapRowId) {
-            SysUser *sysUser = it.second;
+            SysUser* sysUser = it.second;
 
             if (hasPrev)
                 ss << ",";
@@ -1146,7 +958,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Schema::addToDict(OracleObject *object) {
+    void Schema::addToDict(OracleObject* object) {
         if (objectMap.find(object->obj) != objectMap.end()) {
             CONFIG_FAIL("can't add object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
@@ -1168,7 +980,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Schema::removeFromDict(OracleObject *object) {
+    void Schema::removeFromDict(OracleObject* object) {
         if (objectMap.find(object->obj) == objectMap.end()) {
             CONFIG_FAIL("can't remove object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
@@ -1190,15 +1002,15 @@ namespace OpenLogReplicator {
         }
     }
 
-    OracleObject *Schema::checkDict(typeOBJ obj, typeDATAOBJ dataObj) {
+    OracleObject* Schema::checkDict(typeOBJ obj, typeDATAOBJ dataObj) {
         auto it = partitionMap.find(obj);
         if (it == partitionMap.end())
             return nullptr;
         return it->second;
     }
 
-    stringstream& Schema::writeEscapeValue(stringstream &ss, string &str) {
-        const char *c_str = str.c_str();
+    stringstream& Schema::writeEscapeValue(stringstream& ss, string& str) {
+        const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
                 //skip
@@ -1221,7 +1033,7 @@ namespace OpenLogReplicator {
             sysUserMapUser.clear();
 
             for (auto it : sysUserMapRowId) {
-                SysUser *sysUser = it.second;
+                SysUser* sysUser = it.second;
 
                 if (sysUser->single || users.find(sysUser->name) != users.end()) {
                     sysUserMapUser[sysUser->user] = sysUser;
@@ -1249,11 +1061,11 @@ namespace OpenLogReplicator {
         if (sysObjTouched) {
             sysObjMapObj.clear();
             for (auto it : sysObjMapRowId) {
-                SysObj *sysObj = it.second;
+                SysObj* sysObj = it.second;
 
                 auto sysUserIt = sysUserMapUser.find(sysObj->owner);
                 if (sysUserIt != sysUserMapUser.end()) {
-                    SysUser *sysUser = sysUserIt->second;
+                    SysUser* sysUser = sysUserIt->second;
                     if (!sysUser->single || sysObj->single) {
                         sysObjMapObj[sysObj->obj] = sysObj;
                         if (sysObj->touched) {
@@ -1283,7 +1095,7 @@ namespace OpenLogReplicator {
             sysCColMapKey.clear();
 
             for (auto it : sysCColMapRowId) {
-                SysCCol *sysCCol = it.second;
+                SysCCol* sysCCol = it.second;
 
                 if (sysObjMapObj.find(sysCCol->obj) != sysObjMapObj.end()) {
                     SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
@@ -1314,7 +1126,7 @@ namespace OpenLogReplicator {
             sysCDefMapCon.clear();
 
             for (auto it : sysCDefMapRowId) {
-                SysCDef *sysCDef = it.second;
+                SysCDef* sysCDef = it.second;
 
                 if (sysObjMapObj.find(sysCDef->obj) != sysObjMapObj.end()) {
                     SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
@@ -1346,7 +1158,7 @@ namespace OpenLogReplicator {
             sysColMapSeg.clear();
 
             for (auto it : sysColMapRowId) {
-                SysCol *sysCol = it.second;
+                SysCol* sysCol = it.second;
 
                 if (sysObjMapObj.find(sysCol->obj) != sysObjMapObj.end()) {
                     SysColKey sysColKey(sysCol->obj, sysCol->intCol);
@@ -1381,7 +1193,7 @@ namespace OpenLogReplicator {
             sysDeferredStgMapObj.clear();
 
             for (auto it : sysDeferredStgMapRowId) {
-                SysDeferredStg *sysDeferredStg = it.second;
+                SysDeferredStg* sysDeferredStg = it.second;
 
                 if (sysObjMapObj.find(sysDeferredStg->obj) != sysObjMapObj.end()) {
                     sysDeferredStgMapObj[sysDeferredStg->obj] = sysDeferredStg;
@@ -1410,7 +1222,7 @@ namespace OpenLogReplicator {
             sysEColMapKey.clear();
 
             for (auto it : sysEColMapRowId) {
-                SysECol *sysECol = it.second;
+                SysECol* sysECol = it.second;
 
                 if (sysObjMapObj.find(sysECol->tabObj) != sysObjMapObj.end()) {
                     SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
@@ -1441,7 +1253,7 @@ namespace OpenLogReplicator {
             sysTabMapKey.clear();
 
             for (auto it : sysTabMapRowId) {
-                SysTab *sysTab = it.second;
+                SysTab* sysTab = it.second;
 
                 if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end()) {
                     sysTabMapObj[sysTab->obj] = sysTab;
@@ -1476,7 +1288,7 @@ namespace OpenLogReplicator {
             sysTabComPartMapObj.clear();
 
             for (auto it : sysTabComPartMapRowId) {
-                SysTabComPart *sysTabComPart = it.second;
+                SysTabComPart* sysTabComPart = it.second;
 
                 sysTabComPartMapObj[sysTabComPart->obj] = sysTabComPart;
                 if (sysObjMapObj.find(sysTabComPart->obj) != sysObjMapObj.end()) {
@@ -1507,7 +1319,7 @@ namespace OpenLogReplicator {
             sysTabPartMapKey.clear();
 
             for (auto it : sysTabPartMapRowId) {
-                SysTabPart *sysTabPart = it.second;
+                SysTabPart* sysTabPart = it.second;
 
                 if (sysObjMapObj.find(sysTabPart->obj) != sysObjMapObj.end()) {
                     SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
@@ -1537,7 +1349,7 @@ namespace OpenLogReplicator {
             sysTabSubPartMapKey.clear();
 
             for (auto it : sysTabSubPartMapRowId) {
-                SysTabSubPart *sysTabSubPart = it.second;
+                SysTabSubPart* sysTabSubPart = it.second;
 
                 if (sysObjMapObj.find(sysTabSubPart->obj) != sysObjMapObj.end()) {
                     SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
@@ -1546,7 +1358,7 @@ namespace OpenLogReplicator {
                         //find SYS.TABCOMPART$
                         auto it = sysTabComPartMapObj.find(sysTabSubPart->pObj);
                         if (it != sysTabComPartMapObj.end()) {
-                            SysTabComPart *sysTabComPart = it->second;
+                            SysTabComPart* sysTabComPart = it->second;
                             touchObj(sysTabComPart->bo);
                         }
 
@@ -1573,7 +1385,7 @@ namespace OpenLogReplicator {
             sysSegMapKey.clear();
 
             for (auto it : sysSegMapRowId) {
-                SysSeg *sysSeg = it.second;
+                SysSeg* sysSeg = it.second;
 
                 //non-zero segment
                 if (sysSeg->file != 0 || sysSeg->block != 0) {
@@ -1616,11 +1428,11 @@ namespace OpenLogReplicator {
         for (typeUSER user : usersTouched) {
             for (auto it = objectMap.cbegin(); it != objectMap.cend() ; ) {
 
-                OracleObject *object = it->second;
+                OracleObject* object = it->second;
                 if (object->user == user) {
                     removeFromDict(object);
                     INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
-                            << ", " << object->obj << ")");
+                            << ", obj: " << object->obj << ")");
                     objectMap.erase(it++);
                     delete object;
                 } else {
@@ -1633,7 +1445,7 @@ namespace OpenLogReplicator {
         for (typeOBJ obj : partitionsTouched) {
             auto objectMapIt = partitionMap.find(obj);
             if (objectMapIt != partitionMap.end()) {
-                OracleObject *object = objectMapIt->second;
+                OracleObject* object = objectMapIt->second;
                 touchObj(object->obj);
             }
         }
@@ -1642,32 +1454,32 @@ namespace OpenLogReplicator {
         for (typeOBJ obj : objectsTouched) {
             auto objectMapIt = objectMap.find(obj);
             if (objectMapIt != objectMap.end()) {
-                OracleObject *object = objectMapIt->second;
+                OracleObject* object = objectMapIt->second;
                 removeFromDict(object);
                 INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
-                        << ", " << object->obj << ")");
+                        << ", obj: " << object->obj << ")");
                 delete object;
             }
         }
         objectsTouched.clear();
 
-        for (SchemaElement *element : elements)
+        for (SchemaElement* element : elements)
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, false);
     }
 
-    void Schema::buildMaps(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options, bool output) {
+    void Schema::buildMaps(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options, bool output) {
         uint64_t tabCnt = 0;
         regex regexOwner(owner), regexTable(table);
 
         for (auto itObj : sysObjMapRowId) {
-            SysObj *sysObj = itObj.second;
+            SysObj* sysObj = itObj.second;
             if (sysObj->isDropped() || !sysObj->isTable() || !regex_match(sysObj->name, regexTable))
                 continue;
 
             auto sysUserMapUserIt = sysUserMapUser.find(sysObj->owner);
             if (sysUserMapUserIt == sysUserMapUser.end())
                 continue;
-            SysUser *sysUser = sysUserMapUserIt->second;
+            SysUser* sysUser = sysUserMapUserIt->second;
             if (!regex_match(sysUser->name, regexOwner))
                 continue;
 
@@ -1683,7 +1495,7 @@ namespace OpenLogReplicator {
                 DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - SYS.TAB$ entry missing");
                 continue;
             }
-            SysTab *sysTab = sysTabMapObjIt->second;
+            SysTab* sysTab = sysTabMapObjIt->second;
 
             //skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
@@ -1707,12 +1519,12 @@ namespace OpenLogReplicator {
             if (sysTab->isPartitioned())
                 compressed = false;
             else if (sysTab->isInitial()) {
-                SysDeferredStg *sysDeferredStg = sysDeferredStgMapObj[sysObj->obj];
+                SysDeferredStg* sysDeferredStg = sysDeferredStgMapObj[sysObj->obj];
                 if (sysDeferredStg != nullptr)
                     compressed = sysDeferredStg->isCompressed();
             } else {
                 SysSegKey sysSegKey(sysTab->file, sysTab->block, sysTab->ts);
-                SysSeg *sysSeg = sysSegMapKey[sysSegKey];
+                SysSeg* sysSeg = sysSegMapKey[sysSegKey];
                 if (sysSeg != nullptr)
                     compressed = sysSeg->isCompressed();
             }
@@ -1737,7 +1549,7 @@ namespace OpenLogReplicator {
                 for (auto itTabPart = sysTabPartMapKey.upper_bound(sysTabPartKeyFirst);
                         itTabPart != sysTabPartMapKey.end() && itTabPart->first.bo == sysObj->obj; ++itTabPart) {
 
-                    SysTabPart *sysTabPart = itTabPart->second;
+                    SysTabPart* sysTabPart = itTabPart->second;
                     schemaObject->addPartition(sysTabPart->obj, sysTabPart->dataObj);
                     ++partitions;
                 }
@@ -1750,7 +1562,7 @@ namespace OpenLogReplicator {
                     for (auto itTabSubPart = sysTabSubPartMapKey.upper_bound(sysTabSubPartKeyFirst);
                             itTabSubPart != sysTabSubPartMapKey.end() && itTabSubPart->first.pObj == itTabComPart->second->obj; ++itTabSubPart) {
 
-                        SysTabSubPart *sysTabSubPart = itTabSubPart->second;
+                        SysTabSubPart* sysTabSubPart = itTabSubPart->second;
                         schemaObject->addPartition(itTabSubPart->second->obj, itTabSubPart->second->dataObj);
                         ++partitions;
                     }
@@ -1764,7 +1576,7 @@ namespace OpenLogReplicator {
                 for (auto itCDef = sysCDefMapKey.upper_bound(sysCDefKeyFirst);
                         itCDef != sysCDefMapKey.end() && itCDef->first.obj == sysObj->obj;
                         ++itCDef) {
-                    SysCDef *sysCDef = itCDef->second;
+                    SysCDef* sysCDef = itCDef->second;
                     if (sysCDef->isSupplementalLogPK())
                         suppLogTablePrimary = true;
                     else if (sysCDef->isSupplementalLogAll())
@@ -1776,7 +1588,7 @@ namespace OpenLogReplicator {
             for (auto itCol = sysColMapSeg.upper_bound(sysColSegFirst);
                     itCol != sysColMapSeg.end() && itCol->first.obj == sysObj->obj; ++itCol) {
 
-                SysCol *sysCol = itCol->second;
+                SysCol* sysCol = itCol->second;
                 if (sysCol->segCol == 0)
                     continue;
 
@@ -1784,7 +1596,7 @@ namespace OpenLogReplicator {
                 typeCOL numPk = 0, numSup = 0, guardSegNo = -1;
 
                 SysEColKey sysEColKey(sysObj->obj, sysCol->segCol);
-                SysECol *sysECol = sysEColMapKey[sysEColKey];
+                SysECol* sysECol = sysEColMapKey[sysEColKey];
                 if (sysECol != nullptr)
                     guardSegNo = sysECol->guardId;
 
@@ -1799,7 +1611,7 @@ namespace OpenLogReplicator {
                 if (sysCol->type == 1 || sysCol->type == 96) {
                     auto it = oracleAnalyzer->outputBuffer->characterMap.find(charmapId);
                     if (it == oracleAnalyzer->outputBuffer->characterMap.end()) {
-                        WARNING("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
+                        ERROR("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
                         RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " - unsupported character set id: " << dec << charmapId <<
                                 " for column: " << sysObj->name << "." << sysCol->name);
                     }
@@ -1809,7 +1621,7 @@ namespace OpenLogReplicator {
                 for (auto itCCol = sysCColMapKey.upper_bound(sysCColKeyFirst);
                         itCCol != sysCColMapKey.end() && itCCol->first.obj == sysObj->obj && itCCol->first.intCol == sysCol->intCol;
                         ++itCCol) {
-                    SysCCol *sysCCol = itCCol->second;
+                    SysCCol* sysCCol = itCCol->second;
 
                     //count number of PK the column is part of
                     SysCDef* sysCDef = sysCDefMapCon[sysCCol->con];
@@ -1847,7 +1659,7 @@ namespace OpenLogReplicator {
 
                 DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
-                OracleColumn *column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
+                OracleColumn* column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                         sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
                 if (column == nullptr) {
@@ -1911,14 +1723,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    SchemaElement* Schema::addElement(const char *owner, const char *table, typeOPTIONS options) {
+    SchemaElement* Schema::addElement(const char* owner, const char* table, typeOPTIONS options) {
         if (!checkNameCase(owner)) {
             RUNTIME_FAIL("owner \"" << owner << "\" contains lower case characters, value must be upper case");
         }
         if (!checkNameCase(table)) {
             RUNTIME_FAIL("table \"" << table << "\" contains lower case characters, value must be upper case");
         }
-        SchemaElement *element = new SchemaElement(owner, table, options);
+        SchemaElement* element = new SchemaElement(owner, table, options);
         if (element == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
         }
@@ -1926,12 +1738,12 @@ namespace OpenLogReplicator {
         return element;
     }
 
-    bool Schema::dictSysCColAdd(const char *rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12) {
+    bool Schema::dictSysCColAdd(const char* rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
         if (sysCColMapRowId.find(rowId) != sysCColMapRowId.end())
             return false;
 
-        SysCCol *sysCCol = new SysCCol(rowId, con, intCol, obj, spare11, spare12, false);
+        SysCCol* sysCCol = new SysCCol(rowId, con, intCol, obj, spare11, spare12, false);
         if (sysCCol == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
         }
@@ -1942,12 +1754,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysCDefAdd(const char *rowIdStr, typeCON con, typeOBJ obj, typeTYPE type) {
+    bool Schema::dictSysCDefAdd(const char* rowIdStr, typeCON con, typeOBJ obj, typeTYPE type) {
         RowId rowId(rowIdStr);
         if (sysCDefMapRowId.find(rowId) != sysCDefMapRowId.end())
             return false;
 
-        SysCDef *sysCDef = new SysCDef(rowId, con, obj, type, false);
+        SysCDef* sysCDef = new SysCDef(rowId, con, obj, type, false);
         if (sysCDef == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
         }
@@ -1959,13 +1771,13 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name, typeTYPE type, uint64_t length,
+    bool Schema::dictSysColAdd(const char* rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char* name, typeTYPE type, uint64_t length,
             int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, bool null_, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
         if (sysColMapRowId.find(rowId) != sysColMapRowId.end())
             return false;
 
-        SysCol *sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
+        SysCol* sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
                 null_, property1, property2, false);
         if (sysCol == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
@@ -1979,12 +1791,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2) {
+    bool Schema::dictSysDeferredStgAdd(const char* rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2) {
         RowId rowId(rowIdStr);
         if (sysDeferredStgMapRowId.find(rowId) != sysDeferredStgMapRowId.end())
             return false;
 
-        SysDeferredStg *sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2, false);
+        SysDeferredStg* sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2, false);
         if (sysDeferredStg == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
         }
@@ -1994,12 +1806,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId) {
+    bool Schema::dictSysEColAdd(const char* rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId) {
         RowId rowId(rowIdStr);
         if (sysEColMapRowId.find(rowId) != sysEColMapRowId.end())
             return false;
 
-        SysECol *sysECol = new SysECol(rowId, tabObj, colNum, guardId, false);
+        SysECol* sysECol = new SysECol(rowId, tabObj, colNum, guardId, false);
         if (sysECol == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
         }
@@ -2010,13 +1822,13 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
+    bool Schema::dictSysObjAdd(const char* rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
             uint64_t flags1, uint64_t flags2, bool single) {
         RowId rowId(rowIdStr);
 
         auto sysObjIt = sysObjMapRowId.find(rowId);
         if (sysObjIt != sysObjMapRowId.end()) {
-            SysObj *sysObj = sysObjIt->second;
+            SysObj* sysObj = sysObjIt->second;
             if (!single && sysObj->single) {
                 sysObj->single = false;
                 TRACE(TRACE2_SYSTEM, "SYSTEM: disabling single option for object " << name << " (owner " << dec << owner << ")");
@@ -2024,7 +1836,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        SysObj *sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, single, false);
+        SysObj* sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, single, false);
         if (sysObj == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
         }
@@ -2034,12 +1846,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) {
+    bool Schema::dictSysSegAdd(const char* rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) {
         RowId rowId(rowIdStr);
         if (sysSegMapRowId.find(rowId) != sysSegMapRowId.end())
             return false;
 
-        SysSeg *sysSeg = new SysSeg(rowId, file, block, ts, spare11, spare12, false);
+        SysSeg* sysSeg = new SysSeg(rowId, file, block, ts, spare11, spare12, false);
         if (sysSeg == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
         }
@@ -2050,13 +1862,13 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysTabAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
+    bool Schema::dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
             typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
         if (sysTabMapRowId.find(rowId) != sysTabMapRowId.end())
             return false;
 
-        SysTab *sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2, false);
+        SysTab* sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2, false);
         if (sysTab == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
         }
@@ -2070,12 +1882,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysTabComPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
+    bool Schema::dictSysTabComPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
         RowId rowId(rowIdStr);
         if (sysTabComPartMapRowId.find(rowId) != sysTabComPartMapRowId.end())
             return false;
 
-        SysTabComPart *sysTabComPart = new SysTabComPart(rowId, obj, dataObj, bo, false);
+        SysTabComPart* sysTabComPart = new SysTabComPart(rowId, obj, dataObj, bo, false);
         if (sysTabComPart == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
         }
@@ -2087,12 +1899,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
+    bool Schema::dictSysTabPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo) {
         RowId rowId(rowIdStr);
         if (sysTabPartMapRowId.find(rowId) != sysTabPartMapRowId.end())
             return false;
 
-        SysTabPart *sysTabPart = new SysTabPart(rowId, obj, dataObj, bo, false);
+        SysTabPart* sysTabPart = new SysTabPart(rowId, obj, dataObj, bo, false);
         if (sysTabPart == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
         }
@@ -2103,12 +1915,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj) {
+    bool Schema::dictSysTabSubPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj) {
         RowId rowId(rowIdStr);
         if (sysTabSubPartMapRowId.find(rowId) != sysTabSubPartMapRowId.end())
             return false;
 
-        SysTabSubPart *sysTabSubPart = new SysTabSubPart(rowId, obj, dataObj, pObj, false);
+        SysTabSubPart* sysTabSubPart = new SysTabSubPart(rowId, obj, dataObj, pObj, false);
         if (sysTabSubPart == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
         }
@@ -2119,12 +1931,12 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool single) {
+    bool Schema::dictSysUserAdd(const char* rowIdStr, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single) {
         RowId rowId(rowIdStr);
 
         auto sysUserIt = sysUserMapRowId.find(rowId);
         if (sysUserIt != sysUserMapRowId.end()) {
-            SysUser *sysUser = sysUserIt->second;
+            SysUser* sysUser = sysUserIt->second;
             if (sysUser->single) {
                 if (!single) {
                     sysUser->single = false;
@@ -2136,7 +1948,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        SysUser *sysUser = new SysUser(rowId, user, name, spare11, spare12, single, false);
+        SysUser* sysUser = new SysUser(rowId, user, name, spare11, spare12, single, false);
         if (sysUser == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
         }
@@ -2170,7 +1982,7 @@ namespace OpenLogReplicator {
             usersTouched.insert(user);
     }
 
-    bool Schema::checkNameCase(const char *name) {
+    bool Schema::checkNameCase(const char* name) {
         uint64_t num = 0;
         while (*(name + num) != 0) {
             if (islower((unsigned char)*(name + num)))

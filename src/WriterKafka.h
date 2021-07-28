@@ -38,23 +38,23 @@ namespace OpenLogReplicator {
         string brokers;
         string topic;
         uint64_t maxMessages;
-        uint64_t enableIdempotence;
+        bool enableIdempotence;
         char errstr[512];
-        rd_kafka_t *rk;
-        rd_kafka_topic_t *rkt;
-        rd_kafka_conf_t *conf;
-        static void dr_msg_cb(rd_kafka_t *rk, const rd_kafka_message_t *rkmessage, void *opaque);
-        static void error_cb(rd_kafka_t *rk, int err, const char *reason, void *opaque);
-        static void logger_cb(const rd_kafka_t *rk, int level, const char *fac, const char *buf);
+        rd_kafka_t* rk;
+        rd_kafka_topic_t* rkt;
+        rd_kafka_conf_t* conf;
+        static void dr_msg_cb(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage, void* opaque);
+        static void error_cb(rd_kafka_t* rk, int err, const char* reason, void* opaque);
+        static void logger_cb(const rd_kafka_t* rk, int level, const char* fac, const char* buf);
 
-        virtual void sendMessage(OutputBufferMsg *msg);
+        virtual void sendMessage(OutputBufferMsg* msg);
         virtual string getName() const;
         virtual void pollQueue(void);
 
     public:
-        WriterKafka(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *brokers, const char *topic, uint64_t maxMessageMb,
+        WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, const char* brokers, const char* topic, uint64_t maxMessageMb,
                 uint64_t maxMessages, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn,
-                typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, uint64_t enableIdempotence);
+                typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, bool enableIdempotence);
         virtual ~WriterKafka();
     };
 }

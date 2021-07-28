@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
 
     class OpCode {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
-        RedoLogRecord *redoLogRecord;
+        OracleAnalyzer* oracleAnalyzer;
+        RedoLogRecord* redoLogRecord;
 
         void ktbRedo(uint64_t fieldPos, uint64_t fieldLength);
         void kdoOpCode(uint64_t fieldPos, uint64_t fieldLength);
@@ -46,14 +46,14 @@ namespace OpenLogReplicator {
 
         void ktub(uint64_t fieldPos, uint64_t fieldLength);
         virtual const char* getUndoType(void) const;
-        void dumpCols(uint8_t *data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
-        void dumpColsVector(uint8_t *data, uint64_t colnum, uint16_t fieldLength) const;
-        void dumpRows(uint8_t *data) const;
-        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char *msg) const;
-        void processFbFlags(uint8_t fb, char *fbStr) const;
+        void dumpCols(uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
+        void dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const;
+        void dumpRows(uint8_t* data) const;
+        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char* msg) const;
+        void processFbFlags(uint8_t fb, char* fbStr) const;
 
     public:
-        OpCode(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
+        OpCode(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
         virtual ~OpCode();
 
         virtual void process(void);

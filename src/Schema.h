@@ -51,8 +51,8 @@ namespace OpenLogReplicator {
 
     class Schema {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
-        stringstream& writeEscapeValue(stringstream &ss, string &str);
+        OracleAnalyzer* oracleAnalyzer;
+        stringstream& writeEscapeValue(stringstream& ss, string& str);
         unordered_map<typeOBJ, OracleObject*> objectMap;
         unordered_map<typeOBJ, OracleObject*> partitionMap;
 
@@ -111,7 +111,7 @@ namespace OpenLogReplicator {
         set<typeOBJ> partitionsTouched;
         set<typeOBJ> objectsTouched;
         set<typeUSER> usersTouched;
-        OracleObject *schemaObject;
+        OracleObject* schemaObject;
         vector<SchemaElement*> elements;
         set<string> users;
         set<typeSCN> schemaScnList;
@@ -131,40 +131,40 @@ namespace OpenLogReplicator {
         bool savedDeleted;
 
     public:
-        Schema(OracleAnalyzer *oracleAnalyzer);
+        Schema(OracleAnalyzer* oracleAnalyzer);
         virtual ~Schema();
 
         void dropSchema(void);
         bool readSchema(void);
-        bool readSchemaFile(string &fileName, typeSCN fileScn);
+        bool readSchemaFile(string& fileName, typeSCN fileScn);
         void writeSchema(void);
-        OracleObject *checkDict(typeOBJ obj, typeDATAOBJ dataObj);
-        void addToDict(OracleObject *object);
-        void removeFromDict(OracleObject *object);
+        OracleObject* checkDict(typeOBJ obj, typeDATAOBJ dataObj);
+        void addToDict(OracleObject* object);
+        void removeFromDict(OracleObject* object);
         bool refreshIndexes(void);
         void rebuildMaps(void);
-        void buildMaps(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options, bool output);
-        SchemaElement* addElement(const char *owner, const char *table, typeOPTIONS options);
-        bool dictSysCColAdd(const char *rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12);
-        bool dictSysCDefAdd(const char *rowIdStr, typeCON con, typeOBJ obj, typeTYPE type);
-        bool dictSysColAdd(const char *rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char *name,
+        void buildMaps(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options, bool output);
+        SchemaElement* addElement(const char* owner, const char* table, typeOPTIONS options);
+        bool dictSysCColAdd(const char* rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12);
+        bool dictSysCDefAdd(const char* rowIdStr, typeCON con, typeOBJ obj, typeTYPE type);
+        bool dictSysColAdd(const char* rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char* name,
                 typeTYPE type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
                 bool null_, uint64_t property1, uint64_t property2);
-        bool dictSysDeferredStgAdd(const char *rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2);
-        bool dictSysEColAdd(const char *rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId);
-        bool dictSysObjAdd(const char *rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char *name,
+        bool dictSysDeferredStgAdd(const char* rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2);
+        bool dictSysEColAdd(const char* rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId);
+        bool dictSysObjAdd(const char* rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
                 uint64_t flags1, uint64_t flags2, bool single);
-        bool dictSysSegAdd(const char *rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12);
-        bool dictSysTabAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
+        bool dictSysSegAdd(const char* rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12);
+        bool dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
                 typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2);
-        bool dictSysTabComPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
-        bool dictSysTabPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
-        bool dictSysTabSubPartAdd(const char *rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);
-        bool dictSysUserAdd(const char *rowIdStr, typeUSER user, const char *name, uint64_t spare11, uint64_t spare12, bool single);
+        bool dictSysTabComPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
+        bool dictSysTabPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
+        bool dictSysTabSubPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);
+        bool dictSysUserAdd(const char* rowIdStr, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
         void touchObj(typeOBJ obj);
         void touchPart(typeOBJ obj);
         void touchUser(typeUSER user);
-        bool checkNameCase(const char *name);
+        bool checkNameCase(const char* name);
 
         friend class SystemTransaction;
         friend class OracleAnalyzer;

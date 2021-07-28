@@ -23,7 +23,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
-    SchemaElement::SchemaElement(const char *owner, const char *table, typeOPTIONS options) :
+    SchemaElement::SchemaElement(const char* owner, const char* table, typeOPTIONS options) :
         owner(owner),
         table(table),
         options(options) {

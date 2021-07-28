@@ -19,11 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <algorithm>
 #include <errno.h>
-#include <execinfo.h>
 #include <fcntl.h>
 #include <list>
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
 #include <regex>
 #include <signal.h>
 #include <sys/file.h>
@@ -32,9 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 #include <zconf.h>
 
-uint64_t trace = 3, trace2 = 0;
-#define TRACEVAR
-
+#include "global.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "OracleAnalyzerBatch.h"
@@ -69,50 +64,7 @@ using namespace std;
 using namespace rapidjson;
 using namespace OpenLogReplicator;
 
-const Value& getJSONfieldV(string &fileName, const Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
-    }
-    return value[field];
-}
-
-const Value& getJSONfieldD(string &fileName, const Document& document, const char* field) {
-    if (!document.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
-    }
-    return document[field];
-}
-
-mutex mainMtx;
-condition_variable mainThread;
-bool exitOnSignal = false;
-bool mainShutdown = false;
-
-void stopMain(void) {
-    unique_lock<mutex> lck(mainMtx);
-
-    mainShutdown = true;
-    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
-    mainThread.notify_all();
-}
-
-void signalHandler(int s) {
-    if (!exitOnSignal) {
-        WARNING("caught signal " << s << ", exiting");
-        exitOnSignal = true;
-        stopMain();
-    }
-}
-
-void signalCrash(int sig) {
-    void *array[32];
-    size_t size = backtrace(array, 32);
-    ERROR("signal " << dec << sig);
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
-    exit(1);
-}
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
@@ -120,20 +72,22 @@ int main(int argc, char **argv) {
 
     INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
 
-    list<OracleAnalyzer *> analyzers;
-    list<Writer *> writers;
-    list<OutputBuffer *> buffers;
-    OracleAnalyzer *oracleAnalyzer = nullptr;
-    Writer *writer = nullptr;
+    list<OracleAnalyzer*> analyzers;
+    list<Writer*> writers;
+    list<OutputBuffer*> buffers;
+    OracleAnalyzer* oracleAnalyzer = nullptr;
+    Writer* writer = nullptr;
     int fid = -1;
-    char *configFileBuffer = nullptr;
+    char* configFileBuffer = nullptr;
 
     try {
+        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
+
         regex regexTest(".*");
         string regexString("check if matches!");
         bool regexWorks = regex_search(regexString, regexTest);
         if (!regexWorks) {
-            CONFIG_FAIL("binaries are build with no regex implementation, please check if you have gcc version >= 4.9");
+            CONFIG_FAIL("binaries are build with no regex implementation, check if you have gcc version >= 4.9");
         }
 
         string fileName("scripts/OpenLogReplicator.json");
@@ -144,7 +98,7 @@ int main(int argc, char **argv) {
             // custom config path
             fileName = argv[2];
         } else if (argc > 1) {
-            CONFIG_FAIL("invalid arguments, please run: " << argv[0] << " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " << fileName);
+            CONFIG_FAIL("invalid arguments, run: " << argv[0] << " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " << fileName);
         }
 
         if (getuid() == 0) {
@@ -184,79 +138,74 @@ int main(int argc, char **argv) {
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const Value& versionJSON = getJSONfieldD(fileName, document, "version");
-        if (strcmp(versionJSON.GetString(), CONFIG_SCHEMA_VERSION) != 0) {
-            CONFIG_FAIL("bad JSON, incompatible \"version\" value, expected: " << CONFIG_SCHEMA_VERSION << ", got: " << versionJSON.GetString());
+        const char* version = getJSONfieldS(fileName, document, "version");
+        if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0) {
+            CONFIG_FAIL("bad JSON, incompatible \"version\" value: " << version << ", expected: " << CONFIG_SCHEMA_VERSION);
         }
 
-        //optional
         uint64_t dumpRedoLog = 0;
         if (document.HasMember("dump-redo-log")) {
-            const Value& dumpRedoLogJSON = document["dump-redo-log"];
-            dumpRedoLog = dumpRedoLogJSON.GetUint64();
+            dumpRedoLog = getJSONfieldU(fileName, document, "dump-redo-log");
+            if (dumpRedoLog > 2) {
+                CONFIG_FAIL("bad JSON, invalid \"dump-redo-log\" value: " << dec << dumpRedoLog << ", expected one of: {0, 1, 2}");
+            }
         }
 
-        //optional
         if (document.HasMember("trace")) {
-            const Value& traceJSON = document["trace"];
-            trace = traceJSON.GetUint64();
+            trace = getJSONfieldU(fileName, document, "trace");
+            if (trace > 4) {
+                CONFIG_FAIL("bad JSON, invalid \"trace\" value: " << dec << trace << ", expected one of: {0, 1, 2, 3, 4}");
+            }
         }
 
-        //optional
         if (document.HasMember("trace2")) {
-            const Value& traceJSON = document["trace2"];
-            trace2 = traceJSON.GetUint64();
+            trace2 = getJSONfieldU(fileName, document, "trace2");
+            if (trace2 > 65535) {
+                CONFIG_FAIL("bad JSON, invalid \"trace2\" value: " << dec << trace2 << ", expected one of: {0 .. 65535}");
+            }
         }
-        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
 
-        //optional
         uint64_t dumpRawData = 0;
         if (document.HasMember("dump-raw-data")) {
-            const Value& dumpRawDataJSON = document["dump-raw-data"];
-            dumpRawData = dumpRawDataJSON.GetUint64();
+            dumpRawData = getJSONfieldU(fileName, document, "dump-raw-data");
+            if (dumpRawData > 1) {
+                CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << dec << dumpRawData << ", expected one of: {0, 1}");
+            }
         }
 
         //iterate through sources
-        const Value& sourcesJSON = getJSONfieldD(fileName, document, "sources");
-        if (!sourcesJSON.IsArray()) {
-            CONFIG_FAIL("bad JSON, \"sources\" should be an array");
-        }
+        const Value& sourceArrayJSON = getJSONfieldA(fileName, document, "source");
 
-        for (SizeType i = 0; i < sourcesJSON.Size(); ++i) {
-            const Value& sourceJSON = sourcesJSON[i];
-            const Value& aliasJSON = getJSONfieldV(fileName, sourceJSON, "alias");
-            INFO("adding source: " << aliasJSON.GetString());
+        for (SizeType i = 0; i < sourceArrayJSON.Size(); ++i) {
+            const Value& sourceJSON = getJSONfieldO(fileName, sourceArrayJSON, "source", i);
 
-            //optional
+            const char* alias = getJSONfieldS(fileName, sourceJSON, "alias");
+            INFO("adding source: " << alias);
+
             uint64_t memoryMinMb = 32;
             if (sourceJSON.HasMember("memory-min-mb")) {
-                const Value& memoryMinMbJSON = sourceJSON["memory-min-mb"];
-                memoryMinMb = memoryMinMbJSON.GetUint64();
+                memoryMinMb = getJSONfieldU(fileName, sourceJSON, "memory-min-mb");
                 memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
                 }
             }
 
-            //optional
             uint64_t memoryMaxMb = 1024;
             if (sourceJSON.HasMember("memory-max-mb")) {
-                const Value& memoryMaxMbJSON = sourceJSON["memory-max-mb"];
-                memoryMaxMb = memoryMaxMbJSON.GetUint64();
+                memoryMaxMb = getJSONfieldU(fileName, sourceJSON, "memory-max-mb");
                 memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMaxMb < memoryMinMb) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value can't be greater than \"memory-max-mb\" value");
                 }
             }
 
-            //optional
             uint64_t readBufferMax = memoryMaxMb / 4 / MEMORY_CHUNK_SIZE_MB;
             if (readBufferMax > 32 / MEMORY_CHUNK_SIZE_MB)
                 readBufferMax = 32 / MEMORY_CHUNK_SIZE_MB;
 
             if (sourceJSON.HasMember("read-buffer-max-mb")) {
-                const Value& readBufferMaxMbJSON = sourceJSON["read-buffer-max-mb"];
-                readBufferMax = readBufferMaxMbJSON.GetUint64() / MEMORY_CHUNK_SIZE_MB;
+                readBufferMax = getJSONfieldU(fileName, sourceJSON, "read-buffer-max-mb") / MEMORY_CHUNK_SIZE_MB;
                 if (readBufferMax * MEMORY_CHUNK_SIZE_MB > memoryMaxMb) {
                     CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value can't be greater than \"memory-max-mb\" value");
                 }
@@ -265,125 +214,108 @@ int main(int argc, char **argv) {
                 }
             }
 
-            const Value& nameJSON = getJSONfieldV(fileName, sourceJSON, "name");
+            const char* name = getJSONfieldS(fileName, sourceJSON, "name");
 
             //FORMAT
-            const Value& formatJSON = getJSONfieldV(fileName, sourceJSON, "format");
+            const Value& formatJSON = getJSONfieldO(fileName, sourceJSON, "format");
 
-            //optional
-            uint64_t messageFormat = MESSAGE_FORMAT_SHORT;
+            uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
             if (formatJSON.HasMember("message")) {
-                const Value& messageFormatJSON = formatJSON["message"];
-                messageFormat = messageFormatJSON.GetUint64();
-                if (messageFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << messageFormatJSON.GetString() << ", expected one of: {0, 1}");
+                messageFormat = getJSONfieldU(fileName, formatJSON, "message");
+                if (messageFormat > 15) {
+                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << dec << messageFormat << ", expected one of: {0.. 15}");
+                }
+                if ((messageFormat & MESSAGE_FORMAT_FULL) != 0 &&
+                        (messageFormat & (MESSAGE_FORMAT_SKIP_BEGIN | MESSAGE_FORMAT_SKIP_COMMIT)) != 0) {
+                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << dec << messageFormat <<
+                            ", you are not allowed to use BEGIN/COMMIT flag (" << dec << MESSAGE_FORMAT_SKIP_BEGIN << "/" <<
+                            MESSAGE_FORMAT_SKIP_COMMIT << ") together with FULL mode (" << dec << MESSAGE_FORMAT_FULL << ")");
                 }
             }
 
-            //optional
             uint64_t ridFormat = RID_FORMAT_SKIP;
             if (formatJSON.HasMember("rid")) {
-                const Value& ridFormatJSON = formatJSON["rid"];
-                ridFormat = ridFormatJSON.GetUint64();
+                ridFormat = getJSONfieldU(fileName, formatJSON, "rid");
                 if (ridFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << ridFormatJSON.GetString() << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << dec << ridFormat << ", expected one of: {0, 1}");
                 }
             }
 
-            //optional
             uint64_t xidFormat = XID_FORMAT_TEXT;
             if (formatJSON.HasMember("xid")) {
-                const Value& xidFormatJSON = formatJSON["xid"];
-                xidFormat = xidFormatJSON.GetUint64();
+                xidFormat = getJSONfieldU(fileName, formatJSON, "xid");
                 if (xidFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << xidFormatJSON.GetString() << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << dec << xidFormat << ", expected one of: {0, 1}");
                 }
             }
 
-            //optional
             uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
             if (formatJSON.HasMember("timestamp")) {
-                const Value& timestampFormatJSON = formatJSON["timestamp"];
-                timestampFormat = timestampFormatJSON.GetUint64();
+                timestampFormat = getJSONfieldU(fileName, formatJSON, "timestamp");
                 if (timestampFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << timestampFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << dec << timestampFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
-            //optional
             uint64_t charFormat = CHAR_FORMAT_UTF8;
             if (formatJSON.HasMember("char")) {
-                const Value& charFormatJSON = formatJSON["char"];
-                charFormat = charFormatJSON.GetUint64();
+                charFormat = getJSONfieldU(fileName, formatJSON, "char");
                 if (charFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"char\" value: " << charFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"char\" value: " << dec << charFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
-            //optional
             uint64_t scnFormat = SCN_FORMAT_NUMERIC;
             if (formatJSON.HasMember("scn")) {
-                const Value& scnFormatJSON = formatJSON["scn"];
-                scnFormat = scnFormatJSON.GetUint64();
+                scnFormat = getJSONfieldU(fileName, formatJSON, "scn");
                 if (scnFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << scnFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << dec << scnFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
-            //optional
             uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
             if (formatJSON.HasMember("unknown")) {
-                const Value& unknownFormatJSON = formatJSON["unknown"];
-                unknownFormat = unknownFormatJSON.GetUint64();
+                unknownFormat = getJSONfieldU(fileName, formatJSON, "unknown");
                 if (unknownFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << unknownFormatJSON.GetString() << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << dec << unknownFormat << ", expected one of: {0, 1}");
                 }
             }
 
-            //optional
             uint64_t schemaFormat = SCHEMA_FORMAT_NAME;
             if (formatJSON.HasMember("schema")) {
-                const Value& schemaFormatJSON = formatJSON["schema"];
-                schemaFormat = schemaFormatJSON.GetUint64();
+                schemaFormat = getJSONfieldU(fileName, formatJSON, "schema");
                 if (schemaFormat > 7) {
-                    CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << schemaFormatJSON.GetString() << ", expected one of: {0, 1, 2, 3, 4, 5, 6, 7}");
+                    CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << dec << schemaFormat << ", expected one of: {0 .. 7}");
                 }
             }
 
-            //optional
             uint64_t columnFormat = COLUMN_FORMAT_CHANGED;
             if (formatJSON.HasMember("column")) {
-                const Value& columnFormatJSON = formatJSON["column"];
-                columnFormat = columnFormatJSON.GetUint64();
+                columnFormat = getJSONfieldU(fileName, formatJSON, "column");
                 if (columnFormat > 2) {
-                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << columnFormatJSON.GetString() << ", expected one of: {0, 1, 2}");
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << ", expected one of: {0, 1, 2}");
                 }
             }
 
-            //optional
             uint64_t unknownType = UNKNOWN_TYPE_HIDE;
             if (formatJSON.HasMember("unknown-type")) {
-                const Value& unknownTypeJSON = formatJSON["unknown-type"];
-                unknownType = unknownTypeJSON.GetUint64();
+                unknownType = getJSONfieldU(fileName, formatJSON, "unknown-type");
                 if (unknownType > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << unknownTypeJSON.GetString() << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << dec << unknownType << ", expected one of: {0, 1}");
                 }
             }
 
-            //optional
             uint64_t flushBuffer = 1048576;
-            if (formatJSON.HasMember("flush-buffer")) {
-                const Value& flushBufferJSON = formatJSON["flush-buffer"];
-                flushBuffer = flushBufferJSON.GetUint64();
-            }
+            if (formatJSON.HasMember("flush-buffer"))
+                flushBuffer = getJSONfieldU(fileName, formatJSON, "flush-buffer");
 
-            const Value& formatTypeJSON = getJSONfieldV(fileName, formatJSON, "type");
+            const char* formatType = getJSONfieldS(fileName, formatJSON, "type");
 
-            OutputBuffer *outputBuffer = nullptr;
-            if (strcmp("json", formatTypeJSON.GetString()) == 0) {
+            OutputBuffer* outputBuffer = nullptr;
+            if (strcmp("json", formatType) == 0) {
                 outputBuffer = new OutputBufferJson(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
                         schemaFormat, columnFormat, unknownType, flushBuffer);
-            } else if (strcmp("protobuf", formatTypeJSON.GetString()) == 0) {
+            } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
                 outputBuffer = new OutputBufferProtobuf(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
                         schemaFormat, columnFormat, unknownType, flushBuffer);
@@ -391,7 +323,7 @@ int main(int argc, char **argv) {
                 RUNTIME_FAIL("format \"protobuf\" is not compiled, exiting");
 #endif /* LINK_LIBRARY_PROTOBUF */
                 } else {
-                CONFIG_FAIL("bad JSON, invalid \"type\" value: " << formatTypeJSON.GetString());
+                CONFIG_FAIL("bad JSON, invalid \"type\" value: " << formatType);
             }
 
             if (outputBuffer == nullptr) {
@@ -401,70 +333,61 @@ int main(int argc, char **argv) {
 
 
             //READER
-            const Value& readerJSON = getJSONfieldV(fileName, sourceJSON, "reader");
+            const Value& readerJSON = getJSONfieldO(fileName, sourceJSON, "reader");
 
-            //optional
             uint64_t disableChecks = 0;
             if (readerJSON.HasMember("disable-checks")) {
-                const Value& disableChecksJSON = readerJSON["disable-checks"];
-                disableChecks = disableChecksJSON.GetUint64();
+                disableChecks = getJSONfieldU(fileName, readerJSON, "disable-checks");
+                if (disableChecks > 1) {
+                    CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << dec << disableChecks << ", expected one of: {0, 1}");
+                }
             }
 
-            const Value& readerTypeJSON = getJSONfieldV(fileName, readerJSON, "type");
-            if (strcmp(readerTypeJSON.GetString(), "online") == 0 ||
-                    strcmp(readerTypeJSON.GetString(), "online-standby") == 0) {
+            const char* readerType = getJSONfieldS(fileName, readerJSON, "type");
+
+            if (strcmp(readerType, "online") == 0 ||
+                    strcmp(readerType, "online-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
                 bool standby = false;
-                if (strcmp(readerTypeJSON.GetString(), "online-standby") == 0)
+                if (strcmp(readerType, "online-standby") == 0)
                     standby = true;
 
-                const char *user = "";
-                const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
-                user = userJSON.GetString();
+                const char* user = getJSONfieldS(fileName, readerJSON, "user");
+                const char* password = getJSONfieldS(fileName, readerJSON, "password");
+                const char* server = getJSONfieldS(fileName, readerJSON, "server");
 
-                const char *password = "";
-                const Value& passwordJSON = getJSONfieldV(fileName, readerJSON, "password");
-                password = passwordJSON.GetString();
-
-                const char *server = "";
-                const Value& serverJSON = getJSONfieldV(fileName, readerJSON, "server");
-                server = serverJSON.GetString();
-
-                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
+                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                        name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
 
                 if (readerJSON.HasMember("path-mapping")) {
-                    const Value& pathMapping = readerJSON["path-mapping"];
-                    if (!pathMapping.IsArray()) {
-                        CONFIG_FAIL("bad JSON, \"path-mapping\" should be array");
-                    }
-                    if ((pathMapping.Size() % 2) != 0) {
+                    const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
+                    if ((pathMappingArrayJSON.Size() % 2) != 0) {
                         CONFIG_FAIL("bad JSON, \"path-mapping\" should contain even number of elements");
                     }
 
-                    for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
-                        const Value& sourceMapping = pathMapping[j * 2];
-                        const Value& targetMapping = pathMapping[j * 2 + 1];
-                        oracleAnalyzer->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                    for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
+                        const char* sourceMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                        oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
 
-                //optional
                 if (sourceJSON.HasMember("arch")) {
-                    const Value& archJSON = sourceJSON["arch"];
-                    if (strcmp(archJSON.GetString(), "path") == 0)
+                    const char* arch = getJSONfieldS(fileName, sourceJSON, "arch");
+
+                    if (strcmp(arch, "path") == 0)
                         oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
-                    else if (strcmp(archJSON.GetString(), "online") == 0) {
+                    else if (strcmp(arch, "online") == 0) {
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
-                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0) {
+                    } else if (strcmp(arch, "online-keep") == 0) {
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
                         ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = true;
                     } else {
-                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << arch << ", expected one of: {\"path\", \"online\", \"online-keep\"}");
                     }
                 } else
                     oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
@@ -472,173 +395,128 @@ int main(int argc, char **argv) {
                 RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
 #endif /*LINK_LIBRARY_OCI*/
 
-            } else if (strcmp(readerTypeJSON.GetString(), "offline") == 0) {
+            } else if (strcmp(readerType, "offline") == 0) {
 
-                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
+                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                        name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
 
                 if (readerJSON.HasMember("path-mapping")) {
-                    const Value& pathMapping = readerJSON["path-mapping"];
-                    if (!pathMapping.IsArray()) {
-                        CONFIG_FAIL("bad JSON, \"path-mapping\" should be array");
-                    }
-                    if ((pathMapping.Size() % 2) != 0) {
+                    const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
+
+                    if ((pathMappingArrayJSON.Size() % 2) != 0) {
                         CONFIG_FAIL("bad JSON, \"path-mapping\" should contain even number of elements");
                     }
 
-                    for (SizeType j = 0; j < pathMapping.Size() / 2; ++j) {
-                        const Value& sourceMapping = pathMapping[j * 2];
-                        const Value& targetMapping = pathMapping[j * 2 + 1];
-                        oracleAnalyzer->addPathMapping(sourceMapping.GetString(), targetMapping.GetString());
+                    for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
+                        const char* sourceMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                        oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
 
-            } else if (strcmp(readerTypeJSON.GetString(), "asm") == 0 ||
-                    strcmp(readerTypeJSON.GetString(), "asm-standby") == 0) {
+            } else if (strcmp(readerType, "asm") == 0 || strcmp(readerType, "asm-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
                 bool standby = false;
-                if (strcmp(readerTypeJSON.GetString(), "asm-standby") == 0)
+                if (strcmp(readerType, "asm-standby") == 0)
                     standby = true;
 
-                const char *user = "";
-                const Value& userJSON = getJSONfieldV(fileName, readerJSON, "user");
-                user = userJSON.GetString();
+                const char* user = getJSONfieldS(fileName, readerJSON, "user");
+                const char* password = getJSONfieldS(fileName, readerJSON, "password");
+                const char* server = getJSONfieldS(fileName, readerJSON, "server");
+                const char* userASM = getJSONfieldS(fileName, readerJSON, "user-asm");
+                const char* passwordASM = getJSONfieldS(fileName, readerJSON, "password-asm");
+                const char* serverASM = getJSONfieldS(fileName, readerJSON, "server-asm");
 
-                const char *password = "";
-                const Value& passwordJSON = getJSONfieldV(fileName, readerJSON, "password");
-                password = passwordJSON.GetString();
-
-                const char *server = "";
-                const Value& serverJSON = getJSONfieldV(fileName, readerJSON, "server");
-                server = serverJSON.GetString();
-
-                const char *userASM = "";
-                const Value& userASMJSON = getJSONfieldV(fileName, readerJSON, "user-asm");
-                userASM = userASMJSON.GetString();
-
-                const char *passwordASM = "";
-                const Value& passwordASMJSON = getJSONfieldV(fileName, readerJSON, "password-asm");
-                passwordASM = passwordASMJSON.GetString();
-
-                const char *serverASM = "";
-                const Value& serverASMJSON = getJSONfieldV(fileName, readerJSON, "server-asm");
-                serverASM = serverASMJSON.GetString();
-
-                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server,
-                        userASM, passwordASM, serverASM, standby);
+                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, alias, name, memoryMinMb, memoryMaxMb,
+                        readBufferMax, disableChecks, user, password, server, userASM, passwordASM, serverASM, standby);
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
 
-                //optional
                 if (sourceJSON.HasMember("arch")) {
-                    const Value& archJSON = sourceJSON["arch"];
-                    if (strcmp(archJSON.GetString(), "path") == 0)
+                    const char* arch = getJSONfieldS(fileName, sourceJSON, "arch");
+
+                    if (strcmp(arch, "path") == 0)
                         oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
-                    else if (strcmp(archJSON.GetString(), "online") == 0) {
+                    else if (strcmp(arch, "online") == 0) {
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
                         ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
-                    } else if (strcmp(archJSON.GetString(), "online-keep") == 0)
+                    } else if (strcmp(arch, "online-keep") == 0)
                         oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
                     else {
-                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << archJSON.GetString() << ", expected one of (\"path\", \"online\", \"online-keep\") reader");
+                        CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << arch << ", expected one of: {\"path\", \"online\", \"online-keep\"}");
                     }
                 }
 #else
                 RUNTIME_FAIL("reader types \"online\", \"asm\" are not compiled, exiting");
 #endif /*LINK_LIBRARY_OCI*/
 
-            } else if (strcmp(readerTypeJSON.GetString(), "batch") == 0) {
+            } else if (strcmp(readerType, "batch") == 0) {
 
-                //optional
                 typeCONID conId = 0;
-                if (readerJSON.HasMember("con-id")) {
-                    const Value& conIdJSON = readerJSON["con-id"];
-                    conId = conIdJSON.GetInt();
-                }
+                if (readerJSON.HasMember("con-id"))
+                    conId = getJSONfieldI(fileName, readerJSON, "con-id");
 
-                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, aliasJSON.GetString(),
-                        nameJSON.GetString(), memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
+                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                        name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
                 oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
                 }
 
-                if (!readerJSON.HasMember("redo-logs")) {
-                    CONFIG_FAIL("bad JSON, missing \"redo-logs\" element which is required in \"batch\" reader type");
-                }
+                const Value& redoLogBatchArrayJSON = getJSONfieldA(fileName, readerJSON, "redo-log");
 
-                const Value& redoLogsBatch = readerJSON["redo-logs"];
-                if (!redoLogsBatch.IsArray()) {
-                    CONFIG_FAIL("bad JSON, \"redo-logs\" field should be array");
-                }
-
-                for (SizeType j = 0; j < redoLogsBatch.Size(); ++j) {
-                    const Value& path = redoLogsBatch[j];
-                    oracleAnalyzer->addRedoLogsBatch(path.GetString());
-                }
+                for (SizeType j = 0; j < redoLogBatchArrayJSON.Size(); ++j)
+                    oracleAnalyzer->addRedoLogsBatch(getJSONfieldS(fileName, redoLogBatchArrayJSON, "redo-log", j));
 
                 oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
 
             } else {
-                CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerTypeJSON.GetString());
+                CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerType);
             }
 
             outputBuffer->initialize(oracleAnalyzer);
 
-            //optional
             if (sourceJSON.HasMember("debug")) {
-                const Value& debugJSON = getJSONfieldV(fileName, sourceJSON, "debug");
+                const Value& debugJSON = getJSONfieldO(fileName, sourceJSON, "debug");
 
-                //optional
                 if (debugJSON.HasMember("stop-log-switches")) {
-                    const Value& stopLogSwitchesJSON = debugJSON["stop-log-switches"];
-                    oracleAnalyzer->stopLogSwitches = stopLogSwitchesJSON.GetUint64();
+                    oracleAnalyzer->stopLogSwitches = getJSONfieldU(fileName, debugJSON, "stop-log-switches");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopLogSwitches << " log switches");
                 }
 
-                //optional
                 if (debugJSON.HasMember("stop-checkpoints")) {
-                    const Value& stopCheckpointsJSON = debugJSON["stop-checkpoints"];
-                    oracleAnalyzer->stopCheckpoints = stopCheckpointsJSON.GetUint64();
+                    oracleAnalyzer->stopCheckpoints = getJSONfieldU(fileName, debugJSON, "stop-checkpoints");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopCheckpoints << " checkpoints");
                 }
 
-                //optional
                 if (debugJSON.HasMember("stop-transactions")) {
-                    const Value& stopTransactionsJSON = debugJSON["stop-transactions"];
-                    oracleAnalyzer->stopTransactions = stopTransactionsJSON.GetUint64();
+                    oracleAnalyzer->stopTransactions = getJSONfieldU(fileName, debugJSON, "stop-transactions");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopTransactions << " transactions");
                 }
 
-                //optional
                 if (debugJSON.HasMember("flush-buffer")) {
-                    const Value& stopFlushBufferJSON = debugJSON["flush-buffer"];
-                    uint64_t stopFlushBuffer = stopFlushBufferJSON.GetUint64();
+                    uint64_t stopFlushBuffer = getJSONfieldU(fileName, debugJSON, "flush-buffer");
                     if (stopFlushBuffer == 1) {
                         oracleAnalyzer->stopFlushBuffer = true;
                     } else
                     if (stopFlushBuffer > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value, expected one of (0, 1)");
+                        CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value: " << dec << stopFlushBuffer << ", expected one of: {0, 1}");
                     }
                 }
 
+                if (debugJSON.HasMember("owner") || debugJSON.HasMember("table")) {
+                    const char* debugTable = getJSONfieldS(fileName, debugJSON, "table");
+                    const char* debugOwner = getJSONfieldS(fileName, debugJSON, "owner");
 
-                if (debugJSON.HasMember("table")) {
-                    const Value& debugTableJSON = debugJSON["table"];
-                    if (!debugJSON.HasMember("owner")) {
-                        CONFIG_FAIL("bad JSON, \"debug\" contains \"table\" but missing \"owner\"");
-                    }
-                    const Value& debugOwnerJSON = debugJSON["owner"];
-                    oracleAnalyzer->schema->addElement(debugOwnerJSON.GetString(), debugTableJSON.GetString(), OPTIONS_DEBUG_TABLE);
-                    INFO("will shutdown after committed DML in " << debugOwnerJSON.GetString() << "." << debugTableJSON.GetString());
+                    oracleAnalyzer->schema->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
+                    INFO("will shutdown after committed DML in " << debugOwner << "." << debugTable);
                 }
             }
 
@@ -655,121 +533,203 @@ int main(int argc, char **argv) {
             oracleAnalyzer->schema->addElement("SYS", "TABSUBPART\\$", OPTIONS_SCHEMA_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "USER\\$", OPTIONS_SCHEMA_TABLE);
 
-            const Value& tablesJSON = getJSONfieldV(fileName, sourceJSON, "tables");
-            if (!tablesJSON.IsArray()) {
-                CONFIG_FAIL("bad JSON, field \"tables\" should be array");
-            }
+            if (sourceJSON.HasMember("filter")) {
+                const Value& filterJSON = getJSONfieldO(fileName, sourceJSON, "filter");
 
-            for (SizeType j = 0; j < tablesJSON.Size(); ++j) {
-                if (!tablesJSON[j].HasMember("owner")) {
-                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"owner\" value");
-                }
-                const Value& ownerJSON = getJSONfieldV(fileName, tablesJSON[j], "owner");
-                uint64_t ownerLength = strnlen(ownerJSON.GetString(), 32768);
-                if (ownerLength == 0) {
-                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"owner\" value");
-                }
+                if (filterJSON.HasMember("table")) {
+                    const Value& tableArrayJSON = getJSONfieldA(fileName, filterJSON, "table");
 
-                if (!tablesJSON[j].HasMember("table")) {
-                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"table\" value");
-                }
-                const Value& tableJSON = getJSONfieldV(fileName, tablesJSON[j], "table");
-                uint64_t tableLength = strnlen(tableJSON.GetString(), 32768);
-                if (tableLength == 0) {
-                    CONFIG_FAIL("bad JSON, element \"tables\"[" << dec << (j + 1) << "] is missing \"table\" value");
-                }
-                SchemaElement *element = oracleAnalyzer->schema->addElement(ownerJSON.GetString(), tableJSON.GetString(), 0);
+                    for (SizeType j = 0; j < tableArrayJSON.Size(); ++j) {
+                        const Value& tableElementJSON = getJSONfieldO(fileName, tableArrayJSON, "table", j);
 
-                if (tablesJSON[j].HasMember("key")) {
-                    const Value& key = tablesJSON[j]["key"];
-                    element->keysStr = key.GetString();
-                    stringstream keyStream(element->keysStr);
+                        const char* owner = getJSONfieldS(fileName, tableElementJSON, "owner");
+                        const char* table = getJSONfieldS(fileName, tableElementJSON, "table");
+                        SchemaElement* element = oracleAnalyzer->schema->addElement(owner, table, 0);
 
-                    while (keyStream.good()) {
-                        string keyCol, keyCol2;
-                        getline(keyStream, keyCol, ',');
-                        keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
-                        transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
-                        element->keys.push_back(keyCol);
+                        if (tableElementJSON.HasMember("key")) {
+                            element->keysStr = getJSONfieldS(fileName, tableElementJSON, "key");
+                            stringstream keyStream(element->keysStr);
+
+                            while (keyStream.good()) {
+                                string keyCol, keyCol2;
+                                getline(keyStream, keyCol, ',');
+                                keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
+                                transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
+                                element->keys.push_back(keyCol);
+                            }
+                        } else
+                            element->keysStr = "";
                     }
-                } else
-                    element->keysStr = "";
+                }
+
+                if (filterJSON.HasMember("skip-xid")) {
+                    const Value& skipXidArrayJSON = getJSONfieldA(fileName, filterJSON, "skip-xid");
+                    for (SizeType j = 0; j < skipXidArrayJSON.Size(); ++j) {
+                        const char* skipXid = getJSONfieldS(fileName, filterJSON, "skip-xid", j);
+
+                        typeXID xid = 0;
+                        bool invalid = false;
+                        string usn, slt, sqn;
+
+                        uint64_t length = strnlen(skipXid, 25);
+                        //UUUUSSSSQQQQQQQQ
+                        if (length == 16) {
+                            for (uint64_t i = 0; i < 16; ++i)
+                                if (!iswxdigit(skipXid[i])) {
+                                    invalid = true;
+                                    break;
+                                }
+                            if (!invalid) {
+                                usn.assign(skipXid, 4);
+                                slt.assign(skipXid + 4, 4);
+                                sqn.assign(skipXid + 8, 8);
+                            }
+                        } else
+                        //UUUU.SSS.QQQQQQQQ
+                        if (length == 17) {
+                            for (uint64_t i = 0; i < 17; ++i)
+                                if (!iswxdigit(skipXid[i]) && i != 4 && i != 8) {
+                                    invalid = true;
+                                    break;
+                                }
+                            if (skipXid[4] != '.' || skipXid[8] != '.')
+                                invalid = true;
+                            if (!invalid) {
+                                usn.assign(skipXid, 4);
+                                slt.assign(skipXid + 5, 3);
+                                sqn.assign(skipXid + 9, 8);
+                            }
+                        } else
+                        //UUUU.SSSS.QQQQQQQQ
+                        if (length == 18) {
+                            for (uint64_t i = 0; i < 18; ++i)
+                                if (!iswxdigit(skipXid[i]) && i != 4 && i != 9) {
+                                    invalid = true;
+                                    break;
+                                }
+                            if (skipXid[4] != '.' || skipXid[9] != '.')
+                                invalid = true;
+                            if (!invalid) {
+                                usn.assign(skipXid, 4);
+                                slt.assign(skipXid + 5, 4);
+                                sqn.assign(skipXid + 10, 8);
+                            }
+                        } else
+                        //0xUUUU.SSS.QQQQQQQQ
+                        if (length == 19) {
+                            for (uint64_t i = 2; i < 19; ++i)
+                                if (!iswxdigit(skipXid[i]) && i != 6 && i != 10) {
+                                    invalid = true;
+                                    break;
+                                }
+                            if (skipXid[0] != '0' || skipXid[1] != 'x' || skipXid[6] != '.' || skipXid[10] != '.')
+                                invalid = true;
+                            if (!invalid) {
+                                usn.assign(skipXid + 2, 4);
+                                slt.assign(skipXid + 7, 3);
+                                sqn.assign(skipXid + 11, 8);
+                            }
+                        } else
+                        //0xUUUU.SSSS.QQQQQQQQ
+                        if (length == 20) {
+                            for (uint64_t i = 2; i < 20; ++i)
+                                if (!iswxdigit(skipXid[i]) && i != 6 && i != 11) {
+                                    invalid = true;
+                                    break;
+                                }
+                            if (skipXid[0] != '0' || skipXid[1] != 'x' || skipXid[6] != '.' || skipXid[11] != '.')
+                                invalid = true;
+                            if (!invalid) {
+                                usn.assign(skipXid + 2, 4);
+                                slt.assign(skipXid + 7, 4);
+                                sqn.assign(skipXid + 12, 8);
+                            }
+                        } else
+                            invalid = true;
+
+                        if (invalid) {
+                            CONFIG_FAIL("bad JSON, field \"skip-xid\" has invalid value: " << skipXid);
+                        }
+
+                        xid = XID(stoul(usn, nullptr, 16), stoul(slt, nullptr, 16), stoul(sqn, nullptr, 16));
+                        INFO("adding XID to skip list: " << PRINTXID(xid));
+                        oracleAnalyzer->skipXidList.insert(xid);
+                    }
+                }
+
+                if (filterJSON.HasMember("transaction-max-mb")) {
+                    uint64_t transactionMaxMb = getJSONfieldU(fileName, filterJSON, "transaction-max-mb");
+                    if (transactionMaxMb > memoryMaxMb) {
+                        CONFIG_FAIL("bad JSON, \"transaction-max-mb\" (" << dec << transactionMaxMb <<
+                                ") is bigger than \"memory-max-mb\" (" << memoryMaxMb << ")");
+                    }
+                    oracleAnalyzer->transactionMax = transactionMaxMb * 1024 * 1024;
+                }
             }
 
-            //optional
             if (sourceJSON.HasMember("flags")) {
-                const Value& flagsJSON = sourceJSON["flags"];
-                oracleAnalyzer->flags |= flagsJSON.GetUint64();
+                uint64_t flags = getJSONfieldU(fileName, sourceJSON, "flags");
+                if (flags > 4095) {
+                    CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 4095}");
+                }
+                oracleAnalyzer->flags |= flags;
             }
 
-            //optional
-            if (sourceJSON.HasMember("redo-verify-delay-us")) {
-                const Value& redoVerifyDelayUSJSON = sourceJSON["redo-verify-delay-us"];
-                oracleAnalyzer->redoVerifyDelayUS = redoVerifyDelayUSJSON.GetUint64();
-            }
+            if (sourceJSON.HasMember("redo-verify-delay-us"))
+                oracleAnalyzer->redoVerifyDelayUS = getJSONfieldU(fileName, sourceJSON, "redo-verify-delay-us");
 
-            //optional
-            if (sourceJSON.HasMember("arch-read-sleep-us")) {
-                const Value& archReadSleepUSJSON = sourceJSON["arch-read-sleep-us"];
-                oracleAnalyzer->archReadSleepUS = archReadSleepUSJSON.GetUint64();
-            }
+            if (sourceJSON.HasMember("arch-read-sleep-us"))
+                oracleAnalyzer->archReadSleepUS = getJSONfieldU(fileName, sourceJSON, "arch-read-sleep-us");
 
-            //optional
-            if (sourceJSON.HasMember("arch-read-retry")) {
-                const Value& archReadRetryJSON = sourceJSON["arch-read-retry"];
-                oracleAnalyzer->archReadRetry = archReadRetryJSON.GetUint64();
-            }
+            if (sourceJSON.HasMember("arch-read-retry"))
+                oracleAnalyzer->archReadRetry = getJSONfieldU(fileName, sourceJSON, "arch-read-retry");
 
-            //optional
-            if (sourceJSON.HasMember("redo-read-sleep-us")) {
-                const Value& redoReadSleepUSJSON = sourceJSON["redo-read-sleep-us"];
-                oracleAnalyzer->redoReadSleepUS = redoReadSleepUSJSON.GetUint64();
-            }
+            if (sourceJSON.HasMember("redo-read-sleep-us"))
+                oracleAnalyzer->redoReadSleepUS = getJSONfieldU(fileName, sourceJSON, "redo-read-sleep-us");
 
-            //optional
-            if (readerJSON.HasMember("redo-copy-path")) {
-                const Value& redoCopyPathJSON = readerJSON["redo-copy-path"];
-                oracleAnalyzer->redoCopyPath = redoCopyPathJSON.GetString();
-            }
+            if (readerJSON.HasMember("redo-copy-path"))
+                oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, readerJSON, "redo-copy-path");
 
-            //optional
-            if (readerJSON.HasMember("log-archive-format")) {
-                const Value& logArchiveFormatJSON = readerJSON["log-archive-format"];
-                oracleAnalyzer->logArchiveFormat = logArchiveFormatJSON.GetString();
-            }
+            if (readerJSON.HasMember("log-archive-format"))
+                oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, readerJSON, "log-archive-format");
 
-            //optional
             if (sourceJSON.HasMember("checkpoint")) {
-                const Value& checkpointJSON = getJSONfieldV(fileName, sourceJSON, "checkpoint");
+                const Value& checkpointJSON = getJSONfieldO(fileName, sourceJSON, "checkpoint");
 
-                if (checkpointJSON.HasMember("path")) {
-                    const Value& checkpointPathJSON = checkpointJSON["path"];
-                    oracleAnalyzer->checkpointPath = checkpointPathJSON.GetString();
-                }
+                if (checkpointJSON.HasMember("path"))
+                    oracleAnalyzer->checkpointPath = getJSONfieldS(fileName, checkpointJSON, "path");
 
-                if (checkpointJSON.HasMember("interval-s")) {
-                    const Value& checkpointIntervalSJSON = checkpointJSON["interval-s"];
-                    oracleAnalyzer->checkpointIntervalS = checkpointIntervalSJSON.GetUint64();
-                }
+                if (checkpointJSON.HasMember("interval-s"))
+                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU(fileName, checkpointJSON, "interval-s");
 
-                if (checkpointJSON.HasMember("interval-mb")) {
-                    const Value& checkpointIntervalMBJSON = checkpointJSON["interval-mb"];
-                    oracleAnalyzer->checkpointIntervalMB = checkpointIntervalMBJSON.GetUint64();
-                }
+                if (checkpointJSON.HasMember("interval-mb"))
+                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU(fileName, checkpointJSON, "interval-mb");
 
                 if (checkpointJSON.HasMember("all")) {
-                    const Value& checkpointAllJSON = checkpointJSON["all"];
-                    oracleAnalyzer->checkpointAll = checkpointAllJSON.GetUint64();
+                    uint64_t all = getJSONfieldU(fileName, checkpointJSON, "all");
+                    if (all == 1)
+                        oracleAnalyzer->checkpointAll = true;
+                    else if (all > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"all\" value: " << dec << all << ", expected one of: {0, 1}");
+                    }
                 }
 
                 if (checkpointJSON.HasMember("output-checkpoint")) {
-                    const Value& checkpointOutputCheckpointJSON = checkpointJSON["output-checkpoint"];
-                    oracleAnalyzer->checkpointOutputCheckpoint = checkpointOutputCheckpointJSON.GetUint64();
+                    uint64_t outputCheckpoint = getJSONfieldU(fileName, checkpointJSON, "output-checkpoint");
+                    if (outputCheckpoint == 1)
+                        oracleAnalyzer->checkpointOutputCheckpoint = true;
+                    else if (outputCheckpoint > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"output-checkpoint\" value: " << dec << outputCheckpoint << ", expected one of: {0, 1}");
+                    }
                 }
 
                 if (checkpointJSON.HasMember("output-log-switch")) {
-                    const Value& checkpointOutputLogSwitchJSON = checkpointJSON["output-log-switch"];
-                    oracleAnalyzer->checkpointOutputLogSwitch = checkpointOutputLogSwitchJSON.GetUint64();
+                    uint64_t outputLogSwitch = getJSONfieldU(fileName, checkpointJSON, "output-log-switch");
+                    if (outputLogSwitch == 1)
+                        oracleAnalyzer->checkpointOutputLogSwitch = true;
+                    else if (outputLogSwitch > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"output-log-switch\" value: " << dec << outputLogSwitch << ", expected one of: {0, 1}");
+                    }
                 }
             }
 
@@ -782,64 +742,51 @@ int main(int argc, char **argv) {
         }
 
         //iterate through targets
-        const Value& targetsJSON = getJSONfieldD(fileName, document, "targets");
-        if (!targetsJSON.IsArray()) {
-            CONFIG_FAIL("bad JSON, field \"targets\" should be array");
-        }
-        for (SizeType i = 0; i < targetsJSON.Size(); ++i) {
-            const Value& targetJSON = targetsJSON[i];
-            const Value& aliasJSON = getJSONfieldV(fileName, targetJSON, "alias");
-            INFO("adding target: " << aliasJSON.GetString());
+        const Value& targetArrayJSON = getJSONfieldA(fileName, document, "target");
 
-            const Value& sourceJSON = getJSONfieldV(fileName, targetJSON, "source");
-            OracleAnalyzer *oracleAnalyzer = nullptr;
-            for (OracleAnalyzer *analyzer : analyzers)
-                if (analyzer->alias.compare(sourceJSON.GetString()) == 0)
+        for (SizeType i = 0; i < targetArrayJSON.Size(); ++i) {
+            const Value& targetJSON = targetArrayJSON[i];
+            const char* alias = getJSONfieldS(fileName, targetJSON, "alias");
+            const char* source = getJSONfieldS(fileName, targetJSON, "source");
+
+            INFO("adding target: " << alias);
+            OracleAnalyzer* oracleAnalyzer = nullptr;
+            for (OracleAnalyzer* analyzer : analyzers)
+                if (analyzer->alias.compare(source) == 0)
                     oracleAnalyzer = (OracleAnalyzer*)analyzer;
             if (oracleAnalyzer == nullptr) {
-                CONFIG_FAIL("bad JSON, couldn't find reader for \"source\" value: " << sourceJSON.GetString());
+                CONFIG_FAIL("bad JSON, couldn't find reader for \"source\" value: " << source);
             }
 
             //writer
-            const Value& writerJSON = getJSONfieldV(fileName, targetJSON, "writer");
-            const Value& writerTypeJSON = getJSONfieldV(fileName, writerJSON, "type");
+            const Value& writerJSON = getJSONfieldO(fileName, targetJSON, "writer");
+            const char* writerType = getJSONfieldS(fileName, writerJSON, "type");
 
-            //optional
             uint64_t pollIntervalUS = 100000;
             if (writerJSON.HasMember("poll-interval-us")) {
-                const Value& pollIntervalUSJSON = writerJSON["poll-interval-us"];
-                pollIntervalUS = pollIntervalUSJSON.GetUint64();
+                pollIntervalUS = getJSONfieldU(fileName, writerJSON, "poll-interval-us");
                 if (pollIntervalUS < 100 || pollIntervalUS > 3600000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << pollIntervalUSJSON.GetString() << ", expected from 100 to 3600000000");
+                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << dec << pollIntervalUS << ", expected one of: {100 .. 3600000000}");
                 }
             }
 
-            //optional
             typeSCN startScn = ZERO_SCN;
-            if (writerJSON.HasMember("start-scn")) {
-                const Value& startScnJSON = writerJSON["start-scn"];
-                startScn = startScnJSON.GetUint64();
-            }
+            if (writerJSON.HasMember("start-scn"))
+                startScn = getJSONfieldU(fileName, writerJSON, "start-scn");
 
-            //optional
             typeSEQ startSequence = ZERO_SEQ;
-            if (writerJSON.HasMember("start-seq")) {
-                const Value& startSequenceJSON = writerJSON["start-seq"];
-                startSequence = startSequenceJSON.GetUint64();
-            }
+            if (writerJSON.HasMember("start-seq"))
+                startSequence = getJSONfieldU(fileName, writerJSON, "start-seq");
 
-            //optional
             int64_t startTimeRel = 0;
             if (writerJSON.HasMember("start-time-rel")) {
                 if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time-rel\"");
                 }
-                const Value& startTimeRelJSON = writerJSON["start-time-rel"];
-                startTimeRel = startTimeRelJSON.GetInt64();
+                startTimeRel = getJSONfieldI(fileName, writerJSON, "start-time-rel");
             }
 
-            //optional
-            const char *startTime = "";
+            const char* startTime = "";
             if (writerJSON.HasMember("start-time")) {
                 if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time\"");
@@ -847,131 +794,108 @@ int main(int argc, char **argv) {
                 if (startTimeRel > 0) {
                     CONFIG_FAIL("bad JSON, \"start-time-rel\" used together with \"start-time\"");
                 }
-                const Value& startTimeJSON = writerJSON["start-time"];
-                startTime = startTimeJSON.GetString();
+
+                startTime = getJSONfieldS(fileName, writerJSON, "start-time");
             }
 
-            //optional
             uint64_t checkpointIntervalS = 10;
-            if (writerJSON.HasMember("checkpoint-interval-s")) {
-                const Value& checkpointIntervalSJSON = writerJSON["checkpoint-interval-s"];
-                checkpointIntervalS = checkpointIntervalSJSON.GetUint64();
-            }
+            if (writerJSON.HasMember("checkpoint-interval-s"))
+                checkpointIntervalS = getJSONfieldU(fileName, writerJSON, "checkpoint-interval-s");
 
-            //optional
             uint64_t queueSize = 65536;
             if (writerJSON.HasMember("queue-size")) {
-                const Value& queueSizeJSON = writerJSON["queue-size"];
-                queueSize = queueSizeJSON.GetUint64();
+                queueSize = getJSONfieldU(fileName, writerJSON, "queue-size");
                 if (queueSize < 1 || queueSize > 1000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << queueSizeJSON.GetString() << ", expected from 1 to 1000000");
+                    CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << dec << queueSize << ", expected one of: {1 .. 1000000}");
                 }
             }
 
-            if (strcmp(writerTypeJSON.GetString(), "file") == 0) {
-                //optional
+            if (strcmp(writerType, "file") == 0) {
                 uint64_t maxSize = 0;
-                if (writerJSON.HasMember("max-size")) {
-                    const Value& maxSizeJSON = writerJSON["max-size"];
-                    maxSize = maxSizeJSON.GetUint64();
-                }
+                if (writerJSON.HasMember("max-size"))
+                    maxSize = getJSONfieldU(fileName, writerJSON, "max-size");
 
-                //optional
-                const char *format = "%F_%T";
-                if (writerJSON.HasMember("format")) {
-                    const Value& formatJSON = writerJSON["format"];
-                    format = formatJSON.GetString();
-                }
+                const char* format = "%F_%T";
+                if (writerJSON.HasMember("format"))
+                    format = getJSONfieldS(fileName, writerJSON, "format");
 
-                //optional
-                const char *output = "";
-                if (writerJSON.HasMember("output")) {
-                    const Value& outputJSON = writerJSON["output"];
-                    output = outputJSON.GetString();
-                } else
+                const char* output = "";
+                if (writerJSON.HasMember("output"))
+                    output = getJSONfieldS(fileName, writerJSON, "output");
+                else
                 if (maxSize > 0) {
                     RUNTIME_FAIL("parameter \"max-size\" should be 0 when \"output\" is not set (for: file writer)");
                 }
 
-                //optional
                 uint64_t newLine = 1;
                 if (writerJSON.HasMember("new-line")) {
-                    const Value& newLineJSON = writerJSON["new-line"];
-                    newLine = newLineJSON.GetUint64();
+                    newLine = getJSONfieldU(fileName, writerJSON, "new-line");
                     if (newLine > 2) {
-                        CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << newLineJSON.GetString() << ", expected one of: {0, 1, 2}");
+                        CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << dec << newLine << ", expected one of: {0, 1, 2}");
                     }
                 }
 
-                //optional
                 uint64_t append = 1;
                 if (writerJSON.HasMember("append")) {
-                    const Value& appendJSON = writerJSON["append"];
-                    append = appendJSON.GetUint64();
+                    append = getJSONfieldU(fileName, writerJSON, "append");
                     if (append > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"append\" value: " << appendJSON.GetString() << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"append\" value: " << dec << append << ", expected one of: {0, 1}");
                     }
                 }
 
-                writer = new WriterFile(aliasJSON.GetString(), oracleAnalyzer, output, format, maxSize, newLine, append, pollIntervalUS,
+                writer = new WriterFile(alias, oracleAnalyzer, output, format, maxSize, newLine, append, pollIntervalUS,
                         checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
-            } else if (strcmp(writerTypeJSON.GetString(), "kafka") == 0) {
+            } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
-                    const Value& maxMessageMbJSON = writerJSON["max-message-mb"];
-                    maxMessageMb = maxMessageMbJSON.GetUint64();
-                    if (maxMessageMb < 1)
-                        maxMessageMb = 1;
-                    if (maxMessageMb > MAX_KAFKA_MESSAGE_MB)
-                        maxMessageMb = MAX_KAFKA_MESSAGE_MB;
+                    maxMessageMb = getJSONfieldU(fileName, writerJSON, "max-message-mb");
+                    if (maxMessageMb < 1 || maxMessageMb > MAX_KAFKA_MESSAGE_MB) {
+                        CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << >"}");
+                    }
                 }
 
                 uint64_t maxMessages = 100000;
                 if (writerJSON.HasMember("max-messages")) {
-                    const Value& maxMessagesJSON = writerJSON["max-messages"];
-                    maxMessages = maxMessagesJSON.GetUint64();
-                    if (maxMessages < 1)
-                        maxMessages = 1;
-                    if (maxMessages > MAX_KAFKA_MAX_MESSAGES)
-                        maxMessages = MAX_KAFKA_MAX_MESSAGES;
-                }
-
-                //optional
-                uint64_t enableIdempotence = 1;
-                if (writerJSON.HasMember("enable-idempotence")) {
-                    const Value& enableIdempotenceJSON = writerJSON["enable-idempotence"];
-                    enableIdempotence = enableIdempotenceJSON.GetUint64();
-                    if (enableIdempotence > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"enable-idempotence\" value: " << enableIdempotenceJSON.GetString() << ", expected values {0, 1}");
+                    maxMessages = getJSONfieldU(fileName, writerJSON, "max-messages");
+                    if (maxMessages < 1 || maxMessages > MAX_KAFKA_MAX_MESSAGES) {
+                        CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << >"}");
                     }
                 }
 
-                const Value& brokersJSON = getJSONfieldV(fileName, writerJSON, "brokers");
-                const Value& topicJSON = getJSONfieldV(fileName, writerJSON, "topic");
+                bool enableIdempotence = true;
+                if (writerJSON.HasMember("enable-idempotence")) {
+                    uint64_t enableIdempotenceInt = getJSONfieldU(fileName, writerJSON, "enable-idempotence");
+                    if (enableIdempotenceInt == 1)
+                        enableIdempotence = true;
+                    else if (enableIdempotence > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"enable-idempotence\" value: " << dec << enableIdempotenceInt << ", expected one of: {0, 1}");
+                    }
+                }
 
-                writer = new WriterKafka(aliasJSON.GetString(), oracleAnalyzer, brokersJSON.GetString(),
-                        topicJSON.GetString(), maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS, queueSize,
-                        startScn, startSequence, startTime, startTimeRel, enableIdempotence);
+                const char* brokers = getJSONfieldS(fileName, writerJSON, "brokers");
+                const char* topic = getJSONfieldS(fileName, writerJSON, "topic");
+
+                writer = new WriterKafka(alias, oracleAnalyzer, brokers, topic, maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS,
+                        queueSize, startScn, startSequence, startTime, startTimeRel, enableIdempotence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
 #else
                 RUNTIME_FAIL("writer Kafka is not compiled, exiting")
 #endif /* LINK_LIBRARY_RDKAFKA */
-            } else if (strcmp(writerTypeJSON.GetString(), "zeromq") == 0) {
+            } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
-                const Value& uriJSON = getJSONfieldV(fileName, writerJSON, "uri");
-
-                StreamZeroMQ *stream = new StreamZeroMQ(uriJSON.GetString(), pollIntervalUS);
+                const char* uri = getJSONfieldS(fileName, writerJSON, "uri");
+                StreamZeroMQ* stream = new StreamZeroMQ(uri, pollIntervalUS);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
+                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
@@ -979,16 +903,16 @@ int main(int argc, char **argv) {
 #else
                 RUNTIME_FAIL("writer ZeroMQ is not compiled, exiting")
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
-            } else if (strcmp(writerTypeJSON.GetString(), "network") == 0) {
+            } else if (strcmp(writerType, "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                const Value& uriJSON = getJSONfieldV(fileName, writerJSON, "uri");
+                const char* uri = getJSONfieldS(fileName, writerJSON, "uri");
 
-                StreamNetwork *stream = new StreamNetwork(uriJSON.GetString(), pollIntervalUS);
+                StreamNetwork* stream = new StreamNetwork(uri, pollIntervalUS);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(aliasJSON.GetString(), oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
+                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
@@ -997,7 +921,7 @@ int main(int argc, char **argv) {
                 RUNTIME_FAIL("writer Network is not compiled, exiting")
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else {
-                CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerTypeJSON.GetString());
+                CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerType);
             }
 
             oracleAnalyzer->outputBuffer->setWriter(writer);
@@ -1016,8 +940,8 @@ int main(int argc, char **argv) {
                 mainThread.wait(lck);
         }
 
-    } catch (ConfigurationException &ex) {
-    } catch (RuntimeException &ex) {
+    } catch (ConfigurationException& ex) {
+    } catch (RuntimeException& ex) {
     }
 
     if (oracleAnalyzer != nullptr)
@@ -1027,34 +951,34 @@ int main(int argc, char **argv) {
         writers.push_back(writer);
 
     //shut down all analyzers
-    for (OracleAnalyzer *analyzer : analyzers)
+    for (OracleAnalyzer* analyzer : analyzers)
         analyzer->doShutdown();
-    for (OracleAnalyzer *analyzer : analyzers)
+    for (OracleAnalyzer* analyzer : analyzers)
         if (analyzer->started)
             pthread_join(analyzer->pthread, nullptr);
 
     //shut down writers
-    for (Writer *writer : writers) {
+    for (Writer* writer : writers) {
         writer->doStop();
         if (writer->oracleAnalyzer->stopFlushBuffer == 0)
             writer->doShutdown();
     }
-    for (OutputBuffer *outputBuffer : buffers) {
+    for (OutputBuffer* outputBuffer : buffers) {
         unique_lock<mutex> lck(outputBuffer->mtx);
         outputBuffer->writersCond.notify_all();
     }
-    for (Writer *writer : writers) {
+    for (Writer* writer : writers) {
         if (writer->started)
             pthread_join(writer->pthread, nullptr);
         delete writer;
     }
     writers.clear();
 
-    for (OutputBuffer *outputBuffer : buffers)
+    for (OutputBuffer* outputBuffer : buffers)
         delete outputBuffer;
     buffers.clear();
 
-    for (OracleAnalyzer *analyzer : analyzers)
+    for (OracleAnalyzer* analyzer : analyzers)
         delete analyzer;
     analyzers.clear();
 

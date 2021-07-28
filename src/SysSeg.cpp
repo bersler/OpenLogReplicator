@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
                 (other.ts != ts);
     }
 
-    SysSeg::SysSeg(RowId &rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12, bool touched) :
+    SysSeg::SysSeg(RowId& rowId, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12, bool touched) :
             rowId(rowId),
             file(file),
             block(block),

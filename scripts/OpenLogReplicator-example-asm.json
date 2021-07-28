@@ -1,6 +1,6 @@
 {
-  "version": "0.9.15",
-  "sources": [
+  "version": "0.9.16",
+  "source": [
     {
       "alias": "S1",
       "name": "O112A",
@@ -18,14 +18,16 @@
       },
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
-      "tables": [
-        {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
-        {"owner": "OWNER1", "table": "TABLENAME2"},
-        {"owner": "OWNER2", "table": "TAB.*"}
-      ]
+      "filter": {
+        "table": [
+          {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
+          {"owner": "OWNER1", "table": "TABLENAME2"},
+          {"owner": "OWNER2", "table": "TAB.*"}
+        ]
+      }
     }
   ],
-  "targets": [
+  "target": [
     {
       "alias": "K1", 
       "source": "S1",

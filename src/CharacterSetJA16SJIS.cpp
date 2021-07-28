@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
     CharacterSetJA16SJIS::~CharacterSetJA16SJIS() {
     }
 
-    CharacterSetJA16SJIS::CharacterSetJA16SJIS(const char *name) :
+    CharacterSetJA16SJIS::CharacterSetJA16SJIS(const char* name) :
         CharacterSet16bit(name, unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {
     }
 
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    typeunicode CharacterSetJA16SJIS::decode(const uint8_t* &str, uint64_t &length) const {
+    typeunicode CharacterSetJA16SJIS::decode(const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)

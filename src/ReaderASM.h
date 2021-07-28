@@ -38,16 +38,16 @@ namespace OpenLogReplicator {
         int32_t fileDes;
         uint64_t fileType;
         uint64_t physicalBlockSize;
-        DatabaseStatement *stmtRead;
+        DatabaseStatement* stmtRead;
 
         virtual void redoClose(void);
         virtual uint64_t redoOpen(void);
-        virtual int64_t redoRead(uint8_t *buf, uint64_t offset, uint64_t size);
+        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size);
         virtual uint64_t readSize(uint64_t lastRead);
         virtual uint64_t reloadHeaderRead(void);
 
     public:
-        ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group);
+        ReaderASM(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t group);
         virtual ~ReaderASM();
     };
 }

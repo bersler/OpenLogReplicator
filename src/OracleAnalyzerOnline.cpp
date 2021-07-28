@@ -417,9 +417,9 @@ namespace OpenLogReplicator {
     const char* OracleAnalyzerOnline::SQL_CHECK_CONNECTION(
             "SELECT 1 FROM DUAL");
 
-    OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-            uint64_t disableChecks, const char *user, const char *password, const char *connectString, bool standby) :
+    OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
+            const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+            uint64_t disableChecks, const char* user, const char* password, const char* connectString, bool standby) :
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks),
         standby(standby),
         user(user),
@@ -449,8 +449,8 @@ namespace OpenLogReplicator {
         if (shutdown)
             return;
 
-        typeresetlogs currentResetlogs;
-        typeactivation currentActivation;
+        typeRESETLOGS currentResetlogs;
+        typeACTIVATION currentActivation;
         typeSCN currentScn;
 
         if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
@@ -481,16 +481,16 @@ namespace OpenLogReplicator {
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
-                    WARNING("HINT run: SHUTDOWN IMMEDIATE;");
-                    WARNING("HINT run: STARTUP MOUNT;");
-                    WARNING("HINT run: ALTER DATABASE ARCHIVELOG;");
-                    WARNING("HINT run: ALTER DATABASE OPEN;");
+                    ERROR("HINT: run: SHUTDOWN IMMEDIATE;");
+                    ERROR("HINT: run: STARTUP MOUNT;");
+                    ERROR("HINT: run: ALTER DATABASE ARCHIVELOG;");
+                    ERROR("HINT: run: ALTER DATABASE OPEN;");
                     RUNTIME_FAIL("database not in ARCHIVELOG mode");
                 }
 
                 if (supplementalLogMin == 0) {
-                    WARNING("HINT run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
-                    WARNING("HINT run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
+                    ERROR("HINT: run: ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;");
+                    ERROR("HINT: run: ALTER SYSTEM ARCHIVE LOG CURRENT;");
                     RUNTIME_FAIL("SUPPLEMENTAL_LOG_DATA_MIN missing");
                 }
 
@@ -580,7 +580,7 @@ namespace OpenLogReplicator {
             char pathStr[514]; stmt.defineString(2, pathStr, sizeof(pathStr));
             int64_t ret = stmt.executeQuery();
 
-            Reader *onlineReader = nullptr;
+            Reader* onlineReader = nullptr;
             int64_t lastGroup = -1;
             string path;
 
@@ -643,11 +643,8 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("can't find scn for " << dec << startTime);
             }
 
-        } else if (startScn != ZERO_SCN && startScn != 0) {
-            firstScn = startScn;
-
         //NOW
-        } else {
+        } else if (firstScn == ZERO_SCN || firstScn == 0) {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN);
             stmt.createStatement(SQL_GET_DATABASE_SCN);
@@ -703,7 +700,7 @@ namespace OpenLogReplicator {
             if (conn == nullptr) {
                 try {
                     conn = new DatabaseConnection(env, user, password, connectString, false);
-                } catch (RuntimeException &ex) {
+                } catch (RuntimeException& ex) {
                     //
                 }
             }
@@ -715,7 +712,7 @@ namespace OpenLogReplicator {
                     stmt.createStatement(SQL_CHECK_CONNECTION);
                     uint64_t dummy; stmt.defineUInt64(1, dummy);
                     stmt.executeQuery();
-                } catch (RuntimeException &ex) {
+                } catch (RuntimeException& ex) {
                     closeConnection();
                     INFO("re-connecting to Oracle instance of " << database << " to " << connectString);
                     continue;
@@ -742,7 +739,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    string OracleAnalyzerOnline::getParameterValue(const char *parameter) {
+    string OracleAnalyzerOnline::getParameterValue(const char* parameter) {
         char value[4001];
         DatabaseStatement stmt(conn);
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARAMETER);
@@ -758,7 +755,7 @@ namespace OpenLogReplicator {
         RUNTIME_FAIL("can't get parameter value for " << parameter);
     }
 
-    string OracleAnalyzerOnline::getPropertyValue(const char *property) {
+    string OracleAnalyzerOnline::getPropertyValue(const char* property) {
         char value[4001];
         DatabaseStatement stmt(conn);
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PROPERTY);
@@ -782,13 +779,13 @@ namespace OpenLogReplicator {
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
             stmt.executeQuery();
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             if (conId > 0) {
-                WARNING("HINT run: ALTER SESSION SET CONTAINER = " << conName << ";");
-                WARNING("HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << conName << ";");
+                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << user << ";");
                 RUNTIME_FAIL("grants missing");
             } else {
-                WARNING("HINT run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << user << ";");
                 RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);
@@ -803,13 +800,13 @@ namespace OpenLogReplicator {
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
             stmt.executeQuery();
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             if (conId > 0) {
-                WARNING("HINT run: ALTER SESSION SET CONTAINER = " << conName << ";");
-                WARNING("HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << conName << ";");
+                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
                 RUNTIME_FAIL("grants missing");
             } else {
-                WARNING("HINT run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
                 RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);
@@ -821,7 +818,7 @@ namespace OpenLogReplicator {
         INFO("reading dictionaries for scn: " << dec << firstScn);
         schemaScn = firstScn;
 
-        for (SchemaElement *element : schema->elements)
+        for (SchemaElement* element : schema->elements)
             createSchemaForTable(element->owner, element->table, element->keys, element->keysStr, element->options);
     }
 
@@ -1284,12 +1281,12 @@ namespace OpenLogReplicator {
                 userSpare12 = 0;
                 retUser = stmtUser.next();
             }
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             RUNTIME_FAIL("Error reading schema from flashback, try some later scn for start");
         }
     }
 
-    void OracleAnalyzerOnline::createSchemaForTable(string &owner, string &table, vector<string> &keys, string &keysStr, typeOPTIONS options) {
+    void OracleAnalyzerOnline::createSchemaForTable(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options) {
         DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options);
 
         readSystemDictionaries(owner, table, options);
@@ -1298,7 +1295,7 @@ namespace OpenLogReplicator {
             schema->users.insert(owner);
     }
 
-    void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer *oracleAnalyzer) {
+    void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer* oracleAnalyzer) {
         ((OracleAnalyzerOnline*)oracleAnalyzer)->checkConnection();
 
         {

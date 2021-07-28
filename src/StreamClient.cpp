@@ -18,6 +18,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <atomic>
+#include <stdint.h>
+
+namespace OpenLogReplicator {
+    uint64_t trace = 3;
+    uint64_t trace2 = 0;
+}
+#define GLOBAL_H_ 0
+
 #include "OraProtoBuf.pb.h"
 #include "NetworkException.h"
 #include "RuntimeException.h"
@@ -27,15 +35,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamZeroMQ.h"
 #endif /* LINK_LIBRARY_ZEROMQ */
 
-uint64_t trace = 3, trace2 = 0;
-#define TRACEVAR
 
 #define POLL_INTERVAL           10000
 
 using namespace std;
 using namespace OpenLogReplicator;
 
-void send(pb::RedoRequest &request, Stream *stream) {
+void send(pb::RedoRequest& request, Stream* stream) {
     string buffer;
     bool ret = request.SerializeToString(&buffer);
     if (!ret) {
@@ -46,7 +52,7 @@ void send(pb::RedoRequest &request, Stream *stream) {
     stream->sendMessage(buffer.c_str(), buffer.length());
 }
 
-void receive(pb::RedoResponse &response, Stream *stream) {
+void receive(pb::RedoResponse& response, Stream* stream) {
     uint8_t buffer[READ_NETWORK_BUFFER];
     uint64_t length = stream->receiveMessage(buffer, READ_NETWORK_BUFFER);
 
@@ -69,7 +75,7 @@ int main(int argc, char** argv) {
     atomic<bool> shutdown(false);
 
     try {
-        Stream *stream = nullptr;
+        Stream* stream = nullptr;
         if (strcmp(argv[1], "network") == 0) {
             stream = new StreamNetwork(argv[2], POLL_INTERVAL);
         } else if (strcmp(argv[1], "zeromq") == 0) {
@@ -156,8 +162,8 @@ int main(int argc, char** argv) {
             prevScn = lastScn;
         }
 
-    } catch (RuntimeException &ex) {
-    } catch (NetworkException &ex) {
+    } catch (RuntimeException& ex) {
+    } catch (NetworkException& ex) {
     }
 
     return 0;

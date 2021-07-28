@@ -62,24 +62,24 @@ namespace OpenLogReplicator {
 
     class Reader : public Thread {
     protected:
-        OracleAnalyzer *oracleAnalyzer;
+        OracleAnalyzer* oracleAnalyzer;
         bool hintDisplayed;
         int64_t fileCopyDes;
         typeSEQ fileCopySequence;
 
         virtual void redoClose(void) = 0;
         virtual uint64_t redoOpen(void) = 0;
-        virtual int64_t redoRead(uint8_t *buf, uint64_t offset, uint64_t size) = 0;
+        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) = 0;
         virtual uint64_t readSize(uint64_t lastRead);
         virtual uint64_t reloadHeaderRead(void);
 
-        uint64_t checkBlockHeader(uint8_t *buffer, typeBLK blockNumber, bool checkSum, bool showHint);
+        uint64_t checkBlockHeader(uint8_t* buffer, typeBLK blockNumber, bool checkSum, bool showHint);
         uint64_t reloadHeader(void);
 
     public:
         static char* REDO_CODE[6];
-        uint8_t **redoBufferList;
-        uint8_t *headerBuffer;
+        uint8_t** redoBufferList;
+        uint8_t* headerBuffer;
         int64_t group;
         typeSEQ sequence;
         vector<string> paths;
@@ -89,9 +89,9 @@ namespace OpenLogReplicator {
         uint32_t compatVsn;
         typeBLK numBlocksHeader;
         typeBLK numBlocks;
-        typeresetlogs resetlogsHeader;
-        typeactivation activationHeader;
-        typetime firstTimeHeader;
+        typeRESETLOGS resetlogsHeader;
+        typeACTIVATION activationHeader;
+        typeTIME firstTimeHeader;
         typeSCN firstScnHeader;
         typeSCN firstScn;
         typeSCN nextScnHeader;
@@ -108,13 +108,13 @@ namespace OpenLogReplicator {
         uint64_t bufferSizeMax;
         uint64_t buffersMaxUsed;
 
-        Reader(const char *alias, OracleAnalyzer *oracleAnalyzer, int64_t group);
+        Reader(const char* alias, OracleAnalyzer* oracleAnalyzer, int64_t group);
         virtual ~Reader();
 
-        void *run(void);
+        void* run(void);
         void bufferAllocate(uint64_t num);
         void bufferFree(uint64_t num);
-        typesum calcChSum(uint8_t *buffer, uint64_t size) const;
+        typeSUM calcChSum(uint8_t* buffer, uint64_t size) const;
     };
 }
 

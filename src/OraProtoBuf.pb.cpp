@@ -76,6 +76,7 @@ constexpr Payload::Payload(
 
   , seq_(0u)
   , offset_(uint64_t{0u})
+  , num_(uint64_t{0u})
   , redo_(false){}
 struct PayloadDefaultTypeInternal {
   constexpr PayloadDefaultTypeInternal()
@@ -173,7 +174,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   ::PROTOBUF_NAMESPACE_ID::internal::kInvalidFieldOffsetTag,
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, column_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Schema, tm_val_),
-  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -187,6 +188,17 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_OraProtoBuf_2eproto::offsets[]
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, seq_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, offset_),
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, redo_),
+  PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::Payload, num_),
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  ~0u,
+  0,
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::OpenLogReplicator::pb::SchemaRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -235,10 +247,10 @@ static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOB
   { 0, -1, sizeof(::OpenLogReplicator::pb::Value)},
   { 12, -1, sizeof(::OpenLogReplicator::pb::Column)},
   { 23, -1, sizeof(::OpenLogReplicator::pb::Schema)},
-  { 35, -1, sizeof(::OpenLogReplicator::pb::Payload)},
-  { 49, -1, sizeof(::OpenLogReplicator::pb::SchemaRequest)},
-  { 56, 69, sizeof(::OpenLogReplicator::pb::RedoRequest)},
-  { 76, -1, sizeof(::OpenLogReplicator::pb::RedoResponse)},
+  { 35, 50, sizeof(::OpenLogReplicator::pb::Payload)},
+  { 60, -1, sizeof(::OpenLogReplicator::pb::SchemaRequest)},
+  { 67, 80, sizeof(::OpenLogReplicator::pb::RedoRequest)},
+  { 87, -1, sizeof(::OpenLogReplicator::pb::RedoResponse)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
@@ -263,50 +275,50 @@ const char descriptor_table_protodef_OraProtoBuf_2eproto[] PROTOBUF_SECTION_VARI
   "able\030\006 \001(\010\"\207\001\n\006Schema\022\r\n\005owner\030\001 \001(\t\022\014\n\004"
   "name\030\002 \001(\t\022\013\n\003obj\030\003 \001(\r\022\014\n\002tm\030\004 \001(\004H\000\022\r\n"
   "\003tms\030\005 \001(\tH\000\022,\n\006column\030\006 \003(\0132\034.OpenLogRe"
-  "plicator.pb.ColumnB\010\n\006tm_val\"\373\001\n\007Payload"
+  "plicator.pb.ColumnB\010\n\006tm_val\"\225\002\n\007Payload"
   "\022$\n\002op\030\001 \001(\0162\030.OpenLogReplicator.pb.Op\022,"
   "\n\006schema\030\002 \001(\0132\034.OpenLogReplicator.pb.Sc"
   "hema\022\013\n\003rid\030\003 \001(\t\022+\n\006before\030\004 \003(\0132\033.Open"
   "LogReplicator.pb.Value\022*\n\005after\030\005 \003(\0132\033."
   "OpenLogReplicator.pb.Value\022\013\n\003ddl\030\006 \001(\t\022"
   "\013\n\003seq\030\007 \001(\r\022\016\n\006offset\030\010 \001(\004\022\014\n\004redo\030\t \001"
-  "(\010\"-\n\rSchemaRequest\022\014\n\004mask\030\001 \001(\t\022\016\n\006fil"
-  "ter\030\002 \001(\t\"\336\001\n\013RedoRequest\022/\n\004code\030\001 \001(\0162"
-  "!.OpenLogReplicator.pb.RequestCode\022\025\n\rda"
-  "tabase_name\030\002 \001(\t\022\r\n\003scn\030\003 \001(\004H\000\022\r\n\003tms\030"
-  "\004 \001(\tH\000\022\020\n\006tm_rel\030\005 \001(\003H\000\022\020\n\003seq\030\006 \001(\004H\001"
-  "\210\001\001\0223\n\006schema\030\007 \003(\0132#.OpenLogReplicator."
-  "pb.SchemaRequestB\010\n\006tm_valB\006\n\004_seq\"\353\001\n\014R"
-  "edoResponse\0220\n\004code\030\001 \001(\0162\".OpenLogRepli"
-  "cator.pb.ResponseCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004"
-  "scns\030\003 \001(\tH\000\022\014\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH"
-  "\001\022\r\n\003xid\030\006 \001(\tH\002\022\016\n\004xidn\030\007 \001(\004H\002\022.\n\007payl"
-  "oad\030\010 \003(\0132\035.OpenLogReplicator.pb.Payload"
-  "B\t\n\007scn_valB\010\n\006tm_valB\t\n\007xid_val*S\n\002Op\022\t"
-  "\n\005BEGIN\020\000\022\n\n\006COMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPD"
-  "ATE\020\003\022\n\n\006DELETE\020\004\022\007\n\003DDL\020\005\022\t\n\005CHKPT\020\006*\263\002"
-  "\n\nColumnType\022\013\n\007UNKNOWN\020\000\022\014\n\010VARCHAR2\020\001\022"
-  "\n\n\006NUMBER\020\002\022\010\n\004LONG\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005"
-  "\022\014\n\010LONG_RAW\020\006\022\t\n\005ROWID\020\007\022\010\n\004CHAR\020\010\022\020\n\014B"
-  "INARY_FLOAT\020\t\022\021\n\rBINARY_DOUBLE\020\n\022\010\n\004CLOB"
-  "\020\013\022\010\n\004BLOB\020\014\022\r\n\tTIMESTAMP\020\r\022\025\n\021TIMESTAMP"
-  "_WITH_TZ\020\016\022\032\n\026INTERVAL_YEAR_TO_MONTH\020\017\022\032"
-  "\n\026INTERVAL_DAY_TO_SECOND\020\020\022\n\n\006UROWID\020\021\022\033"
-  "\n\027TIMESTAMP_WITH_LOCAL_TZ\020\022*9\n\013RequestCo"
-  "de\022\010\n\004INFO\020\000\022\t\n\005START\020\001\022\010\n\004REDO\020\002\022\013\n\007CON"
-  "FIRM\020\003*\224\001\n\014ResponseCode\022\t\n\005READY\020\000\022\020\n\014FA"
-  "ILED_START\020\001\022\013\n\007STARTED\020\002\022\023\n\017ALREADY_STA"
-  "RTED\020\003\022\r\n\tSTREAMING\020\004\022\013\n\007PAYLOAD\020\005\022\024\n\020IN"
-  "VALID_DATABASE\020\006\022\023\n\017INVALID_COMMAND\020\0072f\n"
-  "\021OpenLogReplicator\022Q\n\004Redo\022!.OpenLogRepl"
-  "icator.pb.RedoRequest\032\".OpenLogReplicato"
-  "r.pb.RedoResponse(\0010\001B7\n\"io.debezium.con"
-  "nector.oracle.protoB\021OpenLogReplicatorb\006"
-  "proto3"
+  "(\010\022\020\n\003num\030\n \001(\004H\000\210\001\001B\006\n\004_num\"-\n\rSchemaRe"
+  "quest\022\014\n\004mask\030\001 \001(\t\022\016\n\006filter\030\002 \001(\t\"\336\001\n\013"
+  "RedoRequest\022/\n\004code\030\001 \001(\0162!.OpenLogRepli"
+  "cator.pb.RequestCode\022\025\n\rdatabase_name\030\002 "
+  "\001(\t\022\r\n\003scn\030\003 \001(\004H\000\022\r\n\003tms\030\004 \001(\tH\000\022\020\n\006tm_"
+  "rel\030\005 \001(\003H\000\022\020\n\003seq\030\006 \001(\004H\001\210\001\001\0223\n\006schema\030"
+  "\007 \003(\0132#.OpenLogReplicator.pb.SchemaReque"
+  "stB\010\n\006tm_valB\006\n\004_seq\"\353\001\n\014RedoResponse\0220\n"
+  "\004code\030\001 \001(\0162\".OpenLogReplicator.pb.Respo"
+  "nseCode\022\r\n\003scn\030\002 \001(\004H\000\022\016\n\004scns\030\003 \001(\tH\000\022\014"
+  "\n\002tm\030\004 \001(\004H\001\022\r\n\003tms\030\005 \001(\tH\001\022\r\n\003xid\030\006 \001(\t"
+  "H\002\022\016\n\004xidn\030\007 \001(\004H\002\022.\n\007payload\030\010 \003(\0132\035.Op"
+  "enLogReplicator.pb.PayloadB\t\n\007scn_valB\010\n"
+  "\006tm_valB\t\n\007xid_val*S\n\002Op\022\t\n\005BEGIN\020\000\022\n\n\006C"
+  "OMMIT\020\001\022\n\n\006INSERT\020\002\022\n\n\006UPDATE\020\003\022\n\n\006DELET"
+  "E\020\004\022\007\n\003DDL\020\005\022\t\n\005CHKPT\020\006*\263\002\n\nColumnType\022\013"
+  "\n\007UNKNOWN\020\000\022\014\n\010VARCHAR2\020\001\022\n\n\006NUMBER\020\002\022\010\n"
+  "\004LONG\020\003\022\010\n\004DATE\020\004\022\007\n\003RAW\020\005\022\014\n\010LONG_RAW\020\006"
+  "\022\t\n\005ROWID\020\007\022\010\n\004CHAR\020\010\022\020\n\014BINARY_FLOAT\020\t\022"
+  "\021\n\rBINARY_DOUBLE\020\n\022\010\n\004CLOB\020\013\022\010\n\004BLOB\020\014\022\r"
+  "\n\tTIMESTAMP\020\r\022\025\n\021TIMESTAMP_WITH_TZ\020\016\022\032\n\026"
+  "INTERVAL_YEAR_TO_MONTH\020\017\022\032\n\026INTERVAL_DAY"
+  "_TO_SECOND\020\020\022\n\n\006UROWID\020\021\022\033\n\027TIMESTAMP_WI"
+  "TH_LOCAL_TZ\020\022*9\n\013RequestCode\022\010\n\004INFO\020\000\022\t"
+  "\n\005START\020\001\022\010\n\004REDO\020\002\022\013\n\007CONFIRM\020\003*\224\001\n\014Res"
+  "ponseCode\022\t\n\005READY\020\000\022\020\n\014FAILED_START\020\001\022\013"
+  "\n\007STARTED\020\002\022\023\n\017ALREADY_STARTED\020\003\022\r\n\tSTRE"
+  "AMING\020\004\022\013\n\007PAYLOAD\020\005\022\024\n\020INVALID_DATABASE"
+  "\020\006\022\023\n\017INVALID_COMMAND\020\0072f\n\021OpenLogReplic"
+  "ator\022Q\n\004Redo\022!.OpenLogReplicator.pb.Redo"
+  "Request\032\".OpenLogReplicator.pb.RedoRespo"
+  "nse(\0010\001B7\n\"io.debezium.connector.oracle."
+  "protoB\021OpenLogReplicatorb\006proto3"
   ;
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_OraProtoBuf_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_OraProtoBuf_2eproto = {
-  false, false, 2006, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 
+  false, false, 2032, descriptor_table_protodef_OraProtoBuf_2eproto, "OraProtoBuf.proto", 
   &descriptor_table_OraProtoBuf_2eproto_once, nullptr, 0, 7,
   schemas, file_default_instances, TableStruct_OraProtoBuf_2eproto::offsets,
   file_level_metadata_OraProtoBuf_2eproto, file_level_enum_descriptors_OraProtoBuf_2eproto, file_level_service_descriptors_OraProtoBuf_2eproto,
@@ -1542,7 +1554,11 @@ void Schema::InternalSwap(Schema* other) {
 
 class Payload::_Internal {
  public:
+  using HasBits = decltype(std::declval<Payload>()._has_bits_);
   static const ::OpenLogReplicator::pb::Schema& schema(const Payload* msg);
+  static void set_has_num(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
 const ::OpenLogReplicator::pb::Schema&
@@ -1562,6 +1578,7 @@ Payload::Payload(::PROTOBUF_NAMESPACE_ID::Arena* arena,
 }
 Payload::Payload(const Payload& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
+      _has_bits_(from._has_bits_),
       before_(from.before_),
       after_(from.after_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -1634,13 +1651,17 @@ void Payload::Clear() {
   }
   schema_ = nullptr;
   ::memset(&op_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&redo_) -
-      reinterpret_cast<char*>(&op_)) + sizeof(redo_));
+      reinterpret_cast<char*>(&offset_) -
+      reinterpret_cast<char*>(&op_)) + sizeof(offset_));
+  num_ = uint64_t{0u};
+  redo_ = false;
+  _has_bits_.Clear();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
 const char* Payload::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  _Internal::HasBits has_bits{};
   while (!ctx->Done(&ptr)) {
     ::PROTOBUF_NAMESPACE_ID::uint32 tag;
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
@@ -1723,6 +1744,14 @@ const char* Payload::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
+      // optional uint64 num = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 80)) {
+          _Internal::set_has_num(&has_bits);
+          num_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
       default: {
       handle_unusual:
         if ((tag == 0) || ((tag & 7) == 4)) {
@@ -1739,6 +1768,7 @@ const char* Payload::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::in
     }  // switch
   }  // while
 success:
+  _has_bits_.Or(has_bits);
   return ptr;
 failure:
   ptr = nullptr;
@@ -1821,6 +1851,12 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(9, this->_internal_redo(), target);
   }
 
+  // optional uint64 num = 10;
+  if (_internal_has_num()) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt64ToArray(10, this->_internal_num(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1892,6 +1928,14 @@ size_t Payload::ByteSizeLong() const {
         this->_internal_offset());
   }
 
+  // optional uint64 num = 10;
+  cached_has_bits = _has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt64Size(
+        this->_internal_num());
+  }
+
   // bool redo = 9;
   if (this->_internal_redo() != 0) {
     total_size += 1 + 1;
@@ -1945,6 +1989,9 @@ void Payload::MergeFrom(const Payload& from) {
   if (from._internal_offset() != 0) {
     _internal_set_offset(from._internal_offset());
   }
+  if (from._internal_has_num()) {
+    _internal_set_num(from._internal_num());
+  }
   if (from._internal_redo() != 0) {
     _internal_set_redo(from._internal_redo());
   }
@@ -1965,6 +2012,7 @@ bool Payload::IsInitialized() const {
 void Payload::InternalSwap(Payload* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_has_bits_[0], other->_has_bits_[0]);
   before_.InternalSwap(&other->before_);
   after_.InternalSwap(&other->after_);
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(

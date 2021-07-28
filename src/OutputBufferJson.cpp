@@ -37,9 +37,9 @@ namespace OpenLogReplicator {
     OutputBufferJson::~OutputBufferJson() {
     }
 
-    void OutputBufferJson::columnNull(OracleObject *object, typeCOL col) {
+    void OutputBufferJson::columnNull(OracleObject* object, typeCOL col) {
         if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
-            OracleColumn *column = object->columns[col];
+            OracleColumn* column = object->columns[col];
 
             if (column->storedAsLob)
                 return;
@@ -72,7 +72,7 @@ namespace OpenLogReplicator {
         outputBufferAppend("\":null");
     }
 
-    void OutputBufferJson::columnFloat(string &columnName, float value) {
+    void OutputBufferJson::columnFloat(string& columnName, float value) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(valString);
     }
 
-    void OutputBufferJson::columnDouble(string &columnName, double value) {
+    void OutputBufferJson::columnDouble(string& columnName, double value) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(valString);
     }
 
-    void OutputBufferJson::columnString(string &columnName) {
+    void OutputBufferJson::columnString(string& columnName) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::columnNumber(string &columnName, uint64_t precision, uint64_t scale) {
+    void OutputBufferJson::columnNumber(string& columnName, uint64_t precision, uint64_t scale) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(valueBuffer, valueLength);
     }
 
-    void OutputBufferJson::columnRaw(string &columnName, const uint8_t *data, uint64_t length) {
+    void OutputBufferJson::columnRaw(string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::columnTimestamp(string &columnName, struct tm &epochtime, uint64_t fraction, const char *tz) {
+    void OutputBufferJson::columnTimestamp(string& columnName, struct tm &epochtime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -195,6 +195,11 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferJson::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
+        if ((messageFormat & MESSAGE_FORMAT_ADD_SEQUENCES) != 0) {
+            outputBufferAppend(",\"num\":");
+            appendDec(num);
+        }
+
         if (ridFormat == RID_FORMAT_SKIP)
             return;
 
@@ -262,7 +267,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferJson::appendSchema(OracleObject *object, typeDATAOBJ dataObj) {
+    void OutputBufferJson::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
             outputBufferAppend("\"schema\":{\"table\":\"");
             string objectName("OBJ_" + to_string(dataObj));
@@ -475,7 +480,7 @@ namespace OpenLogReplicator {
             outputBufferAppend(buffer[length - i - 1]);
     }
 
-    void OutputBufferJson::appendEscape(const char *str, uint64_t length) {
+    void OutputBufferJson::appendEscape(const char* str, uint64_t length) {
         while (length > 0) {
             if (*str == '\t') {
                 outputBufferAppend('\\');
@@ -504,7 +509,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    time_t OutputBufferJson::tmToEpoch(struct tm *epoch) const {
+    time_t OutputBufferJson::tmToEpoch(struct tm* epoch) const {
         static const int cumdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
         uint64_t year;
         time_t result;
@@ -531,6 +536,9 @@ namespace OpenLogReplicator {
         newTran = false;
         hasPreviousRedo = false;
 
+        if ((messageFormat & MESSAGE_FORMAT_SKIP_BEGIN) != 0)
+            return;
+
         outputBufferBegin(0);
         outputBufferAppend('{');
         hasPreviousValue = false;
@@ -541,9 +549,9 @@ namespace OpenLogReplicator {
         else
             hasPreviousValue = true;
 
-        if (messageFormat == MESSAGE_FORMAT_FULL)
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             outputBufferAppend("\"payload\":[");
-        else {
+        } else {
             outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}");
             outputBufferCommit(false);
         }
@@ -556,11 +564,14 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (messageFormat == MESSAGE_FORMAT_FULL)
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             outputBufferAppend("]}");
-        else {
+            outputBufferCommit(true);
+        } else
+        if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
             outputBufferBegin(0);
             outputBufferAppend('{');
+
             hasPreviousValue = false;
             appendHeader(false, true);
 
@@ -570,15 +581,16 @@ namespace OpenLogReplicator {
                 hasPreviousValue = true;
 
             outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}");
+            outputBufferCommit(true);
         }
-        outputBufferCommit(true);
+        num = 0;
     }
 
-    void OutputBufferJson::processInsert(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void OutputBufferJson::processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (newTran)
             processBegin();
 
-        if (messageFormat == MESSAGE_FORMAT_FULL) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
@@ -639,17 +651,18 @@ namespace OpenLogReplicator {
         }
         outputBufferAppend("}}");
 
-        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
             outputBufferCommit(false);
         }
+        ++num;
     }
 
-    void OutputBufferJson::processUpdate(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void OutputBufferJson::processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (newTran)
             processBegin();
 
-        if (messageFormat == MESSAGE_FORMAT_FULL) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
@@ -659,6 +672,7 @@ namespace OpenLogReplicator {
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
+
             outputBufferAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
@@ -742,17 +756,18 @@ namespace OpenLogReplicator {
         }
         outputBufferAppend("}}");
 
-        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
             outputBufferCommit(false);
         }
+        ++num;
     }
 
-    void OutputBufferJson::processDelete(OracleObject *object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void OutputBufferJson::processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
         if (newTran)
             processBegin();
 
-        if (messageFormat == MESSAGE_FORMAT_FULL) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
@@ -762,6 +777,7 @@ namespace OpenLogReplicator {
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
+
             outputBufferAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
@@ -812,17 +828,18 @@ namespace OpenLogReplicator {
         }
         outputBufferAppend("}}");
 
-        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
             outputBufferCommit(false);
         }
+        ++num;
     }
 
-    void OutputBufferJson::processDDL(OracleObject *object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char *operation, const char *sql, uint64_t sqlLength) {
+    void OutputBufferJson::processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBegin();
 
-        if (messageFormat == MESSAGE_FORMAT_FULL) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
                 outputBufferAppend(',');
             else
@@ -832,6 +849,7 @@ namespace OpenLogReplicator {
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
+
             outputBufferAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
@@ -848,13 +866,14 @@ namespace OpenLogReplicator {
         appendEscape(sql, sqlLength);
         outputBufferAppend("\"}");
 
-        if (messageFormat == MESSAGE_FORMAT_SHORT) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
             outputBufferCommit(true);
         }
+        ++num;
     }
 
-    void OutputBufferJson::processCheckpoint(typeSCN scn, typetime time_, typeSEQ sequence, uint64_t offset, bool redo) {
+    void OutputBufferJson::processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) {
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;

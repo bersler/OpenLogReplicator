@@ -28,10 +28,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleAnalyzerOnlineASM::OracleAnalyzerOnlineASM(OutputBuffer *outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            const char *alias, const char *database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-            uint64_t disableChecks, const char *user, const char *password, const char *connectString, const char *userASM,
-            const char *passwordASM, const char *connectStringASM, bool standby) :
+    OracleAnalyzerOnlineASM::OracleAnalyzerOnlineASM(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
+            const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+            uint64_t disableChecks, const char* user, const char* password, const char* connectString, const char* userASM,
+            const char* passwordASM, const char* connectStringASM, bool standby) :
         OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax,
                 disableChecks, user, password, connectString, standby),
         userASM(userASM),
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
 
                 try {
                     connASM = new DatabaseConnection(env, userASM, passwordASM, connectStringASM, true);
-                } catch (RuntimeException &ex) {
+                } catch (RuntimeException& ex) {
                     //
                 }
             }
@@ -69,12 +69,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    Reader *OracleAnalyzerOnlineASM::readerCreate(int64_t group) {
-        for (Reader *reader : readers)
+    Reader* OracleAnalyzerOnlineASM::readerCreate(int64_t group) {
+        for (Reader* reader : readers)
             if (reader->group == group)
                 return reader;
 
-        ReaderASM *readerASM = new ReaderASM(alias.c_str(), this, group);
+        ReaderASM* readerASM = new ReaderASM(alias.c_str(), this, group);
         if (readerASM == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderASM) << " bytes memory (for: asm reader creation)");
         }

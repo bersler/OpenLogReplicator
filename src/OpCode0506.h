@@ -31,7 +31,7 @@ namespace OpenLogReplicator {
         void ktuxvoff(uint64_t fieldPos, uint64_t fieldLength);
 
     public:
-        OpCode0506(OracleAnalyzer *oracleAnalyzer, RedoLogRecord *redoLogRecord);
+        OpCode0506(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
         virtual ~OpCode0506();
 
         virtual void process(void);

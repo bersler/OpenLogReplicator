@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
 
     class SysTabPart {
     public:
-        SysTabPart(RowId &rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo, bool touched);
+        SysTabPart(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo, bool touched);
 
         RowId rowId;
         typeOBJ obj;

@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     const char* ReaderASM::SQL_ASM_OPEN("BEGIN dbms_diskgroup.open(:i, 'r', :j, :k, :l, :m, :n); END;");
     const char* ReaderASM::SQL_ASM_READ("BEGIN dbms_diskgroup.read(:i, :j, :k, :l); END;");
 
-    ReaderASM::ReaderASM(const char *alias, OracleAnalyzer *oracleAnalyzer, uint64_t group) :
+    ReaderASM::ReaderASM(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t group) :
         Reader(alias, oracleAnalyzer, group),
         fileDes(-1),
         fileType(0),
@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
             stmt.bindInt32(1, fileDes);
             stmt.executeQuery();
             fileDes = -1;
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
         }
     }
 
@@ -99,14 +99,14 @@ namespace OpenLogReplicator {
             stmt.executeQuery();
 
             fileSize *= blockSize;
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             return REDO_ERROR;
         }
 
         return REDO_OK;
     }
 
-    int64_t ReaderASM::redoRead(uint8_t *buf, uint64_t offset, uint64_t size) {
+    int64_t ReaderASM::redoRead(uint8_t* buf, uint64_t offset, uint64_t size) {
         if (fileDes == -1)
             return -1;
 
@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
             stmtRead->bindUInt64(3, size);
             stmtRead->bindBinary(4, buf, 512);
             stmtRead->executeQuery();
-        } catch (RuntimeException &ex) {
+        } catch (RuntimeException& ex) {
             return -1;
         }
 

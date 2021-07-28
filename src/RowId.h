@@ -36,12 +36,12 @@ namespace OpenLogReplicator {
         typeSLOT slot;
 
         RowId();
-        RowId(const char *rowid);
+        RowId(const char* rowid);
         RowId(typeDATAOBJ dataObj, typeDBA dba, typeSLOT slot);
         bool operator<(const RowId& other) const;
         bool operator!=(const RowId& other) const;
         bool operator==(const RowId& other) const;
-        void toString(char *str) const;
+        void toString(char* str) const;
         friend ostream& operator<<(ostream& os, const RowId& tran);
     };
 }
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
 namespace std {
     template <>
     struct hash<OpenLogReplicator::RowId> {
-        size_t operator()(const OpenLogReplicator::RowId &rowId) const;
+        size_t operator()(const OpenLogReplicator::RowId& rowId) const;
     };
 }
 

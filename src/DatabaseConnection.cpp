@@ -23,29 +23,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    DatabaseConnection::DatabaseConnection(DatabaseEnvironment *env, string &user, string &password, string &server, bool sysASM) :
+    DatabaseConnection::DatabaseConnection(DatabaseEnvironment* env, string& user, string& password, string& server, bool sysASM) :
         env(env),
         errhp(nullptr),
         srvhp(nullptr),
         svchp(nullptr),
         authp(nullptr) {
 
-        OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&errhp, OCI_HTYPE_ERROR, 0, nullptr);
-        OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&srvhp, OCI_HTYPE_SERVER, 0, nullptr);
-        OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&svchp, OCI_HTYPE_SVCCTX, 0, nullptr);
-        OCIHandleAlloc((dvoid*)env->envhp, (dvoid**)&authp, OCI_HTYPE_SESSION, 0, nullptr);
+        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &errhp, OCI_HTYPE_ERROR, 0, nullptr);
+        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &srvhp, OCI_HTYPE_SERVER, 0, nullptr);
+        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &svchp, OCI_HTYPE_SVCCTX, 0, nullptr);
+        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &authp, OCI_HTYPE_SESSION, 0, nullptr);
 
-        env->checkErr(errhp, OCIServerAttach(srvhp, errhp, (const OraText*)server.c_str(), server.length(), OCI_DEFAULT));
-        env->checkErr(errhp, OCIAttrSet((dvoid*)svchp, OCI_HTYPE_SVCCTX, srvhp, 0, OCI_ATTR_SERVER, (OCIError *)errhp));
-        env->checkErr(errhp, OCIAttrSet((dvoid*)authp, OCI_HTYPE_SESSION, (dvoid*)user.c_str(), user.length(), OCI_ATTR_USERNAME, (OCIError *)errhp));
-        env->checkErr(errhp, OCIAttrSet((dvoid*)authp, OCI_HTYPE_SESSION, (dvoid*)password.c_str(), password.length(), OCI_ATTR_PASSWORD, (OCIError *)errhp));
+        env->checkErr(errhp, OCIServerAttach(srvhp, errhp, (const OraText*) server.c_str(), server.length(), OCI_DEFAULT));
+        env->checkErr(errhp, OCIAttrSet((dvoid*) svchp, OCI_HTYPE_SVCCTX, srvhp, 0, OCI_ATTR_SERVER, (OCIError*) errhp));
+        env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) user.c_str(), user.length(), OCI_ATTR_USERNAME, (OCIError*) errhp));
+        env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) password.c_str(), password.length(), OCI_ATTR_PASSWORD, (OCIError*) errhp));
 
         if (sysASM)
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_SYSASM));
         else
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_DEFAULT));
 
-        env->checkErr(errhp, OCIAttrSet((dvoid*)svchp, OCI_HTYPE_SVCCTX, (dvoid*)authp, 0, OCI_ATTR_SESSION, errhp));
+        env->checkErr(errhp, OCIAttrSet((dvoid*) svchp, OCI_HTYPE_SVCCTX, (dvoid*) authp, 0, OCI_ATTR_SESSION, errhp));
     }
 
     DatabaseConnection::~DatabaseConnection() {
@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
         OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
 
         if (authp != nullptr) {
-            OCIHandleFree((dvoid*)authp, OCI_HTYPE_SESSION);
+            OCIHandleFree((dvoid*) authp, OCI_HTYPE_SESSION);
             authp = nullptr;
         }
 
@@ -63,17 +63,17 @@ namespace OpenLogReplicator {
         }
 
         if (svchp != nullptr) {
-            OCIHandleFree((dvoid*)svchp, OCI_HTYPE_SVCCTX);
+            OCIHandleFree((dvoid*) svchp, OCI_HTYPE_SVCCTX);
             svchp = nullptr;
         }
 
         if (authp != nullptr) {
-            OCIHandleFree((dvoid*)authp, OCI_HTYPE_SERVER);
+            OCIHandleFree((dvoid*) authp, OCI_HTYPE_SERVER);
             authp = nullptr;
         }
 
         if (errhp != nullptr) {
-            OCIHandleFree((dvoid*)errhp, OCI_HTYPE_ERROR);
+            OCIHandleFree((dvoid*) errhp, OCI_HTYPE_ERROR);
             errhp = nullptr;
         }
     }

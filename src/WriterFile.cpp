@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    WriterFile::WriterFile(const char *alias, OracleAnalyzer *oracleAnalyzer, const char *output, const char *format, uint64_t maxSize, uint64_t newLine,
+    WriterFile::WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, const char* output, const char* format, uint64_t maxSize, uint64_t newLine,
             uint64_t append, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence,
             const char* startTime, uint64_t startTimeRel) :
         Writer(alias, oracleAnalyzer, 0, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
@@ -143,13 +143,13 @@ namespace OpenLogReplicator {
 
         //search for last used number
         if (mode == WRITERFILE_MODE_NUM) {
-            DIR *dir;
+            DIR* dir;
             if ((dir = opendir(outputPath.c_str())) == nullptr) {
                 RUNTIME_FAIL("can't access directory: " << outputPath << " to create output files defined with: " << this->output);
             }
 
             //string newLastCheckedDay;
-            struct dirent *ent;
+            struct dirent* ent;
             typeSCN fileScnMax = ZERO_SCN;
             while ((ent = readdir(dir)) != nullptr) {
                 if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
@@ -180,7 +180,7 @@ namespace OpenLogReplicator {
                 typeSCN fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
-                } catch (exception &e) {
+                } catch (exception& e) {
                     //ignore other files
                     continue;
                 }
@@ -301,7 +301,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void WriterFile::sendMessage(OutputBufferMsg *msg) {
+    void WriterFile::sendMessage(OutputBufferMsg* msg) {
         if (newLine > 0)
             checkFile(msg->scn, msg->sequence, msg->length + 1);
         else
