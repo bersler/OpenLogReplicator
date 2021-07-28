@@ -74,8 +74,8 @@ const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, co
         CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
     const rapidjson::Value& ret = value[field];
-    if (!ret.IsNumber()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
+    if (!ret.IsUint64()) {
+        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a non negative number");
     }
     return ret.GetUint64();
 }
@@ -85,7 +85,7 @@ const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, con
         CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
     }
     const rapidjson::Value& ret = value[field];
-    if (!ret.IsNumber()) {
+    if (!ret.IsUint64()) {
         CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
     }
     return ret.GetInt64();
@@ -123,15 +123,15 @@ const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& 
 
 const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
     const rapidjson::Value& ret = value[num];
-    if (!ret.IsNumber()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a ");
+    if (!ret.IsUint64()) {
+        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
     }
     return ret.GetUint64();
 }
 
 const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
     const rapidjson::Value& ret = value[num];
-    if (!ret.IsNumber()) {
+    if (!ret.IsInt64()) {
         CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not an object");
     }
     return ret.GetInt64();

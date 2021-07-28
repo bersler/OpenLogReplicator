@@ -393,8 +393,8 @@ namespace OpenLogReplicator {
                 WARNING("bad JSON in " << fileName << ", flags-stg should be an array with 2 elements");
                 return false;
             }
-            uint64_t flagsStg1 = flagsStgJSON[0].GetUint64();
-            uint64_t flagsStg2 = flagsStgJSON[1].GetUint64();
+            uint64_t flagsStg1 = getJSONfieldU(fileName, flagsStgJSON, "flags-stg", 0);
+            uint64_t flagsStg2 = getJSONfieldU(fileName, flagsStgJSON, "flags-stg", 1);
 
             dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
