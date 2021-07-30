@@ -33,7 +33,8 @@ namespace OpenLogReplicator {
         Stream(uri, pollInterval),
         socketFD(-1),
         serverFD(-1),
-        readBufferLen(0) {
+        readBufferLen(0),
+        res(nullptr) {
 
         uint64_t colon = this->uri.find(":");
         if (colon == string::npos) {
@@ -44,6 +45,11 @@ namespace OpenLogReplicator {
     }
 
     StreamNetwork::~StreamNetwork() {
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
+        }
+
         if (socketFD != -1) {
             close(socketFD);
             socketFD = -1;
@@ -84,7 +90,6 @@ namespace OpenLogReplicator {
     void StreamNetwork::initializeServer(atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         struct addrinfo hints;
-        struct addrinfo *res;
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
@@ -115,6 +120,11 @@ namespace OpenLogReplicator {
         }
         if (listen(serverFD, 1) < 0) {
             RUNTIME_FAIL("starting listener - " << strerror(errno));
+        }
+
+        if (res != nullptr) {
+            freeaddrinfo(res);
+            res = nullptr;
         }
     }
 

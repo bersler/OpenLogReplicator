@@ -73,9 +73,9 @@ int main(int argc, char** argv) {
     pb::RedoRequest request;
     pb::RedoResponse response;
     atomic<bool> shutdown(false);
+    Stream* stream = nullptr;
 
     try {
-        Stream* stream = nullptr;
         if (strcmp(argv[1], "network") == 0) {
             stream = new StreamNetwork(argv[2], POLL_INTERVAL);
         } else if (strcmp(argv[1], "zeromq") == 0) {
@@ -164,6 +164,11 @@ int main(int argc, char** argv) {
 
     } catch (RuntimeException& ex) {
     } catch (NetworkException& ex) {
+    }
+
+    if (stream != nullptr) {
+        delete stream;
+        stream = nullptr;
     }
 
     return 0;

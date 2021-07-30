@@ -22,22 +22,22 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     OracleColumn::OracleColumn(typeCOL colNo, typeCOL guardSegNo, typeCOL segColNo, const char* name, uint64_t typeNo, uint64_t length, int64_t precision,
             int64_t scale, typeCOL numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint, bool added, bool guard) :
-		colNo(colNo),
-		guardSegNo(guardSegNo),
-		segColNo(segColNo),
-		name(name),
-		typeNo(typeNo),
-		length(length),
-		precision(precision),
-		scale(scale),
-		numPk(numPk),
-		charsetId(charsetId),
-		nullable(nullable),
-		invisible(invisible),
-		storedAsLob(storedAsLob),
-		constraint(constraint),
-		added(added),
-		guard(guard) {
+        colNo(colNo),
+        guardSegNo(guardSegNo),
+        segColNo(segColNo),
+        name(name),
+        typeNo(typeNo),
+        length(length),
+        precision(precision),
+        scale(scale),
+        numPk(numPk),
+        charsetId(charsetId),
+        nullable(nullable),
+        invisible(invisible),
+        storedAsLob(storedAsLob),
+        constraint(constraint),
+        added(added),
+        guard(guard) {
     }
 
     OracleColumn::~OracleColumn() {

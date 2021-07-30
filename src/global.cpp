@@ -108,7 +108,7 @@ const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const
     }
     const rapidjson::Value& ret = value[field];
     if (!ret.IsString()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not string");
+        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a string");
     }
     return ret.GetString();
 }

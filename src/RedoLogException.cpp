@@ -26,8 +26,8 @@ namespace OpenLogReplicator {
     }
 
     RedoLogException::RedoLogException(const char* msg) :
-		exception(),
-		msg(msg) {
+        exception(),
+        msg(msg) {
     }
 
     ostream& operator<<(ostream& os, const RedoLogException& ors) {

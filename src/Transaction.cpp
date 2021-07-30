@@ -31,22 +31,22 @@ using namespace std;
 
 namespace OpenLogReplicator {
     Transaction::Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid) :
-		oracleAnalyzer(oracleAnalyzer),
-		deallocTc(nullptr),
-		xid(xid),
-		firstSequence(0),
-		firstOffset(0),
-		commitSequence(0),
-		commitScn(0),
-		firstTc(nullptr),
-		lastTc(nullptr),
-		opCodes(0),
-		commitTimestamp(0),
-		begin(false),
-		rollback(false),
-		system(false),
-		shutdown(false),
-		size(0) {
+        oracleAnalyzer(oracleAnalyzer),
+        deallocTc(nullptr),
+        xid(xid),
+        firstSequence(0),
+        firstOffset(0),
+        commitSequence(0),
+        commitScn(0),
+        firstTc(nullptr),
+        lastTc(nullptr),
+        opCodes(0),
+        commitTimestamp(0),
+        begin(false),
+        rollback(false),
+        system(false),
+        shutdown(false),
+        size(0) {
 
         stringstream ss;
         ss << "transaction " << PRINTXID(xid);

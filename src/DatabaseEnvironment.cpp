@@ -24,7 +24,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
     DatabaseEnvironment::DatabaseEnvironment() :
-		envhp(nullptr) {
+        envhp(nullptr) {
 
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
     }

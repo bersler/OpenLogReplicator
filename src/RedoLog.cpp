@@ -47,26 +47,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 using namespace std;
 
-extern void stopMain();
-
 namespace OpenLogReplicator {
     RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, const char* path) :
-		oracleAnalyzer(oracleAnalyzer),
-		vectors(0),
-		lwnConfirmedBlock(2),
-		lwnAllocated(0),
-		lwnTimestamp(0),
-		lwnScn(0),
-		lwnScnMax(0),
-		lwnRecords(0),
-		lwnStartBlock(0),
-		shutdown(false),
-		group(group),
-		path(path),
-		sequence(0),
-		firstScn(firstScn),
-		nextScn(nextScn),
-		reader(nullptr) {
+        oracleAnalyzer(oracleAnalyzer),
+        vectors(0),
+        lwnConfirmedBlock(2),
+        lwnAllocated(0),
+        lwnTimestamp(0),
+        lwnScn(0),
+        lwnScnMax(0),
+        lwnRecords(0),
+        lwnStartBlock(0),
+        shutdown(false),
+        group(group),
+        path(path),
+        sequence(0),
+        firstScn(firstScn),
+        nextScn(nextScn),
+        reader(nullptr) {
 
         memset(&zero, 0, sizeof(struct RedoLogRecord));
 
@@ -1174,6 +1172,7 @@ namespace OpenLogReplicator {
                 redoBufferPos += reader->blockSize;
 
                 //checkpoint
+                TRACE(TRACE2_LWN, "LWN: checkpoint at " << dec << currentBlock << "/" << lwnEndBlock << " num: " << lwnNumCnt << "/" << lwnNumMax);
                 if (currentBlock == lwnEndBlock && lwnNumCnt == lwnNumMax) {
                     try {
                         TRACE(TRACE2_LWN, "LWN: analyze");
@@ -1237,7 +1236,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!switchRedo && tmpBufferStart == reader->bufferEnd && reader->ret == REDO_FINISHED &&
+            if (!switchRedo && lwnScn > 0 && tmpBufferStart == reader->bufferEnd && reader->ret == REDO_FINISHED &&
                     oracleAnalyzer->checkpointOutputCheckpoint) {
                 switchRedo = true;
                 oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);

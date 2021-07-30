@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 using namespace std;
 
-extern void stopMain();
-
 namespace OpenLogReplicator {
     OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
             const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,

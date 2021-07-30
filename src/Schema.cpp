@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         sysTabPartTouched(false),
         sysTabSubPartTouched(false),
         sysUserTouched(false),
-		touched(false),
+        touched(false),
         savedDeleted(false) {
     }
 

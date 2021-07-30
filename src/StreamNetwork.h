@@ -34,6 +34,7 @@ namespace OpenLogReplicator {
         string host, port;
         uint8_t readBuffer[READ_NETWORK_BUFFER];
         uint64_t readBufferLen;
+        struct addrinfo *res;
 
     public:
         virtual string getName(void) const;

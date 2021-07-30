@@ -23,8 +23,8 @@ using namespace std;
 
 namespace OpenLogReplicator {
     NetworkException::NetworkException(const char* msg) :
-		exception(),
-		msg(msg) {
+        exception(),
+        msg(msg) {
     }
 
     NetworkException::~NetworkException() {

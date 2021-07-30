@@ -1,3 +1,9 @@
+0.9.18-beta
+- fixed bug: scn could become 0 in checkpoint record when redo log files was empty (had just 2 pages)
+- NetworkClient - fixed bug with memory leak on abnormal exit
+- fixed memory leak for network library
+- fixed bug in Protobuf output module
+
 0.9.17-beta
 - code cleanup to be become more compliant
 - fixed memory leak on abnormal exit

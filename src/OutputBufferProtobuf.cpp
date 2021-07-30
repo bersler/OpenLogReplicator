@@ -317,7 +317,7 @@ namespace OpenLogReplicator {
         }
         appendHeader(true, true);
 
-        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
+        if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             redoResponsePB->add_payload();
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::BEGIN);
@@ -715,8 +715,8 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB commit processing failed, error serializing to string");
             }
             outputBufferAppend(output);
+            outputBufferCommit(true);
         }
-        outputBufferCommit(true);
         ++num;
     }
 
