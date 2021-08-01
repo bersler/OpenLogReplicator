@@ -18,8 +18,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <execinfo.h>
-#include <thread>
+#include <set>
+#include <signal.h>
 #include <unistd.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <sstream>
 
 #define GLOBAL_H_ 0
 #include "ConfigurationException.h"
@@ -27,19 +33,31 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-uint64_t trace = 3;
-uint64_t trace2 = 0;
+set<pthread_t> threads;
+mutex threadMtx;
 mutex mainMtx;
-condition_variable mainThread;
+pthread_t mainThread;
+condition_variable mainCV;
 bool exitOnSignal = false;
 bool mainShutdown = false;
+uint64_t trace = 3;
+uint64_t trace2 = 0;
+
+void printStacktrace(void) {
+    unique_lock<mutex> lck(threadMtx);
+    cerr << "stacktrace for thread: " << dec << pthread_self() << endl;
+    void* array[128];
+    size_t size = backtrace(array, 128);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    cerr << endl;
+}
 
 void stopMain(void) {
     unique_lock<mutex> lck(mainMtx);
 
     mainShutdown = true;
     TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
-    mainThread.notify_all();
+    mainCV.notify_all();
 }
 
 void signalHandler(int s) {
@@ -51,11 +69,27 @@ void signalHandler(int s) {
 }
 
 void signalCrash(int sig) {
-    void* array[32];
-    size_t size = backtrace(array, 32);
-    ERROR("signal " << dec << sig);
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    printStacktrace();
     exit(1);
+}
+
+void signalDump(int sig) {
+    printStacktrace();
+    if (mainThread == pthread_self()) {
+        for (pthread_t thread : threads) {
+            pthread_kill(thread, SIGUSR1);
+        }
+    }
+}
+
+void unRegisterThread(pthread_t pthread) {
+    unique_lock<mutex> lck(threadMtx);
+    threads.erase(pthread);
+}
+
+void registerThread(pthread_t pthread) {
+    unique_lock<mutex> lck(threadMtx);
+    threads.insert(pthread);
 }
 
 const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field) {

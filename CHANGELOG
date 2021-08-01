@@ -1,3 +1,7 @@
+0.9.19-beta
+- added support for Oracle 19.12.0
+- added stacktrace print on signal USR1
+
 0.9.18-beta
 - fixed bug: scn could become 0 in checkpoint record when redo log files was empty (had just 2 pages)
 - NetworkClient - fixed bug with memory leak on abnormal exit

@@ -19,7 +19,7 @@ Compilation for Debug:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CXXFLAGS='-g -O0 -fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_11 --with-protobuf=/opt/protobuf --with-zeromq=/usr
+4. ./configure CFLAGS='-fsanitize=address' CXXFLAGS='-g -O0 -fsanitize=address' LDFLAGS='-fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_11 --with-protobuf=/opt/protobuf --with-zeromq=/usr
 5. make
 
 Compilation for Release:

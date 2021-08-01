@@ -33,9 +33,11 @@ namespace OpenLogReplicator {
     Thread::~Thread() {
     }
 
-    void* Thread::runStatic(void* context){
+    void* Thread::runStatic(void* context) {
+        registerThread(((Thread*) context)->pthread);
         ((Thread*) context)->started = true;
         void* ret = ((Thread*) context)->run();
+        unRegisterThread(((Thread*) context)->pthread);
         return ret;
     }
 

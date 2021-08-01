@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
 
@@ -29,16 +30,23 @@ using namespace std;
 
 namespace OpenLogReplicator {
 
+extern mutex threadMtx;
 extern mutex mainMtx;
-extern condition_variable mainThread;
+extern pthread_t mainThread;
+extern condition_variable mainCV;
 extern bool exitOnSignal;
 extern bool mainShutdown;
 extern uint64_t trace;
 extern uint64_t trace2;
 
+void printStacktrace(void);
 void stopMain(void);
 void signalHandler(int s);
 void signalCrash(int sig);
+void signalCrash(int sig);
+void signalDump(int sig);
+void unRegisterThread(pthread_t pthread);
+void registerThread(pthread_t pthread);
 
 const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field);
 const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field);

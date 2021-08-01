@@ -65,9 +65,11 @@ using namespace rapidjson;
 using namespace OpenLogReplicator;
 
 int main(int argc, char** argv) {
+    mainThread = pthread_self();
     signal(SIGINT, signalHandler);
     signal(SIGPIPE, signalHandler);
     signal(SIGSEGV, signalCrash);
+    signal(SIGUSR1, signalDump);
     uintX_t::initializeBASE10();
 
     INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
@@ -937,7 +939,7 @@ int main(int argc, char** argv) {
         {
             unique_lock<mutex> lck(mainMtx);
             if (!mainShutdown)
-                mainThread.wait(lck);
+                mainCV.wait(lck);
         }
 
     } catch (ConfigurationException& ex) {
