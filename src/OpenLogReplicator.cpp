@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
-#include <zconf.h>
 
 #include "global.h"
 #include "ConfigurationException.h"
