@@ -19,14 +19,14 @@ Compilation for Debug:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CFLAGS='-fsanitize=address' CXXFLAGS='-g -O0 -fsanitize=address' LDFLAGS='-fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_11 --with-protobuf=/opt/protobuf --with-zeromq=/usr
+4. ./configure CFLAGS='-fsanitize=address' CXXFLAGS='-g -O0 -fsanitize=address' LDFLAGS='-fsanitize=address' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_12 --with-protobuf=/opt/protobuf --with-zeromq=/usr
 5. make
 
 Compilation for Release:
 1. git clone https://github.com/bersler/OpenLogReplicator
 2. cd OpenLogReplicator
 3. autoreconf -f -i
-4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_11 --with-protobuf=/opt/protobuf --with-zeromq=/usr
+4. ./configure CXXFLAGS='-O3' --with-rapidjson=/opt/rapidjson --with-rdkafka=/opt/librdkafka --with-instantclient=/opt/instantclient_19_12 --with-protobuf=/opt/protobuf --with-zeromq=/usr
 5. make
 
 Step 3 is optional and required if you downloaded the files from GIT and timestamps of files may be changed.
@@ -34,7 +34,7 @@ Step 3 is optional and required if you downloaded the files from GIT and timesta
 Running:
 1. cp sample/OpenLogReplicator.json.example OpenLogReplicator.json
 2. vi OpenLogReplicator.json
-3. export LD_LIBRARY_PATH=/opt/instantclient_19_11:/opt/protobuf/lib:/opt/librdkafka/lib
+3. export LD_LIBRARY_PATH=/opt/instantclient_19_12:/opt/protobuf/lib:/opt/librdkafka/lib
 4. ./src/OpenLogReplicator
 
 The documentation for the OpenLogReplicator program can be found on https://www.bersler.com/openlogreplicator/

@@ -567,7 +567,7 @@ int main(int argc, char** argv) {
                 if (filterJSON.HasMember("skip-xid")) {
                     const Value& skipXidArrayJSON = getJSONfieldA(fileName, filterJSON, "skip-xid");
                     for (SizeType j = 0; j < skipXidArrayJSON.Size(); ++j) {
-                        const char* skipXid = getJSONfieldS(fileName, filterJSON, "skip-xid", j);
+                        const char* skipXid = getJSONfieldS(fileName, skipXidArrayJSON, "skip-xid", j);
 
                         typeXID xid = 0;
                         bool invalid = false;

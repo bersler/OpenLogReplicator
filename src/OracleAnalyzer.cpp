@@ -1036,7 +1036,7 @@ namespace OpenLogReplicator {
             ss << ",\"min-tran\":{"
                     << "\"seq\":" << dec << minSequence
                     << ",\"offset\":" << dec << minOffset
-                    << ",\"xid:\":\"" << hex << setfill('0') << setw(16) << minXid << "\"}";
+                    << ",\"xid:\":\"" << PRINTXID(minXid) << "\"}";
         }
 
         ss << "}";

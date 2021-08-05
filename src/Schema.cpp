@@ -567,11 +567,7 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
             uint64_t group = getJSONfieldI(fileName, onlineRedoJSON[i], "group");
-
-            const Value& path = onlineRedoJSON[i]["path"];
-            if (!path.IsArray()) {
-                RUNTIME_FAIL("bad JSON, path-mapping should be array");
-            }
+            const Value& path = getJSONfieldA(fileName, onlineRedoJSON[i], "path");
 
             Reader* onlineReader = oracleAnalyzer->readerCreate(group);
             if (onlineReader != nullptr) {

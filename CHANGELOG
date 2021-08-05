@@ -1,3 +1,7 @@
+0.9.20-beta 
+- changed Oracle client to 19.12
+- build scripts compiled with newer autotools
+
 0.9.19-beta
 - added support for Oracle 19.12.0
 - added stacktrace print on signal USR1

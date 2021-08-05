@@ -33,158 +33,158 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-set<pthread_t> threads;
-mutex threadMtx;
-mutex mainMtx;
-pthread_t mainThread;
-condition_variable mainCV;
-bool exitOnSignal = false;
-bool mainShutdown = false;
-uint64_t trace = 3;
-uint64_t trace2 = 0;
+    set<pthread_t> threads;
+    mutex threadMtx;
+    mutex mainMtx;
+    pthread_t mainThread;
+    condition_variable mainCV;
+    bool exitOnSignal = false;
+    bool mainShutdown = false;
+    uint64_t trace = 3;
+    uint64_t trace2 = 0;
 
-void printStacktrace(void) {
-    unique_lock<mutex> lck(threadMtx);
-    cerr << "stacktrace for thread: " << dec << pthread_self() << endl;
-    void* array[128];
-    size_t size = backtrace(array, 128);
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
-    cerr << endl;
-}
-
-void stopMain(void) {
-    unique_lock<mutex> lck(mainMtx);
-
-    mainShutdown = true;
-    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
-    mainCV.notify_all();
-}
-
-void signalHandler(int s) {
-    if (!exitOnSignal) {
-        WARNING("caught signal " << s << ", exiting");
-        exitOnSignal = true;
-        stopMain();
+    void printStacktrace(void) {
+        unique_lock<mutex> lck(threadMtx);
+        cerr << "stacktrace for thread: " << dec << pthread_self() << endl;
+        void* array[128];
+        size_t size = backtrace(array, 128);
+        backtrace_symbols_fd(array, size, STDERR_FILENO);
+        cerr << endl;
     }
-}
 
-void signalCrash(int sig) {
-    printStacktrace();
-    exit(1);
-}
+    void stopMain(void) {
+        unique_lock<mutex> lck(mainMtx);
 
-void signalDump(int sig) {
-    printStacktrace();
-    if (mainThread == pthread_self()) {
-        for (pthread_t thread : threads) {
-            pthread_kill(thread, SIGUSR1);
+        mainShutdown = true;
+        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP ALL");
+        mainCV.notify_all();
+    }
+
+    void signalHandler(int s) {
+        if (!exitOnSignal) {
+            WARNING("caught signal " << s << ", exiting");
+            exitOnSignal = true;
+            stopMain();
         }
     }
-}
 
-void unRegisterThread(pthread_t pthread) {
-    unique_lock<mutex> lck(threadMtx);
-    threads.erase(pthread);
-}
+    void signalCrash(int sig) {
+        printStacktrace();
+        exit(1);
+    }
 
-void registerThread(pthread_t pthread) {
-    unique_lock<mutex> lck(threadMtx);
-    threads.insert(pthread);
-}
+    void signalDump(int sig) {
+        printStacktrace();
+        if (mainThread == pthread_self()) {
+            for (pthread_t thread : threads) {
+                pthread_kill(thread, SIGUSR1);
+            }
+        }
+    }
 
-const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+    void unRegisterThread(pthread_t pthread) {
+        unique_lock<mutex> lck(threadMtx);
+        threads.erase(pthread);
     }
-    const rapidjson::Value& ret = value[field];
-    if (!ret.IsArray()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not an array");
-    }
-    return ret;
-}
 
-const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+    void registerThread(pthread_t pthread) {
+        unique_lock<mutex> lck(threadMtx);
+        threads.insert(pthread);
     }
-    const rapidjson::Value& ret = value[field];
-    if (!ret.IsUint64()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a non negative number");
-    }
-    return ret.GetUint64();
-}
 
-const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+    const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsArray()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not an array");
+        }
+        return ret;
     }
-    const rapidjson::Value& ret = value[field];
-    if (!ret.IsInt64()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
-    }
-    return ret.GetInt64();
-}
 
-const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+    const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a non negative number");
+        }
+        return ret.GetUint64();
     }
-    const rapidjson::Value& ret = value[field];
-    if (!ret.IsObject()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not an object");
-    }
-    return ret;
-}
 
-const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field) {
-    if (!value.HasMember(field)) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+    const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
+        }
+        return ret.GetInt64();
     }
-    const rapidjson::Value& ret = value[field];
-    if (!ret.IsString()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a string");
-    }
-    return ret.GetString();
-}
 
-const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
-    const rapidjson::Value& ret = value[num];
-    if (!ret.IsArray()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not an array");
+    const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsObject()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not an object");
+        }
+        return ret;
     }
-    return ret;
-}
 
-const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
-    const rapidjson::Value& ret = value[num];
-    if (!ret.IsUint64()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
+    const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsString()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a string");
+        }
+        return ret.GetString();
     }
-    return ret.GetUint64();
-}
 
-const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
-    const rapidjson::Value& ret = value[num];
-    if (!ret.IsInt64()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a number");
+    const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsArray()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not an array");
+        }
+        return ret;
     }
-    return ret.GetInt64();
-}
 
-const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
-    const rapidjson::Value& ret = value[num];
-    if (!ret.IsObject()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not an object");
+    const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
+        }
+        return ret.GetUint64();
     }
-    return ret;
-}
 
-const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
-    const rapidjson::Value& ret = value[num];
-    if (!ret.IsString()) {
-        CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a string");
+    const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a number");
+        }
+        return ret.GetInt64();
     }
-    return ret.GetString();
-}
+
+    const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsObject()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not an object");
+        }
+        return ret;
+    }
+
+    const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsString()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a string");
+        }
+        return ret.GetString();
+    }
 
 }

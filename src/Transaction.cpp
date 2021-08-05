@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
                                     }
                                 }
                             } else {
-                                RUNTIME_FAIL("minimal supplemental log missing or redo log inconsistency for transaction " << PRINTXID(xid));
+                                //RUNTIME_FAIL("minimal supplemental log missing or redo log inconsistency for transaction " << PRINTXID(xid));
                             }
                         }
 
