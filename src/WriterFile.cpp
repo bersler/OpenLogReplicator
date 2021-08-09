@@ -134,7 +134,6 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("output file is with no rotation: " << this->output << " - \"append\" must be set to 1");
             }
             mode = WRITERFILE_MODE_NOROTATE;
-            outputFile = outputFileMask;
         }
 
         if ((mode == WRITERFILE_MODE_TIMETAMP || mode == WRITERFILE_MODE_NUM) && maxSize == 0) {
@@ -213,7 +212,7 @@ namespace OpenLogReplicator {
             return;
         } else
         if (mode == WRITERFILE_MODE_NOROTATE) {
-            // do nothing here
+            outputFile = outputPath + "/" + outputFileMask;
         } else
         if (mode == WRITERFILE_MODE_NUM) {
             if (outputSize + length > maxSize) {

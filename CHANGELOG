@@ -1,6 +1,7 @@
 0.9.20-beta 
 - changed Oracle client to 19.12
 - build scripts compiled with newer autotools
+- fixed bug with output file path for json data
 
 0.9.19-beta
 - added support for Oracle 19.12.0
