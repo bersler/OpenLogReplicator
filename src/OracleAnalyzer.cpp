@@ -791,10 +791,11 @@ namespace OpenLogReplicator {
 
             bool foundPath = false;
             for (string& path : reader->paths) {
-                reader->pathMapped = applyMapping(path);
+                reader->pathMapped = path;
+                applyMapping(reader->pathMapped);
                 if (readerCheckRedoLog(reader)) {
                     foundPath = true;
-                    RedoLog* redo = new RedoLog(this, reader->group, reader->pathMapped.c_str());
+                    RedoLog* redo = new RedoLog(this, reader->group, reader->pathMapped);
                     if (redo == nullptr) {
                         readerDropAll();
                         RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (for: online redo logs)");
@@ -809,7 +810,8 @@ namespace OpenLogReplicator {
             if (!foundPath) {
                 uint64_t badGroup = reader->group;
                 for (string& path : reader->paths) {
-                    string pathMapped(applyMapping(path));
+                    string pathMapped(path);
+                    applyMapping(pathMapped);
                     ERROR("can't read: " << pathMapped);
                 }
                 readerDropAll();
@@ -918,7 +920,8 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::addPathMapping(const char* source, const char* target) {
         TRACE(TRACE2_FILE, "FILE: added mapping [" << source << "] -> [" << target << "]");
-        string sourceMaping(source), targetMapping(target);
+        string sourceMaping(source);
+        string targetMapping(target);
         pathMapping.push_back(sourceMaping);
         pathMapping.push_back(targetMapping);
     }
@@ -944,11 +947,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzer::addRedoLogsBatch(string path) {
+    void OracleAnalyzer::addRedoLogsBatch(const char* path) {
         redoLogsBatch.push_back(path);
     }
 
-    string OracleAnalyzer::applyMapping(string path) {
+    void OracleAnalyzer::applyMapping(string& path) {
         uint64_t sourceLength, targetLength, newPathLength = path.length();
         char pathBuffer[MAX_PATH_LENGTH];
 
@@ -963,12 +966,13 @@ namespace OpenLogReplicator {
                 memcpy(pathBuffer, pathMapping[i * 2 + 1].c_str(), targetLength);
                 memcpy(pathBuffer + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
-                path = pathBuffer;
+                if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH) {
+                    RUNTIME_FAIL("After mapping path length (" << dec << (newPathLength - sourceLength + targetLength) << ") is too long for: " << pathBuffer);
+                }
+                path.assign(pathBuffer);
                 break;
             }
         }
-
-        return path;
     }
 
     bool OracleAnalyzer::checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo) {
@@ -1093,7 +1097,6 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("can't access directory: " << checkpointPath);
         }
 
-        string newLastCheckedDay;
         struct dirent* ent;
         typeSCN fileScnMax = 0;
         while ((ent = readdir(dir)) != nullptr) {
@@ -1189,7 +1192,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const char* databaseRead = getJSONfieldS(fileName, document, "database");
+        const char* databaseRead = getJSONfieldS(fileName, VDATABASE_LENGTH, document, "database");
         if (database.compare(databaseRead) != 0) {
             WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << database << " - skipping file");
             return false;
@@ -1330,7 +1333,8 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("missing location of archived redo logs for offline mode");
         }
 
-        string mappedPath(oracleAnalyzer->applyMapping(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog"));
+        string mappedPath(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog");
+        oracleAnalyzer->applyMapping(mappedPath);
         TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
         DIR* dir;
@@ -1382,7 +1386,7 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
 
-                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName.c_str());
+                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName);
                 if (redo == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#2)");
                 }
@@ -1437,7 +1441,7 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                     continue;
 
-                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
+                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath);
                 if (redo == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#3)");
                 }
@@ -1468,7 +1472,7 @@ namespace OpenLogReplicator {
                     if (sequence == 0 || sequence < oracleAnalyzer->sequence)
                         continue;
 
-                    RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName.c_str());
+                    RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName);
                     if (redo == nullptr) {
                         RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#4)");
                     }

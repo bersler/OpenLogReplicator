@@ -1,3 +1,7 @@
+0.9.21-beta
+- added length checks for string types
+- minor code cleanup & optimization to reduce memory allocations
+
 0.9.20-beta 
 - changed Oracle client to 19.12
 - build scripts compiled with newer autotools

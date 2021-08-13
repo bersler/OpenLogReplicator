@@ -696,8 +696,8 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->dumpStream << "DEBUG op: " << dec << (uint64_t)(redoLogRecord->op & 0x1F) << endl;
             }
 
-            string xtype("0");
-            string rtype("");
+            const char* xtype("0");
+            const char* rtype("");
             switch (redoLogRecord->flags & 0x03) {
             case FLAGS_XA:
                 xtype = "XA"; //redo
@@ -714,7 +714,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0)
                 rtype = "xtype KDO_KDOM2";
 
-            string rowDependencies("Disabled");
+            const char* rowDependencies("Disabled");
             if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0)
                 rowDependencies = "Enabled";
 
@@ -764,8 +764,11 @@ namespace OpenLogReplicator {
         redoLogRecord->rci = redoLogRecord->data[fieldPos + 19];
         redoLogRecord->flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 20);
 
-        string ktuType("ktubu"), prevObj(""), postObj("");
+        const char* ktuType("ktubu");
+        const char* prevObj("");
+        const char* postObj("");
         bool ktubl = false;
+
         if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
             ktubl = true;
             ktuType = "ktubl";
@@ -801,7 +804,7 @@ namespace OpenLogReplicator {
                     " tsn: " << dec << redoLogRecord->tsn << "]" << endl;
         }
 
-        string lastBufferSplit;
+        const char* lastBufferSplit;
         if ((redoLogRecord->flg & FLG_LASTBUFFERSPLIT) != 0)
             lastBufferSplit = "Yes";
         else {
@@ -811,7 +814,7 @@ namespace OpenLogReplicator {
                 lastBufferSplit = " No";
         }
 
-        string userUndoDone;
+        const char* userUndoDone;
         if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
             userUndoDone = "Yes";
         else {
@@ -821,7 +824,7 @@ namespace OpenLogReplicator {
                 userUndoDone = " No";
         }
 
-        string undoType;
+        const char* undoType;
         if (oracleAnalyzer->version < REDO_VERSION_12_2) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "Multi-block undo - HEAD";
@@ -851,7 +854,7 @@ namespace OpenLogReplicator {
                 undoType = "Regular undo";
         }
 
-        string tempObject;
+        const char* tempObject;
         if ((redoLogRecord->flg & FLG_ISTEMPOBJECT) != 0)
             tempObject = "Yes";
         else {
@@ -861,7 +864,7 @@ namespace OpenLogReplicator {
                 tempObject = " No";
         }
 
-        string tablespaceUndo;
+        const char* tablespaceUndo;
         if ((redoLogRecord->flg & FLG_TABLESPACEUNDO) != 0)
             tablespaceUndo = "Yes";
         else {
@@ -871,7 +874,7 @@ namespace OpenLogReplicator {
                 tablespaceUndo = " No";
         }
 
-        string userOnly(" No");
+        const char* userOnly(" No");
         if ((redoLogRecord->flg & FLG_USERONLY) != 0)
             userOnly = "Yes";
         else {

@@ -147,7 +147,6 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("can't access directory: " << outputPath << " to create output files defined with: " << this->output);
             }
 
-            //string newLastCheckedDay;
             struct dirent* ent;
             typeSCN fileScnMax = ZERO_SCN;
             while ((ent = readdir(dir)) != nullptr) {

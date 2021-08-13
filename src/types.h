@@ -290,6 +290,18 @@ typedef uint64_t typeunicode;
 
 #define OPFLAG_BEGIN_TRANS      0x01
 
+#define JSON_PARAMETER_LENGTH   256
+#define JSON_USERNAME_LENGTH    128
+#define JSON_PASSWORD_LENGTH    128
+#define JSON_SERVER_LENGTH      4096
+#define JSON_KEY_LENGTH         4096
+#define JSON_XID_LIST_LENGTH    1048576
+
+#define VDATABASE_LENGTH        9
+#define VCONTEXT_LENGTH         9
+#define VPARAMETER_LENGTH       4000
+#define VPROPERTY_LENGTH        4000
+
 using namespace std;
 
 namespace OpenLogReplicator {

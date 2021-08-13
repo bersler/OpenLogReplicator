@@ -198,10 +198,10 @@ namespace OpenLogReplicator {
         virtual void doShutdown(void);
         virtual void goStandby(void);
         void addPathMapping(const char* source, const char* target);
-        void addRedoLogsBatch(string path);
+        void addRedoLogsBatch(const char* path);
         static void archGetLogPath(OracleAnalyzer* oracleAnalyzer);
         static void archGetLogList(OracleAnalyzer* oracleAnalyzer);
-        string applyMapping(string path);
+        void applyMapping(string& path);
         bool checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
         bool readCheckpointFile(string& fileName, typeSCN fileScn);

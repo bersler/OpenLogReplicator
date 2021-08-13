@@ -149,8 +149,7 @@ namespace OpenLogReplicator {
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
                 char iso[21];
                 lastTime.toISO8601(iso);
-                string isoStr(iso);
-                redoResponsePB->set_tms(isoStr);
+                redoResponsePB->set_tms(iso);
             } else {
                 redoResponsePB->set_tm(lastTime.toTime() * 1000);
             }

@@ -79,12 +79,12 @@ namespace OpenLogReplicator {
         void closeConnection(void);
         string getParameterValue(const char* parameter);
         string getPropertyValue(const char* property);
-        void checkTableForGrants(string tableName);
-        void checkTableForGrantsFlashback(string tableName, typeSCN scn);
+        void checkTableForGrants(const char* tableName);
+        void checkTableForGrantsFlashback(const char* tableName, typeSCN scn);
         virtual const char* getModeName(void) const;
         virtual void createSchema(void);
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
-        void readSystemDictionaries(string owner, string table, typeOPTIONS options);
+        void readSystemDictionaries(string& owner, string& table, typeOPTIONS options);
         void createSchemaForTable(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options);
 
     public:

@@ -136,13 +136,17 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field) {
+    const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field)) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
         }
         const rapidjson::Value& ret = value[field];
         if (!ret.IsString()) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a string");
+        }
+        if (ret.GetStringLength() > maxLength) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too long (" << dec <<
+                    ret.GetStringLength() << ", max: " << maxLength);
         }
         return ret.GetString();
     }
@@ -179,12 +183,15 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsString()) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a string");
         }
+        if (ret.GetStringLength() > maxLength) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too long (" << dec <<
+                    ret.GetStringLength() << ", max: " << maxLength);
+        }
         return ret.GetString();
     }
-
 }

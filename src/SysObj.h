@@ -22,6 +22,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSOBJ_H_
 #define SYSOBJ_H_
 
+#define SYSOBJ_ROWID_LENGTH     18
+#define SYSOBJ_NAME_LENGTH      128
+
 using namespace std;
 
 namespace OpenLogReplicator {

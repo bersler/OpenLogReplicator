@@ -177,7 +177,6 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("can't access directory: " << oracleAnalyzer->checkpointPath);
         }
 
-        string newLastCheckedDay;
         struct dirent* ent;
         typeSCN fileScnMax = ZERO_SCN;
         while ((ent = readdir(dir)) != nullptr) {
@@ -278,9 +277,9 @@ namespace OpenLogReplicator {
         const Value& sysUserJSON = getJSONfieldA(fileName, document, "sys-user");
 
         for (SizeType i = 0; i < sysUserJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysUserJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSUSER_ROWID_LENGTH, sysUserJSON[i], "row-id");
             typeUSER user = getJSONfieldU(fileName, sysUserJSON[i], "user");
-            const char* name = getJSONfieldS(fileName, sysUserJSON[i], "name");
+            const char* name = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, sysUserJSON[i], "name");
 
             const Value& spare1JSON = getJSONfieldA(fileName, sysUserJSON[i], "spare1");
             if (spare1JSON.Size() != 2) {
@@ -299,12 +298,12 @@ namespace OpenLogReplicator {
         const Value& sysObjJSON = getJSONfieldA(fileName, document, "sys-obj");
 
         for (SizeType i = 0; i < sysObjJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysObjJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSOBJ_ROWID_LENGTH, sysObjJSON[i], "row-id");
             typeUSER owner = getJSONfieldU(fileName, sysObjJSON[i], "owner");
             typeOBJ obj = getJSONfieldU(fileName, sysObjJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU(fileName, sysObjJSON[i], "data-obj");
             typeTYPE type = getJSONfieldU(fileName, sysObjJSON[i], "type");
-            const char* name = getJSONfieldS(fileName, sysObjJSON[i], "name");
+            const char* name = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, sysObjJSON[i], "name");
 
             const Value& flagsJSON = getJSONfieldA(fileName, sysObjJSON[i], "flags");
             if (flagsJSON.Size() != 2) {
@@ -323,12 +322,12 @@ namespace OpenLogReplicator {
         const Value& sysColJSON = getJSONfieldA(fileName, document, "sys-col");
 
         for (SizeType i = 0; i < sysColJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysColJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSCOL_ROWID_LENGTH, sysColJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysColJSON[i], "obj");
             typeCOL col = getJSONfieldI(fileName, sysColJSON[i], "col");
             typeCOL segCol = getJSONfieldI(fileName, sysColJSON[i], "seg-col");
             typeCOL intCol = getJSONfieldI(fileName, sysColJSON[i], "int-col");
-            const char* name = getJSONfieldS(fileName, sysColJSON[i], "name");
+            const char* name = getJSONfieldS(fileName, SYSCOL_NAME_LENGTH, sysColJSON[i], "name");
             typeTYPE type = getJSONfieldU(fileName, sysColJSON[i], "type");
             uint64_t length = getJSONfieldU(fileName, sysColJSON[i], "length");
             int64_t precision = getJSONfieldI(fileName, sysColJSON[i], "precision");
@@ -352,7 +351,7 @@ namespace OpenLogReplicator {
         const Value& sysCColJSON = getJSONfieldA(fileName, document, "sys-ccol");
 
         for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysCColJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSCCOL_ROWID_LENGTH, sysCColJSON[i], "row-id");
             typeCON con = getJSONfieldI(fileName, sysCColJSON[i], "con");
             typeCON intCol = getJSONfieldI(fileName, sysCColJSON[i], "int-col");
             typeOBJ obj = getJSONfieldU(fileName, sysCColJSON[i], "obj");
@@ -372,7 +371,7 @@ namespace OpenLogReplicator {
         const Value& sysCDefJSON = getJSONfieldA(fileName, document, "sys-cdef");
 
         for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysCDefJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSCDEF_ROWID_LENGTH, sysCDefJSON[i], "row-id");
             typeCON con = getJSONfieldI(fileName, sysCDefJSON[i], "con");
             typeOBJ obj = getJSONfieldU(fileName, sysCDefJSON[i], "obj");
             typeTYPE type = getJSONfieldU(fileName, sysCDefJSON[i], "type");
@@ -385,7 +384,7 @@ namespace OpenLogReplicator {
         const Value& sysDeferredStgJSON = getJSONfieldA(fileName, document, "sys-deferredstg");
 
         for (SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysDeferredStgJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSDEFERREDSTG_ROWID_LENGTH, sysDeferredStgJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysDeferredStgJSON[i], "obj");
 
             const Value& flagsStgJSON = getJSONfieldA(fileName, sysDeferredStgJSON[i], "flags-stg");
@@ -404,7 +403,7 @@ namespace OpenLogReplicator {
         const Value& sysEColJSON = getJSONfieldA(fileName, document, "sys-ecol");
 
         for (SizeType i = 0; i < sysEColJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysEColJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSECOL_ROWID_LENGTH, sysEColJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysEColJSON[i], "tab-obj");
             typeCOL colNum = getJSONfieldI(fileName, sysEColJSON[i], "col-num");
             typeCOL guardId = getJSONfieldI(fileName, sysEColJSON[i], "guard-id");
@@ -417,7 +416,7 @@ namespace OpenLogReplicator {
         const Value& sysSegJSON = getJSONfieldA(fileName, document, "sys-seg");
 
         for (SizeType i = 0; i < sysSegJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysSegJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSSEG_ROWID_LENGTH, sysSegJSON[i], "row-id");
             uint32_t file = getJSONfieldU(fileName, sysSegJSON[i], "file");
             uint32_t block = getJSONfieldU(fileName, sysSegJSON[i], "block");
             uint32_t ts = getJSONfieldU(fileName, sysSegJSON[i], "ts");
@@ -438,7 +437,7 @@ namespace OpenLogReplicator {
         const Value& sysTabJSON = getJSONfieldA(fileName, document, "sys-tab");
 
         for (SizeType i = 0; i < sysTabJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysTabJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSTAB_ROWID_LENGTH, sysTabJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysTabJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabJSON[i], "data-obj");
             uint32_t ts = getJSONfieldU(fileName, sysTabJSON[i], "ts");
@@ -470,7 +469,7 @@ namespace OpenLogReplicator {
         const Value& sysTabPartJSON = getJSONfieldA(fileName, document, "sys-tabpart");
 
         for (SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysTabPartJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSTABPART_ROWID_LENGTH, sysTabPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysTabPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabPartJSON[i], "data-obj");
             typeOBJ bo = getJSONfieldU(fileName, sysTabPartJSON[i], "bo");
@@ -483,7 +482,7 @@ namespace OpenLogReplicator {
         const Value& sysTabComPartJSON = getJSONfieldA(fileName, document, "sys-tabcompart");
 
         for (SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysTabComPartJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSTABCOMPART_ROWID_LENGTH, sysTabComPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysTabComPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabComPartJSON[i], "data-obj");
             typeOBJ bo = getJSONfieldU(fileName, sysTabComPartJSON[i], "bo");
@@ -496,7 +495,7 @@ namespace OpenLogReplicator {
         const Value& sysTabSubPartJSON = getJSONfieldA(fileName, document, "sys-tabsubpart");
 
         for (SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, sysTabSubPartJSON[i], "row-id");
+            const char* rowId = getJSONfieldS(fileName, SYSTABSUBPART_ROWID_LENGTH, sysTabSubPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "data-obj");
             typeOBJ pObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "p-obj");
@@ -506,7 +505,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
 
         //database metadata
-        const char* databaseRead = getJSONfieldS(fileName, document, "database");
+        const char* databaseRead = getJSONfieldS(fileName, VDATABASE_LENGTH, document, "database");
         if (oracleAnalyzer->database.compare(databaseRead) != 0) {
             WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << oracleAnalyzer->database << " - skipping file");
             return false;
@@ -534,7 +533,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        string contextRead(getJSONfieldS(fileName, document, "context"));
+        string contextRead(getJSONfieldS(fileName, VCONTEXT_LENGTH, document, "context"));
         if (oracleAnalyzer->context.length() == 0)
             oracleAnalyzer->context = contextRead;
         else if (oracleAnalyzer->context.compare(contextRead) != 0) {
@@ -550,16 +549,16 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        oracleAnalyzer->conName = getJSONfieldS(fileName, document, "con-name");
-        oracleAnalyzer->dbRecoveryFileDest = getJSONfieldS(fileName, document, "db-recovery-file-dest");
-        oracleAnalyzer->dbBlockChecksum = getJSONfieldS(fileName, document, "db-block-checksum");
+        oracleAnalyzer->conName = getJSONfieldS(fileName, VCONTEXT_LENGTH, document, "con-name");
+        oracleAnalyzer->dbRecoveryFileDest = getJSONfieldS(fileName, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
+        oracleAnalyzer->dbBlockChecksum = getJSONfieldS(fileName, VPARAMETER_LENGTH, document, "db-block-checksum");
 
         if (oracleAnalyzer->logArchiveFormat.length() == 0)
-            oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, document, "log-archive-format");
+            oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-format");
 
-        oracleAnalyzer->logArchiveDest = getJSONfieldS(fileName, document, "log-archive-dest");
-        oracleAnalyzer->nlsCharacterSet = getJSONfieldS(fileName, document, "nls-character-set");
-        oracleAnalyzer->nlsNcharCharacterSet = getJSONfieldS(fileName, document, "nls-nchar-character-set");
+        oracleAnalyzer->logArchiveDest = getJSONfieldS(fileName, VPARAMETER_LENGTH, document, "log-archive-dest");
+        oracleAnalyzer->nlsCharacterSet = getJSONfieldS(fileName, VPROPERTY_LENGTH, document, "nls-character-set");
+        oracleAnalyzer->nlsNcharCharacterSet = getJSONfieldS(fileName, VPROPERTY_LENGTH, document, "nls-nchar-character-set");
 
         oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
 
@@ -1533,7 +1532,7 @@ namespace OpenLogReplicator {
             typeCOL totalPk = 0, maxSegCol = 0, keysCnt = 0;
             bool suppLogTablePrimary = false, suppLogTableAll = false, supLogColMissing = false;
 
-            schemaObject = new OracleObject(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols, options, sysUser->name.c_str(), sysObj->name.c_str());
+            schemaObject = new OracleObject(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols, options, sysUser->name, sysObj->name);
             if (schemaObject == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation2)");
             }
@@ -1655,7 +1654,7 @@ namespace OpenLogReplicator {
 
                 DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
-                OracleColumn* column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name.c_str(), sysCol->type,
+                OracleColumn* column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name, sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                         sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
                 if (column == nullptr) {
@@ -1773,6 +1772,9 @@ namespace OpenLogReplicator {
         if (sysColMapRowId.find(rowId) != sysColMapRowId.end())
             return false;
 
+        if (strlen(name) > SYSCOL_NAME_LENGTH) {
+            RUNTIME_FAIL("SYS.COL$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+        }
         SysCol* sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
                 null_, property1, property2, false);
         if (sysCol == nullptr) {
@@ -1832,6 +1834,9 @@ namespace OpenLogReplicator {
             return false;
         }
 
+        if (strlen(name) > SYSOBJ_NAME_LENGTH) {
+            RUNTIME_FAIL("SYS.OBJ$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+        }
         SysObj* sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, single, false);
         if (sysObj == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
@@ -1944,6 +1949,9 @@ namespace OpenLogReplicator {
             return false;
         }
 
+        if (strlen(name) > SYSUSER_NAME_LENGTH) {
+            RUNTIME_FAIL("SYS.USER$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+        }
         SysUser* sysUser = new SysUser(rowId, user, name, spare11, spare12, single, false);
         if (sysUser == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");

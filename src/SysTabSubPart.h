@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSTABSUBPART_H_
 #define SYSTABSUBPART_H_
 
+#define SYSTABSUBPART_ROWID_LENGTH     18
+
 using namespace std;
 
 namespace OpenLogReplicator {

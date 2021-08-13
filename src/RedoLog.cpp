@@ -48,7 +48,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, const char* path) :
+    RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, string& path) :
         oracleAnalyzer(oracleAnalyzer),
         vectors(0),
         lwnConfirmedBlock(2),
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                     " Largest LWN: " << dec << largestLwn << " blocks" << endl;
 
             uint32_t miscFlags = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 236);
-            string endOfRedo;
+            const char* endOfRedo = "";
             if ((miscFlags & REDO_END) != 0)
                 endOfRedo = "Yes";
             else

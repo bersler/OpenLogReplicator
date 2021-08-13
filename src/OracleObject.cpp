@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, const char* owner, const char* name) :
+    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, string& owner, string& name) :
         obj(obj),
         dataObj(dataObj),
         user(user),
@@ -35,32 +35,33 @@ namespace OpenLogReplicator {
         guardSegNo(-1),
         owner(owner),
         name(name) {
+
         systemTable = 0;
-        if (owner != nullptr && strncmp(owner, "SYS", 3) == 0) {
+        if (this->owner.compare("SYS") == 0) {
             sys = true;
-            if (name != nullptr && strncmp(name, "CCOL$", 5) == 0)
+            if (this->name.compare("CCOL$") == 0)
                 systemTable = TABLE_SYS_CCOL;
-            else if (name != nullptr && strncmp(name, "CDEF$", 5) == 0)
+            else if (this->name.compare("CDEF$") == 0)
                 systemTable = TABLE_SYS_CDEF;
-            else if (name != nullptr && strncmp(name, "COL$", 4) == 0)
+            else if (this->name.compare("COL$") == 0)
                 systemTable = TABLE_SYS_COL;
-            else if (name != nullptr && strncmp(name, "DEFERRED_STG$", 13) == 0)
+            else if (this->name.compare("DEFERRED_STG$") == 0)
                 systemTable = TABLE_SYS_DEFERRED_STG;
-            else if (name != nullptr && strncmp(name, "ECOL$", 5) == 0)
+            else if (this->name.compare("ECOL$") == 0)
                 systemTable = TABLE_SYS_ECOL;
-            else if (name != nullptr && strncmp(name, "OBJ$", 4) == 0)
+            else if (this->name.compare("OBJ$") == 0)
                 systemTable = TABLE_SYS_OBJ;
-            else if (name != nullptr && strncmp(name, "SEG$", 4) == 0)
+            else if (this->name.compare("SEG$") == 0)
                 systemTable = TABLE_SYS_SEG;
-            else if (name != nullptr && strncmp(name, "TAB$", 4) == 0)
+            else if (this->name.compare("TAB$") == 0)
                 systemTable = TABLE_SYS_TAB;
-            else if (name != nullptr && strncmp(name, "TABPART$", 8) == 0)
+            else if (this->name.compare("TABPART$") == 0)
                 systemTable = TABLE_SYS_TABPART;
-            else if (name != nullptr && strncmp(name, "TABCOMPART$", 11) == 0)
+            else if (this->name.compare("TABCOMPART$") == 0)
                 systemTable = TABLE_SYS_TABCOMPART;
-            else if (name != nullptr && strncmp(name, "TABSUBPART$", 11) == 0)
+            else if (this->name.compare("TABSUBPART$") == 0)
                 systemTable = TABLE_SYS_TABSUBPART;
-            else if (name != nullptr && strncmp(name, "USER$", 5) == 0)
+            else if (this->name.compare("USER$") == 0)
                 systemTable = TABLE_SYS_USER;
         } else
             sys = false;

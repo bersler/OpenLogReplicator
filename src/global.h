@@ -52,13 +52,13 @@ const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& 
 const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field);
 const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field);
 const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field);
-const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field);
+const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
 
 const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
 const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
 const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
 const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const char* getJSONfieldS(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
 
 }
 

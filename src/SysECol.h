@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSECOL_H_
 #define SYSECOL_H_
 
+#define SYSECOL_ROWID_LENGTH    18
+
 using namespace std;
 
 namespace OpenLogReplicator {

@@ -740,7 +740,7 @@ namespace OpenLogReplicator {
     }
 
     string OracleAnalyzerOnline::getParameterValue(const char* parameter) {
-        char value[4001];
+        char value[VPARAMETER_LENGTH + 1];
         DatabaseStatement stmt(conn);
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PARAMETER);
         TRACE(TRACE2_SQL, "PARAM1: " << parameter);
@@ -756,7 +756,7 @@ namespace OpenLogReplicator {
     }
 
     string OracleAnalyzerOnline::getPropertyValue(const char* property) {
-        char value[4001];
+        char value[VPROPERTY_LENGTH + 1];
         DatabaseStatement stmt(conn);
         TRACE(TRACE2_SQL, "SQL: " << SQL_GET_PROPERTY);
         TRACE(TRACE2_SQL, "PARAM1: " << property);
@@ -771,9 +771,9 @@ namespace OpenLogReplicator {
         RUNTIME_FAIL("can't get proprty value for " << property);
     }
 
-    void OracleAnalyzerOnline::checkTableForGrants(string tableName) {
+    void OracleAnalyzerOnline::checkTableForGrants(const char* tableName) {
         try {
-            string query("SELECT 1 FROM " + tableName + " WHERE 0 = 1");
+            string query("SELECT 1 FROM " + string(tableName) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
@@ -792,9 +792,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::checkTableForGrantsFlashback(string tableName, typeSCN scn) {
+    void OracleAnalyzerOnline::checkTableForGrantsFlashback(const char* tableName, typeSCN scn) {
         try {
-            string query("SELECT 1 FROM " + tableName + " AS OF SCN " + to_string(scn) + " WHERE 0 = 1");
+            string query("SELECT 1 FROM " + string(tableName) + " AS OF SCN " + to_string(scn) + " WHERE 0 = 1");
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
@@ -1201,7 +1201,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::readSystemDictionaries(string owner, string table, typeOPTIONS options) {
+    void OracleAnalyzerOnline::readSystemDictionaries(string& owner, string& table, typeOPTIONS options) {
         string ownerRegexp("^" + owner + "$");
         string tableRegexp("^" + table + "$");
         bool single = ((options & OPTIONS_SCHEMA_TABLE) != 0);
@@ -1317,9 +1317,10 @@ namespace OpenLogReplicator {
             int64_t ret = stmt.executeQuery();
 
             while (ret) {
-                string mappedPath(oracleAnalyzer->applyMapping(path));
+                string mappedPath(path);
+                oracleAnalyzer->applyMapping(mappedPath);
 
-                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath.c_str());
+                RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath);
                 if (redo == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#1)");
                 }

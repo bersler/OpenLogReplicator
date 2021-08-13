@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSDEFERREDSTG_H_
 #define SYSDEFERREDSTG_H_
 
+#define SYSDEFERREDSTG_ROWID_LENGTH    18
+
 using namespace std;
 
 namespace OpenLogReplicator {

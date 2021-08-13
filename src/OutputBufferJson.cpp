@@ -82,9 +82,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(columnName);
         outputBufferAppend("\":");
 
-        stringstream valStringStream;
-        valStringStream << value;
-        string valString(valStringStream.str());
+        string valString(to_string(value));
         outputBufferAppend(valString);
     }
 
@@ -98,9 +96,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(columnName);
         outputBufferAppend("\":");
 
-        stringstream valStringStream;
-        valStringStream << value;
-        string valString(valStringStream.str());
+        string valString(to_string(value));
         outputBufferAppend(valString);
     }
 

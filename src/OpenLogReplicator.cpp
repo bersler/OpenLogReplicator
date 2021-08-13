@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const char* version = getJSONfieldS(fileName, document, "version");
+        const char* version = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "version");
         if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0) {
             CONFIG_FAIL("bad JSON, incompatible \"version\" value: " << version << ", expected: " << CONFIG_SCHEMA_VERSION);
         }
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         for (SizeType i = 0; i < sourceArrayJSON.Size(); ++i) {
             const Value& sourceJSON = getJSONfieldO(fileName, sourceArrayJSON, "source", i);
 
-            const char* alias = getJSONfieldS(fileName, sourceJSON, "alias");
+            const char* alias = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "alias");
             INFO("adding source: " << alias);
 
             uint64_t memoryMinMb = 32;
@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
                 }
             }
 
-            const char* name = getJSONfieldS(fileName, sourceJSON, "name");
+            const char* name = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "name");
 
             //FORMAT
             const Value& formatJSON = getJSONfieldO(fileName, sourceJSON, "format");
@@ -310,7 +310,7 @@ int main(int argc, char** argv) {
             if (formatJSON.HasMember("flush-buffer"))
                 flushBuffer = getJSONfieldU(fileName, formatJSON, "flush-buffer");
 
-            const char* formatType = getJSONfieldS(fileName, formatJSON, "type");
+            const char* formatType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, formatJSON, "type");
 
             OutputBuffer* outputBuffer = nullptr;
             if (strcmp("json", formatType) == 0) {
@@ -344,7 +344,7 @@ int main(int argc, char** argv) {
                 }
             }
 
-            const char* readerType = getJSONfieldS(fileName, readerJSON, "type");
+            const char* readerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, readerJSON, "type");
 
             if (strcmp(readerType, "online") == 0 ||
                     strcmp(readerType, "online-standby") == 0) {
@@ -353,9 +353,9 @@ int main(int argc, char** argv) {
                 if (strcmp(readerType, "online-standby") == 0)
                     standby = true;
 
-                const char* user = getJSONfieldS(fileName, readerJSON, "user");
-                const char* password = getJSONfieldS(fileName, readerJSON, "password");
-                const char* server = getJSONfieldS(fileName, readerJSON, "server");
+                const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
+                const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
+                const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
@@ -371,14 +371,14 @@ int main(int argc, char** argv) {
                     }
 
                     for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
-                        const char* sourceMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2);
-                        const char* targetMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                        const char* sourceMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
                         oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
 
                 if (sourceJSON.HasMember("arch")) {
-                    const char* arch = getJSONfieldS(fileName, sourceJSON, "arch");
+                    const char* arch = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
 
                     if (strcmp(arch, "path") == 0)
                         oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
@@ -413,8 +413,8 @@ int main(int argc, char** argv) {
                     }
 
                     for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
-                        const char* sourceMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2);
-                        const char* targetMapping = getJSONfieldS(fileName, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                        const char* sourceMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
                         oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
@@ -425,12 +425,12 @@ int main(int argc, char** argv) {
                 if (strcmp(readerType, "asm-standby") == 0)
                     standby = true;
 
-                const char* user = getJSONfieldS(fileName, readerJSON, "user");
-                const char* password = getJSONfieldS(fileName, readerJSON, "password");
-                const char* server = getJSONfieldS(fileName, readerJSON, "server");
-                const char* userASM = getJSONfieldS(fileName, readerJSON, "user-asm");
-                const char* passwordASM = getJSONfieldS(fileName, readerJSON, "password-asm");
-                const char* serverASM = getJSONfieldS(fileName, readerJSON, "server-asm");
+                const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
+                const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
+                const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
+                const char* userASM = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user-asm");
+                const char* passwordASM = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password-asm");
+                const char* serverASM = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server-asm");
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, alias, name, memoryMinMb, memoryMaxMb,
                         readBufferMax, disableChecks, user, password, server, userASM, passwordASM, serverASM, standby);
@@ -440,7 +440,7 @@ int main(int argc, char** argv) {
                 }
 
                 if (sourceJSON.HasMember("arch")) {
-                    const char* arch = getJSONfieldS(fileName, sourceJSON, "arch");
+                    const char* arch = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
 
                     if (strcmp(arch, "path") == 0)
                         oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
                 const Value& redoLogBatchArrayJSON = getJSONfieldA(fileName, readerJSON, "redo-log");
 
                 for (SizeType j = 0; j < redoLogBatchArrayJSON.Size(); ++j)
-                    oracleAnalyzer->addRedoLogsBatch(getJSONfieldS(fileName, redoLogBatchArrayJSON, "redo-log", j));
+                    oracleAnalyzer->addRedoLogsBatch(getJSONfieldS(fileName, MAX_PATH_LENGTH, redoLogBatchArrayJSON, "redo-log", j));
 
                 oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
 
@@ -513,8 +513,8 @@ int main(int argc, char** argv) {
                 }
 
                 if (debugJSON.HasMember("owner") || debugJSON.HasMember("table")) {
-                    const char* debugTable = getJSONfieldS(fileName, debugJSON, "table");
-                    const char* debugOwner = getJSONfieldS(fileName, debugJSON, "owner");
+                    const char* debugOwner = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, debugJSON, "owner");
+                    const char* debugTable = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, debugJSON, "table");
 
                     oracleAnalyzer->schema->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
                     INFO("will shutdown after committed DML in " << debugOwner << "." << debugTable);
@@ -543,12 +543,12 @@ int main(int argc, char** argv) {
                     for (SizeType j = 0; j < tableArrayJSON.Size(); ++j) {
                         const Value& tableElementJSON = getJSONfieldO(fileName, tableArrayJSON, "table", j);
 
-                        const char* owner = getJSONfieldS(fileName, tableElementJSON, "owner");
-                        const char* table = getJSONfieldS(fileName, tableElementJSON, "table");
+                        const char* owner = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, tableElementJSON, "owner");
+                        const char* table = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, tableElementJSON, "table");
                         SchemaElement* element = oracleAnalyzer->schema->addElement(owner, table, 0);
 
                         if (tableElementJSON.HasMember("key")) {
-                            element->keysStr = getJSONfieldS(fileName, tableElementJSON, "key");
+                            element->keysStr = getJSONfieldS(fileName, JSON_KEY_LENGTH, tableElementJSON, "key");
                             stringstream keyStream(element->keysStr);
 
                             while (keyStream.good()) {
@@ -566,7 +566,7 @@ int main(int argc, char** argv) {
                 if (filterJSON.HasMember("skip-xid")) {
                     const Value& skipXidArrayJSON = getJSONfieldA(fileName, filterJSON, "skip-xid");
                     for (SizeType j = 0; j < skipXidArrayJSON.Size(); ++j) {
-                        const char* skipXid = getJSONfieldS(fileName, skipXidArrayJSON, "skip-xid", j);
+                        const char* skipXid = getJSONfieldS(fileName, JSON_XID_LIST_LENGTH, skipXidArrayJSON, "skip-xid", j);
 
                         typeXID xid = 0;
                         bool invalid = false;
@@ -689,16 +689,16 @@ int main(int argc, char** argv) {
                 oracleAnalyzer->redoReadSleepUS = getJSONfieldU(fileName, sourceJSON, "redo-read-sleep-us");
 
             if (readerJSON.HasMember("redo-copy-path"))
-                oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, readerJSON, "redo-copy-path");
+                oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, readerJSON, "redo-copy-path");
 
             if (readerJSON.HasMember("log-archive-format"))
-                oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, readerJSON, "log-archive-format");
+                oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, VPARAMETER_LENGTH, readerJSON, "log-archive-format");
 
             if (sourceJSON.HasMember("checkpoint")) {
                 const Value& checkpointJSON = getJSONfieldO(fileName, sourceJSON, "checkpoint");
 
                 if (checkpointJSON.HasMember("path"))
-                    oracleAnalyzer->checkpointPath = getJSONfieldS(fileName, checkpointJSON, "path");
+                    oracleAnalyzer->checkpointPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, checkpointJSON, "path");
 
                 if (checkpointJSON.HasMember("interval-s"))
                     oracleAnalyzer->checkpointIntervalS = getJSONfieldU(fileName, checkpointJSON, "interval-s");
@@ -747,8 +747,8 @@ int main(int argc, char** argv) {
 
         for (SizeType i = 0; i < targetArrayJSON.Size(); ++i) {
             const Value& targetJSON = targetArrayJSON[i];
-            const char* alias = getJSONfieldS(fileName, targetJSON, "alias");
-            const char* source = getJSONfieldS(fileName, targetJSON, "source");
+            const char* alias = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "alias");
+            const char* source = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "source");
 
             INFO("adding target: " << alias);
             OracleAnalyzer* oracleAnalyzer = nullptr;
@@ -761,7 +761,7 @@ int main(int argc, char** argv) {
 
             //writer
             const Value& writerJSON = getJSONfieldO(fileName, targetJSON, "writer");
-            const char* writerType = getJSONfieldS(fileName, writerJSON, "type");
+            const char* writerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "type");
 
             uint64_t pollIntervalUS = 100000;
             if (writerJSON.HasMember("poll-interval-us")) {
@@ -796,7 +796,7 @@ int main(int argc, char** argv) {
                     CONFIG_FAIL("bad JSON, \"start-time-rel\" used together with \"start-time\"");
                 }
 
-                startTime = getJSONfieldS(fileName, writerJSON, "start-time");
+                startTime = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "start-time");
             }
 
             uint64_t checkpointIntervalS = 10;
@@ -818,11 +818,11 @@ int main(int argc, char** argv) {
 
                 const char* format = "%F_%T";
                 if (writerJSON.HasMember("format"))
-                    format = getJSONfieldS(fileName, writerJSON, "format");
+                    format = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "format");
 
                 const char* output = "";
                 if (writerJSON.HasMember("output"))
-                    output = getJSONfieldS(fileName, writerJSON, "output");
+                    output = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "output");
                 else
                 if (maxSize > 0) {
                     RUNTIME_FAIL("parameter \"max-size\" should be 0 when \"output\" is not set (for: file writer)");
@@ -877,8 +877,8 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                const char* brokers = getJSONfieldS(fileName, writerJSON, "brokers");
-                const char* topic = getJSONfieldS(fileName, writerJSON, "topic");
+                const char* brokers = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "brokers");
+                const char* topic = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "topic");
 
                 writer = new WriterKafka(alias, oracleAnalyzer, brokers, topic, maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, enableIdempotence);
@@ -890,7 +890,7 @@ int main(int argc, char** argv) {
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
-                const char* uri = getJSONfieldS(fileName, writerJSON, "uri");
+                const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
                 StreamZeroMQ* stream = new StreamZeroMQ(uri, pollIntervalUS);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
@@ -906,7 +906,7 @@ int main(int argc, char** argv) {
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
             } else if (strcmp(writerType, "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                const char* uri = getJSONfieldS(fileName, writerJSON, "uri");
+                const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
 
                 StreamNetwork* stream = new StreamNetwork(uri, pollIntervalUS);
                 if (stream == nullptr) {

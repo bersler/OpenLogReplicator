@@ -365,7 +365,7 @@ namespace OpenLogReplicator {
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const char* database = getJSONfieldS(fileName, document, "database");
+        const char* database = getJSONfieldS(fileName, VDATABASE_LENGTH, document, "database");
         if (oracleAnalyzer->database.compare(database) != 0) {
             RUNTIME_FAIL("parsing of " << fileName << " - invalid database name");
         }

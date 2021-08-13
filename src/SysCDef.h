@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSCDEF_H_
 #define SYSCDEF_H_
 
+#define SYSCDEF_ROWID_LENGTH    18
+
 using namespace std;
 
 namespace OpenLogReplicator {

@@ -22,6 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYSTABCOMPART_H_
 #define SYSTABCOMPART_H_
 
+#define SYSTABCOMPART_ROWID_LENGTH     18
+
 using namespace std;
 
 namespace OpenLogReplicator {
