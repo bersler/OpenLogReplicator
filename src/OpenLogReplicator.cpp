@@ -877,8 +877,8 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                const char* brokers = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "brokers");
-                const char* topic = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "topic");
+                const char* brokers = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "brokers");
+                const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
 
                 writer = new WriterKafka(alias, oracleAnalyzer, brokers, topic, maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, enableIdempotence);

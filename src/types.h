@@ -290,7 +290,11 @@ typedef uint64_t typeunicode;
 
 #define OPFLAG_BEGIN_TRANS      0x01
 
+
 #define JSON_PARAMETER_LENGTH   256
+#define JSON_BROKERS_LENGTH     4096
+#define JSON_TOPIC_LENGTH       256
+
 #define JSON_USERNAME_LENGTH    128
 #define JSON_PASSWORD_LENGTH    128
 #define JSON_SERVER_LENGTH      4096
