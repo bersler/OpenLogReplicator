@@ -302,7 +302,7 @@ typedef uint64_t typeunicode;
 #define JSON_XID_LIST_LENGTH    1048576
 
 #define VDATABASE_LENGTH        9
-#define VCONTEXT_LENGTH         9
+#define VCONTEXT_LENGTH         30
 #define VPARAMETER_LENGTH       4000
 #define VPROPERTY_LENGTH        4000
 
