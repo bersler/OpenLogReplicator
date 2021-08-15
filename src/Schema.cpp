@@ -505,7 +505,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
 
         //database metadata
-        const char* databaseRead = getJSONfieldS(fileName, VDATABASE_LENGTH, document, "database");
+        const char* databaseRead = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
         if (oracleAnalyzer->database.compare(databaseRead) != 0) {
             WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << oracleAnalyzer->database << " - skipping file");
             return false;

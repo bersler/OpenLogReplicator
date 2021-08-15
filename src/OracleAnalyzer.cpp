@@ -1192,7 +1192,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        const char* databaseRead = getJSONfieldS(fileName, VDATABASE_LENGTH, document, "database");
+        const char* databaseRead = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
         if (database.compare(databaseRead) != 0) {
             WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << database << " - skipping file");
             return false;

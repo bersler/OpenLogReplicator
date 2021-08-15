@@ -1,6 +1,6 @@
 0.9.22-beta
 - added support for Oracle 21c (21.3)
-- OpenLogReplicator.json: field length limit for broker is 4096, topic is 256, context is 30
+- OpenLogReplicator.json: field length limit for broker is 4096, topic is 256, context is 30, database to 256
 
 0.9.21-beta
 - added length checks for string types
