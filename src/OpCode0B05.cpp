@@ -64,18 +64,20 @@ namespace OpenLogReplicator {
             uint8_t bits = 1;
 
             //fields: 4 + cc .. 4 + cc - 1
-            for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0505);
+            if (oracleAnalyzer->dumpRedoLog >= 1)
+                for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
+                    if (fieldNum >= redoLogRecord->fieldCnt)
+                        break;
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0506);
 
-                if (oracleAnalyzer->dumpRedoLog >= 1)
                     dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
-                bits <<= 1;
-                colNums += 2;
-                if (bits == 0) {
-                    bits = 1;
-                    ++nulls;
+                    bits <<= 1;
+                    colNums += 2;
+                    if (bits == 0) {
+                        bits = 1;
+                        ++nulls;
+                    }
                 }
-            }
         }
     }
 }

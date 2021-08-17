@@ -91,6 +91,10 @@ namespace OpenLogReplicator {
         return property.isSet64(256);
     }
 
+    bool SysCol::isNested(void) {
+        return property.isSet64(1024);
+    }
+
     bool SysCol::isAdded(void) {
         return property.isSet64(1073741824);
     }

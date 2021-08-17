@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         bool isInvisible(void);
         bool isStoredAsLob(void);
         bool isConstraint(void);
+        bool isNested(void);
         bool isAdded(void);
         bool isGuard(void);
 

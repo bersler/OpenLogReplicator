@@ -1656,7 +1656,7 @@ namespace OpenLogReplicator {
 
                 OracleColumn* column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name, sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
-                        sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isAdded(), sysCol->isGuard());
+                        sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isNested(), sysCol->isAdded(), sysCol->isGuard());
                 if (column == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation3)");
                 }

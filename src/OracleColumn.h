@@ -41,12 +41,13 @@ namespace OpenLogReplicator {
         bool invisible;
         bool storedAsLob;
         bool constraint;
+        bool nested;
         bool added;
         bool guard;
 
         OracleColumn(typeCOL colNo, typeCOL guardSegNo, typeCOL segColNo, string& name, uint64_t typeNo, uint64_t length, int64_t precision,
                 int64_t scale, typeCOL numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint,
-                bool added, bool guard);
+                bool nested, bool added, bool guard);
         virtual ~OracleColumn();
 
         friend ostream& operator<<(ostream& os, const OracleColumn& ors);

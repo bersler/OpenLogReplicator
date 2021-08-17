@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
         dumpRawData(dumpRawData),
         flags(0),
         disableChecks(disableChecks),
-        redoReadSleepUS(10000),
+        redoReadSleepUS(50000),
         archReadSleepUS(10000000),
         archReadRetry(10),
         redoVerifyDelayUS(250000),

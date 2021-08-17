@@ -628,6 +628,8 @@ namespace OpenLogReplicator {
                 if (object != nullptr) {
                     if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                         continue;
+                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+                        continue;
                     if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                         continue;
 
@@ -700,6 +702,8 @@ namespace OpenLogReplicator {
                 if (object != nullptr) {
                     if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
                         continue;
+                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+                        continue;
                     if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                         continue;
 
@@ -731,6 +735,8 @@ namespace OpenLogReplicator {
 
                 if (object != nullptr) {
                     if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
                         continue;
                     if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                         continue;
@@ -804,6 +810,8 @@ namespace OpenLogReplicator {
 
                 if (object != nullptr) {
                     if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                        continue;
+                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
                         continue;
                     if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                         continue;

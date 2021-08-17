@@ -116,6 +116,8 @@ namespace OpenLogReplicator {
                 for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
                     if ((*nulls & bits) == 0) {
                         oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                        if (fieldNum >= redoLogRecord->fieldCnt)
+                            return;
                         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050109);
                     }
 
@@ -156,6 +158,8 @@ namespace OpenLogReplicator {
             uint8_t bits = 1;
 
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
+                if (fieldNum >= redoLogRecord->fieldCnt)
+                    return;
                 oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
 
                 if (oracleAnalyzer->dumpRedoLog >= 1)

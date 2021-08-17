@@ -406,14 +406,15 @@ namespace OpenLogReplicator {
                 } else if (status == READER_STATUS_READ) {
                     TRACE(TRACE2_DISK, "DISK: reading " << pathMapped << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
                     uint64_t lastRead = blockSize;
-                    clock_t lastReadTime = 0, read1Time = 0, read2Time = 0;
+                    clock_t lastReadTime = 0, readTime = 0;
                     uint64_t bufferScan = bufferEnd;
+                    bool readBlocks = false;
                     bool reachedZero = false;
 
                     while (!shutdown && status == READER_STATUS_READ) {
                         clock_t loopTime = getTime();
-                        read1Time = 0;
-                        read2Time = 0;
+                        readBlocks = false;
+                        readTime = 0;
 
                         if (bufferEnd == fileSize) {
                             ret = REDO_FINISHED;
@@ -440,11 +441,11 @@ namespace OpenLogReplicator {
                                 uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
                                 uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
 
-                                time_t* readTime = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
-                                if (*readTime + oracleAnalyzer->redoVerifyDelayUS < loopTime)
+                                time_t* readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
+                                if (*readTimeP + oracleAnalyzer->redoVerifyDelayUS < loopTime)
                                     ++goodBlocks;
                                 else {
-                                    read2Time = *readTime + oracleAnalyzer->redoVerifyDelayUS;
+                                    readTime = *readTimeP + oracleAnalyzer->redoVerifyDelayUS;
                                     break;
                                 }
                             }
@@ -484,6 +485,7 @@ namespace OpenLogReplicator {
                                     }
                                 }
 
+                                readBlocks = true;
                                 uint64_t tmpRet = REDO_OK;
                                 typeBLK maxNumBlock = actualRead / blockSize;
                                 typeBLK bufferEndBlock = bufferEnd / blockSize;
@@ -544,6 +546,7 @@ namespace OpenLogReplicator {
                                 ret = REDO_ERROR;
                                 break;
                             }
+
                             if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
                                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                 if (bytesWritten != actualRead) {
@@ -586,9 +589,10 @@ namespace OpenLogReplicator {
                                     break;
                                 }
                                 reachedZero = true;
-                                read1Time = lastReadTime + oracleAnalyzer->redoReadSleepUS;
-                            } else
+                            } else {
+                                readBlocks = true;
                                 reachedZero = false;
+                            }
 
                             lastRead = goodBlocks * blockSize;
                             lastReadTime = getTime();
@@ -597,8 +601,8 @@ namespace OpenLogReplicator {
                                     bufferScan += goodBlocks * blockSize;
 
                                     for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
-                                        time_t* readTime = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
-                                        *readTime = lastReadTime;
+                                        time_t* readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
+                                        *readTimeP = lastReadTime;
                                     }
                                 } else {
                                     unique_lock<mutex> lck(oracleAnalyzer->mtx);
@@ -615,15 +619,16 @@ namespace OpenLogReplicator {
                         }
 
                         //sleep some time
-                        if (read1Time > 0) {
-                            clock_t nowTime = getTime();
-                            if (read1Time < read2Time || read2Time == 0) {
-                                if (read1Time > nowTime) {
-                                    usleep(read1Time - nowTime);
-                                }
+                        if (!readBlocks) {
+                            if (readTime == 0) {
+                                usleep(oracleAnalyzer->redoReadSleepUS);
                             } else {
-                                if (read2Time > nowTime) {
-                                    usleep(read2Time - nowTime);
+                                clock_t nowTime = getTime();
+                                if (readTime > nowTime) {
+                                    if (oracleAnalyzer->redoReadSleepUS < readTime - nowTime)
+                                        usleep(oracleAnalyzer->redoReadSleepUS);
+                                    else
+                                        usleep(readTime - nowTime);
                                 }
                             }
                         }

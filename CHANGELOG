@@ -1,3 +1,9 @@
+0.9.23-beta
+- hidden constraint value for nested tables
+- fixed bug: in idle used 100% CPU
+- quick fix for skipping compressed rows (experimental)
+- OpenLogReplicator.json: changed default for "redo-read-sleep-us" parameter from 10000 to 50000
+
 0.9.22-beta
 - added support for Oracle 21c (21.3)
 - OpenLogReplicator.json: field length limit for broker is 4096, topic is 256, context is 30, database to 256

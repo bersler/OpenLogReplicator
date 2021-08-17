@@ -53,10 +53,10 @@
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
       "read-buffer-max-mb": 256,
-      "redo-read-sleep-us": 10000,
+      "redo-read-sleep-us": 250000,
       "arch-read-sleep-us": 10000000,
       "arch-read-retry": 3,
-      "redo-verify-delay-us": 50000,
+      "redo-verify-delay-us": 250000,
       "filter": {
         "table": [
           {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
