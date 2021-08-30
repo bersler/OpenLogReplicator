@@ -49,8 +49,13 @@ namespace OpenLogReplicator {
     void OutputBufferProtobuf::columnNull(OracleObject* object, typeCOL col) {
         if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = object->columns[col];
-
             if (column->storedAsLob)
+                return;
+            if (column->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                return;
+            if (column->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+                return;
+            if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 return;
 
             uint64_t typeNo = object->columns[col]->typeNo;
@@ -407,49 +412,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    } else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        columnNull(object, column);
-                    }
-                } else {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
-                    } else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        columnNull(nullptr, column);
-                    }
-                }
-            }
-        }
+        appendAfter(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             string output;
@@ -498,90 +461,8 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    } else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        columnNull(object, column);
-                    }
-                } else {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
-                    } else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        columnNull(nullptr, column);
-                    }
-                }
-            }
-        }
-
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    } else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        columnNull(object, column);
-                    }
-                } else {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
-                    } else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        columnNull(nullptr, column);
-                    }
-                }
-            }
-        }
+        appendBefore(object);
+        appendAfter(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             string output;
@@ -629,49 +510,7 @@ namespace OpenLogReplicator {
         schemaPB = payloadPB->mutable_schema();
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    } else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        columnNull(object, column);
-                    }
-                } else {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
-                    } else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        columnNull(nullptr, column);
-                    }
-                }
-            }
-        }
+        appendBefore(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             string output;

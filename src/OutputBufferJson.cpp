@@ -40,8 +40,13 @@ namespace OpenLogReplicator {
     void OutputBufferJson::columnNull(OracleObject* object, typeCOL col) {
         if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = object->columns[col];
-
             if (column->storedAsLob)
+                return;
+            if (column->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+                return;
+            if (column->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+                return;
+            if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 return;
 
             uint64_t typeNo = object->columns[col]->typeNo;
@@ -612,42 +617,8 @@ namespace OpenLogReplicator {
         outputBufferAppend("{\"op\":\"c\",");
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-        outputBufferAppend(",\"after\":{");
-
-        hasPreviousColumn = false;
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0)
-                        columnNull(object, column);
-                } else {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
-                    else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
-                        columnNull(nullptr, column);
-                }
-            }
-        }
-        outputBufferAppend("}}");
+        appendAfter(object);
+        outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
@@ -686,77 +657,9 @@ namespace OpenLogReplicator {
         outputBufferAppend("{\"op\":\"u\",");
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-        outputBufferAppend(",\"before\":{");
-
-        hasPreviousColumn = false;
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
-                        columnNull(object, column);
-                } else {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
-                    else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
-                        columnNull(nullptr, column);
-                }
-            }
-        }
-
-        outputBufferAppend("},\"after\":{");
-
-        hasPreviousColumn = false;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    else
-                    if (values[column][VALUE_AFTER] != nullptr || values[column][VALUE_BEFORE] != nullptr)
-                        columnNull(object, column);
-                } else {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                        processValue(nullptr, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], 0, 0);
-                    else
-                    if (values[column][VALUE_AFTER] != nullptr ||
-                            values[column][VALUE_BEFORE] != nullptr)
-                        columnNull(nullptr, column);
-                }
-            }
-        }
-        outputBufferAppend("}}");
+        appendBefore(object);
+        appendAfter(object);
+        outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");
@@ -795,42 +698,8 @@ namespace OpenLogReplicator {
         outputBufferAppend("{\"op\":\"d\",");
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
-        outputBufferAppend(",\"before\":{");
-
-        hasPreviousColumn = false;
-        typeCOL column;
-        uint64_t baseMax = valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (valuesSet[base] < mask)
-                    break;
-                if ((valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (object != nullptr) {
-                    if (object->columns[column]->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
-                        continue;
-                    if (object->columns[column]->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
-                        continue;
-
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], object->columns[column]->typeNo, object->columns[column]->charsetId);
-                    else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0 || object->columns[column]->numPk > 0)
-                        columnNull(object, column);
-                } else {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                        processValue(nullptr, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], 0, 0);
-                    else
-                    if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0)
-                        columnNull(nullptr, column);
-                }
-            }
-        }
-        outputBufferAppend("}}");
+        appendBefore(object);
+        outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             outputBufferAppend("]}");

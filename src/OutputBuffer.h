@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
         bool newTran;
 
         void outputBufferRotate(bool copy);
-        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, uint64_t typeNo, uint64_t charsetId);
+        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length);
 
         void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)

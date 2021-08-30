@@ -42,8 +42,8 @@
       "debug": {
         "owner": "SYSTEM",
         "table": "OPENLOGREPLICATOR",
-        "stop-log-switches": 0
-        "stop-checkpoints": 0
+        "stop-log-switches": 0,
+        "stop-checkpoints": 0,
         "stop-transactions": 0,
         "stop-dmls": 0,
         "flush-buffer": 0

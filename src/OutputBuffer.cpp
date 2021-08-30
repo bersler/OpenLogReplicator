@@ -862,13 +862,21 @@ namespace OpenLogReplicator {
         lastBuffer = firstBuffer;
     }
 
-    void OutputBuffer::processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, uint64_t typeNo, uint64_t charsetId) {
+    void OutputBuffer::processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length) {
         if (object == nullptr) {
             string columnName("COL_" + to_string(col));
             columnRaw(columnName, data, length);
             return;
         }
         OracleColumn* column = object->columns[col];
+        if (column->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            return;
+        if (column->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+            return;
+        if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            return;
+        uint64_t typeNo = column->typeNo;
+        uint64_t charsetId = column->charsetId;
 
         if (length == 0) {
             RUNTIME_FAIL("trying to output null data for column: " << column->name);
@@ -1143,7 +1151,8 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                valueSet(VALUE_AFTER, i, redoLogRecord2->data + fieldPos + pos, colLength, 0);
+                if (colLength > 0 || columnFormat >= COLUMN_FORMAT_FULL_INS_DEC || object == nullptr || object->columns[i]->numPk > 0)
+                    valueSet(VALUE_AFTER, i, redoLogRecord2->data + fieldPos + pos, colLength, 0);
                 pos += colLength;
             }
 
@@ -1210,7 +1219,8 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                valueSet(VALUE_BEFORE, i, redoLogRecord1->data + fieldPos + pos, colLength, 0);
+                if (colLength > 0 || columnFormat >= COLUMN_FORMAT_FULL_INS_DEC || object == nullptr || object->columns[i]->numPk > 0)
+                    valueSet(VALUE_BEFORE, i, redoLogRecord1->data + fieldPos + pos, colLength, 0);
                 pos += colLength;
             }
 
@@ -1478,13 +1488,13 @@ namespace OpenLogReplicator {
             redoLogRecord2p = redoLogRecord2p->next;
         }
 
-        int16_t guardPos = -1;
+        typeCOL guardPos = -1;
         if (object != nullptr && object->guardSegNo != -1)
             guardPos = object->guardSegNo;
 
-        uint64_t column, baseMax = valuesMax >> 6;
+        uint64_t baseMax = valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            column = base << 6;
+            typeCOL column = base << 6;
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (valuesSet[base] < mask)
                     break;
@@ -1585,9 +1595,9 @@ namespace OpenLogReplicator {
             if (object != nullptr) {
                 TRACE(TRACE2_DML, "DML: tab: " << object->owner << "." << object->name << " type: " << type << " columns: " << valuesMax);
 
-                uint64_t column, baseMax = valuesMax >> 6;
+                uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    column = base << 6;
+                    typeCOL column = base << 6;
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -1595,19 +1605,19 @@ namespace OpenLogReplicator {
                             continue;
 
                         TRACE(TRACE2_DML, "DML: " << dec << (column + 1) << ": " <<
-                                " B(" << dec << lengths[column][VALUE_BEFORE] << ")" <<
-                                " A(" << dec << lengths[column][VALUE_AFTER] << ")" <<
-                                " BS(" << dec << lengths[column][VALUE_BEFORE_SUPP] << ")" <<
-                                " AS(" << dec << lengths[column][VALUE_AFTER_SUPP] << ")" <<
+                                " B(" << dec << (values[column][VALUE_BEFORE] != nullptr ? (int64_t)lengths[column][VALUE_BEFORE] : -1) << ")" <<
+                                " A(" << dec << (values[column][VALUE_AFTER] != nullptr ? (int64_t)lengths[column][VALUE_AFTER] : -1) << ")" <<
+                                " BS(" << dec << (values[column][VALUE_BEFORE_SUPP] != nullptr ? (int64_t)lengths[column][VALUE_BEFORE_SUPP] : -1) << ")" <<
+                                " AS(" << dec << (values[column][VALUE_AFTER_SUPP] != nullptr ? (int64_t)lengths[column][VALUE_AFTER_SUPP] : -1) << ")" <<
                                 " pk: " << dec << object->columns[column]->numPk);
                     }
                 }
             } else {
                 TRACE(TRACE2_DML, "DML: tab: [DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type << " columns: " << valuesMax);
 
-                uint64_t column, baseMax = valuesMax >> 6;
+                uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    column = base << 6;
+                    typeCOL column = base << 6;
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -1624,100 +1634,173 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (type == TRANSACTION_UPDATE) {
-            if (object != nullptr && (columnFormat & COLUMN_FORMAT_FULL_UPD) == 0) {
-                uint64_t column, baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    column = base << 6;
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-
-                        //remove unchanged column values - only for tables with defined primary key
-                        if (object->columns[column]->numPk == 0 &&
-                                values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] != nullptr &&
-                                lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER]) {
-                            if (lengths[column][VALUE_BEFORE] == 0 ||
-                                    memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
-                                valuesSet[base] &= ~mask;
-                                values[column][VALUE_BEFORE] = nullptr;
-                                values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                values[column][VALUE_AFTER] = nullptr;
-                                values[column][VALUE_AFTER_SUPP] = nullptr;
+        if (object != nullptr) {
+            if (type == TRANSACTION_UPDATE) {
+                if (columnFormat < COLUMN_FORMAT_FULL_UPD) {
+                    uint64_t baseMax = valuesMax >> 6;
+                    for (uint64_t base = 0; base <= baseMax; ++base) {
+                        typeCOL column = base << 6;
+                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                            if (valuesSet[base] < mask)
+                                break;
+                            if ((valuesSet[base] & mask) == 0)
                                 continue;
-                            }
-                        }
 
-                        //remove columns additionally present, but not modified
-                        if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
                             if (object->columns[column]->numPk == 0) {
-                                values[column][VALUE_BEFORE] = nullptr;
-                            } else {
-                                values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
-                                lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
-                            }
-                        }
+                                //remove unchanged column values - only for tables with defined primary key
+                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
+                                        values[column][VALUE_AFTER] != nullptr) {
+                                    if (lengths[column][VALUE_BEFORE] == 0 ||
+                                            memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
+                                        valuesSet[base] &= ~mask;
+                                        values[column][VALUE_BEFORE] = nullptr;
+                                        values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                        values[column][VALUE_AFTER] = nullptr;
+                                        values[column][VALUE_AFTER_SUPP] = nullptr;
+                                        continue;
+                                    }
+                                }
 
-                        if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
-                            if (object->columns[column]->numPk == 0) {
-                                values[column][VALUE_AFTER] = nullptr;
+                                //remove columns additionally present, but null
+                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                                    valuesSet[base] &= ~mask;
+                                    values[column][VALUE_BEFORE] = nullptr;
+                                    values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                    values[column][VALUE_AFTER_SUPP] = nullptr;
+                                    continue;
+                                }
+
+                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
+                                    valuesSet[base] &= ~mask;
+                                    values[column][VALUE_AFTER] = nullptr;
+                                    values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                    values[column][VALUE_AFTER_SUPP] = nullptr;
+                                    continue;
+                                }
+
                             } else {
-                                values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
-                                lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                //leave null value & propagate
+                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                                    values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
+                                    lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
+                                }
+
+                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
+                                    values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                    lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (system) {
-                oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                if (system) {
+                    oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                        processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                } else
                     processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-            } else
-                processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-        } else {
-            if (object != nullptr) {
+
+            } else if (type == TRANSACTION_INSERT) {
                 //assume null values for all missing columns
-                if ((columnFormat & COLUMN_FORMAT_FULL_INS_DEC) != 0) {
-                    uint16_t maxCol = object->columns.size();
-                    for (uint16_t column = 0; column < maxCol; ++column) {
+                if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
+                    typeCOL maxCol = object->columns.size();
+                    for (typeCOL column = 0; column < maxCol; ++column) {
                         uint64_t base = column >> 6;
                         uint64_t mask = ((uint64_t)1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_BEFORE] = (uint8_t*)1;
-                            lengths[column][VALUE_BEFORE] = 0;
                             values[column][VALUE_AFTER] = (uint8_t*)1;
                             lengths[column][VALUE_AFTER] = 0;
                         }
                     }
                 } else {
+                    //remove null values from insert if not PK
+                    uint64_t baseMax = valuesMax >> 6;
+                    for (uint64_t base = 0; base <= baseMax; ++base) {
+                        typeCOL column = base << 6;
+                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                            if (valuesSet[base] < mask)
+                                break;
+                            if ((valuesSet[base] & mask) == 0)
+                                continue;
+                            if (object->columns[column]->numPk > 0)
+                                continue;
+
+                            cerr << "zero? " << dec << column << endl;
+                            if (values[column][VALUE_AFTER] == nullptr || lengths[column][VALUE_AFTER] == 0) {
+                                valuesSet[base] &= ~mask;
+                                values[column][VALUE_AFTER] = nullptr;
+                                values[column][VALUE_AFTER_SUPP] = nullptr;
+                            }
+                        }
+                    }
+
                     //assume null values for pk missing columns
-                    for (uint16_t column: object->pk) {
+                    for (typeCOL column: object->pk) {
                         uint64_t base = column >> 6;
                         uint64_t mask = ((uint64_t)1) << (column & 0x3F);
                         if ((valuesSet[base] & mask) == 0) {
                             valuesSet[base] |= mask;
-                            values[column][VALUE_BEFORE] = (uint8_t*)1;
-                            lengths[column][VALUE_BEFORE] = 0;
                             values[column][VALUE_AFTER] = (uint8_t*)1;
                             lengths[column][VALUE_AFTER] = 0;
                         }
                     }
                 }
-            }
 
-            if (type == TRANSACTION_INSERT) {
                 if (system) {
                     oracleAnalyzer->systemTransaction->processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
                         processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
                 } else
                     processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+
             } else if (type == TRANSACTION_DELETE) {
+                //assume null values for all missing columns
+                if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
+                    typeCOL maxCol = object->columns.size();
+                    for (typeCOL column = 0; column < maxCol; ++column) {
+                        uint64_t base = column >> 6;
+                        uint64_t mask = ((uint64_t)1) << (column & 0x3F);
+                        if ((valuesSet[base] & mask) == 0) {
+                            valuesSet[base] |= mask;
+                            values[column][VALUE_BEFORE] = (uint8_t*)1;
+                            lengths[column][VALUE_BEFORE] = 0;
+                        }
+                    }
+                } else {
+                    //remove null values from delete if not PK
+                    uint64_t baseMax = valuesMax >> 6;
+                    for (uint64_t base = 0; base <= baseMax; ++base) {
+                        typeCOL column = base << 6;
+                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                            if (valuesSet[base] < mask)
+                                break;
+                            if ((valuesSet[base] & mask) == 0)
+                                continue;
+                            if (object->columns[column]->numPk > 0)
+                                continue;
+
+                            if (values[column][VALUE_BEFORE] == nullptr || lengths[column][VALUE_BEFORE] == 0) {
+                                valuesSet[base] &= ~mask;
+                                values[column][VALUE_BEFORE] = nullptr;
+                                values[column][VALUE_BEFORE_SUPP] = nullptr;
+                            }
+                        }
+                    }
+
+                    //assume null values for pk missing columns
+                    for (typeCOL column: object->pk) {
+                        uint64_t base = column >> 6;
+                        uint64_t mask = ((uint64_t)1) << (column & 0x3F);
+                        if ((valuesSet[base] & mask) == 0) {
+                            valuesSet[base] |= mask;
+                            values[column][VALUE_BEFORE] = (uint8_t*)1;
+                            lengths[column][VALUE_BEFORE] = 0;
+                        }
+                    }
+                }
+
                 if (system) {
                     oracleAnalyzer->systemTransaction->processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)

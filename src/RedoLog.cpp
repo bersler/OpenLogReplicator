@@ -1259,26 +1259,35 @@ namespace OpenLogReplicator {
             }
         }
 
-        //print processing time for archived redo logs
-        if ((trace2 & TRACE2_PERFORMANCE) != 0 && group == 0) {
-            time_t cEnd = oracleAnalyzer->getTime();
-            double mySpeed = 0, myTime = (cEnd - cStart) / 1000.0, suppLogPercent = 0.0;
+        //print performance information
+        if ((trace2 & TRACE2_PERFORMANCE) != 0) {
+            double suppLogPercent = 0.0;
             if (currentBlock != startBlock)
                 suppLogPercent = 100.0 * oracleAnalyzer->suppLogSize / ((currentBlock - startBlock) * reader->blockSize);
-            if (myTime > 0)
-                mySpeed = (currentBlock - startBlock) * reader->blockSize * 1000.0 / 1024 / 1024 / myTime;
 
-            double myReadSpeed = 0;
-            if (reader->sumTime > 0)
-                myReadSpeed = (reader->sumRead * 1000000.0 / 1024 / 1024 / reader->sumTime);
+            if (group == 0) {
+                time_t cEnd = oracleAnalyzer->getTime();
+                double mySpeed = 0, myTime = (cEnd - cStart) / 1000.0;
+                if (myTime > 0)
+                    mySpeed = (currentBlock - startBlock) * reader->blockSize * 1000.0 / 1024 / 1024 / myTime;
 
-            TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " << myTime << " ms, " <<
-                    "Speed: " << fixed << setprecision(2) << mySpeed << " MB/s, " <<
-                    "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
-                    "Read size: " << (reader->sumRead / 1024 / 1024) << " MB, " <<
-                    "Read speed: " << myReadSpeed << " MB/s, " <<
-                    "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
-                    "(" << fixed << setprecision(2) << suppLogPercent << " %)");
+                double myReadSpeed = 0;
+                if (reader->sumTime > 0)
+                    myReadSpeed = (reader->sumRead * 1000000.0 / 1024 / 1024 / reader->sumTime);
+
+                TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " << myTime << " ms, " <<
+                        "Speed: " << fixed << setprecision(2) << mySpeed << " MB/s, " <<
+                        "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
+                        "Read size: " << (reader->sumRead / 1024 / 1024) << " MB, " <<
+                        "Read speed: " << myReadSpeed << " MB/s, " <<
+                        "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
+                        "(" << fixed << setprecision(2) << suppLogPercent << " %)");
+            } else {
+                TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " <<
+                        "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
+                        "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
+                        "(" << fixed << setprecision(2) << suppLogPercent << " %)");
+            }
         }
 
         if (oracleAnalyzer->dumpRedoLog >= 1 && oracleAnalyzer->dumpStream.is_open())

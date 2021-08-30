@@ -8,7 +8,7 @@
         "type": "asm",
         "user": "user1",
         "password": "Password1",
-        "server": "//host:1521/SERVICE"
+        "server": "//host:1521/SERVICE",
         "user-asm": "sysasm",
         "password-asm": "Password1",
         "server-asm": "//host:1521/+ASM"

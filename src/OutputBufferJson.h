@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "OracleObject.h"
 #include "OutputBuffer.h"
 
 #ifndef OUTPUTBUFFERJSON_H_
@@ -46,6 +47,66 @@ namespace OpenLogReplicator {
         void appendDec(uint64_t value);
         void appendSDec(int64_t value);
         void appendEscape(const char* str, uint64_t length);
+        void appendAfter(OracleObject* object) {
+            outputBufferAppend(",\"after\":{");
+
+            hasPreviousColumn = false;
+            if (columnFormat > 0 && object != nullptr) {
+                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                    else
+                        columnNull(object, column);
+                }
+            } else {
+                uint64_t baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    typeCOL column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
+                            continue;
+
+                        if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
+                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                        else
+                            columnNull(object, column);
+                    }
+                }
+            }
+            outputBufferAppend('}');
+        }
+        void appendBefore(OracleObject* object) {
+            outputBufferAppend(",\"before\":{");
+
+            hasPreviousColumn = false;
+            if (columnFormat > 0 && object != nullptr) {
+                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                    else
+                        columnNull(object, column);
+                }
+            } else {
+                uint64_t baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    typeCOL column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
+                            continue;
+
+                        if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
+                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                        else
+                            columnNull(object, column);
+                    }
+                }
+            }
+            outputBufferAppend('}');
+        }
         time_t tmToEpoch(struct tm* epoch) const;
         virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);

@@ -1,3 +1,9 @@
+0.9.24-beta
+- updated automake to version 1.16.3
+- fixed typo bugs in example JSON files
+- display performance data also for online redo logs (trace2: 256)
+- fixed null values for mode "column": 1, 2
+
 0.9.23-beta
 - hidden constraint value for nested tables
 - fixed bug: in idle used 100% CPU
