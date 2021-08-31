@@ -3,6 +3,8 @@
 - fixed typo bugs in example JSON files
 - display performance data also for online redo logs (trace2: 256)
 - fixed null values for mode "column": 1, 2
+- enhanced read error messages
+- updated README.md
 
 0.9.23-beta
 - hidden constraint value for nested tables

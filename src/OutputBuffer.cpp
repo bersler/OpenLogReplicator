@@ -1727,7 +1727,6 @@ namespace OpenLogReplicator {
                             if (object->columns[column]->numPk > 0)
                                 continue;
 
-                            cerr << "zero? " << dec << column << endl;
                             if (values[column][VALUE_AFTER] == nullptr || lengths[column][VALUE_AFTER] == 0) {
                                 valuesSet[base] &= ~mask;
                                 values[column][VALUE_AFTER] = nullptr;

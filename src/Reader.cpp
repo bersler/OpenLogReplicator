@@ -102,11 +102,14 @@ namespace OpenLogReplicator {
     uint64_t Reader::checkBlockHeader(uint8_t* buffer, typeBLK blockNumber, bool checkSum, bool showHint) {
         if (buffer[0] == 0 && buffer[1] == 0)
             return REDO_EMPTY;
+        if (shutdown)
+            return REDO_ERROR;
 
         if ((blockSize == 512 && buffer[1] != 0x22) ||
                 (blockSize == 1024 && buffer[1] != 0x22) ||
                 (blockSize == 4096 && buffer[1] != 0x82)) {
-            ERROR("invalid block size (found: " << dec << blockSize << ", header[1]: [0x" << setfill('0') << setw(2) << hex << (uint64_t)buffer[1] << "]): " << pathMapped);
+            ERROR("invalid block size (found: " << dec << blockSize << ", block: " << dec << blockNumber <<
+                    ", header[1]: 0x" << setfill('0') << setw(2) << hex << (uint64_t)buffer[1] << "): " << pathMapped);
             return REDO_ERROR;
         }
 
@@ -170,6 +173,9 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Reader::reloadHeaderRead(void) {
+        if (shutdown)
+            return REDO_ERROR;
+
         int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
         if (bytes < 512) {
             ERROR("reading file: " << pathMapped << " - " << strerror(errno));
