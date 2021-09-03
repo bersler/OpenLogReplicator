@@ -28,7 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 SET LINESIZE 32767
 SET SERVEROUTPUT ON FORMAT TRUNCATED
 SET TRIMSPOOL ON
-SPOOL gencfg.out
 DECLARE
     TYPE VARCHAR2TABLE IS TABLE OF VARCHAR2(30);
     v_USERNAME_LIST VARCHAR2TABLE;
@@ -141,7 +140,7 @@ BEGIN
     v_FILE := v_NAME || '-schema-' || v_SCN || '.json';
     DBMS_OUTPUT.PUT('CONTENT OF: ' || v_FILE);
     DBMS_OUTPUT.NEW_LINE();
-    DBMS_OUTPUT.PUT('{"database":"' || v_DB_NAME || '"');
+    DBMS_OUTPUT.PUT('{"database":"' || v_NAME || '"');
     DBMS_OUTPUT.PUT(',"big-endian":' || v_BIG_ENDIAN);
     DBMS_OUTPUT.PUT(',"resetlogs":' || v_RESETLOGS_ID);
     DBMS_OUTPUT.PUT(',"activation":' || v_ACTIVATION#);

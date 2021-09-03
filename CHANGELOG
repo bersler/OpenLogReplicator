@@ -1,3 +1,6 @@
+0.9.25-beta
+- fixed bugs in gencfg.sql
+
 0.9.24-beta
 - updated automake to version 1.16.3
 - fixed typo bugs in example JSON files
