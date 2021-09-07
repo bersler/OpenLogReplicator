@@ -1,5 +1,5 @@
 {
-  "version": "0.9.16",
+  "version": "0.9.25",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "trace": 0,
@@ -55,7 +55,7 @@
       "read-buffer-max-mb": 256,
       "redo-read-sleep-us": 250000,
       "arch-read-sleep-us": 10000000,
-      "arch-read-retry": 3,
+      "arch-read-tries": 10,
       "redo-verify-delay-us": 250000,
       "filter": {
         "table": [

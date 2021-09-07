@@ -682,8 +682,12 @@ int main(int argc, char** argv) {
             if (sourceJSON.HasMember("arch-read-sleep-us"))
                 oracleAnalyzer->archReadSleepUS = getJSONfieldU(fileName, sourceJSON, "arch-read-sleep-us");
 
-            if (sourceJSON.HasMember("arch-read-retry"))
-                oracleAnalyzer->archReadRetry = getJSONfieldU(fileName, sourceJSON, "arch-read-retry");
+            if (sourceJSON.HasMember("arch-read-tries")) {
+                oracleAnalyzer->archReadTries = getJSONfieldU(fileName, sourceJSON, "arch-read-tries");
+                if (oracleAnalyzer->archReadTries < 1 || oracleAnalyzer->archReadTries > 1000000000) {
+                    CONFIG_FAIL("bad JSON, invalid \"arch-read-tries\" value: " << dec << oracleAnalyzer->archReadTries << ", expected one of: {1, 1000000000}");
+                }
+            }
 
             if (sourceJSON.HasMember("redo-read-sleep-us"))
                 oracleAnalyzer->redoReadSleepUS = getJSONfieldU(fileName, sourceJSON, "redo-read-sleep-us");

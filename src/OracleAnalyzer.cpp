@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
         disableChecks(disableChecks),
         redoReadSleepUS(50000),
         archReadSleepUS(10000000),
-        archReadRetry(10),
+        archReadTries(10),
         redoVerifyDelayUS(250000),
         version(0),
         conId(-1),
@@ -653,7 +653,7 @@ namespace OpenLogReplicator {
                     redo->reader = archReader;
 
                     archReader->pathMapped = redo->path;
-                    uint64_t retry = archReadRetry;
+                    uint64_t retry = archReadTries;
 
                     while (true) {
                         if (readerCheckRedoLog(archReader) && readerUpdateRedoLog(archReader))

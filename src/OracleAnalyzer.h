@@ -138,7 +138,7 @@ namespace OpenLogReplicator {
         uint64_t flags;
         uint64_t redoReadSleepUS;
         uint64_t archReadSleepUS;
-        uint64_t archReadRetry;
+        uint64_t archReadTries;
         uint64_t redoVerifyDelayUS;
         SystemTransaction* systemTransaction;
         TransactionBuffer* transactionBuffer;

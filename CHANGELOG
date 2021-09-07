@@ -1,5 +1,9 @@
 0.9.25-beta
 - fixed bugs in gencfg.sql
+- added checks for block size in redo header
+- added consistency checks for schemas
+- OpenLogReplicator.json: renamed parameter "arch-read-retry" to "arch-read-tries"
+- OpenLogReplicator.json: updated format version to 0.9.25
 
 0.9.24-beta
 - updated automake to version 1.16.3

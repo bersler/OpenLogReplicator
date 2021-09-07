@@ -46,6 +46,7 @@ using namespace std;
 
 namespace OpenLogReplicator {
     class OracleAnalyzer;
+    class OracleColumn;
     class OracleObject;
     class SchemaElement;
 
@@ -112,6 +113,7 @@ namespace OpenLogReplicator {
         set<typeOBJ> objectsTouched;
         set<typeUSER> usersTouched;
         OracleObject* schemaObject;
+        OracleColumn* schemaColumn;
         vector<SchemaElement*> elements;
         set<string> users;
         set<typeSCN> schemaScnList;

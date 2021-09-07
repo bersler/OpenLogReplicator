@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
     Schema::Schema(OracleAnalyzer* oracleAnalyzer) :
         oracleAnalyzer(oracleAnalyzer),
         schemaObject(nullptr),
+        schemaColumn(nullptr),
         sysCColTouched(false),
         sysCDefTouched(false),
         sysColTouched(false),
@@ -71,6 +72,11 @@ namespace OpenLogReplicator {
         if (schemaObject != nullptr) {
             delete schemaObject;
             schemaObject = nullptr;
+        }
+
+        if (schemaColumn != nullptr) {
+            delete schemaColumn;
+            schemaColumn = nullptr;
         }
 
         partitionMap.clear();
@@ -1654,10 +1660,10 @@ namespace OpenLogReplicator {
 
                 DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
 
-                OracleColumn* column = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name, sysCol->type,
+                schemaColumn = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name, sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                         sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isNested(), sysCol->isAdded(), sysCol->isGuard());
-                if (column == nullptr) {
+                if (schemaColumn == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation3)");
                 }
 
@@ -1665,7 +1671,8 @@ namespace OpenLogReplicator {
                 if (sysCol->segCol > maxSegCol)
                     maxSegCol = sysCol->segCol;
 
-                schemaObject->addColumn(column);
+                schemaObject->addColumn(schemaColumn);
+                schemaColumn = nullptr;
             }
 
             //check if table has all listed columns

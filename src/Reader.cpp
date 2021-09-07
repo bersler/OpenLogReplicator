@@ -203,12 +203,21 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
+        bool blockSizeOK = false;
         blockSize = oracleAnalyzer->read32(headerBuffer + 20);
-        if ((blockSize == 512 && headerBuffer[1] != 0x22) ||
-                (blockSize == 1024 && headerBuffer[1] != 0x22) ||
-                (blockSize == 4096 && headerBuffer[1] != 0x82)) {
+        if (blockSize == 512 && headerBuffer[1] == 0x22)
+            blockSizeOK = true;
+        else
+        if (blockSize == 1024 && headerBuffer[1] == 0x22)
+            blockSizeOK = true;
+        else
+        if (blockSize == 4096 && headerBuffer[1] == 0x82)
+            blockSizeOK = true;
+
+        if (!blockSizeOK) {
             ERROR("invalid block size (found: " << dec << blockSize <<
                     ", header[1]: 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "): " << pathMapped);
+            blockSize = 0;
             return REDO_ERROR;
         }
 

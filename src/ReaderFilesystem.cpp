@@ -89,9 +89,10 @@ namespace OpenLogReplicator {
         uint64_t startTime = 0;
         if ((trace2 & TRACE2_PERFORMANCE) != 0)
             startTime = getTime();
+        int64_t bytes = 0;
+        uint64_t tries = oracleAnalyzer->archReadTries;
 
-        int64_t bytes, retry = oracleAnalyzer->archReadRetry;
-        while (retry > 0 && !shutdown) {
+        while (tries > 0 && !shutdown) {
             bytes = pread(fileDes, buf, size, offset);
             TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
 
@@ -104,7 +105,7 @@ namespace OpenLogReplicator {
 
             ERROR("reading file: " << pathMapped << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUS << " us");
             usleep(oracleAnalyzer->archReadSleepUS);
-            --retry;
+            --tries;
         }
 
         //O_DIRECT does not work
