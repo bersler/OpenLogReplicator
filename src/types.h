@@ -64,7 +64,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.16"
+#define CONFIG_SCHEMA_VERSION                   "0.9.25"
 #define ZERO_SEQ                                ((typeSEQ)0xFFFFFFFF)
 #define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
 #define MAX_PATH_LENGTH                         2048
