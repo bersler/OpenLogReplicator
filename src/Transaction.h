@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
     class OpCode0502;
     class OpCode0504;
     class RedoLogRecord;
+    class OpCode0501;
     class OracleAnalyzer;
 
     class Transaction {
@@ -37,6 +38,7 @@ namespace OpenLogReplicator {
         OracleAnalyzer* oracleAnalyzer;
         vector<uint8_t*> merges;
         TransactionChunk* deallocTc;
+        OpCode0501* opCode0501;
         void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
 
     public:

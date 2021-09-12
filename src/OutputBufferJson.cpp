@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::columnTimestamp(string& columnName, struct tm &epochtime, uint64_t fraction, const char* tz) {
+    void OutputBufferJson::columnTimestamp(string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -157,22 +157,22 @@ namespace OpenLogReplicator {
         if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
             //2012-04-23T18:25:43.511Z - ISO 8601 format
             outputBufferAppend('"');
-            if (epochtime.tm_year > 0) {
-                appendDec((uint64_t)epochtime.tm_year);
+            if (epochTime.tm_year > 0) {
+                appendDec((uint64_t)epochTime.tm_year);
             } else {
-                appendDec((uint64_t)(-epochtime.tm_year));
+                appendDec((uint64_t)(-epochTime.tm_year));
                 outputBufferAppend("BC");
             }
             outputBufferAppend('-');
-            appendDec(epochtime.tm_mon, 2);
+            appendDec(epochTime.tm_mon, 2);
             outputBufferAppend('-');
-            appendDec(epochtime.tm_mday, 2);
+            appendDec(epochTime.tm_mday, 2);
             outputBufferAppend('T');
-            appendDec(epochtime.tm_hour, 2);
+            appendDec(epochTime.tm_hour, 2);
             outputBufferAppend(':');
-            appendDec(epochtime.tm_min, 2);
+            appendDec(epochTime.tm_min, 2);
             outputBufferAppend(':');
-            appendDec(epochtime.tm_sec, 2);
+            appendDec(epochTime.tm_sec, 2);
 
             if (fraction > 0) {
                 outputBufferAppend('.');
@@ -186,10 +186,10 @@ namespace OpenLogReplicator {
             outputBufferAppend('"');
         } else {
             //unix epoch format
-            if (epochtime.tm_year >= 1900) {
-                --epochtime.tm_mon;
-                epochtime.tm_year -= 1900;
-                appendDec(tmToEpoch(&epochtime) * 1000 + ((fraction + 500000) / 1000000));
+            if (epochTime.tm_year >= 1900) {
+                --epochTime.tm_mon;
+                epochTime.tm_year -= 1900;
+                appendDec(tmToEpoch(&epochTime) * 1000 + ((fraction + 500000) / 1000000));
             } else
                 appendDec(0);
         }
@@ -414,100 +414,6 @@ namespace OpenLogReplicator {
         }
 
         outputBufferAppend('}');
-    }
-
-    void OutputBufferJson::appendHex(uint64_t value, uint64_t length) {
-        uint64_t j = (length - 1) * 4;
-        for (uint64_t i = 0; i < length; ++i) {
-            outputBufferAppend(map16[(value >> j) & 0xF]);
-            j -= 4;
-        };
-    }
-
-    void OutputBufferJson::appendDec(uint64_t value, uint64_t length) {
-        char buffer[21];
-
-        for (uint64_t i = 0; i < length; ++i) {
-            buffer[i] = '0' + (value % 10);
-            value /= 10;
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            outputBufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendDec(uint64_t value) {
-        char buffer[21];
-        uint64_t length = 0;
-
-        if (value == 0) {
-            buffer[0] = '0';
-            length = 1;
-        } else {
-            while (value > 0) {
-                buffer[length++] = '0' + (value % 10);
-                value /= 10;
-            }
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            outputBufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendSDec(int64_t value) {
-        char buffer[22];
-        uint64_t length = 0;
-
-        if (value == 0) {
-            buffer[0] = '0';
-            length = 1;
-        } else {
-            if (value < 0) {
-                value = -value;
-                while (value > 0) {
-                    buffer[length++] = '0' + (value % 10);
-                    value /= 10;
-                }
-                buffer[length++] = '-';
-            } else {
-                while (value > 0) {
-                    buffer[length++] = '0' + (value % 10);
-                    value /= 10;
-                }
-            }
-        }
-
-        for (uint64_t i = 0; i < length; ++i)
-            outputBufferAppend(buffer[length - i - 1]);
-    }
-
-    void OutputBufferJson::appendEscape(const char* str, uint64_t length) {
-        while (length > 0) {
-            if (*str == '\t') {
-                outputBufferAppend('\\');
-                outputBufferAppend('t');
-            } else if (*str == '\r') {
-                outputBufferAppend('\\');
-                outputBufferAppend('r');
-            } else if (*str == '\n') {
-                outputBufferAppend('\\');
-                outputBufferAppend('n');
-            } else if (*str == '\f') {
-                outputBufferAppend('\\');
-                outputBufferAppend('f');
-            } else if (*str == '\b') {
-                outputBufferAppend('\\');
-                outputBufferAppend('b');
-            } else if (*str == 0) {
-                outputBufferAppend("\\u0000");
-            } else {
-                if (*str == '"' || *str == '\\' || *str == '/')
-                    outputBufferAppend('\\');
-                outputBufferAppend(*str);
-            }
-            ++str;
-            --length;
-        }
     }
 
     time_t OutputBufferJson::tmToEpoch(struct tm* epoch) const {

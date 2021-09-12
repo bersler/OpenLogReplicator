@@ -116,6 +116,15 @@ namespace OpenLogReplicator {
                 }
             }
         }
+        void createResponse(void) {
+            if (redoResponsePB != nullptr) {
+                RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
+            }
+            redoResponsePB = new pb::RedoResponse;
+            if (redoResponsePB == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response7)");
+            }
+        }
         void numToString(uint64_t value, char* buf, uint64_t length);
         virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);

@@ -836,7 +836,8 @@ namespace OpenLogReplicator {
         valuesRelease();
         for (auto it : characterMap) {
             CharacterSet* cs = it.second;
-            delete cs;
+            if (cs != nullptr)
+                delete cs;
         }
         characterMap.clear();
         timeZoneMap.clear();
@@ -908,12 +909,12 @@ namespace OpenLogReplicator {
             if (length != 7 && length != 11)
                 columnUnknown(column->name, data, length);
             else {
-                struct tm epochtime;
-                epochtime.tm_sec = data[6] - 1; //0..59
-                epochtime.tm_min = data[5] - 1; //0..59
-                epochtime.tm_hour = data[4] - 1; //0..23
-                epochtime.tm_mday = data[3]; //1..31
-                epochtime.tm_mon = data[2]; //1..12
+                struct tm epochTime;
+                epochTime.tm_sec = data[6] - 1; //0..59
+                epochTime.tm_min = data[5] - 1; //0..59
+                epochTime.tm_hour = data[4] - 1; //0..23
+                epochTime.tm_mday = data[3]; //1..31
+                epochTime.tm_mon = data[2]; //1..12
 
                 int64_t val1 = data[0],
                         val2 = data[1];
@@ -921,19 +922,27 @@ namespace OpenLogReplicator {
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
                     val2 -= 100;
-                    epochtime.tm_year = val1 * 100 + val2;
+                    epochTime.tm_year = val1 * 100 + val2;
 
                 } else {
                     val1 = 100 - val1;
                     val2 = 100 - val2;
-                    epochtime.tm_year = - (val1 * 100 + val2);
+                    epochTime.tm_year = - (val1 * 100 + val2);
                 }
 
                 uint64_t fraction = 0;
                 if (length == 11)
                     fraction = oracleAnalyzer->read32Big(data + 7);
 
-                columnTimestamp(column->name, epochtime, fraction, nullptr);
+                if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
+                    epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
+                    epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
+                    epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
+                    epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                    columnUnknown(column->name, data, length);
+                } else {
+                    columnTimestamp(column->name, epochTime, fraction, nullptr);
+                }
             }
             break;
 
@@ -960,12 +969,12 @@ namespace OpenLogReplicator {
             if (length != 9 && length != 13) {
                 columnUnknown(column->name, data, length);
             } else {
-                struct tm epochtime;
-                epochtime.tm_sec = data[6] - 1; //0..59
-                epochtime.tm_min = data[5] - 1; //0..59
-                epochtime.tm_hour = data[4] - 1; //0..23
-                epochtime.tm_mday = data[3]; //1..31
-                epochtime.tm_mon = data[2]; //1..12
+                struct tm epochTime;
+                epochTime.tm_sec = data[6] - 1; //0..59
+                epochTime.tm_min = data[5] - 1; //0..59
+                epochTime.tm_hour = data[4] - 1; //0..23
+                epochTime.tm_mday = data[3]; //1..31
+                epochTime.tm_mon = data[2]; //1..12
 
                 int64_t val1 = data[0],
                          val2 = data[1];
@@ -973,12 +982,12 @@ namespace OpenLogReplicator {
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
                     val2 -= 100;
-                    epochtime.tm_year = val1 * 100 + val2;
+                    epochTime.tm_year = val1 * 100 + val2;
 
                 } else {
                     val1 = 100 - val1;
                     val2 = 100 - val2;
-                    epochtime.tm_year = - (val1 * 100 + val2);
+                    epochTime.tm_year = - (val1 * 100 + val2);
                 }
 
                 uint64_t fraction = 0;
@@ -1027,7 +1036,15 @@ namespace OpenLogReplicator {
                         tz = "TZ?";
                 }
 
-                columnTimestamp(column->name, epochtime, fraction, tz);
+                if (epochTime.tm_sec < 0 || epochTime.tm_sec > 59 ||
+                    epochTime.tm_min < 0 || epochTime.tm_min > 59 ||
+                    epochTime.tm_hour < 0 || epochTime.tm_hour > 23 ||
+                    epochTime.tm_mday < 1 || epochTime.tm_mday > 31 ||
+                    epochTime.tm_mon < 1 || epochTime.tm_mon > 12) {
+                    columnUnknown(column->name, data, length);
+                } else {
+                    columnTimestamp(column->name, epochTime, fraction, tz);
+                }
             }
             break;
 

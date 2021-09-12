@@ -30,12 +30,36 @@ namespace OpenLogReplicator {
     class OracleAnalyzer;
     class OutputBuffer;
     class Schema;
+    class SysCCol;
+    class SysCDef;
+    class SysCol;
+    class SysDeferredStg;
+    class SysECol;
+    class SysObj;
+    class SysSeg;
+    class SysTab;
+    class SysTabComPart;
+    class SysTabPart;
+    class SysTabSubPart;
+    class SysUser;
 
     class SystemTransaction {
     protected:
         OracleAnalyzer* oracleAnalyzer;
         OutputBuffer* outputBuffer;
         Schema* schema;
+        SysCCol* sysCCol;
+        SysCDef* sysCDef;
+        SysCol* sysCol;
+        SysDeferredStg* sysDeferredStg;
+        SysECol* sysECol;
+        SysObj* sysObj;
+        SysSeg* sysSeg;
+        SysTab* sysTab;
+        SysTabComPart* sysTabComPart;
+        SysTabPart* sysTabPart;
+        SysTabSubPart* sysTabSubPart;
+        SysUser* sysUser;
 
         bool updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
         bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCOL column, OracleObject* object, RowId& rowId);

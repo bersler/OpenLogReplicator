@@ -48,10 +48,10 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen(void) {
         struct stat fileStat;
 
-        int ret = stat(pathMapped.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "FILE: stat for file: " << pathMapped << " - " << strerror(errno));
+        int ret = stat(fileName.c_str(), &fileStat);
+        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
         if (ret != 0) {
-            WARNING("reading information for file: " << pathMapped << " - " << strerror(errno));
+            WARNING("reading information for file: " << fileName << " - " << strerror(errno));
             return REDO_ERROR;
         }
 
@@ -63,23 +63,23 @@ namespace OpenLogReplicator {
         if ((oracleAnalyzer->flags & REDO_FLAGS_NOATIME) != 0)
             flags |= O_NOATIME;
 
-        fileDes = open(pathMapped.c_str(), flags);
-        TRACE(TRACE2_FILE, "FILE: open for " << pathMapped << " returns " << dec << fileDes << ", errno = " << errno);
+        fileDes = open(fileName.c_str(), flags);
+        TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
             if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0) {
-                ERROR("opening in direct read mode file: " << dec << pathMapped << " - " << strerror(errno));
+                ERROR("opening in direct read mode file: " << dec << fileName << " - " << strerror(errno));
                 return REDO_ERROR;
             }
 
             flags &= (~O_DIRECT);
-            fileDes = open(pathMapped.c_str(), flags);
+            fileDes = open(fileName.c_str(), flags);
             if (fileDes == -1) {
-                ERROR("opening in read mode file: " << dec << pathMapped << " - " << strerror(errno));
+                ERROR("opening in read mode file: " << dec << fileName << " - " << strerror(errno));
                 return REDO_ERROR;
             }
 
-            DEBUG("file system does not support direct read for: " << pathMapped);
+            DEBUG("file system does not support direct read for: " << fileName);
         }
 
         return REDO_OK;
@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
 
         while (tries > 0 && !shutdown) {
             bytes = pread(fileDes, buf, size, offset);
-            TRACE(TRACE2_FILE, "FILE: read " << pathMapped << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
+            TRACE(TRACE2_FILE, "FILE: read " << fileName << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
 
             if (bytes > 0)
                 break;
@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
             if (bytes == -1 && errno != ENOTCONN)
                 break;
 
-            ERROR("reading file: " << pathMapped << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUS << " us");
+            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUS << " us");
             usleep(oracleAnalyzer->archReadSleepUS);
             --tries;
         }
@@ -112,7 +112,7 @@ namespace OpenLogReplicator {
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
             flags &= ~O_DIRECT;
             if (fcntl(fileDes, F_SETFL, flags) == -1) {
-                ERROR("setting control information for file: " << pathMapped << " - " << strerror(errno));
+                ERROR("setting control information for file: " << fileName << " - " << strerror(errno));
             }
 
             //disable direct read and re-try the read
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
 
             //display warning only if this helped
             if (bytes > 0) {
-                DEBUG("disabling direct read for: " << pathMapped);
+                DEBUG("disabling direct read for: " << fileName);
             }
         }
 

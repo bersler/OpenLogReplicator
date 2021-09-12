@@ -78,8 +78,8 @@ namespace OpenLogReplicator {
         if (readerASM == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderASM) << " bytes memory (for: asm reader creation)");
         }
-
         readers.insert(readerASM);
+
         if (pthread_create(&readerASM->pthread, nullptr, &Reader::runStatic, (void*)readerASM)) {
             CONFIG_FAIL("spawning thread");
         }

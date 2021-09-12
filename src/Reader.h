@@ -83,8 +83,8 @@ namespace OpenLogReplicator {
         int64_t group;
         typeSEQ sequence;
         vector<string> paths;
-        string pathMapped;
-        string pathMappedWrite;
+        string fileName;
+        string fileNameWrite;
         uint64_t blockSize;
         uint32_t compatVsn;
         typeBLK numBlocksHeader;

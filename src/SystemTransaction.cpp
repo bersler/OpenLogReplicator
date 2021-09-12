@@ -32,11 +32,87 @@ namespace OpenLogReplicator {
     SystemTransaction::SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema) :
                 oracleAnalyzer(oracleAnalyzer),
                 outputBuffer(outputBuffer),
-                schema(schema) {
+                schema(schema),
+                sysCCol(nullptr),
+                sysCDef(nullptr),
+                sysCol(nullptr),
+                sysDeferredStg(nullptr),
+                sysECol(nullptr),
+                sysObj(nullptr),
+                sysSeg(nullptr),
+                sysTab(nullptr),
+                sysTabComPart(nullptr),
+                sysTabPart(nullptr),
+                sysTabSubPart(nullptr),
+                sysUser(nullptr) {
         TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
     }
 
     SystemTransaction::~SystemTransaction() {
+        if (sysCCol != nullptr) {
+            delete sysCCol;
+            sysCCol = nullptr;
+        }
+
+        if (sysCCol != nullptr) {
+            delete sysCCol;
+            sysCCol = nullptr;
+        }
+
+        if (sysCDef != nullptr) {
+            delete sysCDef;
+            sysCDef = nullptr;
+        }
+
+        if (sysCol != nullptr) {
+            delete sysCol;
+            sysCol = nullptr;
+        }
+
+        if (sysDeferredStg != nullptr) {
+            delete sysDeferredStg;
+            sysDeferredStg = nullptr;
+        }
+
+        if (sysECol != nullptr) {
+            delete sysECol;
+            sysECol = nullptr;
+        }
+
+        if (sysObj != nullptr) {
+            delete sysObj;
+            sysObj = nullptr;
+        }
+
+        if (sysSeg != nullptr) {
+            delete sysSeg;
+            sysSeg = nullptr;
+        }
+
+        if (sysTab != nullptr) {
+            delete sysTab;
+            sysTab = nullptr;
+        }
+
+        if (sysTabComPart != nullptr) {
+            delete sysTabComPart;
+            sysTabComPart = nullptr;
+        }
+
+        if (sysTabPart != nullptr) {
+            delete sysTabPart;
+            sysTabPart = nullptr;
+        }
+
+        if (sysTabSubPart != nullptr) {
+            delete sysTabSubPart;
+            sysTabSubPart = nullptr;
+        }
+
+        if (sysUser != nullptr) {
+            delete sysUser;
+            sysUser = nullptr;
+        }
     }
 
     bool SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
@@ -357,7 +433,7 @@ namespace OpenLogReplicator {
             if (schema->sysCColMapRowId.find(rowId) != schema->sysCColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.CCOL$: (rowid: " << rowId << ") for insert");
             }
-            SysCCol* sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
+            sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
             if (sysCCol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
             }
@@ -385,12 +461,13 @@ namespace OpenLogReplicator {
 
             schema->sysCColMapRowId[rowId] = sysCCol;
             schema->sysCColTouched = true;
+            sysCCol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_CDEF) {
             if (schema->sysCDefMapRowId.find(rowId) != schema->sysCDefMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEF$: (rowid: " << rowId << ") for insert");
             }
-            SysCDef* sysCDef = new SysCDef(rowId, 0, 0, 0, true);
+            sysCDef = new SysCDef(rowId, 0, 0, 0, true);
             if (sysCDef == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
             }
@@ -416,12 +493,13 @@ namespace OpenLogReplicator {
 
             schema->sysCDefMapRowId[rowId] = sysCDef;
             schema->sysCDefTouched = true;
+            sysCDef = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_COL) {
             if (schema->sysColMapRowId.find(rowId) != schema->sysColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.COL$: (rowid: " << rowId << ")for insert");
             }
-            SysCol* sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
+            sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
             if (sysCol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
             }
@@ -467,12 +545,13 @@ namespace OpenLogReplicator {
 
             schema->sysColMapRowId[rowId] = sysCol;
             schema->sysColTouched = true;
+            sysCol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
             if (schema->sysDeferredStgMapRowId.find(rowId) != schema->sysDeferredStgMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.DEFERRED_STG$: (rowid: " << rowId << ") for insert");
             }
-            SysDeferredStg* sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
+            sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
             if (sysDeferredStg == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
             }
@@ -497,12 +576,13 @@ namespace OpenLogReplicator {
             schema->sysDeferredStgMapRowId[rowId] = sysDeferredStg;
             schema->sysDeferredStgTouched = true;
             schema->touchObj(sysDeferredStg->obj);
+            sysDeferredStg = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_ECOL) {
             if (schema->sysEColMapRowId.find(rowId) != schema->sysEColMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.ECOL$: (rowid: " << rowId << ") for insert");
             }
-            SysECol* sysECol = new SysECol(rowId, 0, 0, -1, true);
+            sysECol = new SysECol(rowId, 0, 0, -1, true);
             if (sysECol == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
             }
@@ -528,10 +608,10 @@ namespace OpenLogReplicator {
 
             schema->sysEColMapRowId[rowId] = sysECol;
             schema->sysEColTouched = true;
+            sysECol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_OBJ) {
-            SysObj* sysObj = schema->sysObjMapRowId[rowId];
-            if (sysObj != nullptr) {
+            if (schema->sysObjMapRowId.find(rowId) != schema->sysObjMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.OBJ$: (rowid: " << rowId << ") for insert");
             }
             sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false, true);
@@ -566,12 +646,13 @@ namespace OpenLogReplicator {
 
             schema->sysObjMapRowId[rowId] = sysObj;
             schema->sysObjTouched = true;
+            sysObj = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_SEG) {
             if (schema->sysSegMapRowId.find(rowId) != schema->sysSegMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.SEG$: (rowid: " << rowId << ") for insert");
             }
-            SysSeg* sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
+            sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
             if (sysSeg == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
             }
@@ -599,12 +680,13 @@ namespace OpenLogReplicator {
 
             schema->sysSegMapRowId[rowId] = sysSeg;
             schema->sysSegTouched = true;
+            sysSeg = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TAB) {
             if (schema->sysTabMapRowId.find(rowId) != schema->sysTabMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TAB$: (rowid: " << rowId << ") for insert");
             }
-            SysTab* sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
             if (sysTab == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
             }
@@ -640,12 +722,13 @@ namespace OpenLogReplicator {
 
             schema->sysTabMapRowId[rowId] = sysTab;
             schema->sysTabTouched = true;
+            sysTab = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
             if (schema->sysTabComPartMapRowId.find(rowId) != schema->sysTabComPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABCOMPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabComPart* sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
+            sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
             if (sysTabComPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
             }
@@ -671,12 +754,13 @@ namespace OpenLogReplicator {
 
             schema->sysTabComPartMapRowId[rowId] = sysTabComPart;
             schema->sysTabComPartTouched = true;
+            sysTabComPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABPART) {
             if (schema->sysTabPartMapRowId.find(rowId) != schema->sysTabPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabPart* sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
+            sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
             if (sysTabPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
             }
@@ -702,12 +786,13 @@ namespace OpenLogReplicator {
 
             schema->sysTabPartMapRowId[rowId] = sysTabPart;
             schema->sysTabPartTouched = true;
+            sysTabPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
             if (schema->sysTabSubPartMapRowId.find(rowId) != schema->sysTabSubPartMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TABSUBPART$: (rowid: " << rowId << ") for insert");
             }
-            SysTabSubPart* sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
+            sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
             if (sysTabSubPart == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
             }
@@ -733,12 +818,13 @@ namespace OpenLogReplicator {
 
             schema->sysTabSubPartMapRowId[rowId] = sysTabSubPart;
             schema->sysTabSubPartTouched = true;
+            sysTabSubPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_USER) {
             if (schema->sysUserMapRowId.find(rowId) != schema->sysUserMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.USER$: (rowid: " << rowId << ") for insert");
             }
-            SysUser* sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
+            sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
             if (sysUser == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
             }
@@ -765,6 +851,7 @@ namespace OpenLogReplicator {
             schema->sysUserMapRowId[rowId] = sysUser;
             schema->sysUserTouched = true;
             schema->touchUser(sysUser->user);
+            sysUser = nullptr;
         }
     }
 

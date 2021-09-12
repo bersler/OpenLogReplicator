@@ -33,6 +33,7 @@ namespace OpenLogReplicator {
     Transaction::Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid) :
         oracleAnalyzer(oracleAnalyzer),
         deallocTc(nullptr),
+        opCode0501(nullptr),
         xid(xid),
         firstSequence(0),
         firstOffset(0),
@@ -54,6 +55,11 @@ namespace OpenLogReplicator {
     }
 
     Transaction::~Transaction() {
+        if (opCode0501 != nullptr) {
+            delete opCode0501;
+            opCode0501 = nullptr;
+        }
+
         purge();
     }
 
@@ -119,6 +125,9 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << *this);
 
             if (system) {
+                if (oracleAnalyzer->systemTransaction != nullptr) {
+                    RUNTIME_FAIL("system transaction already active:1");
+                }
                 oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                 if (oracleAnalyzer->systemTransaction == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction)");
@@ -220,14 +229,16 @@ namespace OpenLogReplicator {
                         flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL | FLG_LASTBUFFERSPLIT);
                         oracleAnalyzer->write16(redoLogRecord1->data + fieldPos + 20, flg);
 
-                        OpCode0501* opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
+                        opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
                         if (opCode0501 == nullptr) {
                             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3)");
                         }
 
                         opCode0501->process();
-                        delete opCode0501;
-                        opCode0501 = nullptr;
+                        if (opCode0501 != nullptr) {
+                            delete opCode0501;
+                            opCode0501 = nullptr;
+                        }
                         last501 = nullptr;
                     } else if (last501 != nullptr) {
                         RUNTIME_FAIL("split undo is broken");
@@ -355,6 +366,9 @@ namespace OpenLogReplicator {
                             delete oracleAnalyzer->systemTransaction;
 
                             TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
+                            if (oracleAnalyzer->systemTransaction != nullptr) {
+                                RUNTIME_FAIL("system transaction already active:2");
+                            }
                             oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                             if (oracleAnalyzer->systemTransaction == nullptr) {
                                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");

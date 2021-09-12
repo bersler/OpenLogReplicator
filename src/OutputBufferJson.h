@@ -42,11 +42,95 @@ namespace OpenLogReplicator {
         virtual void appendHeader(bool first, bool showXid);
         virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
 
-        void appendHex(uint64_t value, uint64_t length);
-        void appendDec(uint64_t value, uint64_t length);
-        void appendDec(uint64_t value);
-        void appendSDec(int64_t value);
-        void appendEscape(const char* str, uint64_t length);
+        void appendHex(uint64_t value, uint64_t length) {
+            uint64_t j = (length - 1) * 4;
+            for (uint64_t i = 0; i < length; ++i) {
+                outputBufferAppend(map16[(value >> j) & 0xF]);
+                j -= 4;
+            };
+        }
+        void appendDec(uint64_t value, uint64_t length) {
+            char buffer[21];
+
+            for (uint64_t i = 0; i < length; ++i) {
+                buffer[i] = '0' + (value % 10);
+                value /= 10;
+            }
+
+            for (uint64_t i = 0; i < length; ++i)
+                outputBufferAppend(buffer[length - i - 1]);
+        }
+        void appendDec(uint64_t value) {
+            char buffer[21];
+            uint64_t length = 0;
+
+            if (value == 0) {
+                buffer[0] = '0';
+                length = 1;
+            } else {
+                while (value > 0) {
+                    buffer[length++] = '0' + (value % 10);
+                    value /= 10;
+                }
+            }
+
+            for (uint64_t i = 0; i < length; ++i)
+                outputBufferAppend(buffer[length - i - 1]);
+        }
+        void appendSDec(int64_t value) {
+            char buffer[22];
+            uint64_t length = 0;
+
+            if (value == 0) {
+                buffer[0] = '0';
+                length = 1;
+            } else {
+                if (value < 0) {
+                    value = -value;
+                    while (value > 0) {
+                        buffer[length++] = '0' + (value % 10);
+                        value /= 10;
+                    }
+                    buffer[length++] = '-';
+                } else {
+                    while (value > 0) {
+                        buffer[length++] = '0' + (value % 10);
+                        value /= 10;
+                    }
+                }
+            }
+
+            for (uint64_t i = 0; i < length; ++i)
+                outputBufferAppend(buffer[length - i - 1]);
+        }
+        void appendEscape(const char* str, uint64_t length) {
+            while (length > 0) {
+                if (*str == '\t') {
+                    outputBufferAppend('\\');
+                    outputBufferAppend('t');
+                } else if (*str == '\r') {
+                    outputBufferAppend('\\');
+                    outputBufferAppend('r');
+                } else if (*str == '\n') {
+                    outputBufferAppend('\\');
+                    outputBufferAppend('n');
+                } else if (*str == '\f') {
+                    outputBufferAppend('\\');
+                    outputBufferAppend('f');
+                } else if (*str == '\b') {
+                    outputBufferAppend('\\');
+                    outputBufferAppend('b');
+                } else if (*str == 0) {
+                    outputBufferAppend("\\u0000");
+                } else {
+                    if (*str == '"' || *str == '\\' || *str == '/')
+                        outputBufferAppend('\\');
+                    outputBufferAppend(*str);
+                }
+                ++str;
+                --length;
+            }
+        }
         void appendAfter(OracleObject* object) {
             outputBufferAppend(",\"after\":{");
 

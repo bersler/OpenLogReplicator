@@ -103,7 +103,67 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field) {
+    const uint16_t getJSONfieldU16(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a non negative number");
+        }
+        uint64_t val = ret.GetUint64();
+        if (val > 0xFFFF) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const int16_t getJSONfieldI16(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
+        }
+        int64_t val = ret.GetInt64();
+        if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const uint32_t getJSONfieldU32(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a non negative number");
+        }
+        uint64_t val = ret.GetUint64();
+        if (val > 0xFFFFFFFF) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const int32_t getJSONfieldI32(string& fileName, const rapidjson::Value& value, const char* field) {
+        if (!value.HasMember(field)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
+        }
+        const rapidjson::Value& ret = value[field];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is not a number");
+        }
+        int64_t val = ret.GetInt64();
+        if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const uint64_t getJSONfieldU64(string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field)) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
         }
@@ -114,7 +174,7 @@ namespace OpenLogReplicator {
         return ret.GetUint64();
     }
 
-    const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field) {
+    const int64_t getJSONfieldI64(string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field)) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << " not found");
         }
@@ -159,7 +219,55 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    const uint64_t getJSONfieldU(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const uint16_t getJSONfieldU16(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
+        }
+        uint64_t val = ret.GetUint64();
+        if (val > 0xFFFF) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const int16_t getJSONfieldI16(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a number");
+        }
+        int64_t val = ret.GetInt64();
+        if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const uint32_t getJSONfieldU32(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsUint64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
+        }
+        uint64_t val = ret.GetUint64();
+        if (val > 0xFFFFFFFF) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const int32_t getJSONfieldI32(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+        const rapidjson::Value& ret = value[num];
+        if (!ret.IsInt64()) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a number");
+        }
+        int64_t val = ret.GetInt64();
+        if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000)) {
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+        }
+        return val;
+    }
+
+    const uint64_t getJSONfieldU64(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64()) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a non negative number");
@@ -167,7 +275,7 @@ namespace OpenLogReplicator {
         return ret.GetUint64();
     }
 
-    const int64_t getJSONfieldI(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const int64_t getJSONfieldI64(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64()) {
             CONFIG_FAIL("parsing " << fileName << ", field " << field << "[" << dec << num << "] is not a number");

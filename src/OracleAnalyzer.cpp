@@ -652,7 +652,7 @@ namespace OpenLogReplicator {
                     logsProcessed = true;
                     redo->reader = archReader;
 
-                    archReader->pathMapped = redo->path;
+                    archReader->fileName = redo->path;
                     uint64_t retry = archReadTries;
 
                     while (true) {
@@ -776,8 +776,8 @@ namespace OpenLogReplicator {
         if (readerFS == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
         }
-
         readers.insert(readerFS);
+
         if (pthread_create(&readerFS->pthread, nullptr, &Reader::runStatic, (void*)readerFS)) {
             CONFIG_FAIL("spawning thread");
         }
@@ -791,11 +791,11 @@ namespace OpenLogReplicator {
 
             bool foundPath = false;
             for (string& path : reader->paths) {
-                reader->pathMapped = path;
-                applyMapping(reader->pathMapped);
+                reader->fileName = path;
+                applyMapping(reader->fileName);
                 if (readerCheckRedoLog(reader)) {
                     foundPath = true;
-                    RedoLog* redo = new RedoLog(this, reader->group, reader->pathMapped);
+                    RedoLog* redo = new RedoLog(this, reader->group, reader->fileName);
                     if (redo == nullptr) {
                         readerDropAll();
                         RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (for: online redo logs)");
@@ -1175,6 +1175,18 @@ namespace OpenLogReplicator {
         if (sequence != ZERO_SEQ && sequence > 0)
             return true;
 
+        struct stat fileStat;
+        int ret = stat(fileName.c_str(), &fileStat);
+        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
+        if (ret != 0) {
+            WARNING("reading information for file: " << fileName << " - " << strerror(errno));
+            return false;
+        }
+        if (fileStat.st_size > CHECKPOINT_FILE_MAX_SIZE || fileStat.st_size == 0) {
+            WARNING("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
+            return false;
+        }
+
         ifstream infile;
         infile.open(fileName.c_str(), ios::in);
 
@@ -1198,7 +1210,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        typeRESETLOGS resetlogsRead = getJSONfieldU(fileName, document, "resetlogs");
+        typeRESETLOGS resetlogsRead = getJSONfieldU32(fileName, document, "resetlogs");
         if (resetlogs != 0) {
             if (resetlogs != resetlogsRead) {
                 WARNING("invalid resetlogs for " << fileName << " - " << dec << resetlogsRead << " instead of " << resetlogs << " - skipping file");
@@ -1207,7 +1219,7 @@ namespace OpenLogReplicator {
         } else
             resetlogs = resetlogsRead;
 
-        typeACTIVATION activationRead = getJSONfieldU(fileName, document, "activation");
+        typeACTIVATION activationRead = getJSONfieldU32(fileName, document, "activation");
         if (activation != 0) {
             if (activation != activationRead) {
                 WARNING("invalid activation for " << fileName << " - " << dec << activationRead << " instead of " << activation << " - skipping file");
@@ -1216,22 +1228,30 @@ namespace OpenLogReplicator {
         } else
             activation = activationRead;
 
-        typeSCN scnRead = getJSONfieldU(fileName, document, "scn");
+        typeSCN scnRead = getJSONfieldU64(fileName, document, "scn");
         if (fileScn != scnRead) {
             WARNING("invalid scn for " << fileName << " - " << dec << scnRead << " instead of " << fileScn << " - skipping file");
             return false;
         }
 
-        typeSEQ seqRead = getJSONfieldU(fileName, document, "sequence");
-        uint64_t offsetRead = getJSONfieldU(fileName, document, "offset");
+        typeSEQ seqRead = getJSONfieldU32(fileName, document, "sequence");
+        uint64_t offsetRead = getJSONfieldU64(fileName, document, "offset");
+        if ((offsetRead & 511) != 0) {
+            WARNING("invalid offset for " << fileName << " - " << dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");
+            return false;
+        }
 
         typeSEQ minTranSeq = 0;
         uint64_t minTranOffset = 0;
 
         if (document.HasMember("min-tran")) {
             const Value& minTranJSON = getJSONfieldO(fileName, document, "min-tran");
-            minTranSeq = getJSONfieldU(fileName, minTranJSON, "seq");
-            minTranOffset = getJSONfieldU(fileName, minTranJSON, "offset");
+            minTranSeq = getJSONfieldU32(fileName, minTranJSON, "seq");
+            minTranOffset = getJSONfieldU64(fileName, minTranJSON, "offset");
+            if ((minTranOffset & 511) != 0) {
+                WARNING("invalid offset for " << fileName << " - " << dec << scnRead << " value " << minTranOffset << " is not a multiplication of 512 - skipping file");
+                return false;
+            }
         }
 
         infile.close();

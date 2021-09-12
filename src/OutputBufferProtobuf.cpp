@@ -312,13 +312,7 @@ namespace OpenLogReplicator {
         newTran = false;
         outputBufferBegin(0);
 
-        if (redoResponsePB != nullptr) {
-            RUNTIME_FAIL("PB begin processing failed, message already exists, internal error");
-        }
-        redoResponsePB = new pb::RedoResponse;
-        if (redoResponsePB == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response1)");
-        }
+        createResponse();
         appendHeader(true, true);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -351,14 +345,9 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
-            }
             outputBufferBegin(0);
-            redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response2)");
-            }
+
+            createResponse();
             appendHeader(true, true);
 
             redoResponsePB->add_payload();
@@ -389,19 +378,12 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB insert processing failed, message missing, internal error");
             }
         } else {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB insert processing failed, message already exists, internal error");
-            }
-
             if (object != nullptr)
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
 
-            redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response3)");
-            }
+            createResponse();
             appendHeader(true, true);
         }
 
@@ -438,19 +420,12 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB update processing failed, message missing, internal error");
             }
         } else {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB update processing failed, message already exists, internal error");
-            }
-
             if (object != nullptr)
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
 
-            redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response4)");
-            }
+            createResponse();
             appendHeader(true, true);
         }
 
@@ -488,18 +463,13 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB delete processing failed, message missing, internal error");
             }
         } else {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB delete processing failed, message already exists, internal error");
-            }
 
             if (object != nullptr)
                 outputBufferBegin(object->obj);
             else
                 outputBufferBegin(0);
-            redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response5)");
-            }
+
+            createResponse();
             appendHeader(true, true);
         }
 
@@ -536,13 +506,7 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("PB commit processing failed, message missing, internal error");
             }
         } else {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
-            }
-            redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response6)");
-            }
+            createResponse();
             appendHeader(true, true);
 
             redoResponsePB->add_payload();
@@ -567,13 +531,7 @@ namespace OpenLogReplicator {
     }
 
     void OutputBufferProtobuf::processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) {
-        if (redoResponsePB != nullptr) {
-            RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
-        }
-        redoResponsePB = new pb::RedoResponse;
-        if (redoResponsePB == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response7)");
-        }
+        createResponse();
         outputBufferBegin(0);
         appendHeader(true, true);
 

@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
 
@@ -83,9 +84,12 @@ namespace OpenLogReplicator {
         OutputBufferMsg** oldQueue = queue;
         queue = new OutputBufferMsg*[queueSize];
         if (queue == nullptr) {
+            if (oldQueue != nullptr) {
+                delete[] oldQueue;
+                oldQueue = nullptr;
+            }
             RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
         }
-
         uint64_t oldQueueSize = tmpQueueSize;
 
         for (uint64_t newId = 0 ; newId < tmpQueueSize; ++newId) {
@@ -110,8 +114,10 @@ namespace OpenLogReplicator {
             oldQueue[i] = oldQueue[oldQueueSize];
         }
 
-        delete[] oldQueue;
-        oldQueue = nullptr;
+        if (oldQueue != nullptr) {
+            delete[] oldQueue;
+            oldQueue = nullptr;
+        }
     }
 
     void Writer::confirmMessage(OutputBufferMsg* msg) {
@@ -351,10 +357,21 @@ namespace OpenLogReplicator {
     void Writer::readCheckpoint(void) {
         ifstream infile;
         string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-chkpt.json");
-        infile.open(fileName.c_str(), ios::in);
-        if (!infile.is_open()) {
+
+        struct stat fileStat;
+        int ret = stat(fileName.c_str(), &fileStat);
+        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
+        if (ret != 0) {
             startReader();
             return;
+        }
+        if (fileStat.st_size > CHECKPOINT_FILE_MAX_SIZE || fileStat.st_size == 0) {
+            RUNTIME_FAIL("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
+        }
+
+        infile.open(fileName.c_str(), ios::in);
+        if (!infile.is_open()) {
+            RUNTIME_FAIL("checkpoint file: " << fileName << " read error");
         }
 
         string configJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
@@ -370,11 +387,11 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("parsing of " << fileName << " - invalid database name");
         }
 
-        oracleAnalyzer->resetlogs = getJSONfieldU(fileName, document, "resetlogs");
-        oracleAnalyzer->activation = getJSONfieldU(fileName, document, "activation");
+        oracleAnalyzer->resetlogs = getJSONfieldU32(fileName, document, "resetlogs");
+        oracleAnalyzer->activation = getJSONfieldU32(fileName, document, "activation");
 
         //started earlier - continue work & ignore default startup parameters
-        startScn = getJSONfieldU(fileName, document, "scn");
+        startScn = getJSONfieldU64(fileName, document, "scn");
         startSequence = ZERO_SEQ;
         startTime.clear();
         startTimeRel = 0;

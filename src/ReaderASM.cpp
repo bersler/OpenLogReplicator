@@ -70,12 +70,12 @@ namespace OpenLogReplicator {
             blockSize = 0;
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_GETFILEATR);
-            TRACE(TRACE2_SQL, "PARAM1: " << pathMapped);
+            TRACE(TRACE2_SQL, "PARAM1: " << fileName);
             TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
             TRACE(TRACE2_SQL, "PARAM3: " << dec << fileSize);
             TRACE(TRACE2_SQL, "PARAM4: " << dec << blockSize);
             stmt.createStatement(SQL_ASM_GETFILEATR);
-            stmt.bindString(1, pathMapped);
+            stmt.bindString(1, fileName);
             stmt.bindUInt64(2, fileType);
             stmt.bindUInt64(3, fileSize);
             stmt.bindUInt64(4, blockSize);
@@ -83,14 +83,14 @@ namespace OpenLogReplicator {
 
             physicalBlockSize = -1;
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_OPEN);
-            TRACE(TRACE2_SQL, "PARAM1: " << pathMapped);
+            TRACE(TRACE2_SQL, "PARAM1: " << fileName);
             TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
             TRACE(TRACE2_SQL, "PARAM3: " << dec << blockSize);
             TRACE(TRACE2_SQL, "PARAM4: " << dec << fileDes);
             TRACE(TRACE2_SQL, "PARAM5: " << dec << physicalBlockSize);
             TRACE(TRACE2_SQL, "PARAM6: " << dec << fileSize);
             stmt.createStatement(SQL_ASM_OPEN);
-            stmt.bindString(1, pathMapped);
+            stmt.bindString(1, fileName);
             stmt.bindUInt64(2, fileType);
             stmt.bindUInt64(3, blockSize);
             stmt.bindInt32(4, fileDes);
@@ -155,7 +155,7 @@ namespace OpenLogReplicator {
     uint64_t ReaderASM::reloadHeaderRead(void) {
         int64_t bytes = redoRead(headerBuffer + blockSize, blockSize, blockSize);
         if (bytes != blockSize) {
-            ERROR("unable to read file " << pathMapped);
+            ERROR("unable to read file " << fileName);
             return REDO_ERROR;
         }
         return REDO_OK;

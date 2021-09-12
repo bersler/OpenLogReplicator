@@ -1,3 +1,9 @@
+0.9.26-beta
+- fixed memory leaks during abnormal exit
+- added content validation for checkpoint files
+- added length check for reading JSON config and checkpoint files
+- added minor performance optimizations for JSON output
+
 0.9.25-beta
 - fixed bugs in gencfg.sql
 - added checks for block size in redo header
@@ -8,7 +14,7 @@
 0.9.24-beta
 - updated automake to version 1.16.3
 - fixed typo bugs in example JSON files
-- display performance data also for online redo logs (trace2: 256)
+- display performance data also for online redo logs ("trace2": 256)
 - fixed null values for mode "column": 1, 2
 - enhanced read error messages
 - updated README.md

@@ -84,6 +84,7 @@ namespace OpenLogReplicator {
                 opCodes[i] = nullptr;
             }
         }
+        vectors = 0;
     }
 
     void RedoLog::printHeaderInfo(void) const {
@@ -1040,6 +1041,9 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->readStartOffset > 0) {
+            if ((oracleAnalyzer->readStartOffset % reader->blockSize) != 0) {
+                RUNTIME_FAIL("incorrect offset start:  " << dec << oracleAnalyzer->readStartOffset << " - not a multiplication of block size: " << dec << reader->blockSize);
+            }
             lwnConfirmedBlock = oracleAnalyzer->readStartOffset / reader->blockSize;
             TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << dec << oracleAnalyzer->readStartOffset << " (block " << dec << lwnConfirmedBlock << ")");
 

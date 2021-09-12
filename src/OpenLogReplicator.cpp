@@ -120,8 +120,8 @@ int main(int argc, char** argv) {
         if (ret != 0) {
             CONFIG_FAIL("reading information for file: " << fileName << " - " << strerror(errno));
         }
-        if (fileStat.st_size == 0) {
-            CONFIG_FAIL("file " << fileName << " is empty");
+        if (fileStat.st_size > CONFIG_FILE_MAX_SIZE || fileStat.st_size == 0) {
+            CONFIG_FAIL("file " << fileName << " wrong size: " << dec << fileStat.st_size);
         }
 
         configFileBuffer = new char[fileStat.st_size + 1];
@@ -146,21 +146,21 @@ int main(int argc, char** argv) {
 
         uint64_t dumpRedoLog = 0;
         if (document.HasMember("dump-redo-log")) {
-            dumpRedoLog = getJSONfieldU(fileName, document, "dump-redo-log");
+            dumpRedoLog = getJSONfieldU64(fileName, document, "dump-redo-log");
             if (dumpRedoLog > 2) {
                 CONFIG_FAIL("bad JSON, invalid \"dump-redo-log\" value: " << dec << dumpRedoLog << ", expected one of: {0, 1, 2}");
             }
         }
 
         if (document.HasMember("trace")) {
-            trace = getJSONfieldU(fileName, document, "trace");
+            trace = getJSONfieldU64(fileName, document, "trace");
             if (trace > 4) {
                 CONFIG_FAIL("bad JSON, invalid \"trace\" value: " << dec << trace << ", expected one of: {0, 1, 2, 3, 4}");
             }
         }
 
         if (document.HasMember("trace2")) {
-            trace2 = getJSONfieldU(fileName, document, "trace2");
+            trace2 = getJSONfieldU64(fileName, document, "trace2");
             if (trace2 > 65535) {
                 CONFIG_FAIL("bad JSON, invalid \"trace2\" value: " << dec << trace2 << ", expected one of: {0 .. 65535}");
             }
@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
 
         uint64_t dumpRawData = 0;
         if (document.HasMember("dump-raw-data")) {
-            dumpRawData = getJSONfieldU(fileName, document, "dump-raw-data");
+            dumpRawData = getJSONfieldU64(fileName, document, "dump-raw-data");
             if (dumpRawData > 1) {
                 CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << dec << dumpRawData << ", expected one of: {0, 1}");
             }
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
 
             uint64_t memoryMinMb = 32;
             if (sourceJSON.HasMember("memory-min-mb")) {
-                memoryMinMb = getJSONfieldU(fileName, sourceJSON, "memory-min-mb");
+                memoryMinMb = getJSONfieldU64(fileName, sourceJSON, "memory-min-mb");
                 memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
@@ -194,7 +194,7 @@ int main(int argc, char** argv) {
 
             uint64_t memoryMaxMb = 1024;
             if (sourceJSON.HasMember("memory-max-mb")) {
-                memoryMaxMb = getJSONfieldU(fileName, sourceJSON, "memory-max-mb");
+                memoryMaxMb = getJSONfieldU64(fileName, sourceJSON, "memory-max-mb");
                 memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMaxMb < memoryMinMb) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value can't be greater than \"memory-max-mb\" value");
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
                 readBufferMax = 32 / MEMORY_CHUNK_SIZE_MB;
 
             if (sourceJSON.HasMember("read-buffer-max-mb")) {
-                readBufferMax = getJSONfieldU(fileName, sourceJSON, "read-buffer-max-mb") / MEMORY_CHUNK_SIZE_MB;
+                readBufferMax = getJSONfieldU64(fileName, sourceJSON, "read-buffer-max-mb") / MEMORY_CHUNK_SIZE_MB;
                 if (readBufferMax * MEMORY_CHUNK_SIZE_MB > memoryMaxMb) {
                     CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value can't be greater than \"memory-max-mb\" value");
                 }
@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
 
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
             if (formatJSON.HasMember("message")) {
-                messageFormat = getJSONfieldU(fileName, formatJSON, "message");
+                messageFormat = getJSONfieldU64(fileName, formatJSON, "message");
                 if (messageFormat > 15) {
                     CONFIG_FAIL("bad JSON, invalid \"message\" value: " << dec << messageFormat << ", expected one of: {0.. 15}");
                 }
@@ -236,7 +236,7 @@ int main(int argc, char** argv) {
 
             uint64_t ridFormat = RID_FORMAT_SKIP;
             if (formatJSON.HasMember("rid")) {
-                ridFormat = getJSONfieldU(fileName, formatJSON, "rid");
+                ridFormat = getJSONfieldU64(fileName, formatJSON, "rid");
                 if (ridFormat > 1) {
                     CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << dec << ridFormat << ", expected one of: {0, 1}");
                 }
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
 
             uint64_t xidFormat = XID_FORMAT_TEXT;
             if (formatJSON.HasMember("xid")) {
-                xidFormat = getJSONfieldU(fileName, formatJSON, "xid");
+                xidFormat = getJSONfieldU64(fileName, formatJSON, "xid");
                 if (xidFormat > 1) {
                     CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << dec << xidFormat << ", expected one of: {0, 1}");
                 }
@@ -252,7 +252,7 @@ int main(int argc, char** argv) {
 
             uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
             if (formatJSON.HasMember("timestamp")) {
-                timestampFormat = getJSONfieldU(fileName, formatJSON, "timestamp");
+                timestampFormat = getJSONfieldU64(fileName, formatJSON, "timestamp");
                 if (timestampFormat > 3) {
                     CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << dec << timestampFormat << ", expected one of: {0, 1, 2, 3}");
                 }
@@ -260,7 +260,7 @@ int main(int argc, char** argv) {
 
             uint64_t charFormat = CHAR_FORMAT_UTF8;
             if (formatJSON.HasMember("char")) {
-                charFormat = getJSONfieldU(fileName, formatJSON, "char");
+                charFormat = getJSONfieldU64(fileName, formatJSON, "char");
                 if (charFormat > 3) {
                     CONFIG_FAIL("bad JSON, invalid \"char\" value: " << dec << charFormat << ", expected one of: {0, 1, 2, 3}");
                 }
@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
 
             uint64_t scnFormat = SCN_FORMAT_NUMERIC;
             if (formatJSON.HasMember("scn")) {
-                scnFormat = getJSONfieldU(fileName, formatJSON, "scn");
+                scnFormat = getJSONfieldU64(fileName, formatJSON, "scn");
                 if (scnFormat > 3) {
                     CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << dec << scnFormat << ", expected one of: {0, 1, 2, 3}");
                 }
@@ -276,7 +276,7 @@ int main(int argc, char** argv) {
 
             uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
             if (formatJSON.HasMember("unknown")) {
-                unknownFormat = getJSONfieldU(fileName, formatJSON, "unknown");
+                unknownFormat = getJSONfieldU64(fileName, formatJSON, "unknown");
                 if (unknownFormat > 1) {
                     CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << dec << unknownFormat << ", expected one of: {0, 1}");
                 }
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
 
             uint64_t schemaFormat = SCHEMA_FORMAT_NAME;
             if (formatJSON.HasMember("schema")) {
-                schemaFormat = getJSONfieldU(fileName, formatJSON, "schema");
+                schemaFormat = getJSONfieldU64(fileName, formatJSON, "schema");
                 if (schemaFormat > 7) {
                     CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << dec << schemaFormat << ", expected one of: {0 .. 7}");
                 }
@@ -292,7 +292,7 @@ int main(int argc, char** argv) {
 
             uint64_t columnFormat = COLUMN_FORMAT_CHANGED;
             if (formatJSON.HasMember("column")) {
-                columnFormat = getJSONfieldU(fileName, formatJSON, "column");
+                columnFormat = getJSONfieldU64(fileName, formatJSON, "column");
                 if (columnFormat > 2) {
                     CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << ", expected one of: {0, 1, 2}");
                 }
@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
 
             uint64_t unknownType = UNKNOWN_TYPE_HIDE;
             if (formatJSON.HasMember("unknown-type")) {
-                unknownType = getJSONfieldU(fileName, formatJSON, "unknown-type");
+                unknownType = getJSONfieldU64(fileName, formatJSON, "unknown-type");
                 if (unknownType > 1) {
                     CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << dec << unknownType << ", expected one of: {0, 1}");
                 }
@@ -308,7 +308,7 @@ int main(int argc, char** argv) {
 
             uint64_t flushBuffer = 1048576;
             if (formatJSON.HasMember("flush-buffer"))
-                flushBuffer = getJSONfieldU(fileName, formatJSON, "flush-buffer");
+                flushBuffer = getJSONfieldU64(fileName, formatJSON, "flush-buffer");
 
             const char* formatType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, formatJSON, "type");
 
@@ -338,7 +338,7 @@ int main(int argc, char** argv) {
 
             uint64_t disableChecks = 0;
             if (readerJSON.HasMember("disable-checks")) {
-                disableChecks = getJSONfieldU(fileName, readerJSON, "disable-checks");
+                disableChecks = getJSONfieldU64(fileName, readerJSON, "disable-checks");
                 if (disableChecks > 1) {
                     CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << dec << disableChecks << ", expected one of: {0, 1}");
                 }
@@ -359,7 +359,6 @@ int main(int argc, char** argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
-
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
@@ -400,7 +399,6 @@ int main(int argc, char** argv) {
 
                 oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
-
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
@@ -434,7 +432,6 @@ int main(int argc, char** argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, alias, name, memoryMinMb, memoryMaxMb,
                         readBufferMax, disableChecks, user, password, server, userASM, passwordASM, serverASM, standby);
-
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
@@ -461,15 +458,14 @@ int main(int argc, char** argv) {
 
                 typeCONID conId = 0;
                 if (readerJSON.HasMember("con-id"))
-                    conId = getJSONfieldI(fileName, readerJSON, "con-id");
+                    conId = getJSONfieldI16(fileName, readerJSON, "con-id");
 
                 oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
-                oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
-
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
                 }
+                oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
                 const Value& redoLogBatchArrayJSON = getJSONfieldA(fileName, readerJSON, "redo-log");
 
@@ -488,22 +484,22 @@ int main(int argc, char** argv) {
                 const Value& debugJSON = getJSONfieldO(fileName, sourceJSON, "debug");
 
                 if (debugJSON.HasMember("stop-log-switches")) {
-                    oracleAnalyzer->stopLogSwitches = getJSONfieldU(fileName, debugJSON, "stop-log-switches");
+                    oracleAnalyzer->stopLogSwitches = getJSONfieldU64(fileName, debugJSON, "stop-log-switches");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopLogSwitches << " log switches");
                 }
 
                 if (debugJSON.HasMember("stop-checkpoints")) {
-                    oracleAnalyzer->stopCheckpoints = getJSONfieldU(fileName, debugJSON, "stop-checkpoints");
+                    oracleAnalyzer->stopCheckpoints = getJSONfieldU64(fileName, debugJSON, "stop-checkpoints");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopCheckpoints << " checkpoints");
                 }
 
                 if (debugJSON.HasMember("stop-transactions")) {
-                    oracleAnalyzer->stopTransactions = getJSONfieldU(fileName, debugJSON, "stop-transactions");
+                    oracleAnalyzer->stopTransactions = getJSONfieldU64(fileName, debugJSON, "stop-transactions");
                     INFO("will shutdown after " << dec << oracleAnalyzer->stopTransactions << " transactions");
                 }
 
                 if (debugJSON.HasMember("flush-buffer")) {
-                    uint64_t stopFlushBuffer = getJSONfieldU(fileName, debugJSON, "flush-buffer");
+                    uint64_t stopFlushBuffer = getJSONfieldU64(fileName, debugJSON, "flush-buffer");
                     if (stopFlushBuffer == 1) {
                         oracleAnalyzer->stopFlushBuffer = stopFlushBuffer;
                     } else
@@ -659,7 +655,7 @@ int main(int argc, char** argv) {
                 }
 
                 if (filterJSON.HasMember("transaction-max-mb")) {
-                    uint64_t transactionMaxMb = getJSONfieldU(fileName, filterJSON, "transaction-max-mb");
+                    uint64_t transactionMaxMb = getJSONfieldU64(fileName, filterJSON, "transaction-max-mb");
                     if (transactionMaxMb > memoryMaxMb) {
                         CONFIG_FAIL("bad JSON, \"transaction-max-mb\" (" << dec << transactionMaxMb <<
                                 ") is bigger than \"memory-max-mb\" (" << memoryMaxMb << ")");
@@ -669,7 +665,7 @@ int main(int argc, char** argv) {
             }
 
             if (sourceJSON.HasMember("flags")) {
-                uint64_t flags = getJSONfieldU(fileName, sourceJSON, "flags");
+                uint64_t flags = getJSONfieldU64(fileName, sourceJSON, "flags");
                 if (flags > 4095) {
                     CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 4095}");
                 }
@@ -677,20 +673,20 @@ int main(int argc, char** argv) {
             }
 
             if (sourceJSON.HasMember("redo-verify-delay-us"))
-                oracleAnalyzer->redoVerifyDelayUS = getJSONfieldU(fileName, sourceJSON, "redo-verify-delay-us");
+                oracleAnalyzer->redoVerifyDelayUS = getJSONfieldU64(fileName, sourceJSON, "redo-verify-delay-us");
 
             if (sourceJSON.HasMember("arch-read-sleep-us"))
-                oracleAnalyzer->archReadSleepUS = getJSONfieldU(fileName, sourceJSON, "arch-read-sleep-us");
+                oracleAnalyzer->archReadSleepUS = getJSONfieldU64(fileName, sourceJSON, "arch-read-sleep-us");
 
             if (sourceJSON.HasMember("arch-read-tries")) {
-                oracleAnalyzer->archReadTries = getJSONfieldU(fileName, sourceJSON, "arch-read-tries");
+                oracleAnalyzer->archReadTries = getJSONfieldU64(fileName, sourceJSON, "arch-read-tries");
                 if (oracleAnalyzer->archReadTries < 1 || oracleAnalyzer->archReadTries > 1000000000) {
                     CONFIG_FAIL("bad JSON, invalid \"arch-read-tries\" value: " << dec << oracleAnalyzer->archReadTries << ", expected one of: {1, 1000000000}");
                 }
             }
 
             if (sourceJSON.HasMember("redo-read-sleep-us"))
-                oracleAnalyzer->redoReadSleepUS = getJSONfieldU(fileName, sourceJSON, "redo-read-sleep-us");
+                oracleAnalyzer->redoReadSleepUS = getJSONfieldU64(fileName, sourceJSON, "redo-read-sleep-us");
 
             if (readerJSON.HasMember("redo-copy-path"))
                 oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, readerJSON, "redo-copy-path");
@@ -705,13 +701,13 @@ int main(int argc, char** argv) {
                     oracleAnalyzer->checkpointPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, checkpointJSON, "path");
 
                 if (checkpointJSON.HasMember("interval-s"))
-                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU(fileName, checkpointJSON, "interval-s");
+                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU64(fileName, checkpointJSON, "interval-s");
 
                 if (checkpointJSON.HasMember("interval-mb"))
-                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU(fileName, checkpointJSON, "interval-mb");
+                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU64(fileName, checkpointJSON, "interval-mb");
 
                 if (checkpointJSON.HasMember("all")) {
-                    uint64_t all = getJSONfieldU(fileName, checkpointJSON, "all");
+                    uint64_t all = getJSONfieldU64(fileName, checkpointJSON, "all");
                     if (all <= 1)
                         oracleAnalyzer->checkpointAll = all;
                     else if (all > 1) {
@@ -720,7 +716,7 @@ int main(int argc, char** argv) {
                 }
 
                 if (checkpointJSON.HasMember("output-checkpoint")) {
-                    uint64_t outputCheckpoint = getJSONfieldU(fileName, checkpointJSON, "output-checkpoint");
+                    uint64_t outputCheckpoint = getJSONfieldU64(fileName, checkpointJSON, "output-checkpoint");
                     if (outputCheckpoint <= 1)
                         oracleAnalyzer->checkpointOutputCheckpoint = outputCheckpoint;
                     else if (outputCheckpoint > 1) {
@@ -729,7 +725,7 @@ int main(int argc, char** argv) {
                 }
 
                 if (checkpointJSON.HasMember("output-log-switch")) {
-                    uint64_t outputLogSwitch = getJSONfieldU(fileName, checkpointJSON, "output-log-switch");
+                    uint64_t outputLogSwitch = getJSONfieldU64(fileName, checkpointJSON, "output-log-switch");
                     if (outputLogSwitch <= 1)
                         oracleAnalyzer->checkpointOutputLogSwitch = outputLogSwitch;
                     else if (outputLogSwitch > 1) {
@@ -769,7 +765,7 @@ int main(int argc, char** argv) {
 
             uint64_t pollIntervalUS = 100000;
             if (writerJSON.HasMember("poll-interval-us")) {
-                pollIntervalUS = getJSONfieldU(fileName, writerJSON, "poll-interval-us");
+                pollIntervalUS = getJSONfieldU64(fileName, writerJSON, "poll-interval-us");
                 if (pollIntervalUS < 100 || pollIntervalUS > 3600000000) {
                     CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << dec << pollIntervalUS << ", expected one of: {100 .. 3600000000}");
                 }
@@ -777,18 +773,18 @@ int main(int argc, char** argv) {
 
             typeSCN startScn = ZERO_SCN;
             if (writerJSON.HasMember("start-scn"))
-                startScn = getJSONfieldU(fileName, writerJSON, "start-scn");
+                startScn = getJSONfieldU64(fileName, writerJSON, "start-scn");
 
             typeSEQ startSequence = ZERO_SEQ;
             if (writerJSON.HasMember("start-seq"))
-                startSequence = getJSONfieldU(fileName, writerJSON, "start-seq");
+                startSequence = getJSONfieldU32(fileName, writerJSON, "start-seq");
 
             int64_t startTimeRel = 0;
             if (writerJSON.HasMember("start-time-rel")) {
                 if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time-rel\"");
                 }
-                startTimeRel = getJSONfieldI(fileName, writerJSON, "start-time-rel");
+                startTimeRel = getJSONfieldI64(fileName, writerJSON, "start-time-rel");
             }
 
             const char* startTime = "";
@@ -805,11 +801,11 @@ int main(int argc, char** argv) {
 
             uint64_t checkpointIntervalS = 10;
             if (writerJSON.HasMember("checkpoint-interval-s"))
-                checkpointIntervalS = getJSONfieldU(fileName, writerJSON, "checkpoint-interval-s");
+                checkpointIntervalS = getJSONfieldU64(fileName, writerJSON, "checkpoint-interval-s");
 
             uint64_t queueSize = 65536;
             if (writerJSON.HasMember("queue-size")) {
-                queueSize = getJSONfieldU(fileName, writerJSON, "queue-size");
+                queueSize = getJSONfieldU64(fileName, writerJSON, "queue-size");
                 if (queueSize < 1 || queueSize > 1000000) {
                     CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << dec << queueSize << ", expected one of: {1 .. 1000000}");
                 }
@@ -818,7 +814,7 @@ int main(int argc, char** argv) {
             if (strcmp(writerType, "file") == 0) {
                 uint64_t maxSize = 0;
                 if (writerJSON.HasMember("max-size"))
-                    maxSize = getJSONfieldU(fileName, writerJSON, "max-size");
+                    maxSize = getJSONfieldU64(fileName, writerJSON, "max-size");
 
                 const char* format = "%F_%T";
                 if (writerJSON.HasMember("format"))
@@ -834,7 +830,7 @@ int main(int argc, char** argv) {
 
                 uint64_t newLine = 1;
                 if (writerJSON.HasMember("new-line")) {
-                    newLine = getJSONfieldU(fileName, writerJSON, "new-line");
+                    newLine = getJSONfieldU64(fileName, writerJSON, "new-line");
                     if (newLine > 2) {
                         CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << dec << newLine << ", expected one of: {0, 1, 2}");
                     }
@@ -842,7 +838,7 @@ int main(int argc, char** argv) {
 
                 uint64_t append = 1;
                 if (writerJSON.HasMember("append")) {
-                    append = getJSONfieldU(fileName, writerJSON, "append");
+                    append = getJSONfieldU64(fileName, writerJSON, "append");
                     if (append > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"append\" value: " << dec << append << ", expected one of: {0, 1}");
                     }
@@ -857,7 +853,7 @@ int main(int argc, char** argv) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
-                    maxMessageMb = getJSONfieldU(fileName, writerJSON, "max-message-mb");
+                    maxMessageMb = getJSONfieldU64(fileName, writerJSON, "max-message-mb");
                     if (maxMessageMb < 1 || maxMessageMb > MAX_KAFKA_MESSAGE_MB) {
                         CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << "}");
                     }
@@ -865,7 +861,7 @@ int main(int argc, char** argv) {
 
                 uint64_t maxMessages = 100000;
                 if (writerJSON.HasMember("max-messages")) {
-                    maxMessages = getJSONfieldU(fileName, writerJSON, "max-messages");
+                    maxMessages = getJSONfieldU64(fileName, writerJSON, "max-messages");
                     if (maxMessages < 1 || maxMessages > MAX_KAFKA_MAX_MESSAGES) {
                         CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << "}");
                     }
@@ -873,7 +869,7 @@ int main(int argc, char** argv) {
 
                 bool enableIdempotence = true;
                 if (writerJSON.HasMember("enable-idempotence")) {
-                    uint64_t enableIdempotenceInt = getJSONfieldU(fileName, writerJSON, "enable-idempotence");
+                    uint64_t enableIdempotenceInt = getJSONfieldU64(fileName, writerJSON, "enable-idempotence");
                     if (enableIdempotenceInt == 1)
                         enableIdempotence = true;
                     else if (enableIdempotence > 1) {

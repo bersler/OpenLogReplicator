@@ -262,6 +262,17 @@ namespace OpenLogReplicator {
             return true;
         dropSchema();
 
+        struct stat fileStat;
+        int ret = stat(fileName.c_str(), &fileStat);
+        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
+        if (ret != 0) {
+            WARNING("reading information for file: " << fileName << " - " << strerror(errno));
+            return false;
+        }
+        if (fileStat.st_size > SCHEMA_FILE_MAX_SIZE || fileStat.st_size == 0) {
+            RUNTIME_FAIL("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
+        }
+
         ifstream infile;
         infile.open(fileName.c_str(), ios::in);
 
@@ -284,7 +295,7 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysUserJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSUSER_ROWID_LENGTH, sysUserJSON[i], "row-id");
-            typeUSER user = getJSONfieldU(fileName, sysUserJSON[i], "user");
+            typeUSER user = getJSONfieldU32(fileName, sysUserJSON[i], "user");
             const char* name = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, sysUserJSON[i], "name");
 
             const Value& spare1JSON = getJSONfieldA(fileName, sysUserJSON[i], "spare1");
@@ -292,9 +303,9 @@ namespace OpenLogReplicator {
                 WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
-            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
-            uint64_t single = getJSONfieldU(fileName, sysUserJSON[i], "single");
+            uint64_t spare11 = getJSONfieldU64(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU64(fileName, spare1JSON, "spare1", 1);
+            uint64_t single = getJSONfieldU64(fileName, sysUserJSON[i], "single");
 
             dictSysUserAdd(rowId, user, name, spare11, spare12, single);
         }
@@ -305,10 +316,10 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysObjJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSOBJ_ROWID_LENGTH, sysObjJSON[i], "row-id");
-            typeUSER owner = getJSONfieldU(fileName, sysObjJSON[i], "owner");
-            typeOBJ obj = getJSONfieldU(fileName, sysObjJSON[i], "obj");
-            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysObjJSON[i], "data-obj");
-            typeTYPE type = getJSONfieldU(fileName, sysObjJSON[i], "type");
+            typeUSER owner = getJSONfieldU32(fileName, sysObjJSON[i], "owner");
+            typeOBJ obj = getJSONfieldU32(fileName, sysObjJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysObjJSON[i], "data-obj");
+            typeTYPE type = getJSONfieldU16(fileName, sysObjJSON[i], "type");
             const char* name = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, sysObjJSON[i], "name");
 
             const Value& flagsJSON = getJSONfieldA(fileName, sysObjJSON[i], "flags");
@@ -316,9 +327,9 @@ namespace OpenLogReplicator {
                 WARNING("bad JSON in " << fileName << ", flags should be an array with 2 elements");
                 return false;
             }
-            uint64_t flags1 = getJSONfieldU(fileName, flagsJSON, "flags", 0);
-            uint64_t flags2 = getJSONfieldU(fileName, flagsJSON, "flags", 1);
-            uint64_t single = getJSONfieldU(fileName, sysObjJSON[i], "single");
+            uint64_t flags1 = getJSONfieldU64(fileName, flagsJSON, "flags", 0);
+            uint64_t flags2 = getJSONfieldU64(fileName, flagsJSON, "flags", 1);
+            uint64_t single = getJSONfieldU64(fileName, sysObjJSON[i], "single");
 
             dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags1, flags2, single);
         }
@@ -329,25 +340,25 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSCOL_ROWID_LENGTH, sysColJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysColJSON[i], "obj");
-            typeCOL col = getJSONfieldI(fileName, sysColJSON[i], "col");
-            typeCOL segCol = getJSONfieldI(fileName, sysColJSON[i], "seg-col");
-            typeCOL intCol = getJSONfieldI(fileName, sysColJSON[i], "int-col");
+            typeOBJ obj = getJSONfieldU32(fileName, sysColJSON[i], "obj");
+            typeCOL col = getJSONfieldI16(fileName, sysColJSON[i], "col");
+            typeCOL segCol = getJSONfieldI16(fileName, sysColJSON[i], "seg-col");
+            typeCOL intCol = getJSONfieldI16(fileName, sysColJSON[i], "int-col");
             const char* name = getJSONfieldS(fileName, SYSCOL_NAME_LENGTH, sysColJSON[i], "name");
-            typeTYPE type = getJSONfieldU(fileName, sysColJSON[i], "type");
-            uint64_t length = getJSONfieldU(fileName, sysColJSON[i], "length");
-            int64_t precision = getJSONfieldI(fileName, sysColJSON[i], "precision");
-            int64_t scale = getJSONfieldI(fileName, sysColJSON[i], "scale");
-            uint64_t charsetForm = getJSONfieldU(fileName, sysColJSON[i], "charset-form");
-            uint64_t charsetId = getJSONfieldU(fileName, sysColJSON[i], "charset-id");
-            int64_t null_ = getJSONfieldI(fileName, sysColJSON[i], "null");
+            typeTYPE type = getJSONfieldU16(fileName, sysColJSON[i], "type");
+            uint64_t length = getJSONfieldU64(fileName, sysColJSON[i], "length");
+            int64_t precision = getJSONfieldI64(fileName, sysColJSON[i], "precision");
+            int64_t scale = getJSONfieldI64(fileName, sysColJSON[i], "scale");
+            uint64_t charsetForm = getJSONfieldU64(fileName, sysColJSON[i], "charset-form");
+            uint64_t charsetId = getJSONfieldU64(fileName, sysColJSON[i], "charset-id");
+            int64_t null_ = getJSONfieldI64(fileName, sysColJSON[i], "null");
             const Value& propertyJSON = getJSONfieldA(fileName, sysColJSON[i], "property");
             if (propertyJSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", property should be an array with 2 elements");
                 return false;
             }
-            uint64_t property1 = getJSONfieldU(fileName, propertyJSON, "property", 0);
-            uint64_t property2 = getJSONfieldU(fileName, propertyJSON, "property", 1);
+            uint64_t property1 = getJSONfieldU64(fileName, propertyJSON, "property", 0);
+            uint64_t property2 = getJSONfieldU64(fileName, propertyJSON, "property", 1);
 
             dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null_, property1, property2);
         }
@@ -358,16 +369,16 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSCCOL_ROWID_LENGTH, sysCColJSON[i], "row-id");
-            typeCON con = getJSONfieldI(fileName, sysCColJSON[i], "con");
-            typeCON intCol = getJSONfieldI(fileName, sysCColJSON[i], "int-col");
-            typeOBJ obj = getJSONfieldU(fileName, sysCColJSON[i], "obj");
+            typeCON con = getJSONfieldI16(fileName, sysCColJSON[i], "con");
+            typeCON intCol = getJSONfieldI16(fileName, sysCColJSON[i], "int-col");
+            typeOBJ obj = getJSONfieldU32(fileName, sysCColJSON[i], "obj");
             const Value& spare1JSON = getJSONfieldA(fileName, sysCColJSON[i], "spare1");
             if (spare1JSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
-            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
+            uint64_t spare11 = getJSONfieldU64(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU64(fileName, spare1JSON, "spare1", 1);
 
             dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
@@ -378,9 +389,9 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSCDEF_ROWID_LENGTH, sysCDefJSON[i], "row-id");
-            typeCON con = getJSONfieldI(fileName, sysCDefJSON[i], "con");
-            typeOBJ obj = getJSONfieldU(fileName, sysCDefJSON[i], "obj");
-            typeTYPE type = getJSONfieldU(fileName, sysCDefJSON[i], "type");
+            typeCON con = getJSONfieldI16(fileName, sysCDefJSON[i], "con");
+            typeOBJ obj = getJSONfieldU32(fileName, sysCDefJSON[i], "obj");
+            typeTYPE type = getJSONfieldU16(fileName, sysCDefJSON[i], "type");
 
             dictSysCDefAdd(rowId, con, obj, type);
         }
@@ -391,15 +402,15 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSDEFERREDSTG_ROWID_LENGTH, sysDeferredStgJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysDeferredStgJSON[i], "obj");
+            typeOBJ obj = getJSONfieldU32(fileName, sysDeferredStgJSON[i], "obj");
 
             const Value& flagsStgJSON = getJSONfieldA(fileName, sysDeferredStgJSON[i], "flags-stg");
             if (flagsStgJSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", flags-stg should be an array with 2 elements");
                 return false;
             }
-            uint64_t flagsStg1 = getJSONfieldU(fileName, flagsStgJSON, "flags-stg", 0);
-            uint64_t flagsStg2 = getJSONfieldU(fileName, flagsStgJSON, "flags-stg", 1);
+            uint64_t flagsStg1 = getJSONfieldU64(fileName, flagsStgJSON, "flags-stg", 0);
+            uint64_t flagsStg2 = getJSONfieldU64(fileName, flagsStgJSON, "flags-stg", 1);
 
             dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
@@ -410,9 +421,9 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysEColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSECOL_ROWID_LENGTH, sysEColJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysEColJSON[i], "tab-obj");
-            typeCOL colNum = getJSONfieldI(fileName, sysEColJSON[i], "col-num");
-            typeCOL guardId = getJSONfieldI(fileName, sysEColJSON[i], "guard-id");
+            typeOBJ obj = getJSONfieldU32(fileName, sysEColJSON[i], "tab-obj");
+            typeCOL colNum = getJSONfieldI16(fileName, sysEColJSON[i], "col-num");
+            typeCOL guardId = getJSONfieldI16(fileName, sysEColJSON[i], "guard-id");
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
@@ -423,17 +434,17 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysSegJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSSEG_ROWID_LENGTH, sysSegJSON[i], "row-id");
-            uint32_t file = getJSONfieldU(fileName, sysSegJSON[i], "file");
-            uint32_t block = getJSONfieldU(fileName, sysSegJSON[i], "block");
-            uint32_t ts = getJSONfieldU(fileName, sysSegJSON[i], "ts");
+            uint32_t file = getJSONfieldU32(fileName, sysSegJSON[i], "file");
+            uint32_t block = getJSONfieldU32(fileName, sysSegJSON[i], "block");
+            uint32_t ts = getJSONfieldU32(fileName, sysSegJSON[i], "ts");
 
             const Value& spare1JSON = getJSONfieldA(fileName, sysSegJSON[i], "spare1");
             if (spare1JSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
                 return false;
             }
-            uint64_t spare11 = getJSONfieldU(fileName, spare1JSON, "spare1", 0);
-            uint64_t spare12 = getJSONfieldU(fileName, spare1JSON, "spare1", 1);
+            uint64_t spare11 = getJSONfieldU64(fileName, spare1JSON, "spare1", 0);
+            uint64_t spare12 = getJSONfieldU64(fileName, spare1JSON, "spare1", 1);
 
             dictSysSegAdd(rowId, file, block, ts, spare11, spare12);
         }
@@ -444,28 +455,28 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysTabJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSTAB_ROWID_LENGTH, sysTabJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysTabJSON[i], "obj");
-            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabJSON[i], "data-obj");
-            uint32_t ts = getJSONfieldU(fileName, sysTabJSON[i], "ts");
-            uint32_t file = getJSONfieldU(fileName, sysTabJSON[i], "file");
-            uint32_t block = getJSONfieldU(fileName, sysTabJSON[i], "block");
-            typeCOL cluCols = getJSONfieldI(fileName, sysTabJSON[i], "clu-cols");
+            typeOBJ obj = getJSONfieldU32(fileName, sysTabJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysTabJSON[i], "data-obj");
+            uint32_t ts = getJSONfieldU32(fileName, sysTabJSON[i], "ts");
+            uint32_t file = getJSONfieldU32(fileName, sysTabJSON[i], "file");
+            uint32_t block = getJSONfieldU32(fileName, sysTabJSON[i], "block");
+            typeCOL cluCols = getJSONfieldI16(fileName, sysTabJSON[i], "clu-cols");
 
             const Value& flagsJSON = getJSONfieldA(fileName, sysTabJSON[i], "flags");
             if (flagsJSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", flags should be an array with 2 elements");
                 return false;
             }
-            uint64_t flags1 = getJSONfieldU(fileName, flagsJSON, "flags", 0);
-            uint64_t flags2 = getJSONfieldU(fileName, flagsJSON, "flags", 1);
+            uint64_t flags1 = getJSONfieldU64(fileName, flagsJSON, "flags", 0);
+            uint64_t flags2 = getJSONfieldU64(fileName, flagsJSON, "flags", 1);
 
             const Value& propertyJSON = getJSONfieldA(fileName, sysTabJSON[i], "property");
             if (propertyJSON.Size() != 2) {
                 WARNING("bad JSON in " << fileName << ", property should be an array with 2 elements");
                 return false;
             }
-            uint64_t property1 = getJSONfieldU(fileName, propertyJSON, "property", 0);
-            uint64_t property2 = getJSONfieldU(fileName, propertyJSON, "property", 1);
+            uint64_t property1 = getJSONfieldU64(fileName, propertyJSON, "property", 0);
+            uint64_t property2 = getJSONfieldU64(fileName, propertyJSON, "property", 1);
 
             dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
         }
@@ -476,9 +487,9 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSTABPART_ROWID_LENGTH, sysTabPartJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysTabPartJSON[i], "obj");
-            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabPartJSON[i], "data-obj");
-            typeOBJ bo = getJSONfieldU(fileName, sysTabPartJSON[i], "bo");
+            typeOBJ obj = getJSONfieldU32(fileName, sysTabPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysTabPartJSON[i], "data-obj");
+            typeOBJ bo = getJSONfieldU32(fileName, sysTabPartJSON[i], "bo");
 
             dictSysTabPartAdd(rowId, obj, dataObj, bo);
         }
@@ -489,9 +500,9 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSTABCOMPART_ROWID_LENGTH, sysTabComPartJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysTabComPartJSON[i], "obj");
-            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabComPartJSON[i], "data-obj");
-            typeOBJ bo = getJSONfieldU(fileName, sysTabComPartJSON[i], "bo");
+            typeOBJ obj = getJSONfieldU32(fileName, sysTabComPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysTabComPartJSON[i], "data-obj");
+            typeOBJ bo = getJSONfieldU32(fileName, sysTabComPartJSON[i], "bo");
 
             dictSysTabComPartAdd(rowId, obj, dataObj, bo);
         }
@@ -502,9 +513,9 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSTABSUBPART_ROWID_LENGTH, sysTabSubPartJSON[i], "row-id");
-            typeOBJ obj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "obj");
-            typeDATAOBJ dataObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "data-obj");
-            typeOBJ pObj = getJSONfieldU(fileName, sysTabSubPartJSON[i], "p-obj");
+            typeOBJ obj = getJSONfieldU32(fileName, sysTabSubPartJSON[i], "obj");
+            typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysTabSubPartJSON[i], "data-obj");
+            typeOBJ pObj = getJSONfieldU32(fileName, sysTabSubPartJSON[i], "p-obj");
 
             dictSysTabSubPartAdd(rowId, obj, dataObj, pObj);
         }
@@ -517,11 +528,15 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        bool bigEndian = getJSONfieldU(fileName, document, "big-endian");
-        if (bigEndian)
+        uint64_t bigEndian = getJSONfieldU64(fileName, document, "big-endian");
+        if (bigEndian == 1)
             oracleAnalyzer->setBigEndian();
+        else if (bigEndian != 0) {
+            WARNING("invalid big-endian value " << fileName << " - " << dec << bigEndian << " - skipping file");
+            return false;
+        }
 
-        typeRESETLOGS resetlogsRead = getJSONfieldU(fileName, document, "resetlogs");
+        typeRESETLOGS resetlogsRead = getJSONfieldU32(fileName, document, "resetlogs");
         if (oracleAnalyzer->resetlogs == 0)
             oracleAnalyzer->resetlogs = resetlogsRead;
 
@@ -530,7 +545,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        typeACTIVATION activationRead = getJSONfieldU(fileName, document, "activation");
+        typeACTIVATION activationRead = getJSONfieldU32(fileName, document, "activation");
         if (oracleAnalyzer->activation == 0)
             oracleAnalyzer->activation = activationRead;
 
@@ -547,7 +562,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        typeCONID conIdRead = getJSONfieldI(fileName, document, "con-id");
+        typeCONID conIdRead = getJSONfieldI16(fileName, document, "con-id");
         if (oracleAnalyzer->conId == -1)
             oracleAnalyzer->conId = conIdRead;
         else if (oracleAnalyzer->conId != conIdRead) {
@@ -571,7 +586,7 @@ namespace OpenLogReplicator {
         const Value& onlineRedoJSON = getJSONfieldA(fileName, document, "online-redo");
 
         for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
-            uint64_t group = getJSONfieldI(fileName, onlineRedoJSON[i], "group");
+            uint64_t group = getJSONfieldI64(fileName, onlineRedoJSON[i], "group");
             const Value& path = getJSONfieldA(fileName, onlineRedoJSON[i], "path");
 
             Reader* onlineReader = oracleAnalyzer->readerCreate(group);
