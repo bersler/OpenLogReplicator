@@ -517,18 +517,18 @@ int main(int argc, char** argv) {
                 }
             }
 
-            oracleAnalyzer->schema->addElement("SYS", "CCOL\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "CDEF\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "COL\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "ECOL\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "OBJ\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "SEG\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TAB\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABPART\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABCOMPART\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "TABSUBPART\\$", OPTIONS_SCHEMA_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "USER\\$", OPTIONS_SCHEMA_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "SEG\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "TABSUBPART\\$", OPTIONS_SYSTEM_TABLE);
+            oracleAnalyzer->schema->addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
 
             if (sourceJSON.HasMember("filter")) {
                 const Value& filterJSON = getJSONfieldO(fileName, sourceJSON, "filter");

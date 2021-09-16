@@ -188,7 +188,7 @@ typedef uint64_t typeunicode;
 #define VALUE_AFTER_SUPP                        3
 
 #define OPTIONS_DEBUG_TABLE                     1
-#define OPTIONS_SCHEMA_TABLE                    2
+#define OPTIONS_SYSTEM_TABLE                    2
 
 #define TABLE_SYS_CCOL                          1
 #define TABLE_SYS_CDEF                          2

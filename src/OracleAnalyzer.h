@@ -100,6 +100,7 @@ namespace OpenLogReplicator {
         string lastCheckedDay;
         uint64_t bigEndian;
         bool version12;
+        bool schemaChanged;
 
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader* reader);

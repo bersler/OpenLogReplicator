@@ -59,6 +59,10 @@ namespace OpenLogReplicator {
         property.set(property1, property2);
     }
 
+    bool SysTab::isBinary(void) {
+        return property.isSet64(1);
+    }
+
     bool SysTab::isClustered(void) {
         return property.isSet64(1024);
     }

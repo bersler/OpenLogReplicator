@@ -651,7 +651,7 @@ namespace OpenLogReplicator {
             if (object == nullptr)
                 return;
         }
-        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
+        if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
             system = true;
 
         Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
@@ -687,7 +687,7 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransactionUndo(RedoLogRecord* redoLogRecord) {
-        bool isSystem = false;
+        bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
@@ -702,8 +702,8 @@ namespace OpenLogReplicator {
             if (object == nullptr)
                 return;
         }
-        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
-            isSystem = true;
+        if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
+            system = true;
 
         Transaction* transaction = oracleAnalyzer->xidTransactionMap[(redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32)];
         if (transaction == nullptr) {
@@ -723,7 +723,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (isSystem)
+        if (system)
             transaction->system = true;
 
         //cluster key
@@ -826,7 +826,8 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        bool shutdownFound = false, isSystem = false;
+        bool shutdownFound = false;
+        bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1);
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2);
 
@@ -867,8 +868,8 @@ namespace OpenLogReplicator {
             if (object == nullptr)
                 return;
         }
-        if (object != nullptr && (object->options & OPTIONS_SCHEMA_TABLE) != 0)
-            isSystem = true;
+        if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
+            system = true;
 
         //cluster key
         if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
@@ -918,7 +919,7 @@ namespace OpenLogReplicator {
                         RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord1->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #append");
                     }
                 }
-                if (isSystem)
+                if (system)
                     transaction->system = true;
 
                 //skip list
@@ -974,7 +975,7 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->xidTransactionMap.erase(xidMap);
                     WARNING("no match found for transaction rollback, skipping");
                 }
-                if (isSystem)
+                if (system)
                     transaction->system = true;
             }
 
@@ -1099,6 +1100,14 @@ namespace OpenLogReplicator {
                         lwnStartBlock = currentBlock;
                         lwnEndBlock = lwnStartBlock + lwnLength;
                         TRACE(TRACE2_LWN, "LWN: at: " << dec << lwnStartBlock << " length: " << lwnLength << " chk: " << dec << lwnNum << " max: " << lwnNumMax);
+
+                        //verify LWN header start
+                        if (lwnNum > lwnNumMax) {
+                            RUNTIME_FAIL("invalid LWN block number: " << dec << lwnNum << "/" << lwnNumMax);
+                        }
+                        if (lwnScn < reader->firstScn || (lwnScn > reader->nextScn && reader->nextScn != ZERO_SCN)) {
+                            RUNTIME_FAIL("invalid LWN SCN: " << dec << lwnScn);
+                        }
                     } else {
                         RUNTIME_FAIL("did not find LWN at offset: " << dec << tmpBufferStart);
                     }
@@ -1189,7 +1198,8 @@ namespace OpenLogReplicator {
                         }
 
                         switchRedo = (tmpBufferStart == reader->bufferEnd) && (reader->ret == REDO_FINISHED);
-                        if (oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
+                        if (lwnScn > oracleAnalyzer->firstScn &&
+                                oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
                                 oracleAnalyzer->checkpointOutputCheckpoint) {
                             oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
 
@@ -1240,8 +1250,8 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (!switchRedo && lwnScn > 0 && tmpBufferStart == reader->bufferEnd && reader->ret == REDO_FINISHED &&
-                    oracleAnalyzer->checkpointOutputCheckpoint) {
+            if (!switchRedo && lwnScn > 0 && lwnScn > oracleAnalyzer->firstScn && tmpBufferStart == reader->bufferEnd &&
+                    reader->ret == REDO_FINISHED && oracleAnalyzer->checkpointOutputCheckpoint) {
                 switchRedo = true;
                 oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
             }

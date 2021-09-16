@@ -369,7 +369,7 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSCCOL_ROWID_LENGTH, sysCColJSON[i], "row-id");
-            typeCON con = getJSONfieldI16(fileName, sysCColJSON[i], "con");
+            typeCON con = getJSONfieldU32(fileName, sysCColJSON[i], "con");
             typeCON intCol = getJSONfieldI16(fileName, sysCColJSON[i], "int-col");
             typeOBJ obj = getJSONfieldU32(fileName, sysCColJSON[i], "obj");
             const Value& spare1JSON = getJSONfieldA(fileName, sysCColJSON[i], "spare1");
@@ -389,7 +389,7 @@ namespace OpenLogReplicator {
 
         for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(fileName, SYSCDEF_ROWID_LENGTH, sysCDefJSON[i], "row-id");
-            typeCON con = getJSONfieldI16(fileName, sysCDefJSON[i], "con");
+            typeCON con = getJSONfieldU32(fileName, sysCDefJSON[i], "con");
             typeOBJ obj = getJSONfieldU32(fileName, sysCDefJSON[i], "obj");
             typeTYPE type = getJSONfieldU16(fileName, sysCDefJSON[i], "type");
 
@@ -616,7 +616,7 @@ namespace OpenLogReplicator {
             DEBUG("- creating table schema for owner: " << element->owner << " table: " << element->table << " options: " <<
                     (uint64_t) element->options);
 
-            if ((element->options & OPTIONS_SCHEMA_TABLE) == 0 && users.find(element->owner) == users.end()) {
+            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 && users.find(element->owner) == users.end()) {
                 RUNTIME_FAIL("owner \"" << element->owner << "\" is missing in schema file: " <<
                         fileName << " - recreate schema file (delete old file and force creation of new)");
             }
@@ -1513,6 +1513,12 @@ namespace OpenLogReplicator {
             }
             SysTab* sysTab = sysTabMapObjIt->second;
 
+            //skip binary objects
+            if (sysTab->isBinary()) {
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - binary");
+                continue;
+            }
+
             //skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
                 DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - IOT");
@@ -1585,7 +1591,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SCHEMA_TABLE) == 0 &&
+            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SYSTEM_TABLE) == 0 &&
                     !oracleAnalyzer->suppLogDbAll && !sysUser->isSuppLogAll()) {
 
                 SysCDefKey sysCDefKeyFirst(sysObj->obj, 0);
@@ -1710,7 +1716,7 @@ namespace OpenLogReplicator {
             if (sysTab->isRowMovement())
                 ss << ", row movement enabled";
 
-            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SCHEMA_TABLE) == 0) {
+            if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_SUPPLEMENTAL_LOG) == 0 && (options & OPTIONS_SYSTEM_TABLE) == 0) {
                 //use default primary key
                 if (keys.size() == 0) {
                     if (totalPk == 0)

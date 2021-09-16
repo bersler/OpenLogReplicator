@@ -1637,6 +1637,7 @@ namespace OpenLogReplicator {
 
         if (schema->refreshIndexes()) {
             oracleAnalyzer->schemaScn = scn;
+            oracleAnalyzer->schemaChanged = true;
             schema->writeSchema();
         }
         schema->rebuildMaps();

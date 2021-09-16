@@ -1204,7 +1204,7 @@ namespace OpenLogReplicator {
     void OracleAnalyzerOnline::readSystemDictionaries(string& owner, string& table, typeOPTIONS options) {
         string ownerRegexp("^" + owner + "$");
         string tableRegexp("^" + table + "$");
-        bool single = ((options & OPTIONS_SCHEMA_TABLE) != 0);
+        bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
         DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << dec << (uint64_t)options);
 
         try {
@@ -1226,7 +1226,7 @@ namespace OpenLogReplicator {
             int64_t retUser = stmtUser.executeQuery();
             while (retUser) {
                 if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12,
-                        (options & OPTIONS_SCHEMA_TABLE) != 0)) {
+                        (options & OPTIONS_SYSTEM_TABLE) != 0)) {
                     userSpare11 = 0;
                     userSpare12 = 0;
                     retUser = stmtUser.next();
@@ -1235,7 +1235,7 @@ namespace OpenLogReplicator {
 
                 DatabaseStatement stmtObj(conn);
                 //reading SYS.OBJ$
-                if ((options & OPTIONS_SCHEMA_TABLE) == 0) {
+                if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
                     TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_USER);
                     TRACE(TRACE2_SQL, "PARAM1: " << dec << schemaScn);
                     TRACE(TRACE2_SQL, "PARAM2: " << dec << userUser);
@@ -1291,7 +1291,7 @@ namespace OpenLogReplicator {
 
         readSystemDictionaries(owner, table, options);
         schema->buildMaps(owner, table, keys, keysStr, options, true);
-        if ((options & OPTIONS_SCHEMA_TABLE) == 0 && schema->users.find(owner) == schema->users.end())
+        if ((options & OPTIONS_SYSTEM_TABLE) == 0 && schema->users.find(owner) == schema->users.end())
             schema->users.insert(owner);
     }
 

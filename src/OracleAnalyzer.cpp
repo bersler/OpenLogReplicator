@@ -104,6 +104,7 @@ namespace OpenLogReplicator {
         bigEndian(false),
         suppLogSize(0),
         version12(false),
+        schemaChanged(false),
         archGetLog(archGetLogPath),
         read16(read16Little),
         read32(read32Little),
@@ -990,8 +991,9 @@ namespace OpenLogReplicator {
                 checkpointLastTime.getVal() >= 0 &&
                 !switchRedo &&
                 !checkpointFirst &&
+                !schemaChanged &&
                 (offset - checkpointLastOffset < checkpointIntervalMB * 1024 * 1024 || checkpointIntervalMB == 0)) {
-            if (time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0) {
+            if ((time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0)) {
                 checkpointLastTime = time_;
                 return true;
             }
@@ -1032,7 +1034,7 @@ namespace OpenLogReplicator {
                 << ",\"resetlogs\":" << dec << resetlogs
                 << ",\"activation\":" << dec << activation
                 << ",\"time\":" << dec << time_.getVal()
-                << ",\"sequence\":" << dec << sequence
+                << ",\"seq\":" << dec << sequence
                 << ",\"offset\":" << dec << offset
                 << ",\"switch\":" << dec << switchRedo;
 
@@ -1079,6 +1081,10 @@ namespace OpenLogReplicator {
 
         checkpointLastTime = time_;
         checkpointLastOffset = offset;
+        if (schemaChanged) {
+            schemaChanged = false;
+            return true;
+        }
 
         if (switchRedo) {
             if (checkpointOutputLogSwitch)
@@ -1234,7 +1240,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        typeSEQ seqRead = getJSONfieldU32(fileName, document, "sequence");
+        typeSEQ seqRead = getJSONfieldU32(fileName, document, "seq");
         uint64_t offsetRead = getJSONfieldU64(fileName, document, "offset");
         if ((offsetRead & 511) != 0) {
             WARNING("invalid offset for " << fileName << " - " << dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");

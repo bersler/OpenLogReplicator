@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
         }
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
         }
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000)) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
         }
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -158,7 +158,7 @@ namespace OpenLogReplicator {
         }
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000)) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
         }
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -238,7 +238,7 @@ namespace OpenLogReplicator {
         }
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000)) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -250,7 +250,7 @@ namespace OpenLogReplicator {
         }
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }
@@ -262,7 +262,7 @@ namespace OpenLogReplicator {
         }
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000)) {
-            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big");
+            CONFIG_FAIL("parsing " << fileName << ", field " << field << " is too big (" << dec << val << ")");
         }
         return val;
     }

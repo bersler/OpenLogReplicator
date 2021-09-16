@@ -326,6 +326,8 @@ namespace OpenLogReplicator {
     void Writer::writeCheckpoint(bool force) {
         if (oracleAnalyzer->checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
             return;
+        if (oracleAnalyzer->schemaScn >= confirmedScn)
+            force = true;
 
         time_t now = time(nullptr);
         uint64_t timeSinceCheckpoint = (now - previousCheckpoint);
