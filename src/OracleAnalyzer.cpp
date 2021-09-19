@@ -977,15 +977,13 @@ namespace OpenLogReplicator {
     }
 
     bool OracleAnalyzer::checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo) {
-        if (trace >= TRACE_DEBUG) {
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << dec << scn
-                    << " time: " << dec << time_.getVal()
-                    << " seq: " << sequence
-                    << " offset: " << offset
-                    << " switch: " << switchRedo
-                    << " checkpointLastTime: " << checkpointLastTime.getVal()
-                    << " checkpointLastOffset: " << checkpointLastOffset);
-        }
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << dec << scn
+                << " time: " << dec << time_.getVal()
+                << " seq: " << sequence
+                << " offset: " << offset
+                << " switch: " << switchRedo
+                << " checkpointLastTime: " << checkpointLastTime.getVal()
+                << " checkpointLastOffset: " << checkpointLastOffset);
 
         if (!checkpointAll &&
                 checkpointLastTime.getVal() >= 0 &&

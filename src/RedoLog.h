@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
         uint64_t lwnRecords;
         uint64_t lwnStartBlock;
-        bool shutdown;
+        bool instrumentedShutdown;
 
         void printHeaderInfo(void) const;
         void analyzeLwn(LwnMember* lwnMember);

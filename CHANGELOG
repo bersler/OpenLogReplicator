@@ -1,10 +1,14 @@
+0.9.28-beta
+- fixed checkpointing on instrumented shutdown
+- removed LWN checking from version 0.9.27-beta
+
 0.9.27-beta
 - added verification checks for LWN header
 - changed "sequence" to "seq" in checkpoint file - you might need to update manually json checkpoint files
 - fixed bug: incorrect con length read from schema file
 - added some tracking debug info
 - added check for ignoring binary objects (like xmltype, object)
-- removed debug table from output (to make testign easier)
+- removed debug table from output (to make testing easier)
 - removed warning for 11.2 during ALTER TABLE ADD COLUMN with DEFAULT
 - fixed bugs related to checkpoints
 - fixed bug: sending checkpoint messages for already confirmed SCN

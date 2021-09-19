@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         lwnScnMax(0),
         lwnRecords(0),
         lwnStartBlock(0),
-        shutdown(false),
+        instrumentedShutdown(false),
         group(group),
         path(path),
         sequence(0),
@@ -799,8 +799,8 @@ namespace OpenLogReplicator {
             (transaction->commitScn > oracleAnalyzer->schemaScn && transaction->system == true)) {
 
             if (transaction->shutdown) {
-                INFO("shutdown started - initiated by debug transaction " << PRINTXID(transaction->xid));
-                shutdown = true;
+                INFO("shutdown started - initiated by debug transaction " << PRINTXID(transaction->xid) << " at scn " << dec << transaction->commitScn);
+                instrumentedShutdown = true;
             }
 
             if (transaction->begin) {
@@ -810,7 +810,7 @@ namespace OpenLogReplicator {
                     --oracleAnalyzer->stopTransactions;
                     if (oracleAnalyzer->stopTransactions == 0) {
                         INFO("shutdown started - exhausted number of transactions");
-                        shutdown = true;
+                        instrumentedShutdown = true;
                     }
                 }
 
@@ -1102,9 +1102,6 @@ namespace OpenLogReplicator {
                         TRACE(TRACE2_LWN, "LWN: at: " << dec << lwnStartBlock << " length: " << lwnLength << " chk: " << dec << lwnNum << " max: " << lwnNumMax);
 
                         //verify LWN header start
-                        if (lwnNum > lwnNumMax) {
-                            RUNTIME_FAIL("invalid LWN block number: " << dec << lwnNum << "/" << lwnNumMax);
-                        }
                         if (lwnScn < reader->firstScn || (lwnScn > reader->nextScn && reader->nextScn != ZERO_SCN)) {
                             RUNTIME_FAIL("invalid LWN SCN: " << dec << lwnScn);
                         }
@@ -1201,13 +1198,14 @@ namespace OpenLogReplicator {
                         if (lwnScn > oracleAnalyzer->firstScn &&
                                 oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
                                 oracleAnalyzer->checkpointOutputCheckpoint) {
+                            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn);
                             oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
 
                             if (oracleAnalyzer->stopCheckpoints > 0) {
                                 --oracleAnalyzer->stopCheckpoints;
                                 if (oracleAnalyzer->stopCheckpoints == 0) {
                                     INFO("shutdown started - exhausted number of checkpoints");
-                                    shutdown = true;
+                                    instrumentedShutdown = true;
                                 }
                             }
                         }
@@ -1243,20 +1241,22 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
-
-                if (shutdown) {
-                    stopMain();
-                    oracleAnalyzer->shutdown = true;
-                }
             }
 
             if (!switchRedo && lwnScn > 0 && lwnScn > oracleAnalyzer->firstScn && tmpBufferStart == reader->bufferEnd &&
                     reader->ret == REDO_FINISHED && oracleAnalyzer->checkpointOutputCheckpoint) {
                 switchRedo = true;
+                TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " with switch");
                 oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
+            } else if (instrumentedShutdown) {
+                TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " at exit");
+                oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, false);
             }
 
-            {
+            if (instrumentedShutdown) {
+                stopMain();
+                oracleAnalyzer->shutdown = true;
+            } else if (!oracleAnalyzer->shutdown) {
                 unique_lock<mutex> lck(oracleAnalyzer->mtx);
                 if (reader->bufferStart < tmpBufferStart)
                     reader->bufferStart = tmpBufferStart;
