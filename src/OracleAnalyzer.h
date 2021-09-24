@@ -150,6 +150,7 @@ namespace OpenLogReplicator {
         uint64_t stopTransactions;
         uint64_t transactionMax;
         set<typeXID> skipXidList;
+        set<typeXIDMAP> brokenXidMapList;
         bool stopFlushBuffer;
 
         void (*archGetLog)(OracleAnalyzer* oracleAnalyzer);
@@ -206,11 +207,11 @@ namespace OpenLogReplicator {
         bool checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
         bool readCheckpointFile(string& fileName, typeSCN fileScn);
-        void skipEmptyFields(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        void skipEmptyFields(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
         uint8_t* getMemoryChunk(const char* module, bool supp);
         void freeMemoryChunk(const char* module, uint8_t* chunk, bool supp);
 
-        bool nextFieldOpt(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
+        bool nextFieldOpt(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             if (fieldNum >= redoLogRecord->fieldCnt)
                 return false;
 
@@ -220,7 +221,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldLength + 3) & 0xFFFC;
-            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length) {
                 REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
@@ -232,7 +233,7 @@ namespace OpenLogReplicator {
             return true;
         };
 
-        void nextField(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
+        void nextField(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             ++fieldNum;
             if (fieldNum > redoLogRecord->fieldCnt) {
                 REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
@@ -250,7 +251,7 @@ namespace OpenLogReplicator {
                 fieldPos = redoLogRecord->fieldPos;
             else
                 fieldPos += (fieldLength + 3) & 0xFFFC;
-            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + fieldNum * 2);
+            fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length) {
                 REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<

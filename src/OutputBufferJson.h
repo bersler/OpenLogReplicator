@@ -137,10 +137,12 @@ namespace OpenLogReplicator {
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
-                    else
-                        columnNull(object, column);
+                    if (values[column][VALUE_AFTER] != nullptr) {
+                        if (lengths[column][VALUE_AFTER] > 0)
+                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                        else
+                            columnNull(object, column);
+                    }
                 }
             } else {
                 uint64_t baseMax = valuesMax >> 6;
@@ -152,10 +154,12 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0)
-                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
-                        else
-                            columnNull(object, column);
+                        if (values[column][VALUE_AFTER] != nullptr) {
+                            if (lengths[column][VALUE_AFTER] > 0)
+                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                            else
+                                columnNull(object, column);
+                        }
                     }
                 }
             }
@@ -167,10 +171,12 @@ namespace OpenLogReplicator {
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
-                    else
-                        columnNull(object, column);
+                    if (values[column][VALUE_BEFORE] != nullptr) {
+                        if (lengths[column][VALUE_BEFORE] > 0)
+                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                        else
+                            columnNull(object, column);
+                    }
                 }
             } else {
                 uint64_t baseMax = valuesMax >> 6;
@@ -182,10 +188,12 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0)
-                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
-                        else
-                            columnNull(object, column);
+                        if (values[column][VALUE_BEFORE] != nullptr) {
+                            if (lengths[column][VALUE_BEFORE] > 0)
+                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                            else
+                                columnNull(object, column);
+                        }
                     }
                 }
             }

@@ -67,19 +67,8 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
-            if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) != 0) {
-                ERROR("opening in direct read mode file: " << dec << fileName << " - " << strerror(errno));
-                return REDO_ERROR;
-            }
-
-            flags &= (~O_DIRECT);
-            fileDes = open(fileName.c_str(), flags);
-            if (fileDes == -1) {
-                ERROR("opening in read mode file: " << dec << fileName << " - " << strerror(errno));
-                return REDO_ERROR;
-            }
-
-            DEBUG("file system does not support direct read for: " << fileName);
+            ERROR("opening file returned: " << dec << fileName << " - " << strerror(errno));
+            return REDO_ERROR;
         }
 
         return REDO_OK;
@@ -110,18 +99,7 @@ namespace OpenLogReplicator {
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
-            flags &= ~O_DIRECT;
-            if (fcntl(fileDes, F_SETFL, flags) == -1) {
-                ERROR("setting control information for file: " << fileName << " - " << strerror(errno));
-            }
-
-            //disable direct read and re-try the read
-            bytes = pread(fileDes, buf, size, offset);
-
-            //display warning only if this helped
-            if (bytes > 0) {
-                DEBUG("disabling direct read for: " << fileName);
-            }
+            ERROR("HINT: try to restart with direct io mode disabled, set \"flags\" to value: " << dec << REDO_FLAGS_DIRECT);
         }
 
         if ((trace2 & TRACE2_PERFORMANCE) != 0) {

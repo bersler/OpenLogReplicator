@@ -57,6 +57,8 @@ namespace OpenLogReplicator {
                 return;
             if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
                 return;
+            if (column->unused && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_UNUSED_COLUMNS) == 0)
+                return;
 
             uint64_t typeNo = object->columns[col]->typeNo;
             if (typeNo != 1 //varchar2/nvarchar2

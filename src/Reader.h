@@ -43,10 +43,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define REDO_OK                 0
 #define REDO_OVERWRITTEN        1
-#define REDO_ERROR              2
-#define REDO_FINISHED           3
-#define REDO_EMPTY              4
-#define REDO_BAD_CRC            5
+#define REDO_FINISHED           2
+#define REDO_EMPTY              3
+#define REDO_ERROR_READ         4
+#define REDO_ERROR_WRITE        5
+#define REDO_ERROR_SEQUENCE     6
+#define REDO_ERROR_CRC          7
+#define REDO_ERROR_BLOCK        8
+#define REDO_ERROR_BAD_DATA     9
+#define REDO_ERROR             10
 
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20

@@ -339,8 +339,8 @@ int main(int argc, char** argv) {
             uint64_t disableChecks = 0;
             if (readerJSON.HasMember("disable-checks")) {
                 disableChecks = getJSONfieldU64(fileName, readerJSON, "disable-checks");
-                if (disableChecks > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << dec << disableChecks << ", expected one of: {0, 1}");
+                if (disableChecks > 7) {
+                    CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << dec << disableChecks << ", expected one of: {0 .. 7}");
                 }
             }
 
@@ -668,6 +668,9 @@ int main(int argc, char** argv) {
                 uint64_t flags = getJSONfieldU64(fileName, sourceJSON, "flags");
                 if (flags > 4095) {
                     CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 4095}");
+                }
+                if ((flags & REDO_FLAGS_SCHEMALESS) != 0 && columnFormat > 0) {
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << " is invalid for schemaless mode");
                 }
                 oracleAnalyzer->flags |= flags;
             }

@@ -28,7 +28,8 @@ namespace OpenLogReplicator {
     OpCode0501::OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
 
-        uint64_t fieldNum = 0, fieldPos = 0;
+        uint64_t fieldPos = 0;
+        typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050101))
             return;
@@ -50,7 +51,8 @@ namespace OpenLogReplicator {
 
     void OpCode0501::process(void) {
         OpCode::process();
-        uint64_t fieldNum = 0, fieldPos = 0;
+        uint64_t fieldPos = 0;
+        typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103);
@@ -62,7 +64,7 @@ namespace OpenLogReplicator {
         //field: 2
         ktub(fieldPos, fieldLength);
 
-        //incomplete data, don't analyse further
+        //incomplete data, don't analyze further
         if (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID) != 0)
             return;
 
@@ -257,7 +259,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::suppLog(uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0501::suppLog(typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         uint64_t suppLogSize = 0;
         uint64_t suppLogFieldCnt = 0;
         oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);

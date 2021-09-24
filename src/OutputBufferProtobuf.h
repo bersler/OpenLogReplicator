@@ -47,27 +47,8 @@ namespace OpenLogReplicator {
         void appendAfter(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
-                    if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
-                    } else {
-                        payloadPB->add_after();
-                        valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                        columnNull(object, column);
-                    }
-                }
-            } else {
-                uint64_t baseMax = valuesMax >> 6;
-                for (uint64_t base = 0; base <= baseMax; ++base) {
-                    typeCOL column = base << 6;
-                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                        if (valuesSet[base] < mask)
-                            break;
-                        if ((valuesSet[base] & mask) == 0)
-                            continue;
-
-                        if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] > 0) {
+                    if (values[column][VALUE_AFTER] != nullptr) {
+                        if (lengths[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
                             processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
@@ -78,19 +59,44 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
+            } else {
+                uint64_t baseMax = valuesMax >> 6;
+                for (uint64_t base = 0; base <= baseMax; ++base) {
+                    typeCOL column = base << 6;
+                    for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                        if (valuesSet[base] < mask)
+                            break;
+                        if ((valuesSet[base] & mask) == 0)
+                            continue;
+
+                        if (values[column][VALUE_AFTER] != nullptr) {
+                            if (lengths[column][VALUE_AFTER] > 0) {
+                                payloadPB->add_after();
+                                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                            } else {
+                                payloadPB->add_after();
+                                valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
+                                columnNull(object, column);
+                            }
+                        }
+                    }
+                }
             }
         }
         void appendBefore(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
-                    if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
-                    } else {
-                        payloadPB->add_before();
-                        valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                        columnNull(object, column);
+                    if (values[column][VALUE_BEFORE] != nullptr) {
+                        if (lengths[column][VALUE_BEFORE] > 0) {
+                            payloadPB->add_before();
+                            valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
+                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                        } else {
+                            payloadPB->add_before();
+                            valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
+                            columnNull(object, column);
+                        }
                     }
                 }
             } else {
@@ -103,14 +109,16 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] > 0) {
-                            payloadPB->add_before();
-                            valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
-                        } else {
-                            payloadPB->add_before();
-                            valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            columnNull(object, column);
+                        if (values[column][VALUE_BEFORE] != nullptr) {
+                            if (lengths[column][VALUE_BEFORE] > 0) {
+                                payloadPB->add_before();
+                                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
+                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                            } else {
+                                payloadPB->add_before();
+                                valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
+                                columnNull(object, column);
+                            }
                         }
                     }
                 }

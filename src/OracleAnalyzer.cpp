@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
         redoReadSleepUS(50000),
         archReadSleepUS(10000000),
         archReadTries(10),
-        redoVerifyDelayUS(250000),
+        redoVerifyDelayUS((flags & REDO_FLAGS_DIRECT) != 0 ? 500000 : 0),
         version(0),
         conId(-1),
         resetlogs(0),
@@ -124,7 +124,7 @@ namespace OpenLogReplicator {
         }
 
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
-            memoryChunks[i] = new uint8_t[MEMORY_CHUNK_SIZE];
+            memoryChunks[i] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
 
             if (memoryChunks[i] == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
@@ -176,7 +176,7 @@ namespace OpenLogReplicator {
 
         while (memoryChunksAllocated > 0) {
             --memoryChunksAllocated;
-            delete[] memoryChunks[memoryChunksAllocated];
+            free(memoryChunks[memoryChunksAllocated]);
             memoryChunks[memoryChunksAllocated] = nullptr;
         }
 
@@ -194,6 +194,7 @@ namespace OpenLogReplicator {
         redoLogsBatch.clear();
         checkpointScnList.clear();
         skipXidList.clear();
+        brokenXidMapList.clear();
     }
 
     void OracleAnalyzer::updateOnlineLogs(void) {
@@ -881,7 +882,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        if  (i == oracleAnalyzer->logArchiveFormat.length() && j == file.length())
+        if (i == oracleAnalyzer->logArchiveFormat.length() && j == file.length())
             return sequence;
 
         WARNING("Error getting sequence from file: " << file << " log_archive_format: " << oracleAnalyzer->logArchiveFormat <<
@@ -927,10 +928,10 @@ namespace OpenLogReplicator {
         pathMapping.push_back(targetMapping);
     }
 
-    void OracleAnalyzer::skipEmptyFields(RedoLogRecord* redoLogRecord, uint64_t& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OracleAnalyzer::skipEmptyFields(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         uint16_t nextFieldLength;
         while (fieldNum + 1 <= redoLogRecord->fieldCnt) {
-            nextFieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (fieldNum + 1) * 2);
+            nextFieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) + 1) * 2);
             if (nextFieldLength != 0)
                 return;
             ++fieldNum;
@@ -1297,7 +1298,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                memoryChunks[0] = new uint8_t[MEMORY_CHUNK_SIZE];
+                memoryChunks[0] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
                 if (memoryChunks[0] == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << (MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#6)");
                 }
@@ -1327,7 +1328,7 @@ namespace OpenLogReplicator {
 
             //keep 25% reserved
             if (memoryChunksAllocated > memoryChunksMin && memoryChunksFree > memoryChunksAllocated / 4) {
-                delete[] chunk;
+                free(chunk);
                 --memoryChunksAllocated;
             } else {
                 memoryChunks[memoryChunksFree] = chunk;
@@ -1437,6 +1438,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::archGetLogList(OracleAnalyzer* oracleAnalyzer) {
+        uint64_t sequenceStart = ZERO_SEQ;
         for (string& mappedPath : oracleAnalyzer->redoLogsBatch) {
             TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
@@ -1474,6 +1476,8 @@ namespace OpenLogReplicator {
                 redo->nextScn = ZERO_SCN;
                 redo->sequence = sequence;
                 oracleAnalyzer->archiveRedoQueue.push(redo);
+                if (sequenceStart == ZERO_SEQ || sequenceStart > sequence)
+                    sequenceStart = sequence;
             //dir, check all files
             } else {
                 DIR* dir;
@@ -1509,6 +1513,9 @@ namespace OpenLogReplicator {
                 closedir(dir);
             }
         }
+
+        if (sequenceStart != ZERO_SEQ && oracleAnalyzer->sequence == 0)
+            oracleAnalyzer->sequence = sequenceStart;
     }
 
     bool redoLogCompare::operator()(RedoLog* const& p1, RedoLog* const& p2) {

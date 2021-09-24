@@ -59,6 +59,7 @@ typedef uint16_t typeTYPE;
 typedef uint32_t typeCON;
 typedef uint32_t typeUSER;
 typedef uint8_t  typeOPTIONS;
+typedef uint16_t typeFIELD;
 
 typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
@@ -70,6 +71,7 @@ typedef uint64_t typeunicode;
 #define SCHEMA_FILE_MAX_SIZE                    2147483648
 #define ZERO_SEQ                                ((typeSEQ)0xFFFFFFFF)
 #define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
+#define MEMORY_ALIGNMENT                        512
 #define MAX_PATH_LENGTH                         2048
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
@@ -165,10 +167,11 @@ typedef uint64_t typeunicode;
 #define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x00000040
 #define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x00000080
 #define REDO_FLAGS_SHOW_NESTED_COLUMNS          0x00000100
-#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000200
-#define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000400
-#define REDO_FLAGS_CHECKPOINT_KEEP              0x00000800
-#define REDO_FLAGS_SCHEMA_KEEP                  0x00001000
+#define REDO_FLAGS_SHOW_UNUSED_COLUMNS          0x00000200
+#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000400
+#define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000800
+#define REDO_FLAGS_CHECKPOINT_KEEP              0x00001000
+#define REDO_FLAGS_SCHEMA_KEEP                  0x00002000
 
 #define DISABLE_CHECK_GRANTS                    0x00000001
 #define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x00000002
@@ -293,7 +296,6 @@ typedef uint64_t typeunicode;
 #define SUPPLOG_DELETE          0x04
 
 #define OPFLAG_BEGIN_TRANS      0x01
-
 
 #define JSON_PARAMETER_LENGTH   256
 #define JSON_BROKERS_LENGTH     4096

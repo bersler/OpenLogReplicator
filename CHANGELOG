@@ -1,3 +1,17 @@
+0.9.29-beta
+- fixed bug: "disable-checks" parameter value check
+- fixed bug: schemaless mode failing with compressed tables
+- fixed bug: incorrect strting offset in checkpoint file
+- fixed bug: reading from inactive online redo log could print warnings/errors
+- fixed bug: merging split undo blocks could sometimes fail
+- fixed bug: schemaless processing failed with DML commands
+- fixed bug: direct read mode was not working
+- fixed bug: null values where added for unknown values
+- added content checks for redo data/column integrity
+- added support for unused columns ("flags" parameter have shifted)
+- OpenLogReplicator.json: default for "redo-verify-delay-us" is 0 when direct io is used, else 500000
+- minor code cleanups
+
 0.9.28-beta
 - fixed checkpointing on instrumented shutdown
 - removed LWN checking from version 0.9.27-beta

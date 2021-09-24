@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         void ktudb(uint64_t fieldPos, uint64_t fieldLength);
         void kteoputrn(uint64_t fieldPos, uint64_t fieldLength);
         void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
-        void suppLog(uint64_t &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        void suppLog(typeFIELD &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
         virtual const char* getUndoType(void);
 
     public:

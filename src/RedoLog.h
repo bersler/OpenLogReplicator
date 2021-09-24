@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         typeSCN lwnScnMax;
         LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
         uint64_t lwnRecords;
-        uint64_t lwnStartBlock;
+        uint64_t lwnCheckpointBlock;
         bool instrumentedShutdown;
 
         void printHeaderInfo(void) const;

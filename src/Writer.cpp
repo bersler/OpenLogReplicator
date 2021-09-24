@@ -227,14 +227,15 @@ namespace OpenLogReplicator {
                                 oracleAnalyzer->waitingForWriter = false;
                                 oracleAnalyzer->memoryCond.notify_all();
 
-                                if (tmpQueueSize > 0)
+                                if (tmpQueueSize > 0) {
                                     outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollIntervalUS));
-                                else {
+                                } else {
                                     if (stop) {
                                         INFO("writer flushed, shutting down");
                                         doShutdown();
-                                    } else
+                                    } else {
                                         outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
+                                    }
                                 }
                             }
                         }

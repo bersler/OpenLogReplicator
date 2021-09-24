@@ -876,6 +876,9 @@ namespace OpenLogReplicator {
             return;
         if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
             return;
+        if (column->unused && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_UNUSED_COLUMNS) == 0)
+            return;
+
         uint64_t typeNo = column->typeNo;
         uint64_t charsetId = column->charsetId;
 
@@ -1123,12 +1126,13 @@ namespace OpenLogReplicator {
 
     //0x05010B0B
     void OutputBuffer::processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
-        uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
+        uint64_t pos = 0, fieldPos = 0, fieldPosStart;
+        typeFIELD fieldNum = 0;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        for (uint64_t i = fieldNum; i < redoLogRecord2->rowData; ++i)
+        while (fieldNum < redoLogRecord2->rowData)
             oracleAnalyzer->nextField(redoLogRecord2, fieldNum, fieldPos, fieldLength, 0x000001);
 
         fieldPosStart = fieldPos;
@@ -1193,12 +1197,13 @@ namespace OpenLogReplicator {
 
     //0x05010B0C
     void OutputBuffer::processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
-        uint64_t pos = 0, fieldPos = 0, fieldNum = 0, fieldPosStart;
+        uint64_t pos = 0, fieldPos = 0, fieldPosStart;
+        typeFIELD fieldNum = 0;
         bool prevValue;
         uint16_t fieldLength = 0, colLength = 0;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        for (uint64_t i = fieldNum; i < redoLogRecord1->rowData; ++i)
+        while (fieldNum < redoLogRecord1->rowData)
             oracleAnalyzer->nextField(redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000002);
 
         fieldPosStart = fieldPos;
@@ -1314,8 +1319,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint64_t fieldPos, fieldNum, colNum, colShift, rowDeps;
-        uint16_t fieldLength, colLength;
+        uint64_t fieldPos, rowDeps;
+        typeFIELD fieldNum;
+        uint16_t fieldLength, colLength, colNum, colShift;
         uint8_t* nulls;
         uint8_t bits;
         uint8_t* colNums;
@@ -1346,8 +1352,13 @@ namespace OpenLogReplicator {
                 } else {
                     colNums = nullptr;
                 }
+                if (colShift >= MAX_NO_COLUMNS) {
+                    WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: invalid column shift: (" <<
+                            dec << colShift << "), before: " << dec << redoLogRecord1p->suppLogBefore);
+                    break;
+                }
 
-                for (uint64_t i = fieldNum; i < redoLogRecord1p->rowData - 1; ++i)
+                while (fieldNum < redoLogRecord1p->rowData - 1)
                     oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000003);
 
                 for (uint64_t i = 0; i < redoLogRecord1p->cc; ++i) {
@@ -1371,10 +1382,18 @@ namespace OpenLogReplicator {
                     if (i == redoLogRecord1p->cc - 1 && (redoLogRecord1p->fb & FB_N) != 0)
                         fb |= FB_N;
 
-                    if (object != nullptr && colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column (UNDO)");
-                        break;
+                    if (object != nullptr) {
+                        if (colNum >= object->maxSegCol) {
+                            WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
+                                    dec << colNum << "), probably table was altered, ignoring extra column (UNDO)");
+                            break;
+                        }
+                    } else {
+                        if (colNum >= MAX_NO_COLUMNS) {
+                            WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: referring to invalid column id(" <<
+                                    dec << colNum << ")");
+                            break;
+                        }
                     }
 
                     if ((*nulls & bits) != 0)
@@ -1397,7 +1416,7 @@ namespace OpenLogReplicator {
 
             //supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
-                for (uint64_t i = fieldNum; i < redoLogRecord1p->suppLogRowData - 1; ++i)
+                while (fieldNum < redoLogRecord1p->suppLogRowData - 1)
                     oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000005);
 
                 colNums = redoLogRecord1p->data + redoLogRecord1p->suppLogNumsDelta;
@@ -1415,10 +1434,18 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->nextField(redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000006);
                     colNum = oracleAnalyzer->read16(colNums) - 1;
 
-                    if (object != nullptr && colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column (SUP)");
-                        break;
+                    if (object != nullptr) {
+                        if (colNum >= object->maxSegCol) {
+                            WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
+                                    dec << colNum << "), probably table was altered, ignoring extra column (SUP)");
+                            break;
+                        }
+                    } else {
+                        if (colNum >= MAX_NO_COLUMNS) {
+                            WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: referring to invalid column id(" <<
+                                    dec << colNum << ")");
+                            break;
+                        }
                     }
 
                     colNums += 2;
@@ -1453,15 +1480,24 @@ namespace OpenLogReplicator {
                 nulls = redoLogRecord2p->data + redoLogRecord2p->nullsDelta;
                 bits = 1;
 
+                if (redoLogRecord2p->suppLogAfter > 0)
+                    colShift = redoLogRecord2p->suppLogAfter - 1;
+                else
+                    colShift = 0;
+
                 if (redoLogRecord2p->colNumsDelta > 0) {
                     colNums = redoLogRecord2p->data + redoLogRecord2p->colNumsDelta;
-                    colShift = redoLogRecord2p->suppLogAfter - 1 - oracleAnalyzer->read16(colNums);
+                    colShift -= oracleAnalyzer->read16(colNums);
                 } else {
                     colNums = nullptr;
-                    colShift = redoLogRecord2p->suppLogAfter - 1;
+                }
+                if (colShift >= MAX_NO_COLUMNS) {
+                    WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: invalid column shift: (" <<
+                            dec << colShift << "), after: " << dec << redoLogRecord2p->suppLogAfter << " columns: " << dec << colNums);
+                    break;
                 }
 
-                for (uint64_t i = fieldNum; i < redoLogRecord2p->rowData - 1; ++i)
+                while (fieldNum < redoLogRecord2p->rowData - 1)
                     oracleAnalyzer->nextField(redoLogRecord2p, fieldNum, fieldPos, fieldLength, 0x000007);
 
                 for (uint64_t i = 0; i < redoLogRecord2p->cc; ++i) {
@@ -1488,10 +1524,18 @@ namespace OpenLogReplicator {
                     } else
                         colNum = i + colShift;
 
-                    if (object != nullptr && colNum >= object->maxSegCol) {
-                        WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
-                                dec << colNum << "), probably table was altered, ignoring extra column (REDO)");
-                        break;
+                    if (object != nullptr) {
+                        if (colNum >= object->maxSegCol) {
+                            WARNING("table: " << object->owner << "." << object->name << ": referring to unknown column id(" <<
+                                    dec << colNum << "), probably table was altered, ignoring extra column (REDO)");
+                            break;
+                        }
+                    } else {
+                        if (colNum >= MAX_NO_COLUMNS) {
+                            WARNING("table: [DATAOBJ: " << redoLogRecord1p->dataObj << "]: referring to invalid column id(" <<
+                                    dec << colNum << ")");
+                            break;
+                        }
                     }
 
                     if ((*nulls & bits) != 0)
@@ -1528,6 +1572,7 @@ namespace OpenLogReplicator {
 
                 //merge column values
                 if ((valuesMerge[base] & mask) != 0) {
+
                     for (uint64_t j = 0; j < 4; ++j) {
                         uint64_t length = 0;
 
@@ -1538,11 +1583,18 @@ namespace OpenLogReplicator {
                         if (valuesPart[2][column][j] != nullptr)
                             length += lengthsPart[2][column][j];
 
+                        if (length == 0)
+                            continue;
+
                         if (values[column][j] != nullptr) {
-                            ERROR("values: (" << dec << (uint64_t)valuesPart[0][column][j] << "," << (uint64_t)valuesPart[1][column][j] <<
-                                    "," << (uint64_t)valuesPart[2][column][j] << ")-" << (uint64_t)values[column][j] <<
-                                    " lengths: (" << dec << (uint64_t)lengthsPart[0][column][j] << "," << (uint64_t)lengthsPart[1][column][j] <<
-                                    "," << (uint64_t)lengthsPart[2][column][j] << ")-" << (uint64_t)lengths[column][j]);
+                            ERROR("values: (" << dec << (uint64_t)valuesPart[0][column][j]
+                                << "," << (uint64_t)valuesPart[1][column][j]
+                                << "," << (uint64_t)valuesPart[2][column][j] << ")-"
+                                << (uint64_t)values[column][j]
+                                << " lengths: (" << dec << (uint64_t)lengthsPart[0][column][j]
+                                << "," << (uint64_t)lengthsPart[1][column][j]
+                                << "," << (uint64_t)lengthsPart[2][column][j]
+                                << ")-" << (uint64_t)lengths[column][j]);
                             RUNTIME_FAIL("value for " << dec << column << "/" << j << " is already set when merging");
                         }
 
@@ -1659,76 +1711,88 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (object != nullptr) {
-            if (type == TRANSACTION_UPDATE) {
-                if (columnFormat < COLUMN_FORMAT_FULL_UPD) {
-                    uint64_t baseMax = valuesMax >> 6;
-                    for (uint64_t base = 0; base <= baseMax; ++base) {
-                        typeCOL column = base << 6;
-                        for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                            if (valuesSet[base] < mask)
-                                break;
-                            if ((valuesSet[base] & mask) == 0)
-                                continue;
+        if (type == TRANSACTION_UPDATE) {
+            uint64_t baseMax = valuesMax >> 6;
+            for (uint64_t base = 0; base <= baseMax; ++base) {
+                typeCOL column = base << 6;
+                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                    if (valuesSet[base] < mask)
+                        break;
+                    if ((valuesSet[base] & mask) == 0)
+                        continue;
 
-                            if (object->columns[column]->numPk == 0) {
-                                //remove unchanged column values - only for tables with defined primary key
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
-                                        values[column][VALUE_AFTER] != nullptr) {
-                                    if (lengths[column][VALUE_BEFORE] == 0 ||
-                                            memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
-                                        valuesSet[base] &= ~mask;
-                                        values[column][VALUE_BEFORE] = nullptr;
-                                        values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                        values[column][VALUE_AFTER] = nullptr;
-                                        values[column][VALUE_AFTER_SUPP] = nullptr;
-                                        continue;
-                                    }
-                                }
-
-                                //remove columns additionally present, but null
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                    if (object != nullptr && columnFormat < COLUMN_FORMAT_FULL_UPD) {
+                        if (object->columns[column]->numPk == 0) {
+                            //remove unchanged column values - only for tables with defined primary key
+                            if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
+                                    values[column][VALUE_AFTER] != nullptr) {
+                                if (lengths[column][VALUE_BEFORE] == 0 ||
+                                        memcmp(values[column][VALUE_BEFORE], values[column][VALUE_AFTER], lengths[column][VALUE_BEFORE]) == 0) {
                                     valuesSet[base] &= ~mask;
                                     values[column][VALUE_BEFORE] = nullptr;
                                     values[column][VALUE_BEFORE_SUPP] = nullptr;
-                                    values[column][VALUE_AFTER_SUPP] = nullptr;
-                                    continue;
-                                }
-
-                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
-                                    valuesSet[base] &= ~mask;
                                     values[column][VALUE_AFTER] = nullptr;
-                                    values[column][VALUE_BEFORE_SUPP] = nullptr;
                                     values[column][VALUE_AFTER_SUPP] = nullptr;
                                     continue;
                                 }
+                            }
 
-                            } else {
-                                //leave null value & propagate
-                                if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
-                                    values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
-                                    lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
-                                }
+                            //remove columns additionally present, but null
+                            if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                                valuesSet[base] &= ~mask;
+                                values[column][VALUE_BEFORE] = nullptr;
+                                values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                values[column][VALUE_AFTER_SUPP] = nullptr;
+                                continue;
+                            }
 
-                                if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
-                                    values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
-                                    lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
-                                }
+                            if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
+                                valuesSet[base] &= ~mask;
+                                values[column][VALUE_AFTER] = nullptr;
+                                values[column][VALUE_BEFORE_SUPP] = nullptr;
+                                values[column][VALUE_AFTER_SUPP] = nullptr;
+                                continue;
+                            }
+
+                        } else {
+                            //leave null value & propagate
+                            if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
+                                values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
+                                lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
+                            }
+
+                            if (values[column][VALUE_AFTER] != nullptr && lengths[column][VALUE_AFTER] == 0 && values[column][VALUE_BEFORE] == nullptr) {
+                                values[column][VALUE_BEFORE] = values[column][VALUE_AFTER];
+                                lengths[column][VALUE_BEFORE] = lengths[column][VALUE_AFTER];
                             }
                         }
                     }
-                }
 
-                if (system) {
-                    oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
-                        processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                } else {
-                    if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
-                        processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                }
+                    //for update assume null for missing columns
+                    if (values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] == nullptr) {
+                        values[column][VALUE_AFTER] = (uint8_t*)1;
+                        lengths[column][VALUE_AFTER] = 0;
+                    }
 
-            } else if (type == TRANSACTION_INSERT) {
+                    if (values[column][VALUE_AFTER] != nullptr && values[column][VALUE_BEFORE] == nullptr) {
+                        values[column][VALUE_BEFORE] = (uint8_t*)1;
+                        lengths[column][VALUE_BEFORE] = 0;
+                    }
+                }
+            }
+
+
+            if (system) {
+                oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                    processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            } else {
+                if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
+                    processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            }
+
+        } else if (type == TRANSACTION_INSERT) {
+            if (object != nullptr) {
                 //assume null values for all missing columns
                 if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
                     typeCOL maxCol = object->columns.size();
@@ -1773,17 +1837,19 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
+            }
 
-                if (system) {
-                    oracleAnalyzer->systemTransaction->processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
-                        processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                } else {
-                    if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
-                        processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                }
+            if (system) {
+                oracleAnalyzer->systemTransaction->processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                    processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            } else {
+                if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
+                    processInsert(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            }
 
-            } else if (type == TRANSACTION_DELETE) {
+        } else if (type == TRANSACTION_DELETE) {
+            if (object != nullptr) {
                 //assume null values for all missing columns
                 if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
                     typeCOL maxCol = object->columns.size();
@@ -1828,15 +1894,15 @@ namespace OpenLogReplicator {
                         }
                     }
                 }
+            }
 
-                if (system) {
-                    oracleAnalyzer->systemTransaction->processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
-                        processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                } else {
-                    if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
-                        processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
-                }
+            if (system) {
+                oracleAnalyzer->systemTransaction->processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
+                    processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
+            } else {
+                if (object == nullptr || (object->options & OPTIONS_DEBUG_TABLE) == 0)
+                    processDelete(object, dataObj, bdba, slot, redoLogRecord1->xid);
             }
         }
 
@@ -1845,7 +1911,8 @@ namespace OpenLogReplicator {
 
     //0x18010000
     void OutputBuffer::processDDLheader(RedoLogRecord* redoLogRecord1) {
-        uint64_t fieldPos = 0, fieldNum = 0, sqlLength;
+        uint64_t fieldPos = 0, sqlLength;
+        typeFIELD fieldNum = 0;
         uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
         char* sqlText = nullptr;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);

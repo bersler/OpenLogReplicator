@@ -33,7 +33,8 @@ namespace OpenLogReplicator {
 
     void OpCode0514::process(void) {
         OpCode::process();
-        uint64_t fieldNum = 0, fieldPos = 0;
+        uint64_t fieldPos = 0;
+        typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051401);

@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         }
         memset(redoBufferList, 0, oracleAnalyzer->readBufferMax * sizeof(uint8_t*));
 
-        headerBuffer = new uint8_t[REDO_PAGE_SIZE_MAX * 2];
+        headerBuffer = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2);
         if (headerBuffer == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read header)");
         }
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         }
 
         if (headerBuffer != nullptr) {
-            delete[] headerBuffer;
+            free(headerBuffer);
             headerBuffer = nullptr;
         }
 
@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
                 (blockSize == 4096 && buffer[1] != 0x82)) {
             ERROR("invalid block size (found: " << dec << blockSize << ", block: " << dec << blockNumber <<
                     ", header[1]: 0x" << setfill('0') << setw(2) << hex << (uint64_t)buffer[1] << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         typeBLK blockNumberHeader = oracleAnalyzer->read32(buffer + 4);
@@ -121,8 +121,8 @@ namespace OpenLogReplicator {
         } else {
             if (group == 0) {
                 if (sequence != sequenceHeader) {
-                    ERROR("invalid header sequence (" << dec << sequenceHeader << ", expected: " << sequence << "): " << fileName);
-                    return REDO_ERROR;
+                    WARNING("invalid header sequence (" << dec << sequenceHeader << ", expected: " << sequence << "): " << fileName);
+                    return REDO_ERROR_SEQUENCE;
                 }
             } else {
                 if (sequence > sequenceHeader)
@@ -134,7 +134,7 @@ namespace OpenLogReplicator {
 
         if (blockNumberHeader != blockNumber) {
             ERROR("invalid header block number (" << dec << blockNumberHeader << ", expected: " << blockNumber << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BLOCK;
         }
 
         if ((oracleAnalyzer->disableChecks & DISABLE_CHECK_BLOCK_SUM) == 0) {
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
                         hintDisplayed = true;
                     }
                 }
-                return REDO_BAD_CRC;
+                return REDO_ERROR_CRC;
             }
         }
 
@@ -179,20 +179,18 @@ namespace OpenLogReplicator {
         int64_t bytes = redoRead(headerBuffer, 0, blockSize > 0 ? blockSize * 2: REDO_PAGE_SIZE_MAX * 2);
         if (bytes < 512) {
             ERROR("reading file: " << fileName << " - " << strerror(errno));
-            return REDO_ERROR;
+            return REDO_ERROR_READ;
         }
 
         //check file header
         if (headerBuffer[0] != 0) {
             ERROR("invalid header (header[0]: 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[0] << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         if (headerBuffer[28] == 0x7A && headerBuffer[29] == 0x7B && headerBuffer[30] == 0x7C && headerBuffer[31] == 0x7D) {
-            if (!oracleAnalyzer->bigEndian) {
-                INFO("changing configuration to BIG ENDIAN data for file: " << fileName);
+            if (!oracleAnalyzer->bigEndian)
                 oracleAnalyzer->setBigEndian();
-            }
         } else
         if (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A ||
                 oracleAnalyzer->bigEndian) {
@@ -200,7 +198,7 @@ namespace OpenLogReplicator {
                     ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[29] <<
                     ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[30] <<
                     ", 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[31] << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         bool blockSizeOK = false;
@@ -218,12 +216,12 @@ namespace OpenLogReplicator {
             ERROR("invalid block size (found: " << dec << blockSize <<
                     ", header[1]: 0x" << setfill('0') << setw(2) << hex << (uint64_t)headerBuffer[1] << "): " << fileName);
             blockSize = 0;
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         if (bytes < ((int64_t)blockSize * 2)) {
             ERROR("reading file: " << fileName << " - " << strerror(errno));
-            return REDO_ERROR;
+            return REDO_ERROR_READ;
         }
 
         if (bytes > 0 && oracleAnalyzer->redoCopyPath.length() > 0) {
@@ -251,7 +249,7 @@ namespace OpenLogReplicator {
             int64_t bytesWritten = pwrite(fileCopyDes, headerBuffer, bytes, 0);
             if (bytesWritten != bytes) {
                 ERROR("writing file: " << fileNameWrite << " - " << strerror(errno));
-                return REDO_ERROR;
+                return REDO_ERROR_WRITE;
             }
         }
 
@@ -275,17 +273,6 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x15000000 && compatVsn <= 0x15030000)) //21.0.0.0 - 21.3.0.0
             version = compatVsn;
 
-        if (oracleAnalyzer->version == 0) {
-            oracleAnalyzer->version = version;
-            INFO("found redo log version: 0x" << setfill('0') << setw(8) << hex << compatVsn);
-        }
-
-        if (version == 0 || version != oracleAnalyzer->version) {
-            ERROR("invalid database version (found: 0x" << setfill('0') << setw(8) << hex << compatVsn <<
-                    ", expected: 0x" << setfill('0') << setw(8) << hex << version << "): " << fileName);
-            return REDO_ERROR;
-        }
-
         activationHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 52);
         numBlocksHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 156);
         resetlogsHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 160);
@@ -293,14 +280,38 @@ namespace OpenLogReplicator {
         firstTimeHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 188);
         nextScnHeader = oracleAnalyzer->readSCN(headerBuffer + blockSize + 192);
 
+        if (numBlocksHeader != NUM_BLOCK_ONLINE && fileSize > ((uint64_t)numBlocksHeader) * blockSize && group == 0) {
+            fileSize = ((uint64_t)numBlocksHeader) * blockSize;
+            INFO("updating redo log size to: " << dec << fileSize << " for: " << fileName);
+        }
+
+        if (oracleAnalyzer->version == 0) {
+            char SID[9];
+            memcpy(SID, headerBuffer + blockSize + 28, 8); SID[8] = 0;
+            oracleAnalyzer->version = version;
+
+            INFO("found redo log version: 0x" << setfill('0') << setw(8) << hex << compatVsn
+                    << ", activation: " << dec << activationHeader
+                    << ", resetlogs: " << dec << resetlogsHeader
+                    << ", page: " << dec << blockSize
+                    << ", SID: " << SID
+                    << ", endian: " << (oracleAnalyzer->bigEndian ? "BIG" : "LITTLE"));
+        }
+
+        if (version == 0 || version != oracleAnalyzer->version) {
+            ERROR("invalid database version (found: 0x" << setfill('0') << setw(8) << hex << compatVsn <<
+                    ", expected: 0x" << setfill('0') << setw(8) << hex << version << "): " << fileName);
+            return REDO_ERROR_BAD_DATA;
+        }
+
         uint64_t badBlockCrcCount = 0;
         ret = checkBlockHeader(headerBuffer + blockSize, 1, true, false);
         TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
 
-        while (ret == REDO_BAD_CRC) {
+        while (ret == REDO_ERROR_CRC) {
             ++badBlockCrcCount;
             if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
-                return REDO_ERROR;
+                return REDO_ERROR_BAD_DATA;
 
             usleep(oracleAnalyzer->redoReadSleepUS);
             ret = checkBlockHeader(headerBuffer + blockSize, 1, true, false);
@@ -315,7 +326,7 @@ namespace OpenLogReplicator {
 
         if (resetlogsHeader != oracleAnalyzer->resetlogs) {
             ERROR("invalid resetlogs value (found: " << dec << resetlogsHeader << ", expected: " << dec << oracleAnalyzer->resetlogs << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         if (oracleAnalyzer->activation == 0)
@@ -323,7 +334,7 @@ namespace OpenLogReplicator {
 
         if (activationHeader != 0 && activationHeader != oracleAnalyzer->activation) {
             ERROR("invalid activation id value (found: " << dec << activationHeader << ", expected: " << dec << oracleAnalyzer->activation << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         if (firstScn == ZERO_SCN || status == READER_STATUS_UPDATE) {
@@ -332,7 +343,7 @@ namespace OpenLogReplicator {
         } else {
             if (firstScnHeader != firstScn) {
                 ERROR("invalid first scn value (found: " << dec << firstScnHeader << ", expected: " << dec << firstScn << "): " << fileName);
-                return REDO_ERROR;
+                return REDO_ERROR_BAD_DATA;
             }
         }
 
@@ -343,7 +354,7 @@ namespace OpenLogReplicator {
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
             ERROR("invalid next scn value (found: " << dec << nextScnHeader << ", expected: " << dec << nextScn << "): " << fileName);
-            return REDO_ERROR;
+            return REDO_ERROR_BAD_DATA;
         }
 
         return ret;
@@ -487,14 +498,14 @@ namespace OpenLogReplicator {
                                 TRACE(TRACE2_DISK, "DISK: reading#2 " << fileName << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                                 if (actualRead < 0) {
                                     ERROR("reading file: " << fileName << " - " << strerror(errno));
-                                    ret = REDO_ERROR;
+                                    ret = REDO_ERROR_READ;
                                     break;
                                 }
                                 if (actualRead > 0 && fileCopyDes != -1) {
                                     int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                     if (bytesWritten != actualRead) {
                                         ERROR("writing file: " << fileNameWrite << " - " << strerror(errno));
-                                        ret = REDO_ERROR;
+                                        ret = REDO_ERROR_WRITE;
                                         break;
                                     }
                                 }
@@ -557,7 +568,7 @@ namespace OpenLogReplicator {
 
                             TRACE(TRACE2_DISK, "DISK: reading#1 " << fileName << " at (" << dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << dec << actualRead);
                             if (actualRead < 0) {
-                                ret = REDO_ERROR;
+                                ret = REDO_ERROR_READ;
                                 break;
                             }
 
@@ -565,7 +576,7 @@ namespace OpenLogReplicator {
                                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                 if (bytesWritten != actualRead) {
                                     ERROR("writing file: " << fileNameWrite << " - " << strerror(errno));
-                                    ret = REDO_ERROR;
+                                    ret = REDO_ERROR_WRITE;
                                     break;
                                 }
                             }
@@ -586,11 +597,18 @@ namespace OpenLogReplicator {
                                 ++goodBlocks;
                             }
 
+                            //batch mode with partial online redo log file
+                            if (goodBlocks == 0 && group == 0 && nextScnHeader == ZERO_SCN) {
+                                WARNING("end of online redo log file at position " << dec << bufferScan);
+                                ret = REDO_FINISHED;
+                                break;
+                            }
+
                             //treat bad blocks as empty
-                            if (tmpRet == REDO_BAD_CRC && oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0)
+                            if (tmpRet == REDO_ERROR_CRC && oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0)
                                 tmpRet = REDO_EMPTY;
 
-                            if (tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
+                            if (goodBlocks == 0 && tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
                                 ret = tmpRet;
                                 break;
                             }
@@ -624,6 +642,13 @@ namespace OpenLogReplicator {
                                     bufferScan = bufferEnd;
                                     oracleAnalyzer->analyzerCond.notify_all();
                                 }
+                            }
+
+                            //batch mode with partial online redo log file
+                            if (tmpRet == REDO_ERROR_SEQUENCE && group == 0 && nextScnHeader == ZERO_SCN) {
+                                WARNING("end of online redo log file at position " << dec << bufferScan);
+                                ret = REDO_FINISHED;
+                                break;
                             }
                         }
 
