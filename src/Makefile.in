@@ -115,15 +115,16 @@ bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
 @OCI_COMPILE_TRUE@ReaderASM.cpp
 
 @KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
-@PROTOBUF_COMPILE_TRUE@am__append_3 = OraProtoBuf.pb.cpp \
+@ROCKETMQ_COMPILE_TRUE@am__append_3 = WriterRocketMQ.cpp
+@PROTOBUF_COMPILE_TRUE@am__append_4 = OraProtoBuf.pb.cpp \
 @PROTOBUF_COMPILE_TRUE@OutputBufferProtobuf.cpp \
 @PROTOBUF_COMPILE_TRUE@Stream.cpp \
 @PROTOBUF_COMPILE_TRUE@StreamNetwork.cpp \
 @PROTOBUF_COMPILE_TRUE@WriterStream.cpp
 
-@PROTOBUF_COMPILE_TRUE@am__append_4 = StreamClient
-@PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_5 = StreamZeroMQ.cpp
+@PROTOBUF_COMPILE_TRUE@am__append_5 = StreamClient
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_6 = StreamZeroMQ.cpp
+@PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_7 = StreamZeroMQ.cpp
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -167,9 +168,9 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	WriterFile.cpp global.cpp uintX_t.cpp DatabaseConnection.cpp \
 	DatabaseEnvironment.cpp DatabaseStatement.cpp \
 	OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp \
-	ReaderASM.cpp WriterKafka.cpp OraProtoBuf.pb.cpp \
-	OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp \
-	WriterStream.cpp StreamZeroMQ.cpp
+	ReaderASM.cpp WriterKafka.cpp WriterRocketMQ.cpp \
+	OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp \
+	StreamNetwork.cpp WriterStream.cpp StreamZeroMQ.cpp
 @OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseEnvironment.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseStatement.$(OBJEXT) \
@@ -177,12 +178,13 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	ReaderASM.$(OBJEXT)
 @KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
-@PROTOBUF_COMPILE_TRUE@am__objects_3 = OraProtoBuf.pb.$(OBJEXT) \
+@ROCKETMQ_COMPILE_TRUE@am__objects_3 = WriterRocketMQ.$(OBJEXT)
+@PROTOBUF_COMPILE_TRUE@am__objects_4 = OraProtoBuf.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OutputBufferProtobuf.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	Stream.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	StreamNetwork.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	WriterStream.$(OBJEXT)
-@PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__objects_4 = StreamZeroMQ.$(OBJEXT)
+@PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__objects_5 = StreamZeroMQ.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSet7bit.$(OBJEXT) CharacterSet8bit.$(OBJEXT) \
 	CharacterSetAL16UTF16.$(OBJEXT) CharacterSetAL32UTF8.$(OBJEXT) \
@@ -218,7 +220,7 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
 	Writer.$(OBJEXT) WriterFile.$(OBJEXT) global.$(OBJEXT) \
 	uintX_t.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4)
+	$(am__objects_3) $(am__objects_4) $(am__objects_5)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -235,7 +237,7 @@ am__StreamClient_SOURCES_DIST = StreamClient.cpp OraProtoBuf.pb.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	Stream.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	StreamNetwork.$(OBJEXT) \
-@PROTOBUF_COMPILE_TRUE@	$(am__objects_4)
+@PROTOBUF_COMPILE_TRUE@	$(am__objects_5)
 StreamClient_OBJECTS = $(am_StreamClient_OBJECTS)
 StreamClient_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -307,8 +309,8 @@ am__depfiles_remade = ./$(DEPDIR)/CharacterSet.Po \
 	./$(DEPDIR)/Thread.Po ./$(DEPDIR)/Transaction.Po \
 	./$(DEPDIR)/TransactionBuffer.Po ./$(DEPDIR)/Writer.Po \
 	./$(DEPDIR)/WriterFile.Po ./$(DEPDIR)/WriterKafka.Po \
-	./$(DEPDIR)/WriterStream.Po ./$(DEPDIR)/global.Po \
-	./$(DEPDIR)/uintX_t.Po
+	./$(DEPDIR)/WriterRocketMQ.Po ./$(DEPDIR)/WriterStream.Po \
+	./$(DEPDIR)/global.Po ./$(DEPDIR)/uintX_t.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -503,11 +505,12 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	SysUser.cpp SystemTransaction.cpp Thread.cpp \
 	TransactionBuffer.cpp Transaction.cpp Writer.cpp \
 	WriterFile.cpp global.cpp uintX_t.cpp $(am__append_1) \
-	$(am__append_2) $(am__append_3) $(am__append_5)
+	$(am__append_2) $(am__append_3) $(am__append_4) \
+	$(am__append_6)
 @PROTOBUF_COMPILE_TRUE@StreamClient_SOURCES = StreamClient.cpp \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.cpp NetworkException.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.cpp Stream.cpp \
-@PROTOBUF_COMPILE_TRUE@	StreamNetwork.cpp $(am__append_6)
+@PROTOBUF_COMPILE_TRUE@	StreamNetwork.cpp $(am__append_7)
 all: all-am
 
 .SUFFIXES:
@@ -689,6 +692,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Writer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterFile.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterKafka.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterRocketMQ.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/WriterStream.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uintX_t.Po@am__quote@ # am--include-marker
@@ -937,6 +941,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/Writer.Po
 	-rm -f ./$(DEPDIR)/WriterFile.Po
 	-rm -f ./$(DEPDIR)/WriterKafka.Po
+	-rm -f ./$(DEPDIR)/WriterRocketMQ.Po
 	-rm -f ./$(DEPDIR)/WriterStream.Po
 	-rm -f ./$(DEPDIR)/global.Po
 	-rm -f ./$(DEPDIR)/uintX_t.Po
@@ -1069,6 +1074,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/Writer.Po
 	-rm -f ./$(DEPDIR)/WriterFile.Po
 	-rm -f ./$(DEPDIR)/WriterKafka.Po
+	-rm -f ./$(DEPDIR)/WriterRocketMQ.Po
 	-rm -f ./$(DEPDIR)/WriterStream.Po
 	-rm -f ./$(DEPDIR)/global.Po
 	-rm -f ./$(DEPDIR)/uintX_t.Po

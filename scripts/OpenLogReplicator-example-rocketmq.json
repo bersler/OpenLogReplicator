@@ -11,7 +11,7 @@
         "server": "//host:1521/SERVICE"
       },
       "format": {
-        "type": "protobuf"
+        "type": "json"
       },
       "memory-min-mb": 64,
       "memory-max-mb": 1024,
@@ -29,8 +29,11 @@
       "alias": "K1", 
       "source": "S1",
       "writer": {
-        "type": "zeromq",
-        "uri": "tcp://0.0.0.0:50000"
+        "type": "rocketmq",
+        "topic": "O112A",
+        "address": "127.0.0.1:9876",
+        "tags": "TAG",
+        "keys": "KEYS"
       }
     }
   ]

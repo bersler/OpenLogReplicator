@@ -104,6 +104,10 @@ if KAFKA_COMPILE
 OpenLogReplicator_SOURCES += WriterKafka.cpp
 endif
 
+if ROCKETMQ_COMPILE
+OpenLogReplicator_SOURCES += WriterRocketMQ.cpp
+endif
+
 if PROTOBUF_COMPILE
 OpenLogReplicator_SOURCES += OraProtoBuf.pb.cpp \
 OutputBufferProtobuf.cpp \

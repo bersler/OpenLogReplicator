@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.9.29-beta],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.9.30-beta],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -47,6 +47,11 @@ AC_ARG_WITH([rdkafka],
   [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_RDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
   [])
 
+AC_ARG_WITH([rocketmq],
+  [AS_HELP_STRING([--with-rocketmq=PATH], [rocketmq directory])],
+  [ROCKETMQ=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_ROCKETMQ"; LDFLAGS="-L$withval/bin -lrocketmq $LDFLAGS"]
+  [])
+
 AC_ARG_WITH([rapidjson],
   [AS_HELP_STRING([--with-rapidjson=PATH], [rapidjson directory])],
   [CPPFLAGS="-I$withval/include $CPPFLAGS"]
@@ -70,6 +75,7 @@ AC_ARG_WITH([instantclient],
 CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmessage-length=0"
 LDFLAGS="$LDFLAGS -pthread"
 AM_CONDITIONAL([KAFKA_COMPILE], [test x$KAFKA = xtrue])
+AM_CONDITIONAL([ROCKETMQ_COMPILE], [test x$ROCKETMQ = xtrue])
 AM_CONDITIONAL([OCI_COMPILE], [test x$OCI = xtrue])
 AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
 AM_CONDITIONAL([ZEROMQ_COMPILE], [test x$ZEROMQ = xtrue])

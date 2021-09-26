@@ -1,3 +1,7 @@
+0.9.30-beta
+- added target: Apache RocketMQ (experimental)
+- OpenLogReplicator.json: updated format version to 0.9.30
+
 0.9.29-beta
 - fixed bug: "disable-checks" parameter value check
 - fixed bug: schemaless mode failing with compressed tables

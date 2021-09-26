@@ -121,6 +121,13 @@ namespace OpenLogReplicator {
     }
 
     void Writer::confirmMessage(OutputBufferMsg* msg) {
+        if (msg == nullptr) {
+            if (tmpQueueSize == 0) {
+                RUNTIME_FAIL("trying to confirm empty message");
+            }
+            msg = queue[0];
+        }
+
         msg->flags |= OUTPUT_BUFFER_CONFIRMED;
         if (msg->flags & OUTPUT_BUFFER_ALLOCATED) {
             delete[] msg->data;

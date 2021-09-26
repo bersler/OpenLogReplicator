@@ -61,9 +61,9 @@ namespace OpenLogReplicator {
         virtual void pollQueue(void);
 
     public:
-        WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, const char* output, const char* format, uint64_t maxSize, uint64_t newLine,
-                uint64_t append, uint64_t pollIntervalUS, uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence,
-                const char* startTime, uint64_t startTimeRel);
+        WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+                uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
+                const char* output, const char* format, uint64_t maxSize, uint64_t newLine, uint64_t append);
         virtual ~WriterFile();
     };
 }

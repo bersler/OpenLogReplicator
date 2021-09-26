@@ -65,7 +65,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.25"
+#define CONFIG_SCHEMA_VERSION                   "0.9.30"
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
 #define SCHEMA_FILE_MAX_SIZE                    2147483648
@@ -82,10 +82,6 @@ typedef uint64_t typeunicode;
 #define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
 #define MEMORY_CHUNK_MIN_MB                     16
 #define MEMORY_CHUNK_MIN_MB_CHR                 "16"
-
-#define WRITER_KAFKA                            1
-#define WRITER_FILE                             2
-#define WRITER_SERVICE                          3
 
 #define ARCH_LOG_PATH                           0
 #define ARCH_LOG_ONLINE                         1

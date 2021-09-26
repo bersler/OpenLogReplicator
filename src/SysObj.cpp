@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
     }
 
     bool SysObj::isTable(void) {
-        return (type == 2);
+        return (type == SYSOBJ_TYPE_TABLE);
     }
 
     bool SysObj::isTemporary(void) {

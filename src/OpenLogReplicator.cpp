@@ -45,6 +45,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterKafka.h"
 #endif /* LINK_LIBRARY_RDKAFKA */
 
+#ifdef LINK_LIBRARY_ROCKETMQ
+#include "WriterRocketMQ.h"
+#endif /* LINK_LIBRARY_ROCKETMQ */
+
 #ifdef LINK_LIBRARY_OCI
 #include "OracleAnalyzerOnline.h"
 #include "OracleAnalyzerOnlineASM.h"
@@ -847,8 +851,8 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                writer = new WriterFile(alias, oracleAnalyzer, output, format, maxSize, newLine, append, pollIntervalUS,
-                        checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel);
+                writer = new WriterFile(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                        startSequence, startTime, startTimeRel, output, format, maxSize, newLine, append);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
                 }
@@ -881,15 +885,56 @@ int main(int argc, char** argv) {
                 }
 
                 const char* brokers = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "brokers");
+
                 const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
 
-                writer = new WriterKafka(alias, oracleAnalyzer, brokers, topic, maxMessageMb, maxMessages, pollIntervalUS, checkpointIntervalS,
-                        queueSize, startScn, startSequence, startTime, startTimeRel, enableIdempotence);
+                writer = new WriterKafka(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                        startSequence, startTime, startTimeRel, brokers, topic, maxMessages, maxMessageMb, enableIdempotence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
 #else
                 RUNTIME_FAIL("writer Kafka is not compiled, exiting")
+#endif /* LINK_LIBRARY_RDKAFKA */
+            } else if (strcmp(writerType, "rocketmq") == 0) {
+#ifdef LINK_LIBRARY_ROCKETMQ
+
+                const char *groupId = "OpenLogReplicator";
+                if (writerJSON.HasMember("group-id"))
+                    groupId = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "group-id");
+
+                const char* address = nullptr;
+                if (writerJSON.HasMember("address"))
+                    address = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "address");
+
+                const char* domain = nullptr;
+                if (writerJSON.HasMember("domain"))
+                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "domain");
+
+                const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
+
+                if (address == nullptr && domain == nullptr) {
+                    CONFIG_FAIL("bad JSON, for RocketMQ writer, either \"address\" or \"domain\" is required");
+                }
+                if (address != nullptr && domain != nullptr) {
+                    CONFIG_FAIL("bad JSON, for RocketMQ writer, both \"address\" and \"domain\" have been used");
+                }
+
+                const char* tags = "";
+                if (writerJSON.HasMember("tags"))
+                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "tags");
+
+                const char* keys = "";
+                if (writerJSON.HasMember("keys"))
+                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "keys");
+
+                writer = new WriterRocketMQ(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                        startSequence, startTime, startTimeRel, groupId, address, domain, topic, tags, keys);
+                if (writer == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterRocketMQ) << " bytes memory (for: RocketMQ writer)");
+                }
+#else
+                RUNTIME_FAIL("writer RocketMQ is not compiled, exiting")
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
@@ -916,8 +961,8 @@ int main(int argc, char** argv) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
-                        queueSize, startScn, startSequence, startTime, startTimeRel, stream);
+                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                        startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
@@ -930,7 +975,7 @@ int main(int argc, char** argv) {
 
             oracleAnalyzer->outputBuffer->setWriter(writer);
             if (pthread_create(&writer->pthread, nullptr, &Thread::runStatic, (void*)writer)) {
-                RUNTIME_FAIL("spawning thread - kafka writer");
+                RUNTIME_FAIL("spawning thread - network writer");
             }
 
             writers.push_back(writer);
