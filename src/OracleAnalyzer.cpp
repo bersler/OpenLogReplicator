@@ -40,8 +40,9 @@ using namespace rapidjson;
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleAnalyzer::OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
-            const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks) :
+    OracleAnalyzer::OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
+            const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+            uint64_t disableChecks) :
         Thread(alias),
         sequence(ZERO_SEQ),
         suppLogDbPrimary(0),
@@ -86,6 +87,7 @@ namespace OpenLogReplicator {
         systemTransaction(nullptr),
         dumpRedoLog(dumpRedoLog),
         dumpRawData(dumpRawData),
+        dumpPath(dumpPath),
         flags(0),
         disableChecks(disableChecks),
         redoReadSleepUS(50000),

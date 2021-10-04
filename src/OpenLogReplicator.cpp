@@ -75,7 +75,23 @@ int main(int argc, char** argv) {
     signal(SIGUSR1, signalDump);
     uintX_t::initializeBASE10();
 
-    INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information");
+    INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, linked modules:"
+#ifdef LINK_LIBRARY_RDKAFKA
+" Kafka"
+#endif /* LINK_LIBRARY_RDKAFKA */
+#ifdef LINK_LIBRARY_ROCKETMQ
+" RocketMQ"
+#endif /* LINK_LIBRARY_ROCKETMQ */
+#ifdef LINK_LIBRARY_OCI
+" OCI"
+#endif /* LINK_LIBRARY_OCI */
+#ifdef LINK_LIBRARY_PROTOBUF
+" Probobuf"
+#ifdef LINK_LIBRARY_ZEROMQ
+" ZeroMQ"
+#endif /* LINK_LIBRARY_ZEROMQ */
+#endif /* LINK_LIBRARY_PROTOBUF */
+    );
 
     list<OracleAnalyzer*> analyzers;
     list<Writer*> writers;
@@ -156,6 +172,18 @@ int main(int argc, char** argv) {
             }
         }
 
+        const char* dumpPath = ".";
+        if (document.HasMember("dump-path"))
+            dumpPath = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
+
+        uint64_t dumpRawData = 0;
+        if (document.HasMember("dump-raw-data")) {
+            dumpRawData = getJSONfieldU64(fileName, document, "dump-raw-data");
+            if (dumpRawData > 1) {
+                CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << dec << dumpRawData << ", expected one of: {0, 1}");
+            }
+        }
+
         if (document.HasMember("trace")) {
             trace = getJSONfieldU64(fileName, document, "trace");
             if (trace > 4) {
@@ -167,14 +195,6 @@ int main(int argc, char** argv) {
             trace2 = getJSONfieldU64(fileName, document, "trace2");
             if (trace2 > 65535) {
                 CONFIG_FAIL("bad JSON, invalid \"trace2\" value: " << dec << trace2 << ", expected one of: {0 .. 65535}");
-            }
-        }
-
-        uint64_t dumpRawData = 0;
-        if (document.HasMember("dump-raw-data")) {
-            dumpRawData = getJSONfieldU64(fileName, document, "dump-raw-data");
-            if (dumpRawData > 1) {
-                CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << dec << dumpRawData << ", expected one of: {0, 1}");
             }
         }
 
@@ -361,7 +381,7 @@ int main(int argc, char** argv) {
                 const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
                 const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
 
-                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -401,7 +421,7 @@ int main(int argc, char** argv) {
 
             } else if (strcmp(readerType, "offline") == 0) {
 
-                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
@@ -434,8 +454,9 @@ int main(int argc, char** argv) {
                 const char* passwordASM = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password-asm");
                 const char* serverASM = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server-asm");
 
-                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, alias, name, memoryMinMb, memoryMaxMb,
-                        readBufferMax, disableChecks, user, password, server, userASM, passwordASM, serverASM, standby);
+                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, name,
+                        memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, userASM, passwordASM,
+                        serverASM, standby);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
@@ -464,7 +485,7 @@ int main(int argc, char** argv) {
                 if (readerJSON.HasMember("con-id"))
                     conId = getJSONfieldI16(fileName, readerJSON, "con-id");
 
-                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, alias,
+                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
@@ -527,7 +548,6 @@ int main(int argc, char** argv) {
             oracleAnalyzer->schema->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
-            oracleAnalyzer->schema->addElement("SYS", "SEG\\$", OPTIONS_SYSTEM_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);
             oracleAnalyzer->schema->addElement("SYS", "TABCOMPART\\$", OPTIONS_SYSTEM_TABLE);
@@ -670,8 +690,8 @@ int main(int argc, char** argv) {
 
             if (sourceJSON.HasMember("flags")) {
                 uint64_t flags = getJSONfieldU64(fileName, sourceJSON, "flags");
-                if (flags > 4095) {
-                    CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 4095}");
+                if (flags > 16383) {
+                    CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 16383}");
                 }
                 if ((flags & REDO_FLAGS_SCHEMALESS) != 0 && columnFormat > 0) {
                     CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << " is invalid for schemaless mode");

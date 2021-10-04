@@ -55,8 +55,6 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_ECOL11_OBJ;
         static const char* SQL_GET_SYS_OBJ_USER;
         static const char* SQL_GET_SYS_OBJ_NAME;
-        static const char* SQL_GET_SYS_SEG_USER;
-        static const char* SQL_GET_SYS_SEG_OBJ;
         static const char* SQL_GET_SYS_TAB_USER;
         static const char* SQL_GET_SYS_TAB_OBJ;
         static const char* SQL_GET_SYS_TABCOMPART_USER;
@@ -92,9 +90,9 @@ namespace OpenLogReplicator {
         DatabaseConnection* conn;
         bool keepConnection;
 
-        OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
-                const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
-                const char* user, const char* password, const char* connectString, bool standby);
+        OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
+                const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+                uint64_t disableChecks, const char* user, const char* password, const char* connectString, bool standby);
         virtual ~OracleAnalyzerOnline();
         virtual void goStandby(void);
 

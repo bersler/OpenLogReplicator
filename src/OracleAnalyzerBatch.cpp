@@ -23,10 +23,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
-            const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
-            typeCONID conId) :
-        OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, alias, database, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks) {
+    OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
+            const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
+            uint64_t readBufferMax, uint64_t disableChecks, typeCONID conId) :
+        OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb, readBufferMax,
+                disableChecks) {
 
         this->conId = conId;
     }

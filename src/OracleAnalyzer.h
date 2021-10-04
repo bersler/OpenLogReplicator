@@ -112,8 +112,8 @@ namespace OpenLogReplicator {
         virtual void createSchema(void);
 
     public:
-        OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias, const char* database,
-                uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
+        OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath, const char* alias,
+                const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks);
         virtual ~OracleAnalyzer();
 
         typeSCN firstScn;
@@ -131,9 +131,10 @@ namespace OpenLogReplicator {
         string checkpointPath;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
+        uint64_t dumpRawData;
+        string dumpPath;
         uint64_t version;                   //compatibility level of redo logs
         uint64_t suppLogSize;
-        uint64_t dumpRawData;
         Schema* schema;
         OutputBuffer* outputBuffer;
         uint64_t flags;

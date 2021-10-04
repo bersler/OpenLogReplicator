@@ -1049,11 +1049,10 @@ namespace OpenLogReplicator {
 
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
-                stringstream name;
-                name << oracleAnalyzer->database.c_str() << "-" << dec << sequence << ".logdump";
-                oracleAnalyzer->dumpStream.open(name.str());
+                string fileName = oracleAnalyzer->dumpPath + "/" + oracleAnalyzer->database + "-" + to_string(sequence) + ".logdump";
+                oracleAnalyzer->dumpStream.open(fileName);
                 if (!oracleAnalyzer->dumpStream.is_open()) {
-                    WARNING("can't open " << name.str() << " for write. Aborting log dump.");
+                    WARNING("can't open " << fileName << " for write. Aborting log dump.");
                     oracleAnalyzer->dumpRedoLog = 0;
                 }
                 printHeaderInfo();
@@ -1338,8 +1337,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (oracleAnalyzer->dumpRedoLog >= 1 && oracleAnalyzer->dumpStream.is_open())
+        if (oracleAnalyzer->dumpRedoLog >= 1 && oracleAnalyzer->dumpStream.is_open()) {
+            oracleAnalyzer->dumpStream << "END OF REDO DUMP" << endl;
             oracleAnalyzer->dumpStream.close();
+        }
 
         return reader->ret;
     }

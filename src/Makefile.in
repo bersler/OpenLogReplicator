@@ -161,16 +161,15 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
 	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
-	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysSeg.cpp \
-	SysTab.cpp SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp \
-	SysUser.cpp SystemTransaction.cpp Thread.cpp \
-	TransactionBuffer.cpp Transaction.cpp Writer.cpp \
-	WriterFile.cpp global.cpp uintX_t.cpp DatabaseConnection.cpp \
-	DatabaseEnvironment.cpp DatabaseStatement.cpp \
-	OracleAnalyzerOnline.cpp OracleAnalyzerOnlineASM.cpp \
-	ReaderASM.cpp WriterKafka.cpp WriterRocketMQ.cpp \
-	OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp Stream.cpp \
-	StreamNetwork.cpp WriterStream.cpp StreamZeroMQ.cpp
+	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysTab.cpp \
+	SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp SysUser.cpp \
+	SystemTransaction.cpp Thread.cpp TransactionBuffer.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp global.cpp \
+	uintX_t.cpp DatabaseConnection.cpp DatabaseEnvironment.cpp \
+	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
+	OracleAnalyzerOnlineASM.cpp ReaderASM.cpp WriterKafka.cpp \
+	WriterRocketMQ.cpp OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp \
+	Stream.cpp StreamNetwork.cpp WriterStream.cpp StreamZeroMQ.cpp
 @OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseEnvironment.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseStatement.$(OBJEXT) \
@@ -213,9 +212,8 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	RowId.$(OBJEXT) RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
 	SchemaElement.$(OBJEXT) SysCCol.$(OBJEXT) SysCDef.$(OBJEXT) \
 	SysCol.$(OBJEXT) SysDeferredStg.$(OBJEXT) SysECol.$(OBJEXT) \
-	SysObj.$(OBJEXT) SysSeg.$(OBJEXT) SysTab.$(OBJEXT) \
-	SysTabComPart.$(OBJEXT) SysTabPart.$(OBJEXT) \
-	SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) \
+	SysObj.$(OBJEXT) SysTab.$(OBJEXT) SysTabComPart.$(OBJEXT) \
+	SysTabPart.$(OBJEXT) SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) \
 	SystemTransaction.$(OBJEXT) Thread.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
 	Writer.$(OBJEXT) WriterFile.$(OBJEXT) global.$(OBJEXT) \
@@ -302,15 +300,15 @@ am__depfiles_remade = ./$(DEPDIR)/CharacterSet.Po \
 	./$(DEPDIR)/StreamZeroMQ.Po ./$(DEPDIR)/SysCCol.Po \
 	./$(DEPDIR)/SysCDef.Po ./$(DEPDIR)/SysCol.Po \
 	./$(DEPDIR)/SysDeferredStg.Po ./$(DEPDIR)/SysECol.Po \
-	./$(DEPDIR)/SysObj.Po ./$(DEPDIR)/SysSeg.Po \
-	./$(DEPDIR)/SysTab.Po ./$(DEPDIR)/SysTabComPart.Po \
-	./$(DEPDIR)/SysTabPart.Po ./$(DEPDIR)/SysTabSubPart.Po \
-	./$(DEPDIR)/SysUser.Po ./$(DEPDIR)/SystemTransaction.Po \
-	./$(DEPDIR)/Thread.Po ./$(DEPDIR)/Transaction.Po \
-	./$(DEPDIR)/TransactionBuffer.Po ./$(DEPDIR)/Writer.Po \
-	./$(DEPDIR)/WriterFile.Po ./$(DEPDIR)/WriterKafka.Po \
-	./$(DEPDIR)/WriterRocketMQ.Po ./$(DEPDIR)/WriterStream.Po \
-	./$(DEPDIR)/global.Po ./$(DEPDIR)/uintX_t.Po
+	./$(DEPDIR)/SysObj.Po ./$(DEPDIR)/SysTab.Po \
+	./$(DEPDIR)/SysTabComPart.Po ./$(DEPDIR)/SysTabPart.Po \
+	./$(DEPDIR)/SysTabSubPart.Po ./$(DEPDIR)/SysUser.Po \
+	./$(DEPDIR)/SystemTransaction.Po ./$(DEPDIR)/Thread.Po \
+	./$(DEPDIR)/Transaction.Po ./$(DEPDIR)/TransactionBuffer.Po \
+	./$(DEPDIR)/Writer.Po ./$(DEPDIR)/WriterFile.Po \
+	./$(DEPDIR)/WriterKafka.Po ./$(DEPDIR)/WriterRocketMQ.Po \
+	./$(DEPDIR)/WriterStream.Po ./$(DEPDIR)/global.Po \
+	./$(DEPDIR)/uintX_t.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -500,13 +498,12 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
 	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
 	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
-	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysSeg.cpp \
-	SysTab.cpp SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp \
-	SysUser.cpp SystemTransaction.cpp Thread.cpp \
-	TransactionBuffer.cpp Transaction.cpp Writer.cpp \
-	WriterFile.cpp global.cpp uintX_t.cpp $(am__append_1) \
-	$(am__append_2) $(am__append_3) $(am__append_4) \
-	$(am__append_6)
+	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysTab.cpp \
+	SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp SysUser.cpp \
+	SystemTransaction.cpp Thread.cpp TransactionBuffer.cpp \
+	Transaction.cpp Writer.cpp WriterFile.cpp global.cpp \
+	uintX_t.cpp $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_6)
 @PROTOBUF_COMPILE_TRUE@StreamClient_SOURCES = StreamClient.cpp \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.cpp NetworkException.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.cpp Stream.cpp \
@@ -679,7 +676,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysDeferredStg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysECol.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysObj.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysSeg.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysTab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysTabComPart.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SysTabPart.Po@am__quote@ # am--include-marker
@@ -928,7 +924,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/SysDeferredStg.Po
 	-rm -f ./$(DEPDIR)/SysECol.Po
 	-rm -f ./$(DEPDIR)/SysObj.Po
-	-rm -f ./$(DEPDIR)/SysSeg.Po
 	-rm -f ./$(DEPDIR)/SysTab.Po
 	-rm -f ./$(DEPDIR)/SysTabComPart.Po
 	-rm -f ./$(DEPDIR)/SysTabPart.Po
@@ -1061,7 +1056,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/SysDeferredStg.Po
 	-rm -f ./$(DEPDIR)/SysECol.Po
 	-rm -f ./$(DEPDIR)/SysObj.Po
-	-rm -f ./$(DEPDIR)/SysSeg.Po
 	-rm -f ./$(DEPDIR)/SysTab.Po
 	-rm -f ./$(DEPDIR)/SysTabComPart.Po
 	-rm -f ./$(DEPDIR)/SysTabPart.Po

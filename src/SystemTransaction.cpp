@@ -39,7 +39,6 @@ namespace OpenLogReplicator {
                 sysDeferredStg(nullptr),
                 sysECol(nullptr),
                 sysObj(nullptr),
-                sysSeg(nullptr),
                 sysTab(nullptr),
                 sysTabComPart(nullptr),
                 sysTabPart(nullptr),
@@ -82,11 +81,6 @@ namespace OpenLogReplicator {
         if (sysObj != nullptr) {
             delete sysObj;
             sysObj = nullptr;
-        }
-
-        if (sysSeg != nullptr) {
-            delete sysSeg;
-            sysSeg = nullptr;
         }
 
         if (sysTab != nullptr) {
@@ -648,45 +642,11 @@ namespace OpenLogReplicator {
             schema->sysObjTouched = true;
             sysObj = nullptr;
 
-        } else if (object->systemTable == TABLE_SYS_SEG) {
-            if (schema->sysSegMapRowId.find(rowId) != schema->sysSegMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.SEG$: (rowid: " << rowId << ") for insert");
-            }
-            sysSeg = new SysSeg(rowId, 0, 0, 0, 0, 0, true);
-            if (sysSeg == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
-            }
-
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
-            for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
-                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
-                        break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
-                        continue;
-
-                    if (object->columns[column]->name.compare("FILE#") == 0)
-                        updateNumber32u(sysSeg->file, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("BLOCK#") == 0)
-                        updateNumber32u(sysSeg->block, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("TS#") == 0)
-                        updateNumber32u(sysSeg->ts, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("SPARE1") == 0)
-                        updateNumberXu(sysSeg->spare1, column, object, rowId);
-                }
-            }
-
-            schema->sysSegMapRowId[rowId] = sysSeg;
-            schema->sysSegTouched = true;
-            sysSeg = nullptr;
-
         } else if (object->systemTable == TABLE_SYS_TAB) {
             if (schema->sysTabMapRowId.find(rowId) != schema->sysTabMapRowId.end()) {
                 RUNTIME_FAIL("DDL: duplicate SYS.TAB$: (rowid: " << rowId << ") for insert");
             }
-            sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true);
+            sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, true);
             if (sysTab == nullptr) {
                 RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
             }
@@ -705,12 +665,6 @@ namespace OpenLogReplicator {
                         updateObj(sysTab->obj, column, object, rowId);
                     else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
                         updateNumber32u(sysTab->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("TS#") == 0)
-                        updateNumber32u(sysTab->ts, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("FILE#") == 0)
-                        updateNumber32u(sysTab->file, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("BLOCK#") == 0)
-                        updateNumber32u(sysTab->block, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("CLUCOLS") == 0)
                         updateNumber16(sysTab->cluCols, 0, column, object, rowId);
                     else if (object->columns[column]->name.compare("FLAGS") == 0)
@@ -1148,48 +1102,6 @@ namespace OpenLogReplicator {
                 }
             }
 
-        } else if (object->systemTable == TABLE_SYS_SEG) {
-            auto sysSegIt = schema->sysSegMapRowId.find(rowId);
-            if (sysSegIt == schema->sysSegMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysSeg* sysSeg = sysSegIt->second;
-
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
-            for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
-                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
-                        break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
-                        continue;
-
-                    if (object->columns[column]->name.compare("FILE#") == 0) {
-                        if (updateNumber32u(sysSeg->file, 0, column, object, rowId)) {
-                            sysSeg->touched = true;
-                            schema->sysSegTouched = true;
-                        }
-                    } else if (object->columns[column]->name.compare("BLOCK#") == 0) {
-                        if (updateNumber32u(sysSeg->block, 0, column, object, rowId)) {
-                            sysSeg->touched = true;
-                            schema->sysSegTouched = true;
-                        }
-                    } else if (object->columns[column]->name.compare("TS#") == 0) {
-                        if (updateNumber32u(sysSeg->ts, 0, column, object, rowId)) {
-                            sysSeg->touched = true;
-                            schema->sysSegTouched = true;
-                        }
-                    } else if (object->columns[column]->name.compare("SPARE1") == 0) {
-                        if (updateNumberXu(sysSeg->spare1, column, object, rowId)) {
-                            sysSeg->touched = true;
-                            schema->sysSegTouched = true;
-                        }
-                    }
-                }
-            }
-
         } else if (object->systemTable == TABLE_SYS_TAB) {
             auto sysTabIt = schema->sysTabMapRowId.find(rowId);
             if (sysTabIt == schema->sysTabMapRowId.end()) {
@@ -1215,24 +1127,6 @@ namespace OpenLogReplicator {
                         }
                     } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
                         if (updateNumber32u(sysTab->dataObj, 0, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
-                        }
-                    } else if (object->columns[column]->name.compare("TS#") == 0) {
-                        if (updateNumber32u(sysTab->ts, 0, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
-                        }
-                    } else if (object->columns[column]->name.compare("FILE#") == 0) {
-                        if (updateNumber32u(sysTab->file, 0, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
-                        }
-                    } else if (object->columns[column]->name.compare("BLOCK#") == 0) {
-                        if (updateNumber32u(sysTab->block, 0, column, object, rowId)) {
                             sysTab->touched = true;
                             schema->sysTabTouched = true;
                             schema->touchObj(sysTab->obj);
@@ -1517,30 +1411,6 @@ namespace OpenLogReplicator {
                 schema->savedDeleted = true;
             delete sysObj;
 
-        } else if (object->systemTable == TABLE_SYS_SEG) {
-            auto sysSegIt = schema->sysSegMapRowId.find(rowId);
-            if (sysSegIt == schema->sysSegMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysSeg* sysSeg = sysSegIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (FILE#: " << dec << sysSeg->file << ", BLOCK#: " << sysSeg->block << ", TS#: " <<
-                    sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
-            schema->touched = true;
-            schema->sysSegMapRowId.erase(rowId);
-            schema->sysSegTouched = true;
-            if (sysSeg->file != 0 || sysSeg->block != 0) {
-                SysTabKey sysTabKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-                auto sysTabMapKeyIt = schema->sysTabMapKey.find(sysTabKey);
-                if (sysTabMapKeyIt != schema->sysTabMapKey.end()) {
-                    SysTab* sysTab = sysTabMapKeyIt->second;
-                    schema->touchObj(sysTab->obj);
-                }
-            }
-            if (sysSeg->saved)
-                schema->savedDeleted = true;
-            delete sysSeg;
-
         } else if (object->systemTable == TABLE_SYS_TAB) {
             auto sysTabIt = schema->sysTabMapRowId.find(rowId);
             if (sysTabIt == schema->sysTabMapRowId.end()) {
@@ -1548,9 +1418,8 @@ namespace OpenLogReplicator {
                 return;
             }
             SysTab* sysTab = sysTabIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", TS#: " <<
-                    sysTab->ts << ", FILE#: " << sysTab->file << ", BLOCK#: " << sysTab->block << ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " <<
-                    sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", CLUCOLS: " <<
+                    sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
             schema->touched = true;
             schema->sysTabMapRowId.erase(rowId);
             schema->sysTabTouched = true;

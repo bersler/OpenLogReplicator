@@ -1,7 +1,8 @@
 {
-  "version": "0.9.30",
+  "version": "0.9.31",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
+  "dump-path": "/opt/dump",
   "trace": 0,
   "trace2": 0,
   "source": [

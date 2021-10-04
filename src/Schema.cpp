@@ -50,7 +50,6 @@ namespace OpenLogReplicator {
         sysDeferredStgTouched(false),
         sysEColTouched(false),
         sysObjTouched(false),
-        sysSegTouched(false),
         sysTabTouched(false),
         sysTabComPartTouched(false),
         sysTabPartTouched(false),
@@ -131,20 +130,12 @@ namespace OpenLogReplicator {
         sysObjMapRowId.clear();
         sysObjMapObj.clear();
 
-        for (auto it : sysSegMapRowId) {
-            SysSeg* sysSeg = it.second;
-            delete sysSeg;
-        }
-        sysSegMapRowId.clear();
-        sysSegMapKey.clear();
-
         for (auto it : sysTabMapRowId) {
             SysTab* sysTab = it.second;
             delete sysTab;
         }
         sysTabMapRowId.clear();
         sysTabMapObj.clear();
-        sysTabMapKey.clear();
 
         for (auto it : sysTabComPartMapRowId) {
             SysTabComPart* sysTabComPart = it.second;
@@ -429,27 +420,6 @@ namespace OpenLogReplicator {
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << dec << sysEColJSON.Size());
 
-        //SYS.SEG$
-        const Value& sysSegJSON = getJSONfieldA(fileName, document, "sys-seg");
-
-        for (SizeType i = 0; i < sysSegJSON.Size(); ++i) {
-            const char* rowId = getJSONfieldS(fileName, SYSSEG_ROWID_LENGTH, sysSegJSON[i], "row-id");
-            uint32_t file = getJSONfieldU32(fileName, sysSegJSON[i], "file");
-            uint32_t block = getJSONfieldU32(fileName, sysSegJSON[i], "block");
-            uint32_t ts = getJSONfieldU32(fileName, sysSegJSON[i], "ts");
-
-            const Value& spare1JSON = getJSONfieldA(fileName, sysSegJSON[i], "spare1");
-            if (spare1JSON.Size() != 2) {
-                WARNING("bad JSON in " << fileName << ", spare1 should be an array with 2 elements");
-                return false;
-            }
-            uint64_t spare11 = getJSONfieldU64(fileName, spare1JSON, "spare1", 0);
-            uint64_t spare12 = getJSONfieldU64(fileName, spare1JSON, "spare1", 1);
-
-            dictSysSegAdd(rowId, file, block, ts, spare11, spare12);
-        }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.SEG$: " << dec << sysSegJSON.Size());
-
         //SYS.TAB$
         const Value& sysTabJSON = getJSONfieldA(fileName, document, "sys-tab");
 
@@ -457,9 +427,6 @@ namespace OpenLogReplicator {
             const char* rowId = getJSONfieldS(fileName, SYSTAB_ROWID_LENGTH, sysTabJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(fileName, sysTabJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU32(fileName, sysTabJSON[i], "data-obj");
-            uint32_t ts = getJSONfieldU32(fileName, sysTabJSON[i], "ts");
-            uint32_t file = getJSONfieldU32(fileName, sysTabJSON[i], "file");
-            uint32_t block = getJSONfieldU32(fileName, sysTabJSON[i], "block");
             typeCOL cluCols = getJSONfieldI16(fileName, sysTabJSON[i], "clu-cols");
 
             const Value& flagsJSON = getJSONfieldA(fileName, sysTabJSON[i], "flags");
@@ -478,7 +445,7 @@ namespace OpenLogReplicator {
             uint64_t property1 = getJSONfieldU64(fileName, propertyJSON, "property", 0);
             uint64_t property2 = getJSONfieldU64(fileName, propertyJSON, "property", 1);
 
-            dictSysTabAdd(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2);
+            dictSysTabAdd(rowId, obj, dataObj, cluCols, flags1, flags2, property1, property2);
         }
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTabJSON.Size());
 
@@ -591,6 +558,7 @@ namespace OpenLogReplicator {
 
             Reader* onlineReader = oracleAnalyzer->readerCreate(group);
             if (onlineReader != nullptr) {
+                onlineReader->paths.clear();
                 for (SizeType j = 0; j < path.Size(); ++j) {
                     const Value& pathVal = path[j];
                     onlineReader->paths.push_back(pathVal.GetString());
@@ -821,25 +789,6 @@ namespace OpenLogReplicator {
             sysObj->saved = true;
         }
 
-        //SYS.SEG$
-        ss << "]," SCHEMA_ENDL << "\"sys-seg\":[";
-        hasPrev = false;
-        for (auto it : sysSegMapRowId) {
-            SysSeg* sysSeg = it.second;
-
-            if (hasPrev)
-                ss << ",";
-            else
-                hasPrev = true;
-
-            ss SCHEMA_ENDL << "{\"row-id\":\"" << sysSeg->rowId << "\"," <<
-                    "\"file\":" << dec << sysSeg->file << "," <<
-                    "\"block\":" << dec << sysSeg->block << "," <<
-                    "\"ts\":" << dec << sysSeg->ts << "," <<
-                    "\"spare1\":" << dec << sysSeg->spare1 << "}";
-            sysSeg->saved = true;
-        }
-
         //SYS.TAB$
         ss << "]," SCHEMA_ENDL << "\"sys-tab\":[";
         hasPrev = false;
@@ -854,9 +803,6 @@ namespace OpenLogReplicator {
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTab->rowId << "\"," <<
                     "\"obj\":" << dec << sysTab->obj << "," <<
                     "\"data-obj\":" << dec << sysTab->dataObj << "," <<
-                    "\"ts\":" << dec << sysTab->ts << "," <<
-                    "\"file\":" << dec << sysTab->file << "," <<
-                    "\"block\":" << dec << sysTab->block << "," <<
                     "\"clu-cols\":" << dec << sysTab->cluCols << "," <<
                     "\"flags\":" << dec << sysTab->flags << "," <<
                     "\"property\":" << dec << sysTab->property << "}";
@@ -1266,17 +1212,12 @@ namespace OpenLogReplicator {
         //SYS.TAB$
         if (sysTabTouched) {
             sysTabMapObj.clear();
-            sysTabMapKey.clear();
 
             for (auto it : sysTabMapRowId) {
                 SysTab* sysTab = it.second;
 
                 if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end()) {
                     sysTabMapObj[sysTab->obj] = sysTab;
-                    if (sysTab->file != 0 || sysTab->block != 0) {
-                        SysTabKey sysTabKey(sysTab->file, sysTab->block, sysTab->ts);
-                        sysTabMapKey[sysTabKey] = sysTab;
-                    }
                     if (sysTab->touched) {
                         touchObj(sysTab->obj);
                         sysTab->touched = false;
@@ -1286,8 +1227,7 @@ namespace OpenLogReplicator {
                 }
 
                 TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " <<
-                        sysTab->dataObj << ", TS#: " << sysTab->ts << ", FILE#: " << sysTab->file << ", BLOCK#: " << sysTab->block <<
-                        ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
+                        sysTab->dataObj << ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
                 removeRowId.push_back(it.first);
                 delete sysTab;
             }
@@ -1348,7 +1288,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABCOMPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " <<
                         sysTabPart->dataObj << ", BO#: " << sysTabPart->bo << ")");
                 removeRowId.push_back(it.first);
                 delete sysTabPart;
@@ -1384,7 +1324,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABCOMPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABSUBPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " <<
                         sysTabSubPart->dataObj << ", POBJ#: " << sysTabSubPart->pObj << ")");
                 removeRowId.push_back(it.first);
                 delete sysTabSubPart;
@@ -1394,46 +1334,6 @@ namespace OpenLogReplicator {
                 sysTabSubPartMapRowId.erase(rowId);
             removeRowId.clear();
             sysTabSubPartTouched = false;
-        }
-
-        //SYS.SEG$
-        if (sysSegTouched) {
-            sysSegMapKey.clear();
-
-            for (auto it : sysSegMapRowId) {
-                SysSeg* sysSeg = it.second;
-
-                //non-zero segment
-                if (sysSeg->file != 0 || sysSeg->block != 0) {
-                    SysTabKey sysTabKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-                    //find SYS.TAB$
-                    auto sysTabMapKeyIt = sysTabMapKey.find(sysTabKey);
-                    if (sysTabMapKeyIt != sysTabMapKey.end()) {
-                        SysTab* sysTab = sysTabMapKeyIt->second;
-                        //find SYS.OBJ$
-                        if (sysObjMapObj.find(sysTab->obj) != sysObjMapObj.end()) {
-                            SysSegKey sysSegKey(sysSeg->file, sysSeg->block, sysSeg->ts);
-                            sysSegMapKey[sysSegKey] = sysSeg;
-                            if (sysSeg->touched) {
-                                touchObj(sysTab->obj);
-                                sysSeg->touched = false;
-                                changedSchema = true;
-                            }
-                            continue;
-                        }
-                    }
-                }
-
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", FILE#: " << dec << sysSeg->file << ", BLOCK#: " <<
-                        sysSeg->block << ", TS#: " << sysSeg->ts << ", SPARE1: " << sysSeg->spare1 << ")");
-                removeRowId.push_back(it.first);
-                delete sysSeg;
-            }
-
-            for (RowId rowId: removeRowId)
-                sysSegMapRowId.erase(rowId);
-            removeRowId.clear();
-            sysSegTouched = false;
         }
 
         touched = false;
@@ -1544,11 +1444,6 @@ namespace OpenLogReplicator {
                 SysDeferredStg* sysDeferredStg = sysDeferredStgMapObj[sysObj->obj];
                 if (sysDeferredStg != nullptr)
                     compressed = sysDeferredStg->isCompressed();
-            } else {
-                SysSegKey sysSegKey(sysTab->file, sysTab->block, sysTab->ts);
-                SysSeg* sysSeg = sysSegMapKey[sysSegKey];
-                if (sysSeg != nullptr)
-                    compressed = sysSeg->isCompressed();
             }
             //skip compressed tables
             if (compressed) {
@@ -1876,38 +1771,18 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::dictSysSegAdd(const char* rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12) {
-        RowId rowId(rowIdStr);
-        if (sysSegMapRowId.find(rowId) != sysSegMapRowId.end())
-            return false;
-
-        SysSeg* sysSeg = new SysSeg(rowId, file, block, ts, spare11, spare12, false);
-        if (sysSeg == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysSeg) << " bytes memory (for: SysSeg)");
-        }
-        sysSegMapRowId[rowId] = sysSeg;
-        SysSegKey sysSegKey(file, block, ts);
-        sysSegMapKey[sysSegKey] = sysSeg;
-
-        return true;
-    }
-
-    bool Schema::dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
-            typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2) {
+    bool Schema::dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2,
+            uint64_t property1, uint64_t property2) {
         RowId rowId(rowIdStr);
         if (sysTabMapRowId.find(rowId) != sysTabMapRowId.end())
             return false;
 
-        SysTab* sysTab = new SysTab(rowId, obj, dataObj, ts, file, block, cluCols, flags1, flags2, property1, property2, false);
+        SysTab* sysTab = new SysTab(rowId, obj, dataObj, cluCols, flags1, flags2, property1, property2, false);
         if (sysTab == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
         }
         sysTabMapRowId[rowId] = sysTab;
         sysTabMapObj[obj] = sysTab;
-        if (file != 0 || block != 0) {
-            SysTabKey sysTabKey(file, block, ts);
-            sysTabMapKey[sysTabKey] = sysTab;
-        }
 
         return true;
     }

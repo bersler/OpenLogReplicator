@@ -51,8 +51,6 @@ namespace OpenLogReplicator {
                 systemTable = TABLE_SYS_ECOL;
             else if (this->name.compare("OBJ$") == 0)
                 systemTable = TABLE_SYS_OBJ;
-            else if (this->name.compare("SEG$") == 0)
-                systemTable = TABLE_SYS_SEG;
             else if (this->name.compare("TAB$") == 0)
                 systemTable = TABLE_SYS_TAB;
             else if (this->name.compare("TABPART$") == 0)

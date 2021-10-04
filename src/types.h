@@ -65,7 +65,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.30"
+#define CONFIG_SCHEMA_VERSION                   "0.9.31"
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
 #define SCHEMA_FILE_MAX_SIZE                    2147483648
@@ -195,12 +195,11 @@ typedef uint64_t typeunicode;
 #define TABLE_SYS_DEFERRED_STG                  4
 #define TABLE_SYS_ECOL                          5
 #define TABLE_SYS_OBJ                           6
-#define TABLE_SYS_SEG                           7
-#define TABLE_SYS_TAB                           8
-#define TABLE_SYS_TABPART                       9
-#define TABLE_SYS_TABCOMPART                    10
-#define TABLE_SYS_TABSUBPART                    11
-#define TABLE_SYS_USER                          12
+#define TABLE_SYS_TAB                           7
+#define TABLE_SYS_TABPART                       8
+#define TABLE_SYS_TABCOMPART                    9
+#define TABLE_SYS_TABSUBPART                    10
+#define TABLE_SYS_USER                          11
 
 #define USN(__xid)                              ((typeUSN)(((uint64_t)(__xid))>>48))
 #define SLT(__xid)                              ((typeSLT)(((((uint64_t)(__xid))>>32)&0xFFFF)))

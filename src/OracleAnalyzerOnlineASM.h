@@ -38,10 +38,10 @@ namespace OpenLogReplicator {
     public:
         DatabaseConnection* connASM;
 
-        OracleAnalyzerOnlineASM(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* alias,
-                const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax, uint64_t disableChecks,
-                const char* user, const char* password, const char* connectString, const char* userASM, const char* passwdASM,
-                const char* connectStringASM, bool standby);
+        OracleAnalyzerOnlineASM(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
+                const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
+                uint64_t disableChecks, const char* user, const char* password, const char* connectString, const char* userASM,
+                const char* passwdASM, const char* connectStringASM, bool standby);
         virtual ~OracleAnalyzerOnlineASM();
     };
 }

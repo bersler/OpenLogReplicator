@@ -1,3 +1,13 @@
+0.9.31-beta
+- welcome message includes list of compiled modules
+- minor message fixes
+- removed collecting SYS.SEG$ from DDL track code
+- fixed bug: multiplication of redo log files in schema file
+- fixed bug: "flags" parameter value verification
+- minor changes in gencfg.sql
+- OpenLogReplicator.json: updated format version to 0.9.30
+- OpenLogReplicator.json: added new parameter: "dump-path"
+
 0.9.30-beta
 - added target: Apache RocketMQ (experimental)
 - OpenLogReplicator.json: updated format version to 0.9.30

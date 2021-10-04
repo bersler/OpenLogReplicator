@@ -76,7 +76,6 @@ SysCol.cpp \
 SysDeferredStg.cpp \
 SysECol.cpp \
 SysObj.cpp \
-SysSeg.cpp \
 SysTab.cpp \
 SysTabComPart.cpp \
 SysTabPart.cpp \

@@ -36,7 +36,6 @@ namespace OpenLogReplicator {
     class SysDeferredStg;
     class SysECol;
     class SysObj;
-    class SysSeg;
     class SysTab;
     class SysTabComPart;
     class SysTabPart;
@@ -54,7 +53,6 @@ namespace OpenLogReplicator {
         SysDeferredStg* sysDeferredStg;
         SysECol* sysECol;
         SysObj* sysObj;
-        SysSeg* sysSeg;
         SysTab* sysTab;
         SysTabComPart* sysTabComPart;
         SysTabPart* sysTabPart;

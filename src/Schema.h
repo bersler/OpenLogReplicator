@@ -29,7 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysDeferredStg.h"
 #include "SysECol.h"
 #include "SysObj.h"
-#include "SysSeg.h"
 #include "SysTab.h"
 #include "SysTabComPart.h"
 #include "SysTabPart.h"
@@ -83,14 +82,9 @@ namespace OpenLogReplicator {
         map<RowId, SysObj*> sysObjMapRowId;
         unordered_map<typeOBJ, SysObj*> sysObjMapObj;
 
-        //SYS.SEG$
-        map<RowId, SysSeg*> sysSegMapRowId;
-        unordered_map<SysSegKey, SysSeg*> sysSegMapKey;
-
         //SYS.TAB$
         map<RowId, SysTab*> sysTabMapRowId;
         unordered_map<typeOBJ, SysTab*> sysTabMapObj;
-        unordered_map<SysTabKey, SysTab*> sysTabMapKey;
 
         //SYS.TABCOMPART$
         map<RowId, SysTabComPart*> sysTabComPartMapRowId;
@@ -124,7 +118,6 @@ namespace OpenLogReplicator {
         bool sysDeferredStgTouched;
         bool sysEColTouched;
         bool sysObjTouched;
-        bool sysSegTouched;
         bool sysTabTouched;
         bool sysTabComPartTouched;
         bool sysTabPartTouched;
@@ -156,9 +149,8 @@ namespace OpenLogReplicator {
         bool dictSysEColAdd(const char* rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId);
         bool dictSysObjAdd(const char* rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
                 uint64_t flags1, uint64_t flags2, bool single);
-        bool dictSysSegAdd(const char* rowIdStr, uint32_t file, uint32_t block, uint32_t ts, uint64_t spare11, uint64_t spare12);
-        bool dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block,
-                typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2);
+        bool dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2,
+                uint64_t property1, uint64_t property2);
         bool dictSysTabComPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
         bool dictSysTabPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
         bool dictSysTabSubPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);

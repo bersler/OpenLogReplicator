@@ -20,38 +20,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTab.h"
 
 namespace OpenLogReplicator {
-    SysTabKey::SysTabKey() :
-            file(0),
-            block(0),
-            ts(0) {
-    }
-
-    SysTabKey::SysTabKey(uint32_t file, uint32_t block, uint32_t ts) :
-            file(file),
-            block(block),
-            ts(ts) {
-    }
-
-    bool SysTabKey::operator==(const SysTabKey& other) const {
-        return (other.file == file) &&
-                (other.block == block) &&
-                (other.ts == ts);
-    }
-
-    bool SysTabKey::operator!=(const SysTabKey& other) const {
-        return (other.file != file) ||
-                (other.block != block) ||
-                (other.ts != ts);
-    }
-
-    SysTab::SysTab(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, uint32_t ts, uint32_t file, uint32_t block, typeCOL cluCols,
-            uint64_t flags1, uint64_t flags2, uint64_t property1, uint64_t property2, bool touched) :
+    SysTab::SysTab(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2,
+            uint64_t property1, uint64_t property2, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
-            ts(ts),
-            file(file),
-            block(block),
             cluCols(cluCols),
             touched(touched),
             saved(false) {
@@ -89,13 +62,5 @@ namespace OpenLogReplicator {
 
     bool SysTab::isInitial(void) {
         return flags.isSet64(17179869184);
-    }
-}
-
-namespace std {
-    size_t std::hash<OpenLogReplicator::SysTabKey>::operator()(const OpenLogReplicator::SysTabKey &sysTabKey) const {
-        return hash<typeDATAOBJ>()(sysTabKey.file) ^
-                hash<typeDBA>()(sysTabKey.block) ^
-                hash<typeSLOT>()(sysTabKey.ts);
     }
 }
