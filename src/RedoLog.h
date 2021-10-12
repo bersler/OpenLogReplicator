@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDOLOG_H_
 
 #define VECTOR_MAX_LENGTH 512
-#define MAX_LWN_CHUNKS (256*2/MEMORY_CHUNK_SIZE_MB)
+#define MAX_LWN_CHUNKS (512*2/MEMORY_CHUNK_SIZE_MB)
 
 using namespace std;
 
@@ -50,6 +50,7 @@ namespace OpenLogReplicator {
         uint64_t lwnConfirmedBlock;
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
         uint64_t lwnAllocated;
+        uint64_t lwnAllocatedMax;
         typeTIME lwnTimestamp;
         typeSCN lwnScn;
         typeSCN lwnScnMax;
@@ -59,6 +60,7 @@ namespace OpenLogReplicator {
         bool instrumentedShutdown;
 
         void printHeaderInfo(void) const;
+        void freeLwn(void);
         void analyzeLwn(LwnMember* lwnMember);
         void appendToTransactionDDL(RedoLogRecord* redoLogRecord);
         void appendToTransactionUndo(RedoLogRecord* redoLogRecord);

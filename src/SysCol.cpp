@@ -106,4 +106,9 @@ namespace OpenLogReplicator {
     bool SysCol::isGuard(void) {
         return property.isSet64(549755813888);
     }
+
+    bool SysCol::lengthInChars(void) {
+        return ((type == 1 || type == 96) && property.isSet64(8388608));
+        //else in bytes
+    }
 }

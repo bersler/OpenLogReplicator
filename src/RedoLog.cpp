@@ -53,6 +53,7 @@ namespace OpenLogReplicator {
         vectors(0),
         lwnConfirmedBlock(2),
         lwnAllocated(0),
+        lwnAllocatedMax(0),
         lwnTimestamp(0),
         lwnScn(0),
         lwnScnMax(0),
@@ -254,6 +255,15 @@ namespace OpenLogReplicator {
             uint16_t enabledRedoThreads = 1; //FIXME
             oracleAnalyzer->dumpStream << " Enabled redo threads: " << dec << enabledRedoThreads << " " << endl;
         }
+    }
+
+    void RedoLog::freeLwn(void) {
+        while (lwnAllocated > 1)
+            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
+
+        uint64_t* length = (uint64_t*) lwnChunks[0];
+        *length = sizeof(uint64_t);
+        lwnRecords = 0;
     }
 
     void RedoLog::analyzeLwn(LwnMember* lwnMember) {
@@ -1020,24 +1030,14 @@ namespace OpenLogReplicator {
 
     void RedoLog::resetRedo(void) {
         lwnConfirmedBlock = 2;
-
-        while (lwnAllocated > 1)
-            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
-        uint64_t* length = (uint64_t*) lwnChunks[0];
-        *length = sizeof(uint64_t);
-        lwnRecords = 0;
+        freeLwn();
     }
 
     void RedoLog::continueRedo(RedoLog* prev) {
         lwnConfirmedBlock = prev->lwnConfirmedBlock;
         reader->bufferStart = prev->lwnConfirmedBlock * prev->reader->blockSize;
         reader->bufferEnd = prev->lwnConfirmedBlock * prev->reader->blockSize;
-
-        while (lwnAllocated > 1)
-            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
-        uint64_t* length = (uint64_t*) lwnChunks[0];
-        *length = sizeof(uint64_t);
-        lwnRecords = 0;
+        freeLwn();
     }
 
     uint64_t RedoLog::processLog(void) {
@@ -1068,12 +1068,7 @@ namespace OpenLogReplicator {
 
             reader->bufferStart = oracleAnalyzer->readStartOffset;
             reader->bufferEnd = oracleAnalyzer->readStartOffset;
-
-            while (lwnAllocated > 1)
-                oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
-            uint64_t* length = (uint64_t*) lwnChunks[0];
-            *length = sizeof(uint64_t);
-            lwnRecords = 0;
+            freeLwn();
 
             oracleAnalyzer->readStartOffset = 0;
         }
@@ -1154,6 +1149,8 @@ namespace OpenLogReplicator {
                                 }
 
                                 lwnChunks[lwnAllocated++] = oracleAnalyzer->getMemoryChunk("LWN transaction chunk", false);
+                                if (lwnAllocated > lwnAllocatedMax)
+                                    lwnAllocatedMax = lwnAllocated;
                                 length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
                                 *length = sizeof(uint64_t);
                             }
@@ -1245,13 +1242,8 @@ namespace OpenLogReplicator {
                     }
 
                     TRACE(TRACE2_LWN, "LWN: scn: " << dec << lwnScnMax);
-                    for (uint64_t i = 1; i < lwnAllocated; ++i)
-                        oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[i], false);
                     lwnNumCnt = 0;
-                    lwnAllocated = 1;
-                    uint64_t* length = (uint64_t*) lwnChunks[0];
-                    *length = sizeof(uint64_t);
-                    lwnRecords = 0;
+                    freeLwn();
                     lwnConfirmedBlock = currentBlock;
                 } else
                 if (lwnNumCnt > lwnNumMax) {
@@ -1327,11 +1319,13 @@ namespace OpenLogReplicator {
                         "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
                         "Read size: " << (reader->sumRead / 1024 / 1024) << " MB, " <<
                         "Read speed: " << myReadSpeed << " MB/s, " <<
+                        "Max LWN size: " << dec << lwnAllocatedMax << ", " <<
                         "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
                         "(" << fixed << setprecision(2) << suppLogPercent << " %)");
             } else {
                 TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " <<
                         "Redo log size: " << dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
+                        "Max LWN size: " << dec << lwnAllocatedMax << ", " <<
                         "Supplemental redo log size: " << dec << oracleAnalyzer->suppLogSize << " bytes " <<
                         "(" << fixed << setprecision(2) << suppLogPercent << " %)");
             }

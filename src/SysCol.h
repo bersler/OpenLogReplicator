@@ -60,6 +60,7 @@ namespace OpenLogReplicator {
         bool isUnused(void);
         bool isAdded(void);
         bool isGuard(void);
+        bool lengthInChars(void);
 
         RowId rowId;
         typeOBJ obj;
