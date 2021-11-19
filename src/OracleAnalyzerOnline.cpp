@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 #include "OracleObject.h"
 #include "OutputBuffer.h"
+#include "OracleIncarnation.h"
 #include "Reader.h"
 #include "RedoLog.h"
 #include "RuntimeException.h"
@@ -38,6 +39,22 @@ using namespace std;
 
 namespace OpenLogReplicator {
     const char* OracleAnalyzerOnline::SQL_GET_ARCHIVE_LOG_LIST(
+            "SELECT"
+            "   NAME"
+            ",  SEQUENCE#"
+            ",  FIRST_CHANGE#"
+            ",  NEXT_CHANGE#"
+            " FROM"
+            "   SYS.V_$ARCHIVED_LOG"
+            " WHERE"
+            "   SEQUENCE# >= :i"
+            "   AND RESETLOGS_ID = :j"
+            "   AND NAME IS NOT NULL"
+            " ORDER BY"
+            "   SEQUENCE#"
+            ",  DEST_ID");
+
+    const char* OracleAnalyzerOnline::SQL_GET_ARCHIVE_LOG_LIST_ACTIVATION(
             "SELECT"
             "   NAME"
             ",  SEQUENCE#"
@@ -61,8 +78,6 @@ namespace OpenLogReplicator {
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_PK, 'YES', 1, 0)"
             ",  DECODE(D.SUPPLEMENTAL_LOG_DATA_ALL, 'YES', 1, 0)"
             ",  DECODE(TP.ENDIAN_FORMAT, 'Big', 1, 0)"
-            ",  DI.RESETLOGS_ID"
-            ",  D.ACTIVATION#"
             ",  VER.BANNER"
             ",  SYS_CONTEXT('USERENV','DB_NAME')"
             ",  CURRENT_SCN"
@@ -73,10 +88,18 @@ namespace OpenLogReplicator {
             "     TP.PLATFORM_NAME = D.PLATFORM_NAME"
             " JOIN"
             "   SYS.V_$VERSION VER ON"
-            "     VER.BANNER LIKE '%Oracle Database%'"
-            " JOIN"
-            "   SYS.V_$DATABASE_INCARNATION DI ON"
-            "     DI.STATUS = 'CURRENT'");
+            "     VER.BANNER LIKE '%Oracle Database%'");
+
+    const char* OracleAnalyzerOnline::SQL_GET_DATABASE_INCARNATION(
+            "SELECT"
+            "   INCARNATION#"
+            ",  RESETLOGS_CHANGE#"
+            ",  PRIOR_RESETLOGS_CHANGE#"
+            ",  STATUS"
+            ",  RESETLOGS_ID"
+            ",  PRIOR_INCARNATION#"
+            " FROM"
+            "   SYS.V_$DATABASE_INCARNATION");
 
     const char* OracleAnalyzerOnline::SQL_GET_DATABASE_SCN(
             "SELECT"
@@ -111,7 +134,9 @@ namespace OpenLogReplicator {
             "   FROM"
             "     SYS.V_$ARCHIVED_LOG"
             "   WHERE"
-            "     FIRST_CHANGE# - 1 <= :i)");
+            "     FIRST_CHANGE# - 1 <= :i"
+            "     AND RESETLOGS_ID = :j"
+            "     AND ACTIVATION# = :k)");
 
     const char* OracleAnalyzerOnline::SQL_GET_SEQUENCE_FROM_SCN_STANDBY(
             "SELECT MAX(SEQUENCE#) FROM ("
@@ -420,12 +445,9 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::initialize(void) {
-        checkConnection();
-        if (shutdown)
+        if (!checkConnection())
             return;
 
-        typeRESETLOGS currentResetlogs;
-        typeACTIVATION currentActivation;
         typeSCN currentScn;
 
         if ((disableChecks & DISABLE_CHECK_GRANTS) == 0) {
@@ -439,6 +461,9 @@ namespace OpenLogReplicator {
             checkTableForGrants("SYS.V_$TRANSPORTABLE_PLATFORM");
         }
 
+        updateOnlineRedoLogData();
+
+        archReader = readerCreate(0);
         {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INFORMATION);
@@ -448,11 +473,9 @@ namespace OpenLogReplicator {
             stmt.defineUInt64(3, suppLogDbPrimary);
             stmt.defineUInt64(4, suppLogDbAll);
             stmt.defineUInt64(5, bigEndian);
-            stmt.defineUInt32(6, currentResetlogs);
-            stmt.defineUInt32(7, currentActivation);
-            char bannerStr[81]; stmt.defineString(8, bannerStr, sizeof(bannerStr));
-            char contextStr[81]; stmt.defineString(9, contextStr, sizeof(contextStr));
-            stmt.defineUInt64(10, currentScn);
+            char bannerStr[81]; stmt.defineString(6, bannerStr, sizeof(bannerStr));
+            char contextStr[81]; stmt.defineString(7, contextStr, sizeof(contextStr));
+            stmt.defineUInt64(8, currentScn);
 
             if (stmt.executeQuery()) {
                 if (logMode == 0) {
@@ -471,18 +494,6 @@ namespace OpenLogReplicator {
 
                 if (bigEndian)
                     setBigEndian();
-
-                if (resetlogs != 0 && currentResetlogs != resetlogs) {
-                    RUNTIME_FAIL("database resetlogs:" << dec << currentResetlogs << ", expected: " << resetlogs);
-                } else {
-                    resetlogs = currentResetlogs;
-                }
-
-                if (activation != 0 && currentActivation != activation) {
-                    RUNTIME_FAIL("database activation: " << dec << currentActivation << ", expected: " << activation);
-                } else {
-                    activation = currentActivation;
-                }
 
                 //12+
                 conId = 0;
@@ -539,47 +550,6 @@ namespace OpenLogReplicator {
         nlsCharacterSet = getPropertyValue("NLS_CHARACTERSET");
         nlsNcharCharacterSet = getPropertyValue("NLS_NCHAR_CHARACTERSET");
         outputBuffer->setNlsCharset(nlsCharacterSet, nlsNcharCharacterSet);
-
-        {
-            DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: " << dec << standby);
-            stmt.createStatement(SQL_GET_LOGFILE_LIST);
-            if (standby)
-                stmt.bindString(1, "STANDBY");
-            else
-                stmt.bindString(1, "ONLINE");
-
-            int64_t group = -1; stmt.defineInt64(1, group);
-            char pathStr[514]; stmt.defineString(2, pathStr, sizeof(pathStr));
-            int64_t ret = stmt.executeQuery();
-
-            Reader* onlineReader = nullptr;
-            int64_t lastGroup = -1;
-            string path;
-
-            while (ret) {
-                if (group != lastGroup) {
-                    onlineReader = readerCreate(group);
-                    onlineReader->paths.clear();
-                    lastGroup = group;
-                }
-                path = pathStr;
-                onlineReader->paths.push_back(path);
-                ret = stmt.next();
-            }
-
-            if (readers.size() == 0) {
-                if (standby) {
-                    RUNTIME_FAIL("failed to find standby redo log files");
-                } else {
-                    RUNTIME_FAIL("failed to find online redo log files");
-                }
-            }
-        }
-
-        checkOnlineRedoLogs();
-        archReader = readerCreate(0);
     }
 
     void OracleAnalyzerOnline::positionReader(void) {
@@ -633,6 +603,7 @@ namespace OpenLogReplicator {
         //first sequence
         if (startSequence != ZERO_SEQ) {
             sequence = startSequence;
+            offset = 0;
             if (firstScn == ZERO_SCN)
                 firstScn = 0;
         } else {
@@ -650,7 +621,13 @@ namespace OpenLogReplicator {
             } else {
                 TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SEQUENCE_FROM_SCN);
                 TRACE(TRACE2_SQL, "PARAM1: " << dec << firstScn);
+                TRACE(TRACE2_SQL, "PARAM2: " << dec << firstScn);
+                TRACE(TRACE2_SQL, "PARAM3: " << dec << resetlogs);
+                TRACE(TRACE2_SQL, "PARAM4: " << dec << activation);
                 stmt.createStatement(SQL_GET_SEQUENCE_FROM_SCN);
+                stmt.bindUInt64(2, firstScn);
+                stmt.bindUInt32(3, resetlogs);
+                stmt.bindUInt32(4, activation);
             }
             stmt.bindUInt64(1, firstScn);
             stmt.defineUInt32(1, sequence);
@@ -658,6 +635,7 @@ namespace OpenLogReplicator {
             if (!stmt.executeQuery()) {
                 RUNTIME_FAIL("getting database sequence for scn: " << dec << firstScn);
             }
+            offset = 0;
             INFO("starting sequence not found - starting with new batch with seq: " << dec << sequence);
         }
 
@@ -666,7 +644,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::checkConnection(void) {
+    bool OracleAnalyzerOnline::checkConnection(void) {
         if (conn == nullptr) {
             INFO("connecting to Oracle instance of " << database << " to " << connectString);
         }
@@ -693,12 +671,14 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                break;
+                return true;
             }
 
-            WARNING("cannot connect to database, retry in 5 sec.");
+            DEBUG("cannot connect to database, retry in 5 sec.");
             sleep(5);
         }
+
+        return false;
     }
 
     void OracleAnalyzerOnline::goStandby(void) {
@@ -789,7 +769,9 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::createSchema(void) {
-        checkConnection();
+        if (!checkConnection())
+            return;
+
         INFO("reading dictionaries for scn: " << dec << firstScn);
         schemaScn = firstScn;
 
@@ -1227,20 +1209,110 @@ namespace OpenLogReplicator {
             schema->users.insert(owner);
     }
 
+    void OracleAnalyzerOnline::updateOnlineRedoLogData(void) {
+        if (!checkConnection())
+            return;
+
+        //reload incarnation data
+        for (OracleIncarnation* oi : oiSet)
+            delete oi;
+        oiSet.clear();
+        oiCurrent = nullptr;
+
+        {
+            DatabaseStatement stmt(conn);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INCARNATION);
+
+            stmt.createStatement(SQL_GET_DATABASE_INCARNATION);
+            uint32_t incarnation; stmt.defineUInt32(1, incarnation);
+            typeSCN resetlogsScn; stmt.defineUInt64(2, resetlogsScn);
+            typeSCN priorResetlogsScn; stmt.defineUInt64(3, priorResetlogsScn);
+            char status[129]; stmt.defineString(4, status, sizeof(status));
+            typeRESETLOGS resetlogs; stmt.defineUInt32(5, resetlogs);
+            uint32_t priorIncarnation; stmt.defineUInt32(6, priorIncarnation);
+            int64_t ret = stmt.executeQuery();
+
+            while (ret) {
+                OracleIncarnation *oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
+                        resetlogs, priorIncarnation);
+                if (oi == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << (sizeof(OracleIncarnation)) << " bytes memory (for: oracle incarnation)");
+                }
+                oiSet.insert(oi);
+
+                if (oi->current)
+                    oiCurrent = oi;
+
+                ret = stmt.next();
+            }
+        }
+
+        //reload online redo log data
+        {
+            DatabaseStatement stmt(conn);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST);
+            TRACE(TRACE2_SQL, "PARAM1: " << dec << standby);
+            stmt.createStatement(SQL_GET_LOGFILE_LIST);
+            if (standby)
+                stmt.bindString(1, "STANDBY");
+            else
+                stmt.bindString(1, "ONLINE");
+
+            int64_t group = -1; stmt.defineInt64(1, group);
+            char pathStr[514]; stmt.defineString(2, pathStr, sizeof(pathStr));
+            int64_t ret = stmt.executeQuery();
+
+            Reader* onlineReader = nullptr;
+            int64_t lastGroup = -1;
+            string path;
+
+            while (ret) {
+                if (group != lastGroup) {
+                    onlineReader = readerCreate(group);
+                    onlineReader->paths.clear();
+                    lastGroup = group;
+                }
+                path = pathStr;
+                onlineReader->paths.push_back(path);
+                ret = stmt.next();
+            }
+
+            if (readers.size() == 0) {
+                if (standby) {
+                    RUNTIME_FAIL("failed to find standby redo log files");
+                } else {
+                    RUNTIME_FAIL("failed to find online redo log files");
+                }
+            }
+        }
+        checkOnlineRedoLogs();
+    }
+
     void OracleAnalyzerOnline::archGetLogOnline(OracleAnalyzer* oracleAnalyzer) {
-        ((OracleAnalyzerOnline*)oracleAnalyzer)->checkConnection();
+        if (!((OracleAnalyzerOnline*)oracleAnalyzer)->checkConnection())
+            return;
 
         {
             DatabaseStatement stmt(((OracleAnalyzerOnline*)oracleAnalyzer)->conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST);
-            TRACE(TRACE2_SQL, "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
-            TRACE(TRACE2_SQL, "PARAM2: " << dec << oracleAnalyzer->resetlogs);
-            TRACE(TRACE2_SQL, "PARAM3: " << dec << oracleAnalyzer->activation);
+            if (oracleAnalyzer->activation != 0) {
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST_ACTIVATION);
+                TRACE(TRACE2_SQL, "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+                TRACE(TRACE2_SQL, "PARAM2: " << dec << oracleAnalyzer->resetlogs);
+                TRACE(TRACE2_SQL, "PARAM3: " << dec << oracleAnalyzer->activation);
 
-            stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-            stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
-            stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
-            stmt.bindUInt32(3, oracleAnalyzer->activation);
+                stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST_ACTIVATION);
+                stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+                stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
+                stmt.bindUInt32(3, oracleAnalyzer->activation);
+            } else {
+                TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST);
+                TRACE(TRACE2_SQL, "PARAM1: " << dec << ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+                TRACE(TRACE2_SQL, "PARAM2: " << dec << oracleAnalyzer->resetlogs);
+
+                stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
+                stmt.bindUInt32(1, ((OracleAnalyzerOnline*)oracleAnalyzer)->sequence);
+                stmt.bindUInt32(2, oracleAnalyzer->resetlogs);
+            }
 
             char path[513]; stmt.defineString(1, path, sizeof(path));
             typeSEQ sequence; stmt.defineUInt32(2, sequence);

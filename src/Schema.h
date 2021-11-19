@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
 
         void dropSchema(void);
         bool readSchema(void);
-        bool readSchemaFile(string& fileName, typeSCN fileScn);
+        bool readSchema(string& jsonName, typeSCN fileScn);
         void writeSchema(void);
         OracleObject* checkDict(typeOBJ obj, typeDATAOBJ dataObj);
         void addToDict(OracleObject* object);

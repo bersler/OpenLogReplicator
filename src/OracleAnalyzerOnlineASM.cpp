@@ -47,8 +47,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnlineASM::checkConnection(void) {
-        OracleAnalyzerOnline::checkConnection();
+    bool OracleAnalyzerOnlineASM::checkConnection(void) {
+        if (!OracleAnalyzerOnline::checkConnection())
+            return false;
 
         while (!shutdown) {
             if (connASM == nullptr) {
@@ -62,11 +63,13 @@ namespace OpenLogReplicator {
             }
 
             if (connASM != nullptr)
-                break;
+                return true;
 
-            WARNING("cannot connect to ASM, retry in 5 sec.");
+            DEBUG("cannot connect to ASM, retry in 5 sec.");
             sleep(5);
         }
+
+        return false;
     }
 
     Reader* OracleAnalyzerOnlineASM::readerCreate(int64_t group) {

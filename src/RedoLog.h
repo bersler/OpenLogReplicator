@@ -77,13 +77,11 @@ namespace OpenLogReplicator {
         typeSCN nextScn;
         Reader* reader;
 
-        void resetRedo(void);
-        void continueRedo(RedoLog* prev);
         uint64_t processLog(void);
         RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, string& path);
         virtual ~RedoLog(void);
 
-        friend ostream& operator<<(ostream& os, const RedoLog& ors);
+        friend ostream& operator<<(ostream& os, const RedoLog& redoLog);
     };
 }
 

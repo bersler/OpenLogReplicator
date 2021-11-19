@@ -92,14 +92,14 @@ namespace OpenLogReplicator {
             if (bytes == -1 && errno != ENOTCONN)
                 break;
 
-            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUS << " us");
-            usleep(oracleAnalyzer->archReadSleepUS);
+            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUs << " us");
+            usleep(oracleAnalyzer->archReadSleepUs);
             --tries;
         }
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
-            ERROR("HINT: try to restart with direct io mode disabled, set \"flags\" to value: " << dec << REDO_FLAGS_DIRECT);
+            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << dec << REDO_FLAGS_DIRECT);
         }
 
         if ((trace2 & TRACE2_PERFORMANCE) != 0) {

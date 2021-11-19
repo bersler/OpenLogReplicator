@@ -1,4 +1,4 @@
-/* Header for NetworkException class
+/* Header for OracleIncarnation class
    Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,24 +17,30 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
-
 #include "types.h"
 
-#ifndef NETWORKEXCEPTION_H_
-#define NETWORKEXCEPTION_H_
+#ifndef ORACLEINCARNATION_H_
+#define ORACLEINCARNATION_H_
 
 using namespace std;
 
 namespace OpenLogReplicator {
-    class NetworkException: public exception {
+    class OracleIncarnation {
     public:
-        const char* msg;
+        uint32_t incarnation;
+        typeSCN resetlogsScn;
+        typeSCN priorResetlogsScn;
+        string status;
+        typeRESETLOGS resetlogs;
+        uint32_t priorIncarnation;
 
-        NetworkException(const char* msg);
-        virtual ~NetworkException();
+        bool current;
 
-        friend ostream& operator<<(ostream& os, const NetworkException& exception);
+        OracleIncarnation(uint32_t incarnation, typeSCN resetlogsScn, typeSCN priorResetlogsScn, const char* status,
+                typeRESETLOGS resetlogs, uint32_t priorIncarnation);
+        virtual ~OracleIncarnation();
+
+        friend ostream& operator<<(ostream& os, const OracleIncarnation& i);
     };
 }
 

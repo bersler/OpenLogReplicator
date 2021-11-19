@@ -1,3 +1,18 @@
+0.9.33-beta
+- fixed bug: throwing unhandled exception from callback functions
+- fixed bug: after resetlogs starting redo log number might be incorrect
+- fixed bug: stacktrace when cancelled and no database connection
+- fixed bug: database server restart was incorrectly handled
+- fixed bug: forced checkpoint files creation in case of log switch
+- OpenLogReplicator.json: updated format version to 0.9.33
+- OpenLogReplicator.json: changed "checkpoint" to "state"
+- OpenLogReplicator.json: changed "all" to "all-checkpoints" in "state"
+- OpenLogReplicator.json: added option "type" in "state"
+- forced creation of checkpoint files for redo log switch and some other conditions
+- optimized schema parameters read operation
+- added support for Oracle 19.13.0, 21.4.0
+- added support for database resetlogs operation
+
 0.9.32-beta
 - changed LWN buffers from 512 to 1024 to avoid error "[ERROR] all 512 LWN buffers allocated"
 

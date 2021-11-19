@@ -286,11 +286,13 @@ namespace OpenLogReplicator {
             if (digits == 0x80) {
                 valueBufferAppend('0');
             } else {
-                uint64_t j = 1, jMax = length - 1;
+                uint64_t j = 1;
+                uint64_t jMax = length - 1;
 
                 //positive number
                 if (digits > 0x80 && jMax >= 1) {
-                    uint64_t value, zeros = 0;
+                    uint64_t value;
+                    uint64_t zeros = 0;
                     //part of the total
                     if (digits <= 0xC0) {
                         valueBufferAppend('0');
@@ -348,7 +350,8 @@ namespace OpenLogReplicator {
                     }
                 //negative number
                 } else if (digits < 0x80 && jMax >= 1) {
-                    uint64_t value, zeros = 0;
+                    uint64_t value;
+                    uint64_t zeros = 0;
                     valueBufferAppend('-');
 
                     if (data[jMax] == 0x66)

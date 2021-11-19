@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
     ConfigurationException::~ConfigurationException() {
     }
 
-    ostream& operator<<(ostream& os, const ConfigurationException& ors) {
-        os << ors.msg;
+    ostream& operator<<(ostream& os, const ConfigurationException& exception) {
+        os << exception.msg;
         return os;
     }
 }

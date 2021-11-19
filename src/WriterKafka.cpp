@@ -26,10 +26,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    WriterKafka::WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+    WriterKafka::WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
             const char* brokers, const char* topic, uint64_t maxMessages, uint64_t maxMessageMb, bool enableIdempotence) :
-        Writer(alias, oracleAnalyzer, maxMessageMb, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSequence, startTime,
+        Writer(alias, oracleAnalyzer, maxMessageMb, pollIntervalUs, checkpointIntervalS, queueSize, startScn, startSequence, startTime,
                 startTimeRel),
         brokers(brokers),
         topic(topic),
@@ -120,8 +120,8 @@ namespace OpenLogReplicator {
                 WARNING("Failed to produce to topic " << topic.c_str() << ", message: " << rd_kafka_err2str(err));
 
                 if (err == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
-                    WARNING("Queue, full, sleeping " << (pollIntervalUS / 1000) << "ms, then retrying");
-                    rd_kafka_poll(rk, pollIntervalUS / 1000);
+                    WARNING("Queue, full, sleeping " << (pollIntervalUs / 1000) << "ms, then retrying");
+                    rd_kafka_poll(rk, pollIntervalUs / 1000);
                     continue;
                 } else {
                     WARNING("OTHER ERROR?");

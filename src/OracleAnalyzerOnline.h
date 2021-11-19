@@ -31,7 +31,9 @@ namespace OpenLogReplicator {
     class OracleAnalyzerOnline : public OracleAnalyzer {
     protected:
         static const char* SQL_GET_ARCHIVE_LOG_LIST;
+        static const char* SQL_GET_ARCHIVE_LOG_LIST_ACTIVATION;
         static const char* SQL_GET_DATABASE_INFORMATION;
+        static const char* SQL_GET_DATABASE_INCARNATION;
         static const char* SQL_GET_DATABASE_SCN;
         static const char* SQL_GET_CON_INFO;
         static const char* SQL_GET_SCN_FROM_TIME;
@@ -73,7 +75,7 @@ namespace OpenLogReplicator {
 
         virtual void positionReader(void);
         virtual void initialize(void);
-        virtual void checkConnection(void);
+        virtual bool checkConnection(void);
         void closeConnection(void);
         string getParameterValue(const char* parameter);
         string getPropertyValue(const char* property);
@@ -84,6 +86,7 @@ namespace OpenLogReplicator {
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
         void readSystemDictionaries(string& owner, string& table, typeOPTIONS options);
         void createSchemaForTable(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options);
+        virtual void updateOnlineRedoLogData(void);
 
     public:
         DatabaseEnvironment* env;

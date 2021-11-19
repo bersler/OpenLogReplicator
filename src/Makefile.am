@@ -58,6 +58,7 @@ OpenLogReplicator.cpp \
 OracleAnalyzer.cpp \
 OracleAnalyzerBatch.cpp \
 OracleColumn.cpp \
+OracleIncarnation.cpp \
 OracleObject.cpp \
 OutputBuffer.cpp \
 OutputBufferJson.cpp \
@@ -70,6 +71,8 @@ RowId.cpp \
 RuntimeException.cpp \
 Schema.cpp \
 SchemaElement.cpp \
+State.cpp \
+StateDisk.cpp \
 SysCCol.cpp \
 SysCDef.cpp \
 SysCol.cpp \
@@ -90,6 +93,14 @@ WriterFile.cpp \
 global.cpp \
 uintX_t.cpp
 
+if HIREDIS_COMPILE
+OpenLogReplicator_SOURCES += StateRedis.cpp
+endif
+
+if KAFKA_COMPILE
+OpenLogReplicator_SOURCES += WriterKafka.cpp
+endif
+
 if OCI_COMPILE
 OpenLogReplicator_SOURCES += DatabaseConnection.cpp \
 DatabaseEnvironment.cpp \
@@ -97,14 +108,6 @@ DatabaseStatement.cpp \
 OracleAnalyzerOnline.cpp \
 OracleAnalyzerOnlineASM.cpp \
 ReaderASM.cpp
-endif
-
-if KAFKA_COMPILE
-OpenLogReplicator_SOURCES += WriterKafka.cpp
-endif
-
-if ROCKETMQ_COMPILE
-OpenLogReplicator_SOURCES += WriterRocketMQ.cpp
 endif
 
 if PROTOBUF_COMPILE
@@ -124,4 +127,8 @@ if ZEROMQ_COMPILE
 OpenLogReplicator_SOURCES += StreamZeroMQ.cpp
 StreamClient_SOURCES += StreamZeroMQ.cpp
 endif
+endif
+
+if ROCKETMQ_COMPILE
+OpenLogReplicator_SOURCES += WriterRocketMQ.cpp
 endif

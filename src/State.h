@@ -1,4 +1,4 @@
-/* Header for NetworkException class
+/* Header for State class
    Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,24 +17,28 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <exception>
+#include <set>
 
-#include "types.h"
+#include <types.h>
 
-#ifndef NETWORKEXCEPTION_H_
-#define NETWORKEXCEPTION_H_
+#ifndef STATE_H_
+#define STATE_H_
+
+#define STATE_TYPE_DISK 0
+#define STATE_TYPE_REDIS 1
 
 using namespace std;
 
 namespace OpenLogReplicator {
-    class NetworkException: public exception {
+    class State {
     public:
-        const char* msg;
+        State();
+        virtual ~State();
 
-        NetworkException(const char* msg);
-        virtual ~NetworkException();
-
-        friend ostream& operator<<(ostream& os, const NetworkException& exception);
+        virtual void list(set<string>& namesList) = 0;
+        virtual bool read(string& name, uint64_t maxSize, string& in, bool noFail) = 0;
+        virtual void write(string& name, stringstream& out) = 0;
+        virtual void drop(string& name) = 0;
     };
 }
 

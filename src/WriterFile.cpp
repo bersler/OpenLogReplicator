@@ -30,10 +30,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    WriterFile::WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+    WriterFile::WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
             const char* output, const char* format, uint64_t maxSize, uint64_t newLine, uint64_t append) :
-        Writer(alias, oracleAnalyzer, 0, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
+        Writer(alias, oracleAnalyzer, 0, pollIntervalUs, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
         prefixPos(0),
         suffixPos(0),
         mode(WRITERFILE_MODE_STDOUT),

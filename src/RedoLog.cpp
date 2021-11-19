@@ -73,6 +73,7 @@ namespace OpenLogReplicator {
         uint64_t* length = (uint64_t*) lwnChunks[0];
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
+        lwnAllocatedMax = 1;
     }
 
     RedoLog::~RedoLog() {
@@ -1028,18 +1029,6 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::resetRedo(void) {
-        lwnConfirmedBlock = 2;
-        freeLwn();
-    }
-
-    void RedoLog::continueRedo(RedoLog* prev) {
-        lwnConfirmedBlock = prev->lwnConfirmedBlock;
-        reader->bufferStart = prev->lwnConfirmedBlock * prev->reader->blockSize;
-        reader->bufferEnd = prev->lwnConfirmedBlock * prev->reader->blockSize;
-        freeLwn();
-    }
-
     uint64_t RedoLog::processLog(void) {
         if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->firstScn != 0) {
             firstScn = reader->firstScn;
@@ -1059,23 +1048,48 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (oracleAnalyzer->readStartOffset > 0) {
-            if ((oracleAnalyzer->readStartOffset % reader->blockSize) != 0) {
-                RUNTIME_FAIL("incorrect offset start:  " << dec << oracleAnalyzer->readStartOffset << " - not a multiplication of block size: " << dec << reader->blockSize);
+        if (oracleAnalyzer->offset > 0) {
+            if ((oracleAnalyzer->offset % reader->blockSize) != 0) {
+                RUNTIME_FAIL("incorrect offset start:  " << dec << oracleAnalyzer->offset << " - not a multiplication of block size: " << dec << reader->blockSize);
             }
-            lwnConfirmedBlock = oracleAnalyzer->readStartOffset / reader->blockSize;
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << dec << oracleAnalyzer->readStartOffset << " (block " << dec << lwnConfirmedBlock << ")");
+            lwnConfirmedBlock = oracleAnalyzer->offset / reader->blockSize;
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << dec << oracleAnalyzer->offset << " (block " << dec << lwnConfirmedBlock << ")");
 
-            reader->bufferStart = oracleAnalyzer->readStartOffset;
-            reader->bufferEnd = oracleAnalyzer->readStartOffset;
-            freeLwn();
+            reader->bufferStart = oracleAnalyzer->offset;
+            reader->bufferEnd = oracleAnalyzer->offset;
+            oracleAnalyzer->offset = 0;
+        } else {
+            lwnConfirmedBlock = 2;
+            reader->bufferStart = lwnConfirmedBlock * reader->blockSize;
+            reader->bufferEnd = lwnConfirmedBlock * reader->blockSize;
 
-            oracleAnalyzer->readStartOffset = 0;
+            oracleAnalyzer->checkpointLastOffset = 0;
         }
+
         INFO("processing redo log: " << *this << " offset: " << dec << reader->bufferStart);
 
-        if (lwnConfirmedBlock == 2)
-            oracleAnalyzer->checkpointLastOffset = 0;
+        if (oracleAnalyzer->resetlogs == 0)
+            oracleAnalyzer->resetlogs = reader->resetlogsHeader;
+
+        if (reader->resetlogsHeader != oracleAnalyzer->resetlogs) {
+            RUNTIME_FAIL("invalid resetlogs value (found: " << dec << reader->resetlogsHeader << ", expected: " << dec << oracleAnalyzer->resetlogs << "): " << reader->fileName);
+        }
+
+        if (oracleAnalyzer->activation == 0) {
+            INFO("new activation detected: " << dec << reader->activationHeader);
+            oracleAnalyzer->activation = reader->activationHeader;
+            oracleAnalyzer->activationChanged = true;
+        }
+
+        if (reader->activationHeader != 0 && reader->activationHeader != oracleAnalyzer->activation) {
+            RUNTIME_FAIL("invalid activation id value (found: " << dec << reader->activationHeader << ", expected: " << dec << oracleAnalyzer->activation << "): " << reader->fileName);
+        }
+
+        if (oracleAnalyzer->nextScn != ZERO_SCN) {
+            if (oracleAnalyzer->nextScn != reader->firstScnHeader) {
+                RUNTIME_FAIL("incorrect SCN for redo log file, read: " << dec << reader->firstScnHeader << " expected: " << oracleAnalyzer->nextScn);
+            }
+        }
 
         time_t cStart = oracleAnalyzer->getTime();
         {
@@ -1085,9 +1099,19 @@ namespace OpenLogReplicator {
             oracleAnalyzer->sleepingCond.notify_all();
         }
         LwnMember* lwnMember;
-        uint64_t currentBlock = lwnConfirmedBlock, blockOffset = 16, startBlock = lwnConfirmedBlock, tmpBufferStart = reader->bufferStart,
-                recordLength4 = 0, recordPos = 0, recordLeftToCopy = 0, lwnEndBlock = lwnConfirmedBlock, lwnStartBlock = lwnConfirmedBlock;
-        uint16_t lwnNum = 0, lwnNumMax = 0, lwnNumCur = 0, lwnNumCnt = 0;
+        uint64_t currentBlock = lwnConfirmedBlock;
+        uint64_t blockOffset = 16;
+        uint64_t startBlock = lwnConfirmedBlock;
+        uint64_t tmpBufferStart = reader->bufferStart;
+        uint64_t recordLength4 = 0;
+        uint64_t recordPos = 0;
+        uint64_t recordLeftToCopy = 0;
+        uint64_t lwnEndBlock = lwnConfirmedBlock;
+        uint64_t lwnStartBlock = lwnConfirmedBlock;
+        uint16_t lwnNum = 0;
+        uint16_t lwnNumMax = 0;
+        uint16_t lwnNumCur = 0;
+        uint16_t lwnNumCnt = 0;
         lwnCheckpointBlock = lwnConfirmedBlock;
         bool switchRedo = false;
 
@@ -1219,9 +1243,8 @@ namespace OpenLogReplicator {
                                 lwnScnMax = lwnMembers[i]->scn;
                         }
 
-                        switchRedo = (tmpBufferStart == reader->bufferEnd) && (reader->ret == REDO_FINISHED);
                         if (lwnScn > oracleAnalyzer->firstScn &&
-                                oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo) &&
+                                oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, false) &&
                                 oracleAnalyzer->checkpointOutputCheckpoint) {
                             TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn);
                             oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
@@ -1271,6 +1294,7 @@ namespace OpenLogReplicator {
                         reader->ret == REDO_FINISHED) {
                     switchRedo = true;
                     TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " with switch");
+                    oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
                     oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
                 } else if (instrumentedShutdown) {
                     TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " at exit");
@@ -1291,7 +1315,11 @@ namespace OpenLogReplicator {
                     if (reader->ret == REDO_FINISHED && nextScn == ZERO_SCN && reader->nextScn != 0)
                         nextScn = reader->nextScn;
 
-                    if (reader->ret == REDO_FINISHED || reader->ret == REDO_OVERWRITTEN || reader->status == READER_STATUS_SLEEPING)
+                    if (reader->ret == REDO_STOPPED || reader->ret == REDO_OVERWRITTEN) {
+                        oracleAnalyzer->offset = lwnConfirmedBlock * reader->blockSize;
+                        break;
+                    } else
+                    if (reader->ret == REDO_FINISHED || reader->status == READER_STATUS_SLEEPING)
                         break;
                     oracleAnalyzer->analyzerCond.wait(lck);
                 }
@@ -1306,7 +1334,8 @@ namespace OpenLogReplicator {
 
             if (group == 0) {
                 time_t cEnd = oracleAnalyzer->getTime();
-                double mySpeed = 0, myTime = (cEnd - cStart) / 1000.0;
+                double mySpeed = 0;
+                double myTime = (cEnd - cStart) / 1000.0;
                 if (myTime > 0)
                     mySpeed = (currentBlock - startBlock) * reader->blockSize * 1000.0 / 1024 / 1024 / myTime;
 
@@ -1336,12 +1365,13 @@ namespace OpenLogReplicator {
             oracleAnalyzer->dumpStream.close();
         }
 
+        freeLwn();
         return reader->ret;
     }
 
-    ostream& operator<<(ostream& os, const RedoLog& ors) {
-        os << "group: " << dec << ors.group << " scn: " << ors.firstScn << " to " <<
-                ((ors.nextScn != ZERO_SCN) ? ors.nextScn : 0) << " seq: " << ors.sequence << " path: " << ors.path;
+    ostream& operator<<(ostream& os, const RedoLog& redoLog) {
+        os << "group: " << dec << redoLog.group << " scn: " << redoLog.firstScn << " to " <<
+                ((redoLog.nextScn != ZERO_SCN) ? redoLog.nextScn : 0) << " seq: " << redoLog.sequence << " path: " << redoLog.path;
         return os;
     }
 }

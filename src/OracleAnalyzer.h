@@ -35,10 +35,12 @@ using namespace std;
 namespace OpenLogReplicator {
     class RedoLog;
     class OutputBuffer;
+    class OracleIncarnation;
     class Reader;
     class RedoLogRecord;
     class Schema;
     class SystemTransaction;
+    class State;
     class Transaction;
     class TransactionBuffer;
 
@@ -53,10 +55,13 @@ namespace OpenLogReplicator {
     class OracleAnalyzer : public Thread {
     protected:
         typeSEQ sequence;
+        uint64_t offset;
+        typeSCN nextScn;
 
         priority_queue<RedoLog*, vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
         set<RedoLog*> onlineRedoSet;
-        uint64_t suppLogDbPrimary, suppLogDbAll;
+        uint64_t suppLogDbPrimary;
+        uint64_t suppLogDbAll;
         uint64_t memoryMinMb;
         uint64_t memoryMaxMb;
         uint8_t** memoryChunks;
@@ -88,7 +93,6 @@ namespace OpenLogReplicator {
         typeSEQ startSequence;
         string startTime;
         int64_t startTimeRel;
-        uint64_t readStartOffset;
         uint64_t readBufferMax;
         unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
         uint64_t disableChecks;
@@ -101,15 +105,18 @@ namespace OpenLogReplicator {
         uint64_t bigEndian;
         bool version12;
         bool schemaChanged;
+        bool activationChanged;
 
         void updateOnlineLogs(void);
         bool readerCheckRedoLog(Reader* reader);
         uint64_t readerDropAll(void);
+        void updateResetlogs(void);
         static uint64_t getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const string& file);
         virtual const char* getModeName(void) const;
-        virtual void checkConnection(void);
+        virtual bool checkConnection(void);
         virtual bool continueWithOnline(void);
         virtual void createSchema(void);
+        virtual void updateOnlineRedoLogData(void);
 
     public:
         OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath, const char* alias,
@@ -128,7 +135,7 @@ namespace OpenLogReplicator {
         uint64_t checkpointLastOffset;
         string logArchiveFormat;
         string redoCopyPath;
-        string checkpointPath;
+        State *state;
         ofstream dumpStream;
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
@@ -138,10 +145,11 @@ namespace OpenLogReplicator {
         Schema* schema;
         OutputBuffer* outputBuffer;
         uint64_t flags;
-        uint64_t redoReadSleepUS;
-        uint64_t archReadSleepUS;
+        uint64_t redoReadSleepUs;
+        uint64_t archReadSleepUs;
         uint64_t archReadTries;
-        uint64_t redoVerifyDelayUS;
+        uint64_t redoVerifyDelayUs;
+        uint64_t refreshIntervalUs;
         SystemTransaction* systemTransaction;
         TransactionBuffer* transactionBuffer;
         typeRESETLOGS resetlogs;
@@ -153,6 +161,8 @@ namespace OpenLogReplicator {
         set<typeXID> skipXidList;
         set<typeXIDMAP> brokenXidMapList;
         bool stopFlushBuffer;
+        set<OracleIncarnation*> oiSet;
+        OracleIncarnation* oiCurrent;
 
         void (*archGetLog)(OracleAnalyzer* oracleAnalyzer);
         uint16_t (*read16)(const uint8_t* buf);
@@ -207,7 +217,7 @@ namespace OpenLogReplicator {
         void applyMapping(string& path);
         bool checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
-        bool readCheckpointFile(string& fileName, typeSCN fileScn);
+        bool readCheckpoint(string& jsonName, typeSCN fileScn);
         void skipEmptyFields(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
         uint8_t* getMemoryChunk(const char* module, bool supp);
         void freeMemoryChunk(const char* module, uint8_t* chunk, bool supp);

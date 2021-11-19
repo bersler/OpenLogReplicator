@@ -46,6 +46,7 @@ namespace OpenLogReplicator {
             sequence = startSequence;
         else
             sequence = 0;
+        offset = 0;
     }
 
     void OracleAnalyzerBatch::createSchema(void) {

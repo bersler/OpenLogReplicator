@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
         OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, string& owner, string& name);
         virtual ~OracleObject();
 
-        friend ostream& operator<<(ostream& os, const OracleObject& ors);
+        friend ostream& operator<<(ostream& os, const OracleObject& object);
     };
 }
 

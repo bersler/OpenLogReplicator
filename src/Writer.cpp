@@ -17,7 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
 
@@ -27,13 +26,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "OutputBuffer.h"
 #include "RuntimeException.h"
+#include "State.h"
 #include "Writer.h"
 
 using namespace std;
 using namespace rapidjson;
 
 namespace OpenLogReplicator {
-    Writer::Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUS,
+    Writer::Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUs,
             uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
             int64_t startTimeRel) :
         Thread(alias),
@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         maxQueueSize(0),
         queue(nullptr),
         maxMessageMb(maxMessageMb),
-        pollIntervalUS(pollIntervalUS),
+        pollIntervalUs(pollIntervalUs),
         previousCheckpoint(time(nullptr)),
         checkpointIntervalS(checkpointIntervalS),
         queueSize(queueSize),
@@ -123,7 +123,8 @@ namespace OpenLogReplicator {
     void Writer::confirmMessage(OutputBufferMsg* msg) {
         if (msg == nullptr) {
             if (tmpQueueSize == 0) {
-                RUNTIME_FAIL("trying to confirm empty message");
+                WARNING("trying to confirm empty message");
+                return;
             }
             msg = queue[0];
         }
@@ -201,7 +202,8 @@ namespace OpenLogReplicator {
 
                     OutputBufferMsg* msg = nullptr;
                     OutputBufferQueue* curBuffer = outputBuffer->firstBuffer;
-                    uint64_t curLength = 0, tmpLength = 0;
+                    uint64_t curLength = 0;
+                    uint64_t tmpLength = 0;
                     tmpQueueSize = 0;
 
                     //start streaming
@@ -235,7 +237,7 @@ namespace OpenLogReplicator {
                                 oracleAnalyzer->memoryCond.notify_all();
 
                                 if (tmpQueueSize > 0) {
-                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollIntervalUS));
+                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollIntervalUs));
                                 } else {
                                     if (stop) {
                                         INFO("writer flushed, shutting down");
@@ -259,8 +261,8 @@ namespace OpenLogReplicator {
                             //queue is full
                             pollQueue();
                             while (tmpQueueSize >= queueSize && !shutdown) {
-                                DEBUG("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollIntervalUS << "us");
-                                usleep(pollIntervalUS);
+                                DEBUG("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollIntervalUs << "us");
+                                usleep(pollIntervalUs);
                                 pollQueue();
                             }
                             writeCheckpoint(false);
@@ -343,22 +345,14 @@ namespace OpenLogReplicator {
             return;
 
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
-        string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-chkpt.json");
-        ofstream outfile;
-        outfile.open(fileName.c_str(), ios::out | ios::trunc);
 
-        if (!outfile.is_open()) {
-            RUNTIME_FAIL("writing checkpoint data to " << fileName);
-        }
-
+        string jsonName(oracleAnalyzer->database + "-chkpt");
         stringstream ss;
         ss << "{\"database\":\"" << oracleAnalyzer->database
                 << "\",\"scn\":" << dec << confirmedScn
                 << ",\"resetlogs\":" << dec << oracleAnalyzer->resetlogs
                 << ",\"activation\":" << dec << oracleAnalyzer->activation << "}";
-
-        outfile << ss.rdbuf();
-        outfile.close();
+        oracleAnalyzer->state->write(jsonName, ss);
 
         oracleAnalyzer->checkpointScn = confirmedScn;
         previousCheckpoint = now;
@@ -366,48 +360,35 @@ namespace OpenLogReplicator {
 
     void Writer::readCheckpoint(void) {
         ifstream infile;
-        string fileName(oracleAnalyzer->checkpointPath + "/" + oracleAnalyzer->database + "-chkpt.json");
+        string jsonName(oracleAnalyzer->database + "-chkpt");
 
-        struct stat fileStat;
-        int ret = stat(fileName.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
-        if (ret != 0) {
+        string checkpointJSON;
+        Document document;
+        if (!oracleAnalyzer->state->read(jsonName, CHECKPOINT_FILE_MAX_SIZE, checkpointJSON, true)) {
             startReader();
             return;
         }
-        if (fileStat.st_size > CHECKPOINT_FILE_MAX_SIZE || fileStat.st_size == 0) {
-            RUNTIME_FAIL("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
-        }
 
-        infile.open(fileName.c_str(), ios::in);
-        if (!infile.is_open()) {
-            RUNTIME_FAIL("checkpoint file: " << fileName << " read error");
-        }
-
-        string configJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
-        Document document;
-
-        if (configJSON.length() == 0 || document.Parse(configJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
+        if (checkpointJSON.length() == 0 || document.Parse(checkpointJSON.c_str()).HasParseError()) {
+            RUNTIME_FAIL("parsing of: " << jsonName << " at offset: " << document.GetErrorOffset() <<
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const char* database = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
+        const char* database = getJSONfieldS(jsonName, JSON_PARAMETER_LENGTH, document, "database");
         if (oracleAnalyzer->database.compare(database) != 0) {
-            RUNTIME_FAIL("parsing of " << fileName << " - invalid database name");
+            RUNTIME_FAIL("parsing of: " << jsonName << " - invalid database name");
         }
 
-        oracleAnalyzer->resetlogs = getJSONfieldU32(fileName, document, "resetlogs");
-        oracleAnalyzer->activation = getJSONfieldU32(fileName, document, "activation");
+        oracleAnalyzer->resetlogs = getJSONfieldU32(jsonName, document, "resetlogs");
+        oracleAnalyzer->activation = getJSONfieldU32(jsonName, document, "activation");
 
         //started earlier - continue work & ignore default startup parameters
-        startScn = getJSONfieldU64(fileName, document, "scn");
+        startScn = getJSONfieldU64(jsonName, document, "scn");
         startSequence = ZERO_SEQ;
         startTime.clear();
         startTimeRel = 0;
         INFO("checkpoint - reading scn: " << dec << startScn);
 
-        infile.close();
         startReader();
     }
 

@@ -38,16 +38,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "Schema.h"
 #include "SchemaElement.h"
-#include "Writer.h"
+#include "StateDisk.h"
 #include "WriterFile.h"
 
-#ifdef LINK_LIBRARY_RDKAFKA
-#include "WriterKafka.h"
-#endif /* LINK_LIBRARY_RDKAFKA */
-
-#ifdef LINK_LIBRARY_ROCKETMQ
-#include "WriterRocketMQ.h"
-#endif /* LINK_LIBRARY_ROCKETMQ */
+#ifdef LINK_LIBRARY_HIREDIS
+#include "StateRedis.h"
+#endif /* LINK_LIBRARY_HIREDIS */
 
 #ifdef LINK_LIBRARY_OCI
 #include "OracleAnalyzerOnline.h"
@@ -62,6 +58,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamZeroMQ.h"
 #endif /* LINK_LIBRARY_ZEROMQ */
 #endif /* LINK_LIBRARY_PROTOBUF */
+
+#ifdef LINK_LIBRARY_RDKAFKA
+#include "WriterKafka.h"
+#endif /* LINK_LIBRARY_RDKAFKA */
+
+#ifdef LINK_LIBRARY_ROCKETMQ
+#include "WriterRocketMQ.h"
+#endif /* LINK_LIBRARY_ROCKETMQ */
 
 using namespace std;
 using namespace rapidjson;
@@ -79,9 +83,6 @@ int main(int argc, char** argv) {
 #ifdef LINK_LIBRARY_RDKAFKA
 " Kafka"
 #endif /* LINK_LIBRARY_RDKAFKA */
-#ifdef LINK_LIBRARY_ROCKETMQ
-" RocketMQ"
-#endif /* LINK_LIBRARY_ROCKETMQ */
 #ifdef LINK_LIBRARY_OCI
 " OCI"
 #endif /* LINK_LIBRARY_OCI */
@@ -91,6 +92,12 @@ int main(int argc, char** argv) {
 " ZeroMQ"
 #endif /* LINK_LIBRARY_ZEROMQ */
 #endif /* LINK_LIBRARY_PROTOBUF */
+#ifdef LINK_LIBRARY_HIREDIS
+" Redis"
+#endif /* LINK_LIBRARY_HIREDIS */
+#ifdef LINK_LIBRARY_ROCKETMQ
+" RocketMQ"
+#endif /* LINK_LIBRARY_ROCKETMQ */
     );
 
     list<OracleAnalyzer*> analyzers;
@@ -443,6 +450,7 @@ int main(int argc, char** argv) {
 
             } else if (strcmp(readerType, "asm") == 0 || strcmp(readerType, "asm-standby") == 0) {
 #ifdef LINK_LIBRARY_OCI
+                WARNING("experimental feature is used: read using ASM");
                 bool standby = false;
                 if (strcmp(readerType, "asm-standby") == 0)
                     standby = true;
@@ -572,7 +580,8 @@ int main(int argc, char** argv) {
                             stringstream keyStream(element->keysStr);
 
                             while (keyStream.good()) {
-                                string keyCol, keyCol2;
+                                string keyCol;
+                                string keyCol2;
                                 getline(keyStream, keyCol, ',');
                                 keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
                                 transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
@@ -590,7 +599,9 @@ int main(int argc, char** argv) {
 
                         typeXID xid = 0;
                         bool invalid = false;
-                        string usn, slt, sqn;
+                        string usn;
+                        string slt;
+                        string sqn;
 
                         uint64_t length = strnlen(skipXid, 25);
                         //UUUUSSSSQQQQQQQQ
@@ -700,10 +711,13 @@ int main(int argc, char** argv) {
             }
 
             if (sourceJSON.HasMember("redo-verify-delay-us"))
-                oracleAnalyzer->redoVerifyDelayUS = getJSONfieldU64(fileName, sourceJSON, "redo-verify-delay-us");
+                oracleAnalyzer->redoVerifyDelayUs = getJSONfieldU64(fileName, sourceJSON, "redo-verify-delay-us");
+
+            if (sourceJSON.HasMember("refresh-interval-us"))
+                oracleAnalyzer->refreshIntervalUs = getJSONfieldU64(fileName, sourceJSON, "refresh-interval-us");
 
             if (sourceJSON.HasMember("arch-read-sleep-us"))
-                oracleAnalyzer->archReadSleepUS = getJSONfieldU64(fileName, sourceJSON, "arch-read-sleep-us");
+                oracleAnalyzer->archReadSleepUs = getJSONfieldU64(fileName, sourceJSON, "arch-read-sleep-us");
 
             if (sourceJSON.HasMember("arch-read-tries")) {
                 oracleAnalyzer->archReadTries = getJSONfieldU64(fileName, sourceJSON, "arch-read-tries");
@@ -713,7 +727,7 @@ int main(int argc, char** argv) {
             }
 
             if (sourceJSON.HasMember("redo-read-sleep-us"))
-                oracleAnalyzer->redoReadSleepUS = getJSONfieldU64(fileName, sourceJSON, "redo-read-sleep-us");
+                oracleAnalyzer->redoReadSleepUs = getJSONfieldU64(fileName, sourceJSON, "redo-read-sleep-us");
 
             if (readerJSON.HasMember("redo-copy-path"))
                 oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, readerJSON, "redo-copy-path");
@@ -721,29 +735,49 @@ int main(int argc, char** argv) {
             if (readerJSON.HasMember("log-archive-format"))
                 oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, VPARAMETER_LENGTH, readerJSON, "log-archive-format");
 
-            if (sourceJSON.HasMember("checkpoint")) {
-                const Value& checkpointJSON = getJSONfieldO(fileName, sourceJSON, "checkpoint");
+            uint64_t stateType = STATE_TYPE_DISK;
+            const char* statePath = "checkpoint";
+            const char* stateServer = "localhost";
+            uint16_t statePort = 6379;
 
-                if (checkpointJSON.HasMember("path"))
-                    oracleAnalyzer->checkpointPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, checkpointJSON, "path");
+            if (sourceJSON.HasMember("state")) {
+                const Value& stateJSON = getJSONfieldO(fileName, sourceJSON, "state");
 
-                if (checkpointJSON.HasMember("interval-s"))
-                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU64(fileName, checkpointJSON, "interval-s");
-
-                if (checkpointJSON.HasMember("interval-mb"))
-                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU64(fileName, checkpointJSON, "interval-mb");
-
-                if (checkpointJSON.HasMember("all")) {
-                    uint64_t all = getJSONfieldU64(fileName, checkpointJSON, "all");
-                    if (all <= 1)
-                        oracleAnalyzer->checkpointAll = all;
-                    else if (all > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"all\" value: " << dec << all << ", expected one of: {0, 1}");
+                if (stateJSON.HasMember("type")) {
+                    const char* stateTypeStr = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "type");
+                    if (strcmp(stateTypeStr, "disk") == 0) {
+                        stateType = STATE_TYPE_DISK;
+                        if (stateJSON.HasMember("path"))
+                            statePath = getJSONfieldS(fileName, MAX_PATH_LENGTH, stateJSON, "path");
+                    } else if (strcmp(stateTypeStr, "redis") == 0) {
+                        WARNING("experimental feature is used: writing state in Redis (not yet implemented)");
+                        stateType = STATE_TYPE_REDIS;
+                        if (stateJSON.HasMember("server"))
+                            stateServer = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "server");
+                        if (stateJSON.HasMember("port"))
+                            statePort = getJSONfieldU16(fileName, stateJSON, "port");
+                    } else {
+                        CONFIG_FAIL("bad JSON, invalid \"type\" value: " << dec << stateTypeStr << ", expected one of: {\"disk\", \"redis\"}");
                     }
                 }
 
-                if (checkpointJSON.HasMember("output-checkpoint")) {
-                    uint64_t outputCheckpoint = getJSONfieldU64(fileName, checkpointJSON, "output-checkpoint");
+                if (stateJSON.HasMember("interval-s"))
+                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU64(fileName, stateJSON, "interval-s");
+
+                if (stateJSON.HasMember("interval-mb"))
+                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU64(fileName, stateJSON, "interval-mb");
+
+                if (stateJSON.HasMember("all-checkpoints")) {
+                    uint64_t allCheckpoints = getJSONfieldU64(fileName, stateJSON, "all-checkpoints");
+                    if (allCheckpoints <= 1)
+                        oracleAnalyzer->checkpointAll = allCheckpoints;
+                    else if (allCheckpoints > 1) {
+                        CONFIG_FAIL("bad JSON, invalid \"all-checkpoints\" value: " << dec << allCheckpoints << ", expected one of: {0, 1}");
+                    }
+                }
+
+                if (stateJSON.HasMember("output-checkpoint")) {
+                    uint64_t outputCheckpoint = getJSONfieldU64(fileName, stateJSON, "output-checkpoint");
                     if (outputCheckpoint <= 1)
                         oracleAnalyzer->checkpointOutputCheckpoint = outputCheckpoint;
                     else if (outputCheckpoint > 1) {
@@ -751,14 +785,25 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                if (checkpointJSON.HasMember("output-log-switch")) {
-                    uint64_t outputLogSwitch = getJSONfieldU64(fileName, checkpointJSON, "output-log-switch");
+                if (stateJSON.HasMember("output-log-switch")) {
+                    uint64_t outputLogSwitch = getJSONfieldU64(fileName, stateJSON, "output-log-switch");
                     if (outputLogSwitch <= 1)
                         oracleAnalyzer->checkpointOutputLogSwitch = outputLogSwitch;
                     else if (outputLogSwitch > 1) {
                         CONFIG_FAIL("bad JSON, invalid \"output-log-switch\" value: " << dec << outputLogSwitch << ", expected one of: {0, 1}");
                     }
                 }
+            }
+
+            if (stateType == STATE_TYPE_DISK) {
+                oracleAnalyzer->state = new StateDisk(statePath);
+            } else
+            if (stateType == STATE_TYPE_REDIS) {
+#ifdef LINK_LIBRARY_HIREDIS
+                oracleAnalyzer->state = new StateRedis(stateServer, statePort);
+#else
+            RUNTIME_FAIL("format \"redis\" is not compiled, exiting");
+#endif /* LINK_LIBRARY_HIREDIS */
             }
 
             if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
@@ -790,11 +835,11 @@ int main(int argc, char** argv) {
             const Value& writerJSON = getJSONfieldO(fileName, targetJSON, "writer");
             const char* writerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "type");
 
-            uint64_t pollIntervalUS = 100000;
+            uint64_t pollIntervalUs = 100000;
             if (writerJSON.HasMember("poll-interval-us")) {
-                pollIntervalUS = getJSONfieldU64(fileName, writerJSON, "poll-interval-us");
-                if (pollIntervalUS < 100 || pollIntervalUS > 3600000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << dec << pollIntervalUS << ", expected one of: {100 .. 3600000000}");
+                pollIntervalUs = getJSONfieldU64(fileName, writerJSON, "poll-interval-us");
+                if (pollIntervalUs < 100 || pollIntervalUs > 3600000000) {
+                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << dec << pollIntervalUs << ", expected one of: {100 .. 3600000000}");
                 }
             }
 
@@ -871,7 +916,7 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                writer = new WriterFile(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                writer = new WriterFile(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, output, format, maxSize, newLine, append);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
@@ -908,7 +953,7 @@ int main(int argc, char** argv) {
 
                 const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
 
-                writer = new WriterKafka(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                writer = new WriterKafka(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, brokers, topic, maxMessages, maxMessageMb, enableIdempotence);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
@@ -918,7 +963,7 @@ int main(int argc, char** argv) {
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerType, "rocketmq") == 0) {
 #ifdef LINK_LIBRARY_ROCKETMQ
-
+                WARNING("experimental feature is used: RocketMQ output");
                 const char *groupId = "OpenLogReplicator";
                 if (writerJSON.HasMember("group-id"))
                     groupId = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "group-id");
@@ -948,7 +993,7 @@ int main(int argc, char** argv) {
                 if (writerJSON.HasMember("keys"))
                     domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "keys");
 
-                writer = new WriterRocketMQ(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                writer = new WriterRocketMQ(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, groupId, address, domain, topic, tags, keys);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterRocketMQ) << " bytes memory (for: RocketMQ writer)");
@@ -959,12 +1004,12 @@ int main(int argc, char** argv) {
             } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
                 const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
-                StreamZeroMQ* stream = new StreamZeroMQ(uri, pollIntervalUS);
+                StreamZeroMQ* stream = new StreamZeroMQ(uri, pollIntervalUs);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS,
+                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
@@ -976,12 +1021,12 @@ int main(int argc, char** argv) {
 #ifdef LINK_LIBRARY_PROTOBUF
                 const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
 
-                StreamNetwork* stream = new StreamNetwork(uri, pollIntervalUS);
+                StreamNetwork* stream = new StreamNetwork(uri, pollIntervalUs);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
-                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUS, checkpointIntervalS, queueSize, startScn,
+                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");

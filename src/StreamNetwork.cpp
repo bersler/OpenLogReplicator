@@ -136,7 +136,8 @@ namespace OpenLogReplicator {
             NETWORK_FAIL("network send error - no connection");
         }
 
-        fd_set wset, w;
+        fd_set wset;
+        fd_set w;
         FD_ZERO(&wset);
         FD_SET(socketFD, &wset);
 

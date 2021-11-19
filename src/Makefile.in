@@ -107,15 +107,15 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
-@OCI_COMPILE_TRUE@am__append_1 = DatabaseConnection.cpp \
+@HIREDIS_COMPILE_TRUE@am__append_1 = StateRedis.cpp
+@KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
+@OCI_COMPILE_TRUE@am__append_3 = DatabaseConnection.cpp \
 @OCI_COMPILE_TRUE@DatabaseEnvironment.cpp \
 @OCI_COMPILE_TRUE@DatabaseStatement.cpp \
 @OCI_COMPILE_TRUE@OracleAnalyzerOnline.cpp \
 @OCI_COMPILE_TRUE@OracleAnalyzerOnlineASM.cpp \
 @OCI_COMPILE_TRUE@ReaderASM.cpp
 
-@KAFKA_COMPILE_TRUE@am__append_2 = WriterKafka.cpp
-@ROCKETMQ_COMPILE_TRUE@am__append_3 = WriterRocketMQ.cpp
 @PROTOBUF_COMPILE_TRUE@am__append_4 = OraProtoBuf.pb.cpp \
 @PROTOBUF_COMPILE_TRUE@OutputBufferProtobuf.cpp \
 @PROTOBUF_COMPILE_TRUE@Stream.cpp \
@@ -125,6 +125,7 @@ bin_PROGRAMS = OpenLogReplicator$(EXEEXT) $(am__EXEEXT_1)
 @PROTOBUF_COMPILE_TRUE@am__append_5 = StreamClient
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_6 = StreamZeroMQ.cpp
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__append_7 = StreamZeroMQ.cpp
+@ROCKETMQ_COMPILE_TRUE@am__append_8 = WriterRocketMQ.cpp
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -156,34 +157,37 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OpCode0B04.cpp OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp \
 	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
 	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
-	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
-	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
-	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
-	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
+	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleIncarnation.cpp \
+	OracleObject.cpp OutputBuffer.cpp OutputBufferJson.cpp \
+	Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
+	RedoLogException.cpp RedoLogRecord.cpp RowId.cpp \
+	RuntimeException.cpp Schema.cpp SchemaElement.cpp State.cpp \
+	StateDisk.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
 	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysTab.cpp \
 	SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp SysUser.cpp \
 	SystemTransaction.cpp Thread.cpp TransactionBuffer.cpp \
 	Transaction.cpp Writer.cpp WriterFile.cpp global.cpp \
-	uintX_t.cpp DatabaseConnection.cpp DatabaseEnvironment.cpp \
+	uintX_t.cpp StateRedis.cpp WriterKafka.cpp \
+	DatabaseConnection.cpp DatabaseEnvironment.cpp \
 	DatabaseStatement.cpp OracleAnalyzerOnline.cpp \
-	OracleAnalyzerOnlineASM.cpp ReaderASM.cpp WriterKafka.cpp \
-	WriterRocketMQ.cpp OraProtoBuf.pb.cpp OutputBufferProtobuf.cpp \
-	Stream.cpp StreamNetwork.cpp WriterStream.cpp StreamZeroMQ.cpp
-@OCI_COMPILE_TRUE@am__objects_1 = DatabaseConnection.$(OBJEXT) \
+	OracleAnalyzerOnlineASM.cpp ReaderASM.cpp OraProtoBuf.pb.cpp \
+	OutputBufferProtobuf.cpp Stream.cpp StreamNetwork.cpp \
+	WriterStream.cpp StreamZeroMQ.cpp WriterRocketMQ.cpp
+@HIREDIS_COMPILE_TRUE@am__objects_1 = StateRedis.$(OBJEXT)
+@KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
+@OCI_COMPILE_TRUE@am__objects_3 = DatabaseConnection.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseEnvironment.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	DatabaseStatement.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnline.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	OracleAnalyzerOnlineASM.$(OBJEXT) \
 @OCI_COMPILE_TRUE@	ReaderASM.$(OBJEXT)
-@KAFKA_COMPILE_TRUE@am__objects_2 = WriterKafka.$(OBJEXT)
-@ROCKETMQ_COMPILE_TRUE@am__objects_3 = WriterRocketMQ.$(OBJEXT)
 @PROTOBUF_COMPILE_TRUE@am__objects_4 = OraProtoBuf.pb.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	OutputBufferProtobuf.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	Stream.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	StreamNetwork.$(OBJEXT) \
 @PROTOBUF_COMPILE_TRUE@	WriterStream.$(OBJEXT)
 @PROTOBUF_COMPILE_TRUE@@ZEROMQ_COMPILE_TRUE@am__objects_5 = StreamZeroMQ.$(OBJEXT)
+@ROCKETMQ_COMPILE_TRUE@am__objects_6 = WriterRocketMQ.$(OBJEXT)
 am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	CharacterSet7bit.$(OBJEXT) CharacterSet8bit.$(OBJEXT) \
 	CharacterSetAL16UTF16.$(OBJEXT) CharacterSetAL32UTF8.$(OBJEXT) \
@@ -205,20 +209,22 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OpCode0B10.$(OBJEXT) OpCode1801.$(OBJEXT) OpCode.$(OBJEXT) \
 	OpenLogReplicator.$(OBJEXT) OracleAnalyzer.$(OBJEXT) \
 	OracleAnalyzerBatch.$(OBJEXT) OracleColumn.$(OBJEXT) \
-	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
-	OutputBufferJson.$(OBJEXT) Reader.$(OBJEXT) \
-	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
+	OracleIncarnation.$(OBJEXT) OracleObject.$(OBJEXT) \
+	OutputBuffer.$(OBJEXT) OutputBufferJson.$(OBJEXT) \
+	Reader.$(OBJEXT) ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
 	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
 	RowId.$(OBJEXT) RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
-	SchemaElement.$(OBJEXT) SysCCol.$(OBJEXT) SysCDef.$(OBJEXT) \
-	SysCol.$(OBJEXT) SysDeferredStg.$(OBJEXT) SysECol.$(OBJEXT) \
-	SysObj.$(OBJEXT) SysTab.$(OBJEXT) SysTabComPart.$(OBJEXT) \
-	SysTabPart.$(OBJEXT) SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) \
+	SchemaElement.$(OBJEXT) State.$(OBJEXT) StateDisk.$(OBJEXT) \
+	SysCCol.$(OBJEXT) SysCDef.$(OBJEXT) SysCol.$(OBJEXT) \
+	SysDeferredStg.$(OBJEXT) SysECol.$(OBJEXT) SysObj.$(OBJEXT) \
+	SysTab.$(OBJEXT) SysTabComPart.$(OBJEXT) SysTabPart.$(OBJEXT) \
+	SysTabSubPart.$(OBJEXT) SysUser.$(OBJEXT) \
 	SystemTransaction.$(OBJEXT) Thread.$(OBJEXT) \
 	TransactionBuffer.$(OBJEXT) Transaction.$(OBJEXT) \
 	Writer.$(OBJEXT) WriterFile.$(OBJEXT) global.$(OBJEXT) \
 	uintX_t.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4) $(am__objects_5)
+	$(am__objects_3) $(am__objects_4) $(am__objects_5) \
+	$(am__objects_6)
 OpenLogReplicator_OBJECTS = $(am_OpenLogReplicator_OBJECTS)
 OpenLogReplicator_LDADD = $(LDADD)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -288,27 +294,29 @@ am__depfiles_remade = ./$(DEPDIR)/CharacterSet.Po \
 	./$(DEPDIR)/OracleAnalyzerBatch.Po \
 	./$(DEPDIR)/OracleAnalyzerOnline.Po \
 	./$(DEPDIR)/OracleAnalyzerOnlineASM.Po \
-	./$(DEPDIR)/OracleColumn.Po ./$(DEPDIR)/OracleObject.Po \
-	./$(DEPDIR)/OutputBuffer.Po ./$(DEPDIR)/OutputBufferJson.Po \
+	./$(DEPDIR)/OracleColumn.Po ./$(DEPDIR)/OracleIncarnation.Po \
+	./$(DEPDIR)/OracleObject.Po ./$(DEPDIR)/OutputBuffer.Po \
+	./$(DEPDIR)/OutputBufferJson.Po \
 	./$(DEPDIR)/OutputBufferProtobuf.Po ./$(DEPDIR)/Reader.Po \
 	./$(DEPDIR)/ReaderASM.Po ./$(DEPDIR)/ReaderFilesystem.Po \
 	./$(DEPDIR)/RedoLog.Po ./$(DEPDIR)/RedoLogException.Po \
 	./$(DEPDIR)/RedoLogRecord.Po ./$(DEPDIR)/RowId.Po \
 	./$(DEPDIR)/RuntimeException.Po ./$(DEPDIR)/Schema.Po \
-	./$(DEPDIR)/SchemaElement.Po ./$(DEPDIR)/Stream.Po \
-	./$(DEPDIR)/StreamClient.Po ./$(DEPDIR)/StreamNetwork.Po \
-	./$(DEPDIR)/StreamZeroMQ.Po ./$(DEPDIR)/SysCCol.Po \
-	./$(DEPDIR)/SysCDef.Po ./$(DEPDIR)/SysCol.Po \
-	./$(DEPDIR)/SysDeferredStg.Po ./$(DEPDIR)/SysECol.Po \
-	./$(DEPDIR)/SysObj.Po ./$(DEPDIR)/SysTab.Po \
-	./$(DEPDIR)/SysTabComPart.Po ./$(DEPDIR)/SysTabPart.Po \
-	./$(DEPDIR)/SysTabSubPart.Po ./$(DEPDIR)/SysUser.Po \
-	./$(DEPDIR)/SystemTransaction.Po ./$(DEPDIR)/Thread.Po \
-	./$(DEPDIR)/Transaction.Po ./$(DEPDIR)/TransactionBuffer.Po \
-	./$(DEPDIR)/Writer.Po ./$(DEPDIR)/WriterFile.Po \
-	./$(DEPDIR)/WriterKafka.Po ./$(DEPDIR)/WriterRocketMQ.Po \
-	./$(DEPDIR)/WriterStream.Po ./$(DEPDIR)/global.Po \
-	./$(DEPDIR)/uintX_t.Po
+	./$(DEPDIR)/SchemaElement.Po ./$(DEPDIR)/State.Po \
+	./$(DEPDIR)/StateDisk.Po ./$(DEPDIR)/StateRedis.Po \
+	./$(DEPDIR)/Stream.Po ./$(DEPDIR)/StreamClient.Po \
+	./$(DEPDIR)/StreamNetwork.Po ./$(DEPDIR)/StreamZeroMQ.Po \
+	./$(DEPDIR)/SysCCol.Po ./$(DEPDIR)/SysCDef.Po \
+	./$(DEPDIR)/SysCol.Po ./$(DEPDIR)/SysDeferredStg.Po \
+	./$(DEPDIR)/SysECol.Po ./$(DEPDIR)/SysObj.Po \
+	./$(DEPDIR)/SysTab.Po ./$(DEPDIR)/SysTabComPart.Po \
+	./$(DEPDIR)/SysTabPart.Po ./$(DEPDIR)/SysTabSubPart.Po \
+	./$(DEPDIR)/SysUser.Po ./$(DEPDIR)/SystemTransaction.Po \
+	./$(DEPDIR)/Thread.Po ./$(DEPDIR)/Transaction.Po \
+	./$(DEPDIR)/TransactionBuffer.Po ./$(DEPDIR)/Writer.Po \
+	./$(DEPDIR)/WriterFile.Po ./$(DEPDIR)/WriterKafka.Po \
+	./$(DEPDIR)/WriterRocketMQ.Po ./$(DEPDIR)/WriterStream.Po \
+	./$(DEPDIR)/global.Po ./$(DEPDIR)/uintX_t.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -493,17 +501,18 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp OpCode0B0B.cpp \
 	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
 	OpenLogReplicator.cpp OracleAnalyzer.cpp \
-	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleObject.cpp \
-	OutputBuffer.cpp OutputBufferJson.cpp Reader.cpp \
-	ReaderFilesystem.cpp RedoLog.cpp RedoLogException.cpp \
-	RedoLogRecord.cpp RowId.cpp RuntimeException.cpp Schema.cpp \
-	SchemaElement.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
+	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleIncarnation.cpp \
+	OracleObject.cpp OutputBuffer.cpp OutputBufferJson.cpp \
+	Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
+	RedoLogException.cpp RedoLogRecord.cpp RowId.cpp \
+	RuntimeException.cpp Schema.cpp SchemaElement.cpp State.cpp \
+	StateDisk.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
 	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysTab.cpp \
 	SysTabComPart.cpp SysTabPart.cpp SysTabSubPart.cpp SysUser.cpp \
 	SystemTransaction.cpp Thread.cpp TransactionBuffer.cpp \
 	Transaction.cpp Writer.cpp WriterFile.cpp global.cpp \
 	uintX_t.cpp $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_6)
+	$(am__append_4) $(am__append_6) $(am__append_8)
 @PROTOBUF_COMPILE_TRUE@StreamClient_SOURCES = StreamClient.cpp \
 @PROTOBUF_COMPILE_TRUE@	OraProtoBuf.pb.cpp NetworkException.cpp \
 @PROTOBUF_COMPILE_TRUE@	RuntimeException.cpp Stream.cpp \
@@ -652,6 +661,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzerOnline.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleAnalyzerOnlineASM.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleColumn.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleIncarnation.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OracleObject.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBuffer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OutputBufferJson.Po@am__quote@ # am--include-marker
@@ -666,6 +676,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/RuntimeException.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Schema.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/SchemaElement.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/State.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateDisk.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StateRedis.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Stream.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StreamClient.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/StreamNetwork.Po@am__quote@ # am--include-marker
@@ -900,6 +913,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/OracleAnalyzerOnline.Po
 	-rm -f ./$(DEPDIR)/OracleAnalyzerOnlineASM.Po
 	-rm -f ./$(DEPDIR)/OracleColumn.Po
+	-rm -f ./$(DEPDIR)/OracleIncarnation.Po
 	-rm -f ./$(DEPDIR)/OracleObject.Po
 	-rm -f ./$(DEPDIR)/OutputBuffer.Po
 	-rm -f ./$(DEPDIR)/OutputBufferJson.Po
@@ -914,6 +928,9 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/RuntimeException.Po
 	-rm -f ./$(DEPDIR)/Schema.Po
 	-rm -f ./$(DEPDIR)/SchemaElement.Po
+	-rm -f ./$(DEPDIR)/State.Po
+	-rm -f ./$(DEPDIR)/StateDisk.Po
+	-rm -f ./$(DEPDIR)/StateRedis.Po
 	-rm -f ./$(DEPDIR)/Stream.Po
 	-rm -f ./$(DEPDIR)/StreamClient.Po
 	-rm -f ./$(DEPDIR)/StreamNetwork.Po
@@ -1032,6 +1049,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/OracleAnalyzerOnline.Po
 	-rm -f ./$(DEPDIR)/OracleAnalyzerOnlineASM.Po
 	-rm -f ./$(DEPDIR)/OracleColumn.Po
+	-rm -f ./$(DEPDIR)/OracleIncarnation.Po
 	-rm -f ./$(DEPDIR)/OracleObject.Po
 	-rm -f ./$(DEPDIR)/OutputBuffer.Po
 	-rm -f ./$(DEPDIR)/OutputBufferJson.Po
@@ -1046,6 +1064,9 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/RuntimeException.Po
 	-rm -f ./$(DEPDIR)/Schema.Po
 	-rm -f ./$(DEPDIR)/SchemaElement.Po
+	-rm -f ./$(DEPDIR)/State.Po
+	-rm -f ./$(DEPDIR)/StateDisk.Po
+	-rm -f ./$(DEPDIR)/StateRedis.Po
 	-rm -f ./$(DEPDIR)/Stream.Po
 	-rm -f ./$(DEPDIR)/StreamClient.Po
 	-rm -f ./$(DEPDIR)/StreamNetwork.Po

@@ -19,19 +19,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <dirent.h>
 #include <errno.h>
+#include <sys/stat.h>
 #include <thread>
 #include <unistd.h>
-#include <sys/stat.h>
 
 #include "global.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
+#include "OracleIncarnation.h"
 #include "OutputBuffer.h"
 #include "ReaderFilesystem.h"
 #include "RedoLog.h"
 #include "RedoLogException.h"
 #include "RuntimeException.h"
 #include "Schema.h"
+#include "State.h"
 #include "SystemTransaction.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
@@ -45,6 +47,8 @@ namespace OpenLogReplicator {
             uint64_t disableChecks) :
         Thread(alias),
         sequence(ZERO_SEQ),
+        offset(0),
+        nextScn(ZERO_SCN),
         suppLogDbPrimary(0),
         suppLogDbAll(0),
         memoryMinMb(memoryMinMb),
@@ -60,7 +64,7 @@ namespace OpenLogReplicator {
         dbBlockChecksum(""),
         logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
         redoCopyPath(""),
-        checkpointPath("checkpoint"),
+        state(nullptr),
         checkpointIntervalS(600),
         checkpointIntervalMB(100),
         checkpointFirst(1),
@@ -79,7 +83,6 @@ namespace OpenLogReplicator {
         startScn(ZERO_SCN),
         startSequence(ZERO_SEQ),
         startTimeRel(0),
-        readStartOffset(0),
         readBufferMax(readBufferMax),
         transactionBuffer(nullptr),
         schema(nullptr),
@@ -90,10 +93,11 @@ namespace OpenLogReplicator {
         dumpPath(dumpPath),
         flags(0),
         disableChecks(disableChecks),
-        redoReadSleepUS(50000),
-        archReadSleepUS(10000000),
+        redoReadSleepUs(50000),
+        archReadSleepUs(10000000),
         archReadTries(10),
-        redoVerifyDelayUS((flags & REDO_FLAGS_DIRECT) != 0 ? 500000 : 0),
+        redoVerifyDelayUs((flags & REDO_FLAGS_DIRECT) != 0 ? 500000 : 0),
+        refreshIntervalUs(10000000),
         version(0),
         conId(-1),
         resetlogs(0),
@@ -103,10 +107,12 @@ namespace OpenLogReplicator {
         stopTransactions(0),
         transactionMax(0),
         stopFlushBuffer(false),
+        oiCurrent(nullptr),
         bigEndian(false),
         suppLogSize(0),
         version12(false),
         schemaChanged(false),
+        activationChanged(false),
         archGetLog(archGetLogPath),
         read16(read16Little),
         read32(read32Little),
@@ -192,6 +198,16 @@ namespace OpenLogReplicator {
             schema = nullptr;
         }
 
+        if (state != nullptr) {
+            delete state;
+            state = nullptr;
+        }
+
+        for (OracleIncarnation* oi : oiSet)
+            delete oi;
+        oiSet.clear();
+        oiCurrent = nullptr;
+
         pathMapping.clear();
         redoLogsBatch.clear();
         checkpointScnList.clear();
@@ -201,7 +217,6 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::updateOnlineLogs(void) {
         for (RedoLog* onlineRedo : onlineRedoSet) {
-            onlineRedo->resetRedo();
             if (!readerUpdateRedoLog(onlineRedo->reader)) {
                 RUNTIME_FAIL("updating failed for " << dec << onlineRedo->path);
             } else {
@@ -450,6 +465,7 @@ namespace OpenLogReplicator {
             sequence = startSequence;
         else
             sequence = 0;
+        offset = 0;
     }
 
     void OracleAnalyzer::createSchema(void) {
@@ -457,6 +473,10 @@ namespace OpenLogReplicator {
             return;
 
         RUNTIME_FAIL("schema file missing");
+    }
+
+    void OracleAnalyzer::updateOnlineRedoLogData(void) {
+        //nothing here
     }
 
     void* OracleAnalyzer::run(void) {
@@ -502,6 +522,8 @@ namespace OpenLogReplicator {
                 if (firstScn == ZERO_SCN || sequence == ZERO_SEQ)
                     positionReader();
 
+                INFO("current resetlogs is: " << dec << resetlogs);
+
                 if (!schema->readSchema()) {
                     createSchema();
                     schema->writeSchema();
@@ -513,9 +535,9 @@ namespace OpenLogReplicator {
                 }
 
                 if (firstScn == ZERO_SCN) {
-                    INFO("last confirmed scn: <none>, starting sequence: " << dec << sequence << ", offset: " << readStartOffset);
+                    INFO("last confirmed scn: <none>, starting sequence: " << dec << sequence << ", offset: " << offset);
                 } else {
-                    INFO("last confirmed scn: " << dec << firstScn << ", starting sequence: " << dec << sequence << ", offset: " << readStartOffset);
+                    INFO("last confirmed scn: " << dec << firstScn << ", starting sequence: " << dec << sequence << ", offset: " << offset);
                 }
 
                 if ((dbBlockChecksum.compare("OFF") == 0 || dbBlockChecksum.compare("FALSE") == 0) &&
@@ -539,42 +561,149 @@ namespace OpenLogReplicator {
                 logsProcessed = false;
 
                 //
+                //ARCHIVED REDO LOGS READ
+                //
+                while (!shutdown) {
+                    TRACE(TRACE2_REDO, "REDO: checking archived redo logs, seq: " << dec << sequence);
+                    updateResetlogs();
+                    archGetLog(this);
+
+                    if (archiveRedoQueue.empty()) {
+                        if ((flags & REDO_FLAGS_ARCH_ONLY) != 0) {
+                            TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: archived redo log missing for seq: " << dec << sequence << ", sleeping");
+                            usleep(archReadSleepUs);
+                        } else {
+                            break;
+                        }
+                    }
+
+                    TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << dec << sequence);
+                    while (!archiveRedoQueue.empty() && !shutdown) {
+                        RedoLog* redoPrev = redo;
+                        redo = archiveRedoQueue.top();
+                        TRACE(TRACE2_REDO, "REDO: " << redo->path << " is seq: " << dec << redo->sequence << ", scn: " << dec << redo->firstScn);
+
+                        //when no checkpoint exists start processing from first file
+                        if (sequence == 0)
+                            sequence = redo->sequence;
+
+                        //skip older archived redo logs
+                        if (redo->sequence < sequence) {
+                            archiveRedoQueue.pop();
+                            delete redo;
+                            continue;
+                        } else if (redo->sequence > sequence) {
+                            RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence << ", found: " << redo->sequence << " instead");
+                        }
+
+                        logsProcessed = true;
+                        redo->reader = archReader;
+
+                        archReader->fileName = redo->path;
+                        uint64_t retry = archReadTries;
+
+                        while (true) {
+                            if (readerCheckRedoLog(archReader) && readerUpdateRedoLog(archReader)) {
+                                break;
+                            }
+
+                            if (retry == 0) {
+                                RUNTIME_FAIL("opening archived redo log: " << redo->path);
+                            }
+
+                            INFO("archived redo log " << redo->path << " is not ready for read, sleeping " << dec << archReadSleepUs << " us");
+                            usleep(archReadSleepUs);
+                            --retry;
+                        }
+
+                        //new activation value after resetlogs operation
+                        if (activationChanged) {
+                            activationChanged = false;
+                            schemaScn = nextScn;
+                            schema->writeSchema();
+                        }
+                        ret = redo->processLog();
+
+                        if (shutdown)
+                            break;
+
+                        if (ret != REDO_FINISHED) {
+                            RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << dec << ret << ")");
+                        }
+
+                        ++sequence;
+                        archiveRedoQueue.pop();
+                        delete redo;
+                        redo = nullptr;
+
+                        if (stopLogSwitches > 0) {
+                            --stopLogSwitches;
+                            if (stopLogSwitches == 0) {
+                                INFO("shutdown started - exhausted number of log switches");
+                                stopMain();
+                                shutdown = true;
+                            }
+                        }
+                    }
+
+                    if (!logsProcessed)
+                        break;
+                }
+
+                if (!continueWithOnline())
+                    break;
+
+                if (shutdown)
+                    break;
+
+                //
                 //ONLINE REDO LOGS READ
                 //
                 if ((flags & REDO_FLAGS_ARCH_ONLY) == 0) {
                     TRACE(TRACE2_REDO, "REDO: checking online redo logs, seq: " << dec << sequence);
+                    updateResetlogs();
                     updateOnlineLogs();
 
                     while (!shutdown) {
                         redo = nullptr;
                         TRACE(TRACE2_REDO, "REDO: searching online redo log for seq: " << dec << sequence);
 
-                        //find the candidate to read
-                        for (RedoLog* onlineRedo : onlineRedoSet) {
-                            if (onlineRedo->sequence == sequence)
-                                redo = onlineRedo;
-                            TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << dec << onlineRedo->sequence << ", scn: " << dec << onlineRedo->firstScn);
-                        }
-
                         //keep reading online redo logs while it is possible
                         if (redo == nullptr) {
                             bool higher = false;
+                            clock_t startTime = getTime();
+
                             while (!shutdown) {
-                                for (RedoLog* redoTmp : onlineRedoSet) {
-                                    if (redoTmp->reader->sequence > sequence)
+                                for (RedoLog* onlineRedo : onlineRedoSet) {
+                                    if (onlineRedo->reader->sequence > sequence)
                                         higher = true;
-                                    if (redoTmp->reader->sequence == sequence)
-                                        redo = redoTmp;
+
+                                    if (onlineRedo->reader->sequence == sequence &&
+                                            (onlineRedo->reader->numBlocksHeader == ZERO_BLK ||
+                                                    offset < onlineRedo->reader->numBlocksHeader * onlineRedo->reader->blockSize)) {
+                                        redo = onlineRedo;
+                                    }
+
+                                    TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << dec << onlineRedo->sequence <<
+                                            ", scn: " << dec << onlineRedo->firstScn << ", blocks: " << dec << onlineRedo->reader->numBlocksHeader);
                                 }
 
                                 //all so far read, waiting for switch
                                 if (redo == nullptr && !higher) {
-                                    usleep(redoReadSleepUS);
+                                    usleep(redoReadSleepUs);
                                 } else
                                     break;
 
                                 if (shutdown)
                                     break;
+
+                                clock_t loopTime = getTime();
+                                if (startTime + refreshIntervalUs < loopTime) {
+                                    updateOnlineRedoLogData();
+                                    updateOnlineLogs();
+                                    goStandby();
+                                    break;
+                                }
 
                                 updateOnlineLogs();
                             }
@@ -593,18 +722,20 @@ namespace OpenLogReplicator {
                         if (shutdown)
                             break;
 
-                        if (ret != REDO_FINISHED) {
-                            if (ret == REDO_OVERWRITTEN) {
-                                INFO("online redo log has been overwritten by new data, continuing reading from archived redo log");
-                                break;
-                            }
+                        if (ret == REDO_FINISHED) {
+                            ++sequence;
+                        } else if (ret == REDO_STOPPED) {
+                            //nothing here
+                        } else if (ret == REDO_OVERWRITTEN) {
+                            INFO("online redo log has been overwritten by new data, continuing reading from archived redo log");
+                            break;
+                        } else {
                             if (redo->group == 0) {
                                 RUNTIME_FAIL("read archived redo log");
                             } else {
                                 RUNTIME_FAIL("read online redo log");
                             }
                         }
-                        ++sequence;
 
                         if (stopLogSwitches > 0) {
                             --stopLogSwitches;
@@ -617,99 +748,11 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                //
-                //ARCHIVED REDO LOGS READ
-                //
                 if (shutdown)
-                    break;
-                TRACE(TRACE2_REDO, "REDO: checking archived redo logs, seq: " << dec << sequence);
-                archGetLog(this);
-
-                if (archiveRedoQueue.empty()) {
-                    if ((flags & REDO_FLAGS_ARCH_ONLY) != 0) {
-                        TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: archived redo log missing for seq: " << dec << sequence << ", sleeping");
-                        usleep(archReadSleepUS);
-                    } else {
-                        RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence);
-                    }
-                }
-
-                TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << dec << sequence);
-                while (!archiveRedoQueue.empty() && !shutdown) {
-                    RedoLog* redoPrev = redo;
-                    redo = archiveRedoQueue.top();
-                    TRACE(TRACE2_REDO, "REDO: " << redo->path << " is seq: " << dec << redo->sequence << ", scn: " << dec << redo->firstScn);
-
-                    //when no checkpoint exists start processing from first file
-                    if (sequence == 0)
-                        sequence = redo->sequence;
-
-                    //skip older archived redo logs
-                    if (redo->sequence < sequence) {
-                        archiveRedoQueue.pop();
-                        delete redo;
-                        continue;
-                    } else if (redo->sequence > sequence) {
-                        RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence << ", found: " << redo->sequence << " instead");
-                    }
-
-                    logsProcessed = true;
-                    redo->reader = archReader;
-
-                    archReader->fileName = redo->path;
-                    uint64_t retry = archReadTries;
-
-                    while (true) {
-                        if (readerCheckRedoLog(archReader) && readerUpdateRedoLog(archReader))
-                            break;
-
-                        if (retry == 0) {
-                            RUNTIME_FAIL("opening archived redo log: " << redo->path);
-                        }
-
-                        INFO("archived redo log " << redo->path << " is not ready for read, sleeping " << dec << archReadSleepUS << " us");
-                        usleep(archReadSleepUS);
-                        --retry;
-                    }
-
-                    if (ret == REDO_OVERWRITTEN && redoPrev != nullptr && redoPrev->sequence == redo->sequence) {
-                        redo->continueRedo(redoPrev);
-                    } else {
-                        redo->resetRedo();
-                    }
-
-                    ret = redo->processLog();
-
-                    if (shutdown)
-                        break;
-
-                    if (ret != REDO_FINISHED) {
-                        RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << dec << ret << ")");
-                    }
-
-                    ++sequence;
-                    archiveRedoQueue.pop();
-                    delete redo;
-                    redo = nullptr;
-
-                    if (stopLogSwitches > 0) {
-                        --stopLogSwitches;
-                        if (stopLogSwitches == 0) {
-                            INFO("shutdown started - exhausted number of log switches");
-                            stopMain();
-                            shutdown = true;
-                        }
-                    }
-                }
-
-                if (shutdown)
-                    break;
-
-                if (!continueWithOnline())
                     break;
 
                 if (!logsProcessed)
-                    usleep(redoReadSleepUS);
+                    usleep(redoReadSleepUs);
             }
         } catch (ConfigurationException& ex) {
             stopMain();
@@ -771,6 +814,33 @@ namespace OpenLogReplicator {
         return buffersMaxUsed;
     }
 
+    void OracleAnalyzer::updateResetlogs(void) {
+        if (nextScn == ZERO_SCN || offset != 0)
+            return;
+
+        OracleIncarnation* oiCurrent = nullptr;
+        for (OracleIncarnation* oi : oiSet) {
+            if (oi->resetlogs == resetlogs) {
+                oiCurrent = oi;
+                break;
+            }
+        }
+
+        if (oiCurrent == nullptr) {
+            RUNTIME_FAIL("resetlogs (" << dec << resetlogs << ") not found in incarnation list");
+        }
+
+        for (OracleIncarnation* oi : oiSet) {
+            if (oi->resetlogsScn == nextScn && oiCurrent->resetlogs == resetlogs && oi->priorIncarnation == oiCurrent->incarnation) {
+                WARNING("new resetlogs detected: " << dec << oi->resetlogs);
+                sequence = 1;
+                resetlogs = oi->resetlogs;
+                activation = 0;
+            }
+        }
+
+    }
+
     Reader* OracleAnalyzer::readerCreate(int64_t group) {
         for (Reader* reader : readers)
             if (reader->group == group)
@@ -806,6 +876,7 @@ namespace OpenLogReplicator {
                     }
 
                     redo->reader = reader;
+                    INFO("online redo log: " << reader->fileName);
                     onlineRedoSet.insert(redo);
                     break;
                 }
@@ -834,7 +905,9 @@ namespace OpenLogReplicator {
     //%d - database id
     //%h - some hash
     uint64_t OracleAnalyzer::getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const string& file) {
-        uint64_t sequence = 0, i = 0, j = 0;
+        uint64_t sequence = 0;
+        uint64_t i = 0;
+        uint64_t j = 0;
 
         while (i < oracleAnalyzer->logArchiveFormat.length() && j < file.length()) {
             if (oracleAnalyzer->logArchiveFormat[i] == '%') {
@@ -956,7 +1029,9 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::applyMapping(string& path) {
-        uint64_t sourceLength, targetLength, newPathLength = path.length();
+        uint64_t sourceLength;
+        uint64_t targetLength;
+        uint64_t newPathLength = path.length();
         char pathBuffer[MAX_PATH_LENGTH];
 
         for (uint64_t i = 0; i < pathMapping.size() / 2; ++i) {
@@ -988,30 +1063,22 @@ namespace OpenLogReplicator {
                 << " checkpointLastTime: " << checkpointLastTime.getVal()
                 << " checkpointLastOffset: " << checkpointLastOffset);
 
-        if (!checkpointAll &&
-                checkpointLastTime.getVal() >= 0 &&
-                !switchRedo &&
-                !checkpointFirst &&
-                !schemaChanged &&
-                (offset - checkpointLastOffset < checkpointIntervalMB * 1024 * 1024 || checkpointIntervalMB == 0)) {
-            if ((time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0)) {
-                checkpointLastTime = time_;
-                return true;
-            }
+        if (!checkpointAll && !switchRedo && !checkpointFirst) {
+            if (checkpointLastTime.getVal() >= 0 && !schemaChanged &&
+                    (offset - checkpointLastOffset < checkpointIntervalMB * 1024 * 1024 || checkpointIntervalMB == 0)) {
+                if ((time_.getVal() - checkpointLastTime.getVal() >= checkpointIntervalS && checkpointIntervalS == 0)) {
+                    checkpointLastTime = time_;
+                    return true;
+                }
 
-            return false;
+                return false;
+            }
         }
         checkpointFirst = 0;
 
+        string jsonName(database + "-chkpt-" + to_string(scn));
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
                 sequence << " offset: " << offset << " switch: " << switchRedo);
-        string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(scn) + ".json");
-        ofstream outfile;
-        outfile.open(fileName.c_str(), ios::out | ios::trunc);
-
-        if (!outfile.is_open()) {
-            RUNTIME_FAIL("writing checkpoint data to " << fileName);
-        }
 
         typeSEQ minSequence = ZERO_SEQ;
         uint64_t minOffset = 0;
@@ -1047,18 +1114,17 @@ namespace OpenLogReplicator {
         }
 
         ss << "}";
-
-        outfile << ss.rdbuf();
-        outfile.close();
+        state->write(jsonName, ss);
 
         checkpointScnList.insert(scn);
         if (checkpointScn != ZERO_SCN) {
-            bool unlinkFile = false, firstFound = false;
+            bool unlinkFile = false;
+            bool firstFound = false;
             set<typeSCN>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json");
+                string jsonName(database + "-chkpt-" + to_string(*it));
 
                 unlinkFile = false;
                 if (*it > checkpointScn) {
@@ -1072,8 +1138,8 @@ namespace OpenLogReplicator {
 
                 if (unlinkFile) {
                     if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " checkpoint scn: " << dec << checkpointScn);
-                        unlink(fileName.c_str());
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " checkpoint scn: " << dec << checkpointScn);
+                        state->drop(jsonName);
                     }
                     it = checkpointScnList.erase(it);
                 }
@@ -1098,39 +1164,18 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::readCheckpoints(void) {
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information on: " << checkpointPath);
-        DIR* dir;
-        if ((dir = opendir(checkpointPath.c_str())) == nullptr) {
-            RUNTIME_FAIL("can't access directory: " << checkpointPath);
-        }
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information");
 
-        struct dirent* ent;
+        set<string> namesList;
+        state->list(namesList);
+
         typeSCN fileScnMax = 0;
-        while ((ent = readdir(dir)) != nullptr) {
-            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
-                continue;
-
-            struct stat fileStat;
-            string fileName(ent->d_name);
-
-            string fullName(checkpointPath + "/" + ent->d_name);
-            if (stat(fullName.c_str(), &fileStat)) {
-                WARNING("reading information for file: " << fullName << " - " << strerror(errno));
-                continue;
-            }
-
-            if (S_ISDIR(fileStat.st_mode))
-                continue;
-
+        for (string jsonName : namesList) {
             string prefix(database + "-chkpt-");
-            if (fileName.length() < prefix.length() || fileName.substr(0, prefix.length()).compare(prefix) != 0)
+            if (jsonName.length() < prefix.length() || jsonName.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
 
-            string suffix(".json");
-            if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
-                continue;
-
-            string fileScnStr(fileName.substr(prefix.length(), fileName.length() - suffix.length()));
+            string fileScnStr(jsonName.substr(prefix.length(), jsonName.length()));
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
@@ -1139,10 +1184,9 @@ namespace OpenLogReplicator {
                 continue;
             }
 
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << checkpointPath << "/" << fileName << " scn: " << dec << fileScn);
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << dec << fileScn);
             checkpointScnList.insert(fileScn);
         }
-        closedir(dir);
 
         if (startScn != ZERO_SCN)
             firstScn = startScn;
@@ -1151,25 +1195,26 @@ namespace OpenLogReplicator {
 
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: firstScn: " << dec << firstScn);
         if (firstScn != ZERO_SCN && firstScn != 0) {
-            bool unlinkFile = false, finish;
+            bool toDrop = false;
+            bool finish;
             set<typeSCN>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string fileName(checkpointPath + "/" + database + "-chkpt-" + to_string(*it) + ".json");
+                string jsonName(database + "-chkpt-" + to_string(*it));
 
-                unlinkFile = false;
+                toDrop = false;
                 if (*it > firstScn) {
-                    unlinkFile = true;
+                    toDrop = true;
                 } else {
-                    if (readCheckpointFile(fileName, *it))
-                        unlinkFile = true;
+                    if (readCheckpoint(jsonName, *it))
+                        toDrop = true;
                 }
 
-                if (unlinkFile) {
+                if (toDrop) {
                     if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete file: " << fileName << " scn: " << dec << *it);
-                        unlink(fileName.c_str());
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " scn: " << dec << *it);
+                        state->drop(jsonName);
                     }
                     it = checkpointScnList.erase(it);
                 }
@@ -1177,74 +1222,40 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool OracleAnalyzer::readCheckpointFile(string& fileName, typeSCN fileScn) {
+    bool OracleAnalyzer::readCheckpoint(string& jsonName, typeSCN fileScn) {
         //checkpoint file is read, can delete rest
         if (sequence != ZERO_SEQ && sequence > 0)
             return true;
 
-        struct stat fileStat;
-        int ret = stat(fileName.c_str(), &fileStat);
-        TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
-        if (ret != 0) {
-            WARNING("reading information for file: " << fileName << " - " << strerror(errno));
-            return false;
-        }
-        if (fileStat.st_size > CHECKPOINT_FILE_MAX_SIZE || fileStat.st_size == 0) {
-            WARNING("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
-            return false;
-        }
-
-        ifstream infile;
-        infile.open(fileName.c_str(), ios::in);
-
-        if (!infile.is_open()) {
-            INFO("read error for " << fileName);
-            return false;
-        }
-
-        string checkpointJSON((istreambuf_iterator<char>(infile)), istreambuf_iterator<char>());
+        string checkpointJSON;
         Document document;
+        state->read(jsonName, CHECKPOINT_FILE_MAX_SIZE, checkpointJSON, false);
 
         if (checkpointJSON.length() == 0 || document.Parse(checkpointJSON.c_str()).HasParseError()) {
-            WARNING("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
+            WARNING("parsing: " << jsonName << " at offset: " << document.GetErrorOffset() <<
                     ", message: " << GetParseError_En(document.GetParseError()) << " - skipping file");
             return false;
         }
 
-        const char* databaseRead = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "database");
+        const char* databaseRead = getJSONfieldS(jsonName, JSON_PARAMETER_LENGTH, document, "database");
         if (database.compare(databaseRead) != 0) {
-            WARNING("invalid database for " << fileName << " - " << databaseRead << " instead of " << database << " - skipping file");
+            WARNING("invalid database for: " << jsonName << " - " << databaseRead << " instead of " << database << " - skipping file");
             return false;
         }
 
-        typeRESETLOGS resetlogsRead = getJSONfieldU32(fileName, document, "resetlogs");
-        if (resetlogs != 0) {
-            if (resetlogs != resetlogsRead) {
-                WARNING("invalid resetlogs for " << fileName << " - " << dec << resetlogsRead << " instead of " << resetlogs << " - skipping file");
-                return false;
-            }
-        } else
-            resetlogs = resetlogsRead;
+        resetlogs = getJSONfieldU32(jsonName, document, "resetlogs");
+        activation = getJSONfieldU32(jsonName, document, "activation");
 
-        typeACTIVATION activationRead = getJSONfieldU32(fileName, document, "activation");
-        if (activation != 0) {
-            if (activation != activationRead) {
-                WARNING("invalid activation for " << fileName << " - " << dec << activationRead << " instead of " << activation << " - skipping file");
-                return false;
-            }
-        } else
-            activation = activationRead;
-
-        typeSCN scnRead = getJSONfieldU64(fileName, document, "scn");
+        typeSCN scnRead = getJSONfieldU64(jsonName, document, "scn");
         if (fileScn != scnRead) {
-            WARNING("invalid scn for " << fileName << " - " << dec << scnRead << " instead of " << fileScn << " - skipping file");
+            WARNING("invalid scn for: " << jsonName << " - " << dec << scnRead << " instead of " << fileScn << " - skipping file");
             return false;
         }
 
-        typeSEQ seqRead = getJSONfieldU32(fileName, document, "seq");
-        uint64_t offsetRead = getJSONfieldU64(fileName, document, "offset");
+        typeSEQ seqRead = getJSONfieldU32(jsonName, document, "seq");
+        uint64_t offsetRead = getJSONfieldU64(jsonName, document, "offset");
         if ((offsetRead & 511) != 0) {
-            WARNING("invalid offset for " << fileName << " - " << dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");
+            WARNING("invalid offset for: " << jsonName << " - " << dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");
             return false;
         }
 
@@ -1252,27 +1263,25 @@ namespace OpenLogReplicator {
         uint64_t minTranOffset = 0;
 
         if (document.HasMember("min-tran")) {
-            const Value& minTranJSON = getJSONfieldO(fileName, document, "min-tran");
-            minTranSeq = getJSONfieldU32(fileName, minTranJSON, "seq");
-            minTranOffset = getJSONfieldU64(fileName, minTranJSON, "offset");
+            const Value& minTranJSON = getJSONfieldO(jsonName, document, "min-tran");
+            minTranSeq = getJSONfieldU32(jsonName, minTranJSON, "seq");
+            minTranOffset = getJSONfieldU64(jsonName, minTranJSON, "offset");
             if ((minTranOffset & 511) != 0) {
-                WARNING("invalid offset for " << fileName << " - " << dec << scnRead << " value " << minTranOffset << " is not a multiplication of 512 - skipping file");
+                WARNING("invalid offset for: " << jsonName << " - " << dec << scnRead << " value " << minTranOffset << " is not a multiplication of 512 - skipping file");
                 return false;
             }
         }
 
-        infile.close();
-
         if (minTranSeq > 0) {
             sequence = minTranSeq;
-            readStartOffset = minTranOffset;
+            offset = minTranOffset;
         } else {
             sequence = seqRead;
-            readStartOffset = offsetRead;
+            offset = offsetRead;
         }
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << fileName << " scn: " << dec << fileScn << " seq: " << sequence <<
-                " offset: " << readStartOffset);
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << dec << fileScn << " seq: " << sequence <<
+                " offset: " << offset);
         return false;
     }
 
@@ -1341,7 +1350,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzer::checkConnection(void) {
+    bool OracleAnalyzer::checkConnection(void) {
+        return true;
     }
 
     void OracleAnalyzer::goStandby(void) {
@@ -1516,8 +1526,10 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (sequenceStart != ZERO_SEQ && oracleAnalyzer->sequence == 0)
+        if (sequenceStart != ZERO_SEQ && oracleAnalyzer->sequence == 0) {
             oracleAnalyzer->sequence = sequenceStart;
+            oracleAnalyzer->offset = 0;
+        }
     }
 
     bool redoLogCompare::operator()(RedoLog* const& p1, RedoLog* const& p2) {

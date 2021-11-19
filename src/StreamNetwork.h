@@ -29,9 +29,11 @@ using namespace std;
 namespace OpenLogReplicator {
     class StreamNetwork : public Stream {
     protected:
-        int64_t socketFD, serverFD;
+        int64_t socketFD;
+        int64_t serverFD;
         struct sockaddr_storage address;
-        string host, port;
+        string host;
+        string port;
         uint8_t readBuffer[READ_NETWORK_BUFFER];
         uint64_t readBufferLen;
         struct addrinfo *res;

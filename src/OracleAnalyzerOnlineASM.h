@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
 
         virtual const char* getModeName(void) const;
         virtual Reader* readerCreate(int64_t group);
-        virtual void checkConnection(void);
+        virtual bool checkConnection(void);
 
     public:
         DatabaseConnection* connASM;

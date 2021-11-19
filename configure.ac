@@ -17,7 +17,7 @@
 #<http://www.gnu.org/licenses/>.
 
 AC_PREREQ(2.68)
-AC_INIT([OpenLogReplicator],[0.9.32-beta],[aleszczynski@bersler.com])
+AC_INIT([OpenLogReplicator],[0.9.33-beta],[aleszczynski@bersler.com])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR(config)
@@ -42,6 +42,26 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 
+AC_ARG_WITH([hiredis],
+  [AS_HELP_STRING([--with-hiredis=PATH], [hiredis directory])],
+  [HIREDIS=true; CPPFLAGS="-I$withval $CPPFLAGS -DLINK_LIBRARY_HIREDIS"; LDFLAGS="-L$withval -lhiredis $LDFLAGS"]
+  [])
+
+AC_ARG_WITH([instantclient],
+  [AS_HELP_STRING([--with-instantclient=PATH], [instant client directory])],
+  [OCI=true; CPPFLAGS="-I$withval/sdk/include -DLINK_LIBRARY_OCI $CPPFLAGS"; LDFLAGS="-L$withval -lclntshcore -lnnz19 -lclntsh $LDFLAGS"],
+  [])
+
+AC_ARG_WITH([protobuf],
+  [AS_HELP_STRING([--with-protobuf=PATH], [protobuf directory])],
+  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF $CPPFLAGS"; LDFLAGS="-L$withval/lib -lprotobuf $LDFLAGS"],
+  [])
+
+AC_ARG_WITH([rapidjson],
+  [AS_HELP_STRING([--with-rapidjson=PATH], [rapidjson directory])],
+  [CPPFLAGS="-I$withval/include $CPPFLAGS"]
+  [])
+
 AC_ARG_WITH([rdkafka],
   [AS_HELP_STRING([--with-rdkafka=PATH], [rdkafka directory])],
   [KAFKA=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_RDKAFKA"; LDFLAGS="-L$withval/lib -lrdkafka++ -lrdkafka $LDFLAGS"]
@@ -52,32 +72,18 @@ AC_ARG_WITH([rocketmq],
   [ROCKETMQ=true; CPPFLAGS="-I$withval/include $CPPFLAGS -DLINK_LIBRARY_ROCKETMQ"; LDFLAGS="-L$withval/bin -lrocketmq $LDFLAGS"]
   [])
 
-AC_ARG_WITH([rapidjson],
-  [AS_HELP_STRING([--with-rapidjson=PATH], [rapidjson directory])],
-  [CPPFLAGS="-I$withval/include $CPPFLAGS"]
-  [])
-
-AC_ARG_WITH([protobuf],
-  [AS_HELP_STRING([--with-protobuf=PATH], [protobuf directory])],
-  [PROTOBUF=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_PROTOBUF $CPPFLAGS"; LDFLAGS="-L$withval/lib -lprotobuf $LDFLAGS"],
-  [])
-
 AC_ARG_WITH([zeromq],
   [AS_HELP_STRING([--with-zeromq=PATH], [zeromq directory])],
   [ZEROMQ=true; CPPFLAGS="-I$withval/include -DLINK_LIBRARY_ZEROMQ $CPPFLAGS"; LDFLAGS="-L$withval/lib64 -lzmq $LDFLAGS"],
   [])
 
-AC_ARG_WITH([instantclient],
-  [AS_HELP_STRING([--with-instantclient=PATH], [instant client directory])],
-  [OCI=true; CPPFLAGS="-I$withval/sdk/include -DLINK_LIBRARY_OCI $CPPFLAGS"; LDFLAGS="-L$withval -lclntshcore -lnnz19 -lclntsh $LDFLAGS"],
-  [])
-
 CXXFLAGS="$CXXFLAGS -std=c++0x -pedantic -pedantic-errors -w -Wall -Wextra -fmessage-length=0"
 LDFLAGS="$LDFLAGS -pthread"
+AM_CONDITIONAL([HIREDIS_COMPILE], [test x$HIREDIS = xtrue])
 AM_CONDITIONAL([KAFKA_COMPILE], [test x$KAFKA = xtrue])
-AM_CONDITIONAL([ROCKETMQ_COMPILE], [test x$ROCKETMQ = xtrue])
 AM_CONDITIONAL([OCI_COMPILE], [test x$OCI = xtrue])
 AM_CONDITIONAL([PROTOBUF_COMPILE], [test x$PROTOBUF = xtrue])
+AM_CONDITIONAL([ROCKETMQ_COMPILE], [test x$ROCKETMQ = xtrue])
 AM_CONDITIONAL([ZEROMQ_COMPILE], [test x$ZEROMQ = xtrue])
 
 AC_CONFIG_FILES([

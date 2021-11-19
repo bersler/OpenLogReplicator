@@ -129,7 +129,8 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        uint64_t lastScn, prevScn = 0;
+        uint64_t lastScn;
+        uint64_t prevScn = 0;
         uint64_t num = 0;
 
         request.Clear();

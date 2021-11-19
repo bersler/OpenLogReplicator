@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         RuntimeException(const char* msg);
         virtual ~RuntimeException();
 
-        friend ostream& operator<<(ostream& os, const RuntimeException& ors);
+        friend ostream& operator<<(ostream& os, const RuntimeException& exception);
     };
 }
 

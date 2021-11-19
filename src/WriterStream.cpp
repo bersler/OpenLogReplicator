@@ -30,9 +30,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 using namespace std;
 
 namespace OpenLogReplicator {
-    WriterStream::WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+    WriterStream::WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, Stream* stream) :
-        Writer(alias, oracleAnalyzer, 0, pollIntervalUS, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
+        Writer(alias, oracleAnalyzer, 0, pollIntervalUs, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
         stream(stream) {
 
         stream->initializeServer(&shutdown);
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
     void WriterStream::readCheckpoint(void) {
         while (!streaming && !shutdown && !stop) {
             try {
-                usleep(pollIntervalUS);
+                usleep(pollIntervalUs);
                 if (stream->connected()) {
                     pollQueue();
                 }

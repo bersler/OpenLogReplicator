@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
                 bool nested, bool unused, bool added, bool guard);
         virtual ~OracleColumn();
 
-        friend ostream& operator<<(ostream& os, const OracleColumn& ors);
+        friend ostream& operator<<(ostream& os, const OracleColumn& column);
     };
 }
 

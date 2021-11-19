@@ -919,8 +919,8 @@ namespace OpenLogReplicator {
                 epochTime.tm_mday = data[3]; //1..31
                 epochTime.tm_mon = data[2]; //1..12
 
-                int64_t val1 = data[0],
-                        val2 = data[1];
+                int64_t val1 = data[0];
+                int64_t val2 = data[1];
                 //AD
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
@@ -979,8 +979,8 @@ namespace OpenLogReplicator {
                 epochTime.tm_mday = data[3]; //1..31
                 epochTime.tm_mon = data[2]; //1..12
 
-                int64_t val1 = data[0],
-                         val2 = data[1];
+                int64_t val1 = data[0];
+                int64_t val2 = data[1];
                 //AD
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
@@ -1126,10 +1126,13 @@ namespace OpenLogReplicator {
 
     //0x05010B0B
     void OutputBuffer::processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
-        uint64_t pos = 0, fieldPos = 0, fieldPosStart;
+        uint64_t pos = 0;
+        uint64_t fieldPos = 0;
+        uint64_t fieldPosStart;
         typeFIELD fieldNum = 0;
         bool prevValue;
-        uint16_t fieldLength = 0, colLength = 0;
+        uint16_t fieldLength = 0;
+        uint16_t colLength = 0;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         while (fieldNum < redoLogRecord2->rowData)
@@ -1197,10 +1200,13 @@ namespace OpenLogReplicator {
 
     //0x05010B0C
     void OutputBuffer::processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
-        uint64_t pos = 0, fieldPos = 0, fieldPosStart;
+        uint64_t pos = 0;
+        uint64_t fieldPos = 0;
+        uint64_t fieldPosStart;
         typeFIELD fieldNum = 0;
         bool prevValue;
-        uint16_t fieldLength = 0, colLength = 0;
+        uint16_t fieldLength = 0;
+        uint16_t colLength = 0;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         while (fieldNum < redoLogRecord1->rowData)
@@ -1319,9 +1325,13 @@ namespace OpenLogReplicator {
             }
         }
 
-        uint64_t fieldPos, rowDeps;
+        uint64_t fieldPos;
+        uint64_t rowDeps;
         typeFIELD fieldNum;
-        uint16_t fieldLength, colLength, colNum, colShift;
+        uint16_t fieldLength;
+        uint16_t colLength;
+        uint16_t colNum;
+        uint16_t colShift;
         uint8_t* nulls;
         uint8_t bits;
         uint8_t* colNums;
@@ -1911,9 +1921,13 @@ namespace OpenLogReplicator {
 
     //0x18010000
     void OutputBuffer::processDDLheader(RedoLogRecord* redoLogRecord1) {
-        uint64_t fieldPos = 0, sqlLength;
+        uint64_t fieldPos = 0;
+        uint64_t sqlLength;
         typeFIELD fieldNum = 0;
-        uint16_t seq = 0, cnt = 0, type = 0, fieldLength = 0;
+        uint16_t seq = 0;
+        uint16_t cnt = 0;
+        uint16_t type = 0;
+        uint16_t fieldLength = 0;
         char* sqlText = nullptr;
         OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 

@@ -280,7 +280,8 @@ namespace OpenLogReplicator {
                             " opt: 0x" << setfill('0') << setw(2) << hex << (uint64_t)opt <<
                             ", entries follow..." << endl;
                 else {
-                    char bigscn = 'N', compat = 'N';
+                    char bigscn = 'N';
+                    char compat = 'N';
                     if ((ver & 0x08) != 0)
                         bigscn = 'Y';
                     if ((ver & 0x04) != 0)
@@ -399,7 +400,8 @@ namespace OpenLogReplicator {
             else
                 oracleAnalyzer->dumpStream << " ";
 
-            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+            uint8_t bits = 1;
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)
@@ -607,7 +609,8 @@ namespace OpenLogReplicator {
             else
                 oracleAnalyzer->dumpStream << " ";
 
-            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta, bits = 1;
+            uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+            uint8_t bits = 1;
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
 
                 if ((*nulls & bits) != 0)

@@ -39,7 +39,8 @@ namespace OpenLogReplicator {
     TransactionChunk* TransactionBuffer::newTransactionChunk(Transaction* transaction) {
         uint8_t* chunk;
         TransactionChunk* tc;
-        uint64_t pos, freeMap;
+        uint64_t pos;
+        uint64_t freeMap;
         if (partiallyFullChunks.size() > 0) {
             chunk = partiallyFullChunks.begin()->first;
             freeMap = partiallyFullChunks.begin()->second;

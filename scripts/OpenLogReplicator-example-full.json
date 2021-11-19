@@ -1,5 +1,5 @@
 {
-  "version": "0.9.31",
+  "version": "0.9.33",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
@@ -32,11 +32,12 @@
         "unknown-type": 0,
         "flush-buffer": 1048576
       },
-      "checkpoint": {
+      "state": {
+        "type": "disk",
         "path": "checkpoint",
         "interval-s": 600,
         "interval-mb": 100,
-        "all": 0,
+        "all-checkpoints": 0,
         "output-checkpoint": 1,
         "output-log-switch": 1
       },
@@ -58,6 +59,7 @@
       "arch-read-sleep-us": 10000000,
       "arch-read-tries": 10,
       "redo-verify-delay-us": 250000,
+      "refresh-interval-us": 10000000,
       "filter": {
         "table": [
           {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},

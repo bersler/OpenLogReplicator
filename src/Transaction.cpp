@@ -66,7 +66,9 @@ namespace OpenLogReplicator {
     void Transaction::mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
         memcpy(buffer, redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
         uint64_t pos = redoLogRecord1->fieldLengthsDelta;
-        uint16_t fieldCnt, fieldPos1, fieldPos2;
+        uint16_t fieldCnt;
+        uint16_t fieldPos1;
+        uint16_t fieldPos2;
 
         if ((redoLogRecord1->flg & FLG_LASTBUFFERSPLIT) != 0) {
             uint16_t length1 = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
@@ -138,7 +140,8 @@ namespace OpenLogReplicator {
             } else {
                 oracleAnalyzer->outputBuffer->processBegin(commitScn, commitTimestamp, commitSequence, xid);
             }
-            uint64_t pos, type = 0;
+            uint64_t pos;
+            uint64_t type = 0;
             RedoLogRecord* first1 = nullptr;
             RedoLogRecord* first2 = nullptr;
             RedoLogRecord* last1 = nullptr;

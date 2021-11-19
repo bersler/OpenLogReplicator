@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
         msg(msg) {
     }
 
-    ostream& operator<<(ostream& os, const RuntimeException& ors) {
-        os << ors.msg;
+    ostream& operator<<(ostream& os, const RuntimeException& exception) {
+        os << exception.msg;
         return os;
     }
 }

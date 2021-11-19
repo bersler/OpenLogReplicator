@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         RedoLogException(const char* msg);
         virtual ~RedoLogException();
 
-        friend ostream& operator<<(ostream& os, const RedoLogException& ors);
+        friend ostream& operator<<(ostream& os, const RedoLogException& exception);
     };
 }
 

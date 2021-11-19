@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
         virtual void pollQueue(void);
 
     public:
-        WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+        WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
                 const char* brokers, const char* topic, uint64_t maxMessages, uint64_t maxMessageMb, bool enableIdempotence);
         virtual ~WriterKafka();

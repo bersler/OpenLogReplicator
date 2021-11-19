@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         group(group),
         sequence(0),
         blockSize(0),
-        numBlocksHeader(NUM_BLOCK_ONLINE),
+        numBlocksHeader(ZERO_BLK),
         numBlocks(0),
         firstScn(ZERO_SCN),
         nextScn(ZERO_SCN),
@@ -269,8 +269,8 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200) //12.1.0.0 - 12.1.0.2
             || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100) //12.2.0.0 - 12.2.0.1
             || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000) //18.0.0.0 - 18.14.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x130C0000) //19.0.0.0 - 19.12.0.0
-            || (compatVsn >= 0x15000000 && compatVsn <= 0x15030000)) //21.0.0.0 - 21.3.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x130D0000) //19.0.0.0 - 19.13.0.0
+            || (compatVsn >= 0x15000000 && compatVsn <= 0x15040000)) //21.0.0.0 - 21.4.0.0
             version = compatVsn;
 
         activationHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 52);
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
         firstTimeHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 188);
         nextScnHeader = oracleAnalyzer->readSCN(headerBuffer + blockSize + 192);
 
-        if (numBlocksHeader != NUM_BLOCK_ONLINE && fileSize > ((uint64_t)numBlocksHeader) * blockSize && group == 0) {
+        if (numBlocksHeader != ZERO_BLK && fileSize > ((uint64_t)numBlocksHeader) * blockSize && group == 0) {
             fileSize = ((uint64_t)numBlocksHeader) * blockSize;
             INFO("updating redo log size to: " << dec << fileSize << " for: " << fileName);
         }
@@ -289,11 +289,13 @@ namespace OpenLogReplicator {
             char SID[9];
             memcpy(SID, headerBuffer + blockSize + 28, 8); SID[8] = 0;
             oracleAnalyzer->version = version;
+            typeSEQ sequenceHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 8);
 
             INFO("found redo log version: 0x" << setfill('0') << setw(8) << hex << compatVsn
                     << ", activation: " << dec << activationHeader
                     << ", resetlogs: " << dec << resetlogsHeader
                     << ", page: " << dec << blockSize
+                    << ", sequence: " << dec << sequenceHeader
                     << ", SID: " << SID
                     << ", endian: " << (oracleAnalyzer->bigEndian ? "BIG" : "LITTLE"));
         }
@@ -313,29 +315,13 @@ namespace OpenLogReplicator {
             if (badBlockCrcCount == REDO_BAD_CDC_MAX_CNT)
                 return REDO_ERROR_BAD_DATA;
 
-            usleep(oracleAnalyzer->redoReadSleepUS);
+            usleep(oracleAnalyzer->redoReadSleepUs);
             ret = checkBlockHeader(headerBuffer + blockSize, 1, true, false);
             TRACE(TRACE2_DISK, "DISK: block: 1 check: " << ret);
         }
 
         if (ret != REDO_OK)
             return ret;
-
-        if (oracleAnalyzer->resetlogs == 0)
-            oracleAnalyzer->resetlogs = resetlogsHeader;
-
-        if (resetlogsHeader != oracleAnalyzer->resetlogs) {
-            ERROR("invalid resetlogs value (found: " << dec << resetlogsHeader << ", expected: " << dec << oracleAnalyzer->resetlogs << "): " << fileName);
-            return REDO_ERROR_BAD_DATA;
-        }
-
-        if (oracleAnalyzer->activation == 0)
-            oracleAnalyzer->activation = activationHeader;
-
-        if (activationHeader != 0 && activationHeader != oracleAnalyzer->activation) {
-            ERROR("invalid activation id value (found: " << dec << activationHeader << ", expected: " << dec << oracleAnalyzer->activation << "): " << fileName);
-            return REDO_ERROR_BAD_DATA;
-        }
 
         if (firstScn == ZERO_SCN || status == READER_STATUS_UPDATE) {
             firstScn = firstScnHeader;
@@ -349,7 +335,7 @@ namespace OpenLogReplicator {
 
         //updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
-            DEBUG("updating next SCN to: " << dec << nextScnHeader);
+            DEBUG("updating next scn to: " << dec << nextScnHeader);
             nextScn = nextScnHeader;
         } else
         if (nextScn != ZERO_SCN && nextScnHeader != ZERO_SCN && nextScn != nextScnHeader) {
@@ -431,7 +417,8 @@ namespace OpenLogReplicator {
                 } else if (status == READER_STATUS_READ) {
                     TRACE(TRACE2_DISK, "DISK: reading " << fileName << " at (" << dec << bufferStart << "/" << bufferEnd << ") at size: " << fileSize);
                     uint64_t lastRead = blockSize;
-                    clock_t lastReadTime = 0, readTime = 0;
+                    clock_t lastReadTime = 0;
+                    clock_t readTime = 0;
                     uint64_t bufferScan = bufferEnd;
                     bool readBlocks = false;
                     bool reachedZero = false;
@@ -442,8 +429,13 @@ namespace OpenLogReplicator {
                         readTime = 0;
 
                         if (bufferEnd == fileSize) {
-                            ret = REDO_FINISHED;
-                            break;
+                            if (nextScnHeader != ZERO_SCN) {
+                                ret = REDO_FINISHED;
+                                oracleAnalyzer->nextScn = nextScnHeader;
+                            } else {
+                                WARNING("end of online redo log file at position " << dec << bufferScan);
+                                ret = REDO_STOPPED;
+                            } break;
                         }
 
                         //buffer full?
@@ -467,10 +459,10 @@ namespace OpenLogReplicator {
                                 uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
 
                                 time_t* readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
-                                if (*readTimeP + oracleAnalyzer->redoVerifyDelayUS < loopTime)
+                                if (*readTimeP + oracleAnalyzer->redoVerifyDelayUs < loopTime)
                                     ++goodBlocks;
                                 else {
-                                    readTime = *readTimeP + oracleAnalyzer->redoVerifyDelayUS;
+                                    readTime = *readTimeP + oracleAnalyzer->redoVerifyDelayUs;
                                     break;
                                 }
                             }
@@ -545,7 +537,7 @@ namespace OpenLogReplicator {
 
                         //#1 read
                         if (bufferScan < fileSize && (buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
-                                && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUS < loopTime)) {
+                                && (!reachedZero || lastReadTime + oracleAnalyzer->redoReadSleepUs < loopTime)) {
                             uint64_t toRead = readSize(lastRead);
 
                             if (bufferScan + toRead > fileSize)
@@ -572,7 +564,7 @@ namespace OpenLogReplicator {
                                 break;
                             }
 
-                            if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0)) {
+                            if (actualRead > 0 && fileCopyDes != -1 && (oracleAnalyzer->redoVerifyDelayUs == 0 || group == 0)) {
                                 int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, bufferEnd);
                                 if (bytesWritten != actualRead) {
                                     ERROR("writing file: " << fileNameWrite << " - " << strerror(errno));
@@ -589,7 +581,7 @@ namespace OpenLogReplicator {
                             //check which blocks are good
                             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                                 tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
-                                        false, oracleAnalyzer->redoVerifyDelayUS == 0 || group == 0);
+                                        false, oracleAnalyzer->redoVerifyDelayUs == 0 || group == 0);
                                 TRACE(TRACE2_DISK, "DISK: block: " << dec << (bufferScanBlock + numBlock) << " check: " << tmpRet);
 
                                 if (tmpRet != REDO_OK)
@@ -597,15 +589,20 @@ namespace OpenLogReplicator {
                                 ++goodBlocks;
                             }
 
-                            //batch mode with partial online redo log file
-                            if (goodBlocks == 0 && group == 0 && nextScnHeader == ZERO_SCN) {
-                                WARNING("end of online redo log file at position " << dec << bufferScan);
-                                ret = REDO_FINISHED;
+                            //partial online redo log file
+                            if (goodBlocks == 0 && group == 0) {
+                                if (nextScnHeader != ZERO_SCN) {
+                                    ret = REDO_FINISHED;
+                                    oracleAnalyzer->nextScn = nextScnHeader;
+                                } else {
+                                    WARNING("end of online redo log file at position " << dec << bufferScan);
+                                    ret = REDO_STOPPED;
+                                }
                                 break;
                             }
 
                             //treat bad blocks as empty
-                            if (tmpRet == REDO_ERROR_CRC && oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0)
+                            if (tmpRet == REDO_ERROR_CRC && oracleAnalyzer->redoVerifyDelayUs > 0 && group != 0)
                                 tmpRet = REDO_EMPTY;
 
                             if (goodBlocks == 0 && tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
@@ -629,7 +626,7 @@ namespace OpenLogReplicator {
                             lastRead = goodBlocks * blockSize;
                             lastReadTime = getTime();
                             if (goodBlocks > 0) {
-                                if (oracleAnalyzer->redoVerifyDelayUS > 0 && group != 0) {
+                                if (oracleAnalyzer->redoVerifyDelayUs > 0 && group != 0) {
                                     bufferScan += goodBlocks * blockSize;
 
                                     for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
@@ -645,27 +642,38 @@ namespace OpenLogReplicator {
                             }
 
                             //batch mode with partial online redo log file
-                            if (tmpRet == REDO_ERROR_SEQUENCE && group == 0 && nextScnHeader == ZERO_SCN) {
-                                WARNING("end of online redo log file at position " << dec << bufferScan);
-                                ret = REDO_FINISHED;
+                            if (tmpRet == REDO_ERROR_SEQUENCE && group == 0) {
+                                if (nextScnHeader != ZERO_SCN) {
+                                    ret = REDO_FINISHED;
+                                    oracleAnalyzer->nextScn = nextScnHeader;
+                                } else {
+                                    WARNING("end of online redo log file at position " << dec << bufferScan);
+                                    ret = REDO_STOPPED;
+                                }
                                 break;
                             }
                         }
 
-                        if (numBlocksHeader != NUM_BLOCK_ONLINE && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
-                            ret = REDO_FINISHED;
+                        if (numBlocksHeader != ZERO_BLK && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
+                            if (nextScnHeader != ZERO_SCN) {
+                                ret = REDO_FINISHED;
+                                oracleAnalyzer->nextScn = nextScnHeader;
+                            } else {
+                                WARNING("end of online redo log file at position " << dec << bufferScan);
+                                ret = REDO_STOPPED;
+                            }
                             break;
                         }
 
                         //sleep some time
                         if (!readBlocks) {
                             if (readTime == 0) {
-                                usleep(oracleAnalyzer->redoReadSleepUS);
+                                usleep(oracleAnalyzer->redoReadSleepUs);
                             } else {
                                 clock_t nowTime = getTime();
                                 if (readTime > nowTime) {
-                                    if (oracleAnalyzer->redoReadSleepUS < readTime - nowTime)
-                                        usleep(oracleAnalyzer->redoReadSleepUS);
+                                    if (oracleAnalyzer->redoReadSleepUs < readTime - nowTime)
+                                        usleep(oracleAnalyzer->redoReadSleepUs);
                                     else
                                         usleep(readTime - nowTime);
                                 }

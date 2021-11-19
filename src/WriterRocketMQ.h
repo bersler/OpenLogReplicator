@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
         virtual void pollQueue(void);
 
     public:
-        WriterRocketMQ(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUS, uint64_t checkpointIntervalS,
+        WriterRocketMQ(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
                 const char *groupId, const char *address, const char *domain, const char *topic, const char *tags, const char *keys);
         virtual ~WriterRocketMQ();

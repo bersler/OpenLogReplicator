@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
     NetworkException::~NetworkException() {
     }
 
-    ostream& operator<<(ostream& os, const NetworkException& ors) {
-        os << ors.msg;
+    ostream& operator<<(ostream& os, const NetworkException& exception) {
+        os << exception.msg;
         return os;
     }
 }
