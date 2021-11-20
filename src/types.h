@@ -65,7 +65,7 @@ typedef uint16_t typeunicode16;
 typedef uint32_t typeunicode32;
 typedef uint64_t typeunicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.33"
+#define CONFIG_SCHEMA_VERSION                   "0.9.34"
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
 #define SCHEMA_FILE_MAX_SIZE                    2147483648

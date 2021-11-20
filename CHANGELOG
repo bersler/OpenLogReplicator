@@ -1,3 +1,7 @@
+0.9.34-beta
+- fixed bug: reading from standby database
+- removed distinct config for standby database: "online-standby" is not required, use "online" instead
+
 0.9.33-beta
 - fixed bug: throwing unhandled exception from callback functions
 - fixed bug: after resetlogs starting redo log number might be incorrect

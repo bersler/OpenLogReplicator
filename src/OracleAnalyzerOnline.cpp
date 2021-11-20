@@ -101,6 +101,12 @@ namespace OpenLogReplicator {
             " FROM"
             "   SYS.V_$DATABASE_INCARNATION");
 
+    const char* OracleAnalyzerOnline::SQL_GET_DATABASE_ROLE(
+            "SELECT"
+            "   DATABASE_ROLE"
+            " FROM"
+            "   SYS.V_$DATABASE");
+
     const char* OracleAnalyzerOnline::SQL_GET_DATABASE_SCN(
             "SELECT"
             "   D.CURRENT_SCN"
@@ -417,11 +423,10 @@ namespace OpenLogReplicator {
 
     OracleAnalyzerOnline::OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
-            uint64_t readBufferMax, uint64_t disableChecks, const char* user, const char* password, const char* connectString,
-            bool standby) :
+            uint64_t readBufferMax, uint64_t disableChecks, const char* user, const char* password, const char* connectString) :
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb, readBufferMax,
                 disableChecks),
-        standby(standby),
+        standby(false),
         user(user),
         password(password),
         connectString(connectString),
@@ -505,6 +510,7 @@ namespace OpenLogReplicator {
                     stmt2.defineInt16(1, conId);
                     char conNameChar[81];
                     stmt2.defineString(2, conNameChar, sizeof(conNameChar));
+
                     if (stmt2.executeQuery())
                         conName = conNameChar;
                 }
@@ -664,6 +670,7 @@ namespace OpenLogReplicator {
                     TRACE(TRACE2_SQL, "SQL: " << SQL_CHECK_CONNECTION);
                     stmt.createStatement(SQL_CHECK_CONNECTION);
                     uint64_t dummy; stmt.defineUInt64(1, dummy);
+
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
                     closeConnection();
@@ -733,6 +740,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
+
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
             if (conId > 0) {
@@ -754,6 +762,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "SQL: " << query);
             stmt.createStatement(query.c_str());
             uint64_t dummy; stmt.defineUInt64(1, dummy);
+
             stmt.executeQuery();
         } catch (RuntimeException& ex) {
             if (conId > 0) {
@@ -1221,8 +1230,32 @@ namespace OpenLogReplicator {
 
         {
             DatabaseStatement stmt(conn);
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INCARNATION);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_ROLE);
+            stmt.createStatement(SQL_GET_DATABASE_ROLE);
+            char databaseRole[129]; stmt.defineString(1, databaseRole, sizeof(databaseRole));
 
+            if (stmt.executeQuery()) {
+                string roleStr(databaseRole);
+                if (roleStr.compare("PRIMARY") == 0) {
+                    if (standby) {
+                        standby = false;
+                        INFO("changed database role to: " << roleStr);
+                    }
+                } else
+                if (roleStr.compare("PHYSICAL STANDBY") == 0) {
+                    if (!standby) {
+                        standby = true;
+                        INFO("changed database role to: " << roleStr);
+                    }
+                } else {
+                    RUNTIME_FAIL("unknown database role: " << roleStr)
+                }
+            }
+        }
+
+        {
+            DatabaseStatement stmt(conn);
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_INCARNATION);
             stmt.createStatement(SQL_GET_DATABASE_INCARNATION);
             uint32_t incarnation; stmt.defineUInt32(1, incarnation);
             typeSCN resetlogsScn; stmt.defineUInt64(2, resetlogsScn);
@@ -1230,8 +1263,8 @@ namespace OpenLogReplicator {
             char status[129]; stmt.defineString(4, status, sizeof(status));
             typeRESETLOGS resetlogs; stmt.defineUInt32(5, resetlogs);
             uint32_t priorIncarnation; stmt.defineUInt32(6, priorIncarnation);
-            int64_t ret = stmt.executeQuery();
 
+            int64_t ret = stmt.executeQuery();
             while (ret) {
                 OracleIncarnation *oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
                         resetlogs, priorIncarnation);
@@ -1260,12 +1293,11 @@ namespace OpenLogReplicator {
 
             int64_t group = -1; stmt.defineInt64(1, group);
             char pathStr[514]; stmt.defineString(2, pathStr, sizeof(pathStr));
-            int64_t ret = stmt.executeQuery();
-
             Reader* onlineReader = nullptr;
             int64_t lastGroup = -1;
             string path;
 
+            int64_t ret = stmt.executeQuery();
             while (ret) {
                 if (group != lastGroup) {
                     onlineReader = readerCreate(group);
@@ -1318,8 +1350,8 @@ namespace OpenLogReplicator {
             typeSEQ sequence; stmt.defineUInt32(2, sequence);
             typeSCN firstScn; stmt.defineUInt64(3, firstScn);
             typeSCN nextScn; stmt.defineUInt64(4, nextScn);
-            int64_t ret = stmt.executeQuery();
 
+            int64_t ret = stmt.executeQuery();
             while (ret) {
                 string mappedPath(path);
                 oracleAnalyzer->applyMapping(mappedPath);

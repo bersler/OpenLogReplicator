@@ -377,19 +377,14 @@ int main(int argc, char** argv) {
 
             const char* readerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, readerJSON, "type");
 
-            if (strcmp(readerType, "online") == 0 ||
-                    strcmp(readerType, "online-standby") == 0) {
+            if (strcmp(readerType, "online") == 0) {
 #ifdef LINK_LIBRARY_OCI
-                bool standby = false;
-                if (strcmp(readerType, "online-standby") == 0)
-                    standby = true;
-
                 const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
                 const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
                 const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
 
                 oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
-                        name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, standby);
+                        name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
@@ -448,12 +443,9 @@ int main(int argc, char** argv) {
                     }
                 }
 
-            } else if (strcmp(readerType, "asm") == 0 || strcmp(readerType, "asm-standby") == 0) {
+            } else if (strcmp(readerType, "asm") == 0) {
 #ifdef LINK_LIBRARY_OCI
                 WARNING("experimental feature is used: read using ASM");
-                bool standby = false;
-                if (strcmp(readerType, "asm-standby") == 0)
-                    standby = true;
 
                 const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
                 const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
@@ -464,7 +456,7 @@ int main(int argc, char** argv) {
 
                 oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, name,
                         memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, userASM, passwordASM,
-                        serverASM, standby);
+                        serverASM);
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }

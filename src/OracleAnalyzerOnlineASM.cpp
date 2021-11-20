@@ -31,9 +31,9 @@ namespace OpenLogReplicator {
     OracleAnalyzerOnlineASM::OracleAnalyzerOnlineASM(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
             uint64_t readBufferMax, uint64_t disableChecks, const char* user, const char* password, const char* connectString,
-            const char* userASM, const char* passwordASM, const char* connectStringASM, bool standby) :
+            const char* userASM, const char* passwordASM, const char* connectStringASM) :
         OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb,
-                readBufferMax, disableChecks, user, password, connectString, standby),
+                readBufferMax, disableChecks, user, password, connectString),
         userASM(userASM),
         passwordASM(passwordASM),
         connectStringASM(connectStringASM),
