@@ -145,6 +145,7 @@ namespace OpenLogReplicator {
                 uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
         virtual ~OutputBufferProtobuf();
 
+        virtual void initialize(OracleAnalyzer* oracleAnalyzer);
         virtual void processCommit(void);
         virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo);
     };

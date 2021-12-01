@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
 
         string maxMessageMbStr(to_string(maxMessageMb * 1024 * 1024));
         string maxMessagesStr(to_string(maxMessages));
-        if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
+        if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             (enableIdempotence && rd_kafka_conf_set(conf, "enable.idempotence", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) ||
             rd_kafka_conf_set(conf, "client.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             rd_kafka_conf_set(conf, "group.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
         }
         conf = nullptr;
 
-        rkt = rd_kafka_topic_new(rk, topic, nullptr);
+        rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
     }
 
     void WriterKafka::dr_msg_cb(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage, void* opaque) {
