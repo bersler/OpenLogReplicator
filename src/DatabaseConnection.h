@@ -30,16 +30,23 @@ namespace OpenLogReplicator {
     class DatabaseEnvironment;
 
     class DatabaseConnection {
-    protected:
-
     public:
+        string user;
+        string password;
+        string connectString;
+        bool sysASM;
+        bool connected;
+
         DatabaseEnvironment* env;
         OCIError* errhp;
         OCIServer* srvhp;
         OCISvcCtx* svchp;
         OCISession* authp;
 
-        DatabaseConnection(DatabaseEnvironment* env, string& user, string& password, string& server, bool sysASM);
+        void connect(void);
+        void disconnect(void);
+
+        DatabaseConnection(DatabaseEnvironment* env, const char* user, const char* password, const char* connectString, bool sysASM);
         virtual ~DatabaseConnection();
     };
 }

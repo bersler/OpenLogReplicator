@@ -55,17 +55,22 @@ namespace OpenLogReplicator {
         startTimeRel(startTimeRel),
         streaming(false),
         outputBuffer(oracleAnalyzer->outputBuffer) {
-
-        queue = new OutputBufferMsg*[queueSize];
-        if (queue == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
-        }
     }
 
     Writer::~Writer() {
         if (queue != nullptr) {
             delete[] queue;
             queue = nullptr;
+        }
+    }
+
+    void Writer::initialize(void) {
+        if (queue != nullptr)
+            return;
+
+        queue = new OutputBufferMsg*[queueSize];
+        if (queue == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
         }
     }
 

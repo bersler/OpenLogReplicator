@@ -31,7 +31,14 @@ namespace OpenLogReplicator {
         Stream(uri, pollInterval),
         socket(nullptr),
         context(nullptr) {
+    }
 
+    StreamZeroMQ::~StreamZeroMQ() {
+        zmq_close(socket);
+        zmq_ctx_term(context);
+    }
+
+    void StreamZeroMQ::initialize(void) {
         context = zmq_ctx_new();
         if (context == nullptr) {
             RUNTIME_FAIL("ZeroMQ context creation error");
@@ -40,11 +47,6 @@ namespace OpenLogReplicator {
         if (socket == nullptr) {
             RUNTIME_FAIL("ZeroMQ initializing socket error (errno: " << dec << errno << ")");
         }
-    }
-
-    StreamZeroMQ::~StreamZeroMQ() {
-        zmq_close(socket);
-        zmq_ctx_term(context);
     }
 
     string StreamZeroMQ::getName(void) const {

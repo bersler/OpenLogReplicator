@@ -27,10 +27,6 @@ using namespace std;
 namespace OpenLogReplicator {
     class OracleAnalyzerOnlineASM : public OracleAnalyzerOnline {
     protected:
-        string userASM;
-        string passwordASM;
-        string connectStringASM;
-
         virtual const char* getModeName(void) const;
         virtual Reader* readerCreate(int64_t group);
         virtual bool checkConnection(void);

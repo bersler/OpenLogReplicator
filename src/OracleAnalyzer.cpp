@@ -125,32 +125,6 @@ namespace OpenLogReplicator {
         write56(write56Little),
         write64(write64Little),
         writeSCN(writeSCNLittle) {
-
-        memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
-        if (memoryChunks == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#1)");
-        }
-
-        for (uint64_t i = 0; i < memoryChunksMin; ++i) {
-            memoryChunks[i] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
-
-            if (memoryChunks[i] == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
-            }
-            ++memoryChunksAllocated;
-            ++memoryChunksFree;
-        }
-        memoryChunksHWM = memoryChunksMin;
-
-        transactionBuffer = new TransactionBuffer(this);
-        if (transactionBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
-        }
-
-        schema = new Schema(this);
-        if (schema == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Schema) << " bytes memory (for: schema)");
-        }
     }
 
     OracleAnalyzer::~OracleAnalyzer() {
@@ -213,6 +187,34 @@ namespace OpenLogReplicator {
         checkpointScnList.clear();
         skipXidList.clear();
         brokenXidMapList.clear();
+    }
+
+    void OracleAnalyzer::initialize(void) {
+        memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
+        if (memoryChunks == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#1)");
+        }
+
+        for (uint64_t i = 0; i < memoryChunksMin; ++i) {
+            memoryChunks[i] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
+
+            if (memoryChunks[i] == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
+            }
+            ++memoryChunksAllocated;
+            ++memoryChunksFree;
+        }
+        memoryChunksHWM = memoryChunksMin;
+
+        transactionBuffer = new TransactionBuffer(this);
+        if (transactionBuffer == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
+        }
+
+        schema = new Schema(this);
+        if (schema == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Schema) << " bytes memory (for: schema)");
+        }
     }
 
     void OracleAnalyzer::updateOnlineLogs(void) {
@@ -450,7 +452,7 @@ namespace OpenLogReplicator {
         writeSCN = writeSCNBig;
     }
 
-    void OracleAnalyzer::initialize(void) {
+    void OracleAnalyzer::loadDatabaseMetadata(void) {
         archReader = readerCreate(0);
     }
 
@@ -483,7 +485,8 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_THREADS, "THREADS: ANALYZER (" << hex << this_thread::get_id() << ") START");
 
         try {
-            initialize();
+            loadDatabaseMetadata();
+
             while (firstScn == ZERO_SCN) {
                 {
                     unique_lock<mutex> lck(mtx);
@@ -528,7 +531,6 @@ namespace OpenLogReplicator {
                     createSchema();
                     schema->writeSchema();
                 }
-                goStandby();
 
                 if (sequence == ZERO_SEQ) {
                     RUNTIME_FAIL("starting sequence if unknown, failing");
@@ -851,6 +853,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
         }
         readers.insert(readerFS);
+        readerFS->initialize();
 
         if (pthread_create(&readerFS->pthread, nullptr, &Reader::runStatic, (void*)readerFS)) {
             CONFIG_FAIL("spawning thread");
@@ -859,6 +862,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::checkOnlineRedoLogs() {
+        for (RedoLog* onlineRedo : onlineRedoSet)
+            delete onlineRedo;
+        onlineRedoSet.clear();
+
         for (Reader* reader : readers) {
             if (reader->group == 0)
                 continue;

@@ -38,6 +38,8 @@ namespace OpenLogReplicator {
         hintDisplayed(false),
         fileCopyDes(-1),
         fileCopySequence(0),
+        redoBufferList(nullptr),
+        headerBuffer(nullptr),
         group(group),
         sequence(0),
         blockSize(0),
@@ -59,16 +61,22 @@ namespace OpenLogReplicator {
         bufferSizeMax(oracleAnalyzer->readBufferMax * MEMORY_CHUNK_SIZE),
         buffersFree(oracleAnalyzer->readBufferMax),
         buffersMaxUsed(0) {
+    }
 
-        redoBufferList = new uint8_t*[oracleAnalyzer->readBufferMax];
+    void Reader::initialize(void) {
         if (redoBufferList == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (oracleAnalyzer->readBufferMax * sizeof(uint8_t*)) << " bytes memory (for: read buffer list)");
+            redoBufferList = new uint8_t*[oracleAnalyzer->readBufferMax];
+            if (redoBufferList == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << (oracleAnalyzer->readBufferMax * sizeof(uint8_t*)) << " bytes memory (for: read buffer list)");
+            }
+            memset(redoBufferList, 0, oracleAnalyzer->readBufferMax * sizeof(uint8_t*));
         }
-        memset(redoBufferList, 0, oracleAnalyzer->readBufferMax * sizeof(uint8_t*));
 
-        headerBuffer = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2);
         if (headerBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read header)");
+            headerBuffer = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2);
+            if (headerBuffer == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << dec << (REDO_PAGE_SIZE_MAX * 2) << " bytes memory (for: read header)");
+            }
         }
 
         if (oracleAnalyzer->redoCopyPath.length() > 0) {

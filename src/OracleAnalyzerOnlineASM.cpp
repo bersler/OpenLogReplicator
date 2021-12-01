@@ -33,11 +33,12 @@ namespace OpenLogReplicator {
             uint64_t readBufferMax, uint64_t disableChecks, const char* user, const char* password, const char* connectString,
             const char* userASM, const char* passwordASM, const char* connectStringASM) :
         OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb,
-                readBufferMax, disableChecks, user, password, connectString),
-        userASM(userASM),
-        passwordASM(passwordASM),
-        connectStringASM(connectStringASM),
-        connASM(nullptr) {
+                readBufferMax, disableChecks, user, password, connectString) {
+
+        connASM = new DatabaseConnection(env, userASM, passwordASM, connectStringASM, true);
+        if (connASM == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseConnection) << " bytes memory (for: ASM connection)");
+        }
     }
 
     OracleAnalyzerOnlineASM::~OracleAnalyzerOnlineASM() {
@@ -51,18 +52,20 @@ namespace OpenLogReplicator {
         if (!OracleAnalyzerOnline::checkConnection())
             return false;
 
-        while (!shutdown) {
-            if (connASM == nullptr) {
-                INFO("connecting to ASM instance of " << database << " to " << connectStringASM);
+        if (!connASM->connected) {
+            INFO("connecting to ASM instance of " << database << " to " << connASM->connectString);
+        }
 
+        while (!shutdown) {
+            if (!connASM->connected) {
                 try {
-                    connASM = new DatabaseConnection(env, userASM, passwordASM, connectStringASM, true);
+                    connASM->connect();
                 } catch (RuntimeException& ex) {
                     //
                 }
             }
 
-            if (connASM != nullptr)
+            if (connASM->connected)
                 return true;
 
             DEBUG("cannot connect to ASM, retry in 5 sec.");
@@ -82,6 +85,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderASM) << " bytes memory (for: asm reader creation)");
         }
         readers.insert(readerASM);
+        readerASM->initialize();
 
         if (pthread_create(&readerASM->pthread, nullptr, &Reader::runStatic, (void*)readerASM)) {
             CONFIG_FAIL("spawning thread");

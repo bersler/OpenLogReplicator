@@ -104,7 +104,6 @@ int main(int argc, char** argv) {
     list<Writer*> writers;
     list<OutputBuffer*> buffers;
     OracleAnalyzer* oracleAnalyzer = nullptr;
-    Writer* writer = nullptr;
     int fid = -1;
     char* configFileBuffer = nullptr;
 
@@ -388,6 +387,7 @@ int main(int argc, char** argv) {
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
+                oracleAnalyzer->initialize();
 
                 if (readerJSON.HasMember("path-mapping")) {
                     const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
@@ -428,6 +428,7 @@ int main(int argc, char** argv) {
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
+                oracleAnalyzer->initialize();
 
                 if (readerJSON.HasMember("path-mapping")) {
                     const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
@@ -460,6 +461,7 @@ int main(int argc, char** argv) {
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
+                oracleAnalyzer->initialize();
 
                 if (sourceJSON.HasMember("arch")) {
                     const char* arch = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
@@ -490,6 +492,7 @@ int main(int argc, char** argv) {
                 if (oracleAnalyzer == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
                 }
+                oracleAnalyzer->initialize();
                 oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
                 const Value& redoLogBatchArrayJSON = getJSONfieldA(fileName, readerJSON, "redo-log");
@@ -824,6 +827,7 @@ int main(int argc, char** argv) {
             }
 
             //writer
+            Writer* writer = nullptr;
             const Value& writerJSON = getJSONfieldO(fileName, targetJSON, "writer");
             const char* writerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "type");
 
@@ -1001,9 +1005,14 @@ int main(int argc, char** argv) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
+                stream->initialize();
                 writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
+                    if (stream != nullptr) {
+                        delete stream;
+                        stream = nullptr;
+                    }
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
@@ -1018,9 +1027,14 @@ int main(int argc, char** argv) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
+                stream->initialize();
                 writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
+                    if (stream != nullptr) {
+                        delete stream;
+                        stream = nullptr;
+                    }
                     RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
@@ -1030,13 +1044,13 @@ int main(int argc, char** argv) {
                 CONFIG_FAIL("bad JSON: invalid \"type\" value: " << writerType);
             }
 
+            writers.push_back(writer);
+            writer->initialize();
+
             oracleAnalyzer->outputBuffer->setWriter(writer);
             if (pthread_create(&writer->pthread, nullptr, &Thread::runStatic, (void*)writer)) {
                 RUNTIME_FAIL("spawning thread - network writer");
             }
-
-            writers.push_back(writer);
-            writer = nullptr;
         }
 
         //sleep until killed
@@ -1052,9 +1066,6 @@ int main(int argc, char** argv) {
 
     if (oracleAnalyzer != nullptr)
         analyzers.push_back(oracleAnalyzer);
-
-    if (writer != nullptr)
-        writers.push_back(writer);
 
     //shut down all analyzers
     for (OracleAnalyzer* analyzer : analyzers)

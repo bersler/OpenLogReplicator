@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
-#include "RuntimeException.h"
 #include "WriterKafka.h"
 
 using namespace std;
@@ -38,6 +37,24 @@ namespace OpenLogReplicator {
         rk(nullptr),
         rkt(nullptr),
         conf(nullptr) {
+    }
+
+    WriterKafka::~WriterKafka() {
+        if (conf != nullptr)
+            rd_kafka_conf_destroy(conf);
+
+        if (rkt != nullptr)
+            rd_kafka_topic_destroy(rkt);
+
+        rd_kafka_resp_err_t err = rd_kafka_fatal_error(rk, NULL, 0);
+        if (rk != nullptr)
+            rd_kafka_destroy(rk);
+
+        INFO("Kafka producer exit code: " << dec << err);
+    }
+
+    void WriterKafka::initialize(void) {
+        Writer::initialize();
 
         conf = rd_kafka_conf_new();
         if (conf == nullptr) {
@@ -69,20 +86,6 @@ namespace OpenLogReplicator {
         rkt = rd_kafka_topic_new(rk, topic, nullptr);
     }
 
-    WriterKafka::~WriterKafka() {
-        if (conf != nullptr)
-            rd_kafka_conf_destroy(conf);
-
-        if (rkt != nullptr)
-            rd_kafka_topic_destroy(rkt);
-
-        rd_kafka_resp_err_t err = rd_kafka_fatal_error(rk, NULL, 0);
-        if (rk != nullptr)
-            rd_kafka_destroy(rk);
-
-        INFO("Kafka producer exit code: " << dec << err);
-    }
-
     void WriterKafka::dr_msg_cb(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage, void* opaque) {
         OutputBufferMsg* msg = (OutputBufferMsg*) rkmessage->_private;
         OracleAnalyzer* oracleAnalyzer = msg->oracleAnalyzer;
@@ -103,7 +106,9 @@ namespace OpenLogReplicator {
 
         char errstr[512];
         rd_kafka_resp_err_t orig_err = rd_kafka_fatal_error(rk, errstr, sizeof(errstr));
-        RUNTIME_FAIL("Kafka: fatal error: " << rd_kafka_err2name(orig_err) << ", reason: " << errstr);
+        ERROR("Kafka: fatal error: " << rd_kafka_err2name(orig_err) << ", reason: " << errstr);
+
+        stopMain();
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t* rk, int level, const char* fac, const char* buf) {

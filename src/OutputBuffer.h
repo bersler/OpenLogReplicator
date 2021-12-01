@@ -501,7 +501,7 @@ namespace OpenLogReplicator {
                 uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
         virtual ~OutputBuffer();
 
-        void initialize(OracleAnalyzer* oracleAnalyzer);
+        virtual void initialize(OracleAnalyzer* oracleAnalyzer);
         uint64_t outputBufferSize(void) const;
         void setWriter(Writer* writer);
         void setNlsCharset(string& nlsCharset, string& nlsNcharCharset);

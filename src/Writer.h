@@ -67,6 +67,8 @@ namespace OpenLogReplicator {
                 uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
                 int64_t startTimeRel);
         virtual ~Writer();
+
+        virtual void initialize(void);
         void confirmMessage(OutputBufferMsg* msg);
     };
 }

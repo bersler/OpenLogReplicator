@@ -1,4 +1,4 @@
-/* Header for StreamZeroMQ class
+/* Header for OpCode0B16 class
    Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,31 +17,20 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Stream.h"
+#include "OpCode.h"
 
-#ifndef STREAMZEROMQ_H_
-#define STREAMZEROMQ_H_
-
-using namespace std;
+#ifndef OPCODE0B16_H_
+#define OPCODE0B16_H_
 
 namespace OpenLogReplicator {
-    class StreamZeroMQ : public Stream {
-    protected:
-        void* socket;
-        void* context;
+    class RedoLogRecord;
 
+    class OpCode0B16: public OpCode {
     public:
-        StreamZeroMQ(const char* uri, uint64_t pollInterval);
-        virtual ~StreamZeroMQ();
+        OpCode0B16(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
+        virtual ~OpCode0B16();
 
-        virtual void initialize(void);
-        virtual string getName(void) const;
-        virtual void initializeClient(atomic<bool>* shutdown);
-        virtual void initializeServer(atomic<bool>* shutdown);
-        virtual void sendMessage(const void* msg, uint64_t length);
-        virtual uint64_t receiveMessage(void* msg, uint64_t length);
-        virtual uint64_t receiveMessageNB(void* msg, uint64_t length);
-        virtual bool connected(void);
+        virtual void process(void);
     };
 }
 

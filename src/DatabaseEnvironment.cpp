@@ -25,14 +25,20 @@ using namespace std;
 namespace OpenLogReplicator {
     DatabaseEnvironment::DatabaseEnvironment() :
         envhp(nullptr) {
-
-        OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
     }
 
     DatabaseEnvironment::~DatabaseEnvironment() {
         if (envhp != nullptr)
             OCIHandleFree(envhp, OCI_HTYPE_ENV);
         //OCITerminate(OCI_DEFAULT);
+    }
+
+    void DatabaseEnvironment::initialize(void) {
+        OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
+
+        if (envhp == nullptr) {
+            RUNTIME_FAIL("error initializing oracle environment (OCI)");
+        }
     }
 
     void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {

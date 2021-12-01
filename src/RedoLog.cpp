@@ -33,6 +33,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B0B.h"
 #include "OpCode0B0C.h"
 #include "OpCode0B10.h"
+#include "OpCode0B16.h"
 #include "OpCode1801.h"
 #include "OracleAnalyzer.h"
 #include "OracleObject.h"
@@ -90,7 +91,6 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::printHeaderInfo(void) const {
-
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             char SID[9];
             memcpy(SID, reader->headerBuffer + reader->blockSize + 28, 8); SID[8] = 0;
@@ -566,6 +566,13 @@ namespace OpenLogReplicator {
                 }
                 break;
 
+            case 0x0B16: //REDO: Logminer support - KDOCMP
+                opCodes[vectors] = new OpCode0B16(oracleAnalyzer, &redoLogRecord[vectors]);
+                if (opCodes[vectors] == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0B16) << " bytes memory (for: OP 11.22)");
+                }
+                break;
+
             case 0x1801: //DDL
                 opCodes[vectors] = new OpCode1801(oracleAnalyzer, &redoLogRecord[vectors]);
                 if (opCodes[vectors] == nullptr) {
@@ -618,27 +625,33 @@ namespace OpenLogReplicator {
         uint64_t iPair = 0;
         for (uint64_t i = 0; i < vectors; ++i) {
             //begin transaction
-            if (redoLogRecord[i].opCode == 0x0502)
+
+            if (redoLogRecord[i].opCode == 0x0502) {
                 appendToTransactionBegin(&redoLogRecord[i]);
+            }
 
             //commit/rollback transaction
-            else if (redoLogRecord[i].opCode == 0x0504)
+            else if (redoLogRecord[i].opCode == 0x0504) {
                 appendToTransactionCommit(&redoLogRecord[i]);
+            }
 
             //ddl
-            else if (redoLogRecord[i].opCode == 0x1801 && isUndoRedo[i] == 0)
+            else if (redoLogRecord[i].opCode == 0x1801 && isUndoRedo[i] == 0) {
                 appendToTransactionDDL(&redoLogRecord[i]);
+            }
 
             else if (iPair < vectorsUndo) {
                 if (opCodesUndo[iPair] == i) {
-                    if (iPair < vectorsRedo)
+                    if (iPair < vectorsRedo) {
                         appendToTransaction(&redoLogRecord[opCodesUndo[iPair]], &redoLogRecord[opCodesRedo[iPair]]);
-                    else
+                    } else {
                         appendToTransactionUndo(&redoLogRecord[opCodesUndo[iPair]]);
+                    }
                     ++iPair;
                 } else if (opCodesRedo[iPair] == i) {
-                    if (iPair < vectorsUndo)
+                    if (iPair < vectorsUndo) {
                         appendToTransaction(&redoLogRecord[opCodesRedo[iPair]], &redoLogRecord[opCodesUndo[iPair]]);
+                    }
                     ++iPair;
                 }
             }
@@ -931,6 +944,8 @@ namespace OpenLogReplicator {
         case 0x05010B0C:
         //supp log for update
         case 0x05010B10:
+        //logminer support - KDOCMP
+        case 0x05010B16:
             {
                 Transaction* transaction = nullptr;
                 typeXIDMAP xidMap = (redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
@@ -989,6 +1004,9 @@ namespace OpenLogReplicator {
         //rollback: supp log for update
         case 0x0B100506:
         case 0x0B10050B:
+        //rollback: logminer support - KDOCMP
+        case 0x0B160506:
+        case 0x0B16050B:
             {
                 Transaction* transaction = nullptr;
                 typeXIDMAP xidMap = (((uint64_t)redoLogRecord2->usn) << 16) | ((uint64_t)redoLogRecord2->slt) | (((uint64_t)redoLogRecord2->conId) << 32);

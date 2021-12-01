@@ -47,7 +47,16 @@ namespace OpenLogReplicator {
         newLine(newLine),
         append(append),
         lastSequence(ZERO_SEQ),
+        newLineMsg(nullptr),
         warningDisplayed(false) {
+    }
+
+    WriterFile::~WriterFile() {
+        closeFile();
+    }
+
+    void WriterFile::initialize(void) {
+        Writer::initialize();
 
         if (newLine == 1) {
             newLineMsg = "\n";
@@ -193,10 +202,6 @@ namespace OpenLogReplicator {
             closedir(dir);
             INFO("next number for " << this->output << " is: " << dec << outputFileNum);
         }
-    }
-
-    WriterFile::~WriterFile() {
-        closeFile();
     }
 
     void WriterFile::closeFile(void) {

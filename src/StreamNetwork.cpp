@@ -35,13 +35,6 @@ namespace OpenLogReplicator {
         serverFD(-1),
         readBufferLen(0),
         res(nullptr) {
-
-        uint64_t colon = this->uri.find(":");
-        if (colon == string::npos) {
-            RUNTIME_FAIL("uri is missing \":\"");
-        }
-        host = this->uri.substr(0, colon);
-        port = this->uri.substr(colon + 1, this->uri.length() - 1);
     }
 
     StreamNetwork::~StreamNetwork() {
@@ -59,6 +52,15 @@ namespace OpenLogReplicator {
             close(serverFD);
             serverFD = -1;
         }
+    }
+
+    void StreamNetwork::initialize(void) {
+        uint64_t colon = this->uri.find(":");
+        if (colon == string::npos) {
+            RUNTIME_FAIL("uri is missing \":\"");
+        }
+        host = this->uri.substr(0, colon);
+        port = this->uri.substr(colon + 1, this->uri.length() - 1);
     }
 
     string StreamNetwork::getName(void) const {

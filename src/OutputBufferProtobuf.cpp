@@ -34,8 +34,6 @@ namespace OpenLogReplicator {
         valuePB(nullptr),
         payloadPB(nullptr),
         schemaPB(nullptr) {
-
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
     OutputBufferProtobuf::~OutputBufferProtobuf() {
@@ -44,6 +42,12 @@ namespace OpenLogReplicator {
             redoResponsePB = nullptr;
         }
         google::protobuf::ShutdownProtobufLibrary();
+    }
+
+    void OutputBufferProtobuf::initialize(OracleAnalyzer *oracleAnalyzer) {
+        OutputBuffer::initialize(oracleAnalyzer);
+
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
     void OutputBufferProtobuf::columnNull(OracleObject* object, typeCOL col) {

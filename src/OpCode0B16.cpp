@@ -1,4 +1,4 @@
-/* Header for StreamZeroMQ class
+/* Oracle Redo OpCode: 11.22
    Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,32 +17,33 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Stream.h"
-
-#ifndef STREAMZEROMQ_H_
-#define STREAMZEROMQ_H_
+#include "OpCode0B16.h"
+#include "OracleAnalyzer.h"
+#include "RedoLogRecord.h"
 
 using namespace std;
 
 namespace OpenLogReplicator {
-    class StreamZeroMQ : public Stream {
-    protected:
-        void* socket;
-        void* context;
+    OpCode0B16::OpCode0B16(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
+        OpCode(oracleAnalyzer, redoLogRecord) {
+    }
 
-    public:
-        StreamZeroMQ(const char* uri, uint64_t pollInterval);
-        virtual ~StreamZeroMQ();
+    OpCode0B16::~OpCode0B16() {
+    }
 
-        virtual void initialize(void);
-        virtual string getName(void) const;
-        virtual void initializeClient(atomic<bool>* shutdown);
-        virtual void initializeServer(atomic<bool>* shutdown);
-        virtual void sendMessage(const void* msg, uint64_t length);
-        virtual uint64_t receiveMessage(void* msg, uint64_t length);
-        virtual uint64_t receiveMessageNB(void* msg, uint64_t length);
-        virtual bool connected(void);
-    };
+    void OpCode0B16::process(void) {
+        OpCode::process();
+        uint64_t fieldPos = 0;
+        typeFIELD fieldNum = 0;
+        uint16_t fieldLength = 0;
+
+        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B1601);
+        //field: 1
+        ktbRedo(fieldPos, fieldLength);
+
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B1602))
+            return;
+        //field: 2
+        kdoOpCode(fieldPos, fieldLength);
+    }
 }
-
-#endif

@@ -427,21 +427,25 @@ namespace OpenLogReplicator {
         OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb, readBufferMax,
                 disableChecks),
         standby(false),
-        user(user),
-        password(password),
-        connectString(connectString),
-        env(nullptr),
-        conn(nullptr),
         keepConnection(false) {
 
         env = new DatabaseEnvironment();
         if (env == nullptr) {
             RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseEnvironment) << " bytes memory (for: database environment)");
         }
+        env->initialize();
+
+        conn = new DatabaseConnection(env, user, password, connectString, false);
+        if (conn == nullptr) {
+            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseConnection) << " bytes memory (for: database connection)");
+        }
     }
 
     OracleAnalyzerOnline::~OracleAnalyzerOnline() {
-        closeConnection();
+        if (conn != nullptr) {
+            delete conn;
+            conn = nullptr;
+        }
 
         if (env != nullptr) {
             delete env;
@@ -449,7 +453,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OracleAnalyzerOnline::initialize(void) {
+    void OracleAnalyzerOnline::loadDatabaseMetadata(void) {
         if (!checkConnection())
             return;
 
@@ -651,20 +655,20 @@ namespace OpenLogReplicator {
     }
 
     bool OracleAnalyzerOnline::checkConnection(void) {
-        if (conn == nullptr) {
-            INFO("connecting to Oracle instance of " << database << " to " << connectString);
+        if (!conn->connected) {
+            INFO("connecting to Oracle instance of " << database << " to " << conn->connectString);
         }
 
         while (!shutdown) {
-            if (conn == nullptr) {
+            if (!conn->connected) {
                 try {
-                    conn = new DatabaseConnection(env, user, password, connectString, false);
+                    conn->connect();
                 } catch (RuntimeException& ex) {
                     //
                 }
             }
 
-            if (conn != nullptr) {
+            if (conn->connected) {
                 try {
                     DatabaseStatement stmt(conn);
                     TRACE(TRACE2_SQL, "SQL: " << SQL_CHECK_CONNECTION);
@@ -673,8 +677,8 @@ namespace OpenLogReplicator {
 
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
-                    closeConnection();
-                    INFO("re-connecting to Oracle instance of " << database << " to " << connectString);
+                    conn->disconnect();
+                    INFO("re-connecting to Oracle instance of " << database << " to " << conn->connectString);
                     continue;
                 }
 
@@ -689,16 +693,8 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzerOnline::goStandby(void) {
-        if (keepConnection)
-            closeConnection();
-    }
-
-
-    void OracleAnalyzerOnline::closeConnection(void) {
-        if (conn != nullptr) {
-            delete conn;
-            conn = nullptr;
-        }
+        if (!keepConnection)
+            conn->disconnect();
     }
 
     string OracleAnalyzerOnline::getParameterValue(const char* parameter) {
@@ -745,10 +741,10 @@ namespace OpenLogReplicator {
         } catch (RuntimeException& ex) {
             if (conId > 0) {
                 ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << conName << ";");
-                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << conn->user << ";");
                 RUNTIME_FAIL("grants missing");
             } else {
-                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT ON " << tableName << " TO " << conn->user << ";");
                 RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);
@@ -767,10 +763,10 @@ namespace OpenLogReplicator {
         } catch (RuntimeException& ex) {
             if (conId > 0) {
                 ERROR("HINT: run: ALTER SESSION SET CONTAINER = " << conName << ";");
-                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << conn->user << ";");
                 RUNTIME_FAIL("grants missing");
             } else {
-                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << user << ";");
+                ERROR("HINT: run: GRANT SELECT, FLASHBACK ON " << tableName << " TO " << conn->user << ";");
                 RUNTIME_FAIL("grants missing");
             }
             throw RuntimeException (ex.msg);

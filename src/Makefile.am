@@ -52,6 +52,7 @@ OpCode0B08.cpp \
 OpCode0B0B.cpp \
 OpCode0B0C.cpp \
 OpCode0B10.cpp \
+OpCode0B16.cpp \
 OpCode1801.cpp \
 OpCode.cpp \
 OpenLogReplicator.cpp \

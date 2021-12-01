@@ -1,3 +1,10 @@
+0.9.35-beta
+- fixed bug: throwing exception in constructor [#28]
+- fixed bug: throwing exception in callback functions for Kakfa module
+- fixed bug: error "split undo is broken" when undo for op code 11.22 split
+- fixed bug: reading from standby redo log files failed during switch
+- optimized Oracle connection handling
+
 0.9.34-beta
 - fixed bug: reading from standby database
 - removed distinct config for standby database: "online-standby" is not required, use "online" instead

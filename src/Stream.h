@@ -35,6 +35,9 @@ namespace OpenLogReplicator {
         string uri;
 
     public:
+        Stream(const char* uri, uint64_t pollInterval);
+        virtual ~Stream();
+
         virtual string getName(void) const = 0;
         virtual void initializeClient(atomic<bool>* shutdown) = 0;
         virtual void initializeServer(atomic<bool>* shutdown) = 0;
@@ -42,9 +45,7 @@ namespace OpenLogReplicator {
         virtual uint64_t receiveMessage(void* msg, uint64_t length) = 0;
         virtual uint64_t receiveMessageNB(void* msg, uint64_t length) = 0;
         virtual bool connected(void) = 0;
-
-        Stream(const char* uri, uint64_t pollInterval);
-        virtual ~Stream();
+        virtual void initialize(void) = 0;
     };
 }
 

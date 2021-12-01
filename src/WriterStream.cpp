@@ -34,8 +34,6 @@ namespace OpenLogReplicator {
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, Stream* stream) :
         Writer(alias, oracleAnalyzer, 0, pollIntervalUs, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
         stream(stream) {
-
-        stream->initializeServer(&shutdown);
     }
 
     WriterStream::~WriterStream() {
@@ -43,6 +41,12 @@ namespace OpenLogReplicator {
             delete stream;
             stream = nullptr;
         }
+    }
+
+    void WriterStream::initialize(void) {
+        Writer::initialize();
+
+        stream->initializeServer(&shutdown);
     }
 
     string WriterStream::getName(void) const {

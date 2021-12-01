@@ -81,7 +81,28 @@ namespace OpenLogReplicator {
         firstBuffer(nullptr),
         lastBuffer(nullptr),
         msg(nullptr) {
+    }
 
+    OutputBuffer::~OutputBuffer() {
+        valuesRelease();
+        for (auto it : characterMap) {
+            CharacterSet* cs = it.second;
+            if (cs != nullptr)
+                delete cs;
+        }
+        characterMap.clear();
+        timeZoneMap.clear();
+        objects.clear();
+
+        while (firstBuffer != nullptr) {
+            OutputBufferQueue* nextBuffer = firstBuffer->next;
+            oracleAnalyzer->freeMemoryChunk("output buffer", (uint8_t*)firstBuffer, true);
+            firstBuffer = nextBuffer;
+            --buffersAllocated;
+        }
+    }
+
+    void OutputBuffer::initialize(OracleAnalyzer* oracleAnalyzer) {
         characterMap[1] = new CharacterSet7bit("US7ASCII", CharacterSet7bit::unicode_map_US7ASCII);
         characterMap[2] = new CharacterSet8bit("WE8DEC", CharacterSet8bit::unicode_map_WE8DEC);
         characterMap[3] = new CharacterSet8bit("WE8HP", CharacterSet8bit::unicode_map_WE8HP, true);
@@ -830,28 +851,7 @@ namespace OpenLogReplicator {
         memset(valuesMerge, 0, sizeof(valuesMerge));
         memset(values, 0, sizeof(values));
         memset(valuesPart, 0, sizeof(valuesPart));
-    }
 
-    OutputBuffer::~OutputBuffer() {
-        valuesRelease();
-        for (auto it : characterMap) {
-            CharacterSet* cs = it.second;
-            if (cs != nullptr)
-                delete cs;
-        }
-        characterMap.clear();
-        timeZoneMap.clear();
-        objects.clear();
-
-        while (firstBuffer != nullptr) {
-            OutputBufferQueue* nextBuffer = firstBuffer->next;
-            oracleAnalyzer->freeMemoryChunk("output buffer", (uint8_t*)firstBuffer, true);
-            firstBuffer = nextBuffer;
-            --buffersAllocated;
-        }
-    }
-
-    void OutputBuffer::initialize(OracleAnalyzer* oracleAnalyzer) {
         this->oracleAnalyzer = oracleAnalyzer;
 
         buffersAllocated = 1;

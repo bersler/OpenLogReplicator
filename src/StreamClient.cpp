@@ -91,6 +91,7 @@ int main(int argc, char** argv) {
             ERROR("couldn't create stream");
             exit(0);
         }
+        stream->initialize();
         stream->initializeClient(&shutdown);
 
         request.set_code(pb::RequestCode::INFO);

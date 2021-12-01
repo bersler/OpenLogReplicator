@@ -49,6 +49,8 @@ namespace OpenLogReplicator {
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
                 Stream* stream);
         virtual ~WriterStream();
+
+        virtual void initialize(void);
     };
 }
 

@@ -155,12 +155,12 @@ am__OpenLogReplicator_SOURCES_DIST = CharacterSet16bit.cpp \
 	OpCode0502.cpp OpCode0504.cpp OpCode0506.cpp OpCode050B.cpp \
 	OpCode0513.cpp OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp \
 	OpCode0B04.cpp OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp \
-	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp \
-	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
-	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleIncarnation.cpp \
-	OracleObject.cpp OutputBuffer.cpp OutputBufferJson.cpp \
-	Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
-	RedoLogException.cpp RedoLogRecord.cpp RowId.cpp \
+	OpCode0B0B.cpp OpCode0B0C.cpp OpCode0B10.cpp OpCode0B16.cpp \
+	OpCode1801.cpp OpCode.cpp OpenLogReplicator.cpp \
+	OracleAnalyzer.cpp OracleAnalyzerBatch.cpp OracleColumn.cpp \
+	OracleIncarnation.cpp OracleObject.cpp OutputBuffer.cpp \
+	OutputBufferJson.cpp Reader.cpp ReaderFilesystem.cpp \
+	RedoLog.cpp RedoLogException.cpp RedoLogRecord.cpp RowId.cpp \
 	RuntimeException.cpp Schema.cpp SchemaElement.cpp State.cpp \
 	StateDisk.cpp SysCCol.cpp SysCDef.cpp SysCol.cpp \
 	SysDeferredStg.cpp SysECol.cpp SysObj.cpp SysTab.cpp \
@@ -206,12 +206,13 @@ am_OpenLogReplicator_OBJECTS = CharacterSet16bit.$(OBJEXT) \
 	OpCode0514.$(OBJEXT) OpCode0B02.$(OBJEXT) OpCode0B03.$(OBJEXT) \
 	OpCode0B04.$(OBJEXT) OpCode0B05.$(OBJEXT) OpCode0B06.$(OBJEXT) \
 	OpCode0B08.$(OBJEXT) OpCode0B0B.$(OBJEXT) OpCode0B0C.$(OBJEXT) \
-	OpCode0B10.$(OBJEXT) OpCode1801.$(OBJEXT) OpCode.$(OBJEXT) \
-	OpenLogReplicator.$(OBJEXT) OracleAnalyzer.$(OBJEXT) \
-	OracleAnalyzerBatch.$(OBJEXT) OracleColumn.$(OBJEXT) \
-	OracleIncarnation.$(OBJEXT) OracleObject.$(OBJEXT) \
-	OutputBuffer.$(OBJEXT) OutputBufferJson.$(OBJEXT) \
-	Reader.$(OBJEXT) ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
+	OpCode0B10.$(OBJEXT) OpCode0B16.$(OBJEXT) OpCode1801.$(OBJEXT) \
+	OpCode.$(OBJEXT) OpenLogReplicator.$(OBJEXT) \
+	OracleAnalyzer.$(OBJEXT) OracleAnalyzerBatch.$(OBJEXT) \
+	OracleColumn.$(OBJEXT) OracleIncarnation.$(OBJEXT) \
+	OracleObject.$(OBJEXT) OutputBuffer.$(OBJEXT) \
+	OutputBufferJson.$(OBJEXT) Reader.$(OBJEXT) \
+	ReaderFilesystem.$(OBJEXT) RedoLog.$(OBJEXT) \
 	RedoLogException.$(OBJEXT) RedoLogRecord.$(OBJEXT) \
 	RowId.$(OBJEXT) RuntimeException.$(OBJEXT) Schema.$(OBJEXT) \
 	SchemaElement.$(OBJEXT) State.$(OBJEXT) StateDisk.$(OBJEXT) \
@@ -289,8 +290,9 @@ am__depfiles_remade = ./$(DEPDIR)/CharacterSet.Po \
 	./$(DEPDIR)/OpCode0B05.Po ./$(DEPDIR)/OpCode0B06.Po \
 	./$(DEPDIR)/OpCode0B08.Po ./$(DEPDIR)/OpCode0B0B.Po \
 	./$(DEPDIR)/OpCode0B0C.Po ./$(DEPDIR)/OpCode0B10.Po \
-	./$(DEPDIR)/OpCode1801.Po ./$(DEPDIR)/OpenLogReplicator.Po \
-	./$(DEPDIR)/OraProtoBuf.pb.Po ./$(DEPDIR)/OracleAnalyzer.Po \
+	./$(DEPDIR)/OpCode0B16.Po ./$(DEPDIR)/OpCode1801.Po \
+	./$(DEPDIR)/OpenLogReplicator.Po ./$(DEPDIR)/OraProtoBuf.pb.Po \
+	./$(DEPDIR)/OracleAnalyzer.Po \
 	./$(DEPDIR)/OracleAnalyzerBatch.Po \
 	./$(DEPDIR)/OracleAnalyzerOnline.Po \
 	./$(DEPDIR)/OracleAnalyzerOnlineASM.Po \
@@ -499,8 +501,8 @@ OpenLogReplicator_SOURCES = CharacterSet16bit.cpp CharacterSet7bit.cpp \
 	OpCode0504.cpp OpCode0506.cpp OpCode050B.cpp OpCode0513.cpp \
 	OpCode0514.cpp OpCode0B02.cpp OpCode0B03.cpp OpCode0B04.cpp \
 	OpCode0B05.cpp OpCode0B06.cpp OpCode0B08.cpp OpCode0B0B.cpp \
-	OpCode0B0C.cpp OpCode0B10.cpp OpCode1801.cpp OpCode.cpp \
-	OpenLogReplicator.cpp OracleAnalyzer.cpp \
+	OpCode0B0C.cpp OpCode0B10.cpp OpCode0B16.cpp OpCode1801.cpp \
+	OpCode.cpp OpenLogReplicator.cpp OracleAnalyzer.cpp \
 	OracleAnalyzerBatch.cpp OracleColumn.cpp OracleIncarnation.cpp \
 	OracleObject.cpp OutputBuffer.cpp OutputBufferJson.cpp \
 	Reader.cpp ReaderFilesystem.cpp RedoLog.cpp \
@@ -653,6 +655,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode0B0B.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode0B0C.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode0B10.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode0B16.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpCode1801.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OpenLogReplicator.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/OraProtoBuf.pb.Po@am__quote@ # am--include-marker
@@ -905,6 +908,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/OpCode0B0B.Po
 	-rm -f ./$(DEPDIR)/OpCode0B0C.Po
 	-rm -f ./$(DEPDIR)/OpCode0B10.Po
+	-rm -f ./$(DEPDIR)/OpCode0B16.Po
 	-rm -f ./$(DEPDIR)/OpCode1801.Po
 	-rm -f ./$(DEPDIR)/OpenLogReplicator.Po
 	-rm -f ./$(DEPDIR)/OraProtoBuf.pb.Po
@@ -1041,6 +1045,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/OpCode0B0B.Po
 	-rm -f ./$(DEPDIR)/OpCode0B0C.Po
 	-rm -f ./$(DEPDIR)/OpCode0B10.Po
+	-rm -f ./$(DEPDIR)/OpCode0B16.Po
 	-rm -f ./$(DEPDIR)/OpCode1801.Po
 	-rm -f ./$(DEPDIR)/OpenLogReplicator.Po
 	-rm -f ./$(DEPDIR)/OraProtoBuf.pb.Po

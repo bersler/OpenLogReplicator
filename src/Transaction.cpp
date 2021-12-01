@@ -261,6 +261,8 @@ namespace OpenLogReplicator {
                     case 0x05010B08:
                     //supp log for update
                     case 0x05010B10:
+                    //Logminer support - KDOCMP
+                    case 0x05010B16:
 
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 

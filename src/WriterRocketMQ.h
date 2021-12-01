@@ -54,6 +54,8 @@ namespace OpenLogReplicator {
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
                 const char *groupId, const char *address, const char *domain, const char *topic, const char *tags, const char *keys);
         virtual ~WriterRocketMQ();
+
+        virtual void initialize(void);
     };
 }
 

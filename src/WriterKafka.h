@@ -55,6 +55,8 @@ namespace OpenLogReplicator {
                 uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
                 const char* brokers, const char* topic, uint64_t maxMessages, uint64_t maxMessageMb, bool enableIdempotence);
         virtual ~WriterKafka();
+
+        virtual void initialize(void);
     };
 }
 

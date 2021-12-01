@@ -36,6 +36,7 @@ namespace OpenLogReplicator {
         DatabaseEnvironment();
         virtual ~DatabaseEnvironment();
 
+        void initialize(void);
         void checkErr(OCIError* errhp, sword status);
     };
 }

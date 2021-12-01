@@ -68,16 +68,11 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_TABSUBPART_OBJ;
         static const char* SQL_GET_SYS_USER;
         static const char* SQL_CHECK_CONNECTION;
-
         bool standby;
-        string user;
-        string password;
-        string connectString;
 
         virtual void positionReader(void);
-        virtual void initialize(void);
+        virtual void loadDatabaseMetadata(void);
         virtual bool checkConnection(void);
-        void closeConnection(void);
         string getParameterValue(const char* parameter);
         string getPropertyValue(const char* property);
         void checkTableForGrants(const char* tableName);

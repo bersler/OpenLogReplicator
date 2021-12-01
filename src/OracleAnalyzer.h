@@ -201,9 +201,10 @@ namespace OpenLogReplicator {
         static void writeSCNLittle(uint8_t* buf, typeSCN val);
         static void writeSCNBig(uint8_t* buf, typeSCN val);
 
+        void initialize(void);
         void setBigEndian(void);
         virtual void positionReader(void);
-        virtual void initialize(void);
+        virtual void loadDatabaseMetadata(void);
         void* run(void);
         virtual Reader* readerCreate(int64_t group);
         void checkOnlineRedoLogs();

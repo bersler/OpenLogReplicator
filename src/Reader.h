@@ -115,6 +115,7 @@ namespace OpenLogReplicator {
         Reader(const char* alias, OracleAnalyzer* oracleAnalyzer, int64_t group);
         virtual ~Reader();
 
+        void initialize(void);
         void* run(void);
         void bufferAllocate(uint64_t num);
         void bufferFree(uint64_t num);

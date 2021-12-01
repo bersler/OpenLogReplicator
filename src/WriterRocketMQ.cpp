@@ -42,6 +42,25 @@ namespace OpenLogReplicator {
         topic(topic),
         tags(tags),
         keys(keys) {
+    }
+
+    WriterRocketMQ::~WriterRocketMQ() {
+        if (message != nullptr) {
+            DestroyMessage(message);
+            message = nullptr;
+        }
+
+        if (producer != nullptr) {
+            int err = ShutdownProducer(producer);
+            DestroyProducer(producer);
+            producer = nullptr;
+
+            INFO("RocketMQ producer exit code: " << dec << err);
+        }
+    }
+
+    void WriterRocketMQ::initialize(void) {
+        Writer::initialize();
 
         staticWriter = this;
         producer = CreateProducer(this->groupId.c_str());
@@ -66,21 +85,6 @@ namespace OpenLogReplicator {
 
         //? SetProducerSendMsgTimeout(producer, 3);
         StartProducer(producer);
-    }
-
-    WriterRocketMQ::~WriterRocketMQ() {
-        if (message != nullptr) {
-            DestroyMessage(message);
-            message = nullptr;
-        }
-
-        if (producer != nullptr) {
-            int err = ShutdownProducer(producer);
-            DestroyProducer(producer);
-            producer = nullptr;
-
-            INFO("RocketMQ producer exit code: " << dec << err);
-        }
     }
 
     void WriterRocketMQ::success_cb(CSendResult result) {
