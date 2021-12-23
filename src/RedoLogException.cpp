@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "RedoLogException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     RedoLogException::~RedoLogException() {
     }
@@ -30,7 +28,7 @@ namespace OpenLogReplicator {
         msg(msg) {
     }
 
-    ostream& operator<<(ostream& os, const RedoLogException& exception) {
+    std::ostream& operator<<(std::ostream& os, const RedoLogException& exception) {
         os << exception.msg;
         return os;
     }

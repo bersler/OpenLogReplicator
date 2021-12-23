@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef WRITERROCKETMQ_H_
 #define WRITERROCKETMQ_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 
@@ -36,17 +34,17 @@ namespace OpenLogReplicator {
     protected:
         CProducer* producer;
         CMessage* message;
-        string groupId;
-        string address;
-        string domain;
-        string topic;
-        string tags;
-        string keys;
+        std::string groupId;
+        std::string address;
+        std::string domain;
+        std::string topic;
+        std::string tags;
+        std::string keys;
 
         static void success_cb(CSendResult result);
         static void exception_cb(CMQException e);
         virtual void sendMessage(OutputBufferMsg* msg);
-        virtual string getName() const;
+        virtual std::string getName() const;
         virtual void pollQueue(void);
 
     public:

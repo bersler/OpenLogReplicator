@@ -26,8 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "StateDisk.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     StateDisk::StateDisk(const char* path) :
         State(),
@@ -37,7 +35,7 @@ namespace OpenLogReplicator {
     StateDisk::~StateDisk() {
     }
 
-    void StateDisk::list(set<string>& namesList) {
+    void StateDisk::list(std::set<std::string>& namesList) {
         DIR* dir;
         if ((dir = opendir(path.c_str())) == nullptr) {
             RUNTIME_FAIL("can't access directory: " << path);
@@ -50,9 +48,9 @@ namespace OpenLogReplicator {
                 continue;
 
             struct stat fileStat;
-            string fileName(ent->d_name);
+            std::string fileName(ent->d_name);
 
-            string fullName(path + "/" + ent->d_name);
+            std::string fullName(path + "/" + ent->d_name);
             if (stat(fullName.c_str(), &fileStat)) {
                 WARNING("reading information for file: " << fullName << " - " << strerror(errno));
                 continue;
@@ -61,18 +59,18 @@ namespace OpenLogReplicator {
             if (S_ISDIR(fileStat.st_mode))
                 continue;
 
-            string suffix(".json");
+            std::string suffix(".json");
             if (fileName.length() < suffix.length() || fileName.substr(fileName.length() - suffix.length(), fileName.length()).compare(suffix) != 0)
                 continue;
 
-            string fileBase(fileName.substr(0, fileName.length() - suffix.length()));
+            std::string fileBase(fileName.substr(0, fileName.length() - suffix.length()));
             namesList.insert(fileBase);
         }
         closedir(dir);
     }
 
-    bool StateDisk::read(string& name, uint64_t maxSize, string& in, bool noFail) {
-        string fileName(path + "/" + name + ".json");
+    bool StateDisk::read(std::string& name, uint64_t maxSize, std::string& in, bool noFail) {
+        std::string fileName(path + "/" + name + ".json");
         struct stat fileStat;
         int ret = stat(fileName.c_str(), &fileStat);
         TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno));
@@ -83,25 +81,25 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("reading information for file: " << fileName << " - " << strerror(errno));
         }
         if (fileStat.st_size > maxSize || fileStat.st_size == 0) {
-            RUNTIME_FAIL("checkpoint file: " << fileName << " wrong size: " << dec << fileStat.st_size);
+            RUNTIME_FAIL("checkpoint file: " << fileName << " wrong size: " << std::dec << fileStat.st_size);
         }
 
-        ifstream inputStream;
-        inputStream.open(fileName.c_str(), ios::in);
+        std::ifstream inputStream;
+        inputStream.open(fileName.c_str(), std::ios::in);
 
         if (!inputStream.is_open()) {
             RUNTIME_FAIL("read error for: " << fileName);
         }
 
-        in.assign((istreambuf_iterator<char>(inputStream)), istreambuf_iterator<char>());
+        in.assign((std::istreambuf_iterator<char>(inputStream)), std::istreambuf_iterator<char>());
         inputStream.close();
         return true;
     }
 
-    void StateDisk::write(string& name, stringstream& out) {
-        string fileName(path + "/" + name + ".json");
-        ofstream outputStream;
-        outputStream.open(fileName.c_str(), ios::out | ios::trunc);
+    void StateDisk::write(std::string& name, std::stringstream& out) {
+        std::string fileName(path + "/" + name + ".json");
+        std::ofstream outputStream;
+        outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
 
         if (!outputStream.is_open()) {
             RUNTIME_FAIL("writing checkpoint data to " << fileName);
@@ -110,8 +108,8 @@ namespace OpenLogReplicator {
         outputStream.close();
     }
 
-    void StateDisk::drop(string& name) {
-        string fileName(path + "/" + name + ".json");
+    void StateDisk::drop(std::string& name) {
+        std::string fileName(path + "/" + name + ".json");
         if (unlink(fileName.c_str()) != 0) {
             WARNING("can't remove file: " << fileName << " - " << strerror(errno));
         }

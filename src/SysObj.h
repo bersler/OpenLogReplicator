@@ -69,8 +69,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 //19.0
 #define SYSOBJ_TYPE_QUEUE               24
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SysObj {
     public:
@@ -85,7 +83,7 @@ namespace OpenLogReplicator {
         typeOBJ obj;
         typeDATAOBJ dataObj;        //NULL
         typeTYPE type;
-        string name;
+        std::string name;
         uintX_t flags;             //NULL
         bool single;
         bool touched;

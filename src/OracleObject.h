@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEOBJECT_H_
 #define ORACLEOBJECT_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleColumn;
 
@@ -39,11 +37,11 @@ namespace OpenLogReplicator {
         typeOPTIONS options;
         typeCOL maxSegCol;
         typeCOL guardSegNo;
-        string owner;
-        string name;
-        vector<OracleColumn*> columns;
-        vector<typeOBJ2> partitions;
-        vector<uint16_t> pk;
+        std::string owner;
+        std::string name;
+        std::vector<OracleColumn*> columns;
+        std::vector<typeOBJ2> partitions;
+        std::vector<uint16_t> pk;
         uint64_t systemTable;
         bool sys;
 
@@ -51,10 +49,10 @@ namespace OpenLogReplicator {
         void addPartition(typeOBJ partitionObj, typeDATAOBJ partitionDataObj);
         void updatePK(void);
 
-        OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, string& owner, string& name);
+        OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, std::string& owner, std::string& name);
         virtual ~OracleObject();
 
-        friend ostream& operator<<(ostream& os, const OracleObject& object);
+        friend std::ostream& operator<<(std::ostream& os, const OracleObject& object);
     };
 }
 

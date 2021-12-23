@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "SchemaElement.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
 
     SchemaElement::SchemaElement(const char* owner, const char* table, typeOPTIONS options) :

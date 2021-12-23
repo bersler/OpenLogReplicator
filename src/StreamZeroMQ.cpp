@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "StreamZeroMQ.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     StreamZeroMQ::StreamZeroMQ(const char* uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
@@ -45,26 +43,26 @@ namespace OpenLogReplicator {
         }
         socket = zmq_socket(context, ZMQ_PAIR);
         if (socket == nullptr) {
-            RUNTIME_FAIL("ZeroMQ initializing socket error (errno: " << dec << errno << ")");
+            RUNTIME_FAIL("ZeroMQ initializing socket error (errno: " << std::dec << errno << ")");
         }
     }
 
-    string StreamZeroMQ::getName(void) const {
+    std::string StreamZeroMQ::getName(void) const {
         return "ZeroMQ:" + uri;
     }
 
-    void StreamZeroMQ::initializeClient(atomic<bool>* shutdown) {
+    void StreamZeroMQ::initializeClient(std::atomic<bool>* shutdown) {
         this->shutdown = shutdown;
 
         if (zmq_connect(socket, uri.c_str()) != 0) {
-            RUNTIME_FAIL("ZeroMQ connect to " << uri << " error (errno: " << dec << errno << ")");
+            RUNTIME_FAIL("ZeroMQ connect to " << uri << " error (errno: " << std::dec << errno << ")");
         }
     }
 
-    void StreamZeroMQ::initializeServer(atomic<bool>* shutdown) {
+    void StreamZeroMQ::initializeServer(std::atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         if (zmq_bind(socket, uri.c_str()) != 0) {
-            RUNTIME_FAIL("ZeroMQ bind to " << uri << " error (errno: " << dec << errno << ")");
+            RUNTIME_FAIL("ZeroMQ bind to " << uri << " error (errno: " << std::dec << errno << ")");
         }
     }
 

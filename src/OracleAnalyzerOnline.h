@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEANALYZERONLINE_H_
 #define ORACLEANALYZERONLINE_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class DatabaseConnection;
     class DatabaseEnvironment;
@@ -31,7 +29,6 @@ namespace OpenLogReplicator {
     class OracleAnalyzerOnline : public OracleAnalyzer {
     protected:
         static const char* SQL_GET_ARCHIVE_LOG_LIST;
-        static const char* SQL_GET_ARCHIVE_LOG_LIST_ACTIVATION;
         static const char* SQL_GET_DATABASE_INFORMATION;
         static const char* SQL_GET_DATABASE_INCARNATION;
         static const char* SQL_GET_DATABASE_ROLE;
@@ -73,15 +70,15 @@ namespace OpenLogReplicator {
         virtual void positionReader(void);
         virtual void loadDatabaseMetadata(void);
         virtual bool checkConnection(void);
-        string getParameterValue(const char* parameter);
-        string getPropertyValue(const char* property);
+        std::string getParameterValue(const char* parameter);
+        std::string getPropertyValue(const char* property);
         void checkTableForGrants(const char* tableName);
         void checkTableForGrantsFlashback(const char* tableName, typeSCN scn);
         virtual const char* getModeName(void) const;
         virtual void createSchema(void);
         void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
-        void readSystemDictionaries(string& owner, string& table, typeOPTIONS options);
-        void createSchemaForTable(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options);
+        void readSystemDictionaries(std::string& owner, std::string& table, typeOPTIONS options);
+        void createSchemaForTable(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOPTIONS options);
         virtual void updateOnlineRedoLogData(void);
 
     public:

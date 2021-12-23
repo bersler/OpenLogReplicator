@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHT16HKSCS31_b2_min     0x40
 #define ZHT16HKSCS31_b2_max     0xFE
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetZHT16HKSCS31 : public CharacterSet16bit {
     protected:

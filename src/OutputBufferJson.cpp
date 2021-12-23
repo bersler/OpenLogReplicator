@@ -73,13 +73,13 @@ namespace OpenLogReplicator {
         if (object != nullptr)
             outputBufferAppend(object->columns[col]->name);
         else {
-            string columnName("COL_" + to_string(col));
+            std::string columnName("COL_" + std::to_string(col));
             outputBufferAppend(columnName);
         }
         outputBufferAppend("\":null");
     }
 
-    void OutputBufferJson::columnFloat(string& columnName, float value) {
+    void OutputBufferJson::columnFloat(std::string& columnName, float value) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -89,11 +89,11 @@ namespace OpenLogReplicator {
         outputBufferAppend(columnName);
         outputBufferAppend("\":");
 
-        string valString(to_string(value));
+        std::string valString(std::to_string(value));
         outputBufferAppend(valString);
     }
 
-    void OutputBufferJson::columnDouble(string& columnName, double value) {
+    void OutputBufferJson::columnDouble(std::string& columnName, double value) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -103,11 +103,11 @@ namespace OpenLogReplicator {
         outputBufferAppend(columnName);
         outputBufferAppend("\":");
 
-        string valString(to_string(value));
+        std::string valString(std::to_string(value));
         outputBufferAppend(valString);
     }
 
-    void OutputBufferJson::columnString(string& columnName) {
+    void OutputBufferJson::columnString(std::string& columnName) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -120,7 +120,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::columnNumber(string& columnName, uint64_t precision, uint64_t scale) {
+    void OutputBufferJson::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -132,7 +132,7 @@ namespace OpenLogReplicator {
         outputBufferAppend(valueBuffer, valueLength);
     }
 
-    void OutputBufferJson::columnRaw(string& columnName, const uint8_t* data, uint64_t length) {
+    void OutputBufferJson::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -146,7 +146,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('"');
     }
 
-    void OutputBufferJson::columnTimestamp(string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+    void OutputBufferJson::columnTimestamp(std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
             outputBufferAppend(',');
         else
@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
     void OutputBufferJson::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
             outputBufferAppend("\"schema\":{\"table\":\"");
-            string objectName("OBJ_" + to_string(dataObj));
+            std::string objectName("OBJ_" + std::to_string(dataObj));
             outputBufferAppend(objectName);
             outputBufferAppend('"}');
             return;

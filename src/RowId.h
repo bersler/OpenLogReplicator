@@ -23,8 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ROWID_H_
 #define ROWID_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class RowId {
     public:
@@ -42,7 +40,7 @@ namespace OpenLogReplicator {
         bool operator!=(const RowId& other) const;
         bool operator==(const RowId& other) const;
         void toString(char* str) const;
-        friend ostream& operator<<(ostream& os, const RowId& tran);
+        friend std::ostream& operator<<(std::ostream& os, const RowId& tran);
     };
 }
 

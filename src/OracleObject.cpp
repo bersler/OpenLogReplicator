@@ -21,10 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, string& owner, string& name) :
+    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, std::string& owner, std::string& name) :
         obj(obj),
         dataObj(dataObj),
         user(user),
@@ -75,13 +73,13 @@ namespace OpenLogReplicator {
 
     void OracleObject::addColumn(OracleColumn* column) {
         if (column->segColNo != columns.size() + 1) {
-            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJ: " << dec << obj << ", DATAOBJ: " << dec << dataObj <<
-                ") column: " << column->name << " (COL#: " << dec << column->colNo << ", SEGCOL#: " << dec << column->segColNo <<
+            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJ: " << std::dec << obj << ", DATAOBJ: " << std::dec << dataObj <<
+                ") column: " << column->name << " (COL#: " << std::dec << column->colNo << ", SEGCOL#: " << std::dec << column->segColNo <<
                 ") on position " << (columns.size() + 1));
         }
 
         if (column->segColNo > 1000) {
-            CONFIG_FAIL("invalid segColNo value (" << dec << column->segColNo << "), metadata error");
+            CONFIG_FAIL("invalid segColNo value (" << std::dec << column->segColNo << "), metadata error");
         }
 
         if (column->guard)
@@ -104,11 +102,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    ostream& operator<<(ostream& os, const OracleObject& object) {
-        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << dec << object.obj << ", " <<
-                object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << endl;
+    std::ostream& operator<<(std::ostream& os, const OracleObject& object) {
+        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << std::dec << object.obj << ", " <<
+                object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << std::endl;
         for (OracleColumn* column : object.columns)
-            os << "     - " << *column << endl;
+            os << "     - " << *column << std::endl;
         return os;
     }
 }

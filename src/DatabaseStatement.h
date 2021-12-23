@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef DATABASESTATEMENT_H_
 #define DATABASESTATEMENT_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class DatabaseConnection;
 
@@ -35,8 +33,8 @@ namespace OpenLogReplicator {
         DatabaseConnection* conn;
         bool isExecuted;
         OCIStmt* stmthp;
-        vector<OCIBind*> binds;
-        vector<OCIDefine*> defines;
+        std::vector<OCIBind*> binds;
+        std::vector<OCIDefine*> defines;
 
     public:
         DatabaseStatement(DatabaseConnection* conn);
@@ -48,7 +46,7 @@ namespace OpenLogReplicator {
         int64_t next(void);
 
         void bindString(uint64_t col, const char* val);
-        void bindString(uint64_t col, string& val);
+        void bindString(uint64_t col, std::string& val);
         void bindInt32(uint64_t col, int32_t& val);
         void bindUInt32(uint64_t col, uint32_t& val);
         void bindInt64(uint64_t col, int64_t& val);

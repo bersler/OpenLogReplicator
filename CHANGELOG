@@ -1,3 +1,7 @@
+0.9.37-beta
+- code cleanup - removed default namespaces
+- fixed bug: reading failed when switch to standby was run
+
 0.9.36-beta
 - fixed Kafka compilation errors
 - fixed Protobuf compilation errors

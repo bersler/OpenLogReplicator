@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "StateRedis.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     StateRedis::StateRedis(const char* server, uint16_t port) :
         State(),
@@ -49,19 +47,19 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StateRedis::list(set<string>& namesList) {
+    void StateRedis::list(std::set<std::string>& namesList) {
 
     }
 
-    bool StateRedis::read(string& name, uint64_t maxSize, string& in, bool noFail) {
+    bool StateRedis::read(std::string& name, uint64_t maxSize, std::string& in, bool noFail) {
         return true;
     }
 
-    void StateRedis::write(string& name, stringstream& out) {
+    void StateRedis::write(std::string& name, std::stringstream& out) {
 
     }
 
-    void StateRedis::drop(string& name) {
+    void StateRedis::drop(std::string& name) {
 
     }
 }

@@ -20,8 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseEnvironment.h"
 #include "RuntimeException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     DatabaseEnvironment::DatabaseEnvironment() :
         envhp(nullptr) {
@@ -85,7 +83,7 @@ namespace OpenLogReplicator {
                     errbuf2[len - 1] = 0;
 
                 if (errcode != 100) {
-                    RUNTIME_FAIL("OCI ERROR: [" << errbuf1 << "]" << endl << "[" << errbuf2 << "]");
+                    RUNTIME_FAIL("OCI ERROR: [" << errbuf1 << "]" << std::endl << "[" << errbuf2 << "]");
                 } else {
                     RUNTIME_FAIL("OCI ERROR: [" << errbuf1 << "]");
                 };

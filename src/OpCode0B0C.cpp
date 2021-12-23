@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0B0C::OpCode0B0C(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -49,7 +47,7 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                 for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                    oracleAnalyzer->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
+                    oracleAnalyzer->dumpStream << "slot[" << i << "]: " << std::dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << std::endl;
             }
         }
     }

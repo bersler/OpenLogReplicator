@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         bool updateObj(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
         bool updatePart(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
         bool updateUser(typeUSER& val, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateString(string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId);
+        bool updateString(std::string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId);
         void toRemove(typeOBJ obj);
         void toAdd(typeOBJ obj);
 

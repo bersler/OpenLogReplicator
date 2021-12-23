@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define JA16SJIS_b2_min     0x40
 #define JA16SJIS_b2_max     0xFC
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetJA16SJIS : public CharacterSet16bit {
     protected:

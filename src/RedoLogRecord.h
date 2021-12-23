@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOGRECORD_H_
 #define REDOLOGRECORD_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 
@@ -98,8 +96,8 @@ namespace OpenLogReplicator {
         uint64_t suppLogLenDelta;
         uint64_t opFlags;
 
-        void dumpHex(ostream& str, OracleAnalyzer* oracleAnalyzer) const;
-        friend ostream& operator<<(ostream& os, const RedoLogRecord& redo);
+        void dumpHex(std::ostream& str, OracleAnalyzer* oracleAnalyzer) const;
+        friend std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo);
     };
 }
 

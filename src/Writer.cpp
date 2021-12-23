@@ -29,9 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "State.h"
 #include "Writer.h"
 
-using namespace std;
-using namespace rapidjson;
-
 namespace OpenLogReplicator {
     Writer::Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUs,
             uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
@@ -172,7 +169,7 @@ namespace OpenLogReplicator {
 
         OutputBufferQueue* tmpFirstBuffer = nullptr;
         {
-            unique_lock<mutex> lck(outputBuffer->mtx);
+            std::unique_lock<std::mutex> lck(outputBuffer->mtx);
             tmpFirstBuffer = outputBuffer->firstBuffer;
             while (outputBuffer->firstBuffer->id < maxId) {
                 outputBuffer->firstBuffer = outputBuffer->firstBuffer->next;
@@ -187,14 +184,14 @@ namespace OpenLogReplicator {
                 tmpFirstBuffer = nextBuffer;
             }
             {
-                unique_lock<mutex> lck(oracleAnalyzer->mtx);
+                std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
                 oracleAnalyzer->memoryCond.notify_all();
             }
         }
     }
 
     void* Writer::run(void) {
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << hex << this_thread::get_id() << ") START");
+        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") START");
 
         INFO("writer is starting: " << getName());
 
@@ -221,7 +218,7 @@ namespace OpenLogReplicator {
                             writeCheckpoint(false);
 
                             {
-                                unique_lock<mutex> lck(outputBuffer->mtx);
+                                std::unique_lock<std::mutex> lck(outputBuffer->mtx);
 
                                 //next buffer
                                 if (curBuffer->length == curLength && curBuffer->next != nullptr) {
@@ -242,13 +239,13 @@ namespace OpenLogReplicator {
                                 oracleAnalyzer->memoryCond.notify_all();
 
                                 if (tmpQueueSize > 0) {
-                                    outputBuffer->writersCond.wait_for(lck, chrono::nanoseconds(pollIntervalUs));
+                                    outputBuffer->writersCond.wait_for(lck, std::chrono::nanoseconds(pollIntervalUs));
                                 } else {
                                     if (stop) {
                                         INFO("writer flushed, shutting down");
                                         doShutdown();
                                     } else {
-                                        outputBuffer->writersCond.wait_for(lck, chrono::seconds(5));
+                                        outputBuffer->writersCond.wait_for(lck, std::chrono::seconds(5));
                                     }
                                 }
                             }
@@ -266,7 +263,7 @@ namespace OpenLogReplicator {
                             //queue is full
                             pollQueue();
                             while (tmpQueueSize >= queueSize && !shutdown) {
-                                DEBUG("output queue is full (" << dec << tmpQueueSize << " elements), sleeping " << dec << pollIntervalUs << "us");
+                                DEBUG("output queue is full (" << std::dec << tmpQueueSize << " elements), sleeping " << std::dec << pollIntervalUs << "us");
                                 usleep(pollIntervalUs);
                                 pollQueue();
                             }
@@ -289,7 +286,7 @@ namespace OpenLogReplicator {
                             } else {
                                 msg->data = (uint8_t*)malloc(msg->length);
                                 if (msg->data == nullptr) {
-                                    RUNTIME_FAIL("couldn't allocate " << dec << msg->length << " bytes memory (for: temporary buffer for JSON message)");
+                                    RUNTIME_FAIL("couldn't allocate " << std::dec << msg->length << " bytes memory (for: temporary buffer for JSON message)");
                                 }
                                 msg->flags |= OUTPUT_BUFFER_ALLOCATED;
 
@@ -332,9 +329,9 @@ namespace OpenLogReplicator {
             stopMain();
         }
 
-        INFO("writer is stopping: " << getName() << ", max queue size: " << dec << maxQueueSize);
+        INFO("writer is stopping: " << getName() << ", max queue size: " << std::dec << maxQueueSize);
 
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << hex << this_thread::get_id() << ") STOP");
+        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") STOP");
         return 0;
     }
 
@@ -349,14 +346,14 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < checkpointIntervalS && !force)
             return;
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << std::dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
 
-        string jsonName(oracleAnalyzer->database + "-chkpt");
-        stringstream ss;
+        std::string jsonName(oracleAnalyzer->database + "-chkpt");
+        std::stringstream ss;
         ss << "{\"database\":\"" << oracleAnalyzer->database
-                << "\",\"scn\":" << dec << confirmedScn
-                << ",\"resetlogs\":" << dec << oracleAnalyzer->resetlogs
-                << ",\"activation\":" << dec << oracleAnalyzer->activation << "}";
+                << "\",\"scn\":" << std::dec << confirmedScn
+                << ",\"resetlogs\":" << std::dec << oracleAnalyzer->resetlogs
+                << ",\"activation\":" << std::dec << oracleAnalyzer->activation << "}";
         oracleAnalyzer->state->write(jsonName, ss);
 
         oracleAnalyzer->checkpointScn = confirmedScn;
@@ -364,11 +361,11 @@ namespace OpenLogReplicator {
     }
 
     void Writer::readCheckpoint(void) {
-        ifstream infile;
-        string jsonName(oracleAnalyzer->database + "-chkpt");
+        std::ifstream infile;
+        std::string jsonName(oracleAnalyzer->database + "-chkpt");
 
-        string checkpointJSON;
-        Document document;
+        std::string checkpointJSON;
+        rapidjson::Document document;
         if (!oracleAnalyzer->state->read(jsonName, CHECKPOINT_FILE_MAX_SIZE, checkpointJSON, true)) {
             startReader();
             return;
@@ -392,7 +389,7 @@ namespace OpenLogReplicator {
         startSequence = ZERO_SEQ;
         startTime.clear();
         startTimeRel = 0;
-        INFO("checkpoint - reading scn: " << dec << startScn);
+        INFO("checkpoint - reading scn: " << std::dec << startScn);
 
         startReader();
     }
@@ -408,7 +405,7 @@ namespace OpenLogReplicator {
 
         DEBUG("attempt to start analyzer");
         if (oracleAnalyzer->firstScn == ZERO_SCN && !shutdown) {
-            unique_lock<mutex> lck(oracleAnalyzer->mtx);
+            std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
             oracleAnalyzer->writerCond.notify_all();
             outputBuffer->writersCond.wait(lck);
         }

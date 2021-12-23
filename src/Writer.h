@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef WRITER_H_
 #define WRITER_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
     class OutputBuffer;
@@ -45,13 +43,13 @@ namespace OpenLogReplicator {
         typeSCN confirmedScn;
         typeSCN startScn;
         typeSEQ startSequence;
-        string startTime;
+        std::string startTime;
         int64_t startTimeRel;
         bool streaming;
 
         void createMessage(OutputBufferMsg* msg);
         virtual void sendMessage(OutputBufferMsg* msg) = 0;
-        virtual string getName(void) const = 0;
+        virtual std::string getName(void) const = 0;
         virtual void pollQueue(void) = 0;
         virtual void* run(void);
         virtual void writeCheckpoint(bool force);

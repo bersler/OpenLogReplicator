@@ -206,26 +206,26 @@ typedef uint64_t typeunicode;
 #define SLT(__xid)                              ((typeSLT)(((((uint64_t)(__xid))>>32)&0xFFFF)))
 #define SQN(__xid)                              ((typeSQN)(((__xid)&0xFFFFFFFF)))
 #define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
-#define PRINTXID(__xid)                         "0x"<<setfill('0')<<setw(4)<<hex<<USN(__xid)<<"."<<setw(3)<<(uint64_t)SLT(__xid)<<"."<<setw(8)<<SQN(__xid)
+#define PRINTXID(__xid)                         "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<USN(__xid)<<"."<<std::setw(3)<<(uint64_t)SLT(__xid)<<"."<<std::setw(8)<<SQN(__xid)
 
 #define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
 #define RECORD(__uba)                           ((uint8_t)((((uint64_t)(__uba))>>48)&0xFF))
-#define PRINTUBA(__uba)                         "0x"<<setfill('0')<<setw(8)<<hex<<BLOCK(__uba)<<"."<<setfill('0')<<setw(4)<<hex<<SEQUENCE(__uba)<<"."<<setfill('0')<<setw(2)<<hex<<(uint32_t)RECORD(__uba)
+#define PRINTUBA(__uba)                         "0x"<<std::setfill('0')<<std::setw(8)<<std::hex<<BLOCK(__uba)<<"."<<std::setfill('0')<<std::setw(4)<<std::hex<<SEQUENCE(__uba)<<"."<<std::setfill('0')<<std::setw(2)<<std::hex<<(uint32_t)RECORD(__uba)
 
 #define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
-#define PRINTSCN48(__scn)                       "0x"<<setfill('0')<<setw(4)<<hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<setw(8)<<((__scn)&0xFFFFFFFF)
-#define PRINTSCN64(__scn)                       "0x"<<setfill('0')<<setw(16)<<hex<<(__scn)
+#define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
+#define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
 
-#define ERROR(__x)                              {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); } }
-#define WARNING(__x)                            {if (trace >= TRACE_WARNING) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [WARNING] " << __x << endl; cerr << __s.str();} }
-#define INFO(__x)                               {if (trace >= TRACE_INFO) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [INFO] " << __x << endl; cerr << __s.str();} }
-#define DEBUG(__x)                              {if (trace >= TRACE_DEBUG) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [DEBUG] " << __x << endl; cerr << __s.str();} }
-#define TRACE(__t,__x)                          {if ((trace2 & (__t)) != 0) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [TRACE] " << __x << endl; cerr << __s.str();} }
-#define CONFIG_FAIL(__x)                        {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw ConfigurationException("error");}
-#define NETWORK_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw NetworkException("error");}
-#define REDOLOG_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RedoLogException("error");}
-#define RUNTIME_FAIL(__x)                       {if (trace >= TRACE_ERROR) {stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << endl; cerr << __s.str(); }; throw RuntimeException("error");}
+#define ERROR(__x)                              {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); } }
+#define WARNING(__x)                            {if (OpenLogReplicator::trace >= TRACE_WARNING) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [WARNING] " << __x << std::endl; std::cerr << __s.str();} }
+#define INFO(__x)                               {if (OpenLogReplicator::trace >= TRACE_INFO) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [INFO] " << __x << std::endl; std::cerr << __s.str();} }
+#define DEBUG(__x)                              {if (OpenLogReplicator::trace >= TRACE_DEBUG) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [DEBUG] " << __x << std::endl; std::cerr << __s.str();} }
+#define TRACE(__t,__x)                          {if ((OpenLogReplicator::trace2 & (__t)) != 0) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [TRACE] " << __x << std::endl; std::cerr << __s.str();} }
+#define CONFIG_FAIL(__x)                        {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::ConfigurationException("error");}
+#define NETWORK_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::NetworkException("error");}
+#define REDOLOG_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::RedoLogException("error");}
+#define RUNTIME_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::RuntimeException("error");}
 
 #define TYPEINTXLEN                             2
 #define TYPEINTXDIGITS                          77
@@ -307,8 +307,6 @@ typedef uint64_t typeunicode;
 #define VPARAMETER_LENGTH       4000
 #define VPROPERTY_LENGTH        4000
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 
@@ -328,7 +326,7 @@ namespace OpenLogReplicator {
         uintX_t& operator+=(const uintX_t& val);
         uintX_t& operator=(const uintX_t& val);
         uintX_t& operator=(uint64_t val);
-        uintX_t& operator=(const string& val);
+        uintX_t& operator=(const std::string& val);
         uintX_t& operator=(const char* val);
         uintX_t& set(uint64_t val1, uint64_t val2);
         uintX_t& setStr(const char* val, uint64_t length);
@@ -336,7 +334,7 @@ namespace OpenLogReplicator {
         bool isSet64(uint64_t mask);
         bool isZero();
 
-        friend ostream& operator<<(ostream& os, const uintX_t& val);
+        friend std::ostream& operator<<(std::ostream& os, const uintX_t& val);
     };
 
     class typeTIME {
@@ -405,7 +403,7 @@ namespace OpenLogReplicator {
             //YYYY-MM-DDThh:mm:ssZ
         }
 
-        friend ostream& operator<<(ostream& os, const typeTIME& time_) {
+        friend std::ostream& operator<<(std::ostream& os, const typeTIME& time_) {
             uint64_t rest = time_.val;
             uint64_t ss = rest % 60; rest /= 60;
             uint64_t mi = rest % 60; rest /= 60;
@@ -413,8 +411,11 @@ namespace OpenLogReplicator {
             uint64_t dd = (rest % 31) + 1; rest /= 31;
             uint64_t mm = (rest % 12) + 1; rest /= 12;
             uint64_t yy = rest + 1988;
-            os << setfill('0') << setw(2) << dec << mm << "/" << setfill('0') << setw(2) << dec << dd << "/" << yy << " " <<
-                    setfill('0') << setw(2) << dec << hh << ":" << setfill('0') << setw(2) << dec << mi << ":" << setfill('0') << setw(2) << dec << ss;
+            os << std::setfill('0') << std::setw(2) << std::dec << mm << "/" <<
+                    std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<
+                    yy << " " << std::setfill('0') << std::setw(2) << std::dec << hh << ":" <<
+                    std::setfill('0') << std::setw(2) << std::dec << mi << ":" <<
+                    std::setfill('0') << std::setw(2) << std::dec << ss;
             return os;
             //0123456789012345678
             //DDDDDDDDDD HHHHHHHH

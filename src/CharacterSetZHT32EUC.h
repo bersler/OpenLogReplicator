@@ -35,8 +35,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHT32EUC_4_b4_min    0xA1
 #define ZHT32EUC_4_b4_max    0xFE
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetZHT32EUC : public CharacterSet {
     protected:

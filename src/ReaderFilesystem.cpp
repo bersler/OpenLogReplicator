@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "ReaderFilesystem.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     ReaderFilesystem::ReaderFilesystem(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t group) :
         Reader(alias, oracleAnalyzer, group),
@@ -64,10 +62,10 @@ namespace OpenLogReplicator {
             flags |= O_NOATIME;
 
         fileDes = open(fileName.c_str(), flags);
-        TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << dec << fileDes << ", errno = " << errno);
+        TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << std::dec << fileDes << ", errno = " << errno);
 
         if (fileDes == -1) {
-            ERROR("opening file returned: " << dec << fileName << " - " << strerror(errno));
+            ERROR("opening file returned: " << std::dec << fileName << " - " << strerror(errno));
             return REDO_ERROR;
         }
 
@@ -83,7 +81,7 @@ namespace OpenLogReplicator {
 
         while (tries > 0 && !shutdown) {
             bytes = pread(fileDes, buf, size, offset);
-            TRACE(TRACE2_FILE, "FILE: read " << fileName << ", " << dec << offset << ", " << dec << size << " returns " << dec << bytes);
+            TRACE(TRACE2_FILE, "FILE: read " << fileName << ", " << std::dec << offset << ", " << std::dec << size << " returns " << std::dec << bytes);
 
             if (bytes > 0)
                 break;
@@ -92,14 +90,14 @@ namespace OpenLogReplicator {
             if (bytes == -1 && errno != ENOTCONN)
                 break;
 
-            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << dec << oracleAnalyzer->archReadSleepUs << " us");
+            ERROR("reading file: " << fileName << " - " << strerror(errno) << " - sleeping " << std::dec << oracleAnalyzer->archReadSleepUs << " us");
             usleep(oracleAnalyzer->archReadSleepUs);
             --tries;
         }
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
-            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << dec << REDO_FLAGS_DIRECT);
+            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << std::dec << REDO_FLAGS_DIRECT);
         }
 
         if ((trace2 & TRACE2_PERFORMANCE) != 0) {

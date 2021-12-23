@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSet::CharacterSet(const char* name) :
         name(name) {
@@ -30,47 +28,47 @@ namespace OpenLogReplicator {
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte3 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte3 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte4 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte3 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte4 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte5 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte5 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 
     uint64_t CharacterSet::badChar(uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5, uint64_t byte6) const {
-        ERROR("can't decode character: 0x" << setfill('0') << setw(2) << hex << byte1 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte2 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte3 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte4 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte5 <<
-                ",0x" << setfill('0') << setw(2) << hex << byte6 << " in character set " << name);
+        ERROR("can't decode character: 0x" << std::setfill('0') << std::setw(2) << std::hex << byte1 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte2 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte3 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte4 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte5 <<
+                ",0x" << std::setfill('0') << std::setw(2) << std::hex << byte6 << " in character set " << name);
         return UNICODE_UNKNOWN_CHARACTER;
     }
 }

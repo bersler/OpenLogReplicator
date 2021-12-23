@@ -23,8 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OUTPUTBUFFERJSON_H_
 #define OUTPUTBUFFERJSON_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OutputBufferJson : public OutputBuffer {
     protected:
@@ -32,12 +30,12 @@ namespace OpenLogReplicator {
         bool hasPreviousRedo;
         bool hasPreviousColumn;
         virtual void columnNull(OracleObject* object, typeCOL col);
-        virtual void columnFloat(string& columnName, float value);
-        virtual void columnDouble(string& columnName, double value);
-        virtual void columnString(string& columnName);
-        virtual void columnNumber(string& columnName, uint64_t precision, uint64_t scale);
-        virtual void columnRaw(string& columnName, const uint8_t* data, uint64_t length);
-        virtual void columnTimestamp(string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz);
+        virtual void columnFloat(std::string& columnName, float value);
+        virtual void columnDouble(std::string& columnName, double value);
+        virtual void columnString(std::string& columnName);
+        virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale);
+        virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length);
+        virtual void columnTimestamp(std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz);
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
         virtual void appendHeader(bool first, bool showXid);
         virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);

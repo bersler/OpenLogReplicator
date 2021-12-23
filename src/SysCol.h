@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYSCOL_ROWID_LENGTH     18
 #define SYSCOL_NAME_LENGTH      128
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SysColSeg {
     public:
@@ -67,7 +65,7 @@ namespace OpenLogReplicator {
         typeCOL col;
         typeCOL segCol;
         typeCOL intCol;
-        string name;
+        std::string name;
         typeTYPE type;
         uint64_t length;
         int64_t precision;          //NULL

@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Stream.h"
 #include "WriterStream.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     WriterStream::WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, Stream* stream) :
@@ -49,7 +47,7 @@ namespace OpenLogReplicator {
         stream->initializeServer(&shutdown);
     }
 
-    string WriterStream::getName(void) const {
+    std::string WriterStream::getName(void) const {
         return stream->getName();
     }
 
@@ -67,7 +65,7 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->firstScn != ZERO_SCN)
-            DEBUG("client requested scn: " << dec << startScn);
+            DEBUG("client requested scn: " << std::dec << startScn);
     }
 
     void WriterStream::processInfo(void) {
@@ -150,7 +148,7 @@ namespace OpenLogReplicator {
 
     void WriterStream::pollQueue(void) {
         uint8_t msgR[READ_NETWORK_BUFFER];
-        string msgS;
+        std::string msgS;
 
         int64_t length = stream->receiveMessageNB(msgR, READ_NETWORK_BUFFER);
 
@@ -209,17 +207,17 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                stringstream ss;
-                ss << "request data[" << dec << length << "]: ";
+                std::stringstream ss;
+                ss << "request data[" << std::dec << length << "]: ";
                 for (uint64_t i = 0; i < length; ++i)
-                    ss << hex  << setw(2) << setfill('0') << (uint64_t)msgR[i] << " ";
+                    ss << std::hex  << std::setw(2) << std::setfill('0') << (uint64_t)msgR[i] << " ";
                 WARNING(ss.str());
             }
 
         } else if (length == 0) {
             //no request
         } else if (errno != EAGAIN) {
-            RUNTIME_FAIL("socket error: (ret: " << dec << length << " errno: " << errno << ")");
+            RUNTIME_FAIL("socket error: (ret: " << std::dec << length << " errno: " << errno << ")");
         }
     }
 

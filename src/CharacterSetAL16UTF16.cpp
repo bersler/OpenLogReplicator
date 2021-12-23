@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetAL16UTF16.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetAL16UTF16::CharacterSetAL16UTF16() :
         CharacterSet("AL16UTF16") {

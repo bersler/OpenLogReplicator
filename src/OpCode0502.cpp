@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0502::OpCode0502(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -50,7 +48,7 @@ namespace OpenLogReplicator {
         }
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
-            oracleAnalyzer->dumpStream << endl;
+            oracleAnalyzer->dumpStream << std::endl;
             return;
         }
         //field: 2/3
@@ -59,7 +57,7 @@ namespace OpenLogReplicator {
 
     void OpCode0502::kteop(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 36) {
-            oracleAnalyzer->dumpStream << "too short field kteop: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field kteop: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -73,23 +71,23 @@ namespace OpenLogReplicator {
             typeBLK mapblk = 0; //FIXME
             uint16_t offset = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
 
-            oracleAnalyzer->dumpStream << "kteop redo - redo operation on extent map" << endl;
+            oracleAnalyzer->dumpStream << "kteop redo - redo operation on extent map" << std::endl;
             oracleAnalyzer->dumpStream << "   SETHWM:      " <<
-                    " Highwater::  0x" << setfill('0') << setw(8) << hex << highwater << " " <<
-                    " ext#: " << setfill(' ') << setw(6) << left << dec << ext <<
-                    " blk#: " << setfill(' ') << setw(6) << left << dec << blk <<
-                    " ext size: " << setfill(' ') << setw(6) << left << dec << extSize << endl;
-            oracleAnalyzer->dumpStream << "  #blocks in seg. hdr's freelists: " << dec << blocksFreelist << "     " << endl;
-            oracleAnalyzer->dumpStream << "  #blocks below: " << setfill(' ') << setw(6) << left << dec << blocksBelow << endl;
-            oracleAnalyzer->dumpStream << "  mapblk  0x" << setfill('0') << setw(8) << hex << mapblk << " " <<
-                    " offset: " << setfill(' ') << setw(6) << left << dec << offset << endl;
-            oracleAnalyzer->dumpStream << right;
+                    " Highwater::  0x" << std::setfill('0') << std::setw(8) << std::hex << highwater << " " <<
+                    " ext#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << ext <<
+                    " blk#: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blk <<
+                    " ext size: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << extSize << std::endl;
+            oracleAnalyzer->dumpStream << "  #blocks in seg. hdr's freelists: " << std::dec << blocksFreelist << "     " << std::endl;
+            oracleAnalyzer->dumpStream << "  #blocks below: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << blocksBelow << std::endl;
+            oracleAnalyzer->dumpStream << "  mapblk  0x" << std::setfill('0') << std::setw(8) << std::hex << mapblk << " " <<
+                    " offset: " << std::setfill(' ') << std::setw(6) << std::left << std::dec << offset << std::endl;
+            oracleAnalyzer->dumpStream << std::right;
         }
     }
 
     void OpCode0502::ktudh(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
-            oracleAnalyzer->dumpStream << "too short field ktudh: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field ktudh: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -108,11 +106,11 @@ namespace OpenLogReplicator {
                     oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 28));
 
             oracleAnalyzer->dumpStream << "ktudh redo:" <<
-                    " slt: 0x" << setfill('0') << setw(4) << hex << (uint64_t)SLT(redoLogRecord->xid) <<
-                    " sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
-                    " flg: 0x" << setfill('0') << setw(4) << redoLogRecord->flg <<
-                    " siz: " << dec << siz <<
-                    " fbi: " << dec << (uint64_t)fbi << endl;
+                    " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)SLT(redoLogRecord->xid) <<
+                    " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << SQN(redoLogRecord->xid) <<
+                    " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
+                    " siz: " << std::dec << siz <<
+                    " fbi: " << std::dec << (uint64_t)fbi << std::endl;
             if (oracleAnalyzer->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 oracleAnalyzer->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
@@ -122,18 +120,18 @@ namespace OpenLogReplicator {
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
             if (oracleAnalyzer->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
-                oracleAnalyzer->dumpStream << endl;
+                oracleAnalyzer->dumpStream << std::endl;
         }
     }
 
     void OpCode0502::pdb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            oracleAnalyzer->dumpStream << "too short field pdb: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field pdb: " << std::dec << fieldLength << std::endl;
             return;
         }
         redoLogRecord->pdbId = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 0);
 
         oracleAnalyzer->dumpStream << "       " <<
-            " pdbid:" << dec << redoLogRecord->pdbId << endl;
+            " pdbid:" << std::dec << redoLogRecord->pdbId << std::endl;
     }
 }

@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <map>
+#include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -28,8 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #ifndef OUTPUTBUFFER_H_
 #define OUTPUTBUFFER_H_
-
-using namespace std;
 
 namespace OpenLogReplicator {
     class CharacterSet;
@@ -78,8 +77,8 @@ namespace OpenLogReplicator {
         uint64_t flushBuffer;
         char valueBuffer[MAX_FIELD_LENGTH];
         uint64_t valueLength;
-        unordered_map<uint16_t, const char*> timeZoneMap;
-        unordered_set<OracleObject*> objects;
+        std::unordered_map<uint16_t, const char*> timeZoneMap;
+        std::unordered_set<OracleObject*> objects;
         typeTIME lastTime;
         typeSCN lastScn;
         typeSEQ lastSequence;
@@ -128,11 +127,11 @@ namespace OpenLogReplicator {
 
         void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {
             if ((trace2 & TRACE2_DML) != 0) {
-                stringstream strStr;
-                strStr << "DML: value: " << dec << type << "/" << column << "/" << dec << length << "/" <<
-                        setfill('0') << setw(2) << hex << (uint64_t)fb << " to: ";
+                std::stringstream strStr;
+                strStr << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" <<
+                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fb << " to: ";
                 for (uint64_t i = 0; i < length && i < 10; ++i) {
-                    strStr << "0x" << setfill('0') << setw(2) << hex << (uint64_t)data[i] << ", ";
+                    strStr << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[i] << ", ";
                 }
                 TRACE(TRACE2_DML, strStr.str());
             }
@@ -214,7 +213,7 @@ namespace OpenLogReplicator {
 
             if (force || flushBuffer == 0 || unconfirmedLength > flushBuffer) {
                 {
-                    unique_lock<mutex> lck(mtx);
+                    std::unique_lock<std::mutex> lck(mtx);
                     writersCond.notify_all();
                 }
                 unconfirmedLength = 0;
@@ -241,22 +240,22 @@ namespace OpenLogReplicator {
             }
         };
 
-        void outputBufferAppend(string& str) {
+        void outputBufferAppend(std::string& str) {
             const char* charstr = str.c_str();
             uint64_t length = str.length();
             for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(*charstr++);
         };
 
-        void columnUnknown(string& columnName, const uint8_t* data, uint64_t length) {
+        void columnUnknown(std::string& columnName, const uint8_t* data, uint64_t length) {
             valueBuffer[0] = '?';
             valueLength = 1;
             columnString(columnName);
             if (unknownFormat == UNKNOWN_FORMAT_DUMP) {
-                stringstream ss;
+                std::stringstream ss;
                 for (uint64_t j = 0; j < length; ++j)
-                    ss << " " << hex << setfill('0') << setw(2) << (uint64_t) data[j];
-                WARNING("unknown value (column: " << columnName << "): " << dec << length << " - " << ss.str());
+                    ss << " " << std::hex << std::setfill('0') << std::setw(2) << (uint64_t) data[j];
+                WARNING("unknown value (column: " << columnName << "): " << std::dec << length << " - " << ss.str());
             }
         };
 
@@ -418,7 +417,7 @@ namespace OpenLogReplicator {
         void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId) {
             CharacterSet* characterSet = characterMap[charsetId];
             if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                RUNTIME_FAIL("can't find character set map for id = " << dec << charsetId);
+                RUNTIME_FAIL("can't find character set map for id = " << std::dec << charsetId);
             }
             valueLength = 0;
 
@@ -461,19 +460,19 @@ namespace OpenLogReplicator {
                         valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
                     } else {
-                        RUNTIME_FAIL("got character code: U+" << dec << unicodeCharacter);
+                        RUNTIME_FAIL("got character code: U+" << std::dec << unicodeCharacter);
                     }
                 }
             }
         };
 
         virtual void columnNull(OracleObject* object, typeCOL col) = 0;
-        virtual void columnFloat(string& columnName, float value) = 0;
-        virtual void columnDouble(string& columnName, double value) = 0;
-        virtual void columnString(string& columnName) = 0;
-        virtual void columnNumber(string& columnName, uint64_t precision, uint64_t scale) = 0;
-        virtual void columnRaw(string& columnName, const uint8_t* data, uint64_t length) = 0;
-        virtual void columnTimestamp(string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
+        virtual void columnFloat(std::string& columnName, float value) = 0;
+        virtual void columnDouble(std::string& columnName, double value) = 0;
+        virtual void columnString(std::string& columnName) = 0;
+        virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) = 0;
+        virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) = 0;
+        virtual void columnTimestamp(std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
         virtual void appendHeader(bool first, bool showXid) = 0;
         virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj) = 0;
@@ -487,10 +486,10 @@ namespace OpenLogReplicator {
     public:
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
-        unordered_map<uint64_t, CharacterSet*> characterMap;
+        std::unordered_map<uint64_t, CharacterSet*> characterMap;
         Writer* writer;
-        mutex mtx;
-        condition_variable writersCond;
+        std::mutex mtx;
+        std::condition_variable writersCond;
 
         uint64_t buffersAllocated;
         OutputBufferQueue* firstBuffer;
@@ -504,7 +503,7 @@ namespace OpenLogReplicator {
         virtual void initialize(OracleAnalyzer* oracleAnalyzer);
         uint64_t outputBufferSize(void) const;
         void setWriter(Writer* writer);
-        void setNlsCharset(string& nlsCharset, string& nlsNcharCharset);
+        void setNlsCharset(std::string& nlsCharset, std::string& nlsNcharCharset);
 
         void processBegin(typeSCN scn, typeTIME time_, typeSEQ sequence, typeXID xid);
         virtual void processCommit(void) = 0;

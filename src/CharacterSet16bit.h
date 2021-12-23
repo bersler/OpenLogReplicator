@@ -62,13 +62,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHT16HKSCS_b2_min       0x40
 #define ZHT16HKSCS_b2_max       0xFE
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSet16bit : public CharacterSet {
     protected:
         const typeunicode16* map;
-        uint64_t byte1min, byte1max, byte2min, byte2max;
+        uint64_t byte1min;
+        uint64_t byte1max;
+        uint64_t byte2min;
+        uint64_t byte2max;
         virtual typeunicode readMap(uint64_t byte1, uint64_t byte2) const;
 
     public:

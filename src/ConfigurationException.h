@@ -24,17 +24,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CONFIGURATIONEXCEPTION_H_
 #define CONFIGURATIONEXCEPTION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    class ConfigurationException: public exception {
+    class ConfigurationException: public std::exception {
     public:
         const char* msg;
 
         ConfigurationException(const char* msg);
         virtual ~ConfigurationException();
 
-        friend ostream& operator<<(ostream& os, const ConfigurationException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
     };
 }
 

@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetJA16SJIS.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetJA16SJIS::CharacterSetJA16SJIS() :
         CharacterSet16bit("JA16SJIS", unicode_map_JA16SJIS_2b, JA16SJIS_b1_min, JA16SJIS_b1_max, JA16SJIS_b2_min, JA16SJIS_b2_max) {

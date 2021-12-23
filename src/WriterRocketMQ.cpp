@@ -17,14 +17,11 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-
 #include "OutputBuffer.h"
 #include "ConfigurationException.h"
 #include "OracleAnalyzer.h"
 #include "RuntimeException.h"
 #include "WriterRocketMQ.h"
-
-using namespace std;
 
 namespace OpenLogReplicator {
     WriterRocketMQ* staticWriter;
@@ -55,7 +52,7 @@ namespace OpenLogReplicator {
             DestroyProducer(producer);
             producer = nullptr;
 
-            INFO("RocketMQ producer exit code: " << dec << err);
+            INFO("RocketMQ producer exit code: " << std::dec << err);
         }
     }
 
@@ -102,14 +99,14 @@ namespace OpenLogReplicator {
         SetByteMessageBody(message, (const char*)msg->data, msg->length);
         ret = SendMessageAsync(producer, message, success_cb, exception_cb);
         if (ret != 0) {
-            WARNING("RocketMQ send message returned: " << dec << ret);
+            WARNING("RocketMQ send message returned: " << std::dec << ret);
         } else {
-            TRACE(TRACE2_WRITER, "WRITER: async send message return code: " << dec << ret);
+            TRACE(TRACE2_WRITER, "WRITER: async send message return code: " << std::dec << ret);
         }
-        INFO("MSG sent: " << dec << msg->length << " bytes");
+        INFO("MSG sent: " << std::dec << msg->length << " bytes");
     }
 
-    string WriterRocketMQ::getName() const {
+    std::string WriterRocketMQ::getName() const {
         return "RocketMQ:" + topic;
     }
 

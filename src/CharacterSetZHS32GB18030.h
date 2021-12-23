@@ -45,8 +45,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define ZHS32GB18030_42_b4_min       0x30
 #define ZHS32GB18030_42_b4_max       0x39
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetZHS32GB18030 : public CharacterSet {
     protected:

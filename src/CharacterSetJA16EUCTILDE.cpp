@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetJA16EUCTILDE.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetJA16EUCTILDE::CharacterSetJA16EUCTILDE() :
         CharacterSetJA16EUC("JA16EUCTILDE") {

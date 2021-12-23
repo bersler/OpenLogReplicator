@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef DATABASEENVIRONMENT_H_
 #define DATABASEENVIRONMENT_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class DatabaseStatement;
 

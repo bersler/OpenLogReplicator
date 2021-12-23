@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "RowId.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     const char RowId::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     
@@ -126,7 +124,7 @@ namespace OpenLogReplicator {
         str[18] = 0;
     }
 
-    ostream& operator<<(ostream& os, const RowId& tran) {
+    std::ostream& operator<<(std::ostream& os, const RowId& tran) {
         char str[19];
         tran.toString(str);
         os << str;

@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode1801::OpCode1801(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord),

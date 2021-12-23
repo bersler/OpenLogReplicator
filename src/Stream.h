@@ -25,22 +25,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define READ_NETWORK_BUFFER         1024
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class Stream {
     protected:
-        atomic<bool>* shutdown;
+        std::atomic<bool>* shutdown;
         uint64_t pollInterval;
-        string uri;
+        std::string uri;
 
     public:
         Stream(const char* uri, uint64_t pollInterval);
         virtual ~Stream();
 
-        virtual string getName(void) const = 0;
-        virtual void initializeClient(atomic<bool>* shutdown) = 0;
-        virtual void initializeServer(atomic<bool>* shutdown) = 0;
+        virtual std::string getName(void) const = 0;
+        virtual void initializeClient(std::atomic<bool>* shutdown) = 0;
+        virtual void initializeServer(std::atomic<bool>* shutdown) = 0;
         virtual void sendMessage(const void* msg, uint64_t length) = 0;
         virtual uint64_t receiveMessage(void* msg, uint64_t length) = 0;
         virtual uint64_t receiveMessageNB(void* msg, uint64_t length) = 0;

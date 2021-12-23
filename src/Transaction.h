@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
     class Transaction {
     protected:
         OracleAnalyzer* oracleAnalyzer;
-        vector<uint8_t*> merges;
+        std::vector<uint8_t*> merges;
         TransactionChunk* deallocTc;
         OpCode0501* opCode0501;
         void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         bool rollback;
         bool system;
         bool shutdown;
-        string name;
+        std::string name;
         uint64_t size;
 
         Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid);
@@ -66,7 +66,7 @@ namespace OpenLogReplicator {
         void rollbackLastOp(typeSCN scn);
         void flush(void);
         void purge(void);
-        friend ostream& operator<<(ostream& os, const Transaction& tran);
+        friend std::ostream& operator<<(std::ostream& os, const Transaction& tran);
     };
 }
 

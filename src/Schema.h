@@ -39,9 +39,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
 
-#define SCHEMA_ENDL     <<endl
-
-using namespace std;
+#define SCHEMA_ENDL     <<std::endl
 
 namespace OpenLogReplicator {
     class OracleAnalyzer;
@@ -52,65 +50,65 @@ namespace OpenLogReplicator {
     class Schema {
     protected:
         OracleAnalyzer* oracleAnalyzer;
-        stringstream& writeEscapeValue(stringstream& ss, string& str);
-        unordered_map<typeOBJ, OracleObject*> objectMap;
-        unordered_map<typeOBJ, OracleObject*> partitionMap;
+        std::stringstream& writeEscapeValue(std::stringstream& ss, std::string& str);
+        std::unordered_map<typeOBJ, OracleObject*> objectMap;
+        std::unordered_map<typeOBJ, OracleObject*> partitionMap;
 
         //SYS.CCOL$
-        map<RowId, SysCCol*> sysCColMapRowId;
-        map<SysCColKey, SysCCol*> sysCColMapKey;
+        std::map<RowId, SysCCol*> sysCColMapRowId;
+        std::map<SysCColKey, SysCCol*> sysCColMapKey;
 
         //SYS.CDEF$
-        map<RowId, SysCDef*> sysCDefMapRowId;
-        map<SysCDefKey, SysCDef*> sysCDefMapKey;
-        unordered_map<typeCON, SysCDef*> sysCDefMapCon;
+        std::map<RowId, SysCDef*> sysCDefMapRowId;
+        std::map<SysCDefKey, SysCDef*> sysCDefMapKey;
+        std::unordered_map<typeCON, SysCDef*> sysCDefMapCon;
 
         //SYS.COL$
-        map<RowId, SysCol*> sysColMapRowId;
-        map<SysColKey, SysCol*> sysColMapKey;
-        map<SysColSeg, SysCol*> sysColMapSeg;
+        std::map<RowId, SysCol*> sysColMapRowId;
+        std::map<SysColKey, SysCol*> sysColMapKey;
+        std::map<SysColSeg, SysCol*> sysColMapSeg;
 
         //SYS.DEFERREDSTG$
-        map<RowId, SysDeferredStg*> sysDeferredStgMapRowId;
-        unordered_map<typeOBJ, SysDeferredStg*> sysDeferredStgMapObj;
+        std::map<RowId, SysDeferredStg*> sysDeferredStgMapRowId;
+        std::unordered_map<typeOBJ, SysDeferredStg*> sysDeferredStgMapObj;
 
         //SYS.ECOL$
-        map<RowId, SysECol*> sysEColMapRowId;
-        unordered_map<SysEColKey, SysECol*> sysEColMapKey;
+        std::map<RowId, SysECol*> sysEColMapRowId;
+        std::unordered_map<SysEColKey, SysECol*> sysEColMapKey;
 
         //SYS.OBJ$
-        map<RowId, SysObj*> sysObjMapRowId;
-        unordered_map<typeOBJ, SysObj*> sysObjMapObj;
+        std::map<RowId, SysObj*> sysObjMapRowId;
+        std::unordered_map<typeOBJ, SysObj*> sysObjMapObj;
 
         //SYS.TAB$
-        map<RowId, SysTab*> sysTabMapRowId;
-        unordered_map<typeOBJ, SysTab*> sysTabMapObj;
+        std::map<RowId, SysTab*> sysTabMapRowId;
+        std::unordered_map<typeOBJ, SysTab*> sysTabMapObj;
 
         //SYS.TABCOMPART$
-        map<RowId, SysTabComPart*> sysTabComPartMapRowId;
-        unordered_map<typeOBJ, SysTabComPart*> sysTabComPartMapObj;
-        map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
+        std::map<RowId, SysTabComPart*> sysTabComPartMapRowId;
+        std::unordered_map<typeOBJ, SysTabComPart*> sysTabComPartMapObj;
+        std::map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
 
         //SYS.TABPART$
-        map<RowId, SysTabPart*> sysTabPartMapRowId;
-        map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
+        std::map<RowId, SysTabPart*> sysTabPartMapRowId;
+        std::map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
 
         //SYS.TABSUBPART$
-        map<RowId, SysTabSubPart*> sysTabSubPartMapRowId;
-        map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
+        std::map<RowId, SysTabSubPart*> sysTabSubPartMapRowId;
+        std::map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
 
         //SYS.USER$
-        map<RowId, SysUser*> sysUserMapRowId;
-        unordered_map<typeUSER, SysUser*> sysUserMapUser;
+        std::map<RowId, SysUser*> sysUserMapRowId;
+        std::unordered_map<typeUSER, SysUser*> sysUserMapUser;
 
-        set<typeOBJ> partitionsTouched;
-        set<typeOBJ> objectsTouched;
-        set<typeUSER> usersTouched;
+        std::set<typeOBJ> partitionsTouched;
+        std::set<typeOBJ> objectsTouched;
+        std::set<typeUSER> usersTouched;
         OracleObject* schemaObject;
         OracleColumn* schemaColumn;
-        vector<SchemaElement*> elements;
-        set<string> users;
-        set<typeSCN> schemaScnList;
+        std::vector<SchemaElement*> elements;
+        std::set<std::string> users;
+        std::set<typeSCN> schemaScnList;
         bool touched;
         bool sysCColTouched;
         bool sysCDefTouched;
@@ -131,14 +129,14 @@ namespace OpenLogReplicator {
 
         void dropSchema(void);
         bool readSchema(void);
-        bool readSchema(string& jsonName, typeSCN fileScn);
+        bool readSchema(std::string& jsonName, typeSCN fileScn);
         void writeSchema(void);
         OracleObject* checkDict(typeOBJ obj, typeDATAOBJ dataObj);
         void addToDict(OracleObject* object);
         void removeFromDict(OracleObject* object);
         bool refreshIndexes(void);
         void rebuildMaps(void);
-        void buildMaps(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options, bool output);
+        void buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOPTIONS options, bool output);
         SchemaElement* addElement(const char* owner, const char* table, typeOPTIONS options);
         bool dictSysCColAdd(const char* rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12);
         bool dictSysCDefAdd(const char* rowIdStr, typeCON con, typeOBJ obj, typeTYPE type);

@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ReaderASM.h"
 #include "RuntimeException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     const char* ReaderASM::SQL_ASM_CLOSE("BEGIN dbms_diskgroup.close(:i); END;");
     const char* ReaderASM::SQL_ASM_GETFILEATR("BEGIN dbms_diskgroup.getfileattr(:i, :j, :k, :l); END;");
@@ -54,7 +52,7 @@ namespace OpenLogReplicator {
         try {
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_CLOSE);
-            TRACE(TRACE2_SQL, "PARAM1: " << dec << fileDes);
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << fileDes);
             stmt.createStatement(SQL_ASM_CLOSE);
             stmt.bindInt32(1, fileDes);
             stmt.executeQuery();
@@ -71,9 +69,9 @@ namespace OpenLogReplicator {
             DatabaseStatement stmt(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_GETFILEATR);
             TRACE(TRACE2_SQL, "PARAM1: " << fileName);
-            TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
-            TRACE(TRACE2_SQL, "PARAM3: " << dec << fileSize);
-            TRACE(TRACE2_SQL, "PARAM4: " << dec << blockSize);
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << fileType);
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << fileSize);
+            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << blockSize);
             stmt.createStatement(SQL_ASM_GETFILEATR);
             stmt.bindString(1, fileName);
             stmt.bindUInt64(2, fileType);
@@ -84,11 +82,11 @@ namespace OpenLogReplicator {
             physicalBlockSize = -1;
             TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_OPEN);
             TRACE(TRACE2_SQL, "PARAM1: " << fileName);
-            TRACE(TRACE2_SQL, "PARAM2: " << dec << fileType);
-            TRACE(TRACE2_SQL, "PARAM3: " << dec << blockSize);
-            TRACE(TRACE2_SQL, "PARAM4: " << dec << fileDes);
-            TRACE(TRACE2_SQL, "PARAM5: " << dec << physicalBlockSize);
-            TRACE(TRACE2_SQL, "PARAM6: " << dec << fileSize);
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << fileType);
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << blockSize);
+            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << fileDes);
+            TRACE(TRACE2_SQL, "PARAM5: " << std::dec << physicalBlockSize);
+            TRACE(TRACE2_SQL, "PARAM6: " << std::dec << fileSize);
             stmt.createStatement(SQL_ASM_OPEN);
             stmt.bindString(1, fileName);
             stmt.bindUInt64(2, fileType);
@@ -119,13 +117,13 @@ namespace OpenLogReplicator {
             if (stmtRead == nullptr) {
                 stmtRead = new DatabaseStatement(((OracleAnalyzerOnlineASM*)oracleAnalyzer)->connASM);
                 if (stmtRead == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseStatement) << " bytes memory (for: database statement for ASM)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class DatabaseStatement) << " bytes memory (for: database statement for ASM)");
                 }
 
                 TRACE(TRACE2_SQL, "SQL: " << SQL_ASM_READ);
-                TRACE(TRACE2_SQL, "PARAM1: " << dec << fileDes);
-                TRACE(TRACE2_SQL, "PARAM2: " << dec << offset);
-                TRACE(TRACE2_SQL, "PARAM3: " << dec << size);
+                TRACE(TRACE2_SQL, "PARAM1: " << std::dec << fileDes);
+                TRACE(TRACE2_SQL, "PARAM2: " << std::dec << offset);
+                TRACE(TRACE2_SQL, "PARAM3: " << std::dec << size);
                 stmtRead->createStatement(SQL_ASM_READ);
             } else
                 stmtRead->unbindAll();

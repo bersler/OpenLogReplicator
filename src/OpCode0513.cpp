@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0513::OpCode0513(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -110,24 +108,24 @@ namespace OpenLogReplicator {
 
     void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) const {
         uint16_t flags = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
-        if ((flags & 0x0001) != 0) oracleAnalyzer->dumpStream << "DDL transaction" << endl;
-        if ((flags & 0x0002) != 0) oracleAnalyzer->dumpStream << "Space Management transaction" << endl;
-        if ((flags & 0x0004) != 0) oracleAnalyzer->dumpStream << "Recursive transaction" << endl;
-        if ((flags & 0x0008) != 0) oracleAnalyzer->dumpStream << "Logmnr Internal transaction" << endl;
-        if ((flags & 0x0010) != 0) oracleAnalyzer->dumpStream << "DB Open in Migrate Mode" << endl;
-        if ((flags & 0x0020) != 0) oracleAnalyzer->dumpStream << "LSBY ignore" << endl;
-        if ((flags & 0x0040) != 0) oracleAnalyzer->dumpStream << "LogMiner no tx chunking" << endl;
-        if ((flags & 0x0080) != 0) oracleAnalyzer->dumpStream << "LogMiner Stealth transaction" << endl;
-        if ((flags & 0x0100) != 0) oracleAnalyzer->dumpStream << "LSBY preserve" << endl;
-        if ((flags & 0x0200) != 0) oracleAnalyzer->dumpStream << "LogMiner Marker transaction" << endl;
-        if ((flags & 0x0400) != 0) oracleAnalyzer->dumpStream << "Transaction in pragama'ed plsql" << endl;
-        if ((flags & 0x0800) != 0) oracleAnalyzer->dumpStream << "Tx audit CV flags undefined" << endl;
+        if ((flags & 0x0001) != 0) oracleAnalyzer->dumpStream << "DDL transaction" << std::endl;
+        if ((flags & 0x0002) != 0) oracleAnalyzer->dumpStream << "Space Management transaction" << std::endl;
+        if ((flags & 0x0004) != 0) oracleAnalyzer->dumpStream << "Recursive transaction" << std::endl;
+        if ((flags & 0x0008) != 0) oracleAnalyzer->dumpStream << "Logmnr Internal transaction" << std::endl;
+        if ((flags & 0x0010) != 0) oracleAnalyzer->dumpStream << "DB Open in Migrate Mode" << std::endl;
+        if ((flags & 0x0020) != 0) oracleAnalyzer->dumpStream << "LSBY ignore" << std::endl;
+        if ((flags & 0x0040) != 0) oracleAnalyzer->dumpStream << "LogMiner no tx chunking" << std::endl;
+        if ((flags & 0x0080) != 0) oracleAnalyzer->dumpStream << "LogMiner Stealth transaction" << std::endl;
+        if ((flags & 0x0100) != 0) oracleAnalyzer->dumpStream << "LSBY preserve" << std::endl;
+        if ((flags & 0x0200) != 0) oracleAnalyzer->dumpStream << "LogMiner Marker transaction" << std::endl;
+        if ((flags & 0x0400) != 0) oracleAnalyzer->dumpStream << "Transaction in pragama'ed plsql" << std::endl;
+        if ((flags & 0x0800) != 0) oracleAnalyzer->dumpStream << "Tx audit CV flags undefined" << std::endl;
     }
 
     void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             if (fieldLength < 4) {
-                WARNING("too short session number: " << dec << fieldLength);
+                WARNING("too short session number: " << std::dec << fieldLength);
                 return;
             }
 
@@ -137,29 +135,29 @@ namespace OpenLogReplicator {
                 sessionNumber = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
             else {
                 if (fieldLength < 8) {
-                    WARNING("too short session number: " << dec << fieldLength);
+                    WARNING("too short session number: " << std::dec << fieldLength);
                     return;
                 }
                 sessionNumber = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
             }
 
             oracleAnalyzer->dumpStream <<
-                    "session number   = " << dec << sessionNumber << endl <<
-                    "serial  number   = " << dec << serialNumber << endl;
+                    "session number   = " << std::dec << sessionNumber << std::endl <<
+                    "serial  number   = " << std::dec << serialNumber << std::endl;
         }
     }
 
     void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t version = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-            oracleAnalyzer->dumpStream << "version " << dec << version << endl;
+            oracleAnalyzer->dumpStream << "version " << std::dec << version << std::endl;
         }
     }
 
     void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) const {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t auditSessionid = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-            oracleAnalyzer->dumpStream << "audit sessionid " << auditSessionid << endl;
+            oracleAnalyzer->dumpStream << "audit sessionid " << auditSessionid << std::endl;
         }
     }
 }

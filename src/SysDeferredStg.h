@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define SYSDEFERREDSTG_ROWID_LENGTH    18
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SysDeferredStg {
     public:

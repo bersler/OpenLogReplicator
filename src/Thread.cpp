@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Thread.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     Thread::Thread(const char* alias) :
         stop(false),

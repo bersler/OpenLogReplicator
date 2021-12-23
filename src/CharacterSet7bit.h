@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTERSET7BIT_H_
 #define CHARACTERSET7BIT_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSet7bit : public CharacterSet {
     protected:

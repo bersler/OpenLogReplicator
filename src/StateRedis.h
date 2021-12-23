@@ -24,12 +24,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STATEREDIS_H_
 #define STATEREDIS_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class StateRedis : public State {
     protected:
-        string server;
+        std::string server;
         uint16_t port;
         redisContext *c;
 
@@ -37,10 +35,10 @@ namespace OpenLogReplicator {
         StateRedis(const char* server, uint16_t port);
         virtual ~StateRedis();
 
-        virtual void list(set<string>& namesList);
-        virtual bool read(string& name, uint64_t maxSize, string& in, bool noFail);
-        virtual void write(string& name, stringstream& out);
-        virtual void drop(string& name);
+        virtual void list(std::set<std::string>& namesList);
+        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail);
+        virtual void write(std::string& name, std::stringstream& out);
+        virtual void drop(std::string& name);
     };
 }
 

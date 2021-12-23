@@ -26,8 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define VECTOR_MAX_LENGTH 512
 #define MAX_LWN_CHUNKS (512*2/MEMORY_CHUNK_SIZE_MB)
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
     class OpCode;
@@ -71,17 +69,17 @@ namespace OpenLogReplicator {
 
     public:
         int64_t group;
-        string path;
+        std::string path;
         typeSEQ sequence;
         typeSCN firstScn;
         typeSCN nextScn;
         Reader* reader;
 
         uint64_t processLog(void);
-        RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, string& path);
+        RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, std::string& path);
         virtual ~RedoLog(void);
 
-        friend ostream& operator<<(ostream& os, const RedoLog& redoLog);
+        friend std::ostream& operator<<(std::ostream& os, const RedoLog& redoLog);
     };
 }
 

@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTERSETUTF8_H_
 #define CHARACTERSETUTF8_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetUTF8 : public CharacterSet {
     public:

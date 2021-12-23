@@ -28,8 +28,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define WRITERFILE_MODE_TIMETAMP            3
 #define WRITERFILE_MODE_SEQUENCE            4
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class RedoLogRecord;
     class OracleAnalyzer;
@@ -40,11 +38,11 @@ namespace OpenLogReplicator {
         size_t suffixPos;
         uint64_t mode;
         uint64_t fill;
-        string output;
-        string outputPath;
-        string outputFile;
-        string outputFileMask;
-        string format;
+        std::string output;
+        std::string outputPath;
+        std::string outputFile;
+        std::string outputFileMask;
+        std::string format;
         uint64_t outputFileNum;
         uint64_t outputSize;
         uint64_t maxSize;
@@ -57,7 +55,7 @@ namespace OpenLogReplicator {
         void closeFile(void);
         void checkFile(typeSCN scn, typeSEQ sequence, uint64_t length);
         virtual void sendMessage(OutputBufferMsg* msg);
-        virtual string getName() const;
+        virtual std::string getName() const;
         virtual void pollQueue(void);
 
     public:

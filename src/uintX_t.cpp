@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(const string& val) {
+    uintX_t& uintX_t::operator=(const std::string& val) {
         return setStr(val.c_str(), val.length());
     }
 
@@ -143,12 +143,12 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    ostream& operator<<(ostream& os, const uintX_t& val) {
+    std::ostream& operator<<(std::ostream& os, const uintX_t& val) {
         os << "[";
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
             if (i > 0)
                 os << ",";
-            os << dec << val.data[i];
+            os << std::dec << val.data[i];
         }
         os << "]";
         return os;

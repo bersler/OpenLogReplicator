@@ -26,14 +26,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef GLOBAL_H_
 #define GLOBAL_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
 
-extern mutex threadMtx;
-extern mutex mainMtx;
+extern std::mutex threadMtx;
+extern std::mutex mainMtx;
 extern pthread_t mainThread;
-extern condition_variable mainCV;
+extern std::condition_variable mainCV;
 extern bool exitOnSignal;
 extern bool mainShutdown;
 extern uint64_t trace;
@@ -48,25 +46,25 @@ void signalDump(int sig);
 void unRegisterThread(pthread_t pthread);
 void registerThread(pthread_t pthread);
 
-const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field);
-const uint16_t getJSONfieldU16(string& fileName, const rapidjson::Value& value, const char* field);
-const int16_t getJSONfieldI16(string& fileName, const rapidjson::Value& value, const char* field);
-const uint32_t getJSONfieldU32(string& fileName, const rapidjson::Value& value, const char* field);
-const int32_t getJSONfieldI32(string& fileName, const rapidjson::Value& value, const char* field);
-const uint64_t getJSONfieldU64(string& fileName, const rapidjson::Value& value, const char* field);
-const int64_t getJSONfieldI64(string& fileName, const rapidjson::Value& value, const char* field);
-const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field);
-const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
+const rapidjson::Value& getJSONfieldA(std::string& fileName, const rapidjson::Value& value, const char* field);
+const uint16_t getJSONfieldU16(std::string& fileName, const rapidjson::Value& value, const char* field);
+const int16_t getJSONfieldI16(std::string& fileName, const rapidjson::Value& value, const char* field);
+const uint32_t getJSONfieldU32(std::string& fileName, const rapidjson::Value& value, const char* field);
+const int32_t getJSONfieldI32(std::string& fileName, const rapidjson::Value& value, const char* field);
+const uint64_t getJSONfieldU64(std::string& fileName, const rapidjson::Value& value, const char* field);
+const int64_t getJSONfieldI64(std::string& fileName, const rapidjson::Value& value, const char* field);
+const rapidjson::Value& getJSONfieldO(std::string& fileName, const rapidjson::Value& value, const char* field);
+const char* getJSONfieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
 
-const rapidjson::Value& getJSONfieldA(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const uint16_t getJSONfieldU16(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const int16_t getJSONfieldI16(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const uint32_t getJSONfieldU32(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const int32_t getJSONfieldI32(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const uint64_t getJSONfieldU64(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const int64_t getJSONfieldI64(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const rapidjson::Value& getJSONfieldO(string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-const char* getJSONfieldS(string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
+const rapidjson::Value& getJSONfieldA(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const uint16_t getJSONfieldU16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const int16_t getJSONfieldI16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const uint32_t getJSONfieldU32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const int32_t getJSONfieldI32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const uint64_t getJSONfieldU64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const int64_t getJSONfieldI64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const rapidjson::Value& getJSONfieldO(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+const char* getJSONfieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
 
 }
 

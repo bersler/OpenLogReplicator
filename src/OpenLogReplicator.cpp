@@ -67,17 +67,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterRocketMQ.h"
 #endif /* LINK_LIBRARY_ROCKETMQ */
 
-using namespace std;
-using namespace rapidjson;
-using namespace OpenLogReplicator;
-
 int main(int argc, char** argv) {
-    mainThread = pthread_self();
-    signal(SIGINT, signalHandler);
-    signal(SIGPIPE, signalHandler);
-    signal(SIGSEGV, signalCrash);
-    signal(SIGUSR1, signalDump);
-    uintX_t::initializeBASE10();
+    OpenLogReplicator::mainThread = pthread_self();
+    signal(SIGINT, OpenLogReplicator::signalHandler);
+    signal(SIGPIPE, OpenLogReplicator::signalHandler);
+    signal(SIGSEGV, OpenLogReplicator::signalCrash);
+    signal(SIGUSR1, OpenLogReplicator::signalDump);
+    OpenLogReplicator::uintX_t::initializeBASE10();
 
     INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, linked modules:"
 #ifdef LINK_LIBRARY_RDKAFKA
@@ -100,24 +96,24 @@ int main(int argc, char** argv) {
 #endif /* LINK_LIBRARY_ROCKETMQ */
     );
 
-    list<OracleAnalyzer*> analyzers;
-    list<Writer*> writers;
-    list<OutputBuffer*> buffers;
-    OracleAnalyzer* oracleAnalyzer = nullptr;
+    std::list<OpenLogReplicator::OracleAnalyzer*> analyzers;
+    std::list<OpenLogReplicator::Writer*> writers;
+    std::list<OpenLogReplicator::OutputBuffer*> buffers;
+    OpenLogReplicator::OracleAnalyzer* oracleAnalyzer = nullptr;
     int fid = -1;
     char* configFileBuffer = nullptr;
 
     try {
-        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") START");
+        TRACE(TRACE2_THREADS, "THREADS: MAIN (" << std::hex << std::this_thread::get_id() << ") START");
 
-        regex regexTest(".*");
-        string regexString("check if matches!");
+        std::regex regexTest(".*");
+        std::string regexString("check if matches!");
         bool regexWorks = regex_search(regexString, regexTest);
         if (!regexWorks) {
             CONFIG_FAIL("binaries are build with no regex implementation, check if you have gcc version >= 4.9");
         }
 
-        string fileName("scripts/OpenLogReplicator.json");
+        std::string fileName("scripts/OpenLogReplicator.json");
         if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
             // print banner and exit
             return 0;
@@ -147,75 +143,75 @@ int main(int argc, char** argv) {
             CONFIG_FAIL("reading information for file: " << fileName << " - " << strerror(errno));
         }
         if (fileStat.st_size > CONFIG_FILE_MAX_SIZE || fileStat.st_size == 0) {
-            CONFIG_FAIL("file " << fileName << " wrong size: " << dec << fileStat.st_size);
+            CONFIG_FAIL("file " << fileName << " wrong size: " << std::dec << fileStat.st_size);
         }
 
         configFileBuffer = new char[fileStat.st_size + 1];
         if (configFileBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (fileStat.st_size + 1) << " bytes memory (for: reading " << fileName << ")");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << (fileStat.st_size + 1) << " bytes memory (for: reading " << fileName << ")");
         }
         if (read(fid, configFileBuffer, fileStat.st_size) != fileStat.st_size) {
             CONFIG_FAIL("can't read file " << fileName);
         }
         configFileBuffer[fileStat.st_size] = 0;
 
-        Document document;
+        rapidjson::Document document;
         if (document.Parse(configFileBuffer).HasParseError()) {
             CONFIG_FAIL("parsing " << fileName << " at offset: " << document.GetErrorOffset() <<
                     ", message: " << GetParseError_En(document.GetParseError()));
         }
 
-        const char* version = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "version");
+        const char* version = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "version");
         if (strcmp(version, CONFIG_SCHEMA_VERSION) != 0) {
             CONFIG_FAIL("bad JSON, incompatible \"version\" value: " << version << ", expected: " << CONFIG_SCHEMA_VERSION);
         }
 
         uint64_t dumpRedoLog = 0;
         if (document.HasMember("dump-redo-log")) {
-            dumpRedoLog = getJSONfieldU64(fileName, document, "dump-redo-log");
+            dumpRedoLog = OpenLogReplicator::getJSONfieldU64(fileName, document, "dump-redo-log");
             if (dumpRedoLog > 2) {
-                CONFIG_FAIL("bad JSON, invalid \"dump-redo-log\" value: " << dec << dumpRedoLog << ", expected one of: {0, 1, 2}");
+                CONFIG_FAIL("bad JSON, invalid \"dump-redo-log\" value: " << std::dec << dumpRedoLog << ", expected one of: {0, 1, 2}");
             }
         }
 
         const char* dumpPath = ".";
         if (document.HasMember("dump-path"))
-            dumpPath = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
+            dumpPath = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
 
         uint64_t dumpRawData = 0;
         if (document.HasMember("dump-raw-data")) {
-            dumpRawData = getJSONfieldU64(fileName, document, "dump-raw-data");
+            dumpRawData = OpenLogReplicator::getJSONfieldU64(fileName, document, "dump-raw-data");
             if (dumpRawData > 1) {
-                CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << dec << dumpRawData << ", expected one of: {0, 1}");
+                CONFIG_FAIL("bad JSON, invalid \"dump-raw-data\" value: " << std::dec << dumpRawData << ", expected one of: {0, 1}");
             }
         }
 
         if (document.HasMember("trace")) {
-            trace = getJSONfieldU64(fileName, document, "trace");
-            if (trace > 4) {
-                CONFIG_FAIL("bad JSON, invalid \"trace\" value: " << dec << trace << ", expected one of: {0, 1, 2, 3, 4}");
+            OpenLogReplicator::trace = OpenLogReplicator::getJSONfieldU64(fileName, document, "trace");
+            if (OpenLogReplicator::trace > 4) {
+                CONFIG_FAIL("bad JSON, invalid \"trace\" value: " << std::dec << OpenLogReplicator::trace << ", expected one of: {0, 1, 2, 3, 4}");
             }
         }
 
         if (document.HasMember("trace2")) {
-            trace2 = getJSONfieldU64(fileName, document, "trace2");
-            if (trace2 > 65535) {
-                CONFIG_FAIL("bad JSON, invalid \"trace2\" value: " << dec << trace2 << ", expected one of: {0 .. 65535}");
+            OpenLogReplicator::trace2 = OpenLogReplicator::getJSONfieldU64(fileName, document, "trace2");
+            if (OpenLogReplicator::trace2 > 65535) {
+                CONFIG_FAIL("bad JSON, invalid \"trace2\" value: " << std::dec << OpenLogReplicator::trace2 << ", expected one of: {0 .. 65535}");
             }
         }
 
         //iterate through sources
-        const Value& sourceArrayJSON = getJSONfieldA(fileName, document, "source");
+        const rapidjson::Value& sourceArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, document, "source");
 
-        for (SizeType i = 0; i < sourceArrayJSON.Size(); ++i) {
-            const Value& sourceJSON = getJSONfieldO(fileName, sourceArrayJSON, "source", i);
+        for (rapidjson::SizeType i = 0; i < sourceArrayJSON.Size(); ++i) {
+            const rapidjson::Value& sourceJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceArrayJSON, "source", i);
 
-            const char* alias = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "alias");
+            const char* alias = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "alias");
             INFO("adding source: " << alias);
 
             uint64_t memoryMinMb = 32;
             if (sourceJSON.HasMember("memory-min-mb")) {
-                memoryMinMb = getJSONfieldU64(fileName, sourceJSON, "memory-min-mb");
+                memoryMinMb = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "memory-min-mb");
                 memoryMinMb = (memoryMinMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMinMb < MEMORY_CHUNK_MIN_MB) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value must be at least " MEMORY_CHUNK_MIN_MB_CHR);
@@ -224,7 +220,7 @@ int main(int argc, char** argv) {
 
             uint64_t memoryMaxMb = 1024;
             if (sourceJSON.HasMember("memory-max-mb")) {
-                memoryMaxMb = getJSONfieldU64(fileName, sourceJSON, "memory-max-mb");
+                memoryMaxMb = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "memory-max-mb");
                 memoryMaxMb = (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) * MEMORY_CHUNK_SIZE_MB;
                 if (memoryMaxMb < memoryMinMb) {
                     CONFIG_FAIL("bad JSON, \"memory-min-mb\" value can't be greater than \"memory-max-mb\" value");
@@ -236,119 +232,119 @@ int main(int argc, char** argv) {
                 readBufferMax = 32 / MEMORY_CHUNK_SIZE_MB;
 
             if (sourceJSON.HasMember("read-buffer-max-mb")) {
-                readBufferMax = getJSONfieldU64(fileName, sourceJSON, "read-buffer-max-mb") / MEMORY_CHUNK_SIZE_MB;
+                readBufferMax = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "read-buffer-max-mb") / MEMORY_CHUNK_SIZE_MB;
                 if (readBufferMax * MEMORY_CHUNK_SIZE_MB > memoryMaxMb) {
                     CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value can't be greater than \"memory-max-mb\" value");
                 }
                 if (readBufferMax <= 1) {
-                    CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value should be at least " << dec << MEMORY_CHUNK_SIZE_MB * 2);
+                    CONFIG_FAIL("bad JSON, \"read-buffer-max-mb\" value should be at least " << std::dec << MEMORY_CHUNK_SIZE_MB * 2);
                 }
             }
 
-            const char* name = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "name");
+            const char* name = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "name");
 
             //FORMAT
-            const Value& formatJSON = getJSONfieldO(fileName, sourceJSON, "format");
+            const rapidjson::Value& formatJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceJSON, "format");
 
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
             if (formatJSON.HasMember("message")) {
-                messageFormat = getJSONfieldU64(fileName, formatJSON, "message");
+                messageFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "message");
                 if (messageFormat > 15) {
-                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << dec << messageFormat << ", expected one of: {0.. 15}");
+                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << std::dec << messageFormat << ", expected one of: {0.. 15}");
                 }
                 if ((messageFormat & MESSAGE_FORMAT_FULL) != 0 &&
                         (messageFormat & (MESSAGE_FORMAT_SKIP_BEGIN | MESSAGE_FORMAT_SKIP_COMMIT)) != 0) {
-                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << dec << messageFormat <<
-                            ", you are not allowed to use BEGIN/COMMIT flag (" << dec << MESSAGE_FORMAT_SKIP_BEGIN << "/" <<
-                            MESSAGE_FORMAT_SKIP_COMMIT << ") together with FULL mode (" << dec << MESSAGE_FORMAT_FULL << ")");
+                    CONFIG_FAIL("bad JSON, invalid \"message\" value: " << std::dec << messageFormat <<
+                            ", you are not allowed to use BEGIN/COMMIT flag (" << std::dec << MESSAGE_FORMAT_SKIP_BEGIN << "/" <<
+                            MESSAGE_FORMAT_SKIP_COMMIT << ") together with FULL mode (" << std::dec << MESSAGE_FORMAT_FULL << ")");
                 }
             }
 
             uint64_t ridFormat = RID_FORMAT_SKIP;
             if (formatJSON.HasMember("rid")) {
-                ridFormat = getJSONfieldU64(fileName, formatJSON, "rid");
+                ridFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "rid");
                 if (ridFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << dec << ridFormat << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"rid\" value: " << std::dec << ridFormat << ", expected one of: {0, 1}");
                 }
             }
 
             uint64_t xidFormat = XID_FORMAT_TEXT;
             if (formatJSON.HasMember("xid")) {
-                xidFormat = getJSONfieldU64(fileName, formatJSON, "xid");
+                xidFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "xid");
                 if (xidFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << dec << xidFormat << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"xid\" value: " << std::dec << xidFormat << ", expected one of: {0, 1}");
                 }
             }
 
             uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
             if (formatJSON.HasMember("timestamp")) {
-                timestampFormat = getJSONfieldU64(fileName, formatJSON, "timestamp");
+                timestampFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "timestamp");
                 if (timestampFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << dec << timestampFormat << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"timestamp\" value: " << std::dec << timestampFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
             uint64_t charFormat = CHAR_FORMAT_UTF8;
             if (formatJSON.HasMember("char")) {
-                charFormat = getJSONfieldU64(fileName, formatJSON, "char");
+                charFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "char");
                 if (charFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"char\" value: " << dec << charFormat << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"char\" value: " << std::dec << charFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
             uint64_t scnFormat = SCN_FORMAT_NUMERIC;
             if (formatJSON.HasMember("scn")) {
-                scnFormat = getJSONfieldU64(fileName, formatJSON, "scn");
+                scnFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "scn");
                 if (scnFormat > 3) {
-                    CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << dec << scnFormat << ", expected one of: {0, 1, 2, 3}");
+                    CONFIG_FAIL("bad JSON, invalid \"scn\" value: " << std::dec << scnFormat << ", expected one of: {0, 1, 2, 3}");
                 }
             }
 
             uint64_t unknownFormat = UNKNOWN_FORMAT_QUESTION_MARK;
             if (formatJSON.HasMember("unknown")) {
-                unknownFormat = getJSONfieldU64(fileName, formatJSON, "unknown");
+                unknownFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "unknown");
                 if (unknownFormat > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << dec << unknownFormat << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"unknown\" value: " << std::dec << unknownFormat << ", expected one of: {0, 1}");
                 }
             }
 
             uint64_t schemaFormat = SCHEMA_FORMAT_NAME;
             if (formatJSON.HasMember("schema")) {
-                schemaFormat = getJSONfieldU64(fileName, formatJSON, "schema");
+                schemaFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "schema");
                 if (schemaFormat > 7) {
-                    CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << dec << schemaFormat << ", expected one of: {0 .. 7}");
+                    CONFIG_FAIL("bad JSON, invalid \"schema\" value: " << std::dec << schemaFormat << ", expected one of: {0 .. 7}");
                 }
             }
 
             uint64_t columnFormat = COLUMN_FORMAT_CHANGED;
             if (formatJSON.HasMember("column")) {
-                columnFormat = getJSONfieldU64(fileName, formatJSON, "column");
+                columnFormat = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "column");
                 if (columnFormat > 2) {
-                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << ", expected one of: {0, 1, 2}");
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << std::dec << columnFormat << ", expected one of: {0, 1, 2}");
                 }
             }
 
             uint64_t unknownType = UNKNOWN_TYPE_HIDE;
             if (formatJSON.HasMember("unknown-type")) {
-                unknownType = getJSONfieldU64(fileName, formatJSON, "unknown-type");
+                unknownType = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "unknown-type");
                 if (unknownType > 1) {
-                    CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << dec << unknownType << ", expected one of: {0, 1}");
+                    CONFIG_FAIL("bad JSON, invalid \"unknown-type\" value: " << std::dec << unknownType << ", expected one of: {0, 1}");
                 }
             }
 
             uint64_t flushBuffer = 1048576;
             if (formatJSON.HasMember("flush-buffer"))
-                flushBuffer = getJSONfieldU64(fileName, formatJSON, "flush-buffer");
+                flushBuffer = OpenLogReplicator::getJSONfieldU64(fileName, formatJSON, "flush-buffer");
 
-            const char* formatType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, formatJSON, "type");
+            const char* formatType = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, formatJSON, "type");
 
-            OutputBuffer* outputBuffer = nullptr;
+            OpenLogReplicator::OutputBuffer* outputBuffer = nullptr;
             if (strcmp("json", formatType) == 0) {
-                outputBuffer = new OutputBufferJson(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                outputBuffer = new OpenLogReplicator::OutputBufferJson(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
                         schemaFormat, columnFormat, unknownType, flushBuffer);
             } else if (strcmp("protobuf", formatType) == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                outputBuffer = new OutputBufferProtobuf(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
+                outputBuffer = new OpenLogReplicator::OutputBufferProtobuf(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
                         schemaFormat, columnFormat, unknownType, flushBuffer);
 #else
                 RUNTIME_FAIL("format \"protobuf\" is not compiled, exiting");
@@ -358,88 +354,88 @@ int main(int argc, char** argv) {
             }
 
             if (outputBuffer == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OutputBuffer) << " bytes memory (for: command buffer)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OutputBuffer) << " bytes memory (for: command buffer)");
             }
             buffers.push_back(outputBuffer);
 
 
             //READER
-            const Value& readerJSON = getJSONfieldO(fileName, sourceJSON, "reader");
+            const rapidjson::Value& readerJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceJSON, "reader");
 
             uint64_t disableChecks = 0;
             if (readerJSON.HasMember("disable-checks")) {
-                disableChecks = getJSONfieldU64(fileName, readerJSON, "disable-checks");
+                disableChecks = OpenLogReplicator::getJSONfieldU64(fileName, readerJSON, "disable-checks");
                 if (disableChecks > 7) {
-                    CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << dec << disableChecks << ", expected one of: {0 .. 7}");
+                    CONFIG_FAIL("bad JSON, invalid \"disable-checks\" value: " << std::dec << disableChecks << ", expected one of: {0 .. 7}");
                 }
             }
 
-            const char* readerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, readerJSON, "type");
+            const char* readerType = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, readerJSON, "type");
 
             if (strcmp(readerType, "online") == 0) {
 #ifdef LINK_LIBRARY_OCI
-                const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
-                const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
-                const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
+                const char* user = OpenLogReplicator::getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
+                const char* password = OpenLogReplicator::getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
+                const char* server = OpenLogReplicator::getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
 
-                oracleAnalyzer = new OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
+                oracleAnalyzer = new OpenLogReplicator::OracleAnalyzerOnline(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server);
                 if (oracleAnalyzer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
                 oracleAnalyzer->initialize();
 
                 if (readerJSON.HasMember("path-mapping")) {
-                    const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
+                    const rapidjson::Value& pathMappingArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, readerJSON, "path-mapping");
                     if ((pathMappingArrayJSON.Size() % 2) != 0) {
                         CONFIG_FAIL("bad JSON, \"path-mapping\" should contain even number of elements");
                     }
 
-                    for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
-                        const char* sourceMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
-                        const char* targetMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                    for (rapidjson::SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
+                        const char* sourceMapping = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
                         oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
 
                 if (sourceJSON.HasMember("arch")) {
-                    const char* arch = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
+                    const char* arch = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
 
                     if (strcmp(arch, "path") == 0)
-                        oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzer::archGetLogPath;
                     else if (strcmp(arch, "online") == 0) {
-                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzerOnline::archGetLogOnline;
                     } else if (strcmp(arch, "online-keep") == 0) {
-                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
-                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = true;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzerOnline::archGetLogOnline;
+                        ((OpenLogReplicator::OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = true;
                     } else {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << arch << ", expected one of: {\"path\", \"online\", \"online-keep\"}");
                     }
                 } else
-                    oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                    oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzerOnline::archGetLogOnline;
 #else
                 RUNTIME_FAIL("reader type \"online\" is not compiled, exiting");
 #endif /*LINK_LIBRARY_OCI*/
 
             } else if (strcmp(readerType, "offline") == 0) {
 
-                oracleAnalyzer = new OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
+                oracleAnalyzer = new OpenLogReplicator::OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks);
                 if (oracleAnalyzer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
                 }
                 oracleAnalyzer->initialize();
 
                 if (readerJSON.HasMember("path-mapping")) {
-                    const Value& pathMappingArrayJSON = getJSONfieldA(fileName, readerJSON, "path-mapping");
+                    const rapidjson::Value& pathMappingArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, readerJSON, "path-mapping");
 
                     if ((pathMappingArrayJSON.Size() % 2) != 0) {
                         CONFIG_FAIL("bad JSON, \"path-mapping\" should contain even number of elements");
                     }
 
-                    for (SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
-                        const char* sourceMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
-                        const char* targetMapping = getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
+                    for (rapidjson::SizeType j = 0; j < pathMappingArrayJSON.Size() / 2; ++j) {
+                        const char* sourceMapping = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2);
+                        const char* targetMapping = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, pathMappingArrayJSON, "path-mapping", j * 2 + 1);
                         oracleAnalyzer->addPathMapping(sourceMapping, targetMapping);
                     }
                 }
@@ -448,31 +444,31 @@ int main(int argc, char** argv) {
 #ifdef LINK_LIBRARY_OCI
                 WARNING("experimental feature is used: read using ASM");
 
-                const char* user = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
-                const char* password = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
-                const char* server = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
-                const char* userASM = getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user-asm");
-                const char* passwordASM = getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password-asm");
-                const char* serverASM = getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server-asm");
+                const char* user = OpenLogReplicator::getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user");
+                const char* password = OpenLogReplicator::getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password");
+                const char* server = OpenLogReplicator::getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server");
+                const char* userASM = OpenLogReplicator::getJSONfieldS(fileName, JSON_USERNAME_LENGTH, readerJSON, "user-asm");
+                const char* passwordASM = OpenLogReplicator::getJSONfieldS(fileName, JSON_PASSWORD_LENGTH, readerJSON, "password-asm");
+                const char* serverASM = OpenLogReplicator::getJSONfieldS(fileName, JSON_SERVER_LENGTH, readerJSON, "server-asm");
 
-                oracleAnalyzer = new OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, name,
+                oracleAnalyzer = new OpenLogReplicator::OracleAnalyzerOnlineASM(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, name,
                         memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, user, password, server, userASM, passwordASM,
                         serverASM);
                 if (oracleAnalyzer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzer) << " bytes memory (for: oracle analyzer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OracleAnalyzerOnlineASM) << " bytes memory (for: oracle analyzer)");
                 }
                 oracleAnalyzer->initialize();
 
                 if (sourceJSON.HasMember("arch")) {
-                    const char* arch = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
+                    const char* arch = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, sourceJSON, "arch");
 
                     if (strcmp(arch, "path") == 0)
-                        oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogPath;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzer::archGetLogPath;
                     else if (strcmp(arch, "online") == 0) {
-                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
-                        ((OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzerOnline::archGetLogOnline;
+                        ((OpenLogReplicator::OracleAnalyzerOnline*)oracleAnalyzer)->keepConnection = false;
                     } else if (strcmp(arch, "online-keep") == 0)
-                        oracleAnalyzer->archGetLog = OracleAnalyzerOnline::archGetLogOnline;
+                        oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzerOnline::archGetLogOnline;
                     else {
                         CONFIG_FAIL("bad JSON, invalid \"arch\" value: " << arch << ", expected one of: {\"path\", \"online\", \"online-keep\"}");
                     }
@@ -485,22 +481,22 @@ int main(int argc, char** argv) {
 
                 typeCONID conId = 0;
                 if (readerJSON.HasMember("con-id"))
-                    conId = getJSONfieldI16(fileName, readerJSON, "con-id");
+                    conId = OpenLogReplicator::getJSONfieldI16(fileName, readerJSON, "con-id");
 
-                oracleAnalyzer = new OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
+                oracleAnalyzer = new OpenLogReplicator::OracleAnalyzerBatch(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias,
                         name, memoryMinMb, memoryMaxMb, readBufferMax, disableChecks, conId);
                 if (oracleAnalyzer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
                 }
                 oracleAnalyzer->initialize();
                 oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
-                const Value& redoLogBatchArrayJSON = getJSONfieldA(fileName, readerJSON, "redo-log");
+                const rapidjson::Value& redoLogBatchArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, readerJSON, "redo-log");
 
-                for (SizeType j = 0; j < redoLogBatchArrayJSON.Size(); ++j)
-                    oracleAnalyzer->addRedoLogsBatch(getJSONfieldS(fileName, MAX_PATH_LENGTH, redoLogBatchArrayJSON, "redo-log", j));
+                for (rapidjson::SizeType j = 0; j < redoLogBatchArrayJSON.Size(); ++j)
+                    oracleAnalyzer->addRedoLogsBatch(OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, redoLogBatchArrayJSON, "redo-log", j));
 
-                oracleAnalyzer->archGetLog = OracleAnalyzer::archGetLogList;
+                oracleAnalyzer->archGetLog = OpenLogReplicator::OracleAnalyzer::archGetLogList;
 
             } else {
                 CONFIG_FAIL("bad JSON, invalid \"format\" value: " << readerType);
@@ -509,36 +505,36 @@ int main(int argc, char** argv) {
             outputBuffer->initialize(oracleAnalyzer);
 
             if (sourceJSON.HasMember("debug")) {
-                const Value& debugJSON = getJSONfieldO(fileName, sourceJSON, "debug");
+                const rapidjson::Value& debugJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceJSON, "debug");
 
                 if (debugJSON.HasMember("stop-log-switches")) {
-                    oracleAnalyzer->stopLogSwitches = getJSONfieldU64(fileName, debugJSON, "stop-log-switches");
-                    INFO("will shutdown after " << dec << oracleAnalyzer->stopLogSwitches << " log switches");
+                    oracleAnalyzer->stopLogSwitches = OpenLogReplicator::getJSONfieldU64(fileName, debugJSON, "stop-log-switches");
+                    INFO("will shutdown after " << std::dec << oracleAnalyzer->stopLogSwitches << " log switches");
                 }
 
                 if (debugJSON.HasMember("stop-checkpoints")) {
-                    oracleAnalyzer->stopCheckpoints = getJSONfieldU64(fileName, debugJSON, "stop-checkpoints");
-                    INFO("will shutdown after " << dec << oracleAnalyzer->stopCheckpoints << " checkpoints");
+                    oracleAnalyzer->stopCheckpoints = OpenLogReplicator::getJSONfieldU64(fileName, debugJSON, "stop-checkpoints");
+                    INFO("will shutdown after " << std::dec << oracleAnalyzer->stopCheckpoints << " checkpoints");
                 }
 
                 if (debugJSON.HasMember("stop-transactions")) {
-                    oracleAnalyzer->stopTransactions = getJSONfieldU64(fileName, debugJSON, "stop-transactions");
-                    INFO("will shutdown after " << dec << oracleAnalyzer->stopTransactions << " transactions");
+                    oracleAnalyzer->stopTransactions = OpenLogReplicator::getJSONfieldU64(fileName, debugJSON, "stop-transactions");
+                    INFO("will shutdown after " << std::dec << oracleAnalyzer->stopTransactions << " transactions");
                 }
 
                 if (debugJSON.HasMember("flush-buffer")) {
-                    uint64_t stopFlushBuffer = getJSONfieldU64(fileName, debugJSON, "flush-buffer");
+                    uint64_t stopFlushBuffer = OpenLogReplicator::getJSONfieldU64(fileName, debugJSON, "flush-buffer");
                     if (stopFlushBuffer == 1) {
                         oracleAnalyzer->stopFlushBuffer = stopFlushBuffer;
                     } else
                     if (stopFlushBuffer > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value: " << dec << stopFlushBuffer << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"flush-buffer\" value: " << std::dec << stopFlushBuffer << ", expected one of: {0, 1}");
                     }
                 }
 
                 if (debugJSON.HasMember("owner") || debugJSON.HasMember("table")) {
-                    const char* debugOwner = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, debugJSON, "owner");
-                    const char* debugTable = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, debugJSON, "table");
+                    const char* debugOwner = OpenLogReplicator::getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, debugJSON, "owner");
+                    const char* debugTable = OpenLogReplicator::getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, debugJSON, "table");
 
                     oracleAnalyzer->schema->addElement(debugOwner, debugTable, OPTIONS_DEBUG_TABLE);
                     INFO("will shutdown after committed DML in " << debugOwner << "." << debugTable);
@@ -558,25 +554,25 @@ int main(int argc, char** argv) {
             oracleAnalyzer->schema->addElement("SYS", "USER\\$", OPTIONS_SYSTEM_TABLE);
 
             if (sourceJSON.HasMember("filter")) {
-                const Value& filterJSON = getJSONfieldO(fileName, sourceJSON, "filter");
+                const rapidjson::Value& filterJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceJSON, "filter");
 
                 if (filterJSON.HasMember("table")) {
-                    const Value& tableArrayJSON = getJSONfieldA(fileName, filterJSON, "table");
+                    const rapidjson::Value& tableArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, filterJSON, "table");
 
-                    for (SizeType j = 0; j < tableArrayJSON.Size(); ++j) {
-                        const Value& tableElementJSON = getJSONfieldO(fileName, tableArrayJSON, "table", j);
+                    for (rapidjson::SizeType j = 0; j < tableArrayJSON.Size(); ++j) {
+                        const rapidjson::Value& tableElementJSON = OpenLogReplicator::getJSONfieldO(fileName, tableArrayJSON, "table", j);
 
-                        const char* owner = getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, tableElementJSON, "owner");
-                        const char* table = getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, tableElementJSON, "table");
-                        SchemaElement* element = oracleAnalyzer->schema->addElement(owner, table, 0);
+                        const char* owner = OpenLogReplicator::getJSONfieldS(fileName, SYSUSER_NAME_LENGTH, tableElementJSON, "owner");
+                        const char* table = OpenLogReplicator::getJSONfieldS(fileName, SYSOBJ_NAME_LENGTH, tableElementJSON, "table");
+                        OpenLogReplicator::SchemaElement* element = oracleAnalyzer->schema->addElement(owner, table, 0);
 
                         if (tableElementJSON.HasMember("key")) {
-                            element->keysStr = getJSONfieldS(fileName, JSON_KEY_LENGTH, tableElementJSON, "key");
-                            stringstream keyStream(element->keysStr);
+                            element->keysStr = OpenLogReplicator::getJSONfieldS(fileName, JSON_KEY_LENGTH, tableElementJSON, "key");
+                            std::stringstream keyStream(element->keysStr);
 
                             while (keyStream.good()) {
-                                string keyCol;
-                                string keyCol2;
+                                std::string keyCol;
+                                std::string keyCol2;
                                 getline(keyStream, keyCol, ',');
                                 keyCol.erase(remove(keyCol.begin(), keyCol.end(), ' '), keyCol.end());
                                 transform(keyCol.begin(), keyCol.end(),keyCol.begin(), ::toupper);
@@ -588,15 +584,15 @@ int main(int argc, char** argv) {
                 }
 
                 if (filterJSON.HasMember("skip-xid")) {
-                    const Value& skipXidArrayJSON = getJSONfieldA(fileName, filterJSON, "skip-xid");
-                    for (SizeType j = 0; j < skipXidArrayJSON.Size(); ++j) {
-                        const char* skipXid = getJSONfieldS(fileName, JSON_XID_LIST_LENGTH, skipXidArrayJSON, "skip-xid", j);
+                    const rapidjson::Value& skipXidArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, filterJSON, "skip-xid");
+                    for (rapidjson::SizeType j = 0; j < skipXidArrayJSON.Size(); ++j) {
+                        const char* skipXid = OpenLogReplicator::getJSONfieldS(fileName, JSON_XID_LIST_LENGTH, skipXidArrayJSON, "skip-xid", j);
 
                         typeXID xid = 0;
                         bool invalid = false;
-                        string usn;
-                        string slt;
-                        string sqn;
+                        std::string usn;
+                        std::string slt;
+                        std::string sqn;
 
                         uint64_t length = strnlen(skipXid, 25);
                         //UUUUSSSSQQQQQQQQ
@@ -685,9 +681,9 @@ int main(int argc, char** argv) {
                 }
 
                 if (filterJSON.HasMember("transaction-max-mb")) {
-                    uint64_t transactionMaxMb = getJSONfieldU64(fileName, filterJSON, "transaction-max-mb");
+                    uint64_t transactionMaxMb = OpenLogReplicator::getJSONfieldU64(fileName, filterJSON, "transaction-max-mb");
                     if (transactionMaxMb > memoryMaxMb) {
-                        CONFIG_FAIL("bad JSON, \"transaction-max-mb\" (" << dec << transactionMaxMb <<
+                        CONFIG_FAIL("bad JSON, \"transaction-max-mb\" (" << std::dec << transactionMaxMb <<
                                 ") is bigger than \"memory-max-mb\" (" << memoryMaxMb << ")");
                     }
                     oracleAnalyzer->transactionMax = transactionMaxMb * 1024 * 1024;
@@ -695,40 +691,40 @@ int main(int argc, char** argv) {
             }
 
             if (sourceJSON.HasMember("flags")) {
-                uint64_t flags = getJSONfieldU64(fileName, sourceJSON, "flags");
+                uint64_t flags = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "flags");
                 if (flags > 16383) {
-                    CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << dec << flags << ", expected one of: {0 .. 16383}");
+                    CONFIG_FAIL("bad JSON, invalid \"flags\" value: " << std::dec << flags << ", expected one of: {0 .. 16383}");
                 }
                 if ((flags & REDO_FLAGS_SCHEMALESS) != 0 && columnFormat > 0) {
-                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << dec << columnFormat << " is invalid for schemaless mode");
+                    CONFIG_FAIL("bad JSON, invalid \"column\" value: " << std::dec << columnFormat << " is invalid for schemaless mode");
                 }
                 oracleAnalyzer->flags |= flags;
             }
 
             if (sourceJSON.HasMember("redo-verify-delay-us"))
-                oracleAnalyzer->redoVerifyDelayUs = getJSONfieldU64(fileName, sourceJSON, "redo-verify-delay-us");
+                oracleAnalyzer->redoVerifyDelayUs = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "redo-verify-delay-us");
 
             if (sourceJSON.HasMember("refresh-interval-us"))
-                oracleAnalyzer->refreshIntervalUs = getJSONfieldU64(fileName, sourceJSON, "refresh-interval-us");
+                oracleAnalyzer->refreshIntervalUs = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "refresh-interval-us");
 
             if (sourceJSON.HasMember("arch-read-sleep-us"))
-                oracleAnalyzer->archReadSleepUs = getJSONfieldU64(fileName, sourceJSON, "arch-read-sleep-us");
+                oracleAnalyzer->archReadSleepUs = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "arch-read-sleep-us");
 
             if (sourceJSON.HasMember("arch-read-tries")) {
-                oracleAnalyzer->archReadTries = getJSONfieldU64(fileName, sourceJSON, "arch-read-tries");
+                oracleAnalyzer->archReadTries = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "arch-read-tries");
                 if (oracleAnalyzer->archReadTries < 1 || oracleAnalyzer->archReadTries > 1000000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"arch-read-tries\" value: " << dec << oracleAnalyzer->archReadTries << ", expected one of: {1, 1000000000}");
+                    CONFIG_FAIL("bad JSON, invalid \"arch-read-tries\" value: " << std::dec << oracleAnalyzer->archReadTries << ", expected one of: {1, 1000000000}");
                 }
             }
 
             if (sourceJSON.HasMember("redo-read-sleep-us"))
-                oracleAnalyzer->redoReadSleepUs = getJSONfieldU64(fileName, sourceJSON, "redo-read-sleep-us");
+                oracleAnalyzer->redoReadSleepUs = OpenLogReplicator::getJSONfieldU64(fileName, sourceJSON, "redo-read-sleep-us");
 
             if (readerJSON.HasMember("redo-copy-path"))
-                oracleAnalyzer->redoCopyPath = getJSONfieldS(fileName, MAX_PATH_LENGTH, readerJSON, "redo-copy-path");
+                oracleAnalyzer->redoCopyPath = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, readerJSON, "redo-copy-path");
 
             if (readerJSON.HasMember("log-archive-format"))
-                oracleAnalyzer->logArchiveFormat = getJSONfieldS(fileName, VPARAMETER_LENGTH, readerJSON, "log-archive-format");
+                oracleAnalyzer->logArchiveFormat = OpenLogReplicator::getJSONfieldS(fileName, VPARAMETER_LENGTH, readerJSON, "log-archive-format");
 
             uint64_t stateType = STATE_TYPE_DISK;
             const char* statePath = "checkpoint";
@@ -736,72 +732,72 @@ int main(int argc, char** argv) {
             uint16_t statePort = 6379;
 
             if (sourceJSON.HasMember("state")) {
-                const Value& stateJSON = getJSONfieldO(fileName, sourceJSON, "state");
+                const rapidjson::Value& stateJSON = OpenLogReplicator::getJSONfieldO(fileName, sourceJSON, "state");
 
                 if (stateJSON.HasMember("type")) {
-                    const char* stateTypeStr = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "type");
+                    const char* stateTypeStr = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "type");
                     if (strcmp(stateTypeStr, "disk") == 0) {
                         stateType = STATE_TYPE_DISK;
                         if (stateJSON.HasMember("path"))
-                            statePath = getJSONfieldS(fileName, MAX_PATH_LENGTH, stateJSON, "path");
+                            statePath = OpenLogReplicator::getJSONfieldS(fileName, MAX_PATH_LENGTH, stateJSON, "path");
                     } else if (strcmp(stateTypeStr, "redis") == 0) {
                         WARNING("experimental feature is used: writing state in Redis (not yet implemented)");
                         stateType = STATE_TYPE_REDIS;
                         if (stateJSON.HasMember("server"))
-                            stateServer = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "server");
+                            stateServer = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, stateJSON, "server");
                         if (stateJSON.HasMember("port"))
-                            statePort = getJSONfieldU16(fileName, stateJSON, "port");
+                            statePort = OpenLogReplicator::getJSONfieldU16(fileName, stateJSON, "port");
                     } else {
-                        CONFIG_FAIL("bad JSON, invalid \"type\" value: " << dec << stateTypeStr << ", expected one of: {\"disk\", \"redis\"}");
+                        CONFIG_FAIL("bad JSON, invalid \"type\" value: " << std::dec << stateTypeStr << ", expected one of: {\"disk\", \"redis\"}");
                     }
                 }
 
                 if (stateJSON.HasMember("interval-s"))
-                    oracleAnalyzer->checkpointIntervalS = getJSONfieldU64(fileName, stateJSON, "interval-s");
+                    oracleAnalyzer->checkpointIntervalS = OpenLogReplicator::getJSONfieldU64(fileName, stateJSON, "interval-s");
 
                 if (stateJSON.HasMember("interval-mb"))
-                    oracleAnalyzer->checkpointIntervalMB = getJSONfieldU64(fileName, stateJSON, "interval-mb");
+                    oracleAnalyzer->checkpointIntervalMB = OpenLogReplicator::getJSONfieldU64(fileName, stateJSON, "interval-mb");
 
                 if (stateJSON.HasMember("all-checkpoints")) {
-                    uint64_t allCheckpoints = getJSONfieldU64(fileName, stateJSON, "all-checkpoints");
+                    uint64_t allCheckpoints = OpenLogReplicator::getJSONfieldU64(fileName, stateJSON, "all-checkpoints");
                     if (allCheckpoints <= 1)
                         oracleAnalyzer->checkpointAll = allCheckpoints;
                     else if (allCheckpoints > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"all-checkpoints\" value: " << dec << allCheckpoints << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"all-checkpoints\" value: " << std::dec << allCheckpoints << ", expected one of: {0, 1}");
                     }
                 }
 
                 if (stateJSON.HasMember("output-checkpoint")) {
-                    uint64_t outputCheckpoint = getJSONfieldU64(fileName, stateJSON, "output-checkpoint");
+                    uint64_t outputCheckpoint = OpenLogReplicator::getJSONfieldU64(fileName, stateJSON, "output-checkpoint");
                     if (outputCheckpoint <= 1)
                         oracleAnalyzer->checkpointOutputCheckpoint = outputCheckpoint;
                     else if (outputCheckpoint > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"output-checkpoint\" value: " << dec << outputCheckpoint << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"output-checkpoint\" value: " << std::dec << outputCheckpoint << ", expected one of: {0, 1}");
                     }
                 }
 
                 if (stateJSON.HasMember("output-log-switch")) {
-                    uint64_t outputLogSwitch = getJSONfieldU64(fileName, stateJSON, "output-log-switch");
+                    uint64_t outputLogSwitch = OpenLogReplicator::getJSONfieldU64(fileName, stateJSON, "output-log-switch");
                     if (outputLogSwitch <= 1)
                         oracleAnalyzer->checkpointOutputLogSwitch = outputLogSwitch;
                     else if (outputLogSwitch > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"output-log-switch\" value: " << dec << outputLogSwitch << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"output-log-switch\" value: " << std::dec << outputLogSwitch << ", expected one of: {0, 1}");
                     }
                 }
             }
 
             if (stateType == STATE_TYPE_DISK) {
-                oracleAnalyzer->state = new StateDisk(statePath);
+                oracleAnalyzer->state = new OpenLogReplicator::StateDisk(statePath);
             } else
             if (stateType == STATE_TYPE_REDIS) {
 #ifdef LINK_LIBRARY_HIREDIS
-                oracleAnalyzer->state = new StateRedis(stateServer, statePort);
+                oracleAnalyzer->state = new OpenLogReplicator::StateRedis(stateServer, statePort);
 #else
             RUNTIME_FAIL("format \"redis\" is not compiled, exiting");
 #endif /* LINK_LIBRARY_HIREDIS */
             }
 
-            if (pthread_create(&oracleAnalyzer->pthread, nullptr, &Thread::runStatic, (void*)oracleAnalyzer)) {
+            if (pthread_create(&oracleAnalyzer->pthread, nullptr, &OpenLogReplicator::Thread::runStatic, (void*)oracleAnalyzer)) {
                 RUNTIME_FAIL("spawning thread - oracle analyzer");
             }
 
@@ -810,49 +806,49 @@ int main(int argc, char** argv) {
         }
 
         //iterate through targets
-        const Value& targetArrayJSON = getJSONfieldA(fileName, document, "target");
+        const rapidjson::Value& targetArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, document, "target");
 
-        for (SizeType i = 0; i < targetArrayJSON.Size(); ++i) {
-            const Value& targetJSON = targetArrayJSON[i];
-            const char* alias = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "alias");
-            const char* source = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "source");
+        for (rapidjson::SizeType i = 0; i < targetArrayJSON.Size(); ++i) {
+            const rapidjson::Value& targetJSON = targetArrayJSON[i];
+            const char* alias = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "alias");
+            const char* source = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, targetJSON, "source");
 
             INFO("adding target: " << alias);
-            OracleAnalyzer* oracleAnalyzer = nullptr;
-            for (OracleAnalyzer* analyzer : analyzers)
+            OpenLogReplicator::OracleAnalyzer* oracleAnalyzer = nullptr;
+            for (OpenLogReplicator::OracleAnalyzer* analyzer : analyzers)
                 if (analyzer->alias.compare(source) == 0)
-                    oracleAnalyzer = (OracleAnalyzer*)analyzer;
+                    oracleAnalyzer = (OpenLogReplicator::OracleAnalyzer*)analyzer;
             if (oracleAnalyzer == nullptr) {
                 CONFIG_FAIL("bad JSON, couldn't find reader for \"source\" value: " << source);
             }
 
             //writer
-            Writer* writer = nullptr;
-            const Value& writerJSON = getJSONfieldO(fileName, targetJSON, "writer");
-            const char* writerType = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "type");
+            OpenLogReplicator::Writer* writer = nullptr;
+            const rapidjson::Value& writerJSON = OpenLogReplicator::getJSONfieldO(fileName, targetJSON, "writer");
+            const char* writerType = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "type");
 
             uint64_t pollIntervalUs = 100000;
             if (writerJSON.HasMember("poll-interval-us")) {
-                pollIntervalUs = getJSONfieldU64(fileName, writerJSON, "poll-interval-us");
+                pollIntervalUs = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "poll-interval-us");
                 if (pollIntervalUs < 100 || pollIntervalUs > 3600000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << dec << pollIntervalUs << ", expected one of: {100 .. 3600000000}");
+                    CONFIG_FAIL("bad JSON, invalid \"poll-interval-us\" value: " << std::dec << pollIntervalUs << ", expected one of: {100 .. 3600000000}");
                 }
             }
 
             typeSCN startScn = ZERO_SCN;
             if (writerJSON.HasMember("start-scn"))
-                startScn = getJSONfieldU64(fileName, writerJSON, "start-scn");
+                startScn = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "start-scn");
 
             typeSEQ startSequence = ZERO_SEQ;
             if (writerJSON.HasMember("start-seq"))
-                startSequence = getJSONfieldU32(fileName, writerJSON, "start-seq");
+                startSequence = OpenLogReplicator::getJSONfieldU32(fileName, writerJSON, "start-seq");
 
             int64_t startTimeRel = 0;
             if (writerJSON.HasMember("start-time-rel")) {
                 if (startScn != ZERO_SCN) {
                     CONFIG_FAIL("bad JSON, \"start-scn\" used together with \"start-time-rel\"");
                 }
-                startTimeRel = getJSONfieldI64(fileName, writerJSON, "start-time-rel");
+                startTimeRel = OpenLogReplicator::getJSONfieldI64(fileName, writerJSON, "start-time-rel");
             }
 
             const char* startTime = "";
@@ -864,33 +860,33 @@ int main(int argc, char** argv) {
                     CONFIG_FAIL("bad JSON, \"start-time-rel\" used together with \"start-time\"");
                 }
 
-                startTime = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "start-time");
+                startTime = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "start-time");
             }
 
             uint64_t checkpointIntervalS = 10;
             if (writerJSON.HasMember("checkpoint-interval-s"))
-                checkpointIntervalS = getJSONfieldU64(fileName, writerJSON, "checkpoint-interval-s");
+                checkpointIntervalS = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "checkpoint-interval-s");
 
             uint64_t queueSize = 65536;
             if (writerJSON.HasMember("queue-size")) {
-                queueSize = getJSONfieldU64(fileName, writerJSON, "queue-size");
+                queueSize = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "queue-size");
                 if (queueSize < 1 || queueSize > 1000000) {
-                    CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << dec << queueSize << ", expected one of: {1 .. 1000000}");
+                    CONFIG_FAIL("bad JSON, invalid \"queue-size\" value: " << std::dec << queueSize << ", expected one of: {1 .. 1000000}");
                 }
             }
 
             if (strcmp(writerType, "file") == 0) {
                 uint64_t maxSize = 0;
                 if (writerJSON.HasMember("max-size"))
-                    maxSize = getJSONfieldU64(fileName, writerJSON, "max-size");
+                    maxSize = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "max-size");
 
                 const char* format = "%F_%T";
                 if (writerJSON.HasMember("format"))
-                    format = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "format");
+                    format = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "format");
 
                 const char* output = "";
                 if (writerJSON.HasMember("output"))
-                    output = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "output");
+                    output = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "output");
                 else
                 if (maxSize > 0) {
                     RUNTIME_FAIL("parameter \"max-size\" should be 0 when \"output\" is not set (for: file writer)");
@@ -898,61 +894,61 @@ int main(int argc, char** argv) {
 
                 uint64_t newLine = 1;
                 if (writerJSON.HasMember("new-line")) {
-                    newLine = getJSONfieldU64(fileName, writerJSON, "new-line");
+                    newLine = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "new-line");
                     if (newLine > 2) {
-                        CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << dec << newLine << ", expected one of: {0, 1, 2}");
+                        CONFIG_FAIL("bad JSON, invalid \"new-line\" value: " << std::dec << newLine << ", expected one of: {0, 1, 2}");
                     }
                 }
 
                 uint64_t append = 1;
                 if (writerJSON.HasMember("append")) {
-                    append = getJSONfieldU64(fileName, writerJSON, "append");
+                    append = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "append");
                     if (append > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"append\" value: " << dec << append << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"append\" value: " << std::dec << append << ", expected one of: {0, 1}");
                     }
                 }
 
-                writer = new WriterFile(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
+                writer = new OpenLogReplicator::WriterFile(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, output, format, maxSize, newLine, append);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterFile) << " bytes memory (for: file writer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::WriterFile) << " bytes memory (for: file writer)");
                 }
             } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
                 if (writerJSON.HasMember("max-message-mb")) {
-                    maxMessageMb = getJSONfieldU64(fileName, writerJSON, "max-message-mb");
+                    maxMessageMb = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "max-message-mb");
                     if (maxMessageMb < 1 || maxMessageMb > MAX_KAFKA_MESSAGE_MB) {
-                        CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << "}");
+                        CONFIG_FAIL("bad JSON, invalid \"max-message-mb\" value: " << std::dec << maxMessageMb << ", expected one of: {1 .. " << MAX_KAFKA_MESSAGE_MB << "}");
                     }
                 }
 
                 uint64_t maxMessages = 100000;
                 if (writerJSON.HasMember("max-messages")) {
-                    maxMessages = getJSONfieldU64(fileName, writerJSON, "max-messages");
+                    maxMessages = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "max-messages");
                     if (maxMessages < 1 || maxMessages > MAX_KAFKA_MAX_MESSAGES) {
-                        CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << "}");
+                        CONFIG_FAIL("bad JSON, invalid \"max-messages\" value: " << std::dec << maxMessages << ", expected one of: {1 .. " << MAX_KAFKA_MAX_MESSAGES << "}");
                     }
                 }
 
                 bool enableIdempotence = true;
                 if (writerJSON.HasMember("enable-idempotence")) {
-                    uint64_t enableIdempotenceInt = getJSONfieldU64(fileName, writerJSON, "enable-idempotence");
+                    uint64_t enableIdempotenceInt = OpenLogReplicator::getJSONfieldU64(fileName, writerJSON, "enable-idempotence");
                     if (enableIdempotenceInt == 1)
                         enableIdempotence = true;
                     else if (enableIdempotence > 1) {
-                        CONFIG_FAIL("bad JSON, invalid \"enable-idempotence\" value: " << dec << enableIdempotenceInt << ", expected one of: {0, 1}");
+                        CONFIG_FAIL("bad JSON, invalid \"enable-idempotence\" value: " << std::dec << enableIdempotenceInt << ", expected one of: {0, 1}");
                     }
                 }
 
-                const char* brokers = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "brokers");
+                const char* brokers = OpenLogReplicator::getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "brokers");
 
-                const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
+                const char* topic = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
 
-                writer = new WriterKafka(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
+                writer = new OpenLogReplicator::WriterKafka(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, brokers, topic, maxMessages, maxMessageMb, enableIdempotence);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterKafka) << " bytes memory (for: Kafka writer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::WriterKafka) << " bytes memory (for: Kafka writer)");
                 }
 #else
                 RUNTIME_FAIL("writer Kafka is not compiled, exiting")
@@ -962,17 +958,17 @@ int main(int argc, char** argv) {
                 WARNING("experimental feature is used: RocketMQ output");
                 const char *groupId = "OpenLogReplicator";
                 if (writerJSON.HasMember("group-id"))
-                    groupId = getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "group-id");
+                    groupId = OpenLogReplicator::getJSONfieldS(fileName, JSON_BROKERS_LENGTH, writerJSON, "group-id");
 
                 const char* address = nullptr;
                 if (writerJSON.HasMember("address"))
-                    address = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "address");
+                    address = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "address");
 
                 const char* domain = nullptr;
                 if (writerJSON.HasMember("domain"))
-                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "domain");
+                    domain = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "domain");
 
-                const char* topic = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
+                const char* topic = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "topic");
 
                 if (address == nullptr && domain == nullptr) {
                     CONFIG_FAIL("bad JSON, for RocketMQ writer, either \"address\" or \"domain\" is required");
@@ -983,59 +979,59 @@ int main(int argc, char** argv) {
 
                 const char* tags = "";
                 if (writerJSON.HasMember("tags"))
-                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "tags");
+                    domain = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "tags");
 
                 const char* keys = "";
                 if (writerJSON.HasMember("keys"))
-                    domain = getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "keys");
+                    domain = OpenLogReplicator::getJSONfieldS(fileName, JSON_TOPIC_LENGTH, writerJSON, "keys");
 
-                writer = new WriterRocketMQ(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
+                writer = new OpenLogReplicator::WriterRocketMQ(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, groupId, address, domain, topic, tags, keys);
                 if (writer == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterRocketMQ) << " bytes memory (for: RocketMQ writer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::WriterRocketMQ) << " bytes memory (for: RocketMQ writer)");
                 }
 #else
                 RUNTIME_FAIL("writer RocketMQ is not compiled, exiting")
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
-                const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
-                StreamZeroMQ* stream = new StreamZeroMQ(uri, pollIntervalUs);
+                const char* uri = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
+                OpenLogReplicator::StreamZeroMQ* stream = new OpenLogReplicator::StreamZeroMQ(uri, pollIntervalUs);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
                 stream->initialize();
-                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS,
+                writer = new OpenLogReplicator::WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS,
                         queueSize, startScn, startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     if (stream != nullptr) {
                         delete stream;
                         stream = nullptr;
                     }
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
                 RUNTIME_FAIL("writer ZeroMQ is not compiled, exiting")
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
             } else if (strcmp(writerType, "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
-                const char* uri = getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
+                const char* uri = OpenLogReplicator::getJSONfieldS(fileName, JSON_PARAMETER_LENGTH, writerJSON, "uri");
 
-                StreamNetwork* stream = new StreamNetwork(uri, pollIntervalUs);
+                OpenLogReplicator::StreamNetwork* stream = new OpenLogReplicator::StreamNetwork(uri, pollIntervalUs);
                 if (stream == nullptr) {
                     RUNTIME_FAIL("network stream creation failed");
                 }
 
                 stream->initialize();
-                writer = new WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
+                writer = new OpenLogReplicator::WriterStream(alias, oracleAnalyzer, pollIntervalUs, checkpointIntervalS, queueSize, startScn,
                         startSequence, startTime, startTimeRel, stream);
                 if (writer == nullptr) {
                     if (stream != nullptr) {
                         delete stream;
                         stream = nullptr;
                     }
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(WriterStream) << " bytes memory (for: ZeroMQ writer)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::WriterStream) << " bytes memory (for: ZeroMQ writer)");
                 }
 #else
                 RUNTIME_FAIL("writer Network is not compiled, exiting")
@@ -1048,54 +1044,54 @@ int main(int argc, char** argv) {
             writer->initialize();
 
             oracleAnalyzer->outputBuffer->setWriter(writer);
-            if (pthread_create(&writer->pthread, nullptr, &Thread::runStatic, (void*)writer)) {
+            if (pthread_create(&writer->pthread, nullptr, &OpenLogReplicator::Thread::runStatic, (void*)writer)) {
                 RUNTIME_FAIL("spawning thread - network writer");
             }
         }
 
         //sleep until killed
         {
-            unique_lock<mutex> lck(mainMtx);
-            if (!mainShutdown)
-                mainCV.wait(lck);
+            std::unique_lock<std::mutex> lck(OpenLogReplicator::mainMtx);
+            if (!OpenLogReplicator::mainShutdown)
+                OpenLogReplicator::mainCV.wait(lck);
         }
 
-    } catch (ConfigurationException& ex) {
-    } catch (RuntimeException& ex) {
+    } catch (OpenLogReplicator::ConfigurationException& ex) {
+    } catch (OpenLogReplicator::RuntimeException& ex) {
     }
 
     if (oracleAnalyzer != nullptr)
         analyzers.push_back(oracleAnalyzer);
 
     //shut down all analyzers
-    for (OracleAnalyzer* analyzer : analyzers)
+    for (OpenLogReplicator::OracleAnalyzer* analyzer : analyzers)
         analyzer->doShutdown();
-    for (OracleAnalyzer* analyzer : analyzers)
+    for (OpenLogReplicator::OracleAnalyzer* analyzer : analyzers)
         if (analyzer->started)
             pthread_join(analyzer->pthread, nullptr);
 
     //shut down writers
-    for (Writer* writer : writers) {
+    for (OpenLogReplicator::Writer* writer : writers) {
         writer->doStop();
         if (writer->oracleAnalyzer->stopFlushBuffer == 0)
             writer->doShutdown();
     }
-    for (OutputBuffer* outputBuffer : buffers) {
-        unique_lock<mutex> lck(outputBuffer->mtx);
+    for (OpenLogReplicator::OutputBuffer* outputBuffer : buffers) {
+        std::unique_lock<std::mutex> lck(outputBuffer->mtx);
         outputBuffer->writersCond.notify_all();
     }
-    for (Writer* writer : writers) {
+    for (OpenLogReplicator::Writer* writer : writers) {
         if (writer->started)
             pthread_join(writer->pthread, nullptr);
         delete writer;
     }
     writers.clear();
 
-    for (OutputBuffer* outputBuffer : buffers)
+    for (OpenLogReplicator::OutputBuffer* outputBuffer : buffers)
         delete outputBuffer;
     buffers.clear();
 
-    for (OracleAnalyzer* analyzer : analyzers)
+    for (OpenLogReplicator::OracleAnalyzer* analyzer : analyzers)
         delete analyzer;
     analyzers.clear();
 
@@ -1104,6 +1100,6 @@ int main(int argc, char** argv) {
     if (configFileBuffer != nullptr)
         delete[] configFileBuffer;
 
-    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << hex << this_thread::get_id() << ") STOP");
+    TRACE(TRACE2_THREADS, "THREADS: MAIN (" << std::hex << std::this_thread::get_id() << ") STOP");
     return 0;
 }

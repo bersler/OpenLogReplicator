@@ -24,16 +24,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STREAMNETWORK_H_
 #define STREAMNETWORK_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class StreamNetwork : public Stream {
     protected:
         int64_t socketFD;
         int64_t serverFD;
         struct sockaddr_storage address;
-        string host;
-        string port;
+        std::string host;
+        std::string port;
         uint8_t readBuffer[READ_NETWORK_BUFFER];
         uint64_t readBufferLen;
         struct addrinfo *res;
@@ -43,9 +41,9 @@ namespace OpenLogReplicator {
         virtual ~StreamNetwork();
 
         virtual void initialize(void);
-        virtual string getName(void) const;
-        virtual void initializeClient(atomic<bool>* shutdown);
-        virtual void initializeServer(atomic<bool>* shutdown);
+        virtual std::string getName(void) const;
+        virtual void initializeClient(std::atomic<bool>* shutdown);
+        virtual void initializeServer(std::atomic<bool>* shutdown);
         virtual void sendMessage(const void* msg, uint64_t length);
         virtual uint64_t receiveMessage(void* msg, uint64_t length);
         virtual uint64_t receiveMessageNB(void* msg, uint64_t length);

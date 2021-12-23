@@ -26,8 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "StreamNetwork.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     StreamNetwork::StreamNetwork(const char* uri, uint64_t pollInterval) :
         Stream(uri, pollInterval),
@@ -56,18 +54,18 @@ namespace OpenLogReplicator {
 
     void StreamNetwork::initialize(void) {
         uint64_t colon = this->uri.find(":");
-        if (colon == string::npos) {
+        if (colon == std::string::npos) {
             RUNTIME_FAIL("uri is missing \":\"");
         }
         host = this->uri.substr(0, colon);
         port = this->uri.substr(colon + 1, this->uri.length() - 1);
     }
 
-    string StreamNetwork::getName(void) const {
+    std::string StreamNetwork::getName(void) const {
         return "Network:" + uri;
     }
 
-    void StreamNetwork::initializeClient(atomic<bool>* shutdown) {
+    void StreamNetwork::initializeClient(std::atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         struct sockaddr_in addressC;
         memset((uint8_t*) &addressC, 0, sizeof(addressC));
@@ -89,7 +87,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamNetwork::initializeServer(atomic<bool>* shutdown) {
+    void StreamNetwork::initializeServer(std::atomic<bool>* shutdown) {
         this->shutdown = shutdown;
         struct addrinfo hints;
         memset(&hints, 0, sizeof hints);

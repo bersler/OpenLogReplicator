@@ -20,8 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzerBatch.h"
 #include "RuntimeException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
@@ -55,7 +53,7 @@ namespace OpenLogReplicator {
 
         ERROR("HINT: if you don't have earlier schema, try with schema-less mode (\"flags\": 2)");
         if (schemaFirstScn != ZERO_SCN) {
-            ERROR("HINT: you can also set start SCN for writer: \"start-scn\": " << dec << schemaFirstScn);
+            ERROR("HINT: you can also set start SCN for writer: \"start-scn\": " << std::dec << schemaFirstScn);
         }
 
         RUNTIME_FAIL("schema file missing");

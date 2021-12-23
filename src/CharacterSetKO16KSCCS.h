@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define KO16KSCCS_b2_min    0x31
 #define KO16KSCCS_b2_max    0xFE
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetKO16KSCCS : public CharacterSet16bit {
     protected:

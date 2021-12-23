@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "State.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     State::State() {
     }

@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0504::OpCode0504(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -48,15 +46,15 @@ namespace OpenLogReplicator {
             ktucf(fieldPos, fieldLength);
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            oracleAnalyzer->dumpStream << endl;
+            oracleAnalyzer->dumpStream << std::endl;
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
-                oracleAnalyzer->dumpStream << "rolled back transaction" << endl;
+                oracleAnalyzer->dumpStream << "rolled back transaction" << std::endl;
         }
     }
 
     void OpCode0504::ktucm(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "too short field ktucm: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field ktucm: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -69,17 +67,17 @@ namespace OpenLogReplicator {
             uint16_t srt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 8);  //to check
             uint32_t sta = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
 
-            oracleAnalyzer->dumpStream << "ktucm redo: slt: 0x" << setfill('0') << setw(4) << hex << (uint64_t)SLT(redoLogRecord->xid) <<
-                    " sqn: 0x" << setfill('0') << setw(8) << hex << SQN(redoLogRecord->xid) <<
-                    " srt: " << dec << srt <<
-                    " sta: " << dec << sta <<
-                    " flg: 0x" << hex << redoLogRecord->flg << " ";
+            oracleAnalyzer->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)SLT(redoLogRecord->xid) <<
+                    " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << SQN(redoLogRecord->xid) <<
+                    " srt: " << std::dec << srt <<
+                    " sta: " << std::dec << sta <<
+                    " flg: 0x" << std::hex << redoLogRecord->flg << " ";
         }
     }
 
     void OpCode0504::ktucf(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
-            oracleAnalyzer->dumpStream << "too short field ktucf: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field ktucf: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -92,9 +90,9 @@ namespace OpenLogReplicator {
 
             oracleAnalyzer->dumpStream << "ktucf redo:" <<
                     " uba: " << PRINTUBA(redoLogRecord->uba) <<
-                    " ext: " << dec << ext <<
-                    " spc: " << dec << spc <<
-                    " fbi: " << dec << (uint64_t)fbi <<
+                    " ext: " << std::dec << ext <<
+                    " spc: " << std::dec << spc <<
+                    " fbi: " << std::dec << (uint64_t)fbi <<
                     " ";
         }
     }

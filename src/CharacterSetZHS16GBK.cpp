@@ -20,8 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSetJA16EUC.h"
 #include "CharacterSetZHS16GBK.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetZHS16GBK::CharacterSetZHS16GBK() :
         CharacterSet16bit("ZHS16GBK", unicode_map_ZHS16GBK_2b, ZHS16GBK_b1_min, ZHS16GBK_b1_max, ZHS16GBK_b2_min, ZHS16GBK_b2_max) {

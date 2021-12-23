@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEANALYZERBATCH_H_
 #define ORACLEANALYZERBATCH_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzerBatch : public OracleAnalyzer {
     protected:

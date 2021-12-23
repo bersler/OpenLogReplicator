@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef CHARACTERSETJA16EUCTILDE_H_
 #define CHARACTERSETJA16EUCTILDE_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetJA16EUCTILDE : public CharacterSetJA16EUC {
     protected:

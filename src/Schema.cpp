@@ -35,9 +35,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 #include "State.h"
 
-using namespace rapidjson;
-using namespace std;
-
 namespace OpenLogReplicator {
     Schema::Schema(OracleAnalyzer* oracleAnalyzer) :
         oracleAnalyzer(oracleAnalyzer),
@@ -169,21 +166,21 @@ namespace OpenLogReplicator {
     bool Schema::readSchema(void) {
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: searching for previous schema");
 
-        set<string> namesList;
+        std::set<std::string> namesList;
         oracleAnalyzer->state->list(namesList);
 
         typeSCN fileScnMax = ZERO_SCN;
-        for (string jsonName : namesList) {
-            string prefix(oracleAnalyzer->database + "-schema-");
+        for (std::string jsonName : namesList) {
+            std::string prefix(oracleAnalyzer->database + "-schema-");
             if (jsonName.length() < prefix.length() || jsonName.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
 
             TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: found previous schema: " << jsonName);
-            string fileScnStr(jsonName.substr(prefix.length(), jsonName.length()));
+            std::string fileScnStr(jsonName.substr(prefix.length(), jsonName.length()));
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
-            } catch (exception& e) {
+            } catch (std::exception& e) {
                 //ignore other files
                 continue;
             }
@@ -200,11 +197,11 @@ namespace OpenLogReplicator {
 
         bool toDrop = false;
         bool firstFound = false;
-        set<typeSCN>::iterator it = schemaScnList.end();
+        std::set<typeSCN>::iterator it = schemaScnList.end();
 
         while (it != schemaScnList.begin()) {
             --it;
-            string jsonName(oracleAnalyzer->database + "-schema-" + to_string(*it));
+            std::string jsonName(oracleAnalyzer->database + "-schema-" + std::to_string(*it));
 
             toDrop = false;
             if (*it > oracleAnalyzer->firstScn && oracleAnalyzer->firstScn != ZERO_SCN) {
@@ -216,7 +213,7 @@ namespace OpenLogReplicator {
 
             if (toDrop) {
                 if ((oracleAnalyzer->flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                    TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " scn: " << dec << *it);
+                    TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " scn: " << std::dec << *it);
                     oracleAnalyzer->state->drop(jsonName);
                 }
                 it = schemaScnList.erase(it);
@@ -226,14 +223,14 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    bool Schema::readSchema(string& jsonName, typeSCN fileScn) {
+    bool Schema::readSchema(std::string& jsonName, typeSCN fileScn) {
         if (oracleAnalyzer->schemaScn != ZERO_SCN)
             return true;
         dropSchema();
 
         INFO("reading schema for " << oracleAnalyzer->database << " for scn: " << fileScn);
-        string schemaJSON;
-        Document document;
+        std::string schemaJSON;
+        rapidjson::Document document;
         oracleAnalyzer->state->read(jsonName, SCHEMA_FILE_MAX_SIZE, schemaJSON, false);
 
         if (schemaJSON.length() == 0 || document.Parse(schemaJSON.c_str()).HasParseError()) {
@@ -242,14 +239,14 @@ namespace OpenLogReplicator {
         }
 
         //SYS.USER$
-        const Value& sysUserJSON = getJSONfieldA(jsonName, document, "sys-user");
+        const rapidjson::Value& sysUserJSON = getJSONfieldA(jsonName, document, "sys-user");
 
-        for (SizeType i = 0; i < sysUserJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysUserJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSUSER_ROWID_LENGTH, sysUserJSON[i], "row-id");
             typeUSER user = getJSONfieldU32(jsonName, sysUserJSON[i], "user");
             const char* name = getJSONfieldS(jsonName, SYSUSER_NAME_LENGTH, sysUserJSON[i], "name");
 
-            const Value& spare1JSON = getJSONfieldA(jsonName, sysUserJSON[i], "spare1");
+            const rapidjson::Value& spare1JSON = getJSONfieldA(jsonName, sysUserJSON[i], "spare1");
             if (spare1JSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", spare1 should be an array with 2 elements");
                 return false;
@@ -260,12 +257,12 @@ namespace OpenLogReplicator {
 
             dictSysUserAdd(rowId, user, name, spare11, spare12, single);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << dec << sysUserJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.USER$: " << std::dec << sysUserJSON.Size());
 
         //SYS.OBJ$
-        const Value& sysObjJSON = getJSONfieldA(jsonName, document, "sys-obj");
+        const rapidjson::Value& sysObjJSON = getJSONfieldA(jsonName, document, "sys-obj");
 
-        for (SizeType i = 0; i < sysObjJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysObjJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSOBJ_ROWID_LENGTH, sysObjJSON[i], "row-id");
             typeUSER owner = getJSONfieldU32(jsonName, sysObjJSON[i], "owner");
             typeOBJ obj = getJSONfieldU32(jsonName, sysObjJSON[i], "obj");
@@ -273,7 +270,7 @@ namespace OpenLogReplicator {
             typeTYPE type = getJSONfieldU16(jsonName, sysObjJSON[i], "type");
             const char* name = getJSONfieldS(jsonName, SYSOBJ_NAME_LENGTH, sysObjJSON[i], "name");
 
-            const Value& flagsJSON = getJSONfieldA(jsonName, sysObjJSON[i], "flags");
+            const rapidjson::Value& flagsJSON = getJSONfieldA(jsonName, sysObjJSON[i], "flags");
             if (flagsJSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", flags should be an array with 2 elements");
                 return false;
@@ -284,12 +281,12 @@ namespace OpenLogReplicator {
 
             dictSysObjAdd(rowId, owner, obj, dataObj, type, name, flags1, flags2, single);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << dec << sysObjJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.OBJ$: " << std::dec << sysObjJSON.Size());
 
         //SYS.COL$
-        const Value& sysColJSON = getJSONfieldA(jsonName, document, "sys-col");
+        const rapidjson::Value& sysColJSON = getJSONfieldA(jsonName, document, "sys-col");
 
-        for (SizeType i = 0; i < sysColJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSCOL_ROWID_LENGTH, sysColJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysColJSON[i], "obj");
             typeCOL col = getJSONfieldI16(jsonName, sysColJSON[i], "col");
@@ -303,7 +300,7 @@ namespace OpenLogReplicator {
             uint64_t charsetForm = getJSONfieldU64(jsonName, sysColJSON[i], "charset-form");
             uint64_t charsetId = getJSONfieldU64(jsonName, sysColJSON[i], "charset-id");
             int64_t null_ = getJSONfieldI64(jsonName, sysColJSON[i], "null");
-            const Value& propertyJSON = getJSONfieldA(jsonName, sysColJSON[i], "property");
+            const rapidjson::Value& propertyJSON = getJSONfieldA(jsonName, sysColJSON[i], "property");
             if (propertyJSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", property should be an array with 2 elements");
                 return false;
@@ -313,17 +310,17 @@ namespace OpenLogReplicator {
 
             dictSysColAdd(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId, null_, property1, property2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << dec << sysColJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.COL$: " << std::dec << sysColJSON.Size());
 
         //SYS.CCOL$
-        const Value& sysCColJSON = getJSONfieldA(jsonName, document, "sys-ccol");
+        const rapidjson::Value& sysCColJSON = getJSONfieldA(jsonName, document, "sys-ccol");
 
-        for (SizeType i = 0; i < sysCColJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysCColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSCCOL_ROWID_LENGTH, sysCColJSON[i], "row-id");
             typeCON con = getJSONfieldU32(jsonName, sysCColJSON[i], "con");
             typeCON intCol = getJSONfieldI16(jsonName, sysCColJSON[i], "int-col");
             typeOBJ obj = getJSONfieldU32(jsonName, sysCColJSON[i], "obj");
-            const Value& spare1JSON = getJSONfieldA(jsonName, sysCColJSON[i], "spare1");
+            const rapidjson::Value& spare1JSON = getJSONfieldA(jsonName, sysCColJSON[i], "spare1");
             if (spare1JSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", spare1 should be an array with 2 elements");
                 return false;
@@ -333,12 +330,12 @@ namespace OpenLogReplicator {
 
             dictSysCColAdd(rowId, con, intCol, obj, spare11, spare12);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << dec << sysCColJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CCOL$: " << std::dec << sysCColJSON.Size());
 
         //SYS.CDEF$
-        const Value& sysCDefJSON = getJSONfieldA(jsonName, document, "sys-cdef");
+        const rapidjson::Value& sysCDefJSON = getJSONfieldA(jsonName, document, "sys-cdef");
 
-        for (SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysCDefJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSCDEF_ROWID_LENGTH, sysCDefJSON[i], "row-id");
             typeCON con = getJSONfieldU32(jsonName, sysCDefJSON[i], "con");
             typeOBJ obj = getJSONfieldU32(jsonName, sysCDefJSON[i], "obj");
@@ -346,16 +343,16 @@ namespace OpenLogReplicator {
 
             dictSysCDefAdd(rowId, con, obj, type);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CDEF$: " << dec << sysCDefJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.CDEF$: " << std::dec << sysCDefJSON.Size());
 
         //SYS.DEFERRED_STG$
-        const Value& sysDeferredStgJSON = getJSONfieldA(jsonName, document, "sys-deferredstg");
+        const rapidjson::Value& sysDeferredStgJSON = getJSONfieldA(jsonName, document, "sys-deferredstg");
 
-        for (SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysDeferredStgJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSDEFERREDSTG_ROWID_LENGTH, sysDeferredStgJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysDeferredStgJSON[i], "obj");
 
-            const Value& flagsStgJSON = getJSONfieldA(jsonName, sysDeferredStgJSON[i], "flags-stg");
+            const rapidjson::Value& flagsStgJSON = getJSONfieldA(jsonName, sysDeferredStgJSON[i], "flags-stg");
             if (flagsStgJSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", flags-stg should be an array with 2 elements");
                 return false;
@@ -365,12 +362,12 @@ namespace OpenLogReplicator {
 
             dictSysDeferredStgAdd(rowId, obj, flagsStg1, flagsStg2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << dec << sysDeferredStgJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.DEFERRED_STG$: " << std::dec << sysDeferredStgJSON.Size());
 
         //SYS.ECOL$
-        const Value& sysEColJSON = getJSONfieldA(jsonName, document, "sys-ecol");
+        const rapidjson::Value& sysEColJSON = getJSONfieldA(jsonName, document, "sys-ecol");
 
-        for (SizeType i = 0; i < sysEColJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysEColJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSECOL_ROWID_LENGTH, sysEColJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysEColJSON[i], "tab-obj");
             typeCOL colNum = getJSONfieldI16(jsonName, sysEColJSON[i], "col-num");
@@ -378,18 +375,18 @@ namespace OpenLogReplicator {
 
             dictSysEColAdd(rowId, obj, colNum, guardId);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << dec << sysEColJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.ECOL$: " << std::dec << sysEColJSON.Size());
 
         //SYS.TAB$
-        const Value& sysTabJSON = getJSONfieldA(jsonName, document, "sys-tab");
+        const rapidjson::Value& sysTabJSON = getJSONfieldA(jsonName, document, "sys-tab");
 
-        for (SizeType i = 0; i < sysTabJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysTabJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSTAB_ROWID_LENGTH, sysTabJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysTabJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU32(jsonName, sysTabJSON[i], "data-obj");
             typeCOL cluCols = getJSONfieldI16(jsonName, sysTabJSON[i], "clu-cols");
 
-            const Value& flagsJSON = getJSONfieldA(jsonName, sysTabJSON[i], "flags");
+            const rapidjson::Value& flagsJSON = getJSONfieldA(jsonName, sysTabJSON[i], "flags");
             if (flagsJSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", flags should be an array with 2 elements");
                 return false;
@@ -397,7 +394,7 @@ namespace OpenLogReplicator {
             uint64_t flags1 = getJSONfieldU64(jsonName, flagsJSON, "flags", 0);
             uint64_t flags2 = getJSONfieldU64(jsonName, flagsJSON, "flags", 1);
 
-            const Value& propertyJSON = getJSONfieldA(jsonName, sysTabJSON[i], "property");
+            const rapidjson::Value& propertyJSON = getJSONfieldA(jsonName, sysTabJSON[i], "property");
             if (propertyJSON.Size() != 2) {
                 WARNING("bad JSON in " << jsonName << ", property should be an array with 2 elements");
                 return false;
@@ -407,12 +404,12 @@ namespace OpenLogReplicator {
 
             dictSysTabAdd(rowId, obj, dataObj, cluCols, flags1, flags2, property1, property2);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << dec << sysTabJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TAB$: " << std::dec << sysTabJSON.Size());
 
         //SYS.TABPART$
-        const Value& sysTabPartJSON = getJSONfieldA(jsonName, document, "sys-tabpart");
+        const rapidjson::Value& sysTabPartJSON = getJSONfieldA(jsonName, document, "sys-tabpart");
 
-        for (SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysTabPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSTABPART_ROWID_LENGTH, sysTabPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysTabPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU32(jsonName, sysTabPartJSON[i], "data-obj");
@@ -420,12 +417,12 @@ namespace OpenLogReplicator {
 
             dictSysTabPartAdd(rowId, obj, dataObj, bo);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABPART$: " << dec << sysTabPartJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABPART$: " << std::dec << sysTabPartJSON.Size());
 
         //SYS.TABCOMPART$
-        const Value& sysTabComPartJSON = getJSONfieldA(jsonName, document, "sys-tabcompart");
+        const rapidjson::Value& sysTabComPartJSON = getJSONfieldA(jsonName, document, "sys-tabcompart");
 
-        for (SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysTabComPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSTABCOMPART_ROWID_LENGTH, sysTabComPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysTabComPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU32(jsonName, sysTabComPartJSON[i], "data-obj");
@@ -433,12 +430,12 @@ namespace OpenLogReplicator {
 
             dictSysTabComPartAdd(rowId, obj, dataObj, bo);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABCOMPART$: " << dec << sysTabComPartJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABCOMPART$: " << std::dec << sysTabComPartJSON.Size());
 
         //SYS.TABSUBPART$
-        const Value& sysTabSubPartJSON = getJSONfieldA(jsonName, document, "sys-tabsubpart");
+        const rapidjson::Value& sysTabSubPartJSON = getJSONfieldA(jsonName, document, "sys-tabsubpart");
 
-        for (SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
+        for (rapidjson::SizeType i = 0; i < sysTabSubPartJSON.Size(); ++i) {
             const char* rowId = getJSONfieldS(jsonName, SYSTABSUBPART_ROWID_LENGTH, sysTabSubPartJSON[i], "row-id");
             typeOBJ obj = getJSONfieldU32(jsonName, sysTabSubPartJSON[i], "obj");
             typeDATAOBJ dataObj = getJSONfieldU32(jsonName, sysTabSubPartJSON[i], "data-obj");
@@ -446,7 +443,7 @@ namespace OpenLogReplicator {
 
             dictSysTabSubPartAdd(rowId, obj, dataObj, pObj);
         }
-        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << dec << sysTabSubPartJSON.Size());
+        TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: SYS.TABSUBPART$: " << std::dec << sysTabSubPartJSON.Size());
 
         //database metadata
         const char* databaseRead = getJSONfieldS(jsonName, JSON_PARAMETER_LENGTH, document, "database");
@@ -459,7 +456,7 @@ namespace OpenLogReplicator {
         if (bigEndian == 1)
             oracleAnalyzer->setBigEndian();
         else if (bigEndian != 0) {
-            WARNING("invalid \"big-endian\" value " << jsonName << " - " << dec << bigEndian << " - skipping file");
+            WARNING("invalid \"big-endian\" value " << jsonName << " - " << std::dec << bigEndian << " - skipping file");
             return false;
         }
 
@@ -467,11 +464,11 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->activation == 0)
             oracleAnalyzer->activation = activationRead;
 
-        string contextRead(getJSONfieldS(jsonName, VCONTEXT_LENGTH, document, "context"));
+        std::string contextRead(getJSONfieldS(jsonName, VCONTEXT_LENGTH, document, "context"));
         if (oracleAnalyzer->context.length() == 0)
             oracleAnalyzer->context = contextRead;
         else if (oracleAnalyzer->context.compare(contextRead) != 0) {
-            WARNING("invalid \"context\" for " << jsonName << " - " << dec << contextRead << " instead of " << oracleAnalyzer->context << " - skipping file");
+            WARNING("invalid \"context\" for " << jsonName << " - " << std::dec << contextRead << " instead of " << oracleAnalyzer->context << " - skipping file");
             return false;
         }
 
@@ -479,11 +476,11 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->conId == -1)
             oracleAnalyzer->conId = conIdRead;
         else if (oracleAnalyzer->conId != conIdRead) {
-            WARNING("invalid \"con-id\" for " << jsonName << " - " << dec << conIdRead << " instead of " << oracleAnalyzer->conId << " - skipping file");
+            WARNING("invalid \"con-id\" for " << jsonName << " - " << std::dec << conIdRead << " instead of " << oracleAnalyzer->conId << " - skipping file");
             return false;
         }
 
-        string conNameRead = getJSONfieldS(jsonName, VCONTEXT_LENGTH, document, "con-name");
+        std::string conNameRead = getJSONfieldS(jsonName, VCONTEXT_LENGTH, document, "con-name");
         if (oracleAnalyzer->conName.length() == 0)
             oracleAnalyzer->conName = conNameRead;
         else if (oracleAnalyzer->conName.compare(conNameRead) != 0) {
@@ -513,17 +510,17 @@ namespace OpenLogReplicator {
             oracleAnalyzer->outputBuffer->setNlsCharset(oracleAnalyzer->nlsCharacterSet, oracleAnalyzer->nlsNcharCharacterSet);
 
         if (oracleAnalyzer->readers.size() == 0) {
-            const Value& onlineRedoJSON = getJSONfieldA(jsonName, document, "online-redo");
+            const rapidjson::Value& onlineRedoJSON = getJSONfieldA(jsonName, document, "online-redo");
 
-            for (SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
+            for (rapidjson::SizeType i = 0; i < onlineRedoJSON.Size(); ++i) {
                 uint64_t group = getJSONfieldI64(jsonName, onlineRedoJSON[i], "group");
-                const Value& path = getJSONfieldA(jsonName, onlineRedoJSON[i], "path");
+                const rapidjson::Value& path = getJSONfieldA(jsonName, onlineRedoJSON[i], "path");
 
                 Reader* onlineReader = oracleAnalyzer->readerCreate(group);
                 if (onlineReader != nullptr) {
                     onlineReader->paths.clear();
-                    for (SizeType j = 0; j < path.Size(); ++j) {
-                        const Value& pathVal = path[j];
+                    for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
+                        const rapidjson::Value& pathVal = path[j];
                         onlineReader->paths.push_back(pathVal.GetString());
                     }
                 }
@@ -536,8 +533,8 @@ namespace OpenLogReplicator {
         }
 
         if (oracleAnalyzer->oiSet.size() == 0) {
-            const Value& incarnationsJSON = getJSONfieldA(jsonName, document, "incarnations");
-            for (SizeType i = 0; i < incarnationsJSON.Size(); ++i) {
+            const rapidjson::Value& incarnationsJSON = getJSONfieldA(jsonName, document, "incarnations");
+            for (rapidjson::SizeType i = 0; i < incarnationsJSON.Size(); ++i) {
                 uint32_t incarnation = getJSONfieldU32(jsonName, incarnationsJSON[i], "incarnation");
                 typeSCN resetlogsScn = getJSONfieldU64(jsonName, incarnationsJSON[i], "resetlogs-scn");
                 typeSCN priorResetlogsScn = getJSONfieldU64(jsonName, incarnationsJSON[i], "prior-resetlogs-scn");
@@ -548,7 +545,7 @@ namespace OpenLogReplicator {
                 OracleIncarnation *oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
                         resetlogs, priorIncarnation);
                 if (oi == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << (sizeof(OracleIncarnation)) << " bytes memory (for: oracle incarnation)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << (sizeof(OracleIncarnation)) << " bytes memory (for: oracle incarnation)");
                 }
                 oracleAnalyzer->oiSet.insert(oi);
 
@@ -557,9 +554,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        const Value& usersJSON = getJSONfieldA(jsonName, document, "users");
-        for (SizeType i = 0; i < usersJSON.Size(); ++i) {
-            const Value& userJSON = usersJSON[i];;
+        const rapidjson::Value& usersJSON = getJSONfieldA(jsonName, document, "users");
+        for (rapidjson::SizeType i = 0; i < usersJSON.Size(); ++i) {
+            const rapidjson::Value& userJSON = usersJSON[i];;
             users.insert(userJSON.GetString());
         }
 
@@ -583,15 +580,15 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->schemaScn == ZERO_SCN && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
             return;
 
-        string jsonName(oracleAnalyzer->database + "-schema-" + to_string(oracleAnalyzer->schemaScn));
-        TRACE(TRACE2_SYSTEM, "SYSTEM: writing: " << jsonName << " scn: " << dec << oracleAnalyzer->schemaScn);
+        std::string jsonName(oracleAnalyzer->database + "-schema-" + std::to_string(oracleAnalyzer->schemaScn));
+        TRACE(TRACE2_SYSTEM, "SYSTEM: writing: " << jsonName << " scn: " << std::dec << oracleAnalyzer->schemaScn);
 
-        stringstream ss;
+        std::stringstream ss;
         ss << "{\"database\":\"" << oracleAnalyzer->database << "\"," <<
-                "\"big-endian\":" << dec << oracleAnalyzer->bigEndian << "," <<
-                "\"activation\":" << dec << oracleAnalyzer->activation << "," <<
+                "\"big-endian\":" << std::dec << oracleAnalyzer->bigEndian << "," <<
+                "\"activation\":" << std::dec << oracleAnalyzer->activation << "," <<
                 "\"context\":\"" << oracleAnalyzer->context << "\"," <<
-                "\"con-id\":" << dec << oracleAnalyzer->conId << "," <<
+                "\"con-id\":" << std::dec << oracleAnalyzer->conId << "," <<
                 "\"con-name\":\"" << oracleAnalyzer->conName << "\"," <<
                 "\"db-recovery-file-dest\":\"";
         writeEscapeValue(ss, oracleAnalyzer->dbRecoveryFileDest);
@@ -621,7 +618,7 @@ namespace OpenLogReplicator {
 
             hasPrev2 = false;
             ss SCHEMA_ENDL << "{\"group\":" << reader->group << ",\"path\":[";
-            for (string& path : reader->paths) {
+            for (std::string& path : reader->paths) {
                 if (hasPrev2)
                     ss << ",";
                 else
@@ -651,7 +648,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SCHEMA_ENDL << "\"users\":[";
         hasPrev = false;
-        for (string user : users) {
+        for (std::string user : users) {
             if (hasPrev)
                 ss << ",";
             else
@@ -671,10 +668,10 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysCCol->rowId << "\"," <<
-                    "\"con\":" << dec << sysCCol->con << "," <<
-                    "\"int-col\":" << dec << sysCCol->intCol << "," <<
-                    "\"obj\":" << dec << sysCCol->obj << "," <<
-                    "\"spare1\":" << dec << sysCCol->spare1 << "}";
+                    "\"con\":" << std::dec << sysCCol->con << "," <<
+                    "\"int-col\":" << std::dec << sysCCol->intCol << "," <<
+                    "\"obj\":" << std::dec << sysCCol->obj << "," <<
+                    "\"spare1\":" << std::dec << sysCCol->spare1 << "}";
             sysCCol->saved = true;
         }
 
@@ -690,9 +687,9 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysCDef->rowId << "\"," <<
-                    "\"con\":" << dec << sysCDef->con << "," <<
-                    "\"obj\":" << dec << sysCDef->obj << "," <<
-                    "\"type\":" << dec << sysCDef->type << "}";
+                    "\"con\":" << std::dec << sysCDef->con << "," <<
+                    "\"obj\":" << std::dec << sysCDef->obj << "," <<
+                    "\"type\":" << std::dec << sysCDef->type << "}";
             sysCDef->saved = true;
         }
 
@@ -708,18 +705,18 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysCol->rowId << "\"," <<
-                    "\"obj\":" << dec << sysCol->obj << "," <<
-                    "\"col\":" << dec << sysCol->col << "," <<
-                    "\"seg-col\":" << dec << sysCol->segCol << "," <<
-                    "\"int-col\":" << dec << sysCol->intCol << "," <<
+                    "\"obj\":" << std::dec << sysCol->obj << "," <<
+                    "\"col\":" << std::dec << sysCol->col << "," <<
+                    "\"seg-col\":" << std::dec << sysCol->segCol << "," <<
+                    "\"int-col\":" << std::dec << sysCol->intCol << "," <<
                     "\"name\":\"" << sysCol->name << "\"," <<
-                    "\"type\":" << dec << sysCol->type << "," <<
-                    "\"length\":" << dec << sysCol->length << "," <<
-                    "\"precision\":" << dec << sysCol->precision << "," <<
-                    "\"scale\":" << dec << sysCol->scale << "," <<
-                    "\"charset-form\":" << dec << sysCol->charsetForm << "," <<
-                    "\"charset-id\":" << dec << sysCol->charsetId << "," <<
-                    "\"null\":" << dec << sysCol->null_ << "," <<
+                    "\"type\":" << std::dec << sysCol->type << "," <<
+                    "\"length\":" << std::dec << sysCol->length << "," <<
+                    "\"precision\":" << std::dec << sysCol->precision << "," <<
+                    "\"scale\":" << std::dec << sysCol->scale << "," <<
+                    "\"charset-form\":" << std::dec << sysCol->charsetForm << "," <<
+                    "\"charset-id\":" << std::dec << sysCol->charsetId << "," <<
+                    "\"null\":" << std::dec << sysCol->null_ << "," <<
                     "\"property\":" << sysCol->property << "}";
             sysCol->saved = true;
         }
@@ -736,8 +733,8 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysDeferredStg->rowId << "\"," <<
-                    "\"obj\":" << dec << sysDeferredStg->obj << "," <<
-                    "\"flags-stg\":" << dec << sysDeferredStg->flagsStg << "}";
+                    "\"obj\":" << std::dec << sysDeferredStg->obj << "," <<
+                    "\"flags-stg\":" << std::dec << sysDeferredStg->flagsStg << "}";
             sysDeferredStg->saved = true;
         }
 
@@ -753,9 +750,9 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysECol->rowId << "\"," <<
-                    "\"tab-obj\":" << dec << sysECol->tabObj << "," <<
-                    "\"col-num\":" << dec << sysECol->colNum << "," <<
-                    "\"guard-id\":" << dec << sysECol->guardId << "}";
+                    "\"tab-obj\":" << std::dec << sysECol->tabObj << "," <<
+                    "\"col-num\":" << std::dec << sysECol->colNum << "," <<
+                    "\"guard-id\":" << std::dec << sysECol->guardId << "}";
             sysECol->saved = true;
         }
 
@@ -771,13 +768,13 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysObj->rowId << "\"," <<
-                    "\"owner\":" << dec << sysObj->owner << "," <<
-                    "\"obj\":" << dec << sysObj->obj << "," <<
-                    "\"data-obj\":" << dec << sysObj->dataObj << "," <<
+                    "\"owner\":" << std::dec << sysObj->owner << "," <<
+                    "\"obj\":" << std::dec << sysObj->obj << "," <<
+                    "\"data-obj\":" << std::dec << sysObj->dataObj << "," <<
                     "\"name\":\"" << sysObj->name << "\"," <<
-                    "\"type\":" << dec << sysObj->type << "," <<
-                    "\"flags\":" << dec << sysObj->flags << "," <<
-                    "\"single\":" << dec << (uint64_t)sysObj->single <<"}";
+                    "\"type\":" << std::dec << sysObj->type << "," <<
+                    "\"flags\":" << std::dec << sysObj->flags << "," <<
+                    "\"single\":" << std::dec << (uint64_t)sysObj->single <<"}";
             sysObj->saved = true;
         }
 
@@ -793,11 +790,11 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTab->rowId << "\"," <<
-                    "\"obj\":" << dec << sysTab->obj << "," <<
-                    "\"data-obj\":" << dec << sysTab->dataObj << "," <<
-                    "\"clu-cols\":" << dec << sysTab->cluCols << "," <<
-                    "\"flags\":" << dec << sysTab->flags << "," <<
-                    "\"property\":" << dec << sysTab->property << "}";
+                    "\"obj\":" << std::dec << sysTab->obj << "," <<
+                    "\"data-obj\":" << std::dec << sysTab->dataObj << "," <<
+                    "\"clu-cols\":" << std::dec << sysTab->cluCols << "," <<
+                    "\"flags\":" << std::dec << sysTab->flags << "," <<
+                    "\"property\":" << std::dec << sysTab->property << "}";
             sysTab->saved = true;
         }
 
@@ -813,9 +810,9 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTabComPart->rowId << "\"," <<
-                    "\"obj\":" << dec << sysTabComPart->obj << "," <<
-                    "\"data-obj\":" << dec << sysTabComPart->dataObj << "," <<
-                    "\"bo\":" << dec << sysTabComPart->bo << "}";
+                    "\"obj\":" << std::dec << sysTabComPart->obj << "," <<
+                    "\"data-obj\":" << std::dec << sysTabComPart->dataObj << "," <<
+                    "\"bo\":" << std::dec << sysTabComPart->bo << "}";
             sysTabComPart->saved = true;
         }
 
@@ -831,9 +828,9 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTabPart->rowId << "\"," <<
-                    "\"obj\":" << dec << sysTabPart->obj << "," <<
-                    "\"data-obj\":" << dec << sysTabPart->dataObj << "," <<
-                    "\"bo\":" << dec << sysTabPart->bo << "}";
+                    "\"obj\":" << std::dec << sysTabPart->obj << "," <<
+                    "\"data-obj\":" << std::dec << sysTabPart->dataObj << "," <<
+                    "\"bo\":" << std::dec << sysTabPart->bo << "}";
             sysTabPart->saved = true;
         }
 
@@ -849,9 +846,9 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysTabSubPart->rowId << "\"," <<
-                    "\"obj\":" << dec << sysTabSubPart->obj << "," <<
-                    "\"data-obj\":" << dec << sysTabSubPart->dataObj << "," <<
-                    "\"p-obj\":" << dec << sysTabSubPart->pObj << "}";
+                    "\"obj\":" << std::dec << sysTabSubPart->obj << "," <<
+                    "\"data-obj\":" << std::dec << sysTabSubPart->dataObj << "," <<
+                    "\"p-obj\":" << std::dec << sysTabSubPart->pObj << "}";
             sysTabSubPart->saved = true;
         }
 
@@ -867,10 +864,10 @@ namespace OpenLogReplicator {
                 hasPrev = true;
 
             ss SCHEMA_ENDL << "{\"row-id\":\"" << sysUser->rowId << "\"," <<
-                    "\"user\":" << dec << sysUser->user << "," <<
+                    "\"user\":" << std::dec << sysUser->user << "," <<
                     "\"name\":\"" << sysUser->name << "\"," <<
-                    "\"spare1\":" << dec << sysUser->spare1 << "," <<
-                    "\"single\":" << dec << (uint64_t)sysUser->single << "}";
+                    "\"spare1\":" << std::dec << sysUser->spare1 << "," <<
+                    "\"single\":" << std::dec << (uint64_t)sysUser->single << "}";
             sysUser->saved = true;
         }
 
@@ -883,11 +880,11 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->checkpointScn != ZERO_SCN) {
             bool unlinkFile = false;
             bool firstFound = false;
-            set<typeSCN>::iterator it = schemaScnList.end();
+            std::set<typeSCN>::iterator it = schemaScnList.end();
 
             while (it != schemaScnList.begin()) {
                 --it;
-                string jsonName(oracleAnalyzer->database + "-schema-" + to_string(*it));
+                std::string jsonName(oracleAnalyzer->database + "-schema-" + std::to_string(*it));
 
                 unlinkFile = false;
                 if (*it > oracleAnalyzer->schemaScn) {
@@ -901,7 +898,7 @@ namespace OpenLogReplicator {
 
                 if (unlinkFile) {
                     if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMA_KEEP) == 0) {
-                        TRACE(TRACE2_SYSTEM, "SYSTEM: delete: " << jsonName << " schema scn: " << dec << *it);
+                        TRACE(TRACE2_SYSTEM, "SYSTEM: delete: " << jsonName << " schema scn: " << std::dec << *it);
                         oracleAnalyzer->state->drop(jsonName);
                     }
                     it = schemaScnList.erase(it);
@@ -914,12 +911,12 @@ namespace OpenLogReplicator {
 
     void Schema::addToDict(OracleObject* object) {
         if (objectMap.find(object->obj) != objectMap.end()) {
-            CONFIG_FAIL("can't add object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+            CONFIG_FAIL("can't add object (obj: " << std::dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
         objectMap[object->obj] = object;
 
         if (partitionMap.find(object->obj) != partitionMap.end()) {
-            CONFIG_FAIL("can't add partition (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+            CONFIG_FAIL("can't add partition (obj: " << std::dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
         partitionMap[object->obj] = object;
 
@@ -928,7 +925,7 @@ namespace OpenLogReplicator {
             typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
 
             if (partitionMap.find(partitionObj) != partitionMap.end()) {
-                CONFIG_FAIL("can't add partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
+                CONFIG_FAIL("can't add partition element (obj: " << std::dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
             }
             partitionMap[partitionObj] = object;
         }
@@ -936,12 +933,12 @@ namespace OpenLogReplicator {
 
     void Schema::removeFromDict(OracleObject* object) {
         if (objectMap.find(object->obj) == objectMap.end()) {
-            CONFIG_FAIL("can't remove object (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+            CONFIG_FAIL("can't remove object (obj: " << std::dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
         objectMap.erase(object->obj);
 
         if (partitionMap.find(object->obj) == partitionMap.end()) {
-            CONFIG_FAIL("can't remove partition (obj: " << dec << object->obj << ", dataObj: " << object->dataObj << ")");
+            CONFIG_FAIL("can't remove partition (obj: " << std::dec << object->obj << ", dataObj: " << object->dataObj << ")");
         }
         partitionMap.erase(object->obj);
 
@@ -950,7 +947,7 @@ namespace OpenLogReplicator {
             typeDATAOBJ partitionDataObj = objx & 0xFFFFFFFF;
 
             if (partitionMap.find(partitionObj) == partitionMap.end()) {
-                CONFIG_FAIL("can't remove partition element (obj: " << dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
+                CONFIG_FAIL("can't remove partition element (obj: " << std::dec << partitionObj << ", dataObj: " << partitionDataObj << ")");
             }
             partitionMap.erase(partitionObj);
         }
@@ -963,7 +960,7 @@ namespace OpenLogReplicator {
         return it->second;
     }
 
-    stringstream& Schema::writeEscapeValue(stringstream& ss, string& str) {
+    std::stringstream& Schema::writeEscapeValue(std::stringstream& ss, std::string& str) {
         const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
@@ -981,7 +978,7 @@ namespace OpenLogReplicator {
     bool Schema::refreshIndexes(void) {
         bool changedSchema = savedDeleted;
 
-        list<RowId> removeRowId;
+        std::list<RowId> removeRowId;
         //SYS.USER$
         if (sysUserTouched) {
             sysUserMapUser.clear();
@@ -999,7 +996,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage USER$ (rowid: " << it.first << ", USER#: " << dec << sysUser->user << ", NAME: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage USER$ (rowid: " << it.first << ", USER#: " << std::dec << sysUser->user << ", NAME: " <<
                         sysUser->name << ", SPARE1: " << sysUser->spare1 << ")");
                 removeRowId.push_back(it.first);
                 delete sysUser;
@@ -1031,7 +1028,7 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage OBJ$ (rowid: " << it.first << ", OWNER#: " << dec << sysObj->owner << ", OBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage OBJ$ (rowid: " << it.first << ", OWNER#: " << std::dec << sysObj->owner << ", OBJ#: " <<
                         sysObj->obj << ", DATAOBJ#: " << sysObj->dataObj << ", TYPE#: " << sysObj->type << ", NAME: '" << sysObj->name <<
                         "', FLAGS: " << sysObj->flags << ")");
                 removeRowId.push_back(it.first);
@@ -1062,7 +1059,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage CCOL$ (rowid: " << it.first << ", CON#: " << dec << sysCCol->con << ", INTCOL#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage CCOL$ (rowid: " << it.first << ", CON#: " << std::dec << sysCCol->con << ", INTCOL#: " <<
                         sysCCol->intCol << ", OBJ#: " << sysCCol->obj << ", SPARE1: " << sysCCol->spare1 << ")");
                 removeRowId.push_back(it.first);
                 delete sysCCol;
@@ -1094,7 +1091,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage CDEF$ (rowid: " << it.first << ", CON#: " << dec << sysCDef->con << ", OBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage CDEF$ (rowid: " << it.first << ", CON#: " << std::dec << sysCDef->con << ", OBJ#: " <<
                         sysCDef->obj << ", type: " << sysCDef->type << ")");
                 removeRowId.push_back(it.first);
                 delete sysCDef;
@@ -1127,7 +1124,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage COL$ (rowid: " << it.first << ", OBJ#: " << dec << sysCol->obj << ", COL#: " << sysCol->col <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage COL$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysCol->obj << ", COL#: " << sysCol->col <<
                         ", SEGCOL#: " << sysCol->segCol << ", INTCOL#: " << sysCol->intCol << ", NAME: '" << sysCol->name << "', TYPE#: " <<
                         sysCol->type << ", LENGTH: " << sysCol->length << ", PRECISION#: " << sysCol->precision << ", SCALE: " << sysCol->scale <<
                         ", CHARSETFORM: " << sysCol->charsetForm << ", CHARSETID: " << sysCol->charsetId << ", NULL$: " << sysCol->null_ <<
@@ -1159,7 +1156,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage DEFERRED_STG$ (rowid: " << it.first << ", OBJ#: " << dec << sysDeferredStg->obj <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage DEFERRED_STG$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysDeferredStg->obj <<
                         ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
                 removeRowId.push_back(it.first);
                 delete sysDeferredStg;
@@ -1189,7 +1186,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage ECOL$ (rowid: " << it.first << ", TABOBJ#: " << dec << sysECol->tabObj << ", COLNUM: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage ECOL$ (rowid: " << it.first << ", TABOBJ#: " << std::dec << sysECol->tabObj << ", COLNUM: " <<
                         sysECol->colNum << ", GUARD_ID: " << sysECol->guardId << ")");
                 removeRowId.push_back(it.first);
                 delete sysECol;
@@ -1218,7 +1215,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TAB$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysTab->obj << ", DATAOBJ#: " <<
                         sysTab->dataObj << ", CLUCOLS: " << sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
                 removeRowId.push_back(it.first);
                 delete sysTab;
@@ -1250,7 +1247,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABCOMPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabComPart->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABCOMPART$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysTabComPart->obj << ", DATAOBJ#: " <<
                         sysTabComPart->dataObj << ", BO#: " << sysTabComPart->bo << ")");
                 removeRowId.push_back(it.first);
                 delete sysTabComPart;
@@ -1280,7 +1277,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABPART$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysTabPart->obj << ", DATAOBJ#: " <<
                         sysTabPart->dataObj << ", BO#: " << sysTabPart->bo << ")");
                 removeRowId.push_back(it.first);
                 delete sysTabPart;
@@ -1316,7 +1313,7 @@ namespace OpenLogReplicator {
                     continue;
                 }
 
-                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABSUBPART$ (rowid: " << it.first << ", OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " <<
+                TRACE(TRACE2_SYSTEM, "SYSTEM: garbage TABSUBPART$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysTabSubPart->obj << ", DATAOBJ#: " <<
                         sysTabSubPart->dataObj << ", POBJ#: " << sysTabSubPart->pObj << ")");
                 removeRowId.push_back(it.first);
                 delete sysTabSubPart;
@@ -1339,7 +1336,7 @@ namespace OpenLogReplicator {
                 OracleObject* object = it->second;
                 if (object->user == user) {
                     removeFromDict(object);
-                    INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
+                    INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << std::dec << object->dataObj
                             << ", obj: " << object->obj << ")");
                     objectMap.erase(it++);
                     delete object;
@@ -1364,7 +1361,7 @@ namespace OpenLogReplicator {
             if (objectMapIt != objectMap.end()) {
                 OracleObject* object = objectMapIt->second;
                 removeFromDict(object);
-                INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << dec << object->dataObj
+                INFO("dropped schema: " << object->owner << "." << object->name << " (dataobj: " << std::dec << object->dataObj
                         << ", obj: " << object->obj << ")");
                 delete object;
             }
@@ -1375,10 +1372,10 @@ namespace OpenLogReplicator {
             buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, false);
     }
 
-    void Schema::buildMaps(string& owner, string& table, vector<string>& keys, string& keysStr, typeOPTIONS options, bool output) {
+    void Schema::buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOPTIONS options, bool output) {
         uint64_t tabCnt = 0;
-        regex regexOwner(owner);
-        regex regexTable(table);
+        std::regex regexOwner(owner);
+        std::regex regexTable(table);
 
         for (auto itObj : sysObjMapRowId) {
             SysObj* sysObj = itObj.second;
@@ -1394,39 +1391,39 @@ namespace OpenLogReplicator {
 
             //table already added with another rule
             if (objectMap.find(sysObj->obj) != objectMap.end()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - already added");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - already added");
                 continue;
             }
 
             //object without SYS.TAB$
             auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
             if (sysTabMapObjIt == sysTabMapObj.end()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - SYS.TAB$ entry missing");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - SYS.TAB$ entry missing");
                 continue;
             }
             SysTab* sysTab = sysTabMapObjIt->second;
 
             //skip binary objects
             if (sysTab->isBinary()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - binary");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - binary");
                 continue;
             }
 
             //skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - IOT");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - IOT");
                 continue;
             }
 
             //skip temporary tables
             if (sysObj->isTemporary()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - temporary table");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - temporary table");
                 continue;
             }
 
             //skip nested tables
             if (sysTab->isNested()) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - nested table");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - nested table");
                 continue;
             }
 
@@ -1440,7 +1437,7 @@ namespace OpenLogReplicator {
             }
             //skip compressed tables
             if (compressed) {
-                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << dec << sysObj->obj << ") - compressed table");
+                DEBUG("- skipped: " << sysUser->name << "." << sysObj->name << " (obj: " << std::dec << sysObj->obj << ") - compressed table");
                 continue;
             }
 
@@ -1453,7 +1450,7 @@ namespace OpenLogReplicator {
 
             schemaObject = new OracleObject(sysObj->obj, sysTab->dataObj, sysObj->owner, sysTab->cluCols, options, sysUser->name, sysObj->name);
             if (schemaObject == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleObject) << " bytes memory (for: object creation2)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OracleObject) << " bytes memory (for: object creation2)");
             }
             ++tabCnt;
 
@@ -1527,8 +1524,8 @@ namespace OpenLogReplicator {
                 if (sysCol->type == 1 || sysCol->type == 96) {
                     auto it = oracleAnalyzer->outputBuffer->characterMap.find(charmapId);
                     if (it == oracleAnalyzer->outputBuffer->characterMap.end()) {
-                        ERROR("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << dec << charmapId << ") FROM DUAL;");
-                        RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " - unsupported character set id: " << dec << charmapId <<
+                        ERROR("HINT: check in database for name: SELECT NLS_CHARSET_NAME(" << std::dec << charmapId << ") FROM DUAL;");
+                        RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " - unsupported character set id: " << std::dec << charmapId <<
                                 " for column: " << sysObj->name << "." << sysCol->name);
                     }
                 }
@@ -1559,7 +1556,7 @@ namespace OpenLogReplicator {
                     if (numPk > 0 && (suppLogTablePrimary || sysUser->isSuppLogPrimary() || oracleAnalyzer->suppLogDbPrimary))
                         numSup = 1;
                     numPk = 0;
-                    for (vector<string>::iterator it = keys.begin(); it != keys.end(); ++it) {
+                    for (std::vector<std::string>::iterator it = keys.begin(); it != keys.end(); ++it) {
                         if (strcmp(sysCol->name.c_str(), it->c_str()) == 0) {
                             numPk = 1;
                             ++keysCnt;
@@ -1573,14 +1570,14 @@ namespace OpenLogReplicator {
                         supLogColMissing = true;
                 }
 
-                DEBUG("  - col: " << dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << dec << numPk << ", S: " << dec << numSup << ", G: " << dec << guardSegNo << ")");
+                DEBUG("  - col: " << std::dec << sysCol->segCol << ": " << sysCol->name << " (pk: " << std::dec << numPk << ", S: " << std::dec << numSup << ", G: " << std::dec << guardSegNo << ")");
 
                 schemaColumn = new OracleColumn(sysCol->col, guardSegNo, sysCol->segCol, sysCol->name, sysCol->type,
                         sysCol->length, sysCol->precision, sysCol->scale, numPk, charmapId, (sysCol->null_ == 0), sysCol->isInvisible(),
                         sysCol->isStoredAsLob(), sysCol->isConstraint(), sysCol->isNested(), sysCol->isUnused(), sysCol->isAdded(),
                         sysCol->isGuard());
                 if (schemaColumn == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OracleColumn) << " bytes memory (for: column creation3)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OracleColumn) << " bytes memory (for: column creation3)");
                 }
 
                 totalPk += numPk;
@@ -1596,16 +1593,16 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("table " << sysUser->name << "." << sysObj->name << " couldn't find all column set (" << keysStr << ")");
             }
 
-            stringstream ss;
+            std::stringstream ss;
             if (output)
                 ss << "- found: ";
             else
                 ss << "updated schema: ";
-            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << dec << sysTab->dataObj << ", obj: " << dec << sysObj->obj << ", columns: " << dec << maxSegCol << ")";
+            ss << sysUser->name << "." << sysObj->name << " (dataobj: " << std::dec << sysTab->dataObj << ", obj: " << std::dec << sysObj->obj << ", columns: " << std::dec << maxSegCol << ")";
             if (sysTab->isClustered())
                 ss << ", part of cluster";
             if (sysTab->isPartitioned())
-                ss << ", partitioned(" << dec << partitions << ")";
+                ss << ", partitioned(" << std::dec << partitions << ")";
             if (sysTab->isDependencies())
                 ss << ", row dependencies";
             if (sysTab->isRowMovement())
@@ -1628,7 +1625,7 @@ namespace OpenLogReplicator {
                             !sysUser->isSuppLogAll() &&
                             !oracleAnalyzer->suppLogDbAll &&
                             supLogColMissing)
-                        ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
+                        ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << std::dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
             INFO(ss.str());
@@ -1650,7 +1647,7 @@ namespace OpenLogReplicator {
         }
         SchemaElement* element = new SchemaElement(owner, table, options);
         if (element == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SchemaElement) << " bytes memory (for: schema element)");
         }
         elements.push_back(element);
         return element;
@@ -1663,7 +1660,7 @@ namespace OpenLogReplicator {
 
         SysCCol* sysCCol = new SysCCol(rowId, con, intCol, obj, spare11, spare12, false);
         if (sysCCol == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
         }
         sysCColMapRowId[rowId] = sysCCol;
         SysCColKey sysCColKey(obj, intCol, con);
@@ -1679,7 +1676,7 @@ namespace OpenLogReplicator {
 
         SysCDef* sysCDef = new SysCDef(rowId, con, obj, type, false);
         if (sysCDef == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
         }
         sysCDefMapRowId[rowId] = sysCDef;
         sysCDefMapCon[con] = sysCDef;
@@ -1696,12 +1693,12 @@ namespace OpenLogReplicator {
             return false;
 
         if (strlen(name) > SYSCOL_NAME_LENGTH) {
-            RUNTIME_FAIL("SYS.COL$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+            RUNTIME_FAIL("SYS.COL$ too long value for NAME (value: '" << name << "', length: " << std::dec << strlen(name) << ")");
         }
         SysCol* sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
                 null_, property1, property2, false);
         if (sysCol == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
         }
         sysColMapRowId[rowId] = sysCol;
         SysColKey sysColKey(obj, intCol);
@@ -1719,7 +1716,7 @@ namespace OpenLogReplicator {
 
         SysDeferredStg* sysDeferredStg = new SysDeferredStg(rowId, obj, flagsStg1, flagsStg2, false);
         if (sysDeferredStg == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
         }
         sysDeferredStgMapRowId[rowId] = sysDeferredStg;
         sysDeferredStgMapObj[obj] = sysDeferredStg;
@@ -1734,7 +1731,7 @@ namespace OpenLogReplicator {
 
         SysECol* sysECol = new SysECol(rowId, tabObj, colNum, guardId, false);
         if (sysECol == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
         }
         sysEColMapRowId[rowId] = sysECol;
         SysEColKey sysEColKey(tabObj, colNum);
@@ -1752,17 +1749,17 @@ namespace OpenLogReplicator {
             SysObj* sysObj = sysObjIt->second;
             if (!single && sysObj->single) {
                 sysObj->single = false;
-                TRACE(TRACE2_SYSTEM, "SYSTEM: disabling single option for object " << name << " (owner " << dec << owner << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: disabling single option for object " << name << " (owner " << std::dec << owner << ")");
             }
             return false;
         }
 
         if (strlen(name) > SYSOBJ_NAME_LENGTH) {
-            RUNTIME_FAIL("SYS.OBJ$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+            RUNTIME_FAIL("SYS.OBJ$ too long value for NAME (value: '" << name << "', length: " << std::dec << strlen(name) << ")");
         }
         SysObj* sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, single, false);
         if (sysObj == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
         }
         sysObjMapRowId[rowId] = sysObj;
         sysObjMapObj[obj] = sysObj;
@@ -1778,7 +1775,7 @@ namespace OpenLogReplicator {
 
         SysTab* sysTab = new SysTab(rowId, obj, dataObj, cluCols, flags1, flags2, property1, property2, false);
         if (sysTab == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
         }
         sysTabMapRowId[rowId] = sysTab;
         sysTabMapObj[obj] = sysTab;
@@ -1793,7 +1790,7 @@ namespace OpenLogReplicator {
 
         SysTabComPart* sysTabComPart = new SysTabComPart(rowId, obj, dataObj, bo, false);
         if (sysTabComPart == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
         }
         sysTabComPartMapRowId[rowId] = sysTabComPart;
         SysTabComPartKey sysTabComPartKey(bo, obj);
@@ -1810,7 +1807,7 @@ namespace OpenLogReplicator {
 
         SysTabPart* sysTabPart = new SysTabPart(rowId, obj, dataObj, bo, false);
         if (sysTabPart == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
         }
         sysTabPartMapRowId[rowId] = sysTabPart;
         SysTabPartKey sysTabPartKey(bo, obj);
@@ -1826,7 +1823,7 @@ namespace OpenLogReplicator {
 
         SysTabSubPart* sysTabSubPart = new SysTabSubPart(rowId, obj, dataObj, pObj, false);
         if (sysTabSubPart == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
         }
         sysTabSubPartMapRowId[rowId] = sysTabSubPart;
         SysTabSubPartKey sysTabSubPartKey(pObj, obj);
@@ -1844,7 +1841,7 @@ namespace OpenLogReplicator {
             if (sysUser->single) {
                 if (!single) {
                     sysUser->single = false;
-                    TRACE(TRACE2_SYSTEM, "SYSTEM: disabling single option for user " << name << " (" << dec << user << ")");
+                    TRACE(TRACE2_SYSTEM, "SYSTEM: disabling single option for user " << name << " (" << std::dec << user << ")");
                 }
                 return true;
             }
@@ -1853,11 +1850,11 @@ namespace OpenLogReplicator {
         }
 
         if (strlen(name) > SYSUSER_NAME_LENGTH) {
-            RUNTIME_FAIL("SYS.USER$ too long value for NAME (value: '" << name << "', length: " << dec << strlen(name) << ")");
+            RUNTIME_FAIL("SYS.USER$ too long value for NAME (value: '" << name << "', length: " << std::dec << strlen(name) << ")");
         }
         SysUser* sysUser = new SysUser(rowId, user, name, spare11, spare12, single, false);
         if (sysUser == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
         }
         sysUserMapRowId[rowId] = sysUser;
         sysUserMapUser[user] = sysUser;

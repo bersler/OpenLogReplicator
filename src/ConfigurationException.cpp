@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "ConfigurationException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     ConfigurationException::ConfigurationException(const char* msg) :
         exception(),
@@ -30,7 +28,7 @@ namespace OpenLogReplicator {
     ConfigurationException::~ConfigurationException() {
     }
 
-    ostream& operator<<(ostream& os, const ConfigurationException& exception) {
+    std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception) {
         os << exception.msg;
         return os;
     }

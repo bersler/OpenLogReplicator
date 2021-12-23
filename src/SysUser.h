@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYSUSER_ROWID_LENGTH     18
 #define SYSUSER_NAME_LENGTH      128
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SysUser {
     public:
@@ -36,7 +34,7 @@ namespace OpenLogReplicator {
 
         RowId rowId;
         typeUSER user;
-        string name;
+        std::string name;
         uintX_t spare1;            //NULL
         bool single;
         bool touched;

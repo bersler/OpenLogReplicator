@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseEnvironment.h"
 #include "DatabaseStatement.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     DatabaseStatement::DatabaseStatement(DatabaseConnection* conn) :
         conn(conn),
@@ -96,7 +94,7 @@ namespace OpenLogReplicator {
         conn->env->checkErr(conn->errhp, ret);
     }
 
-    void DatabaseStatement::bindString(uint64_t col, string& val) {
+    void DatabaseStatement::bindString(uint64_t col, std::string& val) {
         OCIBind* bindp = nullptr;
         sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, (void*) val.c_str(), val.length() + 1, SQLT_STR,
                         nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);

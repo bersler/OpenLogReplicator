@@ -24,17 +24,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef RUNTIMEEXCEPTION_H_
 #define RUNTIMEEXCEPTION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    class RuntimeException: public exception {
+    class RuntimeException: public std::exception {
     public:
         const char* msg;
 
         RuntimeException(const char* msg);
         virtual ~RuntimeException();
 
-        friend ostream& operator<<(ostream& os, const RuntimeException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const RuntimeException& exception);
     };
 }
 

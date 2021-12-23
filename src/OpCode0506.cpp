@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0506::OpCode0506(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -30,7 +28,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = redoLogRecord->fieldPos;
         uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field ktub: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "ERROR: too short field ktub: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -63,7 +61,7 @@ namespace OpenLogReplicator {
 
     void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            oracleAnalyzer->dumpStream << "too short field ktuxvoff: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "too short field ktuxvoff: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -71,8 +69,8 @@ namespace OpenLogReplicator {
             uint16_t off = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
             uint16_t flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4);
 
-            oracleAnalyzer->dumpStream << "ktuxvoff: 0x" << setfill('0') << setw(4) << hex << off << " " <<
-                    " ktuxvflg: 0x" << setfill('0') << setw(4) << hex << flg << endl;
+            oracleAnalyzer->dumpStream << "ktuxvoff: 0x" << std::setfill('0') << std::setw(4) << std::hex << off << " " <<
+                    " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << std::endl;
         }
     }
 }

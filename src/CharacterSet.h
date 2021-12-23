@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define UNICODE_UNKNOWN_CHARACTER           0xFFFD
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSet {
     protected:

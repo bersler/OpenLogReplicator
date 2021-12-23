@@ -20,8 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseConnection.h"
 #include "DatabaseEnvironment.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     DatabaseConnection::DatabaseConnection(DatabaseEnvironment* env, const char* user, const char* password, const char* connectString, bool sysASM) :
         user(user),

@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STREAMZEROMQ_H_
 #define STREAMZEROMQ_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class StreamZeroMQ : public Stream {
     protected:
@@ -35,9 +33,9 @@ namespace OpenLogReplicator {
         virtual ~StreamZeroMQ();
 
         virtual void initialize(void);
-        virtual string getName(void) const;
-        virtual void initializeClient(atomic<bool>* shutdown);
-        virtual void initializeServer(atomic<bool>* shutdown);
+        virtual std::string getName(void) const;
+        virtual void initializeClient(std::atomic<bool>* shutdown);
+        virtual void initializeServer(std::atomic<bool>* shutdown);
         virtual void sendMessage(const void* msg, uint64_t length);
         virtual uint64_t receiveMessage(void* msg, uint64_t length);
         virtual uint64_t receiveMessageNB(void* msg, uint64_t length);

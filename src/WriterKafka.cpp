@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "WriterKafka.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     WriterKafka::WriterKafka(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
@@ -50,7 +48,7 @@ namespace OpenLogReplicator {
         if (rk != nullptr)
             rd_kafka_destroy(rk);
 
-        INFO("Kafka producer exit code: " << dec << err);
+        INFO("Kafka producer exit code: " << std::dec << err);
     }
 
     void WriterKafka::initialize(void) {
@@ -61,8 +59,8 @@ namespace OpenLogReplicator {
             CONFIG_FAIL("Kafka failed to create configuration, message: " << errstr);
         }
 
-        string maxMessageMbStr(to_string(maxMessageMb * 1024 * 1024));
-        string maxMessagesStr(to_string(maxMessages));
+        std::string maxMessageMbStr(std::to_string(maxMessageMb * 1024 * 1024));
+        std::string maxMessagesStr(std::to_string(maxMessages));
         if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             (enableIdempotence && rd_kafka_conf_set(conf, "enable.idempotence", "true", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) ||
             rd_kafka_conf_set(conf, "client.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
@@ -112,7 +110,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::logger_cb(const rd_kafka_t* rk, int level, const char* fac, const char* buf) {
-        TRACE(TRACE2_WRITER, "WRITER: " << dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
+        TRACE(TRACE2_WRITER, "WRITER: " << std::dec << level << ", rk: " << (rk ? rd_kafka_name(rk) : NULL) << ", fac: " << fac << ", err: " << buf);
     }
 
     void WriterKafka::sendMessage(OutputBufferMsg* msg) {
@@ -139,7 +137,7 @@ namespace OpenLogReplicator {
         rd_kafka_poll(rk, 0);
     }
 
-    string WriterKafka::getName() const {
+    std::string WriterKafka::getName() const {
         return "Kafka:" + topic;
     }
 

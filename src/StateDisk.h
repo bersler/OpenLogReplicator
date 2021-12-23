@@ -22,21 +22,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef STATEDISK_H_
 #define STATEDISK_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class StateDisk : public State {
     protected:
-        string path;
+        std::string path;
 
     public:
         StateDisk(const char* path);
         virtual ~StateDisk();
 
-        virtual void list(set<string>& namesList);
-        virtual bool read(string& name, uint64_t maxSize, string& in, bool noFail);
-        virtual void write(string& name, stringstream& out);
-        virtual void drop(string& name);
+        virtual void list(std::set<std::string>& namesList);
+        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail);
+        virtual void write(std::string& name, std::stringstream& out);
+        virtual void drop(std::string& name);
     };
 }
 

@@ -24,16 +24,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef DATABASEECONNECTION_H_
 #define DATABASEECONNECTION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class DatabaseEnvironment;
 
     class DatabaseConnection {
     public:
-        string user;
-        string password;
-        string connectString;
+        std::string user;
+        std::string password;
+        std::string connectString;
         bool sysASM;
         bool connected;
 

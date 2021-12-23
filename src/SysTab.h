@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define SYSTAB_ROWID_LENGTH     18
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SysTab {
     public:

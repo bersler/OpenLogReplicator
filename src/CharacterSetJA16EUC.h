@@ -29,8 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define JA16EUC_b3_min      0xA1
 #define JA16EUC_b3_max      0xFE
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class CharacterSetJA16EUC : public CharacterSet {
     protected:

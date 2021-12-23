@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 #include "Writer.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     Transaction::Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid) :
         oracleAnalyzer(oracleAnalyzer),
@@ -49,7 +47,7 @@ namespace OpenLogReplicator {
         shutdown(false),
         size(0) {
 
-        stringstream ss;
+        std::stringstream ss;
         ss << "transaction " << PRINTXID(xid);
         name = ss.str();
     }
@@ -132,7 +130,7 @@ namespace OpenLogReplicator {
                 }
                 oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                 if (oracleAnalyzer->systemTransaction == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction)");
                 }
 
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
@@ -161,30 +159,30 @@ namespace OpenLogReplicator {
                     redoLogRecord2->data = tc->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
                     pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
-                    TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << setfill(' ') << setw(4) << dec << redoLogRecord1->length <<
-                                        ":" << setfill(' ') << setw(4) << dec << redoLogRecord2->length <<
-                                    " fb: " << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->fb <<
-                                        ":" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord2->fb << " " <<
-                                    " op: " << setfill('0') << setw(8) << hex << op <<
-                                    " scn: " << dec << redoLogRecord1->scn <<
-                                    " subScn: " << dec << redoLogRecord1->subScn <<
-                                    " scnRecord: " << dec << redoLogRecord1->scnRecord <<
-                                    " obj: " << dec << redoLogRecord1->obj <<
-                                    " dataObj: " << dec << redoLogRecord1->dataObj <<
-                                    " flg1: 0x" << setfill('0') << setw(4) << hex << redoLogRecord1->flg <<
-                                    " flg2: 0x" << setfill('0') << setw(4) << hex << redoLogRecord2->flg <<
+                    TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord1->length <<
+                                        ":" << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord2->length <<
+                                    " fb: " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
+                                        ":" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->fb << " " <<
+                                    " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
+                                    " scn: " << std::dec << redoLogRecord1->scn <<
+                                    " subScn: " << std::dec << redoLogRecord1->subScn <<
+                                    " scnRecord: " << std::dec << redoLogRecord1->scnRecord <<
+                                    " obj: " << std::dec << redoLogRecord1->obj <<
+                                    " dataObj: " << std::dec << redoLogRecord1->dataObj <<
+                                    " flg1: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->flg <<
+                                    " flg2: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->flg <<
                                     " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
                                     " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
-                                    " bdba1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->bdba << "." << hex << (uint64_t)redoLogRecord1->slot <<
-                                    " nrid1: 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->nridBdba << "." << hex << redoLogRecord1->nridSlot <<
-                                    " bdba2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->bdba << "." << hex << (uint64_t)redoLogRecord2->slot <<
-                                    " nrid2: 0x" << setfill('0') << setw(8) << hex << redoLogRecord2->nridBdba << "." << hex << redoLogRecord2->nridSlot <<
-                                    " supp: (0x" << setfill('0') << setw(2) << hex << (uint64_t)redoLogRecord1->suppLogFb <<
-                                        ", " << setfill(' ') << setw(3) << dec << (uint64_t)redoLogRecord1->suppLogType <<
-                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogCC <<
-                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogBefore <<
-                                        ", " << setfill(' ') << setw(3) << dec << redoLogRecord1->suppLogAfter <<
-                                        ", 0x" << setfill('0') << setw(8) << hex << redoLogRecord1->suppLogBdba << "." << hex << redoLogRecord1->suppLogSlot << ")");
+                                    " bdba1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba << "." << std::hex << (uint64_t)redoLogRecord1->slot <<
+                                    " nrid1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->nridBdba << "." << std::hex << redoLogRecord1->nridSlot <<
+                                    " bdba2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->bdba << "." << std::hex << (uint64_t)redoLogRecord2->slot <<
+                                    " nrid2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->nridBdba << "." << std::hex << redoLogRecord2->nridSlot <<
+                                    " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
+                                        ", " << std::setfill(' ') << std::setw(3) << std::dec << (uint64_t)redoLogRecord1->suppLogType <<
+                                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogCC <<
+                                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogBefore <<
+                                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogAfter <<
+                                        ", 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba << "." << std::hex << redoLogRecord1->suppLogSlot << ")");
 
                     //undo split
                     if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
@@ -203,7 +201,7 @@ namespace OpenLogReplicator {
                         uint64_t size = last501->length + redoLogRecord1->length;
                         uint8_t* merge = new uint8_t[size];
                         if (merge == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << dec << size << " bytes memory (for: merge split undo #1)");
+                            RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1)");
                         }
                         merges.push_back(merge);
                         mergeBlocks(merge, redoLogRecord1, last501);
@@ -219,7 +217,7 @@ namespace OpenLogReplicator {
                         uint64_t size = last501->length + redoLogRecord1->length;
                         uint8_t* merge = new uint8_t[size];
                         if (merge == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << dec << size << " bytes memory (for: merge split undo #1)");
+                            RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1)");
                         }
                         merges.push_back(merge);
                         mergeBlocks(merge, redoLogRecord1, last501);
@@ -234,7 +232,7 @@ namespace OpenLogReplicator {
 
                         opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
                         if (opCode0501 == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3)");
+                            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3)");
                         }
 
                         opCode0501->process();
@@ -357,7 +355,7 @@ namespace OpenLogReplicator {
 
                     //should not happen
                     default:
-                        RUNTIME_FAIL("Unknown OpCode " << hex << op);
+                        RUNTIME_FAIL("Unknown OpCode " << std::hex << op);
                     }
 
                     //split very big transactions
@@ -376,7 +374,7 @@ namespace OpenLogReplicator {
                             }
                             oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                             if (oracleAnalyzer->systemTransaction == nullptr) {
-                                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");
+                                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");
                             }
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {
@@ -460,7 +458,7 @@ namespace OpenLogReplicator {
         opCodes = 0;
     }
 
-    ostream& operator<<(ostream& os, const Transaction& tran) {
+    std::ostream& operator<<(std::ostream& os, const Transaction& tran) {
         uint64_t tcCount = 0;
         TransactionChunk* tc = tran.firstTc;
         while (tc != nullptr) {
@@ -468,14 +466,14 @@ namespace OpenLogReplicator {
             tc = tc->next;
         }
 
-        os << "scn: " << dec << tran.commitScn <<
-                " seq: " << dec << tran.firstSequence <<
-                " offset: " << dec << tran.firstOffset <<
+        os << "scn: " << std::dec << tran.commitScn <<
+                " seq: " << std::dec << tran.firstSequence <<
+                " offset: " << std::dec << tran.firstOffset <<
                 " xid: " << PRINTXID(tran.xid) <<
-                " flags: " << dec << tran.begin << "/" << tran.rollback << "/" << tran.system <<
-                " op: " << dec << tran.opCodes <<
-                " chunks: " << dec << tcCount <<
-                " sz: " << dec << tran.size;
+                " flags: " << std::dec << tran.begin << "/" << tran.rollback << "/" << tran.system <<
+                " op: " << std::dec << tran.opCodes <<
+                " chunks: " << std::dec << tcCount <<
+                " sz: " << std::dec << tran.size;
         return os;
     }
 }

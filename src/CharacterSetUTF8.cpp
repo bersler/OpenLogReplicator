@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetUTF8.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetUTF8::CharacterSetUTF8() :
         CharacterSet("UTF8") {

@@ -24,16 +24,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SCHEMAELEMENT_H_
 #define SCHEMAELEMENT_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class SchemaElement {
 
     public:
-        string owner;
-        string table;
-        vector<string> keys;
-        string keysStr;
+        std::string owner;
+        std::string table;
+        std::vector<std::string> keys;
+        std::string keysStr;
         typeOPTIONS options;
 
         SchemaElement(const char* owner, const char* table, typeOPTIONS options);

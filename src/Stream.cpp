@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Stream.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     Stream::Stream(const char* uri, uint64_t pollInterval) :
         uri(uri),

@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         uint8_t buffer[DATA_BUFFER_SIZE];
 
     public:
-        unordered_map<uint8_t*,uint64_t> partiallyFullChunks;
+        std::unordered_map<uint8_t*,uint64_t> partiallyFullChunks;
 
         TransactionBuffer(OracleAnalyzer* oracleAnalyzer);
         virtual ~TransactionBuffer();

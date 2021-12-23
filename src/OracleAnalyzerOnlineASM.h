@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEANALYZERONLINEASM_H_
 #define ORACLEANALYZERONLINEASM_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzerOnlineASM : public OracleAnalyzerOnline {
     protected:

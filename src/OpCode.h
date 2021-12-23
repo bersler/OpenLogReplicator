@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OPCODE_H_
 #define OPCODE_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
     class RedoLogRecord;

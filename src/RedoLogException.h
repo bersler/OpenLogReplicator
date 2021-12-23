@@ -24,17 +24,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOGEXCEPTION_H_
 #define REDOLOGEXCEPTION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    class RedoLogException: public exception {
+    class RedoLogException: public std::exception {
     public:
         const char* msg;
 
         RedoLogException(const char* msg);
         virtual ~RedoLogException();
 
-        friend ostream& operator<<(ostream& os, const RedoLogException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const RedoLogException& exception);
     };
 }
 

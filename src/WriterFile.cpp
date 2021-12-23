@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RuntimeException.h"
 #include "WriterFile.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     WriterFile::WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
             uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
@@ -71,7 +69,7 @@ namespace OpenLogReplicator {
         }
 
         size_t pathPos = this->output.find_last_of("/");
-        if (pathPos != string::npos) {
+        if (pathPos != std::string::npos) {
             outputPath =  this->output.substr(0, pathPos);
             outputFileMask = this->output.substr(pathPos + 1);
         } else {
@@ -79,64 +77,64 @@ namespace OpenLogReplicator {
             outputFileMask = this->output;
         }
 
-        if ((prefixPos = this->output.find("%i")) != string::npos) {
+        if ((prefixPos = this->output.find("%i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             suffixPos = prefixPos + 2;
         } else
-        if ((prefixPos = this->output.find("%2i")) != string::npos) {
+        if ((prefixPos = this->output.find("%2i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 2;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%3i")) != string::npos) {
+        if ((prefixPos = this->output.find("%3i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 3;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%4i")) != string::npos) {
+        if ((prefixPos = this->output.find("%4i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 4;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%5i")) != string::npos) {
+        if ((prefixPos = this->output.find("%5i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 5;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%6i")) != string::npos) {
+        if ((prefixPos = this->output.find("%6i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 6;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%7i")) != string::npos) {
+        if ((prefixPos = this->output.find("%7i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 7;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%8i")) != string::npos) {
+        if ((prefixPos = this->output.find("%8i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 8;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%9i")) != string::npos) {
+        if ((prefixPos = this->output.find("%9i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 9;
             suffixPos = prefixPos + 3;
         } else
-        if ((prefixPos = this->output.find("%10i")) != string::npos) {
+        if ((prefixPos = this->output.find("%10i")) != std::string::npos) {
             mode = WRITERFILE_MODE_NUM;
             fill = 10;
             suffixPos = prefixPos + 4;
         } else
-        if ((prefixPos = this->output.find("%t")) != string::npos) {
+        if ((prefixPos = this->output.find("%t")) != std::string::npos) {
             mode = WRITERFILE_MODE_TIMETAMP;
             suffixPos = prefixPos + 2;
         } else
-        if ((prefixPos = this->output.find("%s")) != string::npos) {
+        if ((prefixPos = this->output.find("%s")) != std::string::npos) {
             mode = WRITERFILE_MODE_SEQUENCE;
             suffixPos = prefixPos + 2;
         } else {
-            if ((prefixPos = this->output.find("%")) != string::npos) {
+            if ((prefixPos = this->output.find("%")) != std::string::npos) {
                 RUNTIME_FAIL("invalid value for \"output\": " << this->output);
             }
             if (append == 0) {
@@ -163,9 +161,9 @@ namespace OpenLogReplicator {
                     continue;
 
                 struct stat fileStat;
-                string fileNameFound(ent->d_name);
+                std::string fileNameFound(ent->d_name);
 
-                string fullName(outputPath + "/" + ent->d_name);
+                std::string fullName(outputPath + "/" + ent->d_name);
                 if (stat(fullName.c_str(), &fileStat)) {
                     WARNING("reading information for file: " << fullName << " - " << strerror(errno));
                     continue;
@@ -174,20 +172,20 @@ namespace OpenLogReplicator {
                 if (S_ISDIR(fileStat.st_mode))
                     continue;
 
-                string prefix(outputFileMask.substr(0, prefixPos));
+                std::string prefix(outputFileMask.substr(0, prefixPos));
                 if (fileNameFound.length() < prefix.length() || fileNameFound.substr(0, prefix.length()).compare(prefix) != 0)
                     continue;
 
-                string suffix(outputFileMask.substr(suffixPos));
+                std::string suffix(outputFileMask.substr(suffixPos));
                 if (fileNameFound.length() < suffix.length() || fileNameFound.substr(fileNameFound.length() - suffix.length()).compare(suffix) != 0)
                     continue;
 
                 TRACE(TRACE2_WRITER, "WRITER: found previous output file: " << outputPath << "/" << fileNameFound);
-                string fileNameFoundNum(fileNameFound.substr(prefix.length(), fileNameFound.length() - suffix.length() - prefix.length()));
+                std::string fileNameFoundNum(fileNameFound.substr(prefix.length(), fileNameFound.length() - suffix.length() - prefix.length()));
                 typeSCN fileNum;
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
-                } catch (exception& e) {
+                } catch (std::exception& e) {
                     //ignore other files
                     continue;
                 }
@@ -200,7 +198,7 @@ namespace OpenLogReplicator {
                 }
             }
             closedir(dir);
-            INFO("next number for " << this->output << " is: " << dec << outputFileNum);
+            INFO("next number for " << this->output << " is: " << std::dec << outputFileNum);
         }
     }
 
@@ -225,15 +223,15 @@ namespace OpenLogReplicator {
                 outputSize = 0;
             }
             if (length > maxSize) {
-                WARNING("message size (" << dec << length << ") will exceed \"max-file\" size (" << maxSize << ")");
+                WARNING("message size (" << std::dec << length << ") will exceed \"max-file\" size (" << maxSize << ")");
             }
 
             if (outputDes == -1) {
-                string outputFileNumStr(to_string(outputFileNum));
+                std::string outputFileNumStr(std::to_string(outputFileNum));
                 uint64_t zeros = 0;
                 if (fill > outputFileNumStr.length())
                     zeros = fill - outputFileNumStr.length();
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + string(zeros, '0') + outputFileNumStr + outputFileMask.substr(suffixPos);
+                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr + outputFileMask.substr(suffixPos);
             }
         } else
         if (mode == WRITERFILE_MODE_TIMETAMP) {
@@ -242,19 +240,19 @@ namespace OpenLogReplicator {
                 shouldSwitch = true;
 
             if (length > maxSize) {
-                WARNING("message size (" << dec << length << ") will exceed \"max-file\" size (" << maxSize << ")");
+                WARNING("message size (" << std::dec << length << ") will exceed \"max-file\" size (" << maxSize << ")");
             }
 
             if (outputDes == -1 || shouldSwitch) {
-                stringstream __s;
+                std::stringstream __s;
                 time_t now = time(nullptr);
                 tm nowTm = *localtime(&now);
                 char str[50];
                 strftime(str, sizeof(str), format.c_str(), &nowTm);
-                string newOutputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + str + outputFileMask.substr(suffixPos);
+                std::string newOutputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + str + outputFileMask.substr(suffixPos);
                 if (outputFile.compare(newOutputFile) == 0) {
                     if (!warningDisplayed) {
-                        WARNING("rotation size is set too low (" << dec << maxSize << "), increase it, should rotate but too early (" << outputFile << ")");
+                        WARNING("rotation size is set too low (" << std::dec << maxSize << "), increase it, should rotate but too early (" << outputFile << ")");
                         warningDisplayed = true;
                     }
                     shouldSwitch = false;
@@ -274,18 +272,18 @@ namespace OpenLogReplicator {
 
             lastSequence = sequence;
             if (outputDes == -1)
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + to_string(sequence) + outputFileMask.substr(suffixPos);
+                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::to_string(sequence) + outputFileMask.substr(suffixPos);
         }
 
         //file is closed, open it
         if (outputDes == -1) {
             struct stat fileStat;
             int statRet = stat(outputFile.c_str(), &fileStat);
-            TRACE(TRACE2_WRITER, "WRITER: stat for " << outputFile << " returns " << dec << statRet << ", errno = " << errno);
+            TRACE(TRACE2_WRITER, "WRITER: stat for " << outputFile << " returns " << std::dec << statRet << ", errno = " << errno);
 
             //file already exists, append?
             if (append == 0 && statRet == 0) {
-                RUNTIME_FAIL("output file already exists but append mode is not used: " << dec << outputFile);
+                RUNTIME_FAIL("output file already exists but append mode is not used: " << std::dec << outputFile);
             }
 
             INFO("opening output file: " << outputFile);
@@ -327,7 +325,7 @@ namespace OpenLogReplicator {
         confirmMessage(msg);
     }
 
-    string WriterFile::getName() const {
+    std::string WriterFile::getName() const {
         if (outputDes == STDOUT_FILENO)
             return "stdout";
         else

@@ -24,17 +24,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef NETWORKEXCEPTION_H_
 #define NETWORKEXCEPTION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    class NetworkException: public exception {
+    class NetworkException: public std::exception {
     public:
         const char* msg;
 
         NetworkException(const char* msg);
         virtual ~NetworkException();
 
-        friend ostream& operator<<(ostream& os, const NetworkException& exception);
+        friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);
     };
 }
 

@@ -80,27 +80,27 @@ namespace OpenLogReplicator {
         if (object != nullptr)
             valuePB->set_name(object->columns[col]->name);
         else {
-            string columnName("COL_" + to_string(col));
+            std::string columnName("COL_" + std::to_string(col));
             valuePB->set_name(columnName);
         }
     }
 
-    void OutputBufferProtobuf::columnFloat(string& columnName, float value) {
+    void OutputBufferProtobuf::columnFloat(std::string& columnName, float value) {
         valuePB->set_name(columnName);
         valuePB->set_value_float(value);
     }
 
-    void OutputBufferProtobuf::columnDouble(string& columnName, double value) {
+    void OutputBufferProtobuf::columnDouble(std::string& columnName, double value) {
         valuePB->set_name(columnName);
         valuePB->set_value_double(value);
     }
 
-    void OutputBufferProtobuf::columnString(string& columnName) {
+    void OutputBufferProtobuf::columnString(std::string& columnName) {
         valuePB->set_name(columnName);
         valuePB->set_value_string(valueBuffer, valueLength);
     }
 
-    void OutputBufferProtobuf::columnNumber(string& columnName, uint64_t precision, uint64_t scale) {
+    void OutputBufferProtobuf::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
         valuePB->set_name(columnName);
         valueBuffer[valueLength] = 0;
         char* retPtr;
@@ -123,11 +123,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferProtobuf::columnRaw(string& columnName, const uint8_t* data, uint64_t length) {
+    void OutputBufferProtobuf::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
         valuePB->set_name(columnName);
     }
 
-    void OutputBufferProtobuf::columnTimestamp(string& columnName, struct tm& time_, uint64_t fraction, const char* tz) {
+    void OutputBufferProtobuf::columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) {
         valuePB->set_name(columnName);
     }
 
@@ -168,7 +168,7 @@ namespace OpenLogReplicator {
 
         if (showXid) {
             if (xidFormat == XID_FORMAT_TEXT) {
-                stringstream sb;
+                std::stringstream sb;
                 sb << (uint64_t)USN(lastXid);
                 sb << '.';
                 sb << (uint64_t)SLT(lastXid);
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
 
     void OutputBufferProtobuf::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
-            string objectName("OBJ_" + to_string(dataObj));
+            std::string objectName("OBJ_" + std::to_string(dataObj));
             schemaPB->set_name(objectName);
             return;
         }
@@ -326,7 +326,7 @@ namespace OpenLogReplicator {
             payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
             payloadPB->set_op(pb::BEGIN);
 
-            string output;
+            std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -361,7 +361,7 @@ namespace OpenLogReplicator {
             payloadPB->set_op(pb::COMMIT);
         }
 
-        string output;
+        std::string output;
         bool ret = redoResponsePB->SerializeToString(&output);
         delete redoResponsePB;
         redoResponsePB = nullptr;
@@ -403,7 +403,7 @@ namespace OpenLogReplicator {
         appendAfter(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            string output;
+            std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -446,7 +446,7 @@ namespace OpenLogReplicator {
         appendAfter(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            string output;
+            std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
         appendBefore(object);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            string output;
+            std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -522,7 +522,7 @@ namespace OpenLogReplicator {
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            string output;
+            std::string output;
             bool ret = redoResponsePB->SerializeToString(&output);
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -548,7 +548,7 @@ namespace OpenLogReplicator {
         payloadPB->set_offset(offset);
         payloadPB->set_redo(redo);
 
-        string output;
+        std::string output;
         bool ret = redoResponsePB->SerializeToString(&output);
         delete redoResponsePB;
         redoResponsePB = nullptr;

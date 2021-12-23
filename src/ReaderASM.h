@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef READERASM_H_
 #define READERASM_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class DatabaseStatement;
     class OracleAnalyzer;

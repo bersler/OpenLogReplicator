@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "RuntimeException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     RuntimeException::~RuntimeException() {
     }
@@ -30,7 +28,7 @@ namespace OpenLogReplicator {
         msg(msg) {
     }
 
-    ostream& operator<<(ostream& os, const RuntimeException& exception) {
+    std::ostream& operator<<(std::ostream& os, const RuntimeException& exception) {
         os << exception.msg;
         return os;
     }

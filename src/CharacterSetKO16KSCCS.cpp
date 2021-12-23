@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetKO16KSCCS.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     CharacterSetKO16KSCCS::CharacterSetKO16KSCCS() :
         CharacterSet16bit("KO16KSCCS", unicode_map_KO16KSCCS_2b, KO16KSCCS_b1_min, KO16KSCCS_b1_max,

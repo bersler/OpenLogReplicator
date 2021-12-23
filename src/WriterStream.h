@@ -23,8 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef WRITERSTREAM_H_
 #define WRITERSTREAM_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
     class Stream;
@@ -35,7 +33,7 @@ namespace OpenLogReplicator {
         pb::RedoRequest request;
         pb::RedoResponse response;
 
-        virtual string getName(void) const;
+        virtual std::string getName(void) const;
         virtual void readCheckpoint(void);
         void processInfo(void);
         void processStart(void);

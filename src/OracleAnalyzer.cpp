@@ -38,9 +38,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 
-using namespace rapidjson;
-using namespace std;
-
 namespace OpenLogReplicator {
     OracleAnalyzer::OracleAnalyzer(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
             const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
@@ -192,14 +189,14 @@ namespace OpenLogReplicator {
     void OracleAnalyzer::initialize(void) {
         memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
         if (memoryChunks == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#1)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << (memoryMaxMb / MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#1)");
         }
 
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
             memoryChunks[i] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
 
             if (memoryChunks[i] == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << MEMORY_CHUNK_SIZE_MB << " bytes memory (for: memory chunks#2)");
             }
             ++memoryChunksAllocated;
             ++memoryChunksFree;
@@ -208,19 +205,19 @@ namespace OpenLogReplicator {
 
         transactionBuffer = new TransactionBuffer(this);
         if (transactionBuffer == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(TransactionBuffer) << " bytes memory (for: memory chunks#5)");
         }
 
         schema = new Schema(this);
         if (schema == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(Schema) << " bytes memory (for: schema)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Schema) << " bytes memory (for: schema)");
         }
     }
 
     void OracleAnalyzer::updateOnlineLogs(void) {
         for (RedoLog* onlineRedo : onlineRedoSet) {
             if (!readerUpdateRedoLog(onlineRedo->reader)) {
-                RUNTIME_FAIL("updating failed for " << dec << onlineRedo->path);
+                RUNTIME_FAIL("updating failed for " << std::dec << onlineRedo->path);
             } else {
                 onlineRedo->sequence = onlineRedo->reader->sequence;
                 onlineRedo->firstScn = onlineRedo->reader->firstScn;
@@ -482,14 +479,14 @@ namespace OpenLogReplicator {
     }
 
     void* OracleAnalyzer::run(void) {
-        TRACE(TRACE2_THREADS, "THREADS: ANALYZER (" << hex << this_thread::get_id() << ") START");
+        TRACE(TRACE2_THREADS, "THREADS: ANALYZER (" << std::hex << std::this_thread::get_id() << ") START");
 
         try {
             loadDatabaseMetadata();
 
             while (firstScn == ZERO_SCN) {
                 {
-                    unique_lock<mutex> lck(mtx);
+                    std::unique_lock<std::mutex> lck(mtx);
                     if (startScn == ZERO_SCN && startSequence == ZERO_SEQ && startTime.length() == 0 && startTimeRel == 0)
                         writerCond.wait(lck);
                 }
@@ -497,24 +494,24 @@ namespace OpenLogReplicator {
                 if (shutdown)
                     return 0;
 
-                string flagsStr;
+                std::string flagsStr;
                 if (flags) {
-                    flagsStr = " (flags: " + to_string(flags) + ")";
+                    flagsStr = " (flags: " + std::to_string(flags) + ")";
                 }
 
-                string starting;
+                std::string starting;
                 if (startTime.length() > 0)
                     starting = "time: " + startTime;
                 else if (startTimeRel > 0)
-                    starting = "time-rel: " + to_string(startTimeRel);
+                    starting = "time-rel: " + std::to_string(startTimeRel);
                 else if (startScn != ZERO_SCN)
-                    starting = "scn: " + to_string(startScn);
+                    starting = "scn: " + std::to_string(startScn);
                 else
                     starting = "now";
 
-                string startingSeq;
+                std::string startingSeq;
                 if (startSequence != ZERO_SEQ)
-                    startingSeq = ", seq: " + to_string(startSequence);
+                    startingSeq = ", seq: " + std::to_string(startSequence);
 
                 INFO("Oracle Analyzer for " << database << " in " << getModeName() << " mode is starting" << flagsStr << " from " << starting << startingSeq);
 
@@ -525,7 +522,7 @@ namespace OpenLogReplicator {
                 if (firstScn == ZERO_SCN || sequence == ZERO_SEQ)
                     positionReader();
 
-                INFO("current resetlogs is: " << dec << resetlogs);
+                INFO("current resetlogs is: " << std::dec << resetlogs);
 
                 if (!schema->readSchema()) {
                     createSchema();
@@ -537,20 +534,20 @@ namespace OpenLogReplicator {
                 }
 
                 if (firstScn == ZERO_SCN) {
-                    INFO("last confirmed scn: <none>, starting sequence: " << dec << sequence << ", offset: " << offset);
+                    INFO("last confirmed scn: <none>, starting sequence: " << std::dec << sequence << ", offset: " << offset);
                 } else {
-                    INFO("last confirmed scn: " << dec << firstScn << ", starting sequence: " << dec << sequence << ", offset: " << offset);
+                    INFO("last confirmed scn: " << std::dec << firstScn << ", starting sequence: " << std::dec << sequence << ", offset: " << offset);
                 }
 
                 if ((dbBlockChecksum.compare("OFF") == 0 || dbBlockChecksum.compare("FALSE") == 0) &&
                         (disableChecks & DISABLE_CHECK_BLOCK_SUM) == 0) {
                     WARNING("HINT: set DB_BLOCK_CHECKSUM = TYPICAL on the database"
                             " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
-                            << dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
+                            << std::dec << DISABLE_CHECK_BLOCK_SUM << " for the reader");
                 }
 
                 {
-                    unique_lock<mutex> lck(mtx);
+                    std::unique_lock<std::mutex> lck(mtx);
                     outputBuffer->writersCond.notify_all();
                 }
             }
@@ -566,24 +563,24 @@ namespace OpenLogReplicator {
                 //ARCHIVED REDO LOGS READ
                 //
                 while (!shutdown) {
-                    TRACE(TRACE2_REDO, "REDO: checking archived redo logs, seq: " << dec << sequence);
+                    TRACE(TRACE2_REDO, "REDO: checking archived redo logs, seq: " << std::dec << sequence);
                     updateResetlogs();
                     archGetLog(this);
 
                     if (archiveRedoQueue.empty()) {
                         if ((flags & REDO_FLAGS_ARCH_ONLY) != 0) {
-                            TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: archived redo log missing for seq: " << dec << sequence << ", sleeping");
+                            TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: archived redo log missing for seq: " << std::dec << sequence << ", sleeping");
                             usleep(archReadSleepUs);
                         } else {
                             break;
                         }
                     }
 
-                    TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << dec << sequence);
+                    TRACE(TRACE2_REDO, "REDO: searching archived redo log for seq: " << std::dec << sequence);
                     while (!archiveRedoQueue.empty() && !shutdown) {
                         RedoLog* redoPrev = redo;
                         redo = archiveRedoQueue.top();
-                        TRACE(TRACE2_REDO, "REDO: " << redo->path << " is seq: " << dec << redo->sequence << ", scn: " << dec << redo->firstScn);
+                        TRACE(TRACE2_REDO, "REDO: " << redo->path << " is seq: " << std::dec << redo->sequence << ", scn: " << std::dec << redo->firstScn);
 
                         //when no checkpoint exists start processing from first file
                         if (sequence == 0)
@@ -595,7 +592,7 @@ namespace OpenLogReplicator {
                             delete redo;
                             continue;
                         } else if (redo->sequence > sequence) {
-                            RUNTIME_FAIL("couldn't find archive log for seq: " << dec << sequence << ", found: " << redo->sequence << " instead");
+                            RUNTIME_FAIL("couldn't find archive log for seq: " << std::dec << sequence << ", found: " << redo->sequence << " instead");
                         }
 
                         logsProcessed = true;
@@ -613,7 +610,7 @@ namespace OpenLogReplicator {
                                 RUNTIME_FAIL("opening archived redo log: " << redo->path);
                             }
 
-                            INFO("archived redo log " << redo->path << " is not ready for read, sleeping " << dec << archReadSleepUs << " us");
+                            INFO("archived redo log " << redo->path << " is not ready for read, sleeping " << std::dec << archReadSleepUs << " us");
                             usleep(archReadSleepUs);
                             --retry;
                         }
@@ -630,7 +627,7 @@ namespace OpenLogReplicator {
                             break;
 
                         if (ret != REDO_FINISHED) {
-                            RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << dec << ret << ")");
+                            RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << std::dec << ret << ")");
                         }
 
                         ++sequence;
@@ -662,13 +659,13 @@ namespace OpenLogReplicator {
                 //ONLINE REDO LOGS READ
                 //
                 if ((flags & REDO_FLAGS_ARCH_ONLY) == 0) {
-                    TRACE(TRACE2_REDO, "REDO: checking online redo logs, seq: " << dec << sequence);
+                    TRACE(TRACE2_REDO, "REDO: checking online redo logs, seq: " << std::dec << sequence);
                     updateResetlogs();
                     updateOnlineLogs();
 
                     while (!shutdown) {
                         redo = nullptr;
-                        TRACE(TRACE2_REDO, "REDO: searching online redo log for seq: " << dec << sequence);
+                        TRACE(TRACE2_REDO, "REDO: searching online redo log for seq: " << std::dec << sequence);
 
                         //keep reading online redo logs while it is possible
                         if (redo == nullptr) {
@@ -686,8 +683,8 @@ namespace OpenLogReplicator {
                                         redo = onlineRedo;
                                     }
 
-                                    TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << dec << onlineRedo->sequence <<
-                                            ", scn: " << dec << onlineRedo->firstScn << ", blocks: " << dec << onlineRedo->reader->numBlocksHeader);
+                                    TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << std::dec << onlineRedo->sequence <<
+                                            ", scn: " << std::dec << onlineRedo->firstScn << ", blocks: " << std::dec << onlineRedo->reader->numBlocksHeader);
                                 }
 
                                 //all so far read, waiting for switch
@@ -767,15 +764,15 @@ namespace OpenLogReplicator {
         DEBUG("state at stop: " << *this);
         uint64_t buffersMax = readerDropAll();
 
-        INFO("Oracle analyzer for: " << database << " is shut down, allocated at most " << dec <<
+        INFO("Oracle analyzer for: " << database << " is shut down, allocated at most " << std::dec <<
                 (memoryChunksHWM * MEMORY_CHUNK_SIZE_MB) << "MB memory, max disk read buffer: " << (buffersMax * MEMORY_CHUNK_SIZE_MB) << "MB");
 
-        TRACE(TRACE2_THREADS, "THREADS: ANALYZER (" << hex << this_thread::get_id() << ") STOP");
+        TRACE(TRACE2_THREADS, "THREADS: ANALYZER (" << std::hex << std::this_thread::get_id() << ") STOP");
         return 0;
     }
 
     bool OracleAnalyzer::readerCheckRedoLog(Reader* reader) {
-        unique_lock<mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtx);
         reader->status = READER_STATUS_CHECK;
         reader->sequence = 0;
         reader->firstScn = ZERO_SCN;
@@ -798,7 +795,7 @@ namespace OpenLogReplicator {
     uint64_t OracleAnalyzer::readerDropAll(void) {
         uint64_t buffersMaxUsed = 0;
         {
-            unique_lock<mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtx);
             for (Reader* reader : readers)
                 reader->shutdown = true;
             readerCond.notify_all();
@@ -829,12 +826,12 @@ namespace OpenLogReplicator {
         }
 
         if (oiCurrent == nullptr) {
-            RUNTIME_FAIL("resetlogs (" << dec << resetlogs << ") not found in incarnation list");
+            RUNTIME_FAIL("resetlogs (" << std::dec << resetlogs << ") not found in incarnation list");
         }
 
         for (OracleIncarnation* oi : oiSet) {
             if (oi->resetlogsScn == nextScn && oiCurrent->resetlogs == resetlogs && oi->priorIncarnation == oiCurrent->incarnation) {
-                WARNING("new resetlogs detected: " << dec << oi->resetlogs);
+                WARNING("new resetlogs detected: " << std::dec << oi->resetlogs);
                 sequence = 1;
                 resetlogs = oi->resetlogs;
                 activation = 0;
@@ -850,7 +847,7 @@ namespace OpenLogReplicator {
 
         ReaderFilesystem* readerFS = new ReaderFilesystem(alias.c_str(), this, group);
         if (readerFS == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(ReaderFilesystem) << " bytes memory (for: disk reader creation)");
         }
         readers.insert(readerFS);
         readerFS->initialize();
@@ -871,7 +868,7 @@ namespace OpenLogReplicator {
                 continue;
 
             bool foundPath = false;
-            for (string& path : reader->paths) {
+            for (std::string& path : reader->paths) {
                 reader->fileName = path;
                 applyMapping(reader->fileName);
                 if (readerCheckRedoLog(reader)) {
@@ -879,7 +876,7 @@ namespace OpenLogReplicator {
                     RedoLog* redo = new RedoLog(this, reader->group, reader->fileName);
                     if (redo == nullptr) {
                         readerDropAll();
-                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (for: online redo logs)");
+                        RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(RedoLog) << " bytes memory (for: online redo logs)");
                     }
 
                     redo->reader = reader;
@@ -891,13 +888,13 @@ namespace OpenLogReplicator {
 
             if (!foundPath) {
                 uint64_t badGroup = reader->group;
-                for (string& path : reader->paths) {
-                    string pathMapped(path);
+                for (std::string& path : reader->paths) {
+                    std::string pathMapped(path);
                     applyMapping(pathMapped);
                     ERROR("can't read: " << pathMapped);
                 }
                 readerDropAll();
-                RUNTIME_FAIL("can't read any member of group " << dec << badGroup);
+                RUNTIME_FAIL("can't read any member of group " << std::dec << badGroup);
             }
         }
     }
@@ -911,7 +908,7 @@ namespace OpenLogReplicator {
     //%a - activation id
     //%d - database id
     //%h - some hash
-    uint64_t OracleAnalyzer::getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const string& file) {
+    uint64_t OracleAnalyzer::getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const std::string& file) {
         uint64_t sequence = 0;
         uint64_t i = 0;
         uint64_t j = 0;
@@ -973,7 +970,7 @@ namespace OpenLogReplicator {
     }
 
     bool OracleAnalyzer::readerUpdateRedoLog(Reader* reader) {
-        unique_lock<mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(mtx);
         reader->status = READER_STATUS_UPDATE;
         readerCond.notify_all();
         sleepingCond.notify_all();
@@ -993,7 +990,7 @@ namespace OpenLogReplicator {
     void OracleAnalyzer::doShutdown(void) {
         shutdown = true;
         {
-            unique_lock<mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtx);
             readerCond.notify_all();
             sleepingCond.notify_all();
             analyzerCond.notify_all();
@@ -1004,8 +1001,8 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::addPathMapping(const char* source, const char* target) {
         TRACE(TRACE2_FILE, "FILE: added mapping [" << source << "] -> [" << target << "]");
-        string sourceMaping(source);
-        string targetMapping(target);
+        std::string sourceMaping(source);
+        std::string targetMapping(target);
         pathMapping.push_back(sourceMaping);
         pathMapping.push_back(targetMapping);
     }
@@ -1025,8 +1022,8 @@ namespace OpenLogReplicator {
             fieldLength = nextFieldLength;
 
             if (fieldPos + fieldLength > redoLogRecord->length) {
-                REDOLOG_FAIL("field length out of vector: field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                ", pos: " << dec << fieldPos << ", length:" << fieldLength << ", max: " << redoLogRecord->length);
+                REDOLOG_FAIL("field length out of vector: field: " << std::dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                ", pos: " << std::dec << fieldPos << ", length:" << fieldLength << ", max: " << redoLogRecord->length);
             }
         }
     }
@@ -1035,7 +1032,7 @@ namespace OpenLogReplicator {
         redoLogsBatch.push_back(path);
     }
 
-    void OracleAnalyzer::applyMapping(string& path) {
+    void OracleAnalyzer::applyMapping(std::string& path) {
         uint64_t sourceLength;
         uint64_t targetLength;
         uint64_t newPathLength = path.length();
@@ -1053,7 +1050,7 @@ namespace OpenLogReplicator {
                 memcpy(pathBuffer + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH) {
-                    RUNTIME_FAIL("After mapping path length (" << dec << (newPathLength - sourceLength + targetLength) << ") is too long for: " << pathBuffer);
+                    RUNTIME_FAIL("After mapping path length (" << std::dec << (newPathLength - sourceLength + targetLength) << ") is too long for: " << pathBuffer);
                 }
                 path.assign(pathBuffer);
                 break;
@@ -1062,8 +1059,8 @@ namespace OpenLogReplicator {
     }
 
     bool OracleAnalyzer::checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo) {
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << dec << scn
-                << " time: " << dec << time_.getVal()
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << std::dec << scn
+                << " time: " << std::dec << time_.getVal()
                 << " seq: " << sequence
                 << " offset: " << offset
                 << " switch: " << switchRedo
@@ -1083,8 +1080,8 @@ namespace OpenLogReplicator {
         }
         checkpointFirst = 0;
 
-        string jsonName(database + "-chkpt-" + to_string(scn));
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << dec << scn << " time: " << time_.getVal() << " seq: " <<
+        std::string jsonName(database + "-chkpt-" + std::to_string(scn));
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << std::dec << scn << " time: " << time_.getVal() << " seq: " <<
                 sequence << " offset: " << offset << " switch: " << switchRedo);
 
         typeSEQ minSequence = ZERO_SEQ;
@@ -1103,20 +1100,20 @@ namespace OpenLogReplicator {
             }
         }
 
-        stringstream ss;
+        std::stringstream ss;
         ss << "{\"database\":\"" << database
-                << "\",\"scn\":" << dec << scn
-                << ",\"resetlogs\":" << dec << resetlogs
-                << ",\"activation\":" << dec << activation
-                << ",\"time\":" << dec << time_.getVal()
-                << ",\"seq\":" << dec << sequence
-                << ",\"offset\":" << dec << offset
-                << ",\"switch\":" << dec << switchRedo;
+                << "\",\"scn\":" << std::dec << scn
+                << ",\"resetlogs\":" << std::dec << resetlogs
+                << ",\"activation\":" << std::dec << activation
+                << ",\"time\":" << std::dec << time_.getVal()
+                << ",\"seq\":" << std::dec << sequence
+                << ",\"offset\":" << std::dec << offset
+                << ",\"switch\":" << std::dec << switchRedo;
 
         if (minSequence != ZERO_SEQ) {
             ss << ",\"min-tran\":{"
-                    << "\"seq\":" << dec << minSequence
-                    << ",\"offset\":" << dec << minOffset
+                    << "\"seq\":" << std::dec << minSequence
+                    << ",\"offset\":" << std::dec << minOffset
                     << ",\"xid:\":\"" << PRINTXID(minXid) << "\"}";
         }
 
@@ -1127,11 +1124,11 @@ namespace OpenLogReplicator {
         if (checkpointScn != ZERO_SCN) {
             bool unlinkFile = false;
             bool firstFound = false;
-            set<typeSCN>::iterator it = checkpointScnList.end();
+            std::set<typeSCN>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string jsonName(database + "-chkpt-" + to_string(*it));
+                std::string jsonName(database + "-chkpt-" + std::to_string(*it));
 
                 unlinkFile = false;
                 if (*it > checkpointScn) {
@@ -1145,7 +1142,7 @@ namespace OpenLogReplicator {
 
                 if (unlinkFile) {
                     if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " checkpoint scn: " << dec << checkpointScn);
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " checkpoint scn: " << std::dec << checkpointScn);
                         state->drop(jsonName);
                     }
                     it = checkpointScnList.erase(it);
@@ -1173,25 +1170,25 @@ namespace OpenLogReplicator {
     void OracleAnalyzer::readCheckpoints(void) {
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: searching for previous checkpoint information");
 
-        set<string> namesList;
+        std::set<std::string> namesList;
         state->list(namesList);
 
         typeSCN fileScnMax = 0;
-        for (string jsonName : namesList) {
-            string prefix(database + "-chkpt-");
+        for (std::string jsonName : namesList) {
+            std::string prefix(database + "-chkpt-");
             if (jsonName.length() < prefix.length() || jsonName.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
 
-            string fileScnStr(jsonName.substr(prefix.length(), jsonName.length()));
+            std::string fileScnStr(jsonName.substr(prefix.length(), jsonName.length()));
             typeSCN fileScn;
             try {
                 fileScn = strtoull(fileScnStr.c_str(), nullptr, 10);
-            } catch (exception& e) {
+            } catch (std::exception& e) {
                 //ignore other files
                 continue;
             }
 
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << dec << fileScn);
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << std::dec << fileScn);
             checkpointScnList.insert(fileScn);
         }
 
@@ -1200,15 +1197,15 @@ namespace OpenLogReplicator {
         else
             firstScn = 0;
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: firstScn: " << dec << firstScn);
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: firstScn: " << std::dec << firstScn);
         if (firstScn != ZERO_SCN && firstScn != 0) {
             bool toDrop = false;
             bool finish;
-            set<typeSCN>::iterator it = checkpointScnList.end();
+            std::set<typeSCN>::iterator it = checkpointScnList.end();
 
             while (it != checkpointScnList.begin()) {
                 --it;
-                string jsonName(database + "-chkpt-" + to_string(*it));
+                std::string jsonName(database + "-chkpt-" + std::to_string(*it));
 
                 toDrop = false;
                 if (*it > firstScn) {
@@ -1220,7 +1217,7 @@ namespace OpenLogReplicator {
 
                 if (toDrop) {
                     if ((flags & REDO_FLAGS_CHECKPOINT_KEEP) == 0) {
-                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " scn: " << dec << *it);
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: delete: " << jsonName << " scn: " << std::dec << *it);
                         state->drop(jsonName);
                     }
                     it = checkpointScnList.erase(it);
@@ -1229,13 +1226,13 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool OracleAnalyzer::readCheckpoint(string& jsonName, typeSCN fileScn) {
+    bool OracleAnalyzer::readCheckpoint(std::string& jsonName, typeSCN fileScn) {
         //checkpoint file is read, can delete rest
         if (sequence != ZERO_SEQ && sequence > 0)
             return true;
 
-        string checkpointJSON;
-        Document document;
+        std::string checkpointJSON;
+        rapidjson::Document document;
         state->read(jsonName, CHECKPOINT_FILE_MAX_SIZE, checkpointJSON, false);
 
         if (checkpointJSON.length() == 0 || document.Parse(checkpointJSON.c_str()).HasParseError()) {
@@ -1255,14 +1252,14 @@ namespace OpenLogReplicator {
 
         typeSCN scnRead = getJSONfieldU64(jsonName, document, "scn");
         if (fileScn != scnRead) {
-            WARNING("invalid scn for: " << jsonName << " - " << dec << scnRead << " instead of " << fileScn << " - skipping file");
+            WARNING("invalid scn for: " << jsonName << " - " << std::dec << scnRead << " instead of " << fileScn << " - skipping file");
             return false;
         }
 
         typeSEQ seqRead = getJSONfieldU32(jsonName, document, "seq");
         uint64_t offsetRead = getJSONfieldU64(jsonName, document, "offset");
         if ((offsetRead & 511) != 0) {
-            WARNING("invalid offset for: " << jsonName << " - " << dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");
+            WARNING("invalid offset for: " << jsonName << " - " << std::dec << scnRead << " value " << offsetRead << " is not a multiplication of 512 - skipping file");
             return false;
         }
 
@@ -1270,11 +1267,11 @@ namespace OpenLogReplicator {
         uint64_t minTranOffset = 0;
 
         if (document.HasMember("min-tran")) {
-            const Value& minTranJSON = getJSONfieldO(jsonName, document, "min-tran");
+            const rapidjson::Value& minTranJSON = getJSONfieldO(jsonName, document, "min-tran");
             minTranSeq = getJSONfieldU32(jsonName, minTranJSON, "seq");
             minTranOffset = getJSONfieldU64(jsonName, minTranJSON, "offset");
             if ((minTranOffset & 511) != 0) {
-                WARNING("invalid offset for: " << jsonName << " - " << dec << scnRead << " value " << minTranOffset << " is not a multiplication of 512 - skipping file");
+                WARNING("invalid offset for: " << jsonName << " - " << std::dec << scnRead << " value " << minTranOffset << " is not a multiplication of 512 - skipping file");
                 return false;
             }
         }
@@ -1287,16 +1284,16 @@ namespace OpenLogReplicator {
             offset = offsetRead;
         }
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << dec << fileScn << " seq: " << sequence <<
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: found: " << jsonName << " scn: " << std::dec << fileScn << " seq: " << sequence <<
                 " offset: " << offset);
         return false;
     }
 
     uint8_t* OracleAnalyzer::getMemoryChunk(const char* module, bool supp) {
-        TRACE(TRACE2_MEMORY, "MEMORY: " << module << " - get at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
+        TRACE(TRACE2_MEMORY, "MEMORY: " << module << " - get at: " << std::dec << memoryChunksFree << "/" << memoryChunksAllocated);
 
         {
-            unique_lock<mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtx);
 
             if (memoryChunksFree == 0) {
                 if (memoryChunksAllocated == memoryChunksMax) {
@@ -1318,7 +1315,7 @@ namespace OpenLogReplicator {
 
                 memoryChunks[0] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
                 if (memoryChunks[0] == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << (MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#6)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << (MEMORY_CHUNK_SIZE_MB) << " bytes memory (for: memory chunks#6)");
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
@@ -1335,10 +1332,10 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::freeMemoryChunk(const char* module, uint8_t* chunk, bool supp) {
-        TRACE(TRACE2_MEMORY, "MEMORY: " << module << " - free at: " << dec << memoryChunksFree << "/" << memoryChunksAllocated);
+        TRACE(TRACE2_MEMORY, "MEMORY: " << module << " - free at: " << std::dec << memoryChunksFree << "/" << memoryChunksAllocated);
 
         {
-            unique_lock<mutex> lck(mtx);
+            std::unique_lock<std::mutex> lck(mtx);
 
             if (memoryChunksFree == memoryChunksAllocated) {
                 RUNTIME_FAIL("trying to free unknown memory block for: " << module);
@@ -1377,7 +1374,7 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("missing location of archived redo logs for offline mode");
         }
 
-        string mappedPath(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog");
+        std::string mappedPath(oracleAnalyzer->dbRecoveryFileDest + "/" + oracleAnalyzer->context + "/archivelog");
         oracleAnalyzer->applyMapping(mappedPath);
         TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
@@ -1386,14 +1383,14 @@ namespace OpenLogReplicator {
             RUNTIME_FAIL("can't access directory: " << mappedPath);
         }
 
-        string newLastCheckedDay;
+        std::string newLastCheckedDay;
         struct dirent* ent;
         while ((ent = readdir(dir)) != nullptr) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                 continue;
 
             struct stat fileStat;
-            string mappedSubPath(mappedPath + "/" + ent->d_name);
+            std::string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat)) {
                 WARNING("reading information for file: " << mappedSubPath << " - " << strerror(errno));
                 continue;
@@ -1408,7 +1405,7 @@ namespace OpenLogReplicator {
 
             TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath << "/" << ent->d_name);
 
-            string mappedPathWithFile(mappedPath + "/" + ent->d_name);
+            std::string mappedPathWithFile(mappedPath + "/" + ent->d_name);
             DIR* dir2;
             if ((dir2 = opendir(mappedPathWithFile.c_str())) == nullptr) {
                 closedir(dir);
@@ -1420,7 +1417,7 @@ namespace OpenLogReplicator {
                 if (strcmp(ent2->d_name, ".") == 0 || strcmp(ent2->d_name, "..") == 0)
                     continue;
 
-                string fileName(mappedPath + "/" + ent->d_name + "/" + ent2->d_name);
+                std::string fileName(mappedPath + "/" + ent->d_name + "/" + ent2->d_name);
                 TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << fileName);
 
                 uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent2->d_name);
@@ -1432,7 +1429,7 @@ namespace OpenLogReplicator {
 
                 RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName);
                 if (redo == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#2)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(RedoLog) << " bytes memory (arch log list#2)");
                 }
 
                 redo->firstScn = ZERO_SCN;
@@ -1458,7 +1455,7 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::archGetLogList(OracleAnalyzer* oracleAnalyzer) {
         uint64_t sequenceStart = ZERO_SEQ;
-        for (string& mappedPath : oracleAnalyzer->redoLogsBatch) {
+        for (std::string& mappedPath : oracleAnalyzer->redoLogsBatch) {
             TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << mappedPath);
 
             struct stat fileStat;
@@ -1488,7 +1485,7 @@ namespace OpenLogReplicator {
 
                 RedoLog* redo = new RedoLog(oracleAnalyzer, 0, mappedPath);
                 if (redo == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#3)");
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(RedoLog) << " bytes memory (arch log list#3)");
                 }
 
                 redo->firstScn = ZERO_SCN;
@@ -1509,7 +1506,7 @@ namespace OpenLogReplicator {
                     if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0)
                         continue;
 
-                    string fileName(mappedPath + "/" + ent->d_name);
+                    std::string fileName(mappedPath + "/" + ent->d_name);
                     TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: checking path: " << fileName);
 
                     uint64_t sequence = getSequenceFromFileName(oracleAnalyzer, ent->d_name);
@@ -1521,7 +1518,7 @@ namespace OpenLogReplicator {
 
                     RedoLog* redo = new RedoLog(oracleAnalyzer, 0, fileName);
                     if (redo == nullptr) {
-                        RUNTIME_FAIL("couldn't allocate " << dec << sizeof(RedoLog) << " bytes memory (arch log list#4)");
+                        RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(RedoLog) << " bytes memory (arch log list#4)");
                     }
 
                     redo->firstScn = ZERO_SCN;
@@ -1547,11 +1544,11 @@ namespace OpenLogReplicator {
         return p1->sequence < p2->sequence;
     }
 
-    ostream& operator<<(ostream& os, const OracleAnalyzer& oracleAnalyzer) {
+    std::ostream& operator<<(std::ostream& os, const OracleAnalyzer& oracleAnalyzer) {
         if (oracleAnalyzer.xidTransactionMap.size() > 0)
-            os << "Transactions open: " << dec << oracleAnalyzer.xidTransactionMap.size() << endl;
+            os << "Transactions open: " << std::dec << oracleAnalyzer.xidTransactionMap.size() << std::endl;
         for (auto it : oracleAnalyzer.xidTransactionMap) {
-            os << "transaction: " << *it.second << endl;
+            os << "transaction: " << *it.second << std::endl;
         }
         return os;
     }

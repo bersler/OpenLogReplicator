@@ -59,8 +59,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_BUFFER_FULL_SLEEP  1000
 #define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 
@@ -86,9 +84,9 @@ namespace OpenLogReplicator {
         uint8_t* headerBuffer;
         int64_t group;
         typeSEQ sequence;
-        vector<string> paths;
-        string fileName;
-        string fileNameWrite;
+        std::vector<std::string> paths;
+        std::string fileName;
+        std::string fileNameWrite;
         uint64_t blockSize;
         uint32_t compatVsn;
         typeBLK numBlocksHeader;
@@ -104,11 +102,11 @@ namespace OpenLogReplicator {
         uint64_t sumTime;
 
         uint64_t fileSize;
-        atomic<uint64_t> status;
-        atomic<uint64_t> ret;
-        atomic<uint64_t> bufferStart;
-        atomic<uint64_t> bufferEnd;
-        atomic<uint64_t> buffersFree;
+        std::atomic<uint64_t> status;
+        std::atomic<uint64_t> ret;
+        std::atomic<uint64_t> bufferStart;
+        std::atomic<uint64_t> bufferEnd;
+        std::atomic<uint64_t> buffersFree;
         uint64_t bufferSizeMax;
         uint64_t buffersMaxUsed;
 

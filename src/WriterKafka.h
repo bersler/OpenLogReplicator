@@ -27,15 +27,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define MAX_KAFKA_MESSAGE_MB        953
 #define MAX_KAFKA_MAX_MESSAGES      10000000
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 
     class WriterKafka : public Writer {
     protected:
-        string brokers;
-        string topic;
+        std::string brokers;
+        std::string topic;
         uint64_t maxMessages;
         bool enableIdempotence;
         char errstr[512];
@@ -47,7 +45,7 @@ namespace OpenLogReplicator {
         static void logger_cb(const rd_kafka_t* rk, int level, const char* fac, const char* buf);
 
         virtual void sendMessage(OutputBufferMsg* msg);
-        virtual string getName() const;
+        virtual std::string getName() const;
         virtual void pollQueue(void);
 
     public:

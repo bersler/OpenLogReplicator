@@ -24,19 +24,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef THREAD_H_
 #define THREAD_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class Thread {
     protected:
         virtual void* run(void) = 0;
 
     public:
-        atomic<bool> stop;
-        atomic<bool> shutdown;
-        atomic<bool> started;
+        std::atomic<bool> stop;
+        std::atomic<bool> shutdown;
+        std::atomic<bool> started;
         pthread_t pthread;
-        string alias;
+        std::string alias;
 
         static void* runStatic(void* context);
 

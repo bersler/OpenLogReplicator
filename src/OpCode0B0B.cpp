@@ -21,8 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0B0B::OpCode0B0B(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -51,7 +49,7 @@ namespace OpenLogReplicator {
         //field: 3
         redoLogRecord->rowLenghsDelta = fieldPos;
         if (fieldLength < redoLogRecord->nrow * 2) {
-            oracleAnalyzer->dumpStream << "field length list length too short: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "field length list length too short: " << std::dec << fieldLength << std::endl;
             return;
         }
 

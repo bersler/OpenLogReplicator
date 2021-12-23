@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef READERFILESYSTEM_H_
 #define READERFILESYSTEM_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleAnalyzer;
 

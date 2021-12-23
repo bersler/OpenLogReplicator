@@ -19,8 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "NetworkException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     NetworkException::NetworkException(const char* msg) :
         exception(),
@@ -30,7 +28,7 @@ namespace OpenLogReplicator {
     NetworkException::~NetworkException() {
     }
 
-    ostream& operator<<(ostream& os, const NetworkException& exception) {
+    std::ostream& operator<<(std::ostream& os, const NetworkException& exception) {
         os << exception.msg;
         return os;
     }

@@ -22,15 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEINCARNATION_H_
 #define ORACLEINCARNATION_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class OracleIncarnation {
     public:
         uint32_t incarnation;
         typeSCN resetlogsScn;
         typeSCN priorResetlogsScn;
-        string status;
+        std::string status;
         typeRESETLOGS resetlogs;
         uint32_t priorIncarnation;
 
@@ -40,7 +38,7 @@ namespace OpenLogReplicator {
                 typeRESETLOGS resetlogs, uint32_t priorIncarnation);
         virtual ~OracleIncarnation();
 
-        friend ostream& operator<<(ostream& os, const OracleIncarnation& i);
+        friend std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i);
     };
 }
 

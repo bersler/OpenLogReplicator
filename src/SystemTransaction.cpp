@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Schema.h"
 #include "SystemTransaction.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
 
     SystemTransaction::SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema) :
@@ -119,7 +117,7 @@ namespace OpenLogReplicator {
             outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
             int16_t newVal = strtol(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -127,7 +125,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val = defVal;
                 return true;
@@ -149,7 +147,7 @@ namespace OpenLogReplicator {
             }
             uint16_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -157,7 +155,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val = defVal;
                 return true;
@@ -179,7 +177,7 @@ namespace OpenLogReplicator {
             }
             uint32_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -187,7 +185,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val = defVal;
                 return true;
@@ -209,7 +207,7 @@ namespace OpenLogReplicator {
             }
             typeOBJ newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 schema->touchObj(val);
                 schema->touchObj(newVal);
@@ -219,7 +217,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 schema->touchObj(val);
                 val = 0;
@@ -242,7 +240,7 @@ namespace OpenLogReplicator {
             }
             typeOBJ newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 schema->touchPart(val);
                 schema->touchPart(newVal);
@@ -252,7 +250,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 schema->touchPart(val);
                 val = 0;
@@ -275,7 +273,7 @@ namespace OpenLogReplicator {
             }
             typeUSER newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 schema->touchUser(val);
                 schema->touchUser(newVal);
@@ -285,7 +283,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 schema->touchUser(val);
                 val = 0;
@@ -308,7 +306,7 @@ namespace OpenLogReplicator {
             }
             int64_t newVal = strtol(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -316,7 +314,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val = defVal;
                 return true;
@@ -338,7 +336,7 @@ namespace OpenLogReplicator {
             }
             uint64_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -346,7 +344,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val = defVal;
                 return true;
@@ -369,7 +367,7 @@ namespace OpenLogReplicator {
             uintX_t newVal(0);
             newVal.setStr(outputBuffer->valueBuffer, outputBuffer->valueLength);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> " << newVal << ")");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
                 schema->touched = true;
                 val = newVal;
                 return true;
@@ -377,7 +375,7 @@ namespace OpenLogReplicator {
         } else
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
             if (!val.isZero()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << dec << val << " -> NULL)");
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
                 schema->touched = true;
                 val.set(0, 0);
                 return true;
@@ -386,14 +384,14 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateString(string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId) {
+    bool SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId) {
         if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (object->columns[column]->typeNo != 1 && object->columns[column]->typeNo != 96) {
                 RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
             }
             outputBuffer->parseString(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER], object->columns[column]->charsetId);
-            string newVal(outputBuffer->valueBuffer, outputBuffer->valueLength);
+            std::string newVal(outputBuffer->valueBuffer, outputBuffer->valueLength);
             if (outputBuffer->valueLength > maxLength) {
                 RUNTIME_FAIL("ddl: value too long for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << ", length " << outputBuffer->valueLength);
             }
@@ -429,7 +427,7 @@ namespace OpenLogReplicator {
             }
             sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
             if (sysCCol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
             }
 
             typeCOL column;
@@ -463,7 +461,7 @@ namespace OpenLogReplicator {
             }
             sysCDef = new SysCDef(rowId, 0, 0, 0, true);
             if (sysCDef == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
             }
 
             typeCOL column;
@@ -495,7 +493,7 @@ namespace OpenLogReplicator {
             }
             sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
             if (sysCol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
             }
 
             typeCOL column;
@@ -547,7 +545,7 @@ namespace OpenLogReplicator {
             }
             sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
             if (sysDeferredStg == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
             }
 
             typeCOL column;
@@ -578,7 +576,7 @@ namespace OpenLogReplicator {
             }
             sysECol = new SysECol(rowId, 0, 0, -1, true);
             if (sysECol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
             }
 
             typeCOL column;
@@ -610,7 +608,7 @@ namespace OpenLogReplicator {
             }
             sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false, true);
             if (sysObj == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
             }
 
             typeCOL column;
@@ -648,7 +646,7 @@ namespace OpenLogReplicator {
             }
             sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, true);
             if (sysTab == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
             }
 
             typeCOL column;
@@ -684,7 +682,7 @@ namespace OpenLogReplicator {
             }
             sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
             if (sysTabComPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
             }
 
             typeCOL column;
@@ -716,7 +714,7 @@ namespace OpenLogReplicator {
             }
             sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
             if (sysTabPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
             }
 
             typeCOL column;
@@ -748,7 +746,7 @@ namespace OpenLogReplicator {
             }
             sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
             if (sysTabSubPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
             }
 
             typeCOL column;
@@ -780,7 +778,7 @@ namespace OpenLogReplicator {
             }
             sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
             if (sysUser == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
+                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
             }
 
             typeCOL column;
@@ -1316,7 +1314,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysCCol* sysCCol = sysCColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCCol->con << ", INTCOL#: " << sysCCol->intCol << ", OBJ#: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << std::dec << sysCCol->con << ", INTCOL#: " << sysCCol->intCol << ", OBJ#: " <<
                     sysCCol->obj << ", SPARE1: " << sysCCol->spare1 << ")");
             schema->touched = true;
             schema->sysCColMapRowId.erase(rowId);
@@ -1333,7 +1331,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysCDef* sysCDef = sysCDefIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << dec << sysCDef->con << ", OBJ#: " << sysCDef->obj << ", type: " << sysCDef->type << ")");
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << std::dec << sysCDef->con << ", OBJ#: " << sysCDef->obj << ", type: " << sysCDef->type << ")");
             schema->touched = true;
             schema->sysCDefMapRowId.erase(rowId);
             schema->sysCDefTouched = true;
@@ -1349,7 +1347,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysCol* sysCol = sysColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysCol->obj << ", COL#: " << sysCol->col << ", SEGCOL#: " << sysCol->segCol <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysCol->obj << ", COL#: " << sysCol->col << ", SEGCOL#: " << sysCol->segCol <<
                     ", INTCOL#: " << sysCol->intCol << ", NAME: '" << sysCol->name << "', TYPE#: " << sysCol->type << ", LENGTH: " << sysCol->length <<
                     ", PRECISION#: " << sysCol->precision << ", SCALE: " << sysCol->scale << ", CHARSETFORM: " << sysCol->charsetForm <<
                     ", CHARSETID: " << sysCol->charsetId << ", NULL$: " << sysCol->null_ << ", PROPERTY: " << sysCol->property << ")");
@@ -1368,7 +1366,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysDeferredStg* sysDeferredStg = sysDeferredStgIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysDeferredStg->obj << ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysDeferredStg->obj << ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
             schema->touched = true;
             schema->sysDeferredStgMapRowId.erase(rowId);
             schema->sysDeferredStgTouched = true;
@@ -1384,7 +1382,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysECol* sysECol = sysEColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (TABOBJ#: " << dec << sysECol->tabObj << ", COLNUM: " << sysECol->colNum << ", GUARD_ID: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (TABOBJ#: " << std::dec << sysECol->tabObj << ", COLNUM: " << sysECol->colNum << ", GUARD_ID: " <<
                     sysECol->guardId << ")");
             schema->touched = true;
             schema->sysEColMapRowId.erase(rowId);
@@ -1401,7 +1399,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysObj* sysObj = sysObjIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OWNER#: " << dec << sysObj->owner << ", OBJ#: " << sysObj->obj << ", DATAOBJ#: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OWNER#: " << std::dec << sysObj->owner << ", OBJ#: " << sysObj->obj << ", DATAOBJ#: " <<
                     sysObj->dataObj << ", TYPE#: " << sysObj->type << ", NAME: '" << sysObj->name << "', FLAGS: " << sysObj->flags << ")");
             schema->touched = true;
             schema->sysObjMapRowId.erase(rowId);
@@ -1418,7 +1416,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysTab* sysTab = sysTabIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", CLUCOLS: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", CLUCOLS: " <<
                     sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
             schema->touched = true;
             schema->sysTabMapRowId.erase(rowId);
@@ -1435,7 +1433,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysTabComPart* sysTabComPart = sysTabComPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabComPart->obj << ", DATAOBJ#: " << sysTabComPart->dataObj << ", BO#: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabComPart->obj << ", DATAOBJ#: " << sysTabComPart->dataObj << ", BO#: " <<
                     sysTabComPart->bo << ")");
             schema->touched = true;
             schema->sysTabComPartMapRowId.erase(rowId);
@@ -1452,7 +1450,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysTabPart* sysTabPart = sysTabPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabPart->obj << ", DATAOBJ#: " << sysTabPart->dataObj << ", BO#: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabPart->obj << ", DATAOBJ#: " << sysTabPart->dataObj << ", BO#: " <<
                     sysTabPart->bo << ")");
             schema->touched = true;
             schema->sysTabPartMapRowId.erase(rowId);
@@ -1469,7 +1467,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysTabSubPart* sysTabSubPart = sysTabSubPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << dec << sysTabSubPart->obj << ", DATAOBJ#: " << sysTabSubPart->dataObj << ", POBJ#: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabSubPart->obj << ", DATAOBJ#: " << sysTabSubPart->dataObj << ", POBJ#: " <<
                     sysTabSubPart->pObj << ")");
             schema->touched = true;
             schema->sysTabSubPartMapRowId.erase(rowId);
@@ -1486,7 +1484,7 @@ namespace OpenLogReplicator {
                 return;
             }
             SysUser* sysUser = sysUserIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (USER#: " << dec << sysUser->user << ", NAME: " << sysUser->name << ", SPARE1: " <<
+            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (USER#: " << std::dec << sysUser->user << ", NAME: " << sysUser->name << ", SPARE1: " <<
                     sysUser->spare1 << ")");
             schema->touched = true;
             schema->sysUserMapRowId.erase(rowId);

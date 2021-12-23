@@ -27,18 +27,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define STATE_TYPE_DISK 0
 #define STATE_TYPE_REDIS 1
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class State {
     public:
         State();
         virtual ~State();
 
-        virtual void list(set<string>& namesList) = 0;
-        virtual bool read(string& name, uint64_t maxSize, string& in, bool noFail) = 0;
-        virtual void write(string& name, stringstream& out) = 0;
-        virtual void drop(string& name) = 0;
+        virtual void list(std::set<std::string>& namesList) = 0;
+        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail) = 0;
+        virtual void write(std::string& name, std::stringstream& out) = 0;
+        virtual void drop(std::string& name) = 0;
     };
 }
 

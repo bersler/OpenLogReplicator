@@ -22,8 +22,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OpCode0501::OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
         OpCode(oracleAnalyzer, redoLogRecord) {
@@ -38,7 +36,7 @@ namespace OpenLogReplicator {
             return;
         //field: 2
         if (fieldLength < 8) {
-            WARNING("too short field ktub: " << dec << fieldLength);
+            WARNING("too short field ktub: " << std::dec << fieldLength);
             return;
         }
 
@@ -91,7 +89,7 @@ namespace OpenLogReplicator {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
                 if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                     for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                        oracleAnalyzer->dumpStream << "slot[" << i << "]: " << dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << endl;
+                        oracleAnalyzer->dumpStream << "slot[" << i << "]: " << std::dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << std::endl;
                 }
             }
         }
@@ -206,7 +204,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            WARNING("too short field ktudb: " << dec << fieldLength);
+            WARNING("too short field ktudb: " << std::dec << fieldLength);
             return;
         }
 
@@ -222,40 +220,40 @@ namespace OpenLogReplicator {
             uint8_t rec = redoLogRecord->data[fieldPos + 18];
 
             oracleAnalyzer->dumpStream << "ktudb redo:" <<
-                    " siz: " << dec << siz <<
-                    " spc: " << dec << spc <<
-                    " flg: 0x" << setfill('0') << setw(4) << hex << flgKtudb <<
-                    " seq: 0x" << setfill('0') << setw(4) << seq <<
-                    " rec: 0x" << setfill('0') << setw(2) << (uint64_t)rec << endl;
+                    " siz: " << std::dec << siz <<
+                    " spc: " << std::dec << spc <<
+                    " flg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flgKtudb <<
+                    " seq: 0x" << std::setfill('0') << std::setw(4) << seq <<
+                    " rec: 0x" << std::setfill('0') << std::setw(2) << (uint64_t)rec << std::endl;
             oracleAnalyzer->dumpStream << "           " <<
-                    " xid:  " << PRINTXID(redoLogRecord->xid) << "  " << endl;
+                    " xid:  " << PRINTXID(redoLogRecord->xid) << "  " << std::endl;
         }
     }
 
     void OpCode0501::kteoputrn(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            WARNING("too short field kteoputrn: " << dec << fieldLength);
+            WARNING("too short field kteoputrn: " << std::dec << fieldLength);
             return;
         }
         if (oracleAnalyzer->dumpRedoLog >= 2) {
             typeOBJ newDataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-            oracleAnalyzer->dumpStream << "kteoputrn - undo operation for flush for truncate " << endl;
-            oracleAnalyzer->dumpStream << "newobjd: 0x" << hex << newDataObj << " " << endl;
+            oracleAnalyzer->dumpStream << "kteoputrn - undo operation for flush for truncate " << std::endl;
+            oracleAnalyzer->dumpStream << "newobjd: 0x" << std::hex << newDataObj << " " << std::endl;
         }
     }
 
     void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            WARNING("too short row dependencies: " << dec << fieldLength);
+            WARNING("too short row dependencies: " << std::dec << fieldLength);
             return;
         }
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             typeSCN dscn = oracleAnalyzer->readSCN(redoLogRecord->data + fieldPos + 0);
             if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN48(dscn) << endl;
+                oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN48(dscn) << std::endl;
             else
-                oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN64(dscn) << endl;
+                oracleAnalyzer->dumpStream << "dscn: " << PRINTSCN64(dscn) << std::endl;
         }
     }
 
@@ -267,7 +265,7 @@ namespace OpenLogReplicator {
             return;
 
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "ERROR: too short supplemental log: " << dec << fieldLength << endl;
+            oracleAnalyzer->dumpStream << "ERROR: too short supplemental log: " << std::dec << fieldLength << std::endl;
             return;
         }
 
@@ -281,19 +279,19 @@ namespace OpenLogReplicator {
 
         if (oracleAnalyzer->dumpRedoLog >= 2) {
             oracleAnalyzer->dumpStream <<
-                    "supp log type: " << dec << (uint64_t)redoLogRecord->suppLogType <<
-                    " fb: " << dec << (uint64_t)redoLogRecord->suppLogFb <<
-                    " cc: " << dec << redoLogRecord->suppLogCC <<
-                    " before: " << dec << redoLogRecord->suppLogBefore <<
-                    " after: " << dec << redoLogRecord->suppLogAfter << endl;
+                    "supp log type: " << std::dec << (uint64_t)redoLogRecord->suppLogType <<
+                    " fb: " << std::dec << (uint64_t)redoLogRecord->suppLogFb <<
+                    " cc: " << std::dec << redoLogRecord->suppLogCC <<
+                    " before: " << std::dec << redoLogRecord->suppLogBefore <<
+                    " after: " << std::dec << redoLogRecord->suppLogAfter << std::endl;
         }
 
         if (fieldLength >= 26) {
             redoLogRecord->suppLogBdba = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 20);
             redoLogRecord->suppLogSlot = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
             oracleAnalyzer->dumpStream <<
-                    "supp log bdba: 0x" << setfill('0') << setw(8) << hex << redoLogRecord->suppLogBdba <<
-                    "." << hex << redoLogRecord->suppLogSlot << endl;
+                    "supp log bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->suppLogBdba <<
+                    "." << std::hex << redoLogRecord->suppLogSlot << std::endl;
         } else {
             redoLogRecord->suppLogBdba = redoLogRecord->bdba;
             redoLogRecord->suppLogSlot = redoLogRecord->slot;

@@ -23,8 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     TransactionBuffer::TransactionBuffer(OracleAnalyzer* oracleAnalyzer) :
         oracleAnalyzer(oracleAnalyzer) {
@@ -32,7 +30,7 @@ namespace OpenLogReplicator {
 
     TransactionBuffer::~TransactionBuffer() {
         if (partiallyFullChunks.size() > 0) {
-            WARNING("non free blocks in transaction buffer: " << dec << partiallyFullChunks.size());
+            WARNING("non free blocks in transaction buffer: " << std::dec << partiallyFullChunks.size());
         }
     }
 
@@ -91,7 +89,7 @@ namespace OpenLogReplicator {
         uint64_t length = redoLogRecord->length + ROW_HEADER_TOTAL;
 
         if (length > DATA_BUFFER_SIZE) {
-            RUNTIME_FAIL(*oracleAnalyzer <<  "block size (" << dec << length
+            RUNTIME_FAIL(*oracleAnalyzer <<  "block size (" << std::dec << length
                     << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter");
         }
 
@@ -127,7 +125,7 @@ namespace OpenLogReplicator {
         uint64_t length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
         if (length > DATA_BUFFER_SIZE) {
-            RUNTIME_FAIL(*oracleAnalyzer <<  "block size (" << dec << length
+            RUNTIME_FAIL(*oracleAnalyzer <<  "block size (" << std::dec << length
                     << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter");
         }
 
@@ -165,8 +163,8 @@ namespace OpenLogReplicator {
             return;
 
         if (transaction->lastTc->size < ROW_HEADER_TOTAL || transaction->lastTc->elements == 0) {
-            RUNTIME_FAIL(*oracleAnalyzer << "trying to remove from empty buffer size2: " << dec << transaction->lastTc->size << " elements: " <<
-                    dec << transaction->lastTc->elements);
+            RUNTIME_FAIL(*oracleAnalyzer << "trying to remove from empty buffer size2: " << std::dec << transaction->lastTc->size << " elements: " <<
+                    std::dec << transaction->lastTc->elements);
         }
 
         uint64_t length = *((uint64_t*) (transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));

@@ -30,8 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef ORACLEANALYZER_H_
 #define ORACLEANALYZER_H_
 
-using namespace std;
-
 namespace OpenLogReplicator {
     class RedoLog;
     class OutputBuffer;
@@ -58,8 +56,8 @@ namespace OpenLogReplicator {
         uint64_t offset;
         typeSCN nextScn;
 
-        priority_queue<RedoLog*, vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
-        set<RedoLog*> onlineRedoSet;
+        std::priority_queue<RedoLog*, std::vector<RedoLog*>, redoLogCompare> archiveRedoQueue;
+        std::set<RedoLog*> onlineRedoSet;
         uint64_t suppLogDbPrimary;
         uint64_t suppLogDbAll;
         uint64_t memoryMinMb;
@@ -71,37 +69,37 @@ namespace OpenLogReplicator {
         uint64_t memoryChunksMax;
         uint64_t memoryChunksHWM;
         uint64_t memoryChunksSupplemental;
-        string nlsCharacterSet;
-        string nlsNcharCharacterSet;
-        string dbRecoveryFileDest;
-        string dbBlockChecksum;
-        string logArchiveDest;
+        std::string nlsCharacterSet;
+        std::string nlsNcharCharacterSet;
+        std::string dbRecoveryFileDest;
+        std::string dbBlockChecksum;
+        std::string logArchiveDest;
         Reader* archReader;
-        set<Reader*> readers;
+        std::set<Reader*> readers;
         bool waitingForWriter;
-        mutex mtx;
-        condition_variable readerCond;
-        condition_variable sleepingCond;
-        condition_variable analyzerCond;
-        condition_variable memoryCond;
-        condition_variable writerCond;
-        string context;
+        std::mutex mtx;
+        std::condition_variable readerCond;
+        std::condition_variable sleepingCond;
+        std::condition_variable analyzerCond;
+        std::condition_variable memoryCond;
+        std::condition_variable writerCond;
+        std::string context;
         typeSCN checkpointScn;
         typeSCN schemaFirstScn;
         typeSCN schemaScn;
         typeSCN startScn;
         typeSEQ startSequence;
-        string startTime;
+        std::string startTime;
         int64_t startTimeRel;
         uint64_t readBufferMax;
-        unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
+        std::unordered_map<typeXIDMAP, Transaction*> xidTransactionMap;
         uint64_t disableChecks;
-        vector<string> pathMapping;
-        vector<string> redoLogsBatch;
-        set<typeSCN> checkpointScnList;
+        std::vector<std::string> pathMapping;
+        std::vector<std::string> redoLogsBatch;
+        std::set<typeSCN> checkpointScnList;
         typeCONID conId;
-        string conName;
-        string lastCheckedDay;
+        std::string conName;
+        std::string lastCheckedDay;
         uint64_t bigEndian;
         bool version12;
         bool schemaChanged;
@@ -111,7 +109,7 @@ namespace OpenLogReplicator {
         bool readerCheckRedoLog(Reader* reader);
         uint64_t readerDropAll(void);
         void updateResetlogs(void);
-        static uint64_t getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const string& file);
+        static uint64_t getSequenceFromFileName(OracleAnalyzer* oracleAnalyzer, const std::string& file);
         virtual const char* getModeName(void) const;
         virtual bool checkConnection(void);
         virtual bool continueWithOnline(void);
@@ -124,7 +122,7 @@ namespace OpenLogReplicator {
         virtual ~OracleAnalyzer();
 
         typeSCN firstScn;
-        string database;
+        std::string database;
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMB;
         uint64_t checkpointFirst;
@@ -133,13 +131,13 @@ namespace OpenLogReplicator {
         bool checkpointOutputLogSwitch;
         typeTIME checkpointLastTime;
         uint64_t checkpointLastOffset;
-        string logArchiveFormat;
-        string redoCopyPath;
+        std::string logArchiveFormat;
+        std::string redoCopyPath;
         State *state;
-        ofstream dumpStream;
+        std::ofstream dumpStream;
         uint64_t dumpRedoLog;
         uint64_t dumpRawData;
-        string dumpPath;
+        std::string dumpPath;
         uint64_t version;                   //compatibility level of redo logs
         uint64_t suppLogSize;
         Schema* schema;
@@ -158,10 +156,10 @@ namespace OpenLogReplicator {
         uint64_t stopCheckpoints;
         uint64_t stopTransactions;
         uint64_t transactionMax;
-        set<typeXID> skipXidList;
-        set<typeXIDMAP> brokenXidMapList;
+        std::set<typeXID> skipXidList;
+        std::set<typeXIDMAP> brokenXidMapList;
         bool stopFlushBuffer;
-        set<OracleIncarnation*> oiSet;
+        std::set<OracleIncarnation*> oiSet;
         OracleIncarnation* oiCurrent;
 
         void (*archGetLog)(OracleAnalyzer* oracleAnalyzer);
@@ -215,10 +213,10 @@ namespace OpenLogReplicator {
         void addRedoLogsBatch(const char* path);
         static void archGetLogPath(OracleAnalyzer* oracleAnalyzer);
         static void archGetLogList(OracleAnalyzer* oracleAnalyzer);
-        void applyMapping(string& path);
+        void applyMapping(std::string& path);
         bool checkpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool switchRedo);
         void readCheckpoints(void);
-        bool readCheckpoint(string& jsonName, typeSCN fileScn);
+        bool readCheckpoint(std::string& jsonName, typeSCN fileScn);
         void skipEmptyFields(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
         uint8_t* getMemoryChunk(const char* module, bool supp);
         void freeMemoryChunk(const char* module, uint8_t* chunk, bool supp);
@@ -236,11 +234,11 @@ namespace OpenLogReplicator {
             fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length) {
-                REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                        ", pos: " << dec << fieldPos <<
+                REDOLOG_FAIL("field length out of vector, field: " << std::dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", pos: " << std::dec << fieldPos <<
                         ", length:" << fieldLength <<
                         ", max: " << redoLogRecord->length <<
-                        ", code: " << hex << code);
+                        ", code: " << std::hex << code);
             }
             return true;
         };
@@ -248,15 +246,15 @@ namespace OpenLogReplicator {
         void nextField(RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             ++fieldNum;
             if (fieldNum > redoLogRecord->fieldCnt) {
-                REDOLOG_FAIL("field missing in vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                        ", data: " << dec << redoLogRecord->rowData <<
-                        ", obj: " << dec << redoLogRecord->obj <<
-                        ", dataObj: " << dec << redoLogRecord->dataObj <<
-                        ", op: " << hex << redoLogRecord->opCode <<
-                        ", cc: " << dec << (uint64_t)redoLogRecord->cc <<
-                        ", suppCC: " << dec << redoLogRecord->suppLogCC <<
-                        ", fieldLength: " << dec << fieldLength <<
-                        ", code: " << hex << code);
+                REDOLOG_FAIL("field missing in vector, field: " << std::dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", data: " << std::dec << redoLogRecord->rowData <<
+                        ", obj: " << std::dec << redoLogRecord->obj <<
+                        ", dataObj: " << std::dec << redoLogRecord->dataObj <<
+                        ", op: " << std::hex << redoLogRecord->opCode <<
+                        ", cc: " << std::dec << (uint64_t)redoLogRecord->cc <<
+                        ", suppCC: " << std::dec << redoLogRecord->suppLogCC <<
+                        ", fieldLength: " << std::dec << fieldLength <<
+                        ", code: " << std::hex << code);
             }
 
             if (fieldNum == 1)
@@ -266,15 +264,15 @@ namespace OpenLogReplicator {
             fieldLength = read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length) {
-                REDOLOG_FAIL("field length out of vector, field: " << dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
-                        ", pos: " << dec << fieldPos <<
+                REDOLOG_FAIL("field length out of vector, field: " << std::dec << fieldNum << "/" << redoLogRecord->fieldCnt <<
+                        ", pos: " << std::dec << fieldPos <<
                         ", length:" << fieldLength <<
                         ", max: " << redoLogRecord->length <<
-                        ", code: " << hex << code);
+                        ", code: " << std::hex << code);
             }
         };
 
-        friend ostream& operator<<(ostream& os, const OracleAnalyzer& oracleAnalyzer);
+        friend std::ostream& operator<<(std::ostream& os, const OracleAnalyzer& oracleAnalyzer);
         friend class Reader;
         friend class RedoLog;
         friend class Schema;

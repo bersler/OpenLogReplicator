@@ -20,76 +20,74 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
-    void RedoLogRecord::dumpHex(ostream& stream, OracleAnalyzer* oracleAnalyzer) const {
-        stream << "##: " << dec << fieldLengthsDelta;
+    void RedoLogRecord::dumpHex(std::ostream& stream, OracleAnalyzer* oracleAnalyzer) const {
+        stream << "##: " << std::dec << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
-                stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
             if ((j & 0x07) == 0)
                 stream << " ";
-            stream << setfill('0') << setw(2) << hex << (uint64_t)data[j] << " ";
+            stream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j] << " ";
         }
-        stream << endl;
+        stream << std::endl;
 
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
             uint16_t fieldLength = oracleAnalyzer->read16(data + fieldLengthsDelta + i * 2);
-            stream << "##: " << dec << fieldLength << " (" << i << ", " << fieldPosLocal << ")";
+            stream << "##: " << std::dec << fieldLength << " (" << i << ", " << fieldPosLocal << ")";
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)
-                    stream << endl << "##  " << setfill(' ') << setw(2) << hex << j << ": ";
+                    stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
                 if ((j & 0x07) == 0)
                     stream << " ";
-                stream << setfill('0') << setw(2) << hex << (uint64_t)data[fieldPosLocal + j] << " ";
+                stream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[fieldPosLocal + j] << " ";
             }
-            stream << endl;
+            stream << std::endl;
 
             fieldPosLocal += (fieldLength + 3) & 0xFFFC;
         }
     }
 
-    ostream& operator<<(ostream& os, const RedoLogRecord& redo) {
-        stringstream ss;
+    std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo) {
+        std::stringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
-                " scn: " << dec << redo.scn <<
-                " subScn: " << dec << redo.subScn <<
+                " scn: " << std::dec << redo.scn <<
+                " subScn: " << std::dec << redo.subScn <<
                 " xid: " << PRINTXID(redo.xid) <<
-                " op: " << setfill('0') << setw(4) << hex << redo.opCode <<
-                " cls: " << dec << redo.cls <<
-                " rbl: " << dec << redo.rbl <<
-                " seq: " << dec << (uint64_t)redo.seq <<
-                " typ: " << dec << (uint64_t)redo.typ <<
-                " conId: " << dec << redo.conId <<
-                " flgRecord: " << dec << redo.flgRecord <<
-//                " vectorNo: " << dec << vectorNo <<
-                " robj: " << dec << redo.recordObj <<
-                " rdataObj: " << dec << redo.recordDataObj <<
+                " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
+                " cls: " << std::dec << redo.cls <<
+                " rbl: " << std::dec << redo.rbl <<
+                " seq: " << std::dec << (uint64_t)redo.seq <<
+                " typ: " << std::dec << (uint64_t)redo.typ <<
+                " conId: " << std::dec << redo.conId <<
+                " flgRecord: " << std::dec << redo.flgRecord <<
+//                " vectorNo: " << std::dec << vectorNo <<
+                " robj: " << std::dec << redo.recordObj <<
+                " rdataObj: " << std::dec << redo.recordDataObj <<
 //                " scn: " << PRINTSCN64(scn) <<
-                " nrow: " << dec << (uint64_t)redo.nrow <<
-                " afn: " << dec << redo.afn <<
-                " length: " << dec << redo.length <<
-                " dba: 0x" << hex << redo.dba <<
-                " bdba: 0x" << hex << redo.bdba <<
-                " obj: " << dec << redo.obj <<
-                " dataObj: " << dec << redo.dataObj <<
-                " tsn: " << dec << redo.tsn <<
-                " undo: " << dec << redo.undo <<
-                " usn: " << dec << redo.usn <<
+                " nrow: " << std::dec << (uint64_t)redo.nrow <<
+                " afn: " << std::dec << redo.afn <<
+                " length: " << std::dec << redo.length <<
+                " dba: 0x" << std::hex << redo.dba <<
+                " bdba: 0x" << std::hex << redo.bdba <<
+                " obj: " << std::dec << redo.obj <<
+                " dataObj: " << std::dec << redo.dataObj <<
+                " tsn: " << std::dec << redo.tsn <<
+                " undo: " << std::dec << redo.undo <<
+                " usn: " << std::dec << redo.usn <<
                 " uba: " << PRINTUBA(redo.uba) <<
-                " slt: " << dec << (uint64_t)redo.slt <<
-                " rci: " << dec << (uint64_t)redo.rci <<
-                " flg: " << dec << (uint64_t)redo.flg <<
-                " opc: 0x" << hex << redo.opc <<
-                " op: " << dec << (uint64_t)redo.op <<
-                " cc: " << dec << (uint64_t)redo.cc <<
-//                " itli: " << dec << (uint64_t)itli <<
-                " slot: " << dec << redo.slot <<
-                " flags: 0x" << hex << (uint64_t)redo.flags <<
-                " fb: 0x" << hex << (uint64_t)redo.fb <<
-                " nrid: 0x" << hex << redo.nridBdba << "." << dec << redo.nridSlot;
+                " slt: " << std::dec << (uint64_t)redo.slt <<
+                " rci: " << std::dec << (uint64_t)redo.rci <<
+                " flg: " << std::dec << (uint64_t)redo.flg <<
+                " opc: 0x" << std::hex << redo.opc <<
+                " op: " << std::dec << (uint64_t)redo.op <<
+                " cc: " << std::dec << (uint64_t)redo.cc <<
+//                " itli: " << std::dec << (uint64_t)itli <<
+                " slot: " << std::dec << redo.slot <<
+                " flags: 0x" << std::hex << (uint64_t)redo.flags <<
+                " fb: 0x" << std::hex << (uint64_t)redo.fb <<
+                " nrid: 0x" << std::hex << redo.nridBdba << "." << std::dec << redo.nridSlot;
         os << ss.str();
         return os;
     }

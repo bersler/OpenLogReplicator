@@ -25,8 +25,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ReaderASM.h"
 #include "RuntimeException.h"
 
-using namespace std;
-
 namespace OpenLogReplicator {
     OracleAnalyzerOnlineASM::OracleAnalyzerOnlineASM(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
             const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
@@ -37,7 +35,7 @@ namespace OpenLogReplicator {
 
         connASM = new DatabaseConnection(env, userASM, passwordASM, connectStringASM, true);
         if (connASM == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(class DatabaseConnection) << " bytes memory (for: ASM connection)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class DatabaseConnection) << " bytes memory (for: ASM connection)");
         }
     }
 
@@ -82,7 +80,7 @@ namespace OpenLogReplicator {
 
         ReaderASM* readerASM = new ReaderASM(alias.c_str(), this, group);
         if (readerASM == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << dec << sizeof(ReaderASM) << " bytes memory (for: asm reader creation)");
+            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(ReaderASM) << " bytes memory (for: asm reader creation)");
         }
         readers.insert(readerASM);
         readerASM->initialize();
