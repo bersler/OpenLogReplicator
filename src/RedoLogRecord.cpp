@@ -1,5 +1,5 @@
 /* Structure used to hold in memory basic information for OpCode
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     void RedoLogRecord::dumpHex(std::ostream& stream, OracleAnalyzer* oracleAnalyzer) const {
-        stream << "##: " << std::dec << fieldLengthsDelta;
+        stream << "## 0: [" << std::dec << dataOffset << "] " << fieldLengthsDelta;
         for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
             if ((j & 0xF) == 0)
                 stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPosLocal = fieldPos;
         for (uint64_t i = 1; i <= fieldCnt; ++i) {
             uint16_t fieldLength = oracleAnalyzer->read16(data + fieldLengthsDelta + i * 2);
-            stream << "##: " << std::dec << fieldLength << " (" << i << ", " << fieldPosLocal << ")";
+            stream << "## " << std::dec << i << ": [" << (dataOffset + fieldPosLocal) << "] " << fieldLength;
             for (uint64_t j = 0; j < fieldLength; ++j) {
                 if ((j & 0xF) == 0)
                     stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";

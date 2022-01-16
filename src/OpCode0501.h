@@ -1,5 +1,5 @@
 /* Header for OpCode0501 class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -29,9 +29,9 @@ namespace OpenLogReplicator {
     protected:
         void ktudb(uint64_t fieldPos, uint64_t fieldLength);
         void kteoputrn(uint64_t fieldPos, uint64_t fieldLength);
+        void kdilk(uint64_t fieldPos, uint64_t fieldLength);
         void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
         void suppLog(typeFIELD &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
-        virtual const char* getUndoType(void);
 
     public:
         OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);

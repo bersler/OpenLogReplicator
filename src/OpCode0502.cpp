@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.2
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -40,24 +40,24 @@ namespace OpenLogReplicator {
         //field: 1
         ktudh(fieldPos, fieldLength);
 
-        if (redoLogRecord->flg == 0x0080) {
-            if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202))
-                return;
+        if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
             //field: 2
-            kteop(fieldPos, fieldLength);
-        }
+            if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202)) {
+                kteop(fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
+                //field: 3
+                if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
+                    pdb(fieldPos, fieldLength);
+                }
+            }
+
             oracleAnalyzer->dumpStream << std::endl;
-            return;
         }
-        //field: 2/3
-        pdb(fieldPos, fieldLength);
     }
 
     void OpCode0502::kteop(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 36) {
-            oracleAnalyzer->dumpStream << "too short field kteop: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field kteop: " << std::dec << fieldLength);
             return;
         }
 
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
 
     void OpCode0502::ktudh(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
-            oracleAnalyzer->dumpStream << "too short field ktudh: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktudh: " << std::dec << fieldLength);
             return;
         }
 
@@ -119,19 +119,19 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<
                         " pxid:  " << PRINTXID(pxid);
-            if (oracleAnalyzer->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
+            if (oracleAnalyzer->version < REDO_VERSION_12_1) // || redoLogRecord->conId == 0)
                 oracleAnalyzer->dumpStream << std::endl;
         }
     }
 
     void OpCode0502::pdb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            oracleAnalyzer->dumpStream << "too short field pdb: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field pdb: " << std::dec << fieldLength);
             return;
         }
         redoLogRecord->pdbId = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 0);
 
         oracleAnalyzer->dumpStream << "       " <<
-            " pdbid:" << std::dec << redoLogRecord->pdbId << std::endl;
+            " pdbid:" << std::dec << redoLogRecord->pdbId;
     }
 }

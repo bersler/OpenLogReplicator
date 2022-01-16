@@ -1,5 +1,5 @@
 /* Header for OpCode050B class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -26,9 +26,6 @@ namespace OpenLogReplicator {
     class RedoLogRecord;
 
     class OpCode050B: public OpCode {
-    protected:
-        virtual const char* getUndoType(void) const;
-
     public:
         OpCode050B(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
         virtual ~OpCode050B();

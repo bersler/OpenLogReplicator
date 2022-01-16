@@ -1,5 +1,5 @@
 /* Oracle Redo Generic OpCode
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
 
     void OpCode::ktbRedo(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KTB Redo: " << std::dec << fieldLength);
             return;
         }
 
@@ -126,10 +126,8 @@ namespace OpenLogReplicator {
 
         int8_t op = redoLogRecord->data[fieldPos + 0];
         uint8_t flg = redoLogRecord->data[fieldPos + 1];
+        uint8_t ver = flg & 0x03;
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint8_t ver = flg & 0x03;
-            uint64_t padding = 1;
-
             oracleAnalyzer->dumpStream << "KTB Redo " << std::endl;
             oracleAnalyzer->dumpStream << "op: 0x" << std::setfill('0') << std::setw(2) << std::hex << (int32_t)op << " " <<
                     " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)ver << "  " << std::endl;
@@ -138,18 +136,23 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "(post-11)";
             else
                 oracleAnalyzer->dumpStream << "(pre-11)";
+
+            uint64_t padding = ((flg & 0x10) != 0) ? 0 : 1;
             oracleAnalyzer->dumpStream << " padding: " << padding << std::endl;
         }
         char opCode = '?';
 
         if ((op & 0x0F) == KTBOP_C) {
             if (fieldLength < 16) {
-                oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo C: " << std::dec << fieldLength << std::endl;
+                WARNING("too short field KTB Redo C: " << std::dec << fieldLength);
                 return;
             }
 
             opCode = 'C';
-            redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 8);
+            if ((flg & 0x04) != 0)
+                redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 8);
+            else
+                redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 4);
             if (oracleAnalyzer->dumpRedoLog >= 1) {
                 oracleAnalyzer->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
             }
@@ -162,7 +165,7 @@ namespace OpenLogReplicator {
             opCode = 'L';
             if ((flg & 0x08) == 0) {
                 if (fieldLength < 28) {
-                    oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo L: " << std::dec << fieldLength << std::endl;
+                    WARNING("too short field KTB Redo L: " << std::dec << fieldLength);
                     return;
                 }
                 redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 12);
@@ -200,7 +203,7 @@ namespace OpenLogReplicator {
 
             } else {
                 if (fieldLength < 32) {
-                    oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo: " << std::dec << fieldLength << std::endl;
+                    WARNING("too short field KTB Redo L2: " << std::dec << fieldLength);
                     return;
                 }
                 redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 16);
@@ -215,8 +218,8 @@ namespace OpenLogReplicator {
                             " xid:  " << PRINTXID(itlXid) <<
                             " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
 
-                    uint8_t lkc = redoLogRecord->data[fieldPos + 25];
-                    uint8_t flag = redoLogRecord->data[fieldPos + 24];
+                    uint8_t lkc = redoLogRecord->data[fieldPos + 24];
+                    uint8_t flag = redoLogRecord->data[fieldPos + 25];
                     char flagStr[5] = "----";
                     if ((flag & 0x80) != 0) flagStr[0] = 'C';
                     if ((flag & 0x40) != 0) flagStr[1] = 'B';
@@ -245,7 +248,7 @@ namespace OpenLogReplicator {
 
         } else if ((op & 0x0F) == KTBOP_F) {
             if (fieldLength < 24) {
-                oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo F: " << std::dec << fieldLength << std::endl;
+                WARNING("too short field KTB Redo F: " << std::dec << fieldLength);
                 return;
             }
 
@@ -297,7 +300,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (fieldLength < 56 + entries * (uint64_t)8) {
-                    oracleAnalyzer->dumpStream << "ERROR: too short field KTB Redo F 0x11: " << std::dec << fieldLength << std::endl;
+                    WARNING("too short field KTB Redo F2: " << std::dec << fieldLength);
                     return;
                 }
 
@@ -327,7 +330,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeIRP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 48) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode IRP: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode IRP: " << std::dec << fieldLength);
             return;
         }
 
@@ -342,17 +345,17 @@ namespace OpenLogReplicator {
         }
 
         if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << std::dec << fieldLength <<
-                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")" << std::endl;
+            WARNING("too short field KDO OpCode IRP for nulls: " << std::dec << fieldLength <<
+                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")");
             return;
         }
         redoLogRecord->nullsDelta = fieldPos + 45;
+        redoLogRecord->sizeDelt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 40);
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t sizeDelt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 40);
             oracleAnalyzer->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
                     " slot: " << std::dec << (uint64_t)redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" <<
-                    " size/delt: " << std::dec << sizeDelt << std::endl;
+                    " size/delt: " << std::dec << redoLogRecord->sizeDelt << std::endl;
 
             char fbStr[9] = "--------";
             processFbFlags(redoLogRecord->fb, fbStr);
@@ -382,14 +385,14 @@ namespace OpenLogReplicator {
                 uint8_t curc = 0; //FIXME
                 uint8_t comc = 0; //FIXME
                 uint32_t pk = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 20);
-                uint8_t pk1 = redoLogRecord->data[fieldPos + 24];
+                uint16_t pk1 = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
                 uint32_t nk = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 28);
-                uint8_t nk1 = redoLogRecord->data[fieldPos + 32];
+                uint16_t nk1 = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 32);
 
                 oracleAnalyzer->dumpStream << "curc: " << std::dec << (uint64_t)curc <<
                         " comc: " << std::dec << (uint64_t)comc <<
-                        " pk: 0x" << std::setfill('0') << std::setw(8) << std::hex << pk << "." << std::hex << (uint64_t)pk1 <<
-                        " nk: 0x" << std::setfill('0') << std::setw(8) << std::hex << nk << "." << std::hex << (uint64_t)nk1 << std::endl;
+                        " pk: 0x" << std::setfill('0') << std::setw(8) << std::hex << pk << "." << std::hex << pk1 <<
+                        " nk: 0x" << std::setfill('0') << std::setw(8) << std::hex << nk << "." << std::hex << nk1 << std::endl;
             }
 
             oracleAnalyzer->dumpStream << "null:";
@@ -421,7 +424,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeDRP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode DRP: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode DRP: " << std::dec << fieldLength);
             return;
         }
 
@@ -436,7 +439,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeLKR(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode LKR: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode LKR: " << std::dec << fieldLength);
             return;
         }
 
@@ -453,7 +456,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeURP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 28) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode URP: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode URP: " << std::dec << fieldLength);
             return;
         }
 
@@ -462,8 +465,8 @@ namespace OpenLogReplicator {
         redoLogRecord->nullsDelta = fieldPos + 26;
 
         if (fieldLength < 26 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode IRP for nulls: " << std::dec <<
-                    fieldLength << " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")" << std::endl;
+            WARNING("too short field KDO OpCode IRP for nulls: " << std::dec <<
+                    fieldLength << " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")");
             return;
         }
 
@@ -489,7 +492,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeCFA(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode ORP: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode ORP: " << std::dec << fieldLength);
             return;
         }
 
@@ -512,7 +515,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeSKL(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode SKL: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode SKL: " << std::dec << fieldLength);
             return;
         }
 
@@ -557,7 +560,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeORP(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 48) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode ORP: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode ORP: " << std::dec << fieldLength);
             return;
         }
 
@@ -568,8 +571,8 @@ namespace OpenLogReplicator {
         redoLogRecord->nullsDelta = fieldPos + 45;
 
         if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode ORP for nulls: " << std::dec << fieldLength <<
-                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")" << std::endl;
+            WARNING("too short field KDO OpCode ORP for nulls: " << std::dec << fieldLength <<
+                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ")");
             return;
         }
 
@@ -577,12 +580,12 @@ namespace OpenLogReplicator {
             redoLogRecord->nridBdba = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 28);
             redoLogRecord->nridSlot = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 32);
         }
+        redoLogRecord->sizeDelt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 40);
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t sizeDelt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 40);
             oracleAnalyzer->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
                 " slot: " << std::dec << (uint64_t)redoLogRecord->slot << "(0x" << std::hex << (uint64_t)redoLogRecord->slot << ")" <<
-                " size/delt: " << std::dec << sizeDelt << std::endl;
+                " size/delt: " << std::dec << redoLogRecord->sizeDelt << std::endl;
 
             char fbStr[9] = "--------";
             processFbFlags(redoLogRecord->fb, fbStr);
@@ -630,7 +633,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 24) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode QMI (1): " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode QMI (1): " << std::dec << fieldLength);
             return;
         }
 
@@ -646,8 +649,8 @@ namespace OpenLogReplicator {
                 " nrow: " << std::dec << (uint64_t)redoLogRecord->nrow << std::endl;
 
             if (fieldLength < 22 + (uint64_t)redoLogRecord->nrow * 2) {
-                oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode QMI (2): " << std::dec << fieldLength << ", " <<
-                        (uint64_t)redoLogRecord->nrow << std::endl;
+                WARNING("too short field KDO OpCode QMI (2): " << std::dec << fieldLength << ", " <<
+                        (uint64_t)redoLogRecord->nrow);
                 return;
             }
         }
@@ -655,7 +658,7 @@ namespace OpenLogReplicator {
 
     void OpCode::kdoOpCode(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field KDO OpCode: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field KDO OpCode: " << std::dec << fieldLength);
             return;
         }
 
@@ -727,6 +730,53 @@ namespace OpenLogReplicator {
             oracleAnalyzer->dumpStream << "itli: " << std::dec << (uint64_t)redoLogRecord->itli << " " <<
                     " ispac: " << std::dec << (uint64_t)ispac << " " <<
                     " maxfr: " << std::dec << (uint64_t)maxFr << std::endl;
+
+            switch ((redoLogRecord->op & 0x1F)) {
+            case OP_SKL:
+                if (fieldLength >= 32) {
+                    char fwdFl = '-';
+                    uint32_t fwd = (((uint32_t)redoLogRecord->data[fieldPos + 16]) << 24) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 17]) << 16) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 18]) << 8) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 19]));
+                    uint16_t fwdPos = (((uint16_t)redoLogRecord->data[fieldPos + 20]) << 8) |
+                            (((uint16_t)redoLogRecord->data[fieldPos + 21]));
+                    char bkwFl = '-';
+                    uint32_t bkw = (((uint32_t)redoLogRecord->data[fieldPos + 22]) << 24) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 23]) << 16) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 24]) << 8) |
+                            (((uint32_t)redoLogRecord->data[fieldPos + 25]));
+                    uint16_t bkwPos = (((uint16_t)redoLogRecord->data[fieldPos + 26]) << 8) |
+                            (((uint16_t)redoLogRecord->data[fieldPos + 27]));
+                    uint8_t fl = redoLogRecord->data[fieldPos + 28];
+                    uint8_t lock = redoLogRecord->data[fieldPos + 29];
+                    uint8_t slot = redoLogRecord->data[fieldPos + 30];
+
+                    if (fl & 0x01) fwdFl = 'F';
+                    if (fl & 0x02) bkwFl = 'B';
+
+                    oracleAnalyzer->dumpStream << "flag: " << fwdFl << bkwFl <<
+                            " lock: " << std::dec << (uint64_t)lock <<
+                            " slot: " << std::dec << (uint64_t)slot << "(0x" << std::hex << (uint64_t)slot << ")" << std::endl;
+
+                    if (fwdFl == 'F')
+                        oracleAnalyzer->dumpStream << "fwd: 0x" << std::setfill('0') << std::setw(8) << std::hex << fwd <<"." << fwdPos << " " << std::endl;
+                    if (bkwFl == 'B')
+                        oracleAnalyzer->dumpStream << "bkw: 0x" << std::setfill('0') << std::setw(8) << std::hex << bkw <<"." << bkwPos << std::endl;
+                }
+                break;
+
+            case OP_DSC:
+                if (fieldLength >= 24) {
+                    uint16_t slot = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 16);
+                    uint8_t tabn = redoLogRecord->data[fieldPos + 18];
+                    uint8_t rel = redoLogRecord->data[fieldPos + 19];
+
+                    oracleAnalyzer->dumpStream << "tabn: " << std::dec << (uint64_t)tabn << " slot: " << slot << "(0x" << std::hex << slot << ")" << std::endl;
+                    oracleAnalyzer->dumpStream << "piece relative column number: " << std::dec << (uint64_t)rel << std::endl;
+                }
+                break;
+            }
         }
 
         switch (redoLogRecord->op & 0x1F) {
@@ -750,9 +800,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::ktub(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode::ktub(uint64_t fieldPos, uint64_t fieldLength, bool isKtubl) {
         if (fieldLength < 24) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field ktub: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktub: " << std::dec << fieldLength);
             return;
         }
 
@@ -770,7 +820,7 @@ namespace OpenLogReplicator {
         const char* postObj("");
         bool ktubl = false;
 
-        if ((redoLogRecord->flg & FLG_KTUBL) != 0) {
+        if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0 && isKtubl) {
             ktubl = true;
             ktuType = "ktubl";
             if (oracleAnalyzer->version < REDO_VERSION_19_0) {
@@ -837,13 +887,13 @@ namespace OpenLogReplicator {
                 undoType = "Regular undo      ";
         } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
-                undoType = "Multi-Block undo - HEAD";
+                undoType = "Multi-block undo - HEAD";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOTAIL) != 0)
                 undoType = "Multi-Block undo - TAIL";
             else if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOMID) != 0)
                 undoType = "Multi-Block undo - MID";
             else
-                undoType = "Regular undo";
+                undoType = "Regular undo      ";
         } else {
             if ((redoLogRecord->flg & FLG_MULTIBLOCKUNDOHEAD) != 0)
                 undoType = "MBU - HEAD  ";
@@ -891,7 +941,6 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->dumpStream << "too short field ktubl: " << std::dec << fieldLength << std::endl;
                 return;
             }
-            redoLogRecord->opFlags |= OPFLAG_BEGIN_TRANS;
 
             if (fieldLength == 28) {
                 if (oracleAnalyzer->dumpRedoLog >= 1) {
@@ -911,8 +960,8 @@ namespace OpenLogReplicator {
                                 " flg2: " << std::hex << flg2 << std::endl;
                     } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                         oracleAnalyzer->dumpStream <<
-                                "Undo type:  " << undoType <<
-                                "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << std::endl <<
+                                "Undo type:  " << undoType << "  " <<
+                                "Begin trans    Last buffer split:  " << lastBufferSplit << " " << std::endl <<
                                 "Temp Object:  " << tempObject << " " << std::endl <<
                                 "Tablespace Undo:  " << tablespaceUndo << " " << std::endl <<
                                 "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " << std::endl;
@@ -969,8 +1018,8 @@ namespace OpenLogReplicator {
                                 " flg2: " << std::hex << flg2 << std::endl;
                     } else if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                         oracleAnalyzer->dumpStream <<
-                                "Undo type:  " << undoType <<
-                                "        Begin trans    Last buffer split:  " << lastBufferSplit << " " << std::endl <<
+                                "Undo type:  " << undoType << "  " <<
+                                "Begin trans    Last buffer split:  " << lastBufferSplit << " " << std::endl <<
                                 "Temp Object:  " << tempObject << " " << std::endl <<
                                 "Tablespace Undo:  " << tablespaceUndo << " " << std::endl <<
                                 "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << " " <<
@@ -1018,10 +1067,25 @@ namespace OpenLogReplicator {
                 if (oracleAnalyzer->version < REDO_VERSION_19_0) {
                     oracleAnalyzer->dumpStream <<
                             "Undo type:  " << undoType << " " <<
-                            "Undo type:  " << getUndoType() <<
+                            "Undo type:  ";
+                    if ((redoLogRecord->flg & FLG_USERUNDODDONE) != 0)
+                        oracleAnalyzer->dumpStream << "User undo done   ";
+                    if ((redoLogRecord->flg & FLG_BEGIN_TRANS) != 0)
+                        oracleAnalyzer->dumpStream << " Begin trans    ";
+                    oracleAnalyzer->dumpStream <<
                             "Last buffer split:  " << lastBufferSplit << " " << std::endl <<
                             "Tablespace Undo:  " << tablespaceUndo << " " << std::endl <<
                             "             0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->undo << std::endl;
+
+                    if ((redoLogRecord->flg & FLG_BUEXT) != 0) {
+                        uint16_t flg2 = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
+                        int16_t buExtIdx = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 26);
+
+                        oracleAnalyzer->dumpStream <<
+                                "BuExt idx: " << std::dec << buExtIdx <<
+                                " flg2: " << std::hex << flg2 << std::endl;
+                    }
+
                 } else {
                     oracleAnalyzer->dumpStream <<
                             "[Undo type  ] " << undoType << " " <<
@@ -1033,11 +1097,6 @@ namespace OpenLogReplicator {
                 }
             }
         }
-    }
-
-
-    const char* OpCode::getUndoType(void) const {
-        return "";
     }
 
     void OpCode::dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const {

@@ -1,5 +1,5 @@
 /* Header for Reader class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -79,7 +79,7 @@ namespace OpenLogReplicator {
         uint64_t reloadHeader(void);
 
     public:
-        static char* REDO_CODE[6];
+        static char* REDO_CODE[13];
         uint8_t** redoBufferList;
         uint8_t* headerBuffer;
         int64_t group;

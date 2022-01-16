@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.6
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = redoLogRecord->fieldPos;
         uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
-            oracleAnalyzer->dumpStream << "ERROR: too short field ktub: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktub: " << std::dec << fieldLength);
             return;
         }
 
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050601);
         //field: 1
-        ktub(fieldPos, fieldLength);
+        ktub(fieldPos, fieldLength, true);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050602))
             return;
@@ -55,13 +55,9 @@ namespace OpenLogReplicator {
         ktuxvoff(fieldPos, fieldLength);
     }
 
-    const char* OpCode0506::getUndoType(void) const {
-        return "User undo done   ";
-    }
-
     void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            oracleAnalyzer->dumpStream << "too short field ktuxvoff: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktuxvoff: " << std::dec << fieldLength);
             return;
         }
 

@@ -1,5 +1,5 @@
 /* Base class for reading redo from file system
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         flags = O_RDONLY | O_LARGEFILE;
         fileSize = fileStat.st_size;
 
-        if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT) == 0)
+        if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT_DISABLE) == 0)
             flags |= O_DIRECT;
         if ((oracleAnalyzer->flags & REDO_FLAGS_NOATIME) != 0)
             flags |= O_NOATIME;
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
         //O_DIRECT does not work
         if (bytes < 0 && (flags & O_DIRECT) != 0) {
-            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << std::dec << REDO_FLAGS_DIRECT);
+            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << std::dec << REDO_FLAGS_DIRECT_DISABLE);
         }
 
         if ((trace2 & TRACE2_PERFORMANCE) != 0) {

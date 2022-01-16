@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.1
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050104))
             return;
         //field: 2
-        ktub(fieldPos, fieldLength);
+        ktub(fieldPos, fieldLength, true);
 
         //incomplete data, don't analyze further
         if (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID) != 0)
@@ -92,38 +92,77 @@ namespace OpenLogReplicator {
                         oracleAnalyzer->dumpStream << "slot[" << i << "]: " << std::dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << std::endl;
                 }
             }
-        }
 
-        if ((redoLogRecord->op & 0x1F) == OP_URP) {
-            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050107);
-            //field: 5
-            if (fieldLength > 0) {
-                redoLogRecord->colNumsDelta = fieldPos;
-                colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
-            }
-
-            if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050108);
-
-                redoLogRecord->rowData = fieldPos;
-                if (oracleAnalyzer->dumpRedoLog >= 1) {
-                    dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
+            if ((redoLogRecord->op & 0x1F) == OP_URP) {
+                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050107);
+                //field: 5
+                if (fieldLength > 0) {
+                    redoLogRecord->colNumsDelta = fieldPos;
+                    colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
                 }
-            } else {
+
+                if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050108);
+
+                    redoLogRecord->rowData = fieldPos;
+                    if (oracleAnalyzer->dumpRedoLog >= 1) {
+                        dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
+                    }
+                } else {
+                    redoLogRecord->rowData = fieldNum + 1;
+                    uint8_t bits = 1;
+
+                    for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
+                        if ((*nulls & bits) == 0) {
+                            oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                            if (fieldNum >= redoLogRecord->fieldCnt)
+                                return;
+                            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050109);
+                        }
+
+                        if (oracleAnalyzer->dumpRedoLog >= 1)
+                            dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
+                        colNums += 2;
+                        bits <<= 1;
+                        if (bits == 0) {
+                            bits = 1;
+                            ++nulls;
+                        }
+                    }
+
+                    if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                        oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
+                        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010A);
+                        rowDeps(fieldPos, fieldLength);
+                    }
+
+                    suppLog(fieldNum, fieldPos, fieldLength);
+                }
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
+                if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010B);
+                    rowDeps(fieldPos, fieldLength);
+                }
+
+                suppLog(fieldNum, fieldPos, fieldLength);
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
+                if (nulls == nullptr) {
+                    WARNING("nulls field is missing");
+                    return;
+                }
+
                 redoLogRecord->rowData = fieldNum + 1;
                 uint8_t bits = 1;
 
                 for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                    if ((*nulls & bits) == 0) {
-                        oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
-                        if (fieldNum >= redoLogRecord->fieldCnt)
-                            return;
-                        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050109);
-                    }
+                    if (fieldNum >= redoLogRecord->fieldCnt)
+                        return;
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
 
                     if (oracleAnalyzer->dumpRedoLog >= 1)
-                        dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
-                    colNums += 2;
+                        dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
                     bits <<= 1;
                     if (bits == 0) {
                         bits = 1;
@@ -132,74 +171,107 @@ namespace OpenLogReplicator {
                 }
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                    oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
-                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010A);
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
                     rowDeps(fieldPos, fieldLength);
                 }
 
                 suppLog(fieldNum, fieldPos, fieldLength);
-            }
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
-            if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010B);
-                rowDeps(fieldPos, fieldLength);
-            }
+            } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
+                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
+                redoLogRecord->rowLenghsDelta = fieldPos;
 
-            suppLog(fieldNum, fieldPos, fieldLength);
-
-        } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
-            if (nulls == nullptr) {
-                WARNING("nulls field is missing");
-                return;
-            }
-
-            redoLogRecord->rowData = fieldNum + 1;
-            uint8_t bits = 1;
-
-            for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                if (fieldNum >= redoLogRecord->fieldCnt)
-                    return;
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
-
+                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
+                redoLogRecord->rowData = fieldNum;
                 if (oracleAnalyzer->dumpRedoLog >= 1)
-                    dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
-                bits <<= 1;
-                if (bits == 0) {
-                    bits = 1;
-                    ++nulls;
+                    dumpRows(redoLogRecord->data + fieldPos);
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_LMN) {
+                suppLog(fieldNum, fieldPos, fieldLength);
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_LKR) {
+                suppLog(fieldNum, fieldPos, fieldLength);
+
+            } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
+                suppLog(fieldNum, fieldPos, fieldLength);
+            }
+        } else
+
+        if (redoLogRecord->opc == 0x0A16) {
+            kdilk(fieldPos, fieldLength);
+
+            //field: 5
+            if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110))
+                return;
+
+            if (oracleAnalyzer->dumpRedoLog >= 1) {
+                oracleAnalyzer->dumpStream << "key :(" << std::dec << fieldLength << "): ";
+
+                if (fieldLength > 20)
+                    oracleAnalyzer->dumpStream << std::endl;
+
+                for (uint64_t j = 0; j < fieldLength; ++j) {
+                    oracleAnalyzer->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                    if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
+                        oracleAnalyzer->dumpStream << std::endl;
                 }
+                oracleAnalyzer->dumpStream << std::endl;
             }
 
-            if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
-                rowDeps(fieldPos, fieldLength);
+            //field: 6
+            if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+                return;
+
+            if (oracleAnalyzer->dumpRedoLog >= 1) {
+                oracleAnalyzer->dumpStream << "keydata/bitmap: (" << std::dec << fieldLength << "): ";
+
+                if (fieldLength > 20)
+                    oracleAnalyzer->dumpStream << std::endl;
+
+                for (uint64_t j = 0; j < fieldLength; ++j) {
+                    oracleAnalyzer->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                    if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
+                        oracleAnalyzer->dumpStream << std::endl;
+                }
+                oracleAnalyzer->dumpStream << std::endl;
             }
 
-            suppLog(fieldNum, fieldPos, fieldLength);
+            //field: 7
+            if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+                return;
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
-            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
-            redoLogRecord->rowLenghsDelta = fieldPos;
+            if (oracleAnalyzer->dumpRedoLog >= 1) {
+                oracleAnalyzer->dumpStream << "selflock: (" << std::dec << fieldLength << "): ";
 
-            oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
-            redoLogRecord->rowData = fieldNum;
-            if (oracleAnalyzer->dumpRedoLog >= 1)
-                dumpRows(redoLogRecord->data + fieldPos);
+                if (fieldLength > 20)
+                    oracleAnalyzer->dumpStream << std::endl;
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_LMN) {
-            suppLog(fieldNum, fieldPos, fieldLength);
+                for (uint64_t j = 0; j < fieldLength; ++j) {
+                    oracleAnalyzer->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                    if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
+                        oracleAnalyzer->dumpStream << std::endl;
+                }
+                oracleAnalyzer->dumpStream << std::endl;
+            }
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_LKR) {
-            suppLog(fieldNum, fieldPos, fieldLength);
+            //field: 8
+            if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+                return;
 
-        } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
-            suppLog(fieldNum, fieldPos, fieldLength);
+            if (oracleAnalyzer->dumpRedoLog >= 1) {
+                oracleAnalyzer->dumpStream << "bitmap: (" << std::dec << fieldLength << "): ";
+
+                if (fieldLength > 20)
+                    oracleAnalyzer->dumpStream << std::endl;
+
+                for (uint64_t j = 0; j < fieldLength; ++j) {
+                    oracleAnalyzer->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                    if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
+                        oracleAnalyzer->dumpStream << std::endl;
+                }
+                oracleAnalyzer->dumpStream << std::endl;
+            }
         }
-    }
-
-    const char* OpCode0501::getUndoType(void) {
-        return "";
     }
 
     void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
@@ -242,6 +314,63 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OpCode0501::kdilk(uint64_t fieldPos, uint64_t fieldLength) {
+        if (fieldLength < 20) {
+            WARNING("too short field kdilk: " << std::dec << fieldLength);
+            return;
+        }
+
+        if (oracleAnalyzer->dumpRedoLog >= 1) {
+            uint8_t code = redoLogRecord->data[fieldPos + 0];
+            uint8_t itl = redoLogRecord->data[fieldPos + 1];
+            uint8_t kdxlkflg = redoLogRecord->data[fieldPos + 2];
+            uint32_t indexid = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+            uint32_t block = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 8);
+            int32_t sdc = (int32_t)oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
+
+            oracleAnalyzer->dumpStream << "Dump kdilk :" <<
+                    " itl=" << std::dec << (uint64_t)itl << ", " <<
+                    "kdxlkflg=0x" << std::hex << (uint64_t)kdxlkflg << " " <<
+                    "sdc=" << std::dec << sdc << " " <<
+                    "indexid=0x" << std::hex << indexid << " " <<
+                    "block=0x" << std::setfill('0') << std::setw(8) << std::hex << block << std::endl;
+
+            switch (code) {
+                case 2:
+                    oracleAnalyzer->dumpStream << "(kdxlpu): purge leaf row" << std::endl;
+                    break;
+                case 3:
+                    oracleAnalyzer->dumpStream << "(kdxlpu): purge leaf row" << std::endl;
+                    break;
+                case 4:
+                    oracleAnalyzer->dumpStream << "(kdxlde): mark leaf row deleted" << std::endl;
+                    break;
+                case 5:
+                    oracleAnalyzer->dumpStream << "(kdxlre): restore leaf row (clear leaf delete flags)" << std::endl;
+                    break;
+                case 18:
+                    oracleAnalyzer->dumpStream << "(kdxlup): update keydata in row" << std::endl;
+                    break;
+            }
+
+            if (fieldLength >= 24) {
+                uint32_t keySizes = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 20);
+
+                if (fieldLength < keySizes * 2 + 24) {
+                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength);
+                    return;
+                }
+                oracleAnalyzer->dumpStream << "number of keys: " << std::dec << keySizes << " " << std::endl;
+                oracleAnalyzer->dumpStream << "key sizes:" << std::endl;
+                for (uint64_t j = 0; j < keySizes; ++j) {
+                    uint16_t key = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24 + j * 2);
+                    oracleAnalyzer->dumpStream << " " << std::dec << key;
+                }
+                oracleAnalyzer->dumpStream << std::endl;
+            }
+        }
+    }
+
     void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
             WARNING("too short row dependencies: " << std::dec << fieldLength);
@@ -265,7 +394,7 @@ namespace OpenLogReplicator {
             return;
 
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "ERROR: too short supplemental log: " << std::dec << fieldLength << std::endl;
+            WARNING("too short supplemental log: " << std::dec << fieldLength);
             return;
         }
 
@@ -289,9 +418,11 @@ namespace OpenLogReplicator {
         if (fieldLength >= 26) {
             redoLogRecord->suppLogBdba = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 20);
             redoLogRecord->suppLogSlot = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
-            oracleAnalyzer->dumpStream <<
-                    "supp log bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->suppLogBdba <<
-                    "." << std::hex << redoLogRecord->suppLogSlot << std::endl;
+            if (oracleAnalyzer->dumpRedoLog >= 2) {
+                oracleAnalyzer->dumpStream <<
+                        "supp log bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->suppLogBdba <<
+                        "." << std::hex << redoLogRecord->suppLogSlot << std::endl;
+            }
         } else {
             redoLogRecord->suppLogBdba = redoLogRecord->bdba;
             redoLogRecord->suppLogSlot = redoLogRecord->slot;

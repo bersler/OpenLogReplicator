@@ -1,5 +1,5 @@
 /* Main program
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
     signal(SIGUSR1, OpenLogReplicator::signalDump);
     OpenLogReplicator::uintX_t::initializeBASE10();
 
-    INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2021 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, linked modules:"
+    INFO("OpenLogReplicator v." PACKAGE_VERSION " (C) 2018-2022 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information, linked modules:"
 #ifdef LINK_LIBRARY_RDKAFKA
 " Kafka"
 #endif /* LINK_LIBRARY_RDKAFKA */
@@ -489,7 +489,6 @@ int main(int argc, char** argv) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpenLogReplicator::OracleAnalyzerBatch) << " bytes memory (for: oracle analyzer)");
                 }
                 oracleAnalyzer->initialize();
-                oracleAnalyzer->flags |= REDO_FLAGS_ARCH_ONLY;
 
                 const rapidjson::Value& redoLogBatchArrayJSON = OpenLogReplicator::getJSONfieldA(fileName, readerJSON, "redo-log");
 

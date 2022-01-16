@@ -1,5 +1,5 @@
 /* Definition of types and macros
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -157,7 +157,7 @@ typedef uint64_t typeunicode;
 
 #define REDO_FLAGS_ARCH_ONLY                    0x00000001
 #define REDO_FLAGS_SCHEMALESS                   0x00000002
-#define REDO_FLAGS_DIRECT                       0x00000004
+#define REDO_FLAGS_DIRECT_DISABLE               0x00000004
 #define REDO_FLAGS_NOATIME                      0x00000008
 #define REDO_FLAGS_ON_ERROR_CONTINUE            0x00000010
 #define REDO_FLAGS_TRACK_DDL                    0x00000020
@@ -241,12 +241,13 @@ typedef uint64_t typeunicode;
 #define FLG_MULTIBLOCKUNDOHEAD  0x0001
 #define FLG_MULTIBLOCKUNDOTAIL  0x0002
 #define FLG_LASTBUFFERSPLIT     0x0004
-#define FLG_KTUBL               0x0008
+#define FLG_BEGIN_TRANS         0x0008
 #define FLG_USERUNDODDONE       0x0010
 #define FLG_ISTEMPOBJECT        0x0020
 #define FLG_USERONLY            0x0040
 #define FLG_TABLESPACEUNDO      0x0080
 #define FLG_MULTIBLOCKUNDOMID   0x0100
+#define FLG_BUEXT               0x0800
 
 #define FB_N                    0x01
 #define FB_P                    0x02

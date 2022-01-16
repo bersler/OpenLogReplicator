@@ -1,5 +1,5 @@
 /* Thread reading Oracle Redo Logs using offline mode
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -93,7 +93,7 @@ namespace OpenLogReplicator {
         redoReadSleepUs(50000),
         archReadSleepUs(10000000),
         archReadTries(10),
-        redoVerifyDelayUs((flags & REDO_FLAGS_DIRECT) != 0 ? 500000 : 0),
+        redoVerifyDelayUs((flags & REDO_FLAGS_DIRECT_DISABLE) != 0 ? 500000 : 0),
         refreshIntervalUs(10000000),
         version(0),
         conId(-1),
@@ -627,6 +627,12 @@ namespace OpenLogReplicator {
                             break;
 
                         if (ret != REDO_FINISHED) {
+                            if  (ret == REDO_STOPPED) {
+                                archiveRedoQueue.pop();
+                                delete redo;
+                                redo = nullptr;
+                                break;
+                            }
                             RUNTIME_FAIL("archive log processing returned: " << Reader::REDO_CODE[ret] << " (code: " << std::dec << ret << ")");
                         }
 
@@ -825,19 +831,22 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (oiCurrent == nullptr) {
-            RUNTIME_FAIL("resetlogs (" << std::dec << resetlogs << ") not found in incarnation list");
-        }
-
+        //resetlogs is changed
         for (OracleIncarnation* oi : oiSet) {
             if (oi->resetlogsScn == nextScn && oiCurrent->resetlogs == resetlogs && oi->priorIncarnation == oiCurrent->incarnation) {
-                WARNING("new resetlogs detected: " << std::dec << oi->resetlogs);
+                INFO("new resetlogs detected: " << std::dec << oi->resetlogs);
                 sequence = 1;
                 resetlogs = oi->resetlogs;
                 activation = 0;
+                return;
             }
         }
 
+        if (oiSet.size() == 0)
+            return;
+
+        if (oiCurrent == nullptr)
+            RUNTIME_FAIL("resetlogs (" << std::dec << resetlogs << ") not found in incarnation list");
     }
 
     Reader* OracleAnalyzer::readerCreate(int64_t group) {
@@ -1534,6 +1543,7 @@ namespace OpenLogReplicator {
             oracleAnalyzer->sequence = sequenceStart;
             oracleAnalyzer->offset = 0;
         }
+        oracleAnalyzer->redoLogsBatch.clear();
     }
 
     bool redoLogCompare::operator()(RedoLog* const& p1, RedoLog* const& p2) {

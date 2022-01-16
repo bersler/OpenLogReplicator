@@ -1,5 +1,5 @@
 /* Header for OpCode class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -42,8 +42,7 @@ namespace OpenLogReplicator {
         void kdoOpCodeSKL(uint64_t fieldPos, uint64_t fieldLength);
         virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
 
-        void ktub(uint64_t fieldPos, uint64_t fieldLength);
-        virtual const char* getUndoType(void) const;
+        void ktub(uint64_t fieldPos, uint64_t fieldLength, bool isKtubl);
         void dumpCols(uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
         void dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const;
         void dumpRows(uint8_t* data) const;

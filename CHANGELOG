@@ -1,3 +1,10 @@
+0.9.38-beta
+- minor code cleanup
+- changed Oracle client to 19.13
+- bumped up year
+- fixed some logdump output
+- fixed bug: batch mode failed
+
 0.9.37-beta
 - code cleanup - removed default namespaces
 - fixed bug: reading failed when switch to standby was run

@@ -1,5 +1,5 @@
 /* Create schema file for offline mode.
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -165,6 +165,7 @@ BEGIN
             v_PREV := TRUE;
         END IF;
 
+        DBMS_OUTPUT.NEW_LINE();
         DBMS_OUTPUT.PUT('{"incarnation":' || v_INCARNATION.INCARNATION# ||
             ',"resetlogs-scn":' || v_INCARNATION.RESETLOGS_CHANGE# ||
             ',"prior-resetlogs-scn":' || v_INCARNATION.PRIOR_RESETLOGS_CHANGE# ||

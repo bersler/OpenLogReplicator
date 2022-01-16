@@ -1,5 +1,5 @@
 /* Transaction from Oracle database
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -211,7 +211,17 @@ namespace OpenLogReplicator {
 
                     if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0) {
                         if (last501 == nullptr || op == 0x05010000) {
-                            RUNTIME_FAIL("split undo HEAD error");
+                            //RUNTIME_FAIL("split undo HEAD error");
+
+                            //FIXME+
+                            WARNING("split undo HEAD error");
+                            if (opCode0501 != nullptr) {
+                                delete opCode0501;
+                                opCode0501 = nullptr;
+                            }
+                            last501 = nullptr;
+                            break;
+                            //FIXME-
                         }
 
                         uint64_t size = last501->length + redoLogRecord1->length;
@@ -242,7 +252,16 @@ namespace OpenLogReplicator {
                         }
                         last501 = nullptr;
                     } else if (last501 != nullptr) {
-                        RUNTIME_FAIL("split undo is broken");
+                        //RUNTIME_FAIL("split undo is broken");
+                        //FIXME+
+                        WARNING("split undo is broken");
+                        if (opCode0501 != nullptr) {
+                            delete opCode0501;
+                            opCode0501 = nullptr;
+                        }
+                        last501 = nullptr;
+                        break;
+                        //FIXME-
                     }
 
                     opFlush = false;

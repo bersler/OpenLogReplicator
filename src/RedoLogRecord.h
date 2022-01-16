@@ -1,5 +1,5 @@
 /* Header for RedoLogRecord class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -44,6 +44,7 @@ namespace OpenLogReplicator {
         typeSCN scn;              //scn
         typeSubSCN subScn;        //subscn
         uint8_t* data;            //data
+        uint64_t dataOffset;
         typeFIELD fieldCnt;
         uint64_t fieldPos;
         typeFIELD rowData;
@@ -80,6 +81,7 @@ namespace OpenLogReplicator {
         uint8_t flags;            //flags like xtype, kdoOpCode
         uint8_t fb;               //row flags like F,L
         uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
+        uint16_t sizeDelt;
 
         typeDBA nridBdba;         //next row id bdba
         typeSLOT nridSlot;        //next row id slot

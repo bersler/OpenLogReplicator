@@ -1,5 +1,5 @@
 /* Header for OpCode0506 class
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -27,7 +27,6 @@ namespace OpenLogReplicator {
 
     class OpCode0506: public OpCode {
     protected:
-        virtual const char* getUndoType(void) const;
         void ktuxvoff(uint64_t fieldPos, uint64_t fieldLength);
 
     public:

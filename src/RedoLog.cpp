@@ -1,5 +1,5 @@
 /* Class reading a redo log file
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -408,6 +408,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectors].subScn = lwnMember->subScn;
             redoLogRecord[vectors].usn = usn;
             redoLogRecord[vectors].data = data + offset;
+            redoLogRecord[vectors].dataOffset = lwnMember->block * reader->blockSize + lwnMember->offset + offset;
             redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
             if (redoLogRecord[vectors].fieldLengthsDelta + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
@@ -1054,7 +1055,7 @@ namespace OpenLogReplicator {
 
         if (reader->bufferStart == reader->blockSize * 2) {
             if (oracleAnalyzer->dumpRedoLog >= 1) {
-                std::string fileName = oracleAnalyzer->dumpPath + "/" + oracleAnalyzer->database + "-" + std::to_string(sequence) + ".logdump";
+                std::string fileName = oracleAnalyzer->dumpPath + "/" + std::to_string(sequence) + ".olr";
                 oracleAnalyzer->dumpStream.open(fileName);
                 if (!oracleAnalyzer->dumpStream.is_open()) {
                     WARNING("can't open " << fileName << " for write. Aborting log dump.");

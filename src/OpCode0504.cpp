@@ -1,5 +1,5 @@
 /* Oracle Redo OpCode: 5.4
-   Copyright (C) 2018-2021 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
 
     void OpCode0504::ktucm(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            oracleAnalyzer->dumpStream << "too short field ktucm: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktucm: " << std::dec << fieldLength);
             return;
         }
 
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
 
     void OpCode0504::ktucf(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
-            oracleAnalyzer->dumpStream << "too short field ktucf: " << std::dec << fieldLength << std::endl;
+            WARNING("too short field ktucf: " << std::dec << fieldLength);
             return;
         }
 
