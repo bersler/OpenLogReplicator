@@ -43,25 +43,37 @@ namespace OpenLogReplicator {
             return;
         //field: 2
         kdoOpCode(fieldPos, fieldLength);
-        redoLogRecord->nullsDelta = fieldPos + 45;
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
-
-        redoLogRecord->rowData = fieldNum + 1;
         uint8_t bits = 1;
 
-        //fields: 3 + cc ... 3 + cc - 1
-        if (oracleAnalyzer->dumpRedoLog >= 1)
-            for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
-                if (fieldNum >= redoLogRecord->fieldCnt)
-                    break;
-                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0204);
+        redoLogRecord->rowData = fieldNum + 1;
 
-                dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
+        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0203))
+            return;
+        if (fieldLength == redoLogRecord->sizeDelt && (redoLogRecord->cc > 1 || redoLogRecord->cc == 0)) {
+            redoLogRecord->compressed = true;
+            if (oracleAnalyzer->dumpRedoLog >= 1)
+                dumpCompressed(redoLogRecord->data + fieldPos, fieldLength);
+        } else {
+            //fields: 3 .. to 3 + cc - 1
+            for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+                if (fieldLength > 0 && (*nulls & bits) != 0) {
+                    WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset);
+                }
+
+                if (oracleAnalyzer->dumpRedoLog >= 1)
+                    dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
                 bits <<= 1;
                 if (bits == 0) {
                     bits = 1;
                     ++nulls;
                 }
+
+                if (fieldNum < redoLogRecord->fieldCnt && i < redoLogRecord->ccData)
+                    oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0204);
+                else
+                    break;
             }
+        }
     }
 }

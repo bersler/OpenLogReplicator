@@ -164,6 +164,9 @@ namespace OpenLogReplicator {
     }
 
     bool Schema::readSchema(void) {
+        if (oracleAnalyzer->schemaScn == ZERO_SCN && (oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) != 0)
+            return true;
+
         TRACE(TRACE2_SCHEMA_LIST, "SCHEMA LIST: searching for previous schema");
 
         std::set<std::string> namesList;

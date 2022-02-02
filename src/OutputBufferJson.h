@@ -47,6 +47,7 @@ namespace OpenLogReplicator {
                 j -= 4;
             };
         }
+
         void appendDec(uint64_t value, uint64_t length) {
             char buffer[21];
 
@@ -58,6 +59,7 @@ namespace OpenLogReplicator {
             for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(buffer[length - i - 1]);
         }
+
         void appendDec(uint64_t value) {
             char buffer[21];
             uint64_t length = 0;
@@ -75,6 +77,7 @@ namespace OpenLogReplicator {
             for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(buffer[length - i - 1]);
         }
+
         void appendSDec(int64_t value) {
             char buffer[22];
             uint64_t length = 0;
@@ -101,6 +104,7 @@ namespace OpenLogReplicator {
             for (uint64_t i = 0; i < length; ++i)
                 outputBufferAppend(buffer[length - i - 1]);
         }
+
         void appendEscape(const char* str, uint64_t length) {
             while (length > 0) {
                 if (*str == '\t') {
@@ -129,6 +133,7 @@ namespace OpenLogReplicator {
                 --length;
             }
         }
+
         void appendAfter(OracleObject* object) {
             outputBufferAppend(",\"after\":{");
 
@@ -137,7 +142,7 @@ namespace OpenLogReplicator {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
                         if (lengths[column][VALUE_AFTER] > 0)
-                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
                         else
                             columnNull(object, column);
                     }
@@ -154,7 +159,7 @@ namespace OpenLogReplicator {
 
                         if (values[column][VALUE_AFTER] != nullptr) {
                             if (lengths[column][VALUE_AFTER] > 0)
-                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
                             else
                                 columnNull(object, column);
                         }
@@ -163,6 +168,7 @@ namespace OpenLogReplicator {
             }
             outputBufferAppend('}');
         }
+
         void appendBefore(OracleObject* object) {
             outputBufferAppend(",\"before\":{");
 
@@ -171,7 +177,7 @@ namespace OpenLogReplicator {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
                         if (lengths[column][VALUE_BEFORE] > 0)
-                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
                         else
                             columnNull(object, column);
                     }
@@ -188,7 +194,7 @@ namespace OpenLogReplicator {
 
                         if (values[column][VALUE_BEFORE] != nullptr) {
                             if (lengths[column][VALUE_BEFORE] > 0)
-                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
                             else
                                 columnNull(object, column);
                         }
@@ -197,6 +203,7 @@ namespace OpenLogReplicator {
             }
             outputBufferAppend('}');
         }
+
         time_t tmToEpoch(struct tm* epoch) const;
         virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);

@@ -49,7 +49,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, std::string& path) :
         oracleAnalyzer(oracleAnalyzer),
-        vectors(0),
+        opCode(nullptr),
+        vectorCur(-1),
+        vectorPrev(-1),
         lwnConfirmedBlock(2),
         lwnAllocated(0),
         lwnAllocatedMax(0),
@@ -79,13 +81,10 @@ namespace OpenLogReplicator {
         while (lwnAllocated > 0)
             oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
 
-        for (uint64_t i = 0; i < vectors; ++i) {
-            if (opCodes[i] != nullptr) {
-                delete opCodes[i];
-                opCodes[i] = nullptr;
-            }
+        if (opCode != nullptr) {
+            delete opCode;
+            opCode = nullptr;
         }
-        vectors = 0;
     }
 
     void RedoLog::printHeaderInfo(void) const {
@@ -266,24 +265,16 @@ namespace OpenLogReplicator {
     }
 
     void RedoLog::analyzeLwn(LwnMember* lwnMember) {
-        RedoLogRecord redoLogRecord[VECTOR_MAX_LENGTH];
-        uint64_t isUndoRedo[VECTOR_MAX_LENGTH];
-        uint64_t opCodesUndo[VECTOR_MAX_LENGTH / 2];
-        uint64_t vectorsUndo = 0;
-        uint64_t opCodesRedo[VECTOR_MAX_LENGTH / 2];
-        uint64_t vectorsRedo = 0;
         uint8_t* data = ((uint8_t*) lwnMember) + sizeof(struct LwnMember);
 
         TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
-        for (uint64_t i = 0; i < vectors; ++i) {
-            if (opCodes[i] != nullptr) {
-                delete opCodes[i];
-                opCodes[i] = nullptr;
-            }
+        if (opCode != nullptr) {
+            delete opCode;
+            opCode = nullptr;
         }
+        vectorPrev = -1;
+        vectorCur = -1;
 
-        vectors = 0;
-        memset(opCodes, 0, sizeof(opCodes));
         uint32_t recordLength = oracleAnalyzer->read32(data);
         uint8_t vld = data[4];
         uint64_t headerLength;
@@ -369,27 +360,34 @@ namespace OpenLogReplicator {
         }
 
         uint64_t offset = headerLength;
+        uint64_t vectors = 0;
         while (offset < recordLength) {
-            memset(&redoLogRecord[vectors], 0, sizeof(struct RedoLogRecord));
-            redoLogRecord[vectors].vectorNo = vectors + 1;
-            redoLogRecord[vectors].cls = oracleAnalyzer->read16(data + offset + 2);
-            redoLogRecord[vectors].afn = oracleAnalyzer->read32(data + offset + 4) & 0xFFFF;
-            redoLogRecord[vectors].dba = oracleAnalyzer->read32(data + offset + 8);
-            redoLogRecord[vectors].scnRecord = oracleAnalyzer->readSCN(data + offset + 12);
-            redoLogRecord[vectors].rbl = 0; //FIXME
-            redoLogRecord[vectors].seq = data[offset + 20];
-            redoLogRecord[vectors].typ = data[offset + 21];
-            typeUSN usn = (redoLogRecord[vectors].cls >= 15) ? (redoLogRecord[vectors].cls - 15) / 2 : -1;
+            vectorPrev = vectorCur;
+            if (vectorPrev == -1)
+                vectorCur = 0;
+            else
+                vectorCur = 1 - vectorPrev;
+
+            memset(&redoLogRecord[vectorCur], 0, sizeof(struct RedoLogRecord));
+            redoLogRecord[vectorCur].vectorNo = (++vectors);
+            redoLogRecord[vectorCur].cls = oracleAnalyzer->read16(data + offset + 2);
+            redoLogRecord[vectorCur].afn = oracleAnalyzer->read32(data + offset + 4) & 0xFFFF;
+            redoLogRecord[vectorCur].dba = oracleAnalyzer->read32(data + offset + 8);
+            redoLogRecord[vectorCur].scnRecord = oracleAnalyzer->readSCN(data + offset + 12);
+            redoLogRecord[vectorCur].rbl = 0; //FIXME
+            redoLogRecord[vectorCur].seq = data[offset + 20];
+            redoLogRecord[vectorCur].typ = data[offset + 21];
+            typeUSN usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
             if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
                 fieldOffset = 32;
-                redoLogRecord[vectors].flgRecord = oracleAnalyzer->read16(data + offset + 28);
-                redoLogRecord[vectors].conId = oracleAnalyzer->read16(data + offset + 24);
+                redoLogRecord[vectorCur].flgRecord = oracleAnalyzer->read16(data + offset + 28);
+                redoLogRecord[vectorCur].conId = oracleAnalyzer->read16(data + offset + 24);
             } else {
                 fieldOffset = 24;
-                redoLogRecord[vectors].flgRecord = 0;
-                redoLogRecord[vectors].conId = 0;
+                redoLogRecord[vectorCur].flgRecord = 0;
+                redoLogRecord[vectorCur].conId = 0;
             }
 
             if (offset + fieldOffset + 1 >= recordLength) {
@@ -400,260 +398,287 @@ namespace OpenLogReplicator {
 
             uint8_t* fieldList = data + offset + fieldOffset;
 
-            redoLogRecord[vectors].opCode = (((typeOP1)data[offset + 0]) << 8) |
+            redoLogRecord[vectorCur].opCode = (((typeOP1)data[offset + 0]) << 8) |
                     data[offset + 1];
-            redoLogRecord[vectors].length = fieldOffset + ((oracleAnalyzer->read16(fieldList) + 2) & 0xFFFC);
-            redoLogRecord[vectors].sequence = sequence;
-            redoLogRecord[vectors].scn = lwnMember->scn;
-            redoLogRecord[vectors].subScn = lwnMember->subScn;
-            redoLogRecord[vectors].usn = usn;
-            redoLogRecord[vectors].data = data + offset;
-            redoLogRecord[vectors].dataOffset = lwnMember->block * reader->blockSize + lwnMember->offset + offset;
-            redoLogRecord[vectors].fieldLengthsDelta = fieldOffset;
-            if (redoLogRecord[vectors].fieldLengthsDelta + 1 >= recordLength) {
+            redoLogRecord[vectorCur].length = fieldOffset + ((oracleAnalyzer->read16(fieldList) + 2) & 0xFFFC);
+            redoLogRecord[vectorCur].sequence = sequence;
+            redoLogRecord[vectorCur].scn = lwnMember->scn;
+            redoLogRecord[vectorCur].subScn = lwnMember->subScn;
+            redoLogRecord[vectorCur].usn = usn;
+            redoLogRecord[vectorCur].data = data + offset;
+            redoLogRecord[vectorCur].dataOffset = lwnMember->block * reader->blockSize + lwnMember->offset + offset;
+            redoLogRecord[vectorCur].fieldLengthsDelta = fieldOffset;
+            if (redoLogRecord[vectorCur].fieldLengthsDelta + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
                 REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": field length list (" << std::dec << (redoLogRecord[vectors].fieldLengthsDelta) << ") outside of record, length: " << recordLength);
+                                    ": field length list (" << std::dec << (redoLogRecord[vectorCur].fieldLengthsDelta) << ") outside of record, length: " << recordLength);
             }
-            redoLogRecord[vectors].fieldCnt = (oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) - 2) / 2;
-            redoLogRecord[vectors].fieldPos = fieldOffset + ((oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta) + 2) & 0xFFFC);
-            if (redoLogRecord[vectors].fieldPos >= recordLength) {
+            redoLogRecord[vectorCur].fieldCnt = (oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) - 2) / 2;
+            redoLogRecord[vectorCur].fieldPos = fieldOffset + ((oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) + 2) & 0xFFFC);
+            if (redoLogRecord[vectorCur].fieldPos >= recordLength) {
                 dumpRedoVector(data, recordLength);
                 REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": fields (" << std::dec << (redoLogRecord[vectors].fieldPos) << ") outside of record, length: " << recordLength);
+                                    ": fields (" << std::dec << (redoLogRecord[vectorCur].fieldPos) << ") outside of record, length: " << recordLength);
             }
 
-            uint64_t fieldPos = redoLogRecord[vectors].fieldPos;
-            for (uint64_t i = 1; i <= redoLogRecord[vectors].fieldCnt; ++i) {
-                redoLogRecord[vectors].length += (oracleAnalyzer->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                fieldPos += (oracleAnalyzer->read16(redoLogRecord[vectors].data + redoLogRecord[vectors].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+            uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
+            for (uint64_t i = 1; i <= redoLogRecord[vectorCur].fieldCnt; ++i) {
+                redoLogRecord[vectorCur].length += (oracleAnalyzer->read16(fieldList + i * 2) + 3) & 0xFFFC;
+                fieldPos += (oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
-                if (offset + redoLogRecord[vectors].length > recordLength) {
+                if (offset + redoLogRecord[vectorCur].length > recordLength) {
                     dumpRedoVector(data, recordLength);
                     REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
                                         ": position of field list outside of record (" <<
                             "i: " << std::dec << i <<
-                            " c: " << std::dec << redoLogRecord[vectors].fieldCnt << " " <<
+                            " c: " << std::dec << redoLogRecord[vectorCur].fieldCnt << " " <<
                             " o: " << std::dec << fieldOffset <<
                             " p: " << std::dec << offset <<
-                            " l: " << std::dec << redoLogRecord[vectors].length <<
+                            " l: " << std::dec << redoLogRecord[vectorCur].length <<
                             " r: " << std::dec << recordLength << ")");
                 }
             }
 
-            if (redoLogRecord[vectors].fieldPos > redoLogRecord[vectors].length) {
+            if (redoLogRecord[vectorCur].fieldPos > redoLogRecord[vectorCur].length) {
                 dumpRedoVector(data, recordLength);
                 REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": incomplete record, offset: " << std::dec << redoLogRecord[vectors].fieldPos << ", length: " << redoLogRecord[vectors].length);
+                                    ": incomplete record, offset: " << std::dec << redoLogRecord[vectorCur].fieldPos << ", length: " << redoLogRecord[vectorCur].length);
             }
 
-            redoLogRecord[vectors].recordObj = 0xFFFFFFFF;
-            redoLogRecord[vectors].recordDataObj = 0xFFFFFFFF;
+            redoLogRecord[vectorCur].recordObj = 0xFFFFFFFF;
+            redoLogRecord[vectorCur].recordDataObj = 0xFFFFFFFF;
 
-            offset += redoLogRecord[vectors].length;
+            offset += redoLogRecord[vectorCur].length;
 
-            switch (redoLogRecord[vectors].opCode) {
+            if (opCode != nullptr) {
+                delete opCode;
+                opCode = nullptr;
+            }
+            switch (redoLogRecord[vectorCur].opCode) {
             case 0x0501: //Undo
-                opCodes[vectors] = new OpCode0501(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0501(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: OP 5.1)");
                 }
                 break;
 
             case 0x0502: //Begin transaction
-                opCodes[vectors] = new OpCode0502(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0502(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0502) << " bytes memory (for: OP 5.2)");
                 }
                 break;
 
             case 0x0504: //Commit/rollback transaction
-                opCodes[vectors] = new OpCode0504(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0504(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0504) << " bytes memory (for: OP 5.4)");
                 }
                 break;
 
             case 0x0506: //Partial rollback
-                opCodes[vectors] = new OpCode0506(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0506(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0506) << " bytes memory (for: OP 5.6)");
                 }
                 break;
 
             case 0x050B:
-                opCodes[vectors] = new OpCode050B(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode050B(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode050B) << " bytes memory (for: OP 5.11)");
                 }
                 break;
 
             case 0x0513: //Session information
-                opCodes[vectors] = new OpCode0513(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0513(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0513) << " bytes memory (for: OP 5.19)");
                 }
                 break;
 
             case 0x0514: //Session information
-                opCodes[vectors] = new OpCode0514(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0514(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0514) << " bytes memory (for: OP 5.20)");
                 }
                 break;
 
             case 0x0B02: //REDO: Insert row piece
-                opCodes[vectors] = new OpCode0B02(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B02(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B02) << " bytes memory (for: OP 11.2)");
                 }
                 break;
 
             case 0x0B03: //REDO: Delete row piece
-                opCodes[vectors] = new OpCode0B03(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B03(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B03) << " bytes memory (for: OP 11.3)");
                 }
                 break;
 
             case 0x0B04: //REDO: Lock row piece
-                opCodes[vectors] = new OpCode0B04(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B04(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B04) << " bytes memory (for: OP 11.4)");
                 }
                 break;
 
             case 0x0B05: //REDO: Update row piece
-                opCodes[vectors] = new OpCode0B05(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B05(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B05) << " bytes memory (for: OP 11.5)");
                 }
                 break;
 
             case 0x0B06: //REDO: Overwrite row piece
-                opCodes[vectors] = new OpCode0B06(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B06(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B06) << " bytes memory (for: OP 11.6)");
                 }
                 break;
 
             case 0x0B08: //REDO: Change forwarding address
-                opCodes[vectors] = new OpCode0B08(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B08(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B08) << " bytes memory (for: OP 11.8)");
                 }
                 break;
 
             case 0x0B0B: //REDO: Insert multiple rows
-                opCodes[vectors] = new OpCode0B0B(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B0B(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B0B) << " bytes memory (for: OP 11.11)");
                 }
                 break;
 
             case 0x0B0C: //REDO: Delete multiple rows
-                opCodes[vectors] = new OpCode0B0C(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B0C(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B0C) << " bytes memory (for: OP 11.12)");
                 }
                 break;
 
             case 0x0B10: //REDO: Supplemental log for update
-                opCodes[vectors] = new OpCode0B10(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B10(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B10) << " bytes memory (for: OP 11.16)");
                 }
                 break;
 
             case 0x0B16: //REDO: Logminer support - KDOCMP
-                opCodes[vectors] = new OpCode0B16(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode0B16(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B16) << " bytes memory (for: OP 11.22)");
                 }
                 break;
 
             case 0x1801: //DDL
-                opCodes[vectors] = new OpCode1801(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode1801(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode1801) << " bytes memory (for: OP 24.1)");
                 }
                 break;
 
             default:
-                opCodes[vectors] = new OpCode(oracleAnalyzer, &redoLogRecord[vectors]);
-                if (opCodes[vectors] == nullptr) {
+                opCode = new OpCode(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (opCode == nullptr) {
                     RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode) << " bytes memory (for: OP)");
                 }
                 break;
             }
 
-            isUndoRedo[vectors] = 0;
-            //UNDO
-            if (redoLogRecord[vectors].opCode == 0x0501
-                    || redoLogRecord[vectors].opCode == 0x0506
-                    || redoLogRecord[vectors].opCode == 0x050B) {
-                opCodesUndo[vectorsUndo++] = vectors;
-                isUndoRedo[vectors] = 1;
-                if (vectorsUndo <= vectorsRedo) {
-                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
-                    redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
-                }
-            //REDO
-            } else if ((redoLogRecord[vectors].opCode & 0xFF00) == 0x0A00 ||
-                    (redoLogRecord[vectors].opCode & 0xFF00) == 0x0B00) {
-                opCodesRedo[vectorsRedo++] = vectors;
-                isUndoRedo[vectors] = 2;
-                if (vectorsRedo <= vectorsUndo) {
-                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsRedo - 1]].dataObj;
-                    redoLogRecord[opCodesRedo[vectorsRedo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsRedo - 1]].obj;
-                }
-            }
+            opCode->process();
+            delete opCode;
+            opCode = nullptr;
 
-            ++vectors;
-            if (vectors >= VECTOR_MAX_LENGTH) {
-                RUNTIME_FAIL("out of redo vectors(" << std::dec << vectors << "), at offset: " << std::dec << offset << " record length: " << std::dec << recordLength);
+            //pair
+            if (vectorPrev != -1 && vectorCur != -1) {
+                //REDO
+                if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00) {
+                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
+                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
+                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
+                    vectorPrev = -1;
+                    vectorCur = -1;
+                    continue;
+                } else
+                if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00) {
+                    //ignore - index operation
+                    vectorPrev = -1;
+                    vectorCur = -1;
+                    continue;
+                } else
+                //UNDO
+                if ((redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) && (redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00) {
+                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
+                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
+                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
+                    vectorPrev = -1;
+                    vectorCur = -1;
+                    continue;
+                } else
+                if ((redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) && (redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0A00) {
+                    //ignore - index operation
+                    vectorPrev = -1;
+                    vectorCur = -1;
+                    continue;
+                } else
+                //BEGIN
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0502) {
+                    appendToTransactionBegin(&redoLogRecord[vectorPrev]);
+                    vectorPrev = -1;
+                    continue;
+                } else
+                //COMMIT
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0504) {
+                    appendToTransactionCommit(&redoLogRecord[vectorPrev]);
+                    vectorPrev = -1;
+                    continue;
+                } else
+                //DDL
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x1801) {
+                    appendToTransactionDDL(&redoLogRecord[vectorPrev]);
+                    vectorPrev = -1;
+                    continue;
+                } else
+                if (redoLogRecord[vectorPrev].opCode == 0x0501 || redoLogRecord[vectorPrev].opCode == 0x0506 || redoLogRecord[vectorPrev].opCode == 0x050B) {
+                    appendToTransactionUndo(&redoLogRecord[vectorPrev]);
+                    vectorPrev = -1;
+                    continue;
+                }
+
+                //vectorPrev = vectorCur;
+                //vectorCur = -1;
+                continue;
             }
         }
 
-        for (uint64_t i = 0; i < vectors; ++i) {
-            opCodes[i]->process();
-            delete opCodes[i];
-            opCodes[i] = nullptr;
+        //purge prev
+        if (vectorPrev != -1) {
+            if (redoLogRecord[vectorPrev].opCode == 0x0502)
+                appendToTransactionBegin(&redoLogRecord[vectorPrev]);
+            else if (redoLogRecord[vectorPrev].opCode == 0x0504)
+                appendToTransactionCommit(&redoLogRecord[vectorPrev]);
+            else if (redoLogRecord[vectorPrev].opCode == 0x1801)
+                appendToTransactionDDL(&redoLogRecord[vectorPrev]);
+            else if (redoLogRecord[vectorPrev].opCode == 0x0501 || redoLogRecord[vectorPrev].opCode == 0x0506 || redoLogRecord[vectorPrev].opCode == 0x050B)
+                appendToTransactionUndo(&redoLogRecord[vectorPrev]);
+            vectorPrev = -1;
         }
 
-        uint64_t iPair = 0;
-        for (uint64_t i = 0; i < vectors; ++i) {
-            //begin transaction
-
-            if (redoLogRecord[i].opCode == 0x0502) {
-                appendToTransactionBegin(&redoLogRecord[i]);
-            }
-
-            //commit/rollback transaction
-            else if (redoLogRecord[i].opCode == 0x0504) {
-                appendToTransactionCommit(&redoLogRecord[i]);
-            }
-
-            //ddl
-            else if (redoLogRecord[i].opCode == 0x1801 && isUndoRedo[i] == 0) {
-                appendToTransactionDDL(&redoLogRecord[i]);
-            }
-
-            else if (iPair < vectorsUndo) {
-                if (opCodesUndo[iPair] == i) {
-                    if (iPair < vectorsRedo) {
-                        appendToTransaction(&redoLogRecord[opCodesUndo[iPair]], &redoLogRecord[opCodesRedo[iPair]]);
-                    } else {
-                        appendToTransactionUndo(&redoLogRecord[opCodesUndo[iPair]]);
-                    }
-                    ++iPair;
-                } else if (opCodesRedo[iPair] == i) {
-                    if (iPair < vectorsUndo) {
-                        appendToTransaction(&redoLogRecord[opCodesRedo[iPair]], &redoLogRecord[opCodesUndo[iPair]]);
-                    }
-                    ++iPair;
-                }
-            }
+        //purge cur
+        if (vectorCur != -1) {
+            if (redoLogRecord[vectorCur].opCode == 0x0502)
+                appendToTransactionBegin(&redoLogRecord[vectorCur]);
+            else if (redoLogRecord[vectorCur].opCode == 0x0504)
+                appendToTransactionCommit(&redoLogRecord[vectorCur]);
+            else if (redoLogRecord[vectorCur].opCode == 0x1801)
+                appendToTransactionDDL(&redoLogRecord[vectorCur]);
+            else if (redoLogRecord[vectorCur].opCode == 0x0501 || redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)
+                appendToTransactionUndo(&redoLogRecord[vectorCur]);
+            vectorPrev = -1;
         }
     }
 
@@ -716,62 +741,80 @@ namespace OpenLogReplicator {
         bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
 
-        if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
-            return;
-
-        //skip list
-        if (oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
-            return;
-
-        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
-        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (object == nullptr)
-                return;
-        }
-        if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
-            system = true;
-
-        Transaction* transaction = nullptr;
-        typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
-
-        auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-        if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-            transaction = transactionIter->second;
-            if (transaction->xid != redoLogRecord->xid) {
-                RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
-            }
-        } else {
-            if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0)
+        if (redoLogRecord->opCode == 0x0501) {
+            if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
                 return;
 
-            transaction = new Transaction(oracleAnalyzer, redoLogRecord->xid);
-            if (transaction == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: append to transaction#2)");
+            //skip list
+            if (redoLogRecord->xid != 0 && oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
+                return;
+
+            OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
+            if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
+                if (object == nullptr)
+                    return;
             }
-            oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
+            if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
+                system = true;
+
+            Transaction* transaction = nullptr;
+            typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
+
+            auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
+            if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
+                transaction = transactionIter->second;
+                if (transaction->xid != redoLogRecord->xid) {
+                    RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
+                }
+            } else {
+                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0)
+                    return;
+
+                transaction = new Transaction(oracleAnalyzer, redoLogRecord->xid);
+                if (transaction == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: append to transaction#2)");
+                }
+                oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
+            }
+
+            if (system)
+                transaction->system = true;
+
+            //cluster key
+            if ((redoLogRecord->fb & FB_K) != 0)
+                return;
+
+            //partition move
+            if ((redoLogRecord->suppLogFb & FB_K) != 0)
+                return;
+
+            //transaction size limit
+            if (oracleAnalyzer->transactionMax > 0 &&
+                    transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
+                oracleAnalyzer->skipXidList.insert(transaction->xid);
+                oracleAnalyzer->xidTransactionMap.erase(xidMap);
+                delete transaction;
+                return;
+            }
+
+            transaction->add(redoLogRecord);
+        } if ((redoLogRecord->opCode == 0x0506 || redoLogRecord->opCode == 0x050B) && (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01)) {
+            Transaction* transaction = nullptr;
+            typeXIDMAP xidMap = (((uint64_t)redoLogRecord->usn) << 16) | ((uint64_t)redoLogRecord->slt) | (((uint64_t)redoLogRecord->conId) << 32);
+
+            auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
+            if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
+                transaction = transactionIter->second;
+                transaction->rollbackLastOp(redoLogRecord);
+            } else {
+                auto iter = oracleAnalyzer->brokenXidMapList.find(xidMap);
+                if (iter == oracleAnalyzer->brokenXidMapList.end()) {
+                    WARNING("no match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord->slt <<
+                            " USN: " << (uint64_t)redoLogRecord->usn);
+                    oracleAnalyzer->brokenXidMapList.insert(xidMap);
+                }
+            }
         }
-
-        if (system)
-            transaction->system = true;
-
-        //cluster key
-        if ((redoLogRecord->fb & FB_K) != 0)
-            return;
-
-        //partition move
-        if ((redoLogRecord->suppLogFb & FB_K) != 0)
-            return;
-
-        //transaction size limit
-        if (oracleAnalyzer->transactionMax > 0 &&
-                transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
-            oracleAnalyzer->skipXidList.insert(transaction->xid);
-            oracleAnalyzer->xidTransactionMap.erase(xidMap);
-            delete transaction;
-            return;
-        }
-
-        transaction->add(redoLogRecord);
     }
 
     void RedoLog::appendToTransactionBegin(RedoLogRecord* redoLogRecord) {
@@ -807,7 +850,6 @@ namespace OpenLogReplicator {
         //skip list
         auto it = oracleAnalyzer->skipXidList.find(redoLogRecord->xid);
         if (it != oracleAnalyzer->skipXidList.end()) {
-            WARNING("skipping transaction: " << PRINTXID(redoLogRecord->xid));
             oracleAnalyzer->skipXidList.erase(it);
             return;
         }
@@ -1000,6 +1042,9 @@ namespace OpenLogReplicator {
         //rollback: overwrite row piece
         case 0x0B060506:
         case 0x0B06050B:
+        //change forwarding address
+        case 0x0B080506:
+        case 0x0B08050B:
         //rollback: supp log for update
         case 0x0B100506:
         case 0x0B10050B:
@@ -1013,7 +1058,7 @@ namespace OpenLogReplicator {
                 auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
                 if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
                     transaction = transactionIter->second;
-                    transaction->rollbackLastOp(redoLogRecord1->scn);
+                    transaction->rollbackLastOp(redoLogRecord1, redoLogRecord2);
                 } else {
                     auto iter = oracleAnalyzer->brokenXidMapList.find(xidMap);
                     if (iter == oracleAnalyzer->brokenXidMapList.end()) {

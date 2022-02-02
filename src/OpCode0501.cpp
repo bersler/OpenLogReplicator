@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
             return;
         //field: 2
         if (fieldLength < 8) {
-            WARNING("too short field ktub: " << std::dec << fieldLength);
+            WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -96,7 +96,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord->op & 0x1F) == OP_URP) {
                 oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050107);
                 //field: 5
-                if (fieldLength > 0) {
+                if (fieldLength > 0 && redoLogRecord->cc > 0) {
                     redoLogRecord->colNumsDelta = fieldPos;
                     colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
                 }
@@ -149,24 +149,40 @@ namespace OpenLogReplicator {
 
             } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (nulls == nullptr) {
-                    WARNING("nulls field is missing");
+                    WARNING("nulls field is missing" << " offset: " << redoLogRecord->dataOffset);
                     return;
                 }
 
-                redoLogRecord->rowData = fieldNum + 1;
-                uint8_t bits = 1;
-
-                for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
+                if (redoLogRecord->cc > 0) {
+                    redoLogRecord->rowData = fieldNum + 1;
                     if (fieldNum >= redoLogRecord->fieldCnt)
                         return;
                     oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
 
-                    if (oracleAnalyzer->dumpRedoLog >= 1)
-                        dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
-                    bits <<= 1;
-                    if (bits == 0) {
-                        bits = 1;
-                        ++nulls;
+                    if (fieldLength == redoLogRecord->sizeDelt && redoLogRecord->cc > 1) {
+                        redoLogRecord->compressed = true;
+                        if (oracleAnalyzer->dumpRedoLog >= 1)
+                            dumpCompressed(redoLogRecord->data + fieldPos, fieldLength);
+                    } else {
+                        uint8_t bits = 1;
+                        for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
+                            if (i > 0) {
+                                if (fieldNum >= redoLogRecord->fieldCnt)
+                                    return;
+                                oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
+                            }
+                            if (fieldLength > 0 && (*nulls & bits) != 0) {
+                                WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset);
+                            }
+
+                            if (oracleAnalyzer->dumpRedoLog >= 1)
+                                dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
+                            bits <<= 1;
+                            if (bits == 0) {
+                                bits = 1;
+                                ++nulls;
+                            }
+                        }
                     }
                 }
 
@@ -276,7 +292,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            WARNING("too short field ktudb: " << std::dec << fieldLength);
+            WARNING("too short field ktudb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -304,7 +320,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::kteoputrn(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            WARNING("too short field kteoputrn: " << std::dec << fieldLength);
+            WARNING("too short field kteoputrn: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
         if (oracleAnalyzer->dumpRedoLog >= 2) {
@@ -316,7 +332,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::kdilk(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            WARNING("too short field kdilk: " << std::dec << fieldLength);
+            WARNING("too short field kdilk: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -357,7 +373,7 @@ namespace OpenLogReplicator {
                 uint32_t keySizes = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 20);
 
                 if (fieldLength < keySizes * 2 + 24) {
-                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength);
+                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
                     return;
                 }
                 oracleAnalyzer->dumpStream << "number of keys: " << std::dec << keySizes << " " << std::endl;
@@ -373,7 +389,7 @@ namespace OpenLogReplicator {
 
     void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            WARNING("too short row dependencies: " << std::dec << fieldLength);
+            WARNING("too short row dependencies: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -394,7 +410,7 @@ namespace OpenLogReplicator {
             return;
 
         if (fieldLength < 20) {
-            WARNING("too short supplemental log: " << std::dec << fieldLength);
+            WARNING("too short supplemental log: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 

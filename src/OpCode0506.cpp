@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = redoLogRecord->fieldPos;
         uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
-            WARNING("too short field ktub: " << std::dec << fieldLength);
+            WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
 
     void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
-            WARNING("too short field ktuxvoff: " << std::dec << fieldLength);
+            WARNING("too short field ktuxvoff: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 

@@ -69,6 +69,7 @@ namespace OpenLogReplicator {
         void rollbackTransactionChunk(Transaction* transaction);
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc);
+        void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
     };
 }
 

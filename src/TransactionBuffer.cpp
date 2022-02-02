@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "OpCode0501.h"
+#include "OpCode050B.h"
 #include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
 #include "RuntimeException.h"
@@ -93,6 +95,29 @@ namespace OpenLogReplicator {
                     << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter");
         }
 
+        if (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID) == 0) {
+            RUNTIME_FAIL("split undo error flag: " << std::dec << redoLogRecord->flg << " offset: " << std::dec << redoLogRecord->dataOffset);
+        }
+
+        if (transaction->lastSplit) {
+            if ((redoLogRecord->opCode) != 0x0501) {
+                RUNTIME_FAIL("split undo no 5.1 offset: " << std::dec << redoLogRecord->dataOffset);
+            }
+
+            uint64_t lengthLast = *((uint64_t*) (transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            RedoLogRecord* last501 = (RedoLogRecord*) (transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            last501->data = transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_DATA;
+
+            uint64_t size = last501->length + redoLogRecord->length;
+            uint8_t* merge = new uint8_t[size];
+            if (merge == nullptr) {
+                RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1) offset: " << std::dec << redoLogRecord->dataOffset);
+            }
+            transaction->merges.push_back(merge);
+            mergeBlocks(merge, redoLogRecord, last501);
+            rollbackTransactionChunk(transaction);
+        }
+
         //empty list
         if (transaction->lastTc == nullptr) {
             transaction->lastTc = newTransactionChunk(transaction);
@@ -119,6 +144,13 @@ namespace OpenLogReplicator {
         tc->size += length;
         ++tc->elements;
         transaction->size += length;
+
+        if (transaction->lastSplit) {
+            for (uint8_t* buf : transaction->merges)
+                delete[] buf;
+            transaction->merges.clear();
+        } else
+            transaction->lastSplit = true;
     }
 
     void TransactionBuffer::addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
@@ -127,6 +159,48 @@ namespace OpenLogReplicator {
         if (length > DATA_BUFFER_SIZE) {
             RUNTIME_FAIL(*oracleAnalyzer <<  "block size (" << std::dec << length
                     << ") exceeding max block size (" << FULL_BUFFER_SIZE << "), try increasing the FULL_BUFFER_SIZE parameter");
+        }
+
+        if (transaction->lastSplit) {
+            if ((redoLogRecord1->opCode) != 0x0501) {
+                RUNTIME_FAIL("split undo HEAD no 5.1 offset: " << std::dec << redoLogRecord1->dataOffset);
+            }
+
+            if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0) {
+                uint64_t lengthLast = *((uint64_t*) (transaction->lastTc->buffer + transaction->lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+                RedoLogRecord* last501 = (RedoLogRecord*) (transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_REDO1);
+                last501->data = transaction->lastTc->buffer + transaction->lastTc->size - lengthLast + ROW_HEADER_DATA;
+
+                uint64_t size = last501->length + redoLogRecord1->length;
+                uint8_t* merge = new uint8_t[size];
+                if (merge == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1) offset: " << std::dec << redoLogRecord1->dataOffset);
+                }
+                transaction->merges.push_back(merge);
+                mergeBlocks(merge, redoLogRecord1, last501);
+
+                uint16_t fieldPos = redoLogRecord1->fieldPos;
+                uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
+                fieldPos += (fieldLength + 3) & 0xFFFC;
+
+                uint16_t flg = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 20);
+                flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL | FLG_LASTBUFFERSPLIT);
+                oracleAnalyzer->write16(redoLogRecord1->data + fieldPos + 20, flg);
+
+                transaction->opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
+                if (transaction->opCode0501 == nullptr) {
+                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3) offset: " << redoLogRecord1->dataOffset);
+                }
+
+                transaction->opCode0501->process();
+                if (transaction->opCode0501 != nullptr) {
+                    delete transaction->opCode0501;
+                    transaction->opCode0501 = nullptr;
+                }
+                length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
+            }
+
+            rollbackTransactionChunk(transaction);
         }
 
         //empty list
@@ -156,6 +230,13 @@ namespace OpenLogReplicator {
         tc->size += length;
         ++tc->elements;
         transaction->size += length;
+
+        if (transaction->lastSplit) {
+            transaction->lastSplit = false;
+            for (uint8_t* buf : transaction->merges)
+                delete[] buf;
+            transaction->merges.clear();
+        }
     }
 
     void TransactionBuffer::rollbackTransactionChunk(Transaction* transaction) {
@@ -183,5 +264,43 @@ namespace OpenLogReplicator {
             }
             deleteTransactionChunk(tc);
         }
+    }
+
+    void TransactionBuffer::mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+        memcpy(buffer, redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
+        uint64_t pos = redoLogRecord1->fieldLengthsDelta;
+        uint16_t fieldCnt;
+        uint16_t fieldPos1;
+        uint16_t fieldPos2;
+
+        if ((redoLogRecord1->flg & FLG_LASTBUFFERSPLIT) != 0) {
+            uint16_t length1 = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
+            uint16_t length2 = oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6);
+            oracleAnalyzer->write16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, length1 + length2);
+            --redoLogRecord1->fieldCnt;
+        }
+
+        //field list
+        fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
+        oracleAnalyzer->write16(buffer + pos, fieldCnt);
+        memcpy(buffer + pos + 2, redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2, redoLogRecord1->fieldCnt * 2);
+        memcpy(buffer + pos + 2 + redoLogRecord1->fieldCnt * 2, redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, redoLogRecord2->fieldCnt * 2 - 4);
+        pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
+        fieldPos1 = pos;
+
+        //data
+        memcpy(buffer + pos, redoLogRecord1->data + redoLogRecord1->fieldPos, redoLogRecord1->length - redoLogRecord1->fieldPos);
+        pos += (redoLogRecord1->length - redoLogRecord1->fieldPos + 3) & (0xFFFC);
+        fieldPos2 = redoLogRecord2->fieldPos +
+                ((oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 2) + 3) & 0xFFFC) +
+                ((oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 4) + 3) & 0xFFFC);
+
+        memcpy(buffer + pos, redoLogRecord2->data + fieldPos2, redoLogRecord2->length - fieldPos2);
+        pos += (redoLogRecord2->length - fieldPos2 + 3) & (0xFFFC);
+
+        redoLogRecord1->length = pos;
+        redoLogRecord1->fieldCnt = fieldCnt;
+        redoLogRecord1->fieldPos = fieldPos1;
+        redoLogRecord1->data = buffer;
     }
 }

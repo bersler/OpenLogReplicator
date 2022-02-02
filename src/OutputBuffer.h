@@ -97,9 +97,11 @@ namespace OpenLogReplicator {
         uint64_t num;
         uint64_t transactionType;
         bool newTran;
+        bool compressedBefore;
+        bool compressedAfter;
 
         void outputBufferRotate(bool copy);
-        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length);
+        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, bool compressed);
 
         void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)
@@ -123,6 +125,8 @@ namespace OpenLogReplicator {
                 }
             }
             valuesMax = 0;
+            compressedBefore = false;
+            compressedAfter = false;
         };
 
         void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {

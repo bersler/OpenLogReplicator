@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
 #include <dirent.h>
 #include <fcntl.h>
 #include <thread>
@@ -245,7 +247,7 @@ namespace OpenLogReplicator {
 
             if (fileCopyDes == -1) {
                 fileNameWrite = oracleAnalyzer->redoCopyPath + "/" + oracleAnalyzer->database + "_" + std::to_string(sequenceHeader) + ".arc";
-                fileCopyDes = open(fileNameWrite.c_str(), O_CREAT | O_WRONLY | O_LARGEFILE, S_IRUSR | S_IWUSR);
+                fileCopyDes = open(fileNameWrite.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
                 if (fileCopyDes == -1) {
                     RUNTIME_FAIL("opening in write mode file: " << std::dec << fileNameWrite << " - " << strerror(errno));
                 }
@@ -278,8 +280,8 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200) //12.1.0.0 - 12.1.0.2
             || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100) //12.2.0.0 - 12.2.0.1
             || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000) //18.0.0.0 - 18.14.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x130D0000) //19.0.0.0 - 19.13.0.0
-            || (compatVsn >= 0x15000000 && compatVsn <= 0x15040000)) //21.0.0.0 - 21.4.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x130E0000) //19.0.0.0 - 19.14.0.0
+            || (compatVsn >= 0x15000000 && compatVsn <= 0x15050000)) //21.0.0.0 - 21.5.0.0
             version = compatVsn;
         else {
             ERROR("invalid database version (found: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn << "): " << fileName);
@@ -304,13 +306,25 @@ namespace OpenLogReplicator {
             oracleAnalyzer->version = version;
             typeSEQ sequenceHeader = oracleAnalyzer->read32(headerBuffer + blockSize + 8);
 
-            INFO("found redo log version: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn
-                    << ", activation: " << std::dec << activationHeader
-                    << ", resetlogs: " << std::dec << resetlogsHeader
-                    << ", page: " << std::dec << blockSize
-                    << ", sequence: " << std::dec << sequenceHeader
-                    << ", SID: " << SID
-                    << ", endian: " << (oracleAnalyzer->bigEndian ? "BIG" : "LITTLE"));
+            if (compatVsn < REDO_VERSION_18_0) {
+                INFO("found redo log version: " << std::dec << (compatVsn >> 24) << "." << ((compatVsn >> 20) & 0xF) << "."
+                        << ((compatVsn >> 16) & 0xF) << "." << ((compatVsn >> 8) & 0xFF)
+                        << ", activation: " << std::dec << activationHeader
+                        << ", resetlogs: " << std::dec << resetlogsHeader
+                        << ", page: " << std::dec << blockSize
+                        << ", sequence: " << std::dec << sequenceHeader
+                        << ", SID: " << SID
+                        << ", endian: " << (oracleAnalyzer->bigEndian ? "BIG" : "LITTLE"));
+            } else {
+                INFO("found redo log version: " << std::dec << (compatVsn >> 24) << "." << ((compatVsn >> 16) & 0xFF) << "."
+                        << ((compatVsn >> 8) & 0xFF)
+                        << ", activation: " << std::dec << activationHeader
+                        << ", resetlogs: " << std::dec << resetlogsHeader
+                        << ", page: " << std::dec << blockSize
+                        << ", sequence: " << std::dec << sequenceHeader
+                        << ", SID: " << SID
+                        << ", endian: " << (oracleAnalyzer->bigEndian ? "BIG" : "LITTLE"));
+            }
         }
 
         if (version != oracleAnalyzer->version) {

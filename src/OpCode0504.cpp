@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
 
     void OpCode0504::ktucm(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
-            WARNING("too short field ktucm: " << std::dec << fieldLength);
+            WARNING("too short field ktucm: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -77,7 +77,7 @@ namespace OpenLogReplicator {
 
     void OpCode0504::ktucf(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
-            WARNING("too short field ktucf: " << std::dec << fieldLength);
+            WARNING("too short field ktucf: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 

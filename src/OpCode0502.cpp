@@ -43,11 +43,16 @@ namespace OpenLogReplicator {
         if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
             //field: 2
             if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202)) {
-                kteop(fieldPos, fieldLength);
-
-                //field: 3
-                if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
+                if (fieldLength == 4) {
+                    //field: 2
                     pdb(fieldPos, fieldLength);
+                } else {
+                    kteop(fieldPos, fieldLength);
+
+                    //field: 3
+                    if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
+                        pdb(fieldPos, fieldLength);
+                    }
                 }
             }
 
@@ -57,19 +62,19 @@ namespace OpenLogReplicator {
 
     void OpCode0502::kteop(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 36) {
-            WARNING("too short field kteop: " << std::dec << fieldLength);
+            WARNING("too short field kteop: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t highwater = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 16);
-            uint16_t ext = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4);
+            uint32_t ext = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
             typeBLK blk = 0; //FIXME
             uint32_t extSize = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
             uint32_t blocksFreelist = 0; //FIXME
             uint32_t blocksBelow = 0; //FIXME
             typeBLK mapblk = 0; //FIXME
-            uint16_t offset = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 24);
+            uint32_t offset = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 24);
 
             oracleAnalyzer->dumpStream << "kteop redo - redo operation on extent map" << std::endl;
             oracleAnalyzer->dumpStream << "   SETHWM:      " <<
@@ -87,7 +92,7 @@ namespace OpenLogReplicator {
 
     void OpCode0502::ktudh(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
-            WARNING("too short field ktudh: " << std::dec << fieldLength);
+            WARNING("too short field ktudh: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 
@@ -126,7 +131,7 @@ namespace OpenLogReplicator {
 
     void OpCode0502::pdb(uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
-            WARNING("too short field pdb: " << std::dec << fieldLength);
+            WARNING("too short field pdb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
         redoLogRecord->pdbId = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 0);

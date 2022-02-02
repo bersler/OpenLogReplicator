@@ -32,6 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define REDO_VERSION_12_1       0x0C100000
 #define REDO_VERSION_12_2       0x0C200000
+#define REDO_VERSION_18_0       0x12000000
 #define REDO_VERSION_19_0       0x13000000
 
 #define REDO_END                0x0008

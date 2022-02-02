@@ -27,21 +27,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class TransactionChunk;
     class OpCode;
+    class OpCode0501;
     class OpCode0502;
     class OpCode0504;
     class RedoLogRecord;
-    class OpCode0501;
     class OracleAnalyzer;
 
     class Transaction {
     protected:
         OracleAnalyzer* oracleAnalyzer;
-        std::vector<uint8_t*> merges;
         TransactionChunk* deallocTc;
-        OpCode0501* opCode0501;
-        void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
 
     public:
+        std::vector<uint8_t*> merges;
         typeXID xid;
         typeSEQ firstSequence;
         uint64_t firstOffset;
@@ -55,15 +53,18 @@ namespace OpenLogReplicator {
         bool rollback;
         bool system;
         bool shutdown;
+        bool lastSplit;
         std::string name;
         uint64_t size;
+        OpCode0501* opCode0501;
 
         Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid);
         virtual ~Transaction();
 
         void add(RedoLogRecord* redoLogRecord);
         void add(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(typeSCN scn);
+        void rollbackLastOp(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(RedoLogRecord* redoLogRecord);
         void flush(void);
         void purge(void);
         friend std::ostream& operator<<(std::ostream& os, const Transaction& tran);

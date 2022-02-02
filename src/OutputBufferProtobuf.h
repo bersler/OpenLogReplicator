@@ -42,6 +42,7 @@ namespace OpenLogReplicator {
         virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
         virtual void appendHeader(bool first, bool showXid);
         virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
+
         void appendAfter(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
@@ -49,7 +50,7 @@ namespace OpenLogReplicator {
                         if (lengths[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
                         } else {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
@@ -71,7 +72,7 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_AFTER] > 0) {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER]);
+                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
                             } else {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
@@ -82,6 +83,7 @@ namespace OpenLogReplicator {
                 }
             }
         }
+
         void appendBefore(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
                 for (typeCOL column = 0; column < object->maxSegCol; ++column) {
@@ -89,7 +91,7 @@ namespace OpenLogReplicator {
                         if (lengths[column][VALUE_BEFORE] > 0) {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
                         } else {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -111,7 +113,7 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_BEFORE] > 0) {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE]);
+                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
                             } else {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
@@ -122,6 +124,7 @@ namespace OpenLogReplicator {
                 }
             }
         }
+
         void createResponse(void) {
             if (redoResponsePB != nullptr) {
                 RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
@@ -131,6 +134,7 @@ namespace OpenLogReplicator {
                 RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response7)");
             }
         }
+
         void numToString(uint64_t value, char* buf, uint64_t length);
         virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
         virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);

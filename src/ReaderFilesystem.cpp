@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -53,13 +55,13 @@ namespace OpenLogReplicator {
             return REDO_ERROR;
         }
 
-        flags = O_RDONLY | O_LARGEFILE;
+        flags = O_RDONLY;
         fileSize = fileStat.st_size;
 
+#if __linux__
         if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT_DISABLE) == 0)
             flags |= O_DIRECT;
-        if ((oracleAnalyzer->flags & REDO_FLAGS_NOATIME) != 0)
-            flags |= O_NOATIME;
+#endif
 
         fileDes = open(fileName.c_str(), flags);
         TRACE(TRACE2_FILE, "FILE: open for " << fileName << " returns " << std::dec << fileDes << ", errno = " << errno);
@@ -68,6 +70,14 @@ namespace OpenLogReplicator {
             ERROR("opening file returned: " << std::dec << fileName << " - " << strerror(errno));
             return REDO_ERROR;
         }
+
+#if __APPLE__
+        if ((oracleAnalyzer->flags & REDO_FLAGS_DIRECT_DISABLE) == 0) {
+            if (fcntl(fileDes, F_GLOBAL_NOCACHE, 1) < 0) {
+                ERROR("set no cache for: " << std::dec << fileName << " - " << strerror(errno));
+            }
+        }
+#endif
 
         return REDO_OK;
     }
@@ -95,8 +105,8 @@ namespace OpenLogReplicator {
             --tries;
         }
 
-        //O_DIRECT does not work
-        if (bytes < 0 && (flags & O_DIRECT) != 0) {
+        //maybe direct IO does not work
+        if (bytes < 0 && (oracleAnalyzer->flags & REDO_FLAGS_DIRECT_DISABLE) == 0) {
             ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set \"flags\" to value: " << std::dec << REDO_FLAGS_DIRECT_DISABLE);
         }
 

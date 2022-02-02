@@ -201,6 +201,7 @@ namespace OpenLogReplicator {
 
         void initialize(void);
         void setBigEndian(void);
+        bool isBigEndian(void);
         virtual void positionReader(void);
         virtual void loadDatabaseMetadata(void);
         void* run(void);

@@ -31,7 +31,6 @@ namespace OpenLogReplicator {
     Transaction::Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid) :
         oracleAnalyzer(oracleAnalyzer),
         deallocTc(nullptr),
-        opCode0501(nullptr),
         xid(xid),
         firstSequence(0),
         firstOffset(0),
@@ -45,7 +44,9 @@ namespace OpenLogReplicator {
         rollback(false),
         system(false),
         shutdown(false),
-        size(0) {
+        lastSplit(false),
+        size(0),
+        opCode0501(nullptr) {
 
         std::stringstream ss;
         ss << "transaction " << PRINTXID(xid);
@@ -61,46 +62,6 @@ namespace OpenLogReplicator {
         purge();
     }
 
-    void Transaction::mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        memcpy(buffer, redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
-        uint64_t pos = redoLogRecord1->fieldLengthsDelta;
-        uint16_t fieldCnt;
-        uint16_t fieldPos1;
-        uint16_t fieldPos2;
-
-        if ((redoLogRecord1->flg & FLG_LASTBUFFERSPLIT) != 0) {
-            uint16_t length1 = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + redoLogRecord1->fieldCnt * 2);
-            uint16_t length2 = oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6);
-            oracleAnalyzer->write16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, length1 + length2);
-            --redoLogRecord1->fieldCnt;
-        }
-
-        //field list
-        fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
-        oracleAnalyzer->write16(buffer + pos, fieldCnt);
-        memcpy(buffer + pos + 2, redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2, redoLogRecord1->fieldCnt * 2);
-        memcpy(buffer + pos + 2 + redoLogRecord1->fieldCnt * 2, redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, redoLogRecord2->fieldCnt * 2 - 4);
-        pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
-        fieldPos1 = pos;
-
-        //data
-        memcpy(buffer + pos, redoLogRecord1->data + redoLogRecord1->fieldPos, redoLogRecord1->length - redoLogRecord1->fieldPos);
-        pos += (redoLogRecord1->length - redoLogRecord1->fieldPos + 3) & (0xFFFC);
-        fieldPos2 = redoLogRecord2->fieldPos +
-                ((oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 2) + 3) & 0xFFFC) +
-                ((oracleAnalyzer->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 4) + 3) & 0xFFFC);
-
-        memcpy(buffer + pos, redoLogRecord2->data + fieldPos2, redoLogRecord2->length - fieldPos2);
-        pos += (redoLogRecord2->length - fieldPos2 + 3) & (0xFFFC);
-
-        redoLogRecord1->length = pos;
-        redoLogRecord1->fieldCnt = fieldCnt;
-        redoLogRecord1->fieldPos = fieldPos1;
-        redoLogRecord1->data = buffer;
-
-        uint16_t myFieldLength = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
-    }
-
     void Transaction::add(RedoLogRecord* redoLogRecord) {
         oracleAnalyzer->transactionBuffer->addTransactionChunk(this, redoLogRecord);
         ++opCodes;
@@ -111,7 +72,52 @@ namespace OpenLogReplicator {
         ++opCodes;
     }
 
-    void Transaction::rollbackLastOp(typeSCN scn) {
+    void Transaction::rollbackLastOp(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+        uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        RedoLogRecord* lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+
+        bool ok = false;
+        if (lastRedoLogRecord2 != nullptr) {
+            if (lastRedoLogRecord2->opCode == 0x0B05 && redoLogRecord1->opCode == 0x0B05)
+                ok = true;
+            else if (lastRedoLogRecord2->opCode == 0x0B03 && redoLogRecord1->opCode == 0x0B02)
+                ok = true;
+            else if (lastRedoLogRecord2->opCode == 0x0B02 && redoLogRecord1->opCode == 0x0B03)
+                ok = true;
+            else if (lastRedoLogRecord2->opCode == 0x0B06 && redoLogRecord1->opCode == 0x0B06)
+                ok = true;
+            else if (lastRedoLogRecord2->opCode == 0x0B08 && redoLogRecord1->opCode == 0x0B08)
+                ok = true;
+            else if (lastRedoLogRecord2->opCode == 0x0B0B && redoLogRecord1->opCode == 0x0B0C)
+                ok = true;
+        }
+
+        if (!ok)
+            return;
+
+        oracleAnalyzer->transactionBuffer->rollbackTransactionChunk(this);
+        if (opCodes > 0)
+            --opCodes;
+    }
+
+    void Transaction::rollbackLastOp(RedoLogRecord* redoLogRecord) {
+        if (lastTc == nullptr || lastTc->size == 0)
+            return;
+
+        uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        RedoLogRecord* lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+
+        bool ok = false;
+        if (lastRedoLogRecord2 != nullptr) {
+            if (lastRedoLogRecord2->opCode == 0x0B10)
+                ok = true;
+        }
+
+        if (!ok)
+            return;
+
         oracleAnalyzer->transactionBuffer->rollbackTransactionChunk(this);
         if (opCodes > 0)
             --opCodes;
@@ -144,7 +150,6 @@ namespace OpenLogReplicator {
             RedoLogRecord* first2 = nullptr;
             RedoLogRecord* last1 = nullptr;
             RedoLogRecord* last2 = nullptr;
-            RedoLogRecord* last501 = nullptr;
 
             TransactionChunk* tc = firstTc;
             while (tc != nullptr) {
@@ -184,88 +189,12 @@ namespace OpenLogReplicator {
                                         ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogAfter <<
                                         ", 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba << "." << std::hex << redoLogRecord1->suppLogSlot << ")");
 
-                    //undo split
-                    if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOTAIL) != 0) {
-                        if (last501 != nullptr || op != 0x05010000) {
-                            RUNTIME_FAIL("split undo TAIL error");
-                        }
-                        last501 = redoLogRecord1;
-                        continue;
-                    } else
-
-                    if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOMID) != 0) {
-                        if (last501 == nullptr || op != 0x05010000) {
-                            RUNTIME_FAIL("split undo MID error");
-                        }
-
-                        uint64_t size = last501->length + redoLogRecord1->length;
-                        uint8_t* merge = new uint8_t[size];
-                        if (merge == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1)");
-                        }
-                        merges.push_back(merge);
-                        mergeBlocks(merge, redoLogRecord1, last501);
-                        last501 = redoLogRecord1;
-                        continue;
-                    } else
-
-                    if ((redoLogRecord1->flg & FLG_MULTIBLOCKUNDOHEAD) != 0) {
-                        if (last501 == nullptr || op == 0x05010000) {
-                            //RUNTIME_FAIL("split undo HEAD error");
-
-                            //FIXME+
-                            WARNING("split undo HEAD error");
-                            if (opCode0501 != nullptr) {
-                                delete opCode0501;
-                                opCode0501 = nullptr;
-                            }
-                            last501 = nullptr;
-                            break;
-                            //FIXME-
-                        }
-
-                        uint64_t size = last501->length + redoLogRecord1->length;
-                        uint8_t* merge = new uint8_t[size];
-                        if (merge == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << std::dec << size << " bytes memory (for: merge split undo #1)");
-                        }
-                        merges.push_back(merge);
-                        mergeBlocks(merge, redoLogRecord1, last501);
-
-                        uint16_t fieldPos = redoLogRecord1->fieldPos;
-                        uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 1 * 2);
-                        fieldPos += (fieldLength + 3) & 0xFFFC;
-
-                        uint16_t flg = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 20);
-                        flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL | FLG_LASTBUFFERSPLIT);
-                        oracleAnalyzer->write16(redoLogRecord1->data + fieldPos + 20, flg);
-
-                        opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
-                        if (opCode0501 == nullptr) {
-                            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3)");
-                        }
-
-                        opCode0501->process();
-                        if (opCode0501 != nullptr) {
-                            delete opCode0501;
-                            opCode0501 = nullptr;
-                        }
-                        last501 = nullptr;
-                    } else if (last501 != nullptr) {
-                        //RUNTIME_FAIL("split undo is broken");
-                        //FIXME+
-                        WARNING("split undo is broken");
-                        if (opCode0501 != nullptr) {
-                            delete opCode0501;
-                            opCode0501 = nullptr;
-                        }
-                        last501 = nullptr;
-                        break;
-                        //FIXME-
-                    }
-
                     opFlush = false;
                     switch (op) {
+                    //single undo - ignore
+                    case 0x05010000:
+                        break;
+
                     //insert row piece
                     case 0x05010B02:
                     //delete row piece
@@ -280,7 +209,6 @@ namespace OpenLogReplicator {
                     case 0x05010B10:
                     //Logminer support - KDOCMP
                     case 0x05010B16:
-
                         redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
                         if (type == 0) {
@@ -374,7 +302,7 @@ namespace OpenLogReplicator {
 
                     //should not happen
                     default:
-                        RUNTIME_FAIL("Unknown OpCode " << std::hex << op);
+                        RUNTIME_FAIL("Unknown OpCode " << std::hex << op << " offset: " << std::dec << redoLogRecord1->dataOffset);
                     }
 
                     //split very big transactions
@@ -389,11 +317,12 @@ namespace OpenLogReplicator {
 
                             TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
                             if (oracleAnalyzer->systemTransaction != nullptr) {
-                                RUNTIME_FAIL("system transaction already active:2");
+                                RUNTIME_FAIL("system transaction already active:2 offset: " << std::dec << redoLogRecord1->dataOffset);
                             }
                             oracleAnalyzer->systemTransaction = new SystemTransaction(oracleAnalyzer, oracleAnalyzer->outputBuffer, oracleAnalyzer->schema);
                             if (oracleAnalyzer->systemTransaction == nullptr) {
-                                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)");
+                                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(SystemTransaction) << " bytes memory (for: system transaction merge)"
+                                        << " offset: " << std::dec << redoLogRecord1->dataOffset);
                             }
 
                             if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0) {

@@ -1,3 +1,14 @@
+0.9.39-beta
+- fixed some logdump output
+- fixed bug: displayed warning about kteop field size
+- added support for Oracle 19.14 and 21.5
+- big code cleanup and rewrite of some parts
+- fixed bug: split undo record + rollback was not properly handled
+- fixed bug: sometimes supplemental redo log was missed
+- fixed bug: sometimes partially rolled transactions were improperly handled
+- changed Oracle client to 19.14
+- cleanup in file access flags
+
 0.9.38-beta
 - minor code cleanup
 - changed Oracle client to 19.13

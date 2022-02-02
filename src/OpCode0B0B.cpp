@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
         //field: 3
         redoLogRecord->rowLenghsDelta = fieldPos;
         if (fieldLength < redoLogRecord->nrow * 2) {
-            WARNING("field length list length too short: " << std::dec << fieldLength);
+            WARNING("field length list length too short: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
         }
 

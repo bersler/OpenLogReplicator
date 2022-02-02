@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
         virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
 
         void ktub(uint64_t fieldPos, uint64_t fieldLength, bool isKtubl);
+        void dumpCompressed(uint8_t* data, uint16_t fieldLength) const;
         void dumpCols(uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
         void dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const;
         void dumpRows(uint8_t* data) const;

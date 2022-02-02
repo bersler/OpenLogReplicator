@@ -75,6 +75,7 @@ namespace OpenLogReplicator {
         typeOP1 opc;             //operation code for UNDO
 
         uint8_t op;
+        uint8_t ccData;
         uint8_t cc;
         uint8_t itli;
         typeSLOT slot;
@@ -97,6 +98,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogNumsDelta;
         uint64_t suppLogLenDelta;
         uint64_t opFlags;
+        bool compressed;
 
         void dumpHex(std::ostream& str, OracleAnalyzer* oracleAnalyzer) const;
         friend std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo);

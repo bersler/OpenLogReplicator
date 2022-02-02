@@ -449,6 +449,10 @@ namespace OpenLogReplicator {
         writeSCN = writeSCNBig;
     }
 
+    bool OracleAnalyzer::isBigEndian(void) {
+        return bigEndian;
+    }
+
     void OracleAnalyzer::loadDatabaseMetadata(void) {
         archReader = readerCreate(0);
     }
@@ -530,7 +534,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (sequence == ZERO_SEQ) {
-                    RUNTIME_FAIL("starting sequence if unknown, failing");
+                    RUNTIME_FAIL("starting sequence is unknown, failing");
                 }
 
                 if (firstScn == ZERO_SCN) {

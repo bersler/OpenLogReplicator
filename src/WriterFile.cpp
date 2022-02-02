@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -287,7 +289,7 @@ namespace OpenLogReplicator {
             }
 
             INFO("opening output file: " << outputFile);
-            outputDes = open(outputFile.c_str(), O_CREAT | O_WRONLY | O_LARGEFILE, S_IRUSR | S_IWUSR);
+            outputDes = open(outputFile.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
             if (outputDes == -1) {
                 RUNTIME_FAIL("opening in write mode file: " << outputFile << " - " << strerror(errno));
             }

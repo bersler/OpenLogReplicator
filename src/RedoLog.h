@@ -23,7 +23,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDOLOG_H_
 #define REDOLOG_H_
 
-#define VECTOR_MAX_LENGTH 512
 #define MAX_LWN_CHUNKS (512*2/MEMORY_CHUNK_SIZE_MB)
 
 namespace OpenLogReplicator {
@@ -42,9 +41,11 @@ namespace OpenLogReplicator {
     class RedoLog {
     protected:
         OracleAnalyzer* oracleAnalyzer;
-        OpCode* opCodes[VECTOR_MAX_LENGTH];
+        OpCode* opCode;
+        RedoLogRecord redoLogRecord[2];
         RedoLogRecord zero;
-        uint64_t vectors;
+        int64_t vectorCur;
+        int64_t vectorPrev;
         uint64_t lwnConfirmedBlock;
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
         uint64_t lwnAllocated;
