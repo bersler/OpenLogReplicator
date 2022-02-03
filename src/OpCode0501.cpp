@@ -23,9 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0501::OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-
+    void OpCode0501::init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
@@ -44,23 +42,21 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
     }
 
-    OpCode0501::~OpCode0501() {
-    }
-
-    void OpCode0501::process(void) {
-        OpCode::process();
+    void OpCode0501::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        init(oracleAnalyzer, redoLogRecord);
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103);
         //field: 1
-        ktudb(fieldPos, fieldLength);
+        ktudb(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050104))
             return;
         //field: 2
-        ktub(fieldPos, fieldLength, true);
+        ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, true);
 
         //incomplete data, don't analyze further
         if (redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID) != 0)
@@ -70,9 +66,9 @@ namespace OpenLogReplicator {
             return;
         //field: 3
         if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
-            ktbRedo(fieldPos, fieldLength);
+            ktbRedo(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
         } else if (redoLogRecord->opc == 0x0E08) {
-            kteoputrn(fieldPos, fieldLength);
+            kteoputrn(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
         }
 
         uint8_t* colNums = nullptr;
@@ -83,7 +79,7 @@ namespace OpenLogReplicator {
         //field: 4
 
         if (redoLogRecord->opc == 0x0B01) {
-            kdoOpCode(fieldPos, fieldLength);
+            kdoOpCode(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
             nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
             if (oracleAnalyzer->dumpRedoLog >= 1) {
@@ -106,7 +102,7 @@ namespace OpenLogReplicator {
 
                     redoLogRecord->rowData = fieldPos;
                     if (oracleAnalyzer->dumpRedoLog >= 1) {
-                        dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
+                        dumpColsVector(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
                     }
                 } else {
                     redoLogRecord->rowData = fieldNum + 1;
@@ -121,7 +117,7 @@ namespace OpenLogReplicator {
                         }
 
                         if (oracleAnalyzer->dumpRedoLog >= 1)
-                            dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
+                            dumpCols(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
                         colNums += 2;
                         bits <<= 1;
                         if (bits == 0) {
@@ -133,19 +129,19 @@ namespace OpenLogReplicator {
                     if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
                         oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
                         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010A);
-                        rowDeps(fieldPos, fieldLength);
+                        rowDeps(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
                     }
 
-                    suppLog(fieldNum, fieldPos, fieldLength);
+                    suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
                 }
 
             } else if ((redoLogRecord->op & 0x1F) == OP_DRP) {
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
                     oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010B);
-                    rowDeps(fieldPos, fieldLength);
+                    rowDeps(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
                 }
 
-                suppLog(fieldNum, fieldPos, fieldLength);
+                suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
             } else if ((redoLogRecord->op & 0x1F) == OP_IRP || (redoLogRecord->op & 0x1F) == OP_ORP) {
                 if (nulls == nullptr) {
@@ -162,7 +158,7 @@ namespace OpenLogReplicator {
                     if (fieldLength == redoLogRecord->sizeDelt && redoLogRecord->cc > 1) {
                         redoLogRecord->compressed = true;
                         if (oracleAnalyzer->dumpRedoLog >= 1)
-                            dumpCompressed(redoLogRecord->data + fieldPos, fieldLength);
+                            dumpCompressed(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, fieldLength);
                     } else {
                         uint8_t bits = 1;
                         for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
@@ -176,7 +172,7 @@ namespace OpenLogReplicator {
                             }
 
                             if (oracleAnalyzer->dumpRedoLog >= 1)
-                                dumpCols(redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
+                                dumpCols(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, i, fieldLength, *nulls & bits);
                             bits <<= 1;
                             if (bits == 0) {
                                 bits = 1;
@@ -188,10 +184,10 @@ namespace OpenLogReplicator {
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
                     oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
-                    rowDeps(fieldPos, fieldLength);
+                    rowDeps(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
                 }
 
-                suppLog(fieldNum, fieldPos, fieldLength);
+                suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
             } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
                 oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
@@ -200,21 +196,21 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
                 redoLogRecord->rowData = fieldNum;
                 if (oracleAnalyzer->dumpRedoLog >= 1)
-                    dumpRows(redoLogRecord->data + fieldPos);
+                    dumpRows(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos);
 
             } else if ((redoLogRecord->op & 0x1F) == OP_LMN) {
-                suppLog(fieldNum, fieldPos, fieldLength);
+                suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
             } else if ((redoLogRecord->op & 0x1F) == OP_LKR) {
-                suppLog(fieldNum, fieldPos, fieldLength);
+                suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
             } else if ((redoLogRecord->op & 0x1F) == OP_CFA) {
-                suppLog(fieldNum, fieldPos, fieldLength);
+                suppLog(oracleAnalyzer, redoLogRecord, fieldNum, fieldPos, fieldLength);
             }
         } else
 
         if (redoLogRecord->opc == 0x0A16) {
-            kdilk(fieldPos, fieldLength);
+            kdilk(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
             //field: 5
             if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110))
@@ -290,7 +286,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::ktudb(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0501::ktudb(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             WARNING("too short field ktudb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -318,7 +314,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::kteoputrn(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0501::kteoputrn(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
             WARNING("too short field kteoputrn: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -330,7 +326,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::kdilk(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0501::kdilk(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             WARNING("too short field kdilk: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -387,7 +383,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::rowDeps(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0501::rowDeps(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
             WARNING("too short row dependencies: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -402,7 +398,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::suppLog(typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0501::suppLog(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, typeFIELD& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         uint64_t suppLogSize = 0;
         uint64_t suppLogFieldCnt = 0;
         oracleAnalyzer->skipEmptyFields(redoLogRecord, fieldNum, fieldPos, fieldLength);
@@ -467,7 +463,7 @@ namespace OpenLogReplicator {
             ++suppLogFieldCnt;
             suppLogSize += (fieldLength + 3) & 0xFFFC;
             if (oracleAnalyzer->dumpRedoLog >= 2)
-                dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNumsSupp), fieldLength, 0);
+                dumpCols(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNumsSupp), fieldLength, 0);
             colNumsSupp += 2;
         }
 

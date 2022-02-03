@@ -22,9 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0506::OpCode0506(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-
+    void OpCode0506::init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
         uint64_t fieldPos = redoLogRecord->fieldPos;
         uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
@@ -36,26 +34,24 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
     }
 
-    OpCode0506::~OpCode0506() {
-    }
-
-    void OpCode0506::process(void) {
-        OpCode::process();
+    void OpCode0506::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        init(oracleAnalyzer, redoLogRecord);
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050601);
         //field: 1
-        ktub(fieldPos, fieldLength, true);
+        ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, true);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050602))
             return;
         //field: 1
-        ktuxvoff(fieldPos, fieldLength);
+        ktuxvoff(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
     }
 
-    void OpCode0506::ktuxvoff(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0506::ktuxvoff(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 8) {
             WARNING("too short field ktuxvoff: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;

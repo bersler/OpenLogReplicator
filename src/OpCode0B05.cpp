@@ -22,27 +22,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0B05::OpCode0B05(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-    }
-
-    OpCode0B05::~OpCode0B05() {
-    }
-
-    void OpCode0B05::process(void) {
-        OpCode::process();
+    void OpCode0B05::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0501);
         //field: 1
-        ktbRedo(fieldPos, fieldLength);
+        ktbRedo(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0502))
             return;
         //field: 2
-        kdoOpCode(fieldPos, fieldLength);
+        kdoOpCode(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0503))
@@ -59,7 +52,7 @@ namespace OpenLogReplicator {
             //field: 4
             redoLogRecord->rowData = fieldNum;
             if (oracleAnalyzer->dumpRedoLog >= 1)
-                dumpColsVector(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
+                dumpColsVector(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength);
         } else {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
@@ -76,7 +69,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (oracleAnalyzer->dumpRedoLog >= 1)
-                    dumpCols(redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
+                    dumpCols(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos, oracleAnalyzer->read16(colNums), fieldLength, *nulls & bits);
                 bits <<= 1;
                 colNums += 2;
                 if (bits == 0) {

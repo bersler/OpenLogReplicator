@@ -45,8 +45,7 @@ namespace OpenLogReplicator {
         system(false),
         shutdown(false),
         lastSplit(false),
-        size(0),
-        opCode0501(nullptr) {
+        size(0) {
 
         std::stringstream ss;
         ss << "transaction " << PRINTXID(xid);
@@ -54,11 +53,6 @@ namespace OpenLogReplicator {
     }
 
     Transaction::~Transaction() {
-        if (opCode0501 != nullptr) {
-            delete opCode0501;
-            opCode0501 = nullptr;
-        }
-
         purge();
     }
 

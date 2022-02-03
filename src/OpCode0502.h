@@ -26,15 +26,13 @@ namespace OpenLogReplicator {
     class RedoLogRecord;
 
     class OpCode0502: public OpCode {
+    protected:
+        static void kteop(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void ktudh(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void pdb(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+
     public:
-        OpCode0502(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode0502();
-
-        virtual void process(void);
-
-        void kteop(uint64_t fieldPos, uint64_t fieldLength);
-        void ktudh(uint64_t fieldPos, uint64_t fieldLength);
-        void pdb(uint64_t fieldPos, uint64_t fieldLength);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class OracleAnalyzer;
-    class OpCode;
     class Reader;
 
     struct LwnMember {
@@ -41,7 +40,6 @@ namespace OpenLogReplicator {
     class RedoLog {
     protected:
         OracleAnalyzer* oracleAnalyzer;
-        OpCode* opCode;
         RedoLogRecord redoLogRecord[2];
         RedoLogRecord zero;
         int64_t vectorCur;

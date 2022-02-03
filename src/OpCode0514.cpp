@@ -22,42 +22,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0514::OpCode0514(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode0513(oracleAnalyzer, redoLogRecord) {
-    }
-
-    OpCode0514::~OpCode0514() {
-    }
-
-    void OpCode0514::process(void) {
-        OpCode::process();
+    void OpCode0514::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051401);
         //field: 1
-        dumpMsgSessionSerial(fieldPos, fieldLength);
+        dumpMsgSessionSerial(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051402))
             return;
         //field: 2
-        dumpVal(fieldPos, fieldLength, "transaction name = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "transaction name = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051403))
             return;
         //field: 3
-        dumpMsgFlags(fieldPos, fieldLength);
+        dumpMsgFlags(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051404))
             return;
         //field: 4
-        dumpMsgVersion(fieldPos, fieldLength);
+        dumpMsgVersion(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051405))
             return;
         //field: 5
-        dumpMsgAuditSessionid(fieldPos, fieldLength);
+        dumpMsgAuditSessionid(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051406))
             return;
@@ -66,11 +59,11 @@ namespace OpenLogReplicator {
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051407))
             return;
         //field: 7
-        dumpVal(fieldPos, fieldLength, "Client Id = ");
+        dumpVal(oracleAnalyzer, redoLogRecord,  fieldPos, fieldLength, "Client Id = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051408))
             return;
         //field: 8
-        dumpVal(fieldPos, fieldLength, "login   username = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "login   username = ");
     }
 }

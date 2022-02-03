@@ -23,20 +23,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPCODE0513_H_
 
 namespace OpenLogReplicator {
-    class RedoLogRecord;
-
     class OpCode0513: public OpCode {
     protected:
-        void dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) const;
-        void dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) const;
-        void dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) const;
-        void dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) const;
+        static void dumpMsgSessionSerial(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void dumpMsgFlags(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void dumpMsgVersion(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void dumpMsgAuditSessionid(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
 
     public:
-        OpCode0513(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode0513();
-
-        virtual void process(void);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

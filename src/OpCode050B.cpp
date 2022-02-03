@@ -23,9 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode050B::OpCode050B(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-
+    void OpCode050B::init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
         if (redoLogRecord->fieldCnt >= 1) {
             uint64_t fieldPos = redoLogRecord->fieldPos;
             uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
@@ -39,11 +37,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    OpCode050B::~OpCode050B() {
-    }
-
-    void OpCode050B::process(void) {
-        OpCode::process();
+    void OpCode050B::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        init(oracleAnalyzer, redoLogRecord);
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
@@ -51,8 +47,8 @@ namespace OpenLogReplicator {
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
         //field: 1
         if (oracleAnalyzer->version < REDO_VERSION_19_0)
-            ktub(fieldPos, fieldLength, false);
+            ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, false);
         else
-            ktub(fieldPos, fieldLength, true);
+            ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, true);
     }
 }

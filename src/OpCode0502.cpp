@@ -23,35 +23,28 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0502::OpCode0502(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-    }
-
-    OpCode0502::~OpCode0502() {
-    }
-
-    void OpCode0502::process(void) {
-        OpCode::process();
+    void OpCode0502::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050201);
         //field: 1
-        ktudh(fieldPos, fieldLength);
+        ktudh(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
             //field: 2
             if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202)) {
                 if (fieldLength == 4) {
                     //field: 2
-                    pdb(fieldPos, fieldLength);
+                    pdb(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
                 } else {
-                    kteop(fieldPos, fieldLength);
+                    kteop(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
                     //field: 3
                     if (oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
-                        pdb(fieldPos, fieldLength);
+                        pdb(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
                     }
                 }
             }
@@ -60,7 +53,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0502::kteop(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0502::kteop(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 36) {
             WARNING("too short field kteop: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -90,7 +83,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0502::ktudh(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0502::ktudh(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 32) {
             WARNING("too short field ktudh: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -129,7 +122,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0502::pdb(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0502::pdb(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 4) {
             WARNING("too short field pdb: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;

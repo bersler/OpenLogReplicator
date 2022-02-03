@@ -23,18 +23,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPCODE0504_H_
 
 namespace OpenLogReplicator {
-    class RedoLogRecord;
-
     class OpCode0504: public OpCode {
     protected:
-        void ktucm(uint64_t fieldPos, uint64_t fieldLength);
-        void ktucf(uint64_t fieldPos, uint64_t fieldLength);
+        static void ktucm(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void ktucf(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
 
     public:
-        OpCode0504(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode0504();
-
-        virtual void process(void);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

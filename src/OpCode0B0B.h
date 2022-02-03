@@ -23,14 +23,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPCODE0B0B_H_
 
 namespace OpenLogReplicator {
-    class RedoLogRecord;
-
     class OpCode0B0B: public OpCode {
     public:
-        OpCode0B0B(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode0B0B();
-
-        virtual void process(void);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

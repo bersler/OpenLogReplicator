@@ -26,10 +26,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class TransactionChunk;
-    class OpCode;
-    class OpCode0501;
-    class OpCode0502;
-    class OpCode0504;
     class RedoLogRecord;
     class OracleAnalyzer;
 
@@ -56,7 +52,6 @@ namespace OpenLogReplicator {
         bool lastSplit;
         std::string name;
         uint64_t size;
-        OpCode0501* opCode0501;
 
         Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid);
         virtual ~Transaction();

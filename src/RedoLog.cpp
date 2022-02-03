@@ -49,7 +49,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, std::string& path) :
         oracleAnalyzer(oracleAnalyzer),
-        opCode(nullptr),
         vectorCur(-1),
         vectorPrev(-1),
         lwnConfirmedBlock(2),
@@ -80,11 +79,6 @@ namespace OpenLogReplicator {
     RedoLog::~RedoLog() {
         while (lwnAllocated > 0)
             oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
-
-        if (opCode != nullptr) {
-            delete opCode;
-            opCode = nullptr;
-        }
     }
 
     void RedoLog::printHeaderInfo(void) const {
@@ -268,10 +262,6 @@ namespace OpenLogReplicator {
         uint8_t* data = ((uint8_t*) lwnMember) + sizeof(struct LwnMember);
 
         TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
-        if (opCode != nullptr) {
-            delete opCode;
-            opCode = nullptr;
-        }
         vectorPrev = -1;
         vectorCur = -1;
 
@@ -450,148 +440,83 @@ namespace OpenLogReplicator {
 
             offset += redoLogRecord[vectorCur].length;
 
-            if (opCode != nullptr) {
-                delete opCode;
-                opCode = nullptr;
-            }
             switch (redoLogRecord[vectorCur].opCode) {
             case 0x0501: //Undo
-                opCode = new OpCode0501(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: OP 5.1)");
-                }
+                OpCode0501::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0502: //Begin transaction
-                opCode = new OpCode0502(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0502) << " bytes memory (for: OP 5.2)");
-                }
+                OpCode0502::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0504: //Commit/rollback transaction
-                opCode = new OpCode0504(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0504) << " bytes memory (for: OP 5.4)");
-                }
+                OpCode0504::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0506: //Partial rollback
-                opCode = new OpCode0506(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0506) << " bytes memory (for: OP 5.6)");
-                }
+                OpCode0506::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x050B:
-                opCode = new OpCode050B(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode050B) << " bytes memory (for: OP 5.11)");
-                }
+                OpCode050B::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0513: //Session information
-                opCode = new OpCode0513(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0513) << " bytes memory (for: OP 5.19)");
-                }
+                OpCode0513::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0514: //Session information
-                opCode = new OpCode0514(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0514) << " bytes memory (for: OP 5.20)");
-                }
+                OpCode0514::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B02: //REDO: Insert row piece
-                opCode = new OpCode0B02(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B02) << " bytes memory (for: OP 11.2)");
-                }
+                OpCode0B02::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B03: //REDO: Delete row piece
-                opCode = new OpCode0B03(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B03) << " bytes memory (for: OP 11.3)");
-                }
+                OpCode0B03::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B04: //REDO: Lock row piece
-                opCode = new OpCode0B04(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B04) << " bytes memory (for: OP 11.4)");
-                }
+                OpCode0B04::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B05: //REDO: Update row piece
-                opCode = new OpCode0B05(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B05) << " bytes memory (for: OP 11.5)");
-                }
+                OpCode0B05::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B06: //REDO: Overwrite row piece
-                opCode = new OpCode0B06(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B06) << " bytes memory (for: OP 11.6)");
-                }
+                OpCode0B06::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B08: //REDO: Change forwarding address
-                opCode = new OpCode0B08(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B08) << " bytes memory (for: OP 11.8)");
-                }
+                OpCode0B08::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B0B: //REDO: Insert multiple rows
-                opCode = new OpCode0B0B(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B0B) << " bytes memory (for: OP 11.11)");
-                }
+                OpCode0B0B::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B0C: //REDO: Delete multiple rows
-                opCode = new OpCode0B0C(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B0C) << " bytes memory (for: OP 11.12)");
-                }
+                OpCode0B0C::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B10: //REDO: Supplemental log for update
-                opCode = new OpCode0B10(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B10) << " bytes memory (for: OP 11.16)");
-                }
+                OpCode0B10::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B16: //REDO: Logminer support - KDOCMP
-                opCode = new OpCode0B16(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0B16) << " bytes memory (for: OP 11.22)");
-                }
+                OpCode0B16::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x1801: //DDL
-                opCode = new OpCode1801(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode1801) << " bytes memory (for: OP 24.1)");
-                }
+                OpCode1801::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
 
             default:
-                opCode = new OpCode(oracleAnalyzer, &redoLogRecord[vectorCur]);
-                if (opCode == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode) << " bytes memory (for: OP)");
-                }
+                OpCode::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
                 break;
             }
-
-            opCode->process();
-            delete opCode;
-            opCode = nullptr;
 
             //pair
             if (vectorPrev != -1 && vectorCur != -1) {

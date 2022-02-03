@@ -186,17 +186,7 @@ namespace OpenLogReplicator {
                 uint16_t flg = oracleAnalyzer->read16(redoLogRecord1->data + fieldPos + 20);
                 flg &= ~(FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL | FLG_LASTBUFFERSPLIT);
                 oracleAnalyzer->write16(redoLogRecord1->data + fieldPos + 20, flg);
-
-                transaction->opCode0501 = new OpCode0501(oracleAnalyzer, redoLogRecord1);
-                if (transaction->opCode0501 == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(OpCode0501) << " bytes memory (for: merge split blocks #3) offset: " << redoLogRecord1->dataOffset);
-                }
-
-                transaction->opCode0501->process();
-                if (transaction->opCode0501 != nullptr) {
-                    delete transaction->opCode0501;
-                    transaction->opCode0501 = nullptr;
-                }
+                OpCode0501::process(oracleAnalyzer, redoLogRecord1);
                 length = redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
             }
 

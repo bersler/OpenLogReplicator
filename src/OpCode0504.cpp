@@ -22,28 +22,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0504::OpCode0504(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-    }
-
-    OpCode0504::~OpCode0504() {
-    }
-
-    void OpCode0504::process(void) {
-        OpCode::process();
+    void OpCode0504::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050401);
         //field: 1
-        ktucm(fieldPos, fieldLength);
+        ktucm(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050402))
             return;
         //field: 2
         if ((redoLogRecord->flg & FLG_KTUCF_OP0504) != 0)
-            ktucf(fieldPos, fieldLength);
+            ktucf(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             oracleAnalyzer->dumpStream << std::endl;
@@ -52,7 +45,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucm(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0504::ktucm(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 20) {
             WARNING("too short field ktucm: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;
@@ -75,7 +68,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0504::ktucf(uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0504::ktucf(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (fieldLength < 16) {
             WARNING("too short field ktucf: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
             return;

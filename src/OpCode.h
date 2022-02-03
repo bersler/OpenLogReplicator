@@ -28,33 +28,26 @@ namespace OpenLogReplicator {
 
     class OpCode {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
-        RedoLogRecord* redoLogRecord;
-
-        void ktbRedo(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCode(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeIRP(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeDRP(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeLKR(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeURP(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeORP(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeCFA(uint64_t fieldPos, uint64_t fieldLength);
-        void kdoOpCodeSKL(uint64_t fieldPos, uint64_t fieldLength);
-        virtual void kdoOpCodeQM(uint64_t fieldPos, uint64_t fieldLength);
-
-        void ktub(uint64_t fieldPos, uint64_t fieldLength, bool isKtubl);
-        void dumpCompressed(uint8_t* data, uint16_t fieldLength) const;
-        void dumpCols(uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull) const;
-        void dumpColsVector(uint8_t* data, uint64_t colnum, uint16_t fieldLength) const;
-        void dumpRows(uint8_t* data) const;
-        void dumpVal(uint64_t fieldPos, uint64_t fieldLength, const char* msg) const;
-        void processFbFlags(uint8_t fb, char* fbStr) const;
+        static void ktbRedo(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCode(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeIRP(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeDRP(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeLKR(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeURP(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeORP(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeCFA(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeSKL(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdoOpCodeQM(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void ktub(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength, bool isKtubl);
+        static void dumpCols(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
+        static void dumpColsVector(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum, uint16_t fieldLength);
+        static void dumpCompressed(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint8_t* data, uint16_t fieldLength);
+        static void dumpRows(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint8_t* data);
+        static void dumpVal(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength, const char* msg);
+        static void processFbFlags(uint8_t fb, char* fbStr);
 
     public:
-        OpCode(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode();
-
-        virtual void process(void);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

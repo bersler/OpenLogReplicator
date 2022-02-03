@@ -23,90 +23,83 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode0513::OpCode0513(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord) {
-    }
-
-    OpCode0513::~OpCode0513() {
-    }
-
-    void OpCode0513::process(void) {
-        OpCode::process();
+    void OpCode0513::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051301);
         //field: 1
-        dumpMsgSessionSerial(fieldPos, fieldLength);
+        dumpMsgSessionSerial(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051302))
             return;
         //field: 2
-        dumpVal(fieldPos, fieldLength, "current username = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "current username = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051303))
             return;
         //field: 3
-        dumpVal(fieldPos, fieldLength, "login   username = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "login   username = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051304))
             return;
         //field: 4
-        dumpVal(fieldPos, fieldLength, "client info      = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "client info      = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051305))
             return;
         //field: 5
-        dumpVal(fieldPos, fieldLength, "OS username      = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "OS username      = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051306))
             return;
         //field: 6
-        dumpVal(fieldPos, fieldLength, "Machine name     = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "Machine name     = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051307))
             return;
         //field: 7
-        dumpVal(fieldPos, fieldLength, "OS terminal      = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "OS terminal      = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051308))
             return;
         //field: 8
-        dumpVal(fieldPos, fieldLength, "OS process id    = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "OS process id    = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051309))
             return;
         //field: 9
-        dumpVal(fieldPos, fieldLength, "OS program name  = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "OS program name  = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130A))
             return;
         //field: 10
-        dumpVal(fieldPos, fieldLength, "transaction name = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "transaction name = ");
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130B))
             return;
         //field: 11
-        dumpMsgFlags(fieldPos, fieldLength);
+        dumpMsgFlags(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130C))
             return;
         //field: 12
-        dumpMsgVersion(fieldPos, fieldLength);
+        dumpMsgVersion(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130D))
             return;
         //field: 13
-        dumpMsgAuditSessionid(fieldPos, fieldLength);
+        dumpMsgAuditSessionid(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
 
         if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130E))
             return;
         //field: 14
-        dumpVal(fieldPos, fieldLength, "Client Id  = ");
+        dumpVal(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, "Client Id  = ");
     }
 
-    void OpCode0513::dumpMsgFlags(uint64_t fieldPos, uint64_t fieldLength) const {
+    void OpCode0513::dumpMsgFlags(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         uint16_t flags = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
         if ((flags & 0x0001) != 0) oracleAnalyzer->dumpStream << "DDL transaction" << std::endl;
         if ((flags & 0x0002) != 0) oracleAnalyzer->dumpStream << "Space Management transaction" << std::endl;
@@ -142,7 +135,7 @@ namespace OpenLogReplicator {
         if ((flags2 & 0x0008) != 0) oracleAnalyzer->dumpStream << "SEQ$ update transaction" << std::endl;
     }
 
-    void OpCode0513::dumpMsgSessionSerial(uint64_t fieldPos, uint64_t fieldLength) const {
+    void OpCode0513::dumpMsgSessionSerial(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             if (fieldLength < 4) {
                 WARNING("too short session number: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
@@ -167,14 +160,14 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0513::dumpMsgVersion(uint64_t fieldPos, uint64_t fieldLength) const {
+    void OpCode0513::dumpMsgVersion(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t version = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
             oracleAnalyzer->dumpStream << "version " << std::dec << version << std::endl;
         }
     }
 
-    void OpCode0513::dumpMsgAuditSessionid(uint64_t fieldPos, uint64_t fieldLength) const {
+    void OpCode0513::dumpMsgAuditSessionid(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint32_t auditSessionid = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
             oracleAnalyzer->dumpStream << "audit sessionid " << auditSessionid << std::endl;

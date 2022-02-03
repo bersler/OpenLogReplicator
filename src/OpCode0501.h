@@ -23,21 +23,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define OPCODE0501_H_
 
 namespace OpenLogReplicator {
-    class RedoLogRecord;
-
     class OpCode0501: public OpCode {
     protected:
-        void ktudb(uint64_t fieldPos, uint64_t fieldLength);
-        void kteoputrn(uint64_t fieldPos, uint64_t fieldLength);
-        void kdilk(uint64_t fieldPos, uint64_t fieldLength);
-        void rowDeps(uint64_t fieldPos, uint64_t fieldLength);
-        void suppLog(typeFIELD &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
+        static void ktudb(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kteoputrn(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void kdilk(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void rowDeps(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
+        static void suppLog(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, typeFIELD &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
 
     public:
-        OpCode0501(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        virtual ~OpCode0501();
-
-        virtual void process(void);
+        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
     };
 }
 

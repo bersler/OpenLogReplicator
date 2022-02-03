@@ -22,17 +22,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    OpCode1801::OpCode1801(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) :
-        OpCode(oracleAnalyzer, redoLogRecord),
-        validDDL(false),
-        type(0) {
-    }
+    void OpCode1801::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+        bool validDDL = false;
+        uint16_t type = 0;
 
-    OpCode1801::~OpCode1801() {
-    }
-
-    void OpCode1801::process(void) {
-        OpCode::process();
+        OpCode::process(oracleAnalyzer, redoLogRecord);
         uint64_t fieldPos = 0;
         typeFIELD fieldNum = 0;
         uint16_t fieldLength = 0;
