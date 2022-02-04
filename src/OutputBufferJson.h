@@ -29,16 +29,16 @@ namespace OpenLogReplicator {
         bool hasPreviousValue;
         bool hasPreviousRedo;
         bool hasPreviousColumn;
-        virtual void columnNull(OracleObject* object, typeCOL col);
+        void columnNull(OracleObject* object, typeCOL col);
         virtual void columnFloat(std::string& columnName, float value);
         virtual void columnDouble(std::string& columnName, double value);
         virtual void columnString(std::string& columnName);
         virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale);
         virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length);
         virtual void columnTimestamp(std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz);
-        virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
-        virtual void appendHeader(bool first, bool showXid);
-        virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
+        void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
+        void appendHeader(bool first, bool showXid);
+        void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
 
         void appendHex(uint64_t value, uint64_t length) {
             uint64_t j = (length - 1) * 4;
@@ -108,22 +108,17 @@ namespace OpenLogReplicator {
         void appendEscape(const char* str, uint64_t length) {
             while (length > 0) {
                 if (*str == '\t') {
-                    outputBufferAppend('\\');
-                    outputBufferAppend('t');
+                    outputBufferAppend("\\t", sizeof("\\t") - 1);
                 } else if (*str == '\r') {
-                    outputBufferAppend('\\');
-                    outputBufferAppend('r');
+                    outputBufferAppend("\\r", sizeof("\\r") - 1);
                 } else if (*str == '\n') {
-                    outputBufferAppend('\\');
-                    outputBufferAppend('n');
+                    outputBufferAppend("\\n", sizeof("\\n") - 1);
                 } else if (*str == '\f') {
-                    outputBufferAppend('\\');
-                    outputBufferAppend('f');
+                    outputBufferAppend("\\f", sizeof("\\f") - 1);
                 } else if (*str == '\b') {
-                    outputBufferAppend('\\');
-                    outputBufferAppend('b');
+                    outputBufferAppend("\\b", sizeof("\\b") - 1);
                 } else if (*str == 0) {
-                    outputBufferAppend("\\u0000");
+                    outputBufferAppend("\\u0000", sizeof("\\u0000") - 1);
                 } else {
                     if (*str == '"' || *str == '\\' || *str == '/')
                         outputBufferAppend('\\');
@@ -135,7 +130,7 @@ namespace OpenLogReplicator {
         }
 
         void appendAfter(OracleObject* object) {
-            outputBufferAppend(",\"after\":{");
+            outputBufferAppend(",\"after\":{", sizeof(",\"after\":{") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {
@@ -170,7 +165,7 @@ namespace OpenLogReplicator {
         }
 
         void appendBefore(OracleObject* object) {
-            outputBufferAppend(",\"before\":{");
+            outputBufferAppend(",\"before\":{", sizeof(",\"before\":{") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {

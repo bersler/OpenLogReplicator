@@ -185,6 +185,10 @@ namespace OpenLogReplicator {
                 outputBufferRotate(copy);
         };
 
+        void outputBufferShiftFast(uint64_t bytes, bool copy) {
+            lastBuffer->length += bytes;
+        };
+
         void outputBufferBegin(typeOBJ obj) {
             messageLength = 0;
             transactionType = 0;
@@ -232,8 +236,14 @@ namespace OpenLogReplicator {
         };
 
         void outputBufferAppend(const char* str, uint64_t length) {
-            for (uint64_t i = 0; i < length; ++i)
-                outputBufferAppend(*str++);
+            if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(lastBuffer->data + lastBuffer->length, str, length);
+                lastBuffer->length += length;
+                messageLength += length;
+            } else {
+                for (uint64_t i = 0; i < length; ++i)
+                    outputBufferAppend(*str++);
+            }
         };
 
         void outputBufferAppend(const char* str) {
@@ -245,10 +255,16 @@ namespace OpenLogReplicator {
         };
 
         void outputBufferAppend(std::string& str) {
-            const char* charstr = str.c_str();
             uint64_t length = str.length();
-            for (uint64_t i = 0; i < length; ++i)
-                outputBufferAppend(*charstr++);
+            if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(lastBuffer->data + lastBuffer->length, str.c_str(), length);
+                lastBuffer->length += length;
+                messageLength += length;
+            } else {
+                const char* charstr = str.c_str();
+                for (uint64_t i = 0; i < length; ++i)
+                    outputBufferAppend(*charstr++);
+            }
         };
 
         void columnUnknown(std::string& columnName, const uint8_t* data, uint64_t length) {
@@ -264,9 +280,6 @@ namespace OpenLogReplicator {
         };
 
         void valueBufferAppend(uint8_t value) {
-            if (valueLength >= MAX_FIELD_LENGTH) {
-                RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
-            }
             valueBuffer[valueLength++] = value;
         };
 
@@ -283,6 +296,9 @@ namespace OpenLogReplicator {
 
         void parseNumber(const uint8_t* data, uint64_t length) {
             valueLength = 0;
+            if (length * 2 + 2 >= MAX_FIELD_LENGTH) {
+                RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
+            }
 
             uint8_t digits = data[0];
             //just zero
@@ -470,16 +486,12 @@ namespace OpenLogReplicator {
             }
         };
 
-        virtual void columnNull(OracleObject* object, typeCOL col) = 0;
         virtual void columnFloat(std::string& columnName, float value) = 0;
         virtual void columnDouble(std::string& columnName, double value) = 0;
         virtual void columnString(std::string& columnName) = 0;
         virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) = 0;
         virtual void columnTimestamp(std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
-        virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) = 0;
-        virtual void appendHeader(bool first, bool showXid) = 0;
-        virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj) = 0;
         virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
         virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
         virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;

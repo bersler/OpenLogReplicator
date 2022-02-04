@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
             std::string columnName("COL_" + std::to_string(col));
             outputBufferAppend(columnName);
         }
-        outputBufferAppend("\":null");
+        outputBufferAppend("\":null", sizeof("\":null") - 1);
     }
 
     void OutputBufferJson::columnFloat(std::string& columnName, float value) {
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":");
+        outputBufferAppend("\":", sizeof("\":") - 1);
 
         std::string valString(std::to_string(value));
         outputBufferAppend(valString);
@@ -101,7 +101,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":");
+        outputBufferAppend("\":", sizeof("\":") - 1);
 
         std::string valString(std::to_string(value));
         outputBufferAppend(valString);
@@ -115,7 +115,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":\"");
+        outputBufferAppend("\":\"", sizeof("\":\"") - 1);
         appendEscape(valueBuffer, valueLength);
         outputBufferAppend('"');
     }
@@ -128,7 +128,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":");
+        outputBufferAppend("\":", sizeof("\":") - 1);
         outputBufferAppend(valueBuffer, valueLength);
     }
 
@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":\"");
+        outputBufferAppend("\":\"", sizeof("\":\"") - 1);
         for (uint64_t j = 0; j < length; ++j)
             appendHex(*(data + j), 2);
         outputBufferAppend('"');
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
 
         outputBufferAppend('"');
         outputBufferAppend(columnName);
-        outputBufferAppend("\":");
+        outputBufferAppend("\":", sizeof("\":") - 1);
 
         if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
             //2012-04-23T18:25:43.511Z - ISO 8601 format
@@ -163,7 +163,7 @@ namespace OpenLogReplicator {
                 appendDec((uint64_t)epochTime.tm_year);
             } else {
                 appendDec((uint64_t)(-epochTime.tm_year));
-                outputBufferAppend("BC");
+                outputBufferAppend("BC", sizeof("BC") - 1);
             }
             outputBufferAppend('-');
             appendDec(epochTime.tm_mon, 2);
@@ -199,7 +199,7 @@ namespace OpenLogReplicator {
 
     void OutputBufferJson::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
         if ((messageFormat & MESSAGE_FORMAT_ADD_SEQUENCES) != 0) {
-            outputBufferAppend(",\"num\":");
+            outputBufferAppend(",\"num\":", sizeof(",\"num\":") - 1);
             appendDec(num);
         }
 
@@ -209,8 +209,8 @@ namespace OpenLogReplicator {
         RowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        outputBufferAppend(",\"rid\":\"");
-        outputBufferAppend(str);
+        outputBufferAppend(",\"rid\":\"", sizeof(",\"rid\":\"") - 1);
+        outputBufferAppend(str, 18);
         outputBufferAppend('"');
     }
 
@@ -222,11 +222,11 @@ namespace OpenLogReplicator {
                 hasPreviousValue = true;
 
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
-                outputBufferAppend("\"scns\":\"0x");
+                outputBufferAppend("\"scns\":\"0x", sizeof("\"scns\":\"0x") - 1);
                 appendHex(lastScn, 16);
                 outputBufferAppend('"');
             } else {
-                outputBufferAppend("\"scn\":");
+                outputBufferAppend("\"scn\":", sizeof("\"scn\":") - 1);
                 appendDec(lastScn);
             }
         }
@@ -238,13 +238,13 @@ namespace OpenLogReplicator {
                 hasPreviousValue = true;
 
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-                outputBufferAppend("\"tms\":\"");
+                outputBufferAppend("\"tms\":\"", sizeof("\"tms\":\"") - 1);
                 char iso[21];
                 lastTime.toISO8601(iso);
-                outputBufferAppend(iso);
+                outputBufferAppend(iso, 20);
                 outputBufferAppend('"');
             } else {
-                outputBufferAppend("\"tm\":");
+                outputBufferAppend("\"tm\":", sizeof("\"tm\":") - 1);
                 appendDec(lastTime.toTime() * 1000);
             }
         }
@@ -256,7 +256,7 @@ namespace OpenLogReplicator {
                 hasPreviousValue = true;
 
             if (xidFormat == XID_FORMAT_TEXT) {
-                outputBufferAppend("\"xid\":\"");
+                outputBufferAppend("\"xid\":\"", sizeof("\"xid\":\"") - 1);
                 appendDec(USN(lastXid));
                 outputBufferAppend('.');
                 appendDec(SLT(lastXid));
@@ -264,7 +264,7 @@ namespace OpenLogReplicator {
                 appendDec(SQN(lastXid));
                 outputBufferAppend('"');
             } else {
-                outputBufferAppend("\"xidn\":");
+                outputBufferAppend("\"xidn\":", sizeof("\"xidn\":") - 1);
                 appendDec(lastXid);
             }
         }
@@ -272,21 +272,21 @@ namespace OpenLogReplicator {
 
     void OutputBufferJson::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
         if (object == nullptr) {
-            outputBufferAppend("\"schema\":{\"table\":\"");
+            outputBufferAppend("\"schema\":{\"table\":\"", sizeof("\"schema\":{\"table\":\"") - 1);
             std::string objectName("OBJ_" + std::to_string(dataObj));
             outputBufferAppend(objectName);
             outputBufferAppend('"}');
             return;
         }
 
-        outputBufferAppend("\"schema\":{\"owner\":\"");
+        outputBufferAppend("\"schema\":{\"owner\":\"", sizeof("\"schema\":{\"owner\":\"") - 1);
         outputBufferAppend(object->owner);
-        outputBufferAppend("\",\"table\":\"");
+        outputBufferAppend("\",\"table\":\"", sizeof("\",\"table\":\"") - 1);
         outputBufferAppend(object->name);
         outputBufferAppend('"');
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
-            outputBufferAppend(",\"obj\":");
+            outputBufferAppend(",\"obj\":", sizeof(",\"obj\":") - 1);
             appendDec(object->obj);
         }
 
@@ -298,7 +298,7 @@ namespace OpenLogReplicator {
                     objects.insert(object);
             }
 
-            outputBufferAppend(",\"columns\":[");
+            outputBufferAppend(",\"columns\":[", sizeof(",\"columns\":[") - 1);
 
             bool hasPrev = false;
             for (typeCOL column = 0; column < object->columns.size(); ++column) {
@@ -310,107 +310,107 @@ namespace OpenLogReplicator {
                 else
                     hasPrev = true;
 
-                outputBufferAppend("{\"name\":\"");
+                outputBufferAppend("{\"name\":\"", sizeof("{\"name\":\"") - 1);
                 outputBufferAppend(object->columns[column]->name);
 
-                outputBufferAppend("\",\"type\":");
+                outputBufferAppend("\",\"type\":", sizeof("\",\"type\":") - 1);
                 switch(object->columns[column]->typeNo) {
                 case 1: //varchar2(n), nvarchar(n)
-                    outputBufferAppend("\"varchar2\",\"length\":");
+                    outputBufferAppend("\"varchar2\",\"length\":", sizeof("\"varchar2\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 2: //number(p, s), float(p)
-                    outputBufferAppend("\"number\",\"precision\":");
+                    outputBufferAppend("\"number\",\"precision\":", sizeof("\"number\",\"precision\":") - 1);
                     appendSDec(object->columns[column]->precision);
-                    outputBufferAppend(",\"scale\":");
+                    outputBufferAppend(",\"scale\":", sizeof(",\"scale\":") - 1);
                     appendSDec(object->columns[column]->scale);
                     break;
 
                 case 8: //long, not supported
-                    outputBufferAppend("\"long\"");
+                    outputBufferAppend("\"long\"", sizeof("\"long\"") - 1);
                     break;
 
                 case 12: //date
-                    outputBufferAppend("\"date\"");
+                    outputBufferAppend("\"date\"", sizeof("\"date\"") - 1);
                     break;
 
                 case 23: //raw(n)
-                    outputBufferAppend("\"raw\",\"length\":");
+                    outputBufferAppend("\"raw\",\"length\":", sizeof("\"raw\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 24: //long raw, not supported
-                    outputBufferAppend("\"long raw\"");
+                    outputBufferAppend("\"long raw\"", sizeof("\"long raw\"") - 1);
                     break;
 
                 case 69: //rowid, not supported
-                    outputBufferAppend("\"rowid\"");
+                    outputBufferAppend("\"rowid\"", sizeof("\"rowid\"") - 1);
                     break;
 
                 case 96: //char(n), nchar(n)
-                    outputBufferAppend("\"char\",\"length\":");
+                    outputBufferAppend("\"char\",\"length\":", sizeof("\"char\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 100: //binary_float
-                    outputBufferAppend("\"binary_float\"");
+                    outputBufferAppend("\"binary_float\"", sizeof("\"binary_float\"") - 1);
                     break;
 
                 case 101: //binary_double
-                    outputBufferAppend("\"binary_double\"");
+                    outputBufferAppend("\"binary_double\"", sizeof("\"binary_double\"") - 1);
                     break;
 
                 case 112: //clob, nclob, not supported
-                    outputBufferAppend("\"clob\"");
+                    outputBufferAppend("\"clob\"", sizeof("\"clob\"") - 1);
                     break;
 
                 case 113: //blob, not supported
-                    outputBufferAppend("\"blob\"");
+                    outputBufferAppend("\"blob\"", sizeof("\"blob\"") - 1);
                     break;
 
                 case 180: //timestamp(n)
-                    outputBufferAppend("\"timestamp\",\"length\":");
+                    outputBufferAppend("\"timestamp\",\"length\":", sizeof("\"timestamp\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 181: //timestamp with time zone(n)
-                    outputBufferAppend("\"timestamp with time zone\",\"length\":");
+                    outputBufferAppend("\"timestamp with time zone\",\"length\":", sizeof("\"timestamp with time zone\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 182: //interval year to month(n)
-                    outputBufferAppend("\"interval year to month\",\"length\":");
+                    outputBufferAppend("\"interval year to month\",\"length\":", sizeof("\"interval year to month\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 183: //interval day to second(n)
-                    outputBufferAppend("\"interval day to second\",\"length\":");
+                    outputBufferAppend("\"interval day to second\",\"length\":", sizeof("\"interval day to second\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 208: //urawid(n)
-                    outputBufferAppend("\"urawid\",\"length\":");
+                    outputBufferAppend("\"urawid\",\"length\":", sizeof("\"urawid\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 case 231: //timestamp with local time zone(n), not supported
-                    outputBufferAppend("\"timestamp with local time zone\",\"length\":");
+                    outputBufferAppend("\"timestamp with local time zone\",\"length\":", sizeof("\"timestamp with local time zone\",\"length\":") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 default:
-                    outputBufferAppend("\"unknown\"");
+                    outputBufferAppend("\"unknown\"", sizeof("\"unknown\"") - 1);
                     break;
                 }
 
-                outputBufferAppend(",\"nullable\":");
+                outputBufferAppend(",\"nullable\":", sizeof(",\"nullable\":") - 1);
                 if (object->columns[column]->nullable)
                     outputBufferAppend('1');
                 else
                     outputBufferAppend('0');
 
-                outputBufferAppend("}");
+                outputBufferAppend('}');
             }
             outputBufferAppend(']');
         }
@@ -459,9 +459,9 @@ namespace OpenLogReplicator {
             hasPreviousValue = true;
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            outputBufferAppend("\"payload\":[");
+            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
         } else {
-            outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}");
+            outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}", sizeof("\"payload\":[{\"op\":\"begin\"}]}") - 1);
             outputBufferCommit(false);
         }
     }
@@ -474,7 +474,7 @@ namespace OpenLogReplicator {
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            outputBufferAppend("]}");
+            outputBufferAppend("]}", sizeof("]}") - 1);
             outputBufferCommit(true);
         } else
         if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
@@ -489,7 +489,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}");
+            outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}", sizeof("\"payload\":[{\"op\":\"commit\"}]}") - 1);
             outputBufferCommit(true);
         }
         num = 0;
@@ -519,17 +519,17 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[");
+            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"c\",");
+        outputBufferAppend("{\"op\":\"c\",", sizeof("{\"op\":\"c\",") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendAfter(object);
         outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}");
+            outputBufferAppend("]}", sizeof("]}") - 1);
             outputBufferCommit(false);
         }
         ++num;
@@ -559,10 +559,10 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[");
+            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"u\",");
+        outputBufferAppend("{\"op\":\"u\",", sizeof("{\"op\":\"u\",") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(object);
@@ -570,7 +570,7 @@ namespace OpenLogReplicator {
         outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}");
+            outputBufferAppend("]}", sizeof("]}") - 1);
             outputBufferCommit(false);
         }
         ++num;
@@ -600,17 +600,17 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[");
+            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"d\",");
+        outputBufferAppend("{\"op\":\"d\",", sizeof("{\"op\":\"d\",") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(object);
         outputBufferAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}");
+            outputBufferAppend("]}", sizeof("]}") - 1);
             outputBufferCommit(false);
         }
         ++num;
@@ -640,15 +640,15 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[");
+            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"ddl\",\"sql\":\"");
+        outputBufferAppend("{\"op\":\"ddl\",\"sql\":\"", sizeof("{\"op\":\"ddl\",\"sql\":\"") - 1);
         appendEscape(sql, sqlLength);
-        outputBufferAppend("\"}");
+        outputBufferAppend("\"}", sizeof("\"}") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}");
+            outputBufferAppend("]}", sizeof("]}") - 1);
             outputBufferCommit(true);
         }
         ++num;
@@ -668,13 +668,13 @@ namespace OpenLogReplicator {
         else
             hasPreviousValue = true;
 
-        outputBufferAppend("\"payload\":[{\"op\":\"chkpt\",\"seq\":");
+        outputBufferAppend("\"payload\":[{\"op\":\"chkpt\",\"seq\":", sizeof("\"payload\":[{\"op\":\"chkpt\",\"seq\":") - 1);
         appendDec(sequence);
-        outputBufferAppend(",\"offset\":");
+        outputBufferAppend(",\"offset\":", sizeof(",\"offset\":") - 1);
         appendDec(offset);
         if (redo)
-            outputBufferAppend(",\"redo\":true");
-        outputBufferAppend("}]}");
+            outputBufferAppend(",\"redo\":true", sizeof(",\"redo\":true") - 1);
+        outputBufferAppend("}]}", sizeof("}]}") - 1);
         outputBufferCommit(true);
     }
 }

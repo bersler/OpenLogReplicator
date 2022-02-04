@@ -32,16 +32,16 @@ namespace OpenLogReplicator {
         pb::Payload* payloadPB;
         pb::Schema* schemaPB;
 
-        virtual void columnNull(OracleObject* object, typeCOL col);
+        void columnNull(OracleObject* object, typeCOL col);
         virtual void columnFloat(std::string& columnName, float value);
         virtual void columnDouble(std::string& columnName, double value);
         virtual void columnString(std::string& columnName);
         virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale);
         virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length);
         virtual void columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz);
-        virtual void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
-        virtual void appendHeader(bool first, bool showXid);
-        virtual void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
+        void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
+        void appendHeader(bool first, bool showXid);
+        void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
 
         void appendAfter(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {

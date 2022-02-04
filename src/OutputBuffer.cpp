@@ -1833,7 +1833,6 @@ namespace OpenLogReplicator {
                 }
             }
 
-
             if (system) {
                 oracleAnalyzer->systemTransaction->processUpdate(object, dataObj, bdba, slot, redoLogRecord1->xid);
                 if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS) != 0)
