@@ -46,6 +46,12 @@ namespace OpenLogReplicator {
         return false;
     }
 
+    bool SysCCol::operator!=(const SysCCol& other) const {
+        if (other.rowId != rowId || other.con != con || other.intCol != intCol || other.obj != obj || other.spare1 != spare1)
+            return true;
+        return false;
+    }
+
     SysCCol::SysCCol(RowId& rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12, bool touched) :
                 rowId(rowId),
                 con(con),

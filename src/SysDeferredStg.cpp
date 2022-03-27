@@ -28,6 +28,12 @@ namespace OpenLogReplicator {
         flagsStg.set(flagsStg1, flagsStg2);
     }
 
+    bool SysDeferredStg::operator!=(const SysDeferredStg& other) const {
+        if (other.rowId != rowId || other.obj != obj || other.flagsStg != flagsStg)
+            return true;
+        return false;
+    }
+
     bool SysDeferredStg::isCompressed(void) {
         return flagsStg.isSet64(4);
     }

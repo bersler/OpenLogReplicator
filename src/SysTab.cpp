@@ -32,6 +32,13 @@ namespace OpenLogReplicator {
         property.set(property1, property2);
     }
 
+    bool SysTab::operator!=(const SysTab& other) const {
+        if (other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.cluCols != cluCols || other.flags != flags ||
+                other.property != property)
+            return true;
+        return false;
+    }
+
     bool SysTab::isBinary(void) {
         return property.isSet64(1);
     }

@@ -183,6 +183,7 @@ namespace OpenLogReplicator {
                 oracleAnalyzer->freeMemoryChunk("KAFKA", (uint8_t*)tmpFirstBuffer, true);
                 tmpFirstBuffer = nextBuffer;
             }
+
             {
                 std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
                 oracleAnalyzer->memoryCond.notify_all();
@@ -282,7 +283,7 @@ namespace OpenLogReplicator {
                                 curLength += length8;
                                 msg = (OutputBufferMsg*) (curBuffer->data + curLength);
 
-                            //message in many parts - copy
+                            //message in many parts - merge & copy
                             } else {
                                 msg->data = (uint8_t*)malloc(msg->length);
                                 if (msg->data == nullptr) {

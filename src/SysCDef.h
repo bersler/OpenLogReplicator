@@ -38,6 +38,7 @@ namespace OpenLogReplicator {
     class SysCDef {
     public:
         SysCDef(RowId& rowId, typeCON con, typeOBJ obj, typeTYPE type, bool touched);
+        bool operator!=(const SysCDef& other) const;
         bool isPK(void);
         bool isSupplementalLog(void);
         bool isSupplementalLogPK(void);

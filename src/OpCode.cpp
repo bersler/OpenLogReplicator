@@ -457,7 +457,7 @@ namespace OpenLogReplicator {
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
             uint8_t to = redoLogRecord->data[fieldPos + 19];
-            oracleAnalyzer->dumpStream << "tabn: "<< (uint64_t)redoLogRecord->tabn <<
+            oracleAnalyzer->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
                 " slot: " << std::dec << redoLogRecord->slot <<
                 " to: " << std::dec << (uint64_t)to << std::endl;
         }

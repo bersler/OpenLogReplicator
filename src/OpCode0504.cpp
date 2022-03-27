@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
         redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
         if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t srt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 8);  //to check
+            uint16_t srt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 8);  //FIXME
             uint32_t sta = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
 
             oracleAnalyzer->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)SLT(redoLogRecord->xid) <<

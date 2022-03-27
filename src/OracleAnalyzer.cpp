@@ -363,13 +363,13 @@ namespace OpenLogReplicator {
     }
 
     void OracleAnalyzer::write56Big(uint8_t* buf, uint64_t val) {
-        buf[0] = (val >> 48) & 0xFF;
-        buf[1] = (val >> 40) & 0xFF;
-        buf[2] = (val >> 32) & 0xFF;
-        buf[3] = (val >> 24) & 0xFF;
-        buf[4] = (val >> 16) & 0xFF;
-        buf[5] = (val >> 8) & 0xFF;
-        buf[6] = val & 0xFF;
+        buf[0] = (val >> 24) & 0xFF;
+        buf[1] = (val >> 16) & 0xFF;
+        buf[2] = (val >> 8) & 0xFF;
+        buf[3] = val & 0xFF;
+        buf[4] = (val >> 40) & 0xFF;
+        buf[5] = (val >> 32) & 0xFF;
+        buf[6] = (val >> 48) & 0xFF;
     }
 
     void OracleAnalyzer::write64Little(uint8_t* buf, uint64_t val) {
@@ -408,7 +408,7 @@ namespace OpenLogReplicator {
             buf[2] = (val >> 16) & 0xFF;
             buf[3] = (val >> 24) & 0xFF;
             buf[4] = (val >> 48) & 0xFF;
-            buf[5] = ((val >> 56) & 0xFF) | 0x80;
+            buf[5] = ((val >> 56) & 0x7F) | 0x80;
             buf[6] = (val >> 32) & 0xFF;
             buf[7] = (val >> 40) & 0xFF;
         }
@@ -416,21 +416,21 @@ namespace OpenLogReplicator {
 
     void OracleAnalyzer::writeSCNBig(uint8_t* buf, typeSCN val) {
         if (val < 0x800000000000) {
-            buf[5] = val & 0xFF;
-            buf[4] = (val >> 8) & 0xFF;
-            buf[3] = (val >> 16) & 0xFF;
-            buf[2] = (val >> 24) & 0xFF;
-            buf[1] = (val >> 32) & 0xFF;
-            buf[0] = (val >> 40) & 0xFF;
+            buf[0] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 8) & 0xFF;
+            buf[3] = val & 0xFF;
+            buf[4] = (val >> 40) & 0xFF;
+            buf[5] = (val >> 32) & 0xFF;
         } else {
-            buf[5] = val & 0xFF;
-            buf[4] = (val >> 8) & 0xFF;
-            buf[3] = (val >> 16) & 0xFF;
-            buf[2] = (val >> 24) & 0xFF;
-            buf[1] = (val >> 48) & 0xFF;
-            buf[0] = ((val >> 56) & 0xFF) | 0x80;
-            buf[7] = (val >> 32) & 0xFF;
+            buf[0] = (val >> 24) & 0xFF;
+            buf[1] = (val >> 16) & 0xFF;
+            buf[2] = (val >> 8) & 0xFF;
+            buf[3] = val & 0xFF;
+            buf[4] = ((val >> 56) & 0x7F) | 0x80;
+            buf[5] = (val >> 48) & 0xFF;
             buf[6] = (val >> 40) & 0xFF;
+            buf[7] = (val >> 32) & 0xFF;
         }
     }
 

@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
             segCol(segCol) {
     }
 
-
     bool SysColSeg::operator<(const SysColSeg& other) const {
         if (other.obj > obj)
             return true;
@@ -48,7 +47,6 @@ namespace OpenLogReplicator {
             obj(obj),
             intCol(intCol) {
     }
-
 
     bool SysColKey::operator<(const SysColKey& other) const {
         if (other.obj > obj)
@@ -77,6 +75,14 @@ namespace OpenLogReplicator {
             touched(touched),
             saved(false) {
         property.set(property1, property2);
+    }
+
+    bool SysCol::operator!=(const SysCol& other) const {
+        if (other.rowId != rowId || other.obj != obj || other.col != col || other.segCol != segCol || other.segCol != segCol || other.name.compare(name) != 0 ||
+                other.type != type || other.length != length || other.precision != precision || other.scale != scale || other.charsetForm != charsetForm ||
+                other.charsetId != charsetId || other.null_ != null_ || other.property != property)
+            return true;
+        return false;
     }
 
     bool SysCol::isInvisible(void) {

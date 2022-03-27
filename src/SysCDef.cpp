@@ -47,6 +47,12 @@ namespace OpenLogReplicator {
             saved(false) {
     }
 
+    bool SysCDef::operator!=(const SysCDef& other) const {
+        if (other.rowId != rowId || other.con != con || other.obj != obj || other.type != type)
+            return true;
+        return false;
+    }
+
     bool SysCDef::isPK(void) {
         return (type == 2);
     }

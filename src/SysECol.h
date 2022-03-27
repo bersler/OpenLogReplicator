@@ -39,6 +39,7 @@ namespace OpenLogReplicator {
     class SysECol {
     public:
         SysECol(RowId& rowId, typeOBJ tabObj, typeCOL colNum, typeCOL guardId, bool touched);
+        bool operator!=(const SysECol& other) const;
 
         RowId rowId;
         typeOBJ tabObj;

@@ -46,4 +46,10 @@ namespace OpenLogReplicator {
             touched(touched),
             saved(false) {
     }
+
+    bool SysTabSubPart::operator!=(const SysTabSubPart& other) const {
+        if (other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.pObj != pObj)
+            return true;
+        return false;
+    }
 }

@@ -28,6 +28,7 @@ namespace OpenLogReplicator {
     class SysDeferredStg {
     public:
         SysDeferredStg(RowId& rowId, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched);
+        bool operator!=(const SysDeferredStg& other) const;
         bool isCompressed(void);
 
         RowId rowId;

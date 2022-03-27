@@ -329,7 +329,7 @@ namespace OpenLogReplicator {
 
         if (version != oracleAnalyzer->version) {
             ERROR("invalid database version (found: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn <<
-                    ", expected: 0x" << std::setfill('0') << std::setw(8) << std::hex << version << "): " << fileName);
+                    ", expected: 0x" << std::setfill('0') << std::setw(8) << std::hex << oracleAnalyzer->version << "): " << fileName);
             return REDO_ERROR_BAD_DATA;
         }
 

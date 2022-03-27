@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
             obj(obj) {
     }
 
-
     bool SysTabComPartKey::operator<(const SysTabComPartKey& other) const {
         if (other.bo > bo)
             return true;
@@ -46,5 +45,11 @@ namespace OpenLogReplicator {
             bo(bo),
             touched(touched),
             saved(false) {
+    }
+
+    bool SysTabComPart::operator!=(const SysTabComPart& other) const {
+        if (other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.bo != bo)
+            return true;
+        return false;
     }
 }

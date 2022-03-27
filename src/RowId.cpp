@@ -60,7 +60,7 @@ namespace OpenLogReplicator {
 
         dba = (((typeDBA)map64R[rowid[9]]) << 30) |
                 (((typeDBA)map64R[rowid[10]]) << 24) |
-                (((typeDBA)map64R[rowid[1]]) << 18) |
+                (((typeDBA)map64R[rowid[11]]) << 18) |
                 (((typeDBA)map64R[rowid[12]]) << 12) |
                 (((typeDBA)map64R[rowid[13]]) << 6) |
                 ((typeDBA)map64R[rowid[14]]) |

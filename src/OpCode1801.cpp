@@ -1,4 +1,4 @@
-/* Oracle Redo OpCode: 18.1
+/* Oracle Redo OpCode: 24.1
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -33,6 +33,10 @@ namespace OpenLogReplicator {
 
         oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180101);
         //field: 1
+        if (fieldLength < 18) {
+            WARNING("too short field for 24.1: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            return;
+        }
         redoLogRecord->xid = XID(oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4),
                 oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 6),
                 oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 8));

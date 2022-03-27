@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
             colNum(colNum) {
     }
 
-
     bool SysEColKey::operator==(const SysEColKey& other) const {
         return (other.tabObj == tabObj) &&
                 (other.colNum == colNum);
@@ -48,6 +47,12 @@ namespace OpenLogReplicator {
             guardId(guardId),
             touched(touched),
             saved(false) {
+    }
+
+    bool SysECol::operator!=(const SysECol& other) const {
+        if (other.rowId != rowId || other.tabObj != tabObj || other.colNum != colNum || other.guardId != guardId)
+            return true;
+        return false;
     }
 }
 

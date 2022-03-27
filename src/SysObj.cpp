@@ -34,6 +34,13 @@ namespace OpenLogReplicator {
         flags.set(flags1, flags2);
     }
 
+    bool SysObj::operator!=(const SysObj& other) const {
+        if (other.rowId != rowId || other.owner != owner || other.obj != obj || other.dataObj != dataObj || other.type != type || other.name.compare(name) != 0 ||
+                other.flags != flags)
+            return true;
+        return false;
+    }
+
     bool SysObj::isTable(void) {
         return (type == SYSOBJ_TYPE_TABLE);
     }

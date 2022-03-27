@@ -29,6 +29,7 @@ namespace OpenLogReplicator {
     public:
         SysTab(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1,
                 uint64_t property2, bool touched);
+        bool operator!=(const SysTab& other) const;
         bool isBinary(void);
         bool isClustered(void);
         bool isIot(void);

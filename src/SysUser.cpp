@@ -30,6 +30,12 @@ namespace OpenLogReplicator {
         spare1.set(spare11, spare12);
     }
 
+    bool SysUser::operator!=(const SysUser& other) const {
+        if (other.rowId != rowId || other.user != user || other.name.compare(name) != 0 || other.spare1 != spare1)
+            return true;
+        return false;
+    }
+
     bool SysUser::isSuppLogPrimary(void) {
         return spare1.isSet64(1);
     }
