@@ -1,4 +1,4 @@
-/* Header of config.h
+/* Class for encapsulation information about redo log file
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,21 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include "RedoLog.h"
 
-#define OpenLogReplicator_VERSION_MAJOR @OpenLogReplicator_VERSION_MAJOR@
-#define OpenLogReplicator_VERSION_MINOR @OpenLogReplicator_VERSION_MINOR@
-#define OpenLogReplicator_VERSION_PATCH @OpenLogReplicator_VERSION_PATCH@
+namespace OpenLogReplicator {
+    RedoLog::RedoLog(int64_t group, const char* path) :
+            group(group),
+            path(path) {
+    }
 
-#endif
+    bool RedoLog::operator<(const RedoLog& other) const {
+        if (group < other.group)
+            return true;
+        if (other.group == group) {
+            if (path < other.path)
+                return true;
+        }
+        return false;
+    }
+}

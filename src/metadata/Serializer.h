@@ -1,4 +1,4 @@
-/* Header of config.h
+/* Header for Serializer class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,26 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <set>
 
-#define OpenLogReplicator_VERSION_MAJOR @OpenLogReplicator_VERSION_MAJOR@
-#define OpenLogReplicator_VERSION_MINOR @OpenLogReplicator_VERSION_MINOR@
-#define OpenLogReplicator_VERSION_PATCH @OpenLogReplicator_VERSION_PATCH@
+#include "../common/types.h"
+
+#ifndef SERIALIZER_H_
+#define SERIALIZER_H_
+
+namespace OpenLogReplicator {
+    class Metadata;
+
+    class Serializer {
+    public:
+        Serializer();
+
+        [[nodiscard]] virtual bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs,
+                                               bool loadMetadata, bool storeSchema) = 0;
+        virtual void serialize(Metadata* metadata, std::stringstream &ss, bool noSchema) = 0;
+    };
+}
 
 #endif

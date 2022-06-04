@@ -1,4 +1,4 @@
-/* Header for StateRedis class
+/* Header for RedoLog class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,28 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <hiredis.h>
+#include <string>
 
-#include "State.h"
+#include "../common/types.h"
 
-#ifndef STATEREDIS_H_
-#define STATEREDIS_H_
+#ifndef REDOLOG_H_
+#define REDOLOG_H_
 
 namespace OpenLogReplicator {
-    class StateRedis : public State {
-    protected:
-        std::string server;
-        uint16_t port;
-        redisContext *c;
-
+    class RedoLog {
     public:
-        StateRedis(const char* server, uint16_t port);
-        virtual ~StateRedis();
+        int64_t group;
+        std::string path;
 
-        virtual void list(std::set<std::string>& namesList);
-        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail);
-        virtual void write(std::string& name, std::stringstream& out);
-        virtual void drop(std::string& name);
+        RedoLog(int64_t group, const char* path);
+
+        bool operator<(const RedoLog& other) const;
     };
 }
 

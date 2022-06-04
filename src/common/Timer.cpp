@@ -1,4 +1,4 @@
-/* Header of config.h
+/* Base class for timer
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,12 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include "Timer.h"
 
-#define OpenLogReplicator_VERSION_MAJOR @OpenLogReplicator_VERSION_MAJOR@
-#define OpenLogReplicator_VERSION_MINOR @OpenLogReplicator_VERSION_MINOR@
-#define OpenLogReplicator_VERSION_PATCH @OpenLogReplicator_VERSION_PATCH@
-
-#endif
+namespace OpenLogReplicator {
+    time_t Timer::getTime() {
+        struct timeval tv = {0, 0};
+        gettimeofday(&tv, nullptr);
+        return (1000000 * tv.tv_sec) + tv.tv_usec;
+    }
+}

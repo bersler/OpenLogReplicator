@@ -1,4 +1,4 @@
-/* Header of config.h
+/* Header for Locales class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,11 +17,26 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#include <unordered_map>
 
-#define OpenLogReplicator_VERSION_MAJOR @OpenLogReplicator_VERSION_MAJOR@
-#define OpenLogReplicator_VERSION_MINOR @OpenLogReplicator_VERSION_MINOR@
-#define OpenLogReplicator_VERSION_PATCH @OpenLogReplicator_VERSION_PATCH@
+#include "../common/types.h"
+
+#ifndef LOCALES_H_
+#define LOCALES_H_
+
+namespace OpenLogReplicator {
+    class CharacterSet;
+
+    class Locales {
+    public:
+        std::unordered_map<uint64_t, CharacterSet*> characterMap;
+        std::unordered_map<uint16_t, const char*> timeZoneMap;
+
+        Locales();
+        ~Locales();
+
+        void initialize();
+    };
+}
 
 #endif
