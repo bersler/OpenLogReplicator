@@ -17,39 +17,38 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode0B0B.h"
-#include "OracleAnalyzer.h"
-#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B0B::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
-        OpCode::process(oracleAnalyzer, redoLogRecord);
+    void OpCode0B0B::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+        OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
-        typeFIELD fieldNum = 0;
+        typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B01);
         //field: 1
-        ktbRedo(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B02))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B02))
             return;
         //field: 2
-        kdoOpCode(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B03))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B03))
             return;
         //field: 3
         redoLogRecord->rowLenghsDelta = fieldPos;
         if (fieldLength < redoLogRecord->nrow * 2) {
-            WARNING("field length list length too short: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            WARNING("field length list length too short: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B04))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B04))
             return;
         //field: 4
         redoLogRecord->rowData = fieldNum;
-        dumpRows(oracleAnalyzer, redoLogRecord, redoLogRecord->data + fieldPos);
+        dumpRows(ctx, redoLogRecord, redoLogRecord->data + fieldPos);
     }
 }

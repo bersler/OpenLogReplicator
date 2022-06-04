@@ -17,57 +17,48 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "Thread.h"
+#include "../common/Thread.h"
 
 #ifndef WRITER_H_
 #define WRITER_H_
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
-    class OutputBuffer;
-    struct OutputBufferMsg;
-    class RedoLogRecord;
+    class Builder;
+    struct BuilderMsg;
+    class Metadata;
 
     class Writer : public Thread {
     protected:
-        OutputBuffer* outputBuffer;
+        std::string database;
+        Builder* builder;
+        Metadata* metadata;
+        typeScn checkpointScn;
+        time_t checkpointTime;
+        typeScn confirmedScn;
         uint64_t confirmedMessages;
         uint64_t sentMessages;
-        uint64_t pollIntervalUs;
-        time_t previousCheckpoint;
-        uint64_t checkpointIntervalS;
-        uint64_t queueSize;
         uint64_t tmpQueueSize;
         uint64_t maxQueueSize;
-        OutputBufferMsg** queue;
-        typeSCN confirmedScn;
-        typeSCN startScn;
-        typeSEQ startSequence;
-        std::string startTime;
-        int64_t startTimeRel;
+        BuilderMsg** queue;
         bool streaming;
 
-        void createMessage(OutputBufferMsg* msg);
-        virtual void sendMessage(OutputBufferMsg* msg) = 0;
-        virtual std::string getName(void) const = 0;
-        virtual void pollQueue(void) = 0;
-        virtual void* run(void);
+        void createMessage(BuilderMsg* msg);
+        virtual void sendMessage(BuilderMsg* msg) = 0;
+        virtual std::string getName() const = 0;
+        virtual void pollQueue() = 0;
+        void run() override;
+        void mainLoop();
         virtual void writeCheckpoint(bool force);
-        virtual void readCheckpoint(void);
-        void startReader(void);
-        void sortQueue(void);
+        virtual void readCheckpoint();
+        void sortQueue();
 
     public:
-        OracleAnalyzer* oracleAnalyzer;
-        uint64_t maxMessageMb;      //maximum message size able to handle by writer
+        Writer(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata);
+        ~Writer() override;
 
-        Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUs,
-                uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
-                int64_t startTimeRel);
-        virtual ~Writer();
-
-        virtual void initialize(void);
-        void confirmMessage(OutputBufferMsg* msg);
+        virtual void initialize();
+        void confirmMessage(BuilderMsg* msg);
+        virtual void wakeUp();
     };
 }
 

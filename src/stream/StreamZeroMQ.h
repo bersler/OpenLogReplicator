@@ -29,17 +29,17 @@ namespace OpenLogReplicator {
         void* context;
 
     public:
-        StreamZeroMQ(const char* uri, uint64_t pollInterval);
-        virtual ~StreamZeroMQ();
+        StreamZeroMQ(Ctx* ctx, const char* uri);
+        ~StreamZeroMQ() override;
 
-        virtual void initialize(void);
-        virtual std::string getName(void) const;
-        virtual void initializeClient(std::atomic<bool>* shutdown);
-        virtual void initializeServer(std::atomic<bool>* shutdown);
-        virtual void sendMessage(const void* msg, uint64_t length);
-        virtual uint64_t receiveMessage(void* msg, uint64_t length);
-        virtual uint64_t receiveMessageNB(void* msg, uint64_t length);
-        virtual bool connected(void);
+        void initialize() override;
+        [[nodiscard]] std::string getName() const override;
+        void initializeClient() override;
+        void initializeServer() override;
+        void sendMessage(const void* msg, uint64_t length) override;
+        uint64_t receiveMessage(void* msg, uint64_t length) override;
+        uint64_t receiveMessageNB(void* msg, uint64_t length) override;
+        [[nodiscard]] bool isConnected() override;
     };
 }
 

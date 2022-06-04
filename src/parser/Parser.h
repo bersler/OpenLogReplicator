@@ -1,4 +1,4 @@
-/* Header for RedoLog class
+/* Header for Parser class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,68 +17,69 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "types.h"
-#include "RedoLogRecord.h"
+#include "../common/Ctx.h"
+#include "../common/RedoLogRecord.h"
+#include "../common/types.h"
+#include "../common/typeTime.h"
 
-#ifndef REDOLOG_H_
-#define REDOLOG_H_
+#ifndef PARSER_H_
+#define PARSER_H_
 
 #define MAX_LWN_CHUNKS (512*2/MEMORY_CHUNK_SIZE_MB)
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
+    class Builder;
     class Reader;
+    class Metadata;
+    class TransactionBuffer;
 
     struct LwnMember {
         uint64_t offset;
         uint64_t length;
-        typeSCN scn;
-        typeSubSCN subScn;
-        typeBLK block;
+        typeScn scn;
+        typeSubScn subScn;
+        typeBlk block;
     };
 
-    class RedoLog {
+    class Parser {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
-        RedoLogRecord redoLogRecord[2];
+        Ctx* ctx;
+        Builder* builder;
+        Metadata* metadata;
+        TransactionBuffer* transactionBuffer;
         RedoLogRecord zero;
-        int64_t vectorCur;
-        int64_t vectorPrev;
-        uint64_t lwnConfirmedBlock;
+
         uint8_t* lwnChunks[MAX_LWN_CHUNKS];
+        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
         uint64_t lwnAllocated;
         uint64_t lwnAllocatedMax;
-        typeTIME lwnTimestamp;
-        typeSCN lwnScn;
-        typeSCN lwnScnMax;
-        LwnMember* lwnMembers[MAX_RECORDS_IN_LWN];
-        uint64_t lwnRecords;
+        typeTime lwnTimestamp;
+        typeScn lwnScn;
         uint64_t lwnCheckpointBlock;
-        bool instrumentedShutdown;
 
-        void printHeaderInfo(void) const;
-        void freeLwn(void);
+        void freeLwn();
         void analyzeLwn(LwnMember* lwnMember);
-        void appendToTransactionDDL(RedoLogRecord* redoLogRecord);
-        void appendToTransactionUndo(RedoLogRecord* redoLogRecord);
-        void appendToTransactionBegin(RedoLogRecord* redoLogRecord);
-        void appendToTransactionCommit(RedoLogRecord* redoLogRecord);
+        void appendToTransactionDdl(RedoLogRecord* redoLogRecord1);
+        void appendToTransactionUndo(RedoLogRecord* redoLogRecord1);
+        void appendToTransactionBegin(RedoLogRecord* redoLogRecord1);
+        void appendToTransactionCommit(RedoLogRecord* redoLogRecord1);
         void appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void dumpRedoVector(uint8_t* data, uint64_t recordLength4) const;
 
     public:
         int64_t group;
         std::string path;
-        typeSEQ sequence;
-        typeSCN firstScn;
-        typeSCN nextScn;
+        typeSeq sequence;
+        typeScn firstScn;
+        typeScn nextScn;
         Reader* reader;
 
-        uint64_t processLog(void);
-        RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, std::string& path);
-        virtual ~RedoLog(void);
+        Parser(Ctx* ctx, Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer, int64_t group, std::string& path);
+        virtual ~Parser();
 
-        friend std::ostream& operator<<(std::ostream& os, const RedoLog& redoLog);
+        uint64_t parse();
+
+        friend std::ostream& operator<<(std::ostream& os, const Parser& parser);
     };
 }
 

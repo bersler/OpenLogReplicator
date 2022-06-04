@@ -1,4 +1,4 @@
-/* Header for OutputBufferProtobuf class
+/* Header for BuilderProtobuf class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,35 +17,35 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleObject.h"
-#include "OraProtoBuf.pb.h"
-#include "OutputBuffer.h"
+#include "../common/OracleObject.h"
+#include "../common/OraProtoBuf.pb.h"
+#include "Builder.h"
 
-#ifndef OUTPUTBUFFERPROTOBUF_H_
-#define OUTPUTBUFFERPROTOBUF_H_
+#ifndef BUILDERPROTOBUF_H_
+#define BUILDERPROTOBUF_H_
 
 namespace OpenLogReplicator {
-    class OutputBufferProtobuf : public OutputBuffer {
+    class BuilderProtobuf : public Builder {
     protected:
         pb::RedoResponse* redoResponsePB;
         pb::Value* valuePB;
         pb::Payload* payloadPB;
         pb::Schema* schemaPB;
 
-        void columnNull(OracleObject* object, typeCOL col);
-        virtual void columnFloat(std::string& columnName, float value);
-        virtual void columnDouble(std::string& columnName, double value);
-        virtual void columnString(std::string& columnName);
-        virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale);
-        virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length);
-        virtual void columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz);
-        void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
+        void columnNull(OracleObject* object, typeCol col);
+        void columnFloat(std::string& columnName, float value) override;
+        void columnDouble(std::string& columnName, double value) override;
+        void columnString(std::string& columnName) override;
+        void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) override;
+        void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) override;
+        void columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
+        void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(bool first, bool showXid);
-        void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
+        void appendSchema(OracleObject* object, typeDataObj dataObj);
 
         void appendAfter(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
-                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                for (typeCol column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
                         if (lengths[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
@@ -61,7 +61,7 @@ namespace OpenLogReplicator {
             } else {
                 uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    typeCOL column = base << 6;
+                    auto column = (typeCol)(base << 6);
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -86,7 +86,7 @@ namespace OpenLogReplicator {
 
         void appendBefore(OracleObject* object) {
             if (columnFormat > 0 && object != nullptr) {
-                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                for (typeCol column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
                         if (lengths[column][VALUE_BEFORE] > 0) {
                             payloadPB->add_before();
@@ -102,7 +102,7 @@ namespace OpenLogReplicator {
             } else {
                 uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    typeCOL column = base << 6;
+                    auto column = (typeCol)(base << 6);
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -125,31 +125,28 @@ namespace OpenLogReplicator {
             }
         }
 
-        void createResponse(void) {
-            if (redoResponsePB != nullptr) {
-                RUNTIME_FAIL("PB commit processing failed, message already exists, internal error");
-            }
+        void createResponse() {
+            if (redoResponsePB != nullptr)
+                throw RuntimeException("PB commit processing failed, message already exists, internal error");
             redoResponsePB = new pb::RedoResponse;
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class pb::RedoResponse) << " bytes memory (for: PB response7)");
-            }
         }
 
-        void numToString(uint64_t value, char* buf, uint64_t length);
-        virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation,
-                const char* sql, uint64_t sqlLength);
-        virtual void processBegin(void);
-    public:
-        OutputBufferProtobuf(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat,
-                uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
-        virtual ~OutputBufferProtobuf();
+        static void numToString(uint64_t value, char* buf, uint64_t length);
+        void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDdl(OracleObject* object, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) override;
+        void processBeginMessage() override;
 
-        virtual void initialize(OracleAnalyzer* oracleAnalyzer);
-        virtual void processCommit(void);
-        virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo);
+    public:
+        BuilderProtobuf(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat,
+                        uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat,
+                        uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
+        ~BuilderProtobuf() override;
+
+        void initialize() override;
+        void processCommit(bool system) override;
+        void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;
     };
 }
 

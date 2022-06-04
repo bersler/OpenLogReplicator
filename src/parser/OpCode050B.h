@@ -25,10 +25,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode050B: public OpCode {
     protected:
-        static void init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
+        static void init(Ctx* ctx, RedoLogRecord* redoLogRecord);
 
     public:
-        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
+        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

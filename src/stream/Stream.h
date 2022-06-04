@@ -17,8 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <atomic>
-#include "types.h"
+#include "../common/types.h"
 
 #ifndef STREAM_H_
 #define STREAM_H_
@@ -26,24 +25,25 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define READ_NETWORK_BUFFER         1024
 
 namespace OpenLogReplicator {
+    class Ctx;
+
     class Stream {
     protected:
-        std::atomic<bool>* shutdown;
-        uint64_t pollInterval;
+        Ctx* ctx;
         std::string uri;
 
     public:
-        Stream(const char* uri, uint64_t pollInterval);
+        Stream(Ctx* ctx, const char* uri);
         virtual ~Stream();
 
-        virtual std::string getName(void) const = 0;
-        virtual void initializeClient(std::atomic<bool>* shutdown) = 0;
-        virtual void initializeServer(std::atomic<bool>* shutdown) = 0;
+        [[nodiscard]] virtual std::string getName() const = 0;
+        virtual void initializeClient() = 0;
+        virtual void initializeServer() = 0;
         virtual void sendMessage(const void* msg, uint64_t length) = 0;
         virtual uint64_t receiveMessage(void* msg, uint64_t length) = 0;
         virtual uint64_t receiveMessageNB(void* msg, uint64_t length) = 0;
-        virtual bool connected(void) = 0;
-        virtual void initialize(void) = 0;
+        [[nodiscard]] virtual bool isConnected() = 0;
+        virtual void initialize() = 0;
     };
 }
 

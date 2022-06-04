@@ -19,14 +19,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "RuntimeException.h"
 
+#include <utility>
+
 namespace OpenLogReplicator {
-    RuntimeException::~RuntimeException() {
+    RuntimeException::RuntimeException(const std::string msg) :
+            exception(),
+            msg(std::move(msg)) {
     }
 
     RuntimeException::RuntimeException(const char* msg) :
-        exception(),
-        msg(msg) {
+            exception(),
+            msg(msg) {
     }
+
+    RuntimeException::~RuntimeException() = default;
 
     std::ostream& operator<<(std::ostream& os, const RuntimeException& exception) {
         os << exception.msg;

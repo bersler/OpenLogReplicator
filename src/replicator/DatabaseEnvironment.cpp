@@ -17,11 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstring>
+
+#include "../common/Ctx.h"
+#include "../common/RuntimeException.h"
 #include "DatabaseEnvironment.h"
-#include "RuntimeException.h"
 
 namespace OpenLogReplicator {
-    DatabaseEnvironment::DatabaseEnvironment() :
+    DatabaseEnvironment::DatabaseEnvironment(Ctx* ctx) :
+        ctx(ctx),
         envhp(nullptr) {
     }
 
@@ -31,12 +35,11 @@ namespace OpenLogReplicator {
         //OCITerminate(OCI_DEFAULT);
     }
 
-    void DatabaseEnvironment::initialize(void) {
+    void DatabaseEnvironment::initialize() {
         OCIEnvCreate(&envhp, OCI_THREADED, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
 
-        if (envhp == nullptr) {
-            RUNTIME_FAIL("error initializing oracle environment (OCI)");
-        }
+        if (envhp == nullptr)
+            throw RuntimeException("error initializing oracle environment (OCI)");
     }
 
     void DatabaseEnvironment::checkErr(OCIError* errhp, sword status) {
@@ -50,24 +53,22 @@ namespace OpenLogReplicator {
                 break;
 
             case OCI_SUCCESS_WITH_INFO:
-                WARNING("OCI_SUCCESS_WITH_INFO");
+                WARNING("OCI_SUCCESS_WITH_INFO")
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
                 if (errcode != 100) {
-                    WARNING("OCI: " << errbuf1);
+                    WARNING("OCI: " << errbuf1)
                 }
                 OCIErrorGet(errhp, 2, nullptr, &errcode, errbuf2, sizeof(errbuf2), OCI_HTYPE_ERROR);
                 if (errcode != 100) {
-                    WARNING("OCI: " << errbuf1);
+                    WARNING("OCI: " << errbuf1)
                 }
                 break;
 
             case OCI_NEED_DATA:
-                RUNTIME_FAIL("OCI ERROR: OCI_NEED_DATA");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_NEED_DATA");
 
             case OCI_NO_DATA:
-                RUNTIME_FAIL("OCI ERROR: OCI_NODATA");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_NODATA");
 
             case OCI_ERROR:
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
@@ -82,28 +83,22 @@ namespace OpenLogReplicator {
                 if (len > 0 && errbuf2[len - 1] == '\n')
                     errbuf2[len - 1] = 0;
 
-                if (errcode != 100) {
-                    RUNTIME_FAIL("OCI ERROR: [" << errbuf1 << "]" << std::endl << "[" << errbuf2 << "]");
-                } else {
-                    RUNTIME_FAIL("OCI ERROR: [" << errbuf1 << "]");
-                };
-                break;
+                if (errcode != 100)
+                    throw RuntimeException("OCI ERROR: [" + std::string((char*)errbuf1) + "]\n[" + std::string((char*)errbuf2) + "]");
+                else
+                    throw RuntimeException("OCI ERROR: [" + std::string((char*)errbuf1) + "]");
 
             case OCI_INVALID_HANDLE:
-                RUNTIME_FAIL("OCI ERROR: OCI_INVALID_HANDLE");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_INVALID_HANDLE");
 
             case OCI_STILL_EXECUTING:
-                RUNTIME_FAIL("OCI ERROR: OCI_STILL_EXECUTING");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_STILL_EXECUTING");
 
             case OCI_CONTINUE:
-                RUNTIME_FAIL("OCI ERROR: OCI_CONTINUE");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_CONTINUE");
 
             case OCI_ROWCBK_DONE:
-                RUNTIME_FAIL("OCI ERROR: OCI_CONTINUE");
-                break;
+                throw RuntimeException("OCI ERROR: OCI_CONTINUE");
         }
     }
 }

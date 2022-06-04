@@ -17,30 +17,29 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode0B0C.h"
-#include "OracleAnalyzer.h"
-#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    void OpCode0B0C::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
-        OpCode::process(oracleAnalyzer, redoLogRecord);
+    void OpCode0B0C::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+        OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
-        typeFIELD fieldNum = 0;
+        typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C01);
         //field: 1
-        ktbRedo(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C02))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0C02))
             return;
         //field: 2
-        kdoOpCode(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
+        if (ctx->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == OP_QMD) {
                 for (uint64_t i = 0; i < redoLogRecord->nrow; ++i)
-                    oracleAnalyzer->dumpStream << "slot[" << i << "]: " << std::dec << oracleAnalyzer->read16(redoLogRecord->data+redoLogRecord->slotsDelta + i * 2) << std::endl;
+                    ctx->dumpStream << "slot[" << i << "]: " << std::dec << ctx->read16(redoLogRecord->data + redoLogRecord->slotsDelta + i * 2) << std::endl;
             }
         }
     }

@@ -20,13 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCCol.h"
 
 namespace OpenLogReplicator {
-    SysCColKey::SysCColKey() :
-            con(0),
-            intCol(0),
-            obj(0) {
-    }
-
-    SysCColKey::SysCColKey(typeOBJ obj, typeCOL intCol, typeCON con) :
+    SysCColKey::SysCColKey(typeObj obj, typeCol intCol, typeCon con) :
             obj(obj),
             intCol(intCol),
             con(con) {
@@ -47,18 +41,15 @@ namespace OpenLogReplicator {
     }
 
     bool SysCCol::operator!=(const SysCCol& other) const {
-        if (other.rowId != rowId || other.con != con || other.intCol != intCol || other.obj != obj || other.spare1 != spare1)
-            return true;
-        return false;
+        return other.rowId != rowId || other.con != con || other.intCol != intCol || other.obj != obj || other.spare1 != spare1;
     }
 
-    SysCCol::SysCCol(RowId& rowId, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12, bool touched) :
+    SysCCol::SysCCol(typeRowId& rowId, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12, bool touched) :
                 rowId(rowId),
                 con(con),
                 intCol(intCol),
                 obj(obj),
-                touched(touched),
-                saved(false) {
-        spare1.set(spare11, spare12);
+                spare1(spare11, spare12),
+                touched(touched) {
     }
 }

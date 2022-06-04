@@ -20,12 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCDef.h"
 
 namespace OpenLogReplicator {
-    SysCDefKey::SysCDefKey() :
-            obj(0),
-            con(0) {
-    }
-
-    SysCDefKey::SysCDefKey(typeOBJ obj, typeCON con) :
+    SysCDefKey::SysCDefKey(typeObj obj, typeCon con) :
             obj(obj),
             con(con) {
     }
@@ -38,34 +33,31 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCDef::SysCDef(RowId& rowId, typeCON con, typeOBJ obj, typeTYPE type, bool touched) :
+    SysCDef::SysCDef(typeRowId& rowId, typeCon con, typeObj obj, typeType type, bool touched) :
             rowId(rowId),
             con(con),
             obj(obj),
             type(type),
-            touched(touched),
-            saved(false) {
+            touched(touched) {
     }
 
     bool SysCDef::operator!=(const SysCDef& other) const {
-        if (other.rowId != rowId || other.con != con || other.obj != obj || other.type != type)
-            return true;
-        return false;
+        return other.rowId != rowId || other.con != con || other.obj != obj || other.type != type;
     }
 
-    bool SysCDef::isPK(void) {
-        return (type == 2);
+    bool SysCDef::isPK() const {
+        return (type == SYSCDEF_TYPE_PK);
     }
 
-    bool SysCDef::isSupplementalLog(void) {
-        return (type == 12);
+    bool SysCDef::isSupplementalLog() const {
+        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG);
     }
 
-    bool SysCDef::isSupplementalLogPK(void) {
-        return (type == 14);
+    bool SysCDef::isSupplementalLogPK() const {
+        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG_PK);
     }
 
-    bool SysCDef::isSupplementalLogAll(void) {
-        return (type == 17);
+    bool SysCDef::isSupplementalLogAll() const {
+        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG_ALL);
     }
 }

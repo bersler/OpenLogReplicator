@@ -1,4 +1,4 @@
-/* Class reading a redo log file
+/* Class with main redo log parser
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,6 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../builder/Builder.h"
+#include "../common/OracleObject.h"
+#include "../common/RedoLogException.h"
+#include "../common/Timer.h"
+#include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
+#include "../reader/Reader.h"
 #include "OpCode0501.h"
 #include "OpCode0502.h"
 #include "OpCode0504.h"
@@ -35,318 +42,157 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B10.h"
 #include "OpCode0B16.h"
 #include "OpCode1801.h"
-#include "OracleAnalyzer.h"
-#include "OracleObject.h"
-#include "OutputBuffer.h"
-#include "Reader.h"
-#include "RedoLog.h"
-#include "RedoLogException.h"
-#include "RuntimeException.h"
-#include "Schema.h"
+#include "Parser.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    RedoLog::RedoLog(OracleAnalyzer* oracleAnalyzer, int64_t group, std::string& path) :
-        oracleAnalyzer(oracleAnalyzer),
-        vectorCur(-1),
-        vectorPrev(-1),
-        lwnConfirmedBlock(2),
-        lwnAllocated(0),
-        lwnAllocatedMax(0),
-        lwnTimestamp(0),
-        lwnScn(0),
-        lwnScnMax(0),
-        lwnRecords(0),
-        lwnCheckpointBlock(0),
-        instrumentedShutdown(false),
-        group(group),
-        path(path),
-        sequence(0),
-        firstScn(firstScn),
-        nextScn(nextScn),
-        reader(nullptr) {
+    Parser::Parser(Ctx* ctx, Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer, int64_t group, std::string& path) :
+            ctx(ctx),
+            builder(builder),
+            metadata(metadata),
+            transactionBuffer(transactionBuffer),
+            lwnAllocated(0),
+            lwnAllocatedMax(0),
+            lwnTimestamp(0),
+            lwnScn(0),
+            lwnCheckpointBlock(0),
+            group(group),
+            path(path),
+            sequence(0),
+            firstScn(ZERO_SCN),
+            nextScn(ZERO_SCN),
+            reader(nullptr) {
 
-        memset(&zero, 0, sizeof(struct RedoLogRecord));
+        memset(&zero, 0, sizeof(RedoLogRecord));
 
-        lwnChunks[0] = oracleAnalyzer->getMemoryChunk("LWN transaction chunk", false);
-        uint64_t* length = (uint64_t*) lwnChunks[0];
+        lwnChunks[0] = ctx->getMemoryChunk("parser", false);
+        auto length = (uint64_t*)lwnChunks[0];
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
         lwnAllocatedMax = 1;
     }
 
-    RedoLog::~RedoLog() {
-        while (lwnAllocated > 0)
-            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
-    }
-
-    void RedoLog::printHeaderInfo(void) const {
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            char SID[9];
-            memcpy(SID, reader->headerBuffer + reader->blockSize + 28, 8); SID[8] = 0;
-
-            oracleAnalyzer->dumpStream << "DUMP OF REDO FROM FILE '" << path << "'" << std::endl;
-            if (oracleAnalyzer->version >= REDO_VERSION_12_2)
-                oracleAnalyzer->dumpStream << " Container ID: 0" << std::endl << " Container UID: 0" << std::endl;
-            oracleAnalyzer->dumpStream << " Opcodes *.*" << std::endl;
-            if (oracleAnalyzer->version >= REDO_VERSION_12_2)
-                oracleAnalyzer->dumpStream << " Container ID: 0" << std::endl << " Container UID: 0" << std::endl;
-            oracleAnalyzer->dumpStream << " RBAs: 0x000000.00000000.0000 thru 0xffffffff.ffffffff.ffff" << std::endl;
-            if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                oracleAnalyzer->dumpStream << " SCNs: scn: 0x0000.00000000 thru scn: 0xffff.ffffffff" << std::endl;
-            else
-                oracleAnalyzer->dumpStream << " SCNs: scn: 0x0000000000000000 thru scn: 0xffffffffffffffff" << std::endl;
-            oracleAnalyzer->dumpStream << " Times: creation thru eternity" << std::endl;
-
-            uint32_t dbid = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 24);
-            uint32_t controlSeq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 36);
-            uint32_t fileSize = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 40);
-            uint16_t fileNumber = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 48);
-
-            oracleAnalyzer->dumpStream << " FILE HEADER:" << std::endl <<
-                    "\tCompatibility Vsn = " << std::dec << reader->compatVsn << "=0x" << std::hex << reader->compatVsn << std::endl <<
-                    "\tDb ID=" << std::dec << dbid << "=0x" << std::hex << dbid << ", Db Name='" << SID << "'" << std::endl <<
-                    "\tActivation ID=" << std::dec << reader->activationHeader << "=0x" << std::hex << reader->activationHeader << std::endl <<
-                    "\tControl Seq=" << std::dec << controlSeq << "=0x" << std::hex << controlSeq << ", File size=" << std::dec << fileSize << "=0x" << std::hex << fileSize << std::endl <<
-                    "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << reader->blockSize << ", File Type=2 LOG" << std::endl;
-
-            typeSEQ seq = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 8);
-            uint8_t descrip[65];
-            memcpy (descrip, reader->headerBuffer + reader->blockSize + 92, 64); descrip[64] = 0;
-            uint16_t thread = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 176);
-            uint32_t nab = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 156);
-            uint32_t hws = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 172);
-            uint8_t eot = reader->headerBuffer[reader->blockSize + 204];
-            uint8_t dis = reader->headerBuffer[reader->blockSize + 205];
-
-            oracleAnalyzer->dumpStream << " descrip:\"" << descrip << "\"" << std::endl <<
-                    " thread: " << std::dec << thread <<
-                    " nab: 0x" << std::hex << nab <<
-                    " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << (typeSEQ)seq <<
-                    " hws: 0x" << std::hex << hws <<
-                    " eot: " << std::dec << (uint64_t)eot <<
-                    " dis: " << std::dec << (uint64_t)dis << std::endl;
-
-            typeSCN resetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 164);
-            typeRESETLOGS prevResetlogsCnt = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 292);
-            typeSCN prevResetlogsScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 284);
-            typeTIME firstTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 188));
-            typeTIME nextTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 200));
-            typeSCN enabledScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 208);
-            typeTIME enabledTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 216));
-            typeSCN threadClosedScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 220);
-            typeTIME threadClosedTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 228));
-            typeSCN termialRecScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 240);
-            typeTIME termialRecTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 248));
-            typeSCN mostRecentScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 260);
-            typeSUM chSum = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 14);
-            typeSUM chSum2 = reader->calcChSum(reader->headerBuffer + reader->blockSize, reader->blockSize);
-
-            if (oracleAnalyzer->version < REDO_VERSION_12_2) {
-                oracleAnalyzer->dumpStream <<
-                        " resetlogs count: 0x" << std::hex << reader->resetlogsHeader << " scn: " << PRINTSCN48(resetlogsScn) << " (" << std::dec << resetlogsScn << ")" << std::endl <<
-                        " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << std::dec << prevResetlogsScn << ")" << std::endl <<
-                        " Low  scn: " << PRINTSCN48(reader->firstScnHeader) << " (" << std::dec << reader->firstScnHeader << ")" << " " << firstTime << std::endl <<
-                        " Next scn: " << PRINTSCN48(reader->nextScnHeader) << " (" << std::dec << reader->nextScn << ")" << " " << nextTime << std::endl <<
-                        " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << std::dec << enabledScn << ")" << " " << enabledTime << std::endl <<
-                        " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << std::dec << threadClosedScn << ")" << " " << threadClosedTime << std::endl <<
-                        " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << std::endl <<
-                        " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << std::endl <<
-                        " Terminal recovery  " << termialRecTime << std::endl <<
-                        " Most recent redo scn: " << PRINTSCN48(mostRecentScn) << std::endl;
-            } else {
-                typeSCN realNextScn = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 272);
-
-                oracleAnalyzer->dumpStream <<
-                        " resetlogs count: 0x" << std::hex << reader->resetlogsHeader << " scn: " << PRINTSCN64(resetlogsScn) << std::endl <<
-                        " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN64(prevResetlogsScn) << std::endl <<
-                        " Low  scn: " << PRINTSCN64(reader->firstScnHeader) << " " << firstTime << std::endl <<
-                        " Next scn: " << PRINTSCN64(reader->nextScnHeader) << " " << nextTime << std::endl <<
-                        " Enabled scn: " << PRINTSCN64(enabledScn) << " " << enabledTime << std::endl <<
-                        " Thread closed scn: " << PRINTSCN64(threadClosedScn) << " " << threadClosedTime << std::endl <<
-                        " Real next scn: " << PRINTSCN64(realNextScn) << std::endl <<
-                        " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << std::endl <<
-                        " Terminal recovery stop scn: " << PRINTSCN64(termialRecScn) << std::endl <<
-                        " Terminal recovery  " << termialRecTime << std::endl <<
-                        " Most recent redo scn: " << PRINTSCN64(mostRecentScn) << std::endl;
-            }
-
-            uint32_t largestLwn = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 268);
-            oracleAnalyzer->dumpStream <<
-                    " Largest LWN: " << std::dec << largestLwn << " blocks" << std::endl;
-
-            uint32_t miscFlags = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 236);
-            const char* endOfRedo = "";
-            if ((miscFlags & REDO_END) != 0)
-                endOfRedo = "Yes";
-            else
-                endOfRedo = "No";
-            if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-                oracleAnalyzer->dumpStream << " FailOver End-of-redo stream : " << endOfRedo << std::endl;
-            else
-                oracleAnalyzer->dumpStream << " End-of-redo stream : " << endOfRedo << std::endl;
-
-            if ((miscFlags & REDO_ASYNC) != 0)
-                oracleAnalyzer->dumpStream << " Archivelog created using asynchronous network transmittal" << std::endl;
-
-            if ((miscFlags & REDO_NODATALOSS) != 0)
-                oracleAnalyzer->dumpStream << " No data-loss mode" << std::endl;
-
-            if ((miscFlags & REDO_RESYNC) != 0)
-                oracleAnalyzer->dumpStream << " Resynchronization mode" << std::endl;
-            else
-                oracleAnalyzer->dumpStream << " Unprotected mode" << std::endl;
-
-            if ((miscFlags & REDO_CLOSEDTHREAD) != 0)
-                oracleAnalyzer->dumpStream << " Closed thread archival" << std::endl;
-
-            if ((miscFlags & REDO_MAXPERFORMANCE) != 0)
-                oracleAnalyzer->dumpStream << " Maximize performance mode" << std::endl;
-
-            oracleAnalyzer->dumpStream << " Miscellaneous flags: 0x" << std::hex << miscFlags << std::endl;
-
-            if (oracleAnalyzer->version >= REDO_VERSION_12_2) {
-                uint32_t miscFlags2 = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 296);
-                oracleAnalyzer->dumpStream << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << std::endl;
-            }
-
-            int32_t thr = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 432);
-            int32_t seq2 = (int32_t)oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 436);
-            typeSCN scn2 = oracleAnalyzer->readSCN(reader->headerBuffer + reader->blockSize + 440);
-            uint8_t zeroBlocks = reader->headerBuffer[reader->blockSize + 206];
-            uint8_t formatId = reader->headerBuffer[reader->blockSize + 207];
-            if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                oracleAnalyzer->dumpStream << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
-                        " seq: " << std::dec << seq2 <<
-                        " scn: " << PRINTSCN48(scn2) << std::endl <<
-                        " Zero blocks: " << std::dec << (uint64_t)zeroBlocks << std::endl <<
-                        " Format ID is " << std::dec << (uint64_t)formatId << std::endl;
-            else
-                oracleAnalyzer->dumpStream << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
-                        " seq: " << std::dec << seq2 <<
-                        " scn: " << PRINTSCN64(scn2) << std::endl <<
-                        " Zero blocks: " << std::dec << (uint64_t)zeroBlocks << std::endl <<
-                        " Format ID is " << std::dec << (uint64_t)formatId << std::endl;
-
-            uint32_t standbyApplyDelay = oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 280);
-            if (standbyApplyDelay > 0)
-                oracleAnalyzer->dumpStream << " Standby Apply Delay: " << std::dec << standbyApplyDelay << " minute(s) " << std::endl;
-
-            typeTIME standbyLogCloseTime(oracleAnalyzer->read32(reader->headerBuffer + reader->blockSize + 304));
-            if (standbyLogCloseTime.getVal() > 0)
-                oracleAnalyzer->dumpStream << " Standby Log Close Time:  " << standbyLogCloseTime << std::endl;
-
-            oracleAnalyzer->dumpStream << " redo log key is ";
-            for (uint64_t i = 448; i < 448 + 16; ++i)
-                oracleAnalyzer->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)reader->headerBuffer[reader->blockSize + i];
-            oracleAnalyzer->dumpStream << std::endl;
-
-            uint16_t redoKeyFlag = oracleAnalyzer->read16(reader->headerBuffer + reader->blockSize + 480);
-            oracleAnalyzer->dumpStream << " redo log key flag is " << std::dec << redoKeyFlag << std::endl;
-            uint16_t enabledRedoThreads = 1; //FIXME
-            oracleAnalyzer->dumpStream << " Enabled redo threads: " << std::dec << enabledRedoThreads << " " << std::endl;
+    Parser::~Parser() {
+        while (lwnAllocated > 0) {
+            ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
         }
     }
 
-    void RedoLog::freeLwn(void) {
-        while (lwnAllocated > 1)
-            oracleAnalyzer->freeMemoryChunk("LWN transaction chunk", lwnChunks[--lwnAllocated], false);
+    void Parser::freeLwn() {
+        while (lwnAllocated > 1) {
+            ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
+        }
 
-        uint64_t* length = (uint64_t*) lwnChunks[0];
+        auto length = (uint64_t*)lwnChunks[0];
         *length = sizeof(uint64_t);
-        lwnRecords = 0;
     }
 
-    void RedoLog::analyzeLwn(LwnMember* lwnMember) {
-        uint8_t* data = ((uint8_t*) lwnMember) + sizeof(struct LwnMember);
+    void Parser::analyzeLwn(LwnMember* lwnMember) {
+        TRACE(TRACE2_LWN, "LWN: analyze blk: " << std::dec << lwnMember->block << " offset: " << lwnMember->offset <<
+                                               " scn: " << lwnMember->scn << " subscn: " << lwnMember->subScn)
 
-        TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
-        vectorPrev = -1;
-        vectorCur = -1;
+        uint8_t *data = ((uint8_t *) lwnMember) + sizeof(struct LwnMember);
+        RedoLogRecord redoLogRecord[2];
+        int64_t vectorCur = -1;
+        int64_t vectorPrev = -1;
+        TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn)
 
-        uint32_t recordLength = oracleAnalyzer->read32(data);
+        uint32_t recordLength = ctx->read32(data);
         uint8_t vld = data[4];
         uint64_t headerLength;
 
-        if (recordLength != lwnMember->length) {
-            REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                    ": too small log record, buffer length: " << std::dec << lwnMember->length << ", field length: " << recordLength);
-        }
+        if (recordLength != lwnMember->length)
+            throw RedoLogException( "block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                   ": too small log record, buffer length: " + std::to_string(lwnMember->length) + ", field length: " +
+                                   std::to_string(recordLength));
 
         if ((vld & 0x04) != 0)
             headerLength = 68;
         else
             headerLength = 24;
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t thread = 1; //FIXME
-            oracleAnalyzer->dumpStream << " " << std::endl;
+        if (ctx->dumpRedoLog >= 1) {
+            uint16_t thread = 1; //TODO: verify field length/position
+            ctx->dumpStream << " " << std::endl;
 
-            if (oracleAnalyzer->version < REDO_VERSION_12_1)
-                oracleAnalyzer->dumpStream << "REDO RECORD - Thread:" << thread <<
-                        " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
-                                    std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
-                                    std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
-                        " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength <<
-                        " VLD: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)vld << std::endl;
+            if (ctx->version < REDO_VERSION_12_1)
+                ctx->dumpStream << "REDO RECORD - Thread:" << thread <<
+                                " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
+                                std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
+                                std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
+                                " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength <<
+                                " VLD: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t) vld
+                                << std::endl;
             else {
-                uint32_t conUid = oracleAnalyzer->read32(data + 16);
-                oracleAnalyzer->dumpStream << "REDO RECORD - Thread:" << thread <<
-                        " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
-                                    std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
-                                    std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
-                        " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength <<
-                        " VLD: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)vld <<
-                        " CON_UID: " << std::dec << conUid << std::endl;
+                uint32_t conUid = ctx->read32(data + 16);
+                ctx->dumpStream << "REDO RECORD - Thread:" << thread <<
+                                " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
+                                std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
+                                std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
+                                " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength <<
+                                " VLD: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t) vld <<
+                                " CON_UID: " << std::dec << conUid << std::endl;
             }
 
-            if (oracleAnalyzer->dumpRawData > 0) {
-                oracleAnalyzer->dumpStream << "##: " << std::dec << headerLength;
+            if (ctx->dumpRawData > 0) {
+                ctx->dumpStream << "##: " << std::dec << headerLength;
                 for (uint64_t j = 0; j < headerLength; ++j) {
                     if ((j & 0x0F) == 0)
-                        oracleAnalyzer->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
+                        ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j
+                                        << ": ";
                     if ((j & 0x07) == 0)
-                        oracleAnalyzer->dumpStream << " ";
-                    oracleAnalyzer->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j] << " ";
+                        ctx->dumpStream << " ";
+                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t) data[j] << " ";
                 }
-                oracleAnalyzer->dumpStream << std::endl;
+                ctx->dumpStream << std::endl;
             }
 
             if (headerLength == 68) {
-                if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                    oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                if (ctx->version < REDO_VERSION_12_2)
+                    ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ')
+                                    << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp
+                                    << std::endl;
                 else
-                    oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp << std::endl;
-                uint16_t lwnNst = oracleAnalyzer->read16(data + 26);
-                uint32_t lwnLen = oracleAnalyzer->read32(data + 32);
+                    ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ')
+                                    << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp
+                                    << std::endl;
+                uint16_t lwnNst = ctx->read16(data + 26);
+                uint32_t lwnLen = ctx->read32(data + 32);
 
-                if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                    oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
+                if (ctx->version < REDO_VERSION_12_2)
+                    ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence
+                                    << "." <<
                                     std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
                                     std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
-                        " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen <<
-                        " NST: " << std::setfill('0') << std::setw(4) << std::dec << lwnNst <<
-                        " SCN: " << PRINTSCN48(lwnScn) << ")" << std::endl;
+                                    " LEN: " << std::setfill('0') << std::setw(4) << std::dec << lwnLen <<
+                                    " NST: " << std::setfill('0') << std::setw(4) << std::dec << lwnNst <<
+                                    " SCN: " << PRINTSCN48(lwnScn) << ")" << std::endl;
                 else
-                    oracleAnalyzer->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
+                    ctx->dumpStream << "(LWN RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence
+                                    << "." <<
                                     std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." <<
                                     std::setfill('0') << std::setw(4) << std::hex << lwnMember->offset <<
-                        " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen <<
-                        " NST: 0x" << std::setfill('0') << std::setw(4) << std::hex << lwnNst <<
-                        " SCN: " << PRINTSCN64(lwnScn) << ")" << std::endl;
+                                    " LEN: 0x" << std::setfill('0') << std::setw(8) << std::hex << lwnLen <<
+                                    " NST: 0x" << std::setfill('0') << std::setw(4) << std::hex << lwnNst <<
+                                    " SCN: " << PRINTSCN64(lwnScn) << ")" << std::endl;
             } else {
-                if (oracleAnalyzer->version < REDO_VERSION_12_2)
-                    oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                if (ctx->version < REDO_VERSION_12_2)
+                    ctx->dumpStream << "SCN: " << PRINTSCN48(lwnMember->scn) << " SUBSCN:" << std::setfill(' ')
+                                    << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp
+                                    << std::endl;
                 else
-                    oracleAnalyzer->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ') << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp << std::endl;
+                    ctx->dumpStream << "SCN: " << PRINTSCN64(lwnMember->scn) << " SUBSCN:" << std::setfill(' ')
+                                    << std::setw(3) << std::dec << lwnMember->subScn << " " << lwnTimestamp
+                                    << std::endl;
             }
         }
 
         if (headerLength > recordLength) {
             dumpRedoVector(data, recordLength);
-            REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                    ": too small log record, header length: " << std::dec << headerLength << ", field length: " << recordLength);
+            throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                   ": too small log record, header length: " + std::to_string(headerLength) + ", field length: " +
+                                   std::to_string(recordLength));
         }
 
         uint64_t offset = headerLength;
@@ -358,22 +204,22 @@ namespace OpenLogReplicator {
             else
                 vectorCur = 1 - vectorPrev;
 
-            memset(&redoLogRecord[vectorCur], 0, sizeof(struct RedoLogRecord));
+            memset(&redoLogRecord[vectorCur], 0, sizeof(RedoLogRecord));
             redoLogRecord[vectorCur].vectorNo = (++vectors);
-            redoLogRecord[vectorCur].cls = oracleAnalyzer->read16(data + offset + 2);
-            redoLogRecord[vectorCur].afn = oracleAnalyzer->read32(data + offset + 4) & 0xFFFF;
-            redoLogRecord[vectorCur].dba = oracleAnalyzer->read32(data + offset + 8);
-            redoLogRecord[vectorCur].scnRecord = oracleAnalyzer->readSCN(data + offset + 12);
-            redoLogRecord[vectorCur].rbl = 0; //FIXME
+            redoLogRecord[vectorCur].cls = ctx->read16(data + offset + 2);
+            redoLogRecord[vectorCur].afn = ctx->read32(data + offset + 4) & 0xFFFF;
+            redoLogRecord[vectorCur].dba = ctx->read32(data + offset + 8);
+            redoLogRecord[vectorCur].scnRecord = ctx->readScn(data + offset + 12);
+            redoLogRecord[vectorCur].rbl = 0; //TODO: verify field length/position
             redoLogRecord[vectorCur].seq = data[offset + 20];
             redoLogRecord[vectorCur].typ = data[offset + 21];
-            typeUSN usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
+            typeUsn usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
 
             uint64_t fieldOffset;
-            if (oracleAnalyzer->version >= REDO_VERSION_12_1) {
+            if (ctx->version >= REDO_VERSION_12_1) {
                 fieldOffset = 32;
-                redoLogRecord[vectorCur].flgRecord = oracleAnalyzer->read16(data + offset + 28);
-                redoLogRecord[vectorCur].conId = oracleAnalyzer->read16(data + offset + 24);
+                redoLogRecord[vectorCur].flgRecord = ctx->read16(data + offset + 28);
+                redoLogRecord[vectorCur].conId = (typeConId)ctx->read16(data + offset + 24);
             } else {
                 fieldOffset = 24;
                 redoLogRecord[vectorCur].flgRecord = 0;
@@ -382,57 +228,60 @@ namespace OpenLogReplicator {
 
             if (offset + fieldOffset + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": position of field list (" << std::dec << (offset + fieldOffset + 1) << ") outside of record, length: " << recordLength);
+                throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                       ": position of field list (" + std::to_string(offset + fieldOffset + 1) + ") outside of record, length: " +
+                                       std::to_string(recordLength));
             }
 
             uint8_t* fieldList = data + offset + fieldOffset;
 
-            redoLogRecord[vectorCur].opCode = (((typeOP1)data[offset + 0]) << 8) |
-                    data[offset + 1];
-            redoLogRecord[vectorCur].length = fieldOffset + ((oracleAnalyzer->read16(fieldList) + 2) & 0xFFFC);
+            redoLogRecord[vectorCur].opCode = (((typeOp1)data[offset + 0]) << 8) | data[offset + 1];
+            redoLogRecord[vectorCur].length = fieldOffset + ((ctx->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectorCur].sequence = sequence;
             redoLogRecord[vectorCur].scn = lwnMember->scn;
             redoLogRecord[vectorCur].subScn = lwnMember->subScn;
             redoLogRecord[vectorCur].usn = usn;
             redoLogRecord[vectorCur].data = data + offset;
-            redoLogRecord[vectorCur].dataOffset = lwnMember->block * reader->blockSize + lwnMember->offset + offset;
+            redoLogRecord[vectorCur].dataOffset = lwnMember->block * reader->getBlockSize() + lwnMember->offset + offset;
             redoLogRecord[vectorCur].fieldLengthsDelta = fieldOffset;
             if (redoLogRecord[vectorCur].fieldLengthsDelta + 1 >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": field length list (" << std::dec << (redoLogRecord[vectorCur].fieldLengthsDelta) << ") outside of record, length: " << recordLength);
+                throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                       ": field length list (" + std::to_string(redoLogRecord[vectorCur].fieldLengthsDelta) +
+                                       ") outside of record, length: " + std::to_string(recordLength));
             }
-            redoLogRecord[vectorCur].fieldCnt = (oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) - 2) / 2;
-            redoLogRecord[vectorCur].fieldPos = fieldOffset + ((oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) + 2) & 0xFFFC);
+            redoLogRecord[vectorCur].fieldCnt = (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) - 2) / 2;
+            redoLogRecord[vectorCur].fieldPos = fieldOffset + ((ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) + 2) & 0xFFFC);
             if (redoLogRecord[vectorCur].fieldPos >= recordLength) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": fields (" << std::dec << (redoLogRecord[vectorCur].fieldPos) << ") outside of record, length: " << recordLength);
+                throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                       ": fields (" + std::to_string(redoLogRecord[vectorCur].fieldPos) + ") outside of record, length: " +
+                                       std::to_string(recordLength));
             }
 
             uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectorCur].fieldCnt; ++i) {
-                redoLogRecord[vectorCur].length += (oracleAnalyzer->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                fieldPos += (oracleAnalyzer->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+                redoLogRecord[vectorCur].length += (ctx->read16(fieldList + i * 2) + 3) & 0xFFFC;
+                fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
                 if (offset + redoLogRecord[vectorCur].length > recordLength) {
                     dumpRedoVector(data, recordLength);
-                    REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                        ": position of field list outside of record (" <<
-                            "i: " << std::dec << i <<
-                            " c: " << std::dec << redoLogRecord[vectorCur].fieldCnt << " " <<
-                            " o: " << std::dec << fieldOffset <<
-                            " p: " << std::dec << offset <<
-                            " l: " << std::dec << redoLogRecord[vectorCur].length <<
-                            " r: " << std::dec << recordLength << ")");
+                    throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                           ": position of field list outside of record (" +
+                                           "i: " + std::to_string(i) +
+                                           " c: " + std::to_string(redoLogRecord[vectorCur].fieldCnt) + " " +
+                                           " o: " + std::to_string(fieldOffset) +
+                                           " p: " + std::to_string(offset) +
+                                           " l: " + std::to_string(redoLogRecord[vectorCur].length) +
+                                           " r: " + std::to_string(recordLength) + ")");
                 }
             }
 
             if (redoLogRecord[vectorCur].fieldPos > redoLogRecord[vectorCur].length) {
                 dumpRedoVector(data, recordLength);
-                REDOLOG_FAIL("block: " << std::dec << lwnMember->block << ", offset: " << lwnMember->offset <<
-                                    ": incomplete record, offset: " << std::dec << redoLogRecord[vectorCur].fieldPos << ", length: " << redoLogRecord[vectorCur].length);
+                throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
+                                       ": incomplete record, offset: " + std::to_string(redoLogRecord[vectorCur].fieldPos) + ", length: " +
+                                       std::to_string(redoLogRecord[vectorCur].length));
             }
 
             redoLogRecord[vectorCur].recordObj = 0xFFFFFFFF;
@@ -442,419 +291,383 @@ namespace OpenLogReplicator {
 
             switch (redoLogRecord[vectorCur].opCode) {
             case 0x0501: //Undo
-                OpCode0501::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0501::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0502: //Begin transaction
-                OpCode0502::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0502::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0504: //Commit/rollback transaction
-                OpCode0504::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0504::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0506: //Partial rollback
-                OpCode0506::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0506::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x050B:
-                OpCode050B::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode050B::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0513: //Session information
-                OpCode0513::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0513::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0514: //Session information
-                OpCode0514::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode0514::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B02: //REDO: Insert row piece
-                OpCode0B02::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B02::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B03: //REDO: Delete row piece
-                OpCode0B03::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B03::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B04: //REDO: Lock row piece
-                OpCode0B04::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B04::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B05: //REDO: Update row piece
-                OpCode0B05::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B05::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B06: //REDO: Overwrite row piece
-                OpCode0B06::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B06::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B08: //REDO: Change forwarding address
-                OpCode0B08::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B08::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B0B: //REDO: Insert multiple rows
-                OpCode0B0B::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B0B::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B0C: //REDO: Delete multiple rows
-                OpCode0B0C::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B0C::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B10: //REDO: Supplemental log for update
-                OpCode0B10::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B10::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x0B16: //REDO: Logminer support - KDOCMP
-                OpCode0B16::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                    redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                    redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                }
+                OpCode0B16::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             case 0x1801: //DDL
-                OpCode1801::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode1801::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
             default:
-                OpCode::process(oracleAnalyzer, &redoLogRecord[vectorCur]);
+                OpCode::process(ctx, &redoLogRecord[vectorCur]);
                 break;
             }
 
-            //pair
-            if (vectorPrev != -1 && vectorCur != -1) {
-                //REDO
+            TRACE(TRACE2_DUMP, "DUMP: op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord[vectorCur].opCode <<
+                  " obj: " << std::dec << redoLogRecord[vectorCur].recordObj <<
+                  " flg: " << std::hex << redoLogRecord[vectorCur].flg)
+
+            if (vectorPrev != -1) {
+                //UNDO - data
                 if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00) {
-                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
-                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
                     appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
-                    vectorPrev = -1;
                     vectorCur = -1;
-                    continue;
-                } else
-                if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00) {
-                    //ignore - index operation
-                    vectorPrev = -1;
-                    vectorCur = -1;
-                    continue;
-                } else
-                //UNDO
-                if ((redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) && (redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00) {
-                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordDataObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].dataObj;
-                    //redoLogRecord[opCodesRedo[vectorsUndo - 1]].recordObj = redoLogRecord[opCodesUndo[vectorsUndo - 1]].obj;
-                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
-                    vectorPrev = -1;
-                    vectorCur = -1;
-                    continue;
-                } else
-                if ((redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) && (redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0A00) {
-                    //ignore - index operation
-                    vectorPrev = -1;
-                    vectorCur = -1;
-                    continue;
-                } else
-                //BEGIN
-                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0502) {
-                    appendToTransactionBegin(&redoLogRecord[vectorPrev]);
-                    vectorPrev = -1;
-                    continue;
-                } else
-                //COMMIT
-                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0504) {
-                    appendToTransactionCommit(&redoLogRecord[vectorPrev]);
-                    vectorPrev = -1;
-                    continue;
-                } else
-                //DDL
-                if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x1801) {
-                    appendToTransactionDDL(&redoLogRecord[vectorPrev]);
-                    vectorPrev = -1;
-                    continue;
-                } else
-                if (redoLogRecord[vectorPrev].opCode == 0x0501 || redoLogRecord[vectorPrev].opCode == 0x0506 || redoLogRecord[vectorPrev].opCode == 0x050B) {
-                    appendToTransactionUndo(&redoLogRecord[vectorPrev]);
-                    vectorPrev = -1;
                     continue;
                 }
 
-                //vectorPrev = vectorCur;
-                //vectorCur = -1;
+                //UNDO - index, ignore
+                if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00) {
+                    vectorCur = -1;
+                    continue;
+                }
+
+                //ROLLBACK - data
+                if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00 && (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)) {
+                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
+                    vectorCur = -1;
+                    continue;
+                }
+
+                //ROLLBACK - index, ignore
+                if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0A00 && (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)) {
+                    vectorCur = -1;
+                    continue;
+                }
+            }
+
+            //UNDO - data
+            if (redoLogRecord[vectorCur].opCode == 0x0501 && (redoLogRecord[vectorCur].flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
+                appendToTransactionUndo(&redoLogRecord[vectorCur]);
+                vectorCur = -1;
+                continue;
+            }
+
+            //ROLLBACK - data
+            if (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) {
+                appendToTransactionUndo(&redoLogRecord[vectorCur]);
+                vectorCur = -1;
+                continue;
+            }
+
+            //BEGIN
+            if (redoLogRecord[vectorCur].opCode == 0x0502) {
+                appendToTransactionBegin(&redoLogRecord[vectorCur]);
+                vectorCur = -1;
+                continue;
+            }
+
+            //COMMIT
+            if (redoLogRecord[vectorCur].opCode == 0x0504) {
+                appendToTransactionCommit(&redoLogRecord[vectorCur]);
+                vectorCur = -1;
+                continue;
+            }
+
+            //DDL
+            if (redoLogRecord[vectorCur].opCode == 0x1801) {
+                appendToTransactionDdl(&redoLogRecord[vectorCur]);
+                vectorCur = -1;
                 continue;
             }
         }
-
-        //purge prev
-        if (vectorPrev != -1) {
-            if (redoLogRecord[vectorPrev].opCode == 0x0502)
-                appendToTransactionBegin(&redoLogRecord[vectorPrev]);
-            else if (redoLogRecord[vectorPrev].opCode == 0x0504)
-                appendToTransactionCommit(&redoLogRecord[vectorPrev]);
-            else if (redoLogRecord[vectorPrev].opCode == 0x1801)
-                appendToTransactionDDL(&redoLogRecord[vectorPrev]);
-            else if (redoLogRecord[vectorPrev].opCode == 0x0501 || redoLogRecord[vectorPrev].opCode == 0x0506 || redoLogRecord[vectorPrev].opCode == 0x050B)
-                appendToTransactionUndo(&redoLogRecord[vectorPrev]);
-            vectorPrev = -1;
-        }
-
-        //purge cur
-        if (vectorCur != -1) {
-            if (redoLogRecord[vectorCur].opCode == 0x0502)
-                appendToTransactionBegin(&redoLogRecord[vectorCur]);
-            else if (redoLogRecord[vectorCur].opCode == 0x0504)
-                appendToTransactionCommit(&redoLogRecord[vectorCur]);
-            else if (redoLogRecord[vectorCur].opCode == 0x1801)
-                appendToTransactionDDL(&redoLogRecord[vectorCur]);
-            else if (redoLogRecord[vectorCur].opCode == 0x0501 || redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)
-                appendToTransactionUndo(&redoLogRecord[vectorCur]);
-            vectorPrev = -1;
-        }
     }
 
-    void RedoLog::appendToTransactionDDL(RedoLogRecord* redoLogRecord) {
+    void Parser::appendToTransactionDdl(RedoLogRecord* redoLogRecord1) {
         bool system = false;
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
         //track DDL
-        if ((oracleAnalyzer->flags & REDO_FLAGS_TRACK_DDL) == 0)
+        if (!FLAG(REDO_FLAGS_TRACK_DDL))
             return;
 
         //skip list
-        if (oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
+        if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
-        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (object == nullptr)
-                return;
-        }
+        OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+        if (!FLAG(REDO_FLAGS_SCHEMALESS) && object == nullptr)
+            return;
+
         if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
             system = true;
 
-        Transaction* transaction = nullptr;
-        typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
-
-        auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-        if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-            transaction = transactionIter->second;
-            if (transaction->xid != redoLogRecord->xid) {
-                RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #ddl");
-            }
-        } else {
-            if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0)
-                return;
-
-            transaction = new Transaction(oracleAnalyzer, redoLogRecord->xid);
-            if (transaction == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: append to transaction#1)");
-            }
-            oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
-        }
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        if (transaction == nullptr)
+            return;
 
         if (system)
             transaction->system = true;
 
         //transaction size limit
-        if (oracleAnalyzer->transactionMax > 0 &&
-                transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
-            oracleAnalyzer->skipXidList.insert(transaction->xid);
-            oracleAnalyzer->xidTransactionMap.erase(xidMap);
+        if (ctx->transactionSizeMax > 0 &&
+            transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+            transactionBuffer->skipXidList.insert(transaction->xid);
+            transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
+            transaction->purge(transactionBuffer);
             delete transaction;
             return;
         }
 
-        transaction->add(redoLogRecord, &zero);
+        transaction->add(transactionBuffer, redoLogRecord1, &zero);
     }
 
-    void RedoLog::appendToTransactionUndo(RedoLogRecord* redoLogRecord) {
+    void Parser::appendToTransactionUndo(RedoLogRecord* redoLogRecord1) {
         bool system = false;
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
-        if (redoLogRecord->opCode == 0x0501) {
-            if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
+        if (redoLogRecord1->opCode == 0x0501) {
+            if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
                 return;
 
             //skip list
-            if (redoLogRecord->xid != 0 && oracleAnalyzer->skipXidList.find(redoLogRecord->xid) != oracleAnalyzer->skipXidList.end())
+            if (redoLogRecord1->xid.getVal() != 0 && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
                 return;
 
-            OracleObject* object = oracleAnalyzer->schema->checkDict(redoLogRecord->obj, redoLogRecord->dataObj);
-            if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-                if (object == nullptr)
-                    return;
-            }
+            OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
+            if (!FLAG(REDO_FLAGS_SCHEMALESS) && object == nullptr)
+                return;
+
             if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
                 system = true;
 
-            Transaction* transaction = nullptr;
-            typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
-
-            auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-            if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-                transaction = transactionIter->second;
-                if (transaction->xid != redoLogRecord->xid) {
-                    RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #undo");
-                }
-            } else {
-                if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0)
-                    return;
-
-                transaction = new Transaction(oracleAnalyzer, redoLogRecord->xid);
-                if (transaction == nullptr) {
-                    RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: append to transaction#2)");
-                }
-                oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
-            }
+            Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                                   true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+            if (transaction == nullptr)
+                return;
 
             if (system)
                 transaction->system = true;
 
             //cluster key
-            if ((redoLogRecord->fb & FB_K) != 0)
+            if ((redoLogRecord1->fb & FB_K) != 0)
                 return;
 
             //partition move
-            if ((redoLogRecord->suppLogFb & FB_K) != 0)
+            if ((redoLogRecord1->suppLogFb & FB_K) != 0)
                 return;
 
             //transaction size limit
-            if (oracleAnalyzer->transactionMax > 0 &&
-                    transaction->size + redoLogRecord->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
-                oracleAnalyzer->skipXidList.insert(transaction->xid);
-                oracleAnalyzer->xidTransactionMap.erase(xidMap);
+            if (ctx->transactionSizeMax > 0 &&
+                transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+                transactionBuffer->skipXidList.insert(transaction->xid);
+                transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
+                transaction->purge(transactionBuffer);
                 delete transaction;
                 return;
             }
 
-            transaction->add(redoLogRecord);
-        } if ((redoLogRecord->opCode == 0x0506 || redoLogRecord->opCode == 0x050B) && (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01)) {
-            Transaction* transaction = nullptr;
-            typeXIDMAP xidMap = (((uint64_t)redoLogRecord->usn) << 16) | ((uint64_t)redoLogRecord->slt) | (((uint64_t)redoLogRecord->conId) << 32);
-
-            auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-            if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-                transaction = transactionIter->second;
-                transaction->rollbackLastOp(redoLogRecord);
+            transaction->add(transactionBuffer, redoLogRecord1);
+        } if ((redoLogRecord1->opCode == 0x0506 || redoLogRecord1->opCode == 0x050B) && (redoLogRecord1->opc == 0x0A16 || redoLogRecord1->opc == 0x0B01)) {
+            typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt,  0);
+            Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord1->conId, true, false, true);
+            if (transaction != nullptr) {
+                transaction->rollbackLastOp(transactionBuffer, redoLogRecord1);
             } else {
-                auto iter = oracleAnalyzer->brokenXidMapList.find(xidMap);
-                if (iter == oracleAnalyzer->brokenXidMapList.end()) {
-                    WARNING("no match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord->slt <<
-                            " USN: " << (uint64_t)redoLogRecord->usn);
-                    oracleAnalyzer->brokenXidMapList.insert(xidMap);
+                typeXidMap xidMap = (redoLogRecord1->xid.getVal() >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
+                auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
+                if (iter == transactionBuffer->brokenXidMapList.end()) {
+                    WARNING("no match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord1->slt <<
+                                                                                       " USN: " << (uint64_t)redoLogRecord1->usn)
+                    transactionBuffer->brokenXidMapList.insert(xidMap);
                 }
             }
         }
     }
 
-    void RedoLog::appendToTransactionBegin(RedoLogRecord* redoLogRecord) {
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
+    void Parser::appendToTransactionBegin(RedoLogRecord* redoLogRecord1) {
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
         //skip SQN cleanup
-        if (SQN(redoLogRecord->xid) == 0)
+        if (redoLogRecord1->xid.sqn() == 0)
             return;
 
-        Transaction* transaction = nullptr;
-        typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
-
-        auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-        if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-            transaction = transactionIter->second;
-            RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #begin");
-        }
-
-        transaction = new Transaction(oracleAnalyzer, redoLogRecord->xid);
-        if (transaction == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: begin transaction)");
-        }
-        oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
-
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId, false, true, false);
         transaction->begin = true;
         transaction->firstSequence = sequence;
-        transaction->firstOffset = lwnCheckpointBlock * reader->blockSize;
+        transaction->firstOffset = lwnCheckpointBlock * reader->getBlockSize();
     }
 
-    void RedoLog::appendToTransactionCommit(RedoLogRecord* redoLogRecord) {
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord);
+    void Parser::appendToTransactionCommit(RedoLogRecord* redoLogRecord1) {
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
         //skip list
-        auto it = oracleAnalyzer->skipXidList.find(redoLogRecord->xid);
-        if (it != oracleAnalyzer->skipXidList.end()) {
-            oracleAnalyzer->skipXidList.erase(it);
+        auto it = transactionBuffer->skipXidList.find(redoLogRecord1->xid);
+        if (it != transactionBuffer->skipXidList.end()) {
+            transactionBuffer->skipXidList.erase(it);
             return;
         }
-
-        Transaction* transaction = nullptr;
-        typeXIDMAP xidMap = (redoLogRecord->xid >> 32) | (((uint64_t)redoLogRecord->conId) << 32);
 
         //broken transaction
-        auto iter = oracleAnalyzer->brokenXidMapList.find(xidMap);
-        if (iter != oracleAnalyzer->brokenXidMapList.end())
-            oracleAnalyzer->brokenXidMapList.erase(xidMap);
+        typeXidMap xidMap = (redoLogRecord1->xid.getVal() >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
+        auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
+        if (iter != transactionBuffer->brokenXidMapList.end())
+            transactionBuffer->brokenXidMapList.erase(xidMap);
 
-        auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-        if (transactionIter == oracleAnalyzer->xidTransactionMap.end()) {
-            //unknown transaction
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                               true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        if (transaction == nullptr)
             return;
-        }
-
-        transaction = transactionIter->second;
-        if (transaction->xid != redoLogRecord->xid) {
-            RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #commit");
-        }
 
         transaction->commitTimestamp = lwnTimestamp;
-        transaction->commitScn = redoLogRecord->scnRecord;
-        transaction->commitSequence = redoLogRecord->sequence;
-        if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
+        transaction->commitScn = redoLogRecord1->scnRecord;
+        transaction->commitSequence = redoLogRecord1->sequence;
+        if ((redoLogRecord1->flg & FLG_ROLLBACK_OP0504) != 0)
             transaction->rollback = true;
 
-        if ((transaction->commitScn > oracleAnalyzer->firstScn && transaction->system == false) ||
-            (transaction->commitScn > oracleAnalyzer->schemaScn && transaction->system == true)) {
-
-            if (transaction->shutdown) {
-                INFO("shutdown started - initiated by debug transaction " << PRINTXID(transaction->xid) << " at scn " << std::dec << transaction->commitScn);
-                instrumentedShutdown = true;
-            }
+        if ((transaction->commitScn > metadata->firstDataScn && !transaction->system) ||
+            (transaction->commitScn > metadata->firstSchemaScn && transaction->system)) {
 
             if (transaction->begin) {
-                transaction->flush();
+                transaction->flush(metadata, transactionBuffer, builder);
 
-                if (oracleAnalyzer->stopTransactions > 0) {
-                    --oracleAnalyzer->stopTransactions;
-                    if (oracleAnalyzer->stopTransactions == 0) {
-                        INFO("shutdown started - exhausted number of transactions");
-                        instrumentedShutdown = true;
+                if (ctx->stopTransactions > 0) {
+                    --ctx->stopTransactions;
+                    if (ctx->stopTransactions == 0) {
+                        INFO("shutdown started - exhausted number of transactions")
+                        ctx->stopSoft();
                     }
                 }
 
+                if (transaction->shutdown) {
+                    INFO("shutdown started - initiated by debug transaction " << transaction->xid << " at scn " << std::dec << transaction->commitScn)
+                    ctx->stopSoft();
+                }
             } else {
-                WARNING("skipping transaction with no begin: " << *transaction);
+                WARNING("skipping transaction with no begin: " << *transaction)
             }
         } else {
-            DEBUG("skipping transaction already committed: " << *transaction);
+            DEBUG("skipping transaction already committed: " << *transaction)
         }
 
-        oracleAnalyzer->xidTransactionMap.erase(xidMap);
+        transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
+        transaction->purge(transactionBuffer);
         delete transaction;
     }
 
-    void RedoLog::appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        bool shutdownFound = false;
+    void Parser::appendToTransaction(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
         bool system = false;
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1);
-        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2);
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
+        TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2)
 
         //skip other PDB vectors
-        if (oracleAnalyzer->conId > 0 && redoLogRecord2->conId != oracleAnalyzer->conId &&
-                redoLogRecord1->opCode == 0x0501)
+        if (metadata->conId > 0 && redoLogRecord2->conId != metadata->conId && redoLogRecord1->opCode == 0x0501)
             return;
 
-        if (oracleAnalyzer->conId > 0 && redoLogRecord1->conId != oracleAnalyzer->conId &&
-                (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
+        if (metadata->conId > 0 && redoLogRecord1->conId != metadata->conId &&
+            (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
             return;
 
         //skip list
-        if (oracleAnalyzer->skipXidList.find(redoLogRecord1->xid) != oracleAnalyzer->skipXidList.end())
+        if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
-        typeOBJ obj;
-        typeDATAOBJ dataObj;
+        typeObj obj;
+        typeDataObj dataObj;
 
         if (redoLogRecord1->dataObj != 0) {
             obj = redoLogRecord1->obj;
@@ -868,15 +681,14 @@ namespace OpenLogReplicator {
             redoLogRecord1->dataObj = redoLogRecord2->dataObj;
         }
 
-        if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0) {
-            REDOLOG_FAIL("BDBA does not match (0x" << std::hex << redoLogRecord1->bdba << ", " << redoLogRecord2->bdba << ")");
-        }
+        if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
+            throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
+                                   std::to_string(redoLogRecord2->bdba) + ")");
 
-        OracleObject* object = oracleAnalyzer->schema->checkDict(obj, dataObj);
-        if ((oracleAnalyzer->flags & REDO_FLAGS_SCHEMALESS) == 0) {
-            if (object == nullptr)
-                return;
-        }
+        OracleObject *object = metadata->schema->checkDict(obj, dataObj);
+        if (!FLAG(REDO_FLAGS_SCHEMALESS) && object == nullptr)
+            return;
+
         if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
             system = true;
 
@@ -889,11 +701,7 @@ namespace OpenLogReplicator {
             return;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        if (object != nullptr && (object->options & OPTIONS_DEBUG_TABLE) != 0 && opCodeLong == 0x05010B02)
-            shutdownFound = true;
-
         switch (opCodeLong) {
-
         //insert row piece
         case 0x05010B02:
         //delete row piece
@@ -913,39 +721,28 @@ namespace OpenLogReplicator {
         //logminer support - KDOCMP
         case 0x05010B16:
             {
-                Transaction* transaction = nullptr;
-                typeXIDMAP xidMap = (redoLogRecord1->xid >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
+                Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                        true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                if (transaction == nullptr)
+                    break;
 
-                auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-                if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-                    transaction = transactionIter->second;
-                    if (transaction->xid != redoLogRecord1->xid) {
-                        RUNTIME_FAIL("Transaction " << PRINTXID(redoLogRecord1->xid) << " conflicts with " << PRINTXID(transaction->xid) << " #append");
-                    }
-                } else {
-                    if ((oracleAnalyzer->flags & REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS) == 0)
-                        return;
-
-                    transaction = new Transaction(oracleAnalyzer, redoLogRecord1->xid);
-                    if (transaction == nullptr) {
-                        RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(Transaction) << " bytes memory (for: append to transaction#3)");
-                    }
-                    oracleAnalyzer->xidTransactionMap[xidMap] = transaction;
-                }
                 if (system)
                     transaction->system = true;
 
                 //transaction size limit
-                if (oracleAnalyzer->transactionMax > 0 &&
-                        transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= oracleAnalyzer->transactionMax) {
-                    oracleAnalyzer->skipXidList.insert(transaction->xid);
-                    oracleAnalyzer->xidTransactionMap.erase(xidMap);
+                if (ctx->transactionSizeMax > 0 &&
+                        transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+                    transactionBuffer->skipXidList.insert(transaction->xid);
+                    transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
+                    transaction->purge(transactionBuffer);
                     delete transaction;
                     return;
                 }
 
-                transaction->add(redoLogRecord1, redoLogRecord2);
-                transaction->shutdown = shutdownFound;
+                transaction->add(transactionBuffer, redoLogRecord1, redoLogRecord2);
+
+                if (object != nullptr && (object->options & OPTIONS_DEBUG_TABLE) != 0 && opCodeLong == 0x05010B02 && !ctx->softShutdown)
+                    transaction->shutdown = true;
             }
             break;
 
@@ -977,19 +774,17 @@ namespace OpenLogReplicator {
         case 0x0B160506:
         case 0x0B16050B:
             {
-                Transaction* transaction = nullptr;
-                typeXIDMAP xidMap = (((uint64_t)redoLogRecord2->usn) << 16) | ((uint64_t)redoLogRecord2->slt) | (((uint64_t)redoLogRecord2->conId) << 32);
-
-                auto transactionIter = oracleAnalyzer->xidTransactionMap.find(xidMap);
-                if (transactionIter != oracleAnalyzer->xidTransactionMap.end()) {
-                    transaction = transactionIter->second;
-                    transaction->rollbackLastOp(redoLogRecord1, redoLogRecord2);
+                typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
+                Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord2->conId, true, false, true);
+                if (transaction != nullptr) {
+                    transaction->rollbackLastOp(transactionBuffer, redoLogRecord1, redoLogRecord2);
                 } else {
-                    auto iter = oracleAnalyzer->brokenXidMapList.find(xidMap);
-                    if (iter == oracleAnalyzer->brokenXidMapList.end()) {
+                    typeXidMap xidMap = (redoLogRecord2->xid.getVal() >> 32) | (((uint64_t)redoLogRecord2->conId) << 32);
+                    auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
+                    if (iter == transactionBuffer->brokenXidMapList.end()) {
                         WARNING("no match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord2->slt <<
-                                " USN: " << (uint64_t)redoLogRecord2->usn);
-                        oracleAnalyzer->brokenXidMapList.insert(xidMap);
+                                " USN: " << (uint64_t)redoLogRecord2->usn)
+                        transactionBuffer->brokenXidMapList.insert(xidMap);
                     }
                 }
                 if (system)
@@ -1000,8 +795,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void RedoLog::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
-        if (trace >= TRACE_WARNING) {
+    void Parser::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
+        if (ctx->trace >= TRACE_WARNING) {
             std::stringstream ss;
             ss << "dumping redo vector" << std::endl;
             ss << "##: " << std::dec << recordLength;
@@ -1012,80 +807,75 @@ namespace OpenLogReplicator {
                     ss << " ";
                 ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j] << " ";
             }
-            WARNING(ss.str());
+            WARNING(ss.str())
         }
     }
 
-    uint64_t RedoLog::processLog(void) {
-        if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->firstScn != 0) {
-            firstScn = reader->firstScn;
-            nextScn = reader->nextScn;
-        }
-        oracleAnalyzer->suppLogSize = 0;
+    uint64_t Parser::parse() {
+        uint64_t lwnConfirmedBlock = 2;
+        uint64_t lwnRecords = 0;
 
-        if (reader->bufferStart == reader->blockSize * 2) {
-            if (oracleAnalyzer->dumpRedoLog >= 1) {
-                std::string fileName = oracleAnalyzer->dumpPath + "/" + std::to_string(sequence) + ".olr";
-                oracleAnalyzer->dumpStream.open(fileName);
-                if (!oracleAnalyzer->dumpStream.is_open()) {
-                    WARNING("can't open " << fileName << " for write. Aborting log dump.");
-                    oracleAnalyzer->dumpRedoLog = 0;
+        if (firstScn == ZERO_SCN && nextScn == ZERO_SCN && reader->getFirstScn() != 0) {
+            firstScn = reader->getFirstScn();
+            nextScn = reader->getNextScn();
+        }
+        ctx->suppLogSize = 0;
+
+        if (reader->getBufferStart() == reader->getBlockSize() * 2) {
+            if (ctx->dumpRedoLog >= 1) {
+                std::string fileName = ctx->dumpPath + "/" + std::to_string(sequence) + ".olr";
+                ctx->dumpStream.open(fileName);
+                if (!ctx->dumpStream.is_open()) {
+                    WARNING("can't open " << fileName << " for write. Aborting log dump.")
+                    ctx->dumpRedoLog = 0;
                 }
-                printHeaderInfo();
+                std::stringstream ss;
+                reader->printHeaderInfo(ss, path);
+                ctx->dumpStream << ss.str();
             }
         }
 
-        if (oracleAnalyzer->offset > 0) {
-            if ((oracleAnalyzer->offset % reader->blockSize) != 0) {
-                RUNTIME_FAIL("incorrect offset start:  " << std::dec << oracleAnalyzer->offset << " - not a multiplication of block size: " << std::dec << reader->blockSize);
-            }
-            lwnConfirmedBlock = oracleAnalyzer->offset / reader->blockSize;
-            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << std::dec << oracleAnalyzer->offset << " (block " << std::dec << lwnConfirmedBlock << ")");
+        //continue started offset
+        if (metadata->offset > 0) {
+            if ((metadata->offset % reader->getBlockSize()) != 0)
+                throw RedoLogException("incorrect offset start: " + std::to_string(metadata->offset) +
+                                       " - not a multiplication of block size: " +
+                                       std::to_string(reader->getBlockSize()));
 
-            reader->bufferStart = oracleAnalyzer->offset;
-            reader->bufferEnd = oracleAnalyzer->offset;
-            oracleAnalyzer->offset = 0;
-        } else {
-            lwnConfirmedBlock = 2;
-            reader->bufferStart = lwnConfirmedBlock * reader->blockSize;
-            reader->bufferEnd = lwnConfirmedBlock * reader->blockSize;
+            lwnConfirmedBlock = metadata->offset / reader->getBlockSize();
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: setting reader start position to " << std::dec << metadata->offset <<
+                                                                                     " (block " << std::dec
+                                                                                     << lwnConfirmedBlock << ")")
+            metadata->offset = 0;
+        }
+        reader->setBufferStartEnd(lwnConfirmedBlock * reader->getBlockSize(),
+                                  lwnConfirmedBlock * reader->getBlockSize());
 
-            oracleAnalyzer->checkpointLastOffset = 0;
+        INFO("processing redo log: " << *this << " offset: " << std::dec << reader->getBufferStart())
+        if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA) && !metadata->schema->loaded && ctx->versionStr.length() > 0) {
+            metadata->loadAdaptiveSchema();
+            metadata->schema->loaded = true;
         }
 
-        INFO("processing redo log: " << *this << " offset: " << std::dec << reader->bufferStart);
+        if (metadata->resetlogs == 0)
+            metadata->setResetlogs(reader->getResetlogs());
 
-        if (oracleAnalyzer->resetlogs == 0)
-            oracleAnalyzer->resetlogs = reader->resetlogsHeader;
+        if (metadata->resetlogs != reader->getResetlogs())
+            throw RedoLogException("invalid resetlogs value (found: " + std::to_string(reader->getResetlogs()) + ", expected: " +
+                                   std::to_string(metadata->resetlogs) + "): " + reader->fileName);
 
-        if (reader->resetlogsHeader != oracleAnalyzer->resetlogs) {
-            RUNTIME_FAIL("invalid resetlogs value (found: " << std::dec << reader->resetlogsHeader << ", expected: " << std::dec << oracleAnalyzer->resetlogs << "): " << reader->fileName);
+        if (metadata->activation == 0 || metadata->activation != reader->getActivation()) {
+            INFO("new activation detected: " << std::dec << reader->getActivation())
+            metadata->setActivation(reader->getActivation());
         }
 
-        if (oracleAnalyzer->activation == 0 || reader->activationHeader != oracleAnalyzer->activation) {
-            INFO("new activation detected: " << std::dec << reader->activationHeader);
-            oracleAnalyzer->activation = reader->activationHeader;
-            oracleAnalyzer->activationChanged = true;
-        }
-
-        if (oracleAnalyzer->nextScn != ZERO_SCN) {
-            if (oracleAnalyzer->nextScn != reader->firstScnHeader) {
-                RUNTIME_FAIL("incorrect SCN for redo log file, read: " << std::dec << reader->firstScnHeader << " expected: " << oracleAnalyzer->nextScn);
-            }
-        }
-
-        time_t cStart = oracleAnalyzer->getTime();
-        {
-            std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
-            reader->status = READER_STATUS_READ;
-            oracleAnalyzer->readerCond.notify_all();
-            oracleAnalyzer->sleepingCond.notify_all();
-        }
+        time_t cStart = Timer::getTime();
+        reader->setStatusRead();
         LwnMember* lwnMember;
         uint64_t currentBlock = lwnConfirmedBlock;
         uint64_t blockOffset = 16;
         uint64_t startBlock = lwnConfirmedBlock;
-        uint64_t tmpBufferStart = reader->bufferStart;
+        uint64_t confirmedBufferStart = reader->getBufferStart();
         uint64_t recordLength4 = 0;
         uint64_t recordPos = 0;
         uint64_t recordLeftToCopy = 0;
@@ -1098,11 +888,11 @@ namespace OpenLogReplicator {
         lwnCheckpointBlock = lwnConfirmedBlock;
         bool switchRedo = false;
 
-        while (!oracleAnalyzer->shutdown) {
+        while (!ctx->softShutdown) {
             //there is some work to do
-            while (tmpBufferStart < reader->bufferEnd) {
-                uint64_t redoBufferPos = (currentBlock * reader->blockSize) % MEMORY_CHUNK_SIZE;
-                uint64_t redoBufferNum = ((currentBlock * reader->blockSize) / MEMORY_CHUNK_SIZE) % oracleAnalyzer->readBufferMax;
+            while (confirmedBufferStart < reader->getBufferEnd()) {
+                uint64_t redoBufferPos = (currentBlock * reader->getBlockSize()) % MEMORY_CHUNK_SIZE;
+                uint64_t redoBufferNum = ((currentBlock * reader->getBlockSize()) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
                 uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
                 blockOffset = 16;
@@ -1111,75 +901,71 @@ namespace OpenLogReplicator {
                     uint8_t vld = redoBlock[blockOffset + 4];
 
                     if ((vld & 0x04) != 0) {
-                        lwnNum = oracleAnalyzer->read16(redoBlock + blockOffset + 24);
-                        uint32_t lwnLength = oracleAnalyzer->read32(redoBlock + blockOffset + 28);
+                        lwnNum = ctx->read16(redoBlock + blockOffset + 24);
+                        uint32_t lwnLength = ctx->read32(redoBlock + blockOffset + 28);
                         lwnStartBlock = currentBlock;
                         lwnEndBlock = currentBlock + lwnLength;
-                        lwnScn = oracleAnalyzer->readSCN(redoBlock + blockOffset + 40);
-                        lwnTimestamp = oracleAnalyzer->read32(redoBlock + blockOffset + 64);
+                        lwnScn = ctx->readScn(redoBlock + blockOffset + 40);
+                        lwnTimestamp = ctx->read32(redoBlock + blockOffset + 64);
 
                         if (lwnNumCnt == 0) {
                             lwnCheckpointBlock = currentBlock;
-                            lwnNumMax = oracleAnalyzer->read16(redoBlock + blockOffset + 26);
+                            lwnNumMax = ctx->read16(redoBlock + blockOffset + 26);
                             //verify LWN header start
-                            if (lwnScn < reader->firstScn || (lwnScn > reader->nextScn && reader->nextScn != ZERO_SCN)) {
-                                RUNTIME_FAIL("invalid LWN SCN: " << std::dec << lwnScn);
-                            }
+                            if (lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != ZERO_SCN))
+                                throw RedoLogException("invalid LWN SCN: " + std::to_string(lwnScn));
                         } else {
-                            lwnNumCur = oracleAnalyzer->read16(redoBlock + blockOffset + 26);
-                            if (lwnNumCur != lwnNumMax) {
-                                RUNTIME_FAIL("invalid LWN MAX: " << std::dec << lwnNum << "/" << std::dec << lwnNumCur << "/" << std::dec << lwnNumMax);
-                            }
+                            lwnNumCur = ctx->read16(redoBlock + blockOffset + 26);
+                            if (lwnNumCur != lwnNumMax)
+                                throw RedoLogException("invalid LWN MAX: " + std::to_string(lwnNum) + "/" + std::to_string(lwnNumCur) + "/" +
+                                                       std::to_string(lwnNumMax));
                         }
                         ++lwnNumCnt;
 
-                        TRACE(TRACE2_LWN, "LWN: at: " << std::dec << lwnStartBlock << " length: " << lwnLength << " chk: " << std::dec << lwnNum << " max: " << lwnNumMax);
+                        TRACE(TRACE2_LWN, "LWN: at: " << std::dec << lwnStartBlock << " length: " << lwnLength << " chk: " << std::dec << lwnNum << " max: " << lwnNumMax)
 
-                    } else {
-                        RUNTIME_FAIL("did not find LWN at offset: " << std::dec << tmpBufferStart);
-                    }
+                    } else
+                        throw RedoLogException("did not find LWN at offset: " + std::to_string(confirmedBufferStart));
                 }
 
-                while (blockOffset < reader->blockSize) {
+                while (blockOffset < reader->getBlockSize()) {
                     //next record
                     if (recordLeftToCopy == 0) {
-                        if (blockOffset + 20 >= reader->blockSize)
+                        if (blockOffset + 20 >= reader->getBlockSize())
                             break;
 
-                        recordLength4 = (((uint64_t)oracleAnalyzer->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
+                        recordLength4 = (((uint64_t)ctx->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
                         if (recordLength4 > 0) {
                             uint64_t* length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
 
                             if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
-                                if (lwnAllocated == MAX_LWN_CHUNKS) {
-                                    RUNTIME_FAIL("all " << std::dec << MAX_LWN_CHUNKS << " LWN buffers allocated");
-                                }
+                                if (lwnAllocated == MAX_LWN_CHUNKS)
+                                    throw RedoLogException("all " + std::to_string(MAX_LWN_CHUNKS) + " LWN buffers allocated");
 
-                                lwnChunks[lwnAllocated++] = oracleAnalyzer->getMemoryChunk("LWN transaction chunk", false);
+                                lwnChunks[lwnAllocated++] = ctx->getMemoryChunk("parser", false);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
                                 length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
                                 *length = sizeof(uint64_t);
                             }
 
-                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
-                                RUNTIME_FAIL("Too big redo log record, length: " << recordLength4);
-                            }
+                            if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
+                                throw RedoLogException("Too big redo log record, length: " + std::to_string(recordLength4));
 
                             lwnMember = (struct LwnMember*) (lwnChunks[lwnAllocated - 1] + *length);
                             *length += (sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8;
-                            lwnMember->scn = oracleAnalyzer->read32(redoBlock + blockOffset + 8) |
-                                    ((uint64_t)(oracleAnalyzer->read16(redoBlock + blockOffset + 6)) << 32);
-                            lwnMember->subScn = oracleAnalyzer->read16(redoBlock + blockOffset + 12);
+                            lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8) |
+                                             ((uint64_t)(ctx->read16(redoBlock + blockOffset + 6)) << 32);
+                            lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
                             lwnMember->block = currentBlock;
                             lwnMember->offset = blockOffset;
                             lwnMember->length = recordLength4;
-                            TRACE(TRACE2_LWN, "LWN: length: " << std::dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn);
+                            TRACE(TRACE2_LWN, "LWN: length: " << std::dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn)
 
                             uint64_t lwnPos = lwnRecords++;
-                            if (lwnPos == MAX_RECORDS_IN_LWN) {
-                                RUNTIME_FAIL("all " << std::dec << lwnPos << " records in LWN were used");
-                            }
+                            if (lwnPos >= MAX_RECORDS_IN_LWN)
+                                throw RedoLogException("all " + std::to_string(lwnPos) + " records in LWN were used");
+
                             while (lwnPos > 0 &&
                                     (lwnMembers[lwnPos - 1]->scn > lwnMember->scn ||
                                         (lwnMembers[lwnPos - 1]->scn == lwnMember->scn && lwnMembers[lwnPos - 1]->subScn > lwnMember->subScn))) {
@@ -1198,8 +984,8 @@ namespace OpenLogReplicator {
                         break;
 
                     uint64_t toCopy;
-                    if (blockOffset + recordLeftToCopy > reader->blockSize)
-                        toCopy = reader->blockSize - blockOffset;
+                    if (blockOffset + recordLeftToCopy > reader->getBlockSize())
+                        toCopy = reader->getBlockSize() - blockOffset;
                     else
                         toCopy = recordLeftToCopy;
 
@@ -1210,151 +996,131 @@ namespace OpenLogReplicator {
                 }
 
                 ++currentBlock;
-                tmpBufferStart += reader->blockSize;
-                redoBufferPos += reader->blockSize;
+                confirmedBufferStart += reader->getBlockSize();
+                redoBufferPos += reader->getBlockSize();
 
                 //checkpoint
-                TRACE(TRACE2_LWN, "LWN: checkpoint at " << std::dec << currentBlock << "/" << lwnEndBlock << " num: " << lwnNumCnt << "/" << lwnNumMax);
+                TRACE(TRACE2_LWN, "LWN: checkpoint at " << std::dec << currentBlock << "/" << lwnEndBlock << " num: " << lwnNumCnt << "/" << lwnNumMax)
                 if (currentBlock == lwnEndBlock && lwnNumCnt == lwnNumMax) {
-                    try {
-                        TRACE(TRACE2_LWN, "LWN: analyze");
-                        for (uint64_t i = 0; i < lwnRecords; ++i) {
-                            TRACE(TRACE2_LWN, "LWN: analyze blk: " << std::dec << lwnMembers[i]->block << " offset: " << lwnMembers[i]->offset <<
-                                    " scn: " << lwnMembers[i]->scn << " subscn: " << lwnMembers[i]->subScn);
+                    TRACE(TRACE2_LWN, "LWN: analyze")
+                    for (uint64_t i = 0; i < lwnRecords; ++i) {
+                        try {
                             analyzeLwn(lwnMembers[i]);
-                            if (lwnScnMax < lwnMembers[i]->scn)
-                                lwnScnMax = lwnMembers[i]->scn;
+                        } catch (RedoLogException &ex) {
+                            if (FLAG(REDO_FLAGS_IGNORE_DATA_ERRORS)) {
+                                WARNING("forced to continue working in spite of error: " << ex.msg)
+                            } else
+                                throw RedoLogException("runtime error, aborting further redo log processing: " + ex.msg);
                         }
-
-                        if (lwnScn > oracleAnalyzer->firstScn &&
-                                oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, false) &&
-                                oracleAnalyzer->checkpointOutputCheckpoint) {
-                            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn);
-                            oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
-
-                            if (oracleAnalyzer->stopCheckpoints > 0) {
-                                --oracleAnalyzer->stopCheckpoints;
-                                if (oracleAnalyzer->stopCheckpoints == 0) {
-                                    INFO("shutdown started - exhausted number of checkpoints");
-                                    instrumentedShutdown = true;
-                                }
-                            }
-                        }
-                    } catch (RedoLogException& ex) {
-                        if ((oracleAnalyzer->flags & REDO_FLAGS_ON_ERROR_CONTINUE) == 0) {
-                            RUNTIME_FAIL("runtime error, aborting further redo log processing");
-                        } else
-                            WARNING("forced to continue working in spite of error");
                     }
 
-                    TRACE(TRACE2_LWN, "LWN: scn: " << std::dec << lwnScnMax);
+                    if (lwnScn > metadata->firstDataScn) {
+                        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn)
+                        builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), switchRedo);
+
+                        typeSeq minSequence = ZERO_SEQ;
+                        uint64_t minOffset = -1;
+                        typeXid minXid;
+                        transactionBuffer->checkpoint(minSequence, minOffset, minXid);
+                        metadata->checkpoint(lwnScn, lwnTimestamp, currentBlock * reader->getBlockSize(),
+                                             (currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence, minOffset, minXid);
+
+                        if (ctx->stopCheckpoints > 0) {
+                            --ctx->stopCheckpoints;
+                            if (ctx->stopCheckpoints == 0) {
+                                INFO("shutdown started - exhausted number of checkpoints")
+                                ctx->stopSoft();
+                            }
+                        }
+                    }
+
                     lwnNumCnt = 0;
                     freeLwn();
+                    lwnRecords = 0;
                     lwnConfirmedBlock = currentBlock;
-                } else
-                if (lwnNumCnt > lwnNumMax) {
-                    RUNTIME_FAIL("LWN overflow: " << std::dec << lwnNumCnt << "/" << lwnNumMax);
-                }
+                } else if (lwnNumCnt > lwnNumMax)
+                    throw RedoLogException("LWN overflow: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
 
+                //free memory
                 if (redoBufferPos == MEMORY_CHUNK_SIZE) {
                     redoBufferPos = 0;
                     reader->bufferFree(redoBufferNum);
-                    if (++redoBufferNum == oracleAnalyzer->readBufferMax)
+                    if (++redoBufferNum == ctx->readBufferMax)
                         redoBufferNum = 0;
-
-                    {
-                        std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
-                        reader->bufferStart = tmpBufferStart;
-                        if (reader->status == READER_STATUS_READ) {
-                            oracleAnalyzer->readerCond.notify_all();
-                        }
-                    }
+                    reader->confirmReadData(confirmedBufferStart);
                 }
             }
 
-            if (oracleAnalyzer->checkpointOutputCheckpoint) {
-                if (!switchRedo && lwnScn > 0 && lwnScn > oracleAnalyzer->firstScn && tmpBufferStart == reader->bufferEnd &&
-                        reader->ret == REDO_FINISHED) {
-                    switchRedo = true;
-                    TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " with switch");
-                    oracleAnalyzer->checkpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
-                    oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, switchRedo);
-                } else if (instrumentedShutdown) {
-                    TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " at exit");
-                    oracleAnalyzer->outputBuffer->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->blockSize, false);
-                }
+            //processing finished
+            if (!switchRedo && lwnScn > 0 && lwnScn > metadata->firstDataScn &&
+                    confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == REDO_FINISHED) {
+                switchRedo = true;
+                TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " with switch")
+                builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), switchRedo);
+            } else if (ctx->softShutdown) {
+                TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: on: " << lwnScn << " at exit")
+                builder->processCheckpoint(lwnScn, lwnTimestamp, sequence, currentBlock * reader->getBlockSize(), false);
             }
 
-            if (instrumentedShutdown) {
-                stopMain();
-                oracleAnalyzer->shutdown = true;
-            } else if (!oracleAnalyzer->shutdown) {
-                std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
-                if (reader->bufferStart < tmpBufferStart)
-                    reader->bufferStart = tmpBufferStart;
-
-                //all work done
-                if (tmpBufferStart == reader->bufferEnd) {
-                    if (reader->ret == REDO_FINISHED && nextScn == ZERO_SCN && reader->nextScn != 0)
-                        nextScn = reader->nextScn;
-
-                    if (reader->ret == REDO_STOPPED || reader->ret == REDO_OVERWRITTEN) {
-                        oracleAnalyzer->offset = lwnConfirmedBlock * reader->blockSize;
-                        break;
-                    } else
-                    if (reader->ret == REDO_FINISHED || reader->status == READER_STATUS_SLEEPING)
-                        break;
-                    oracleAnalyzer->analyzerCond.wait(lck);
+            if (ctx->softShutdown) {
+                reader->setRet(REDO_SHUTDOWN);
+            } else {
+                if (reader->checkFinished(confirmedBufferStart)) {
+                    if (reader->getRet() == REDO_FINISHED && nextScn == ZERO_SCN && reader->getNextScn() != ZERO_SCN)
+                        nextScn = reader->getNextScn();
+                    if (reader->getRet() == REDO_STOPPED || reader->getRet() == REDO_OVERWRITTEN)
+                        metadata->offset = lwnConfirmedBlock * reader->getBlockSize();
+                    break;
                 }
             }
         }
 
         //print performance information
-        if ((trace2 & TRACE2_PERFORMANCE) != 0) {
+        if ((ctx->trace2 & TRACE2_PERFORMANCE) != 0) {
             double suppLogPercent = 0.0;
             if (currentBlock != startBlock)
-                suppLogPercent = 100.0 * oracleAnalyzer->suppLogSize / ((currentBlock - startBlock) * reader->blockSize);
+                suppLogPercent = 100.0 * ctx->suppLogSize / ((currentBlock - startBlock) * reader->getBlockSize());
 
             if (group == 0) {
-                time_t cEnd = oracleAnalyzer->getTime();
+                time_t cEnd = Timer::getTime();
                 double mySpeed = 0;
-                double myTime = (cEnd - cStart) / 1000.0;
+                double myTime = (double)(cEnd - cStart) / 1000.0;
                 if (myTime > 0)
-                    mySpeed = (currentBlock - startBlock) * reader->blockSize * 1000.0 / 1024 / 1024 / myTime;
+                    mySpeed = (double)(currentBlock - startBlock) * reader->getBlockSize() * 1000.0 / 1024 / 1024 / myTime;
 
                 double myReadSpeed = 0;
-                if (reader->sumTime > 0)
-                    myReadSpeed = (reader->sumRead * 1000000.0 / 1024 / 1024 / reader->sumTime);
+                if (reader->getSumTime() > 0)
+                    myReadSpeed = ((double)reader->getSumRead() * 1000000.0 / 1024 / 1024 / (double)reader->getSumTime());
 
                 TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " << myTime << " ms, " <<
                         "Speed: " << std::fixed << std::setprecision(2) << mySpeed << " MB/s, " <<
-                        "Redo log size: " << std::dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
-                        "Read size: " << (reader->sumRead / 1024 / 1024) << " MB, " <<
+                        "Redo log size: " << std::dec << ((currentBlock - startBlock) * reader->getBlockSize() / 1024 / 1024) << " MB, " <<
+                        "Read size: " << (reader->getSumRead() / 1024 / 1024) << " MB, " <<
                         "Read speed: " << myReadSpeed << " MB/s, " <<
                         "Max LWN size: " << std::dec << lwnAllocatedMax << ", " <<
-                        "Supplemental redo log size: " << std::dec << oracleAnalyzer->suppLogSize << " bytes " <<
-                        "(" << std::fixed << std::setprecision(2) << suppLogPercent << " %)");
+                        "Supplemental redo log size: " << std::dec << ctx->suppLogSize << " bytes " <<
+                        "(" << std::fixed << std::setprecision(2) << suppLogPercent << " %)")
             } else {
                 TRACE(TRACE2_PERFORMANCE, "PERFORMANCE: " <<
-                        "Redo log size: " << std::dec << ((currentBlock - startBlock) * reader->blockSize / 1024 / 1024) << " MB, " <<
+                        "Redo log size: " << std::dec << ((currentBlock - startBlock) * reader->getBlockSize() / 1024 / 1024) << " MB, " <<
                         "Max LWN size: " << std::dec << lwnAllocatedMax << ", " <<
-                        "Supplemental redo log size: " << std::dec << oracleAnalyzer->suppLogSize << " bytes " <<
-                        "(" << std::fixed << std::setprecision(2) << suppLogPercent << " %)");
+                        "Supplemental redo log size: " << std::dec << ctx->suppLogSize << " bytes " <<
+                        "(" << std::fixed << std::setprecision(2) << suppLogPercent << " %)")
             }
         }
 
-        if (oracleAnalyzer->dumpRedoLog >= 1 && oracleAnalyzer->dumpStream.is_open()) {
-            oracleAnalyzer->dumpStream << "END OF REDO DUMP" << std::endl;
-            oracleAnalyzer->dumpStream.close();
+        if (ctx->dumpRedoLog >= 1 && ctx->dumpStream.is_open()) {
+            ctx->dumpStream << "END OF REDO DUMP" << std::endl;
+            ctx->dumpStream.close();
         }
 
         freeLwn();
-        return reader->ret;
+        return reader->getRet();
     }
 
-    std::ostream& operator<<(std::ostream& os, const RedoLog& redoLog) {
-        os << "group: " << std::dec << redoLog.group << " scn: " << redoLog.firstScn << " to " <<
-                ((redoLog.nextScn != ZERO_SCN) ? redoLog.nextScn : 0) << " seq: " << redoLog.sequence << " path: " << redoLog.path;
+    std::ostream& operator<<(std::ostream& os, const Parser& parser) {
+        os << "group: " << std::dec << parser.group << " scn: " << parser.firstScn << " to " <<
+                ((parser.nextScn != ZERO_SCN) ? parser.nextScn : 0) << " seq: " << parser.sequence << " path: " << parser.path;
         return os;
     }
 }

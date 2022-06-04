@@ -20,12 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTabSubPart.h"
 
 namespace OpenLogReplicator {
-    SysTabSubPartKey::SysTabSubPartKey() :
-            pObj(0),
-            obj(0) {
-    }
-
-    SysTabSubPartKey::SysTabSubPartKey(typeOBJ pObj, typeOBJ obj) :
+    SysTabSubPartKey::SysTabSubPartKey(typeObj pObj, typeObj obj) :
             pObj(pObj),
             obj(obj) {
     }
@@ -38,18 +33,15 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabSubPart::SysTabSubPart(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj, bool touched) :
+    SysTabSubPart::SysTabSubPart(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeObj pObj, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
             pObj(pObj),
-            touched(touched),
-            saved(false) {
+            touched(touched) {
     }
 
     bool SysTabSubPart::operator!=(const SysTabSubPart& other) const {
-        if (other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.pObj != pObj)
-            return true;
-        return false;
+        return other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.pObj != pObj;
     }
 }

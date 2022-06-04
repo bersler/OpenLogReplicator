@@ -254,7 +254,6 @@ namespace OpenLogReplicator {
 
     void Metadata::writeCheckpoint(bool force) {
         std::stringstream ss;
-        time_t now = time(nullptr);
 
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -309,7 +308,6 @@ namespace OpenLogReplicator {
         std::set<std::string> namesList;
         state->list(namesList);
 
-        typeScn fileScnMax = 0;
         for (std::string name : namesList) {
             std::string prefix(database + "-chkpt-");
             if (name.length() < prefix.length() || name.substr(0, prefix.length()).compare(prefix) != 0)
@@ -399,7 +397,6 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::deleteOldCheckpoints() {
-        time_t now = time(nullptr);
         std::set<typeScn> scnToDrop;
 
         if (FLAG(REDO_FLAGS_CHECKPOINT_KEEP))

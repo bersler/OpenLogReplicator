@@ -24,10 +24,9 @@ namespace OpenLogReplicator {
         CharacterSet("AL32UTF8") {
     }
 
-    CharacterSetAL32UTF8::~CharacterSetAL32UTF8() {
-    }
+    CharacterSetAL32UTF8::~CharacterSetAL32UTF8() = default;
 
-    typeunicode CharacterSetAL32UTF8::decode(const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetAL32UTF8::decode(const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
 
@@ -72,7 +71,7 @@ namespace OpenLogReplicator {
 
         //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         if ((byte1 & 0xF8) == 0xF0) {
-            typeunicode character = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
+            typeUnicode character = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
             if (character <= 0x10FFFF && (character < 0xD800 || character > 0xDFFF))
                 return character;
         }

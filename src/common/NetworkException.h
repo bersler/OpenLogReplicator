@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <ctime>
 #include <exception>
+#include <sstream>
+#include <string>
 
 #include "types.h"
 
@@ -27,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class NetworkException: public std::exception {
     public:
-        const char* msg;
+        std::string msg;
 
-        NetworkException(const char* msg);
-        virtual ~NetworkException();
+        explicit NetworkException(const std::string newMsg);
+        explicit NetworkException(const char* msg);
+        ~NetworkException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const NetworkException& exception);
     };

@@ -18,6 +18,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <exception>
+#include <sstream>
+#include <ctime>
+#include <string>
 
 #include "types.h"
 
@@ -27,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RedoLogException: public std::exception {
     public:
-        const char* msg;
+        std::string msg;
 
-        RedoLogException(const char* msg);
-        virtual ~RedoLogException();
+        explicit RedoLogException(std::string msg);
+        explicit RedoLogException(const char* msg);
+        ~RedoLogException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const RedoLogException& exception);
     };

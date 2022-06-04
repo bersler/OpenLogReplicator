@@ -1,4 +1,4 @@
-/* Memory buffer for handling output data in JSON format
+/* Memory buffer for handling output buffer in JSON format
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,26 +17,26 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "OutputBufferProtobuf.h"
-#include "RowId.h"
-#include "RuntimeException.h"
+#include "../common/OracleColumn.h"
+#include "../common/OracleObject.h"
+#include "../common/RuntimeException.h"
+#include "../common/SysCol.h"
+#include "../common/typeRowId.h"
+#include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    OutputBufferProtobuf::OutputBufferProtobuf(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
-            uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
-            uint64_t flushBuffer) :
-        OutputBuffer(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
-                unknownType, flushBuffer),
-        redoResponsePB(nullptr),
-        valuePB(nullptr),
-        payloadPB(nullptr),
-        schemaPB(nullptr) {
+    BuilderProtobuf::BuilderProtobuf(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat,
+                                     uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat,
+                                     uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer) :
+            Builder(ctx, locales, metadata, messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat,
+                    columnFormat, unknownType, flushBuffer),
+            redoResponsePB(nullptr),
+            valuePB(nullptr),
+            payloadPB(nullptr),
+            schemaPB(nullptr) {
     }
 
-    OutputBufferProtobuf::~OutputBufferProtobuf() {
+    BuilderProtobuf::~BuilderProtobuf() {
         if (redoResponsePB != nullptr) {
             delete redoResponsePB;
             redoResponsePB = nullptr;
@@ -44,36 +44,30 @@ namespace OpenLogReplicator {
         google::protobuf::ShutdownProtobufLibrary();
     }
 
-    void OutputBufferProtobuf::initialize(OracleAnalyzer *oracleAnalyzer) {
-        OutputBuffer::initialize(oracleAnalyzer);
-
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
-    }
-
-    void OutputBufferProtobuf::columnNull(OracleObject* object, typeCOL col) {
+    void BuilderProtobuf::columnNull(OracleObject* object, typeCol col) {
         if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = object->columns[col];
             if (column->storedAsLob)
                 return;
-            if (column->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
                 return;
-            if (column->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+            if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
                 return;
-            if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (column->invisible && !FLAG(REDO_FLAGS_SHOW_INVISIBLE_COLUMNS))
                 return;
-            if (column->unused && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_UNUSED_COLUMNS) == 0)
+            if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
                 return;
 
-            uint64_t typeNo = object->columns[col]->typeNo;
-            if (typeNo != 1 //varchar2/nvarchar2
-                    && typeNo != 96 //char/nchar
-                    && typeNo != 2 //number/float
-                    && typeNo != 12 //date
-                    && typeNo != 180 //timestamp
-                    && typeNo != 23 //raw
-                    && typeNo != 100 //binary_float
-                    && typeNo != 101 //binary_double
-                    && typeNo != 181) //timestamp with time zone
+            uint64_t typeNo = object->columns[col]->type;
+            if (typeNo != SYSCOL_TYPE_VARCHAR
+                    && typeNo != SYSCOL_TYPE_CHAR
+                    && typeNo != SYSCOL_TYPE_NUMBER
+                    && typeNo != SYSCOL_TYPE_DATE
+                    && typeNo != SYSCOL_TYPE_TIMESTAMP
+                    && typeNo != SYSCOL_TYPE_RAW
+                    && typeNo != SYSCOL_TYPE_FLOAT
+                    && typeNo != SYSCOL_TYPE_DOUBLE
+                    && typeNo != SYSCOL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
 
@@ -85,22 +79,22 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferProtobuf::columnFloat(std::string& columnName, float value) {
+    void BuilderProtobuf::columnFloat(std::string& columnName, float value) {
         valuePB->set_name(columnName);
         valuePB->set_value_float(value);
     }
 
-    void OutputBufferProtobuf::columnDouble(std::string& columnName, double value) {
+    void BuilderProtobuf::columnDouble(std::string& columnName, double value) {
         valuePB->set_name(columnName);
         valuePB->set_value_double(value);
     }
 
-    void OutputBufferProtobuf::columnString(std::string& columnName) {
+    void BuilderProtobuf::columnString(std::string& columnName) {
         valuePB->set_name(columnName);
         valuePB->set_value_string(valueBuffer, valueLength);
     }
 
-    void OutputBufferProtobuf::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
+    void BuilderProtobuf::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
         valuePB->set_name(columnName);
         valueBuffer[valueLength] = 0;
         char* retPtr;
@@ -108,43 +102,39 @@ namespace OpenLogReplicator {
         if (scale == 0 && precision <= 17) {
             int64_t value = strtol(valueBuffer, &retPtr, 10);
             valuePB->set_value_int(value);
-        } else
-        if (precision <= 6 && scale < 38)
-        {
-            float value = strtol(valueBuffer, &retPtr, 10);
+        } else if (precision <= 6 && scale < 38) {
+            float value = strtof(valueBuffer, &retPtr);
             valuePB->set_value_float(value);
-        } else
-        if (precision <= 15 && scale <= 307)
-        {
-            double value = strtol(valueBuffer, &retPtr, 10);
+        } else if (precision <= 15 && scale <= 307) {
+            double value = strtod(valueBuffer, &retPtr);
             valuePB->set_value_double(value);
         } else {
             valuePB->set_value_string(valueBuffer, valueLength);
         }
     }
 
-    void OutputBufferProtobuf::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
+    void BuilderProtobuf::columnRaw(std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
-    void OutputBufferProtobuf::columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) {
+    void BuilderProtobuf::columnTimestamp(std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)), const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
-    void OutputBufferProtobuf::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
+    void BuilderProtobuf::appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
         if ((messageFormat & MESSAGE_FORMAT_ADD_SEQUENCES) != 0)
             payloadPB->set_num(num);
 
         if (ridFormat == RID_FORMAT_SKIP)
             return;
 
-        RowId rowId(dataObj, bdba, slot);
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         payloadPB->set_rid(str, 18);
     }
 
-    void OutputBufferProtobuf::appendHeader(bool first, bool showXid) {
+    void BuilderProtobuf::appendHeader(bool first, bool showXid) {
         redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
@@ -159,7 +149,7 @@ namespace OpenLogReplicator {
         if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
                 char iso[21];
-                lastTime.toISO8601(iso);
+                lastTime.toIso8601(iso);
                 redoResponsePB->set_tms(iso);
             } else {
                 redoResponsePB->set_tm(lastTime.toTime() * 1000);
@@ -169,19 +159,19 @@ namespace OpenLogReplicator {
         if (showXid) {
             if (xidFormat == XID_FORMAT_TEXT) {
                 std::stringstream sb;
-                sb << (uint64_t)USN(lastXid);
+                sb << (uint64_t)lastXid.usn();
                 sb << '.';
-                sb << (uint64_t)SLT(lastXid);
+                sb << (uint64_t)lastXid.slt();
                 sb << '.';
-                sb << (uint64_t)SQN(lastXid);
+                sb << (uint64_t)lastXid.sqn();
                 redoResponsePB->set_xid(sb.str());
             } else {
-                redoResponsePB->set_xidn(lastXid);
+                redoResponsePB->set_xidn(lastXid.getVal());
             }
         }
     }
 
-    void OutputBufferProtobuf::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
+    void BuilderProtobuf::appendSchema(OracleObject* object, typeDataObj dataObj) {
         if (object == nullptr) {
             std::string objectName("OBJ_" + std::to_string(dataObj));
             schemaPB->set_name(objectName);
@@ -205,94 +195,94 @@ namespace OpenLogReplicator {
             schemaPB->add_column();
             pb::Column* columnPB = schemaPB->mutable_column(schemaPB->column_size() - 1);
 
-            for (typeCOL column = 0; column < object->columns.size(); ++column) {
+            for (typeCol column = 0; column < (typeCol)object->columns.size(); ++column) {
                 if (object->columns[column] == nullptr)
                     continue;
 
                 columnPB->set_name(object->columns[column]->name);
 
-                switch(object->columns[column]->typeNo) {
-                case 1: //varchar2(n), nvarchar2(n)
+                switch(object->columns[column]->type) {
+                case SYSCOL_TYPE_VARCHAR:
                     columnPB->set_type(pb::VARCHAR2);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 2: //number(p, s), float(p)
+                case SYSCOL_TYPE_NUMBER:
                     columnPB->set_type(pb::NUMBER);
-                    columnPB->set_precision(object->columns[column]->precision);
-                    columnPB->set_scale(object->columns[column]->scale);
+                    columnPB->set_precision((int32_t)object->columns[column]->precision);
+                    columnPB->set_scale((int32_t)object->columns[column]->scale);
                     break;
 
-                case 8: //long, not supported
+                case SYSCOL_TYPE_LONG: //long, not supported
                     columnPB->set_type(pb::LONG);
                     break;
 
-                case 12: //date
+                case SYSCOL_TYPE_DATE:
                     columnPB->set_type(pb::DATE);
                     break;
 
-                case 23: //raw(n)
+                case SYSCOL_TYPE_RAW:
                     columnPB->set_type(pb::RAW);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 24: //long raw, not supported
+                case SYSCOL_TYPE_LONG_RAW: //not supported
                     columnPB->set_type(pb::LONG_RAW);
                     break;
 
-                case 69: //rowid, not supported
+                case SYSCOL_TYPE_ROWID: //not supported
                     columnPB->set_type(pb::ROWID);
                     break;
 
-                case 96: //char(n), nchar(n)
+                case SYSCOL_TYPE_CHAR:
                     columnPB->set_type(pb::CHAR);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 100: //binary float
+                case SYSCOL_TYPE_FLOAT:
                     columnPB->set_type(pb::BINARY_FLOAT);
                     break;
 
-                case 101: //binary double
+                case SYSCOL_TYPE_DOUBLE:
                     columnPB->set_type(pb::BINARY_DOUBLE);
                     break;
 
-                case 112: //clob, nclob, not supported
+                case SYSCOL_TYPE_CLOB: //not supported
                     columnPB->set_type(pb::CLOB);
                     break;
 
-                case 113: //blob, not supported
+                case SYSCOL_TYPE_BLOB: //not supported
                     columnPB->set_type(pb::BLOB);
                     break;
 
-                case 180: //timestamp(n)
+                case SYSCOL_TYPE_TIMESTAMP:
                     columnPB->set_type(pb::TIMESTAMP);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 181: //timestamp with time zone(n)
+                case SYSCOL_TYPE_TIMESTAMP_WITH_TZ:
                     columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 182: //interval year to month(n)
+                case SYSCOL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 183: //interval day to second(n)
+                case SYSCOL_TYPE_INTERVAL_DAY_TO_SECOND:
                     columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 208: //urowid(n)
+                case SYSCOL_TYPE_URAWID:
                     columnPB->set_type(pb::UROWID);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case 231: //timestamp with local time zone(n), not supported
+                case SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: //not supported
                     columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
-                    columnPB->set_length(object->columns[column]->length);
+                    columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
                 default:
@@ -305,18 +295,18 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OutputBufferProtobuf::numToString(uint64_t value, char* buf, uint64_t length) {
+    void BuilderProtobuf::numToString(uint64_t value, char* buf, uint64_t length) {
         uint64_t j = (length - 1) * 4;
         for (uint64_t i = 0; i < length; ++i) {
             buf[i] = map16[(value >> j) & 0xF];
             j -= 4;
-        };
+        }
         buf[length] = 0;
     }
 
-    void OutputBufferProtobuf::processBegin(void) {
+    void BuilderProtobuf::processBeginMessage() {
         newTran = false;
-        outputBufferBegin(0);
+        builderBegin(0);
 
         createResponse();
         appendHeader(true, true);
@@ -331,63 +321,25 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret) {
-                RUNTIME_FAIL("PB begin processing failed, error serializing to string");
-            }
-            outputBufferAppend(output);
-            outputBufferCommit(false);
+            if (!ret)
+                throw RuntimeException("PB begin processing failed, error serializing to string");
+            builderAppend(output);
+            builderCommit(false);
         }
     }
 
-    void OutputBufferProtobuf::processCommit(void) {
-        //skip empty transaction
-        if (newTran) {
-            newTran = false;
-            return;
-        }
-
-        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("PB commit processing failed, message missing, internal error");
-            }
-        } else {
-            outputBufferBegin(0);
-
-            createResponse();
-            appendHeader(true, true);
-
-            redoResponsePB->add_payload();
-            payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
-            payloadPB->set_op(pb::COMMIT);
-        }
-
-        std::string output;
-        bool ret = redoResponsePB->SerializeToString(&output);
-        delete redoResponsePB;
-        redoResponsePB = nullptr;
-
-        if (!ret) {
-            RUNTIME_FAIL("PB commit processing failed, error serializing to string");
-        }
-        outputBufferAppend(output);
-        outputBufferCommit(true);
-
-        num = 0;
-    }
-
-    void OutputBufferProtobuf::processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderProtobuf::processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("PB insert processing failed, message missing, internal error");
-            }
+            if (redoResponsePB == nullptr)
+                throw RuntimeException("PB insert processing failed, message missing, internal error");
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
             createResponse();
             appendHeader(true, true);
@@ -408,28 +360,26 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret) {
-                RUNTIME_FAIL("PB insert processing failed, error serializing to string");
-            }
-            outputBufferAppend(output);
-            outputBufferCommit(false);
+            if (!ret)
+                throw RuntimeException("PB insert processing failed, error serializing to string");
+            builderAppend(output);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferProtobuf::processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderProtobuf::processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("PB update processing failed, message missing, internal error");
-            }
+            if (redoResponsePB == nullptr)
+                throw RuntimeException("PB update processing failed, message missing, internal error");
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
             createResponse();
             appendHeader(true, true);
@@ -451,29 +401,27 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret) {
-                RUNTIME_FAIL("PB update processing failed, error serializing to string");
-            }
-            outputBufferAppend(output);
-            outputBufferCommit(false);
+            if (!ret)
+                throw RuntimeException("PB update processing failed, error serializing to string");
+            builderAppend(output);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferProtobuf::processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderProtobuf::processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("PB delete processing failed, message missing, internal error");
-            }
+            if (redoResponsePB == nullptr)
+                throw RuntimeException("PB delete processing failed, message missing, internal error");
         } else {
 
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
             createResponse();
             appendHeader(true, true);
@@ -494,23 +442,21 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret) {
-                RUNTIME_FAIL("PB delete processing failed, error serializing to string");
-            }
-            outputBufferAppend(output);
-            outputBufferCommit(false);
+            if (!ret)
+                throw RuntimeException("PB delete processing failed, error serializing to string");
+            builderAppend(output);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferProtobuf::processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) {
+    void BuilderProtobuf::processDdl(OracleObject* object __attribute__((unused)), typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            if (redoResponsePB == nullptr) {
-                RUNTIME_FAIL("PB commit processing failed, message missing, internal error");
-            }
+            if (redoResponsePB == nullptr)
+                throw RuntimeException("PB commit processing failed, message missing, internal error");
         } else {
             createResponse();
             appendHeader(true, true);
@@ -527,18 +473,63 @@ namespace OpenLogReplicator {
             delete redoResponsePB;
             redoResponsePB = nullptr;
 
-            if (!ret) {
-                RUNTIME_FAIL("PB commit processing failed, error serializing to string");
-            }
-            outputBufferAppend(output);
-            outputBufferCommit(true);
+            if (!ret)
+                throw RuntimeException("PB commit processing failed, error serializing to string");
+            builderAppend(output);
+            builderCommit(true);
         }
         ++num;
     }
 
-    void OutputBufferProtobuf::processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) {
+    void BuilderProtobuf::initialize() {
+        Builder::initialize();
+
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+    }
+
+    void BuilderProtobuf::processCommit(bool system) {
+        if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            return;
+
+        //skip empty transaction
+        if (newTran) {
+            newTran = false;
+            return;
+        }
+
+        if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
+            if (redoResponsePB == nullptr)
+                throw RuntimeException("PB commit processing failed, message missing, internal error");
+        } else {
+            builderBegin(0);
+
+            createResponse();
+            appendHeader(true, true);
+
+            redoResponsePB->add_payload();
+            payloadPB = redoResponsePB->mutable_payload(redoResponsePB->payload_size() - 1);
+            payloadPB->set_op(pb::COMMIT);
+        }
+
+        std::string output;
+        bool ret = redoResponsePB->SerializeToString(&output);
+        delete redoResponsePB;
+        redoResponsePB = nullptr;
+
+        if (!ret)
+            throw RuntimeException("PB commit processing failed, error serializing to string");
+        builderAppend(output);
+        builderCommit(true);
+
+        num = 0;
+    }
+
+    void BuilderProtobuf::processCheckpoint(typeScn scn __attribute__((unused)), typeTime time_ __attribute__((unused)), typeSeq sequence, uint64_t offset, bool redo) {
+        if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
+            return;
+
         createResponse();
-        outputBufferBegin(0);
+        builderBegin(0);
         appendHeader(true, true);
 
         redoResponsePB->add_payload();
@@ -553,10 +544,9 @@ namespace OpenLogReplicator {
         delete redoResponsePB;
         redoResponsePB = nullptr;
 
-        if (!ret) {
-            RUNTIME_FAIL("PB commit processing failed, error serializing to string");
-        }
-        outputBufferAppend(output);
-        outputBufferCommit(true);
+        if (!ret)
+            throw RuntimeException("PB commit processing failed, error serializing to string");
+        builderAppend(output);
+        builderCommit(true);
     }
 }

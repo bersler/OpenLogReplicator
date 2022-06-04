@@ -1,5 +1,5 @@
 {
-  "version": "0.9.34",
+  "version": "0.9.42",
   "source": [
     {
       "alias": "S1",
@@ -24,7 +24,7 @@
   ],
   "target": [
     {
-      "alias": "K1", 
+      "alias": "K1",
       "source": "S1",
       "writer": {
         "type": "kafka",

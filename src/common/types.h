@@ -17,77 +17,64 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <cstdint>
 #include <iomanip>
 #include <iostream>
-#include <ostream>
 #include <sstream>
-#include <string.h>
-#include <time.h>
+#include <string>
 
-#include "../config.h"
-#include "global.h"
+#include "../../config.h"
 
 #ifndef TYPES_H_
 #define TYPES_H_
 
-typedef uint32_t typeRESETLOGS;
-typedef uint32_t typeACTIVATION;
-typedef uint16_t typeSUM;
-typedef uint16_t typeOP1;
-typedef uint32_t typeOP2;
-typedef int16_t typeCONID;
-typedef uint64_t typeUBA;
-typedef uint32_t typeSEQ;
-typedef uint64_t typeSCN;
-typedef uint16_t typeSubSCN;
-typedef uint8_t typeSLT;
-typedef uint32_t typeSQN;
-typedef uint8_t typeRCI;
-typedef int16_t typeUSN;
-typedef uint64_t typeXID;
-typedef uint64_t typeXIDMAP;
-typedef uint16_t typeAFN;
-typedef uint32_t typeDBA;
-typedef uint16_t typeSLOT;
-typedef uint32_t typeBLK;
-typedef uint32_t typeOBJ;
-typedef uint32_t typeDATAOBJ;
-typedef uint64_t typeOBJ2;
-typedef int16_t typeCOL;
-typedef uint16_t typeTYPE;
-typedef uint32_t typeCON;
-typedef uint32_t typeUSER;
-typedef uint8_t  typeOPTIONS;
-typedef uint16_t typeFIELD;
+#define ERROR(__x)                              {std::stringstream __s; time_t __now = time(nullptr); tm __nowTm = *localtime(&__now); char __str[50]; strftime(__str, sizeof(__str), "%F %T", &__nowTm); __s << __str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }
 
-typedef uint16_t typeunicode16;
-typedef uint32_t typeunicode32;
-typedef uint64_t typeunicode;
+typedef uint32_t typeResetlogs;
+typedef uint32_t typeActivation;
+typedef uint16_t typeSum;
+typedef uint16_t typeOp1;
+typedef uint32_t typeOp2;
+typedef int16_t typeConId;
+typedef uint64_t typeUba;
+typedef uint32_t typeSeq;
+typedef uint64_t typeScn;
+typedef uint16_t typeSubScn;
+typedef uint8_t typeSlt;
+typedef uint32_t typeSqn;
+typedef uint8_t typeRci;
+typedef int16_t typeUsn;
+typedef uint64_t typeXidMap;
+typedef uint16_t typeAfn;
+typedef uint32_t typeDba;
+typedef uint16_t typeSlot;
+typedef uint32_t typeBlk;
+typedef uint32_t typeObj;
+typedef uint32_t typeDataObj;
+typedef uint64_t typeObj2;
+typedef int16_t typeCol;
+typedef uint16_t typeType;
+typedef uint32_t typeCon;
+typedef uint32_t typeUser;
+typedef uint8_t  typeOptions;
+typedef uint16_t typeField;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.34"
+typedef uint16_t typeUnicode16;
+typedef uint32_t typeUnicode32;
+typedef uint64_t typeUnicode;
+
+#define CONFIG_SCHEMA_VERSION                   "0.9.41"
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
-#define SCHEMA_FILE_MAX_SIZE                    2147483648
-#define ZERO_SEQ                                ((typeSEQ)0xFFFFFFFF)
-#define ZERO_SCN                                ((typeSCN)0xFFFFFFFFFFFFFFFF)
-#define ZERO_BLK                                ((typeBLK)0xFFFFFFFF)
+#define CHECKPOINT_SCHEMA_FILE_MAX_SIZE         2147483648
+#define ZERO_SEQ                                ((typeSeq)0xFFFFFFFF)
+#define ZERO_SCN                                ((typeScn)0xFFFFFFFFFFFFFFFF)
+#define ZERO_BLK                                ((typeBlk)0xFFFFFFFF)
 #define MEMORY_ALIGNMENT                        512
 #define MAX_PATH_LENGTH                         2048
 #define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MAX_RECORDS_IN_LWN                      1048576
-#define MEMORY_CHUNK_SIZE_MB                    1
-#define MEMORY_CHUNK_SIZE_MB_CHR                "1"
-#define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
-#define MEMORY_CHUNK_MIN_MB                     16
-#define MEMORY_CHUNK_MIN_MB_CHR                 "16"
-
-#define ARCH_LOG_PATH                           0
-#define ARCH_LOG_ONLINE                         1
-#define ARCH_LOG_ONLINE_KEEP                    2
-#define ARCH_LOG_LIST                           3
 
 #define MESSAGE_FORMAT_DEFAULT                  0
 #define MESSAGE_FORMAT_FULL                     1
@@ -132,54 +119,9 @@ typedef uint64_t typeunicode;
 //show all from redo
 #define COLUMN_FORMAT_FULL_UPD                  2
 
-#define TRACE_SILENT                            0
-#define TRACE_ERROR                             1
-#define TRACE_WARNING                           2
-#define TRACE_INFO                              3
-#define TRACE_DEBUG                             4
-
-#define TRACE2_DML                              0x00000001
-#define TRACE2_DUMP                             0x00000002
-#define TRACE2_LWN                              0x00000004
-#define TRACE2_THREADS                          0x00000008
-#define TRACE2_SQL                              0x00000010
-#define TRACE2_FILE                             0x00000020
-#define TRACE2_DISK                             0x00000040
-#define TRACE2_MEMORY                           0x00000080
-#define TRACE2_PERFORMANCE                      0x00000100
-#define TRACE2_TRANSACTION                      0x00000200
-#define TRACE2_REDO                             0x00000400
-#define TRACE2_ARCHIVE_LIST                     0x00000800
-#define TRACE2_SCHEMA_LIST                      0x00001000
-#define TRACE2_WRITER                           0x00002000
-#define TRACE2_CHECKPOINT                       0x00004000
-#define TRACE2_SYSTEM                           0x00008000
-
-#define REDO_FLAGS_ARCH_ONLY                    0x00000001
-#define REDO_FLAGS_SCHEMALESS                   0x00000002
-#define REDO_FLAGS_DIRECT_DISABLE               0x00000004
-#define REDO_FLAGS_ON_ERROR_CONTINUE            0x00000008
-#define REDO_FLAGS_TRACK_DDL                    0x00000010
-#define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x00000020
-#define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x00000040
-#define REDO_FLAGS_SHOW_NESTED_COLUMNS          0x00000080
-#define REDO_FLAGS_SHOW_UNUSED_COLUMNS          0x00000100
-#define REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS 0x00000200
-#define REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS     0x00000400
-#define REDO_FLAGS_CHECKPOINT_KEEP              0x00000800
-#define REDO_FLAGS_SCHEMA_KEEP                  0x00001000
-
-#define DISABLE_CHECK_GRANTS                    0x00000001
-#define DISABLE_CHECK_SUPPLEMENTAL_LOG          0x00000002
-#define DISABLE_CHECK_BLOCK_SUM                 0x00000004
-
 #define TRANSACTION_INSERT                      1
 #define TRANSACTION_DELETE                      2
 #define TRANSACTION_UPDATE                      3
-
-#define OUTPUT_BUFFER_DATA_SIZE                 (MEMORY_CHUNK_SIZE - sizeof(struct OutputBufferQueue))
-#define OUTPUT_BUFFER_ALLOCATED                 0x0001
-#define OUTPUT_BUFFER_CONFIRMED                 0x0002
 
 #define VALUE_BEFORE                            0
 #define VALUE_AFTER                             1
@@ -201,12 +143,6 @@ typedef uint64_t typeunicode;
 #define TABLE_SYS_TABSUBPART                    10
 #define TABLE_SYS_USER                          11
 
-#define USN(__xid)                              ((typeUSN)(((uint64_t)(__xid))>>48))
-#define SLT(__xid)                              ((typeSLT)(((((uint64_t)(__xid))>>32)&0xFFFF)))
-#define SQN(__xid)                              ((typeSQN)(((__xid)&0xFFFFFFFF)))
-#define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
-#define PRINTXID(__xid)                         "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<USN(__xid)<<"."<<std::setw(3)<<(uint64_t)SLT(__xid)<<"."<<std::setw(8)<<SQN(__xid)
-
 #define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
 #define RECORD(__uba)                           ((uint8_t)((((uint64_t)(__uba))>>48)&0xFF))
@@ -215,19 +151,6 @@ typedef uint64_t typeunicode;
 #define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
-
-#define ERROR(__x)                              {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); } }
-#define WARNING(__x)                            {if (OpenLogReplicator::trace >= TRACE_WARNING) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [WARNING] " << __x << std::endl; std::cerr << __s.str();} }
-#define INFO(__x)                               {if (OpenLogReplicator::trace >= TRACE_INFO) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [INFO] " << __x << std::endl; std::cerr << __s.str();} }
-#define DEBUG(__x)                              {if (OpenLogReplicator::trace >= TRACE_DEBUG) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [DEBUG] " << __x << std::endl; std::cerr << __s.str();} }
-#define TRACE(__t,__x)                          {if ((OpenLogReplicator::trace2 & (__t)) != 0) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [TRACE] " << __x << std::endl; std::cerr << __s.str();} }
-#define CONFIG_FAIL(__x)                        {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::ConfigurationException("error");}
-#define NETWORK_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::NetworkException("error");}
-#define REDOLOG_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::RedoLogException("error");}
-#define RUNTIME_FAIL(__x)                       {if (OpenLogReplicator::trace >= TRACE_ERROR) {std::stringstream __s; time_t now = time(nullptr); tm nowTm = *localtime(&now); char str[50]; strftime(str, sizeof(str), "%F %T", &nowTm); __s << str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }; throw OpenLogReplicator::RuntimeException("error");}
-
-#define TYPEINTXLEN                             2
-#define TYPEINTXDIGITS                          77
 
 #define FLAGS_XA                0x01
 #define FLAGS_XR                0x02
@@ -240,7 +163,7 @@ typedef uint64_t typeunicode;
 #define FLG_MULTIBLOCKUNDOHEAD  0x0001
 #define FLG_MULTIBLOCKUNDOTAIL  0x0002
 #define FLG_LASTBUFFERSPLIT     0x0004
-#define FLG_BEGIN_TRANS         0x0008
+#define FLG_BEGIN_TRANS          0x0008
 #define FLG_USERUNDODDONE       0x0010
 #define FLG_ISTEMPOBJECT        0x0020
 #define FLG_USERONLY            0x0040
@@ -272,9 +195,9 @@ typedef uint64_t typeunicode;
 #define OP_DSC                  0x0E
 #define OP_LMN                  0x10
 #define OP_LLB                  0x11
-#define OP__19                  0x13
+#define OP_019                  0x13
 #define OP_SHK                  0x14
-#define OP__21                  0x15
+#define OP_021                  0x15
 #define OP_CMP                  0x16
 #define OP_DCU                  0x17
 #define OP_MRK                  0x18
@@ -286,10 +209,6 @@ typedef uint64_t typeunicode;
 #define KTBOP_L                 0x04
 #define KTBOP_N                 0x06
 #define KTBOP_BLOCKCLEANOUT     0x10
-
-#define SUPPLOG_UPDATE          0x01
-#define SUPPLOG_INSERT          0x02
-#define SUPPLOG_DELETE          0x04
 
 #define OPFLAG_BEGIN_TRANS      0x01
 
@@ -306,122 +225,5 @@ typedef uint64_t typeunicode;
 #define VCONTEXT_LENGTH         30
 #define VPARAMETER_LENGTH       4000
 #define VPROPERTY_LENGTH        4000
-
-namespace OpenLogReplicator {
-    class OracleAnalyzer;
-
-    class uintX_t {
-    private:
-        uint64_t data[TYPEINTXLEN];
-        static uintX_t BASE10[TYPEINTXDIGITS][10];
-    public:
-        uintX_t(uint64_t val);
-        uintX_t();
-        ~uintX_t();
-
-        static void initializeBASE10(void);
-
-        bool operator!=(const uintX_t& other) const;
-        bool operator==(const uintX_t& other) const;
-        uintX_t& operator+=(const uintX_t& val);
-        uintX_t& operator=(const uintX_t& val);
-        uintX_t& operator=(uint64_t val);
-        uintX_t& operator=(const std::string& val);
-        uintX_t& operator=(const char* val);
-        uintX_t& set(uint64_t val1, uint64_t val2);
-        uintX_t& setStr(const char* val, uint64_t length);
-        uint64_t get64(void);
-        bool isSet64(uint64_t mask);
-        bool isZero();
-
-        friend std::ostream& operator<<(std::ostream& os, const uintX_t& val);
-    };
-
-    class typeTIME {
-        uint32_t val;
-    public:
-        typeTIME(void) :
-            val(0) {
-        }
-
-        typeTIME(uint32_t val) :
-            val(val) {
-        }
-
-        uint32_t getVal(void) {
-            return this->val;
-        }
-
-        typeTIME& operator= (uint32_t val) {
-            this->val = val;
-            return *this;
-        }
-
-        time_t toTime(void) {
-            struct tm epochtime = {0};
-            memset((void*) &epochtime, 0, sizeof(epochtime));
-            uint64_t rest = val;
-            epochtime.tm_sec = rest % 60; rest /= 60;
-            epochtime.tm_min = rest % 60; rest /= 60;
-            epochtime.tm_hour = rest % 24; rest /= 24;
-            epochtime.tm_mday = (rest % 31) + 1; rest /= 31;
-            epochtime.tm_mon = (rest % 12); rest /= 12;
-            epochtime.tm_year = rest + 88;
-            return mktime(&epochtime);
-        }
-
-        void toISO8601(char* buffer) {
-            uint64_t rest = val;
-            uint64_t ss = rest % 60; rest /= 60;
-            uint64_t mi = rest % 60; rest /= 60;
-            uint64_t hh = rest % 24; rest /= 24;
-            uint64_t dd = (rest % 31) + 1; rest /= 31;
-            uint64_t mm = (rest % 12) + 1; rest /= 12;
-            uint64_t yy = rest + 1988;
-            buffer[3] = '0' + (yy % 10); yy /= 10;
-            buffer[2] = '0' + (yy % 10); yy /= 10;
-            buffer[1] = '0' + (yy % 10); yy /= 10;
-            buffer[0] = '0' + yy;
-            buffer[4] = '-';
-            buffer[6] = '0' + (mm % 10); mm /= 10;
-            buffer[5] = '0' + mm;
-            buffer[7] = '-';
-            buffer[9] = '0' + (dd % 10); dd /= 10;
-            buffer[8] = '0' + dd;
-            buffer[10] = 'T';
-            buffer[12] = '0' + (hh % 10); hh /= 10;
-            buffer[11] = '0' + hh;
-            buffer[13] = ':';
-            buffer[15] = '0' + (mi % 10); mi /= 10;
-            buffer[14] = '0' + mi;
-            buffer[16] = ':';
-            buffer[18] = '0' + (ss % 10); ss /= 10;
-            buffer[17] = '0' + ss;
-            buffer[19] = 'Z';
-            buffer[20] = 0;
-            //01234567890123456789
-            //YYYY-MM-DDThh:mm:ssZ
-        }
-
-        friend std::ostream& operator<<(std::ostream& os, const typeTIME& time_) {
-            uint64_t rest = time_.val;
-            uint64_t ss = rest % 60; rest /= 60;
-            uint64_t mi = rest % 60; rest /= 60;
-            uint64_t hh = rest % 24; rest /= 24;
-            uint64_t dd = (rest % 31) + 1; rest /= 31;
-            uint64_t mm = (rest % 12) + 1; rest /= 12;
-            uint64_t yy = rest + 1988;
-            os << std::setfill('0') << std::setw(2) << std::dec << mm << "/" <<
-                    std::setfill('0') << std::setw(2) << std::dec << dd << "/" <<
-                    yy << " " << std::setfill('0') << std::setw(2) << std::dec << hh << ":" <<
-                    std::setfill('0') << std::setw(2) << std::dec << mi << ":" <<
-                    std::setfill('0') << std::setw(2) << std::dec << ss;
-            return os;
-            //0123456789012345678
-            //DDDDDDDDDD HHHHHHHH
-            //10/15/2018 22:25:36
-        }
-    };
-}
 
 #endif

@@ -17,71 +17,70 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode0504.h"
-#include "OracleAnalyzer.h"
-#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    void OpCode0504::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
-        OpCode::process(oracleAnalyzer, redoLogRecord);
+    void OpCode0504::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+        OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
-        typeFIELD fieldNum = 0;
+        typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050401);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050401);
         //field: 1
-        ktucm(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        ktucm(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050402))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050402))
             return;
         //field: 2
         if ((redoLogRecord->flg & FLG_KTUCF_OP0504) != 0)
-            ktucf(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+            ktucf(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            oracleAnalyzer->dumpStream << std::endl;
+        if (ctx->dumpRedoLog >= 1) {
+            ctx->dumpStream << std::endl;
             if ((redoLogRecord->flg & FLG_ROLLBACK_OP0504) != 0)
-                oracleAnalyzer->dumpStream << "rolled back transaction" << std::endl;
+                ctx->dumpStream << "rolled back transaction" << std::endl;
         }
     }
 
-    void OpCode0504::ktucm(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0504::ktucm(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 20) {
-            WARNING("too short field ktucm: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            WARNING("too short field ktucm: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
-        redoLogRecord->xid = XID(redoLogRecord->usn,
-                oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0),
-                oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4));
+        redoLogRecord->xid = typeXid(redoLogRecord->usn,
+                                     ctx->read16(redoLogRecord->data + fieldPos + 0),
+                                     ctx->read32(redoLogRecord->data + fieldPos + 4));
         redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t srt = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 8);  //FIXME
-            uint32_t sta = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 12);
+        if (ctx->dumpRedoLog >= 1) {
+            uint16_t srt = ctx->read16(redoLogRecord->data + fieldPos + 8);  //TODO: find field position/size
+            uint32_t sta = ctx->read32(redoLogRecord->data + fieldPos + 12);
 
-            oracleAnalyzer->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)SLT(redoLogRecord->xid) <<
-                    " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << SQN(redoLogRecord->xid) <<
+            ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)redoLogRecord->xid.slt() <<
+                    " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
                     " srt: " << std::dec << srt <<
                     " sta: " << std::dec << sta <<
                     " flg: 0x" << std::hex << redoLogRecord->flg << " ";
         }
     }
 
-    void OpCode0504::ktucf(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0504::ktucf(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 16) {
-            WARNING("too short field ktucf: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            WARNING("too short field ktucf: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
-        redoLogRecord->uba = oracleAnalyzer->read56(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 0);
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t ext = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 8);
-            uint16_t spc = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 10);
+        if (ctx->dumpRedoLog >= 1) {
+            uint16_t ext = ctx->read16(redoLogRecord->data + fieldPos + 8);
+            uint16_t spc = ctx->read16(redoLogRecord->data + fieldPos + 10);
             uint8_t fbi = redoLogRecord->data[fieldPos + 12];
 
-            oracleAnalyzer->dumpStream << "ktucf redo:" <<
+            ctx->dumpStream << "ktucf redo:" <<
                     " uba: " << PRINTUBA(redoLogRecord->uba) <<
                     " ext: " << std::dec << ext <<
                     " spc: " << std::dec << spc <<

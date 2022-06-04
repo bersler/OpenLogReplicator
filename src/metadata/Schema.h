@@ -17,99 +17,128 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <functional>
 #include <map>
-#include <unordered_map>
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
-#include "SysCCol.h"
-#include "SysCDef.h"
-#include "SysCol.h"
-#include "SysDeferredStg.h"
-#include "SysECol.h"
-#include "SysObj.h"
-#include "SysTab.h"
-#include "SysTabComPart.h"
-#include "SysTabPart.h"
-#include "SysTabSubPart.h"
-#include "SysUser.h"
-#include "SystemTransaction.h"
+#include "../common/SysCol.h"
+#include "../common/SysCCol.h"
+#include "../common/SysCDef.h"
+#include "../common/SysECol.h"
+#include "../common/SysTabComPart.h"
+#include "../common/SysTabPart.h"
+#include "../common/SysTabSubPart.h"
+#include "../common/SysUser.h"
+#include "../common/typeXid.h"
+#include "../common/types.h"
 
 #ifndef SCHEMA_H_
 #define SCHEMA_H_
 
-#define SCHEMA_ENDL     <<std::endl
-
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
+    class Ctx;
+    class Locales;
     class OracleColumn;
     class OracleObject;
-    class SchemaElement;
+    class SysColSeg;
+    class SysDeferredStg;
+    class SysObj;
+    class SysTab;
+    class SysUser;
 
     class Schema {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
-        std::stringstream& writeEscapeValue(std::stringstream& ss, std::string& str);
-        std::unordered_map<typeOBJ, OracleObject*> objectMap;
-        std::unordered_map<typeOBJ, OracleObject*> partitionMap;
+        Ctx* ctx;
+        Locales* locales;
+        typeRowId sysUserRowId;
+        SysUser sysUserAdaptive;
+        bool compareSysCCol(Schema* otherSchema, std::string& msgs);
+        bool compareSysCDef(Schema* otherSchema, std::string& msgs);
+        bool compareSysCol(Schema* otherSchema, std::string& msgs);
+        bool compareSysDeferredStg(Schema* otherSchema, std::string& msgs);
+        bool compareSysECol(Schema* otherSchema, std::string& msgs);
+        bool compareSysObj(Schema* otherSchema, std::string& msgs);
+        bool compareSysTab(Schema* otherSchema, std::string& msgs);
+        bool compareSysTabComPart(Schema* otherSchema, std::string& msgs);
+        bool compareSysTabPart(Schema* otherSchema, std::string& msgs);
+        bool compareSysTabSubPart(Schema* otherSchema, std::string& msgs);
+        bool compareSysUser(Schema* otherSchema, std::string& msgs);
+        void refreshIndexesSysCCol();
+        void refreshIndexesSysCDef();
+        void refreshIndexesSysCol();
+        void refreshIndexesSysDeferredStg();
+        void refreshIndexesSysECol();
+        void refreshIndexesSysObj();
+        void refreshIndexesSysTab();
+        void refreshIndexesSysTabComPart();
+        void refreshIndexesSysTabPart();
+        void refreshIndexesSysTabSubPart();
+        void refreshIndexesSysUser(std::set<std::string>& users);
+
+    public:
+        typeScn scn;
+        typeScn refScn;
+        bool loaded;
+
+        std::unordered_map<typeObj, OracleObject*> objectMap;
+        std::unordered_map<typeObj, OracleObject*> partitionMap;
+        OracleObject* schemaObject;
+        OracleColumn* schemaColumn;
 
         //SYS.CCOL$
-        std::map<RowId, SysCCol*> sysCColMapRowId;
+        std::map<typeRowId, SysCCol*> sysCColMapRowId;
         std::map<SysCColKey, SysCCol*> sysCColMapKey;
 
         //SYS.CDEF$
-        std::map<RowId, SysCDef*> sysCDefMapRowId;
+        std::map<typeRowId, SysCDef*> sysCDefMapRowId;
         std::map<SysCDefKey, SysCDef*> sysCDefMapKey;
-        std::unordered_map<typeCON, SysCDef*> sysCDefMapCon;
+        std::unordered_map<typeCon, SysCDef*> sysCDefMapCon;
 
         //SYS.COL$
-        std::map<RowId, SysCol*> sysColMapRowId;
+        std::map<typeRowId, SysCol*> sysColMapRowId;
         std::map<SysColKey, SysCol*> sysColMapKey;
         std::map<SysColSeg, SysCol*> sysColMapSeg;
 
         //SYS.DEFERREDSTG$
-        std::map<RowId, SysDeferredStg*> sysDeferredStgMapRowId;
-        std::unordered_map<typeOBJ, SysDeferredStg*> sysDeferredStgMapObj;
+        std::map<typeRowId, SysDeferredStg*> sysDeferredStgMapRowId;
+        std::unordered_map<typeObj, SysDeferredStg*> sysDeferredStgMapObj;
 
         //SYS.ECOL$
-        std::map<RowId, SysECol*> sysEColMapRowId;
+        std::map<typeRowId, SysECol*> sysEColMapRowId;
         std::unordered_map<SysEColKey, SysECol*> sysEColMapKey;
 
         //SYS.OBJ$
-        std::map<RowId, SysObj*> sysObjMapRowId;
-        std::unordered_map<typeOBJ, SysObj*> sysObjMapObj;
+        std::map<typeRowId, SysObj*> sysObjMapRowId;
+        std::unordered_map<typeObj, SysObj*> sysObjMapObj;
 
         //SYS.TAB$
-        std::map<RowId, SysTab*> sysTabMapRowId;
-        std::unordered_map<typeOBJ, SysTab*> sysTabMapObj;
+        std::map<typeRowId, SysTab*> sysTabMapRowId;
+        std::unordered_map<typeObj, SysTab*> sysTabMapObj;
 
         //SYS.TABCOMPART$
-        std::map<RowId, SysTabComPart*> sysTabComPartMapRowId;
-        std::unordered_map<typeOBJ, SysTabComPart*> sysTabComPartMapObj;
+        std::map<typeRowId, SysTabComPart*> sysTabComPartMapRowId;
+        std::unordered_map<typeObj, SysTabComPart*> sysTabComPartMapObj;
         std::map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
 
         //SYS.TABPART$
-        std::map<RowId, SysTabPart*> sysTabPartMapRowId;
+        std::map<typeRowId, SysTabPart*> sysTabPartMapRowId;
         std::map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
 
         //SYS.TABSUBPART$
-        std::map<RowId, SysTabSubPart*> sysTabSubPartMapRowId;
+        std::map<typeRowId, SysTabSubPart*> sysTabSubPartMapRowId;
         std::map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
 
         //SYS.USER$
-        std::map<RowId, SysUser*> sysUserMapRowId;
-        std::unordered_map<typeUSER, SysUser*> sysUserMapUser;
+        std::map<typeRowId, SysUser*> sysUserMapRowId;
+        std::unordered_map<typeUser, SysUser*> sysUserMapUser;
 
-        std::set<typeOBJ> partitionsTouched;
-        std::set<typeOBJ> objectsTouched;
-        std::set<typeUSER> usersTouched;
-        OracleObject* schemaObject;
-        OracleColumn* schemaColumn;
-        std::vector<SchemaElement*> elements;
-        std::set<std::string> users;
-        std::set<typeSCN> schemaScnList;
-        bool touched;
+        std::set<typeObj> partitionsTouched;
+        std::set<typeObj> objectsTouched;
+        std::set<typeUser> usersTouched;
+
         bool sysCColTouched;
         bool sysCDefTouched;
         bool sysColTouched;
@@ -121,46 +150,61 @@ namespace OpenLogReplicator {
         bool sysTabPartTouched;
         bool sysTabSubPartTouched;
         bool sysUserTouched;
-        bool savedDeleted;
+        bool touched;
 
-    public:
-        Schema(OracleAnalyzer* oracleAnalyzer);
+        Schema(Ctx* ctx, Locales* locales);
         virtual ~Schema();
 
-        void dropSchema(void);
-        bool readSchema(void);
-        bool readSchema(std::string& jsonName, typeSCN fileScn);
-        void writeSchema(void);
-        OracleObject* checkDict(typeOBJ obj, typeDATAOBJ dataObj);
+        void purge();
+        void refreshIndexes(std::set<std::string>& users);
+        [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs);
+        [[nodiscard]] bool dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
+        [[nodiscard]] bool dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);
+        [[nodiscard]] bool dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name,
+                                         typeType type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
+                                         bool null_, uint64_t property1, uint64_t property2);
+        [[nodiscard]] bool dictSysDeferredStgAdd(const char* rowIdStr, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2);
+        [[nodiscard]] bool dictSysEColAdd(const char* rowIdStr, typeObj tabObj, typeCol colNum, typeCol guardId);
+        [[nodiscard]] bool dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
+                                         uint64_t flags1, uint64_t flags2, bool single);
+        [[nodiscard]] bool dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
+                                         uint64_t property1, uint64_t property2);
+        [[nodiscard]] bool dictSysTabComPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
+        [[nodiscard]] bool dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
+        [[nodiscard]] bool dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj);
+        [[nodiscard]] bool dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
+        void dictSysCColDrop(typeRowId rowId);
+        void dictSysCDefDrop(typeRowId rowId);
+        void dictSysColDrop(typeRowId rowId);
+        void dictSysDeferredStgDrop(typeRowId rowId);
+        void dictSysEColDrop(typeRowId rowId);
+        void dictSysObjDrop(typeRowId rowId);
+        void dictSysTabDrop(typeRowId rowId);
+        void dictSysTabComPartDrop(typeRowId rowId);
+        void dictSysTabPartDrop(typeRowId rowId);
+        void dictSysTabSubPartDrop(typeRowId rowId);
+        void dictSysUserDrop(typeRowId rowId);
+        [[nodiscard]] SysCCol* dictSysCColFind(typeRowId rowId);
+        [[nodiscard]] SysCDef* dictSysCDefFind(typeRowId rowId);
+        [[nodiscard]] SysCol* dictSysColFind(typeRowId rowId);
+        [[nodiscard]] SysDeferredStg* dictSysDeferredStgFind(typeRowId rowId);
+        [[nodiscard]] SysECol* dictSysEColFind(typeRowId rowId);
+        [[nodiscard]] SysObj* dictSysObjFind(typeRowId rowId);
+        [[nodiscard]] SysTab* dictSysTabFind(typeRowId rowId);
+        [[nodiscard]] SysTabComPart* dictSysTabComPartFind(typeRowId rowId);
+        [[nodiscard]] SysTabPart* dictSysTabPartFind(typeRowId rowId);
+        [[nodiscard]] SysTabSubPart* dictSysTabSubPartFind(typeRowId rowId);
+        [[nodiscard]] SysUser* dictSysUserFind(typeRowId rowId);
+        void touchObj(typeObj obj);
+        void touchPart(typeObj obj);
+        void touchUser(typeUser user);
+        [[nodiscard]] OracleObject* checkDict(typeObj obj, typeDataObj dataObj);
         void addToDict(OracleObject* object);
         void removeFromDict(OracleObject* object);
-        bool refreshIndexes(void);
-        void rebuildMaps(void);
-        void buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOPTIONS options, bool output);
-        SchemaElement* addElement(const char* owner, const char* table, typeOPTIONS options);
-        bool dictSysCColAdd(const char* rowIdStr, typeCON con, typeCOL intCol, typeOBJ obj, uint64_t spare11, uint64_t spare12);
-        bool dictSysCDefAdd(const char* rowIdStr, typeCON con, typeOBJ obj, typeTYPE type);
-        bool dictSysColAdd(const char* rowIdStr, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char* name,
-                typeTYPE type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
-                bool null_, uint64_t property1, uint64_t property2);
-        bool dictSysDeferredStgAdd(const char* rowIdStr, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2);
-        bool dictSysEColAdd(const char* rowIdStr, typeOBJ tabObj, typeCOL colNum, typeCOL guardId);
-        bool dictSysObjAdd(const char* rowIdStr, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
-                uint64_t flags1, uint64_t flags2, bool single);
-        bool dictSysTabAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2,
-                uint64_t property1, uint64_t property2);
-        bool dictSysTabComPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
-        bool dictSysTabPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo);
-        bool dictSysTabSubPartAdd(const char* rowIdStr, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ pObj);
-        bool dictSysUserAdd(const char* rowIdStr, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
-        void touchObj(typeOBJ obj);
-        void touchPart(typeOBJ obj);
-        void touchUser(typeUSER user);
-        bool checkNameCase(const char* name);
-
-        friend class SystemTransaction;
-        friend class OracleAnalyzer;
-        friend class OracleAnalyzerOnline;
+        void rebuildMaps(std::set<std::string> &msgs);
+        void buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOptions options,
+                       std::set<std::string> &msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
+                       uint64_t defaultCharacterNcharMapId);
     };
 }
 

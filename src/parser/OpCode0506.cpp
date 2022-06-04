@@ -17,51 +17,50 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode0506.h"
-#include "OracleAnalyzer.h"
-#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    void OpCode0506::init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+    void OpCode0506::init(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         uint64_t fieldPos = redoLogRecord->fieldPos;
-        uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
+        uint16_t fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
         if (fieldLength < 8) {
-            WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
-        redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+        redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
     }
 
-    void OpCode0506::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
-        init(oracleAnalyzer, redoLogRecord);
-        OpCode::process(oracleAnalyzer, redoLogRecord);
+    void OpCode0506::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+        init(ctx, redoLogRecord);
+        OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
-        typeFIELD fieldNum = 0;
+        typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050601);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050601);
         //field: 1
-        ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, true);
+        ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
 
-        if (!oracleAnalyzer->nextFieldOpt(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050602))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050602))
             return;
         //field: 1
-        ktuxvoff(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength);
+        ktuxvoff(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 
-    void OpCode0506::ktuxvoff(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength) {
+    void OpCode0506::ktuxvoff(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 8) {
-            WARNING("too short field ktuxvoff: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            WARNING("too short field ktuxvoff: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
-        if (oracleAnalyzer->dumpRedoLog >= 1) {
-            uint16_t off = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 0);
-            uint16_t flg = oracleAnalyzer->read16(redoLogRecord->data + fieldPos + 4);
+        if (ctx->dumpRedoLog >= 1) {
+            uint16_t off = ctx->read16(redoLogRecord->data + fieldPos + 0);
+            uint16_t flg = ctx->read16(redoLogRecord->data + fieldPos + 4);
 
-            oracleAnalyzer->dumpStream << "ktuxvoff: 0x" << std::setfill('0') << std::setw(4) << std::hex << off << " " <<
+            ctx->dumpStream << "ktuxvoff: 0x" << std::setfill('0') << std::setw(4) << std::hex << off << " " <<
                     " ktuxvflg: 0x" << std::setfill('0') << std::setw(4) << std::hex << flg << std::endl;
         }
     }

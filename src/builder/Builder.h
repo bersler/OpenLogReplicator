@@ -1,4 +1,4 @@
-/* Header for OutputBuffer class
+/* Header for Builder class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,51 +17,69 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <atomic>
+#include <cstring>
 #include <map>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "types.h"
-#include "CharacterSet.h"
-#include "RowId.h"
-#include "RuntimeException.h"
+#include "../common/Ctx.h"
+#include "../common/RuntimeException.h"
+#include "../common/types.h"
+#include "../common/typeTime.h"
+#include "../common/typeXid.h"
+#include "../locales/CharacterSet.h"
+#include "../locales/Locales.h"
 
-#ifndef OUTPUTBUFFER_H_
-#define OUTPUTBUFFER_H_
+#ifndef BUILDER_H_
+#define BUILDER_H_
+
+#define OUTPUT_BUFFER_DATA_SIZE                 (MEMORY_CHUNK_SIZE - sizeof(struct BuilderQueue))
+#define OUTPUT_BUFFER_ALLOCATED                 0x0001
+#define OUTPUT_BUFFER_CONFIRMED                 0x0002
 
 namespace OpenLogReplicator {
+    class Ctx;
     class CharacterSet;
-    class OracleAnalyzer;
+    class Locales;
     class OracleObject;
+    class Builder;
+    class Metadata;
     class RedoLogRecord;
-    class Writer;
+    class SystemTransaction;
 
-    struct OutputBufferQueue {
+    struct BuilderQueue {
         uint64_t id;
-        uint64_t length;
+        std::atomic<uint64_t> length;
         uint8_t* data;
-        OutputBufferQueue* next;
+        std::atomic<BuilderQueue*> next;
     };
 
-    struct OutputBufferMsg {
+    struct BuilderMsg {
+        void* ptr;
         uint64_t id;
         uint64_t queueId;
         uint64_t length;
-        typeSCN scn;
-        typeSEQ sequence;
-        OracleAnalyzer* oracleAnalyzer;
+        typeScn scn;
+        typeSeq sequence;
         uint8_t* data;
-        typeOBJ obj;
+        typeObj obj;
         uint16_t pos;
         uint16_t flags;
     };
 
-    class OutputBuffer {
+    class Builder {
     protected:
         static const char map64[65];
         static const char map16[17];
-        OracleAnalyzer* oracleAnalyzer;
+        static const char map10[11];
+
+        Ctx* ctx;
+        Locales* locales;
+        Metadata* metadata;
+        BuilderMsg* msg;
+
         uint64_t messageFormat;
         uint64_t ridFormat;
         uint64_t xidFormat;
@@ -77,13 +95,11 @@ namespace OpenLogReplicator {
         uint64_t flushBuffer;
         char valueBuffer[MAX_FIELD_LENGTH];
         uint64_t valueLength;
-        std::unordered_map<uint16_t, const char*> timeZoneMap;
         std::unordered_set<OracleObject*> objects;
-        typeTIME lastTime;
-        typeSCN lastScn;
-        typeSEQ lastSequence;
-        typeXID lastXid;
-
+        typeTime lastTime;
+        typeScn lastScn;
+        typeSeq lastSequence;
+        typeXid lastXid;
         uint64_t valuesSet[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t valuesMerge[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t lengths[MAX_NO_COLUMNS][4];
@@ -95,13 +111,16 @@ namespace OpenLogReplicator {
         uint64_t mergesMax;
         uint64_t id;
         uint64_t num;
-        uint64_t transactionType;
+        uint64_t maxMessageMb;      //maximum message size able to handle by writer
         bool newTran;
         bool compressedBefore;
         bool compressedAfter;
 
-        void outputBufferRotate(bool copy);
-        void processValue(OracleObject* object, typeCOL col, const uint8_t* data, uint64_t length, bool compressed);
+        std::mutex mtx;
+        std::condition_variable condNoWriterWork;
+
+        void builderRotate(bool copy);
+        void processValue(OracleObject* object, typeCol col, const uint8_t* data, uint64_t length, bool compressed);
 
         void valuesRelease() {
             for (uint64_t i = 0; i < mergesMax; ++i)
@@ -110,7 +129,7 @@ namespace OpenLogReplicator {
 
             uint64_t baseMax = valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                typeCOL column = base << 6;
+                auto column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                     if (valuesSet[base] < mask)
                         break;
@@ -130,14 +149,14 @@ namespace OpenLogReplicator {
         };
 
         void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {
-            if ((trace2 & TRACE2_DML) != 0) {
+            if ((ctx->trace2 & TRACE2_DML) != 0) {
                 std::stringstream strStr;
                 strStr << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" <<
                         std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fb << " to: ";
                 for (uint64_t i = 0; i < length && i < 10; ++i) {
                     strStr << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[i] << ", ";
                 }
-                TRACE(TRACE2_DML, strStr.str());
+                TRACE(TRACE2_DML, strStr.str())
             }
 
             uint64_t base = column >> 6;
@@ -178,83 +197,81 @@ namespace OpenLogReplicator {
             }
         };
 
-        void outputBufferShift(uint64_t bytes, bool copy) {
+        void builderShift(uint64_t bytes, bool copy) {
             lastBuffer->length += bytes;
 
             if (lastBuffer->length >= OUTPUT_BUFFER_DATA_SIZE)
-                outputBufferRotate(copy);
+                builderRotate(copy);
         };
 
-        void outputBufferShiftFast(uint64_t bytes, bool copy) {
+        void builderShiftFast(uint64_t bytes) const {
             lastBuffer->length += bytes;
         };
 
-        void outputBufferBegin(typeOBJ obj) {
+        void builderBegin(typeObj obj) {
             messageLength = 0;
-            transactionType = 0;
 
-            if (lastBuffer->length + sizeof(struct OutputBufferMsg) >= OUTPUT_BUFFER_DATA_SIZE)
-                outputBufferRotate(true);
+            if (lastBuffer->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
+                builderRotate(true);
 
-            msg = (OutputBufferMsg*)(lastBuffer->data + lastBuffer->length);
-            outputBufferShift(sizeof(struct OutputBufferMsg), true);
+            msg = (BuilderMsg*)(lastBuffer->data + lastBuffer->length);
+            builderShift(sizeof(struct BuilderMsg), true);
             msg->scn = lastScn;
             msg->sequence = lastSequence;
             msg->length = 0;
             msg->id = id++;
             msg->obj = obj;
-            msg->oracleAnalyzer = oracleAnalyzer;
             msg->pos = 0;
             msg->flags = 0;
             msg->data = lastBuffer->data + lastBuffer->length;
         };
 
-        void outputBufferCommit(bool force) {
+        void builderCommit(bool force) {
             if (messageLength == 0) {
-                WARNING("JSON buffer - commit of empty transaction");
+                WARNING("output buffer - commit of empty transaction")
             }
 
             msg->queueId = lastBuffer->id;
-            outputBufferShift((8 - (messageLength & 7)) & 7, false);
+            builderShift((8 - (messageLength & 7)) & 7, false);
             unconfirmedLength += messageLength;
             msg->length = messageLength;
 
             if (force || flushBuffer == 0 || unconfirmedLength > flushBuffer) {
                 {
                     std::unique_lock<std::mutex> lck(mtx);
-                    writersCond.notify_all();
+                    condNoWriterWork.notify_all();
                 }
                 unconfirmedLength = 0;
             }
             msg = nullptr;
         };
 
-        void outputBufferAppend(char character) {
+        void builderAppend(char character) {
             lastBuffer->data[lastBuffer->length] = character;
             ++messageLength;
-            outputBufferShift(1, true);
+            builderShift(1, true);
         };
 
-        void outputBufferAppend(const char* str, uint64_t length) {
+        void builderAppend(const char* str, uint64_t length) {
             if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
                 memcpy(lastBuffer->data + lastBuffer->length, str, length);
                 lastBuffer->length += length;
                 messageLength += length;
             } else {
                 for (uint64_t i = 0; i < length; ++i)
-                    outputBufferAppend(*str++);
+                    builderAppend(*str++);
             }
         };
 
-        void outputBufferAppend(const char* str) {
+        void builderAppend(const char* str) {
             char character = *str++;
             while (character != 0) {
-                outputBufferAppend(character);
+                builderAppend(character);
                 character = *str++;
             }
         };
 
-        void outputBufferAppend(std::string& str) {
+        void builderAppend(std::string& str) {
             uint64_t length = str.length();
             if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
                 memcpy(lastBuffer->data + lastBuffer->length, str.c_str(), length);
@@ -263,7 +280,7 @@ namespace OpenLogReplicator {
             } else {
                 const char* charstr = str.c_str();
                 for (uint64_t i = 0; i < length; ++i)
-                    outputBufferAppend(*charstr++);
+                    builderAppend(*charstr++);
             }
         };
 
@@ -275,30 +292,30 @@ namespace OpenLogReplicator {
                 std::stringstream ss;
                 for (uint64_t j = 0; j < length; ++j)
                     ss << " " << std::hex << std::setfill('0') << std::setw(2) << (uint64_t) data[j];
-                WARNING("unknown value (column: " << columnName << "): " << std::dec << length << " - " << ss.str());
+                WARNING("unknown value (column: " << columnName << "): " << std::dec << length << " - " << ss.str())
             }
         };
 
         void valueBufferAppend(uint8_t value) {
-            valueBuffer[valueLength++] = value;
+            valueBuffer[valueLength++] = (char)value;
         };
 
-        void valueBufferAppendHex(typeunicode value, uint64_t length) {
+        void valueBufferAppendHex(typeUnicode value, uint64_t length) {
             uint64_t j = (length - 1) * 4;
             for (uint64_t i = 0; i < length; ++i) {
-                if (valueLength >= MAX_FIELD_LENGTH) {
-                    RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
-                }
+                if (valueLength >= MAX_FIELD_LENGTH)
+                    throw RuntimeException("length of value exceeded " + std::to_string(MAX_FIELD_LENGTH) +
+                                           ", increase MAX_FIELD_LENGTH and recompile code");
                 valueBuffer[valueLength++] = map16[(value >> j) & 0xF];
                 j -= 4;
-            };
+            }
         };
 
         void parseNumber(const uint8_t* data, uint64_t length) {
             valueLength = 0;
-            if (length * 2 + 2 >= MAX_FIELD_LENGTH) {
-                RUNTIME_FAIL("length of value exceeded " << MAX_FIELD_LENGTH << ", please increase MAX_FIELD_LENGTH and recompile code");
-            }
+            if (length * 2 + 2 >= MAX_FIELD_LENGTH)
+                throw RuntimeException("length of value exceeded " + std::to_string(MAX_FIELD_LENGTH) +
+                                       ", increase MAX_FIELD_LENGTH and recompile code");
 
             uint8_t digits = data[0];
             //just zero
@@ -428,21 +445,19 @@ namespace OpenLogReplicator {
                         if ((value % 10) != 0)
                             valueBufferAppend('0' + (value % 10));
                     }
-                } else {
-                    RUNTIME_FAIL("got unknown numeric value");
-                }
+                } else
+                    throw RuntimeException("got unknown numeric value");
             }
         };
 
         void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId) {
-            CharacterSet* characterSet = characterMap[charsetId];
-            if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                RUNTIME_FAIL("can't find character set map for id = " << std::dec << charsetId);
-            }
+            CharacterSet* characterSet = locales->characterMap[charsetId];
+            if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0)
+                throw RuntimeException("can't find character set map for id = " + std::to_string(charsetId));
             valueLength = 0;
 
             while (length > 0) {
-                typeunicode unicodeCharacter;
+                typeUnicode unicodeCharacter;
                 uint64_t unicodeCharacterLength;
 
                 if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
@@ -479,9 +494,8 @@ namespace OpenLogReplicator {
                         valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
                         valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
-                    } else {
-                        RUNTIME_FAIL("got character code: U+" << std::dec << unicodeCharacter);
-                    }
+                    } else
+                        throw RuntimeException("got character code: U+" + std::to_string(unicodeCharacter));
                 }
             }
         };
@@ -492,42 +506,38 @@ namespace OpenLogReplicator {
         virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) = 0;
         virtual void columnTimestamp(std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
-        virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) = 0;
-        virtual void processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation,
-                const char* sql, uint64_t sqlLength) = 0;
-        virtual void processBegin(void) = 0;
+        virtual void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;
+        virtual void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;
+        virtual void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;
+        virtual void processDdl(OracleObject* object, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation,
+                                const char* sql, uint64_t sqlLength) = 0;
+        virtual void processBeginMessage() = 0;
 
     public:
-        uint64_t defaultCharacterMapId;
-        uint64_t defaultCharacterNcharMapId;
-        std::unordered_map<uint64_t, CharacterSet*> characterMap;
-        Writer* writer;
-        std::mutex mtx;
-        std::condition_variable writersCond;
-
+        SystemTransaction* systemTransaction;
         uint64_t buffersAllocated;
-        OutputBufferQueue* firstBuffer;
-        OutputBufferQueue* lastBuffer;
-        OutputBufferMsg* msg;
+        BuilderQueue* firstBuffer;
+        BuilderQueue* lastBuffer;
 
-        OutputBuffer(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
-                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
-        virtual ~OutputBuffer();
+        Builder(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
+                uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
+                uint64_t flushBuffer);
+        virtual ~Builder();
 
-        virtual void initialize(OracleAnalyzer* oracleAnalyzer);
-        uint64_t outputBufferSize(void) const;
-        void setWriter(Writer* writer);
-        void setNlsCharset(std::string& nlsCharset, std::string& nlsNcharCharset);
-
-        void processBegin(typeSCN scn, typeTIME time_, typeSEQ sequence, typeXID xid);
-        virtual void processCommit(void) = 0;
+        [[nodiscard]] uint64_t builderSize() const;
+        [[nodiscard]] uint64_t getMaxMessageMb() const;
+        void setMaxMessageMb(uint64_t maxMessageMb);
+        void processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid, bool system);
         void processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
         void processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
-        void processDML(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system);
-        void processDDLheader(RedoLogRecord* redoLogRecord1);
-        virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) = 0;
+        void processDml(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system);
+        void processDdlHeader(RedoLogRecord* redoLogRecord1);
+        virtual void initialize();
+        virtual void processCommit(bool system) = 0;
+        virtual void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) = 0;
+        void releaseBuffers(uint64_t maxId);
+        void sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds);
+        void wakeUp();
 
         friend class SystemTransaction;
     };

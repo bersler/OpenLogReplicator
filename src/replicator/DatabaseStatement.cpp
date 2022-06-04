@@ -17,15 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstring>
+
 #include "DatabaseConnection.h"
 #include "DatabaseEnvironment.h"
 #include "DatabaseStatement.h"
 
 namespace OpenLogReplicator {
     DatabaseStatement::DatabaseStatement(DatabaseConnection* conn) :
-        conn(conn),
-        isExecuted(false),
-        stmthp(nullptr) {
+            conn(conn),
+            executed(false),
+            stmthp(nullptr) {
 
         conn->env->checkErr(conn->errhp, OCIHandleAlloc(conn->env->envhp, (dvoid**) &stmthp, OCI_HTYPE_STMT, 0, nullptr));
     }
@@ -33,9 +35,9 @@ namespace OpenLogReplicator {
     DatabaseStatement::~DatabaseStatement() {
         unbindAll();
 
-        if (isExecuted) {
+        if (executed) {
             OCIStmtRelease(stmthp, conn->errhp, nullptr, 0, OCI_DEFAULT);
-            isExecuted = false;
+            executed = false;
         }
 
         if (stmthp != nullptr) {
@@ -47,18 +49,18 @@ namespace OpenLogReplicator {
     void DatabaseStatement::createStatement(const char* sql) {
         unbindAll();
 
-        if (isExecuted) {
+        if (executed) {
             OCIStmtRelease(stmthp, conn->errhp, nullptr, 0, OCI_DEFAULT);
-            isExecuted = false;
+            executed = false;
         }
 
         conn->env->checkErr(conn->errhp, OCIStmtPrepare2(conn->svchp, &stmthp, conn->errhp, (const OraText*) sql, strlen(sql),
                 nullptr, 0, OCI_NTV_SYNTAX, OCI_DEFAULT));
     }
 
-    int64_t DatabaseStatement::executeQuery(void) {
+    int64_t DatabaseStatement::executeQuery() {
         sword status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, 1, 0, nullptr, nullptr, OCI_DEFAULT); //COMMIT_ON_SUCCESS
-        isExecuted = true;
+        executed = true;
         if (status == OCI_NO_DATA)
             return 0;
 
@@ -66,7 +68,7 @@ namespace OpenLogReplicator {
         return 1;
     }
 
-    void DatabaseStatement::unbindAll(void) {
+    void DatabaseStatement::unbindAll() {
         for (OCIBind* bindp: binds)
             OCIHandleFree((dvoid*) bindp, OCI_HTYPE_BIND);
         binds.clear();
@@ -76,7 +78,7 @@ namespace OpenLogReplicator {
         defines.clear();
     }
 
-    int64_t DatabaseStatement::next(void) {
+    int64_t DatabaseStatement::next() {
         sword status = OCIStmtFetch2(stmthp, conn->errhp, 1, OCI_FETCH_NEXT, 0, OCI_DEFAULT);
         if (status == OCI_NO_DATA)
             return 0;
@@ -103,7 +105,7 @@ namespace OpenLogReplicator {
         conn->env->checkErr(conn->errhp, ret);
     }
 
-    void DatabaseStatement::bindInt32(uint64_t col, int32_t& val) {
+    [[maybe_unused]] void DatabaseStatement::bindInt32(uint64_t col, int32_t& val) {
         OCIBind* bindp = nullptr;
         sword ret = OCIBindByPos(stmthp, &bindp, conn->errhp, col, (void*) &val, sizeof(val), SQLT_INT,
                         nullptr, nullptr, nullptr, 0, nullptr, OCI_DEFAULT);

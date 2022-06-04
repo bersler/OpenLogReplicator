@@ -17,35 +17,34 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RowId.h"
+#include "types.h"
+#include "typeRowId.h"
 
 #ifndef SYSTABPART_H_
 #define SYSTABPART_H_
 
-#define SYSTABPART_ROWID_LENGTH     18
-
 namespace OpenLogReplicator {
     class SysTabPartKey {
     public:
-        SysTabPartKey();
-        SysTabPartKey(typeOBJ bo, typeOBJ obj);
+        SysTabPartKey(typeObj bo, typeObj obj);
+
         bool operator<(const SysTabPartKey& other) const;
 
-        typeOBJ bo;
-        typeOBJ obj;
+        typeObj bo;
+        typeObj obj;
     };
 
     class SysTabPart {
     public:
-        SysTabPart(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeOBJ bo, bool touched);
+        SysTabPart(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeObj bo, bool touched);
+
         bool operator!=(const SysTabPart& other) const;
 
-        RowId rowId;
-        typeOBJ obj;
-        typeDATAOBJ dataObj;        //NULL
-        typeOBJ bo;
+        typeRowId rowId;
+        typeObj obj;
+        typeDataObj dataObj;        //NULL
+        typeObj bo;
         bool touched;
-        bool saved;
     };
 }
 

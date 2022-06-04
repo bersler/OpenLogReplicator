@@ -29,9 +29,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define WRITERFILE_MODE_SEQUENCE            4
 
 namespace OpenLogReplicator {
-    class RedoLogRecord;
-    class OracleAnalyzer;
-
     class WriterFile : public Writer {
     protected:
         size_t prefixPos;
@@ -46,25 +43,24 @@ namespace OpenLogReplicator {
         uint64_t outputFileNum;
         uint64_t outputSize;
         uint64_t maxSize;
-        int64_t outputDes;
+        int outputDes;
         uint64_t newLine;
         uint64_t append;
-        typeSEQ lastSequence;
-        char* newLineMsg;
+        typeSeq lastSequence;
+        const char* newLineMsg;
         bool warningDisplayed;
-        void closeFile(void);
-        void checkFile(typeSCN scn, typeSEQ sequence, uint64_t length);
-        virtual void sendMessage(OutputBufferMsg* msg);
-        virtual std::string getName() const;
-        virtual void pollQueue(void);
+        void closeFile();
+        void checkFile(typeScn scn, typeSeq sequence, uint64_t length);
+        void sendMessage(BuilderMsg* msg) override;
+        std::string getName() const override;
+        void pollQueue() override;
 
     public:
-        WriterFile(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
-                uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
-                const char* output, const char* format, uint64_t maxSize, uint64_t newLine, uint64_t append);
-        virtual ~WriterFile();
+        WriterFile(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, const char* output, const char* format,
+                   uint64_t maxSize, uint64_t newLine, uint64_t append);
+        ~WriterFile() override;
 
-        virtual void initialize(void);
+        void initialize() override;
     };
 }
 

@@ -17,14 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OraProtoBuf.pb.h"
 #include "Writer.h"
+#include "../common/OraProtoBuf.pb.h"
 
 #ifndef WRITERSTREAM_H_
 #define WRITERSTREAM_H_
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
     class Stream;
 
     class WriterStream : public Writer {
@@ -33,22 +32,20 @@ namespace OpenLogReplicator {
         pb::RedoRequest request;
         pb::RedoResponse response;
 
-        virtual std::string getName(void) const;
-        virtual void readCheckpoint(void);
-        void processInfo(void);
-        void processStart(void);
-        void processRedo(void);
-        void processConfirm(void);
-        virtual void pollQueue(void);
-        virtual void sendMessage(OutputBufferMsg* msg);
+        std::string getName() const override;
+        void readCheckpoint() override;
+        void processInfo();
+        void processStart();
+        void processRedo();
+        void processConfirm();
+        void pollQueue() override;
+        void sendMessage(BuilderMsg* msg) override;
 
     public:
-        WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
-                uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel,
-                Stream* stream);
-        virtual ~WriterStream();
+        WriterStream(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, Stream* stream);
+        ~WriterStream() override;
 
-        virtual void initialize(void);
+        void initialize() override;
     };
 }
 

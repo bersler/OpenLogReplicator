@@ -17,19 +17,23 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <mutex>
+#include <set>
 #include <unordered_map>
 
-#include "types.h"
+#include "../common/Ctx.h"
+#include "../common/types.h"
+#include "../common/typeXid.h"
 
 #ifndef TRANSACTIONBUFFER_H_
 #define TRANSACTIONBUFFER_H_
 
 #define ROW_HEADER_OP       (0)
-#define ROW_HEADER_REDO1    (sizeof(typeOP2))
-#define ROW_HEADER_REDO2    (sizeof(typeOP2)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_DATA     (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_SIZE     (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord))
-#define ROW_HEADER_TOTAL    (sizeof(typeOP2)+sizeof(struct RedoLogRecord)+sizeof(struct RedoLogRecord)+sizeof(uint64_t))
+#define ROW_HEADER_REDO1    (sizeof(typeOp2))
+#define ROW_HEADER_REDO2    (sizeof(typeOp2)+sizeof(RedoLogRecord))
+#define ROW_HEADER_DATA     (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord))
+#define ROW_HEADER_SIZE     (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord))
+#define ROW_HEADER_TOTAL    (sizeof(typeOp2)+sizeof(RedoLogRecord)+sizeof(RedoLogRecord)+sizeof(uint64_t))
 
 #define FULL_BUFFER_SIZE    65536
 #define HEADER_BUFFER_SIZE  (sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint64_t)+sizeof(uint8_t*)+sizeof(TransactionChunk*)+sizeof(TransactionChunk*))
@@ -37,10 +41,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define BUFFERS_FREE_MASK   0xFFFF
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
     class RedoLogRecord;
     class Transaction;
-    class TransactionChunk;
 
     struct TransactionChunk {
         uint64_t elements;
@@ -54,22 +56,32 @@ namespace OpenLogReplicator {
 
     class TransactionBuffer {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
+        Ctx* ctx;
         uint8_t buffer[DATA_BUFFER_SIZE];
+        std::unordered_map<uint8_t*, uint64_t> partiallyFullChunks;
+
+        std::mutex mtx;
+        std::unordered_map<typeXidMap, Transaction*> xidTransactionMap;
 
     public:
-        std::unordered_map<uint8_t*,uint64_t> partiallyFullChunks;
+        std::set<typeXid> skipXidList;
+        std::set<typeXidMap> brokenXidMapList;
+        std::string dumpPath;
 
-        TransactionBuffer(OracleAnalyzer* oracleAnalyzer);
+        explicit TransactionBuffer(Ctx* ctx);
         virtual ~TransactionBuffer();
 
-        TransactionChunk* newTransactionChunk(Transaction* transaction);
+        void purge();
+        [[nodiscard]] Transaction* findTransaction(typeXid xid, typeConId conId, bool old, bool add, bool rollback);
+        void dropTransaction(typeXid xid, typeConId conId);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
+        [[nodiscard]] TransactionChunk* newTransactionChunk();
         void deleteTransactionChunk(TransactionChunk* tc);
         void deleteTransactionChunks(TransactionChunk* tc);
-        void mergeBlocks(uint8_t* buffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
     };
 }
 

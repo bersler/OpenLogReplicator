@@ -19,49 +19,51 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <vector>
 
-#include "types.h"
+#include "../common/types.h"
+#include "../common/typeTime.h"
+#include "../common/typeXid.h"
 
 #ifndef TRANSACTION_H_
 #define TRANSACTION_H_
 
 namespace OpenLogReplicator {
-    class TransactionChunk;
+    class Builder;
     class RedoLogRecord;
-    class OracleAnalyzer;
+    class Metadata;
+    class TransactionBuffer;
+    struct TransactionChunk;
 
     class Transaction {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
         TransactionChunk* deallocTc;
+        uint64_t opCodes;
 
     public:
         std::vector<uint8_t*> merges;
-        typeXID xid;
-        typeSEQ firstSequence;
+        typeXid xid;
+        typeSeq firstSequence;
         uint64_t firstOffset;
-        typeSEQ commitSequence;
-        typeSCN commitScn;
+        typeSeq commitSequence;
+        typeScn commitScn;
         TransactionChunk* firstTc;
         TransactionChunk* lastTc;
-        uint64_t opCodes;
-        typeTIME commitTimestamp;
+        typeTime commitTimestamp;
         bool begin;
         bool rollback;
         bool system;
         bool shutdown;
         bool lastSplit;
-        std::string name;
         uint64_t size;
 
-        Transaction(OracleAnalyzer* oracleAnalyzer, typeXID xid);
-        virtual ~Transaction();
+        explicit Transaction(typeXid xid);
 
-        void add(RedoLogRecord* redoLogRecord);
-        void add(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
-        void rollbackLastOp(RedoLogRecord* redoLogRecord);
-        void flush(void);
-        void purge(void);
+        void add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord);
+        void add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void rollbackLastOp(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord);
+        void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder);
+        void purge(TransactionBuffer* transactionBuffer);
+
         friend std::ostream& operator<<(std::ostream& os, const Transaction& tran);
     };
 }

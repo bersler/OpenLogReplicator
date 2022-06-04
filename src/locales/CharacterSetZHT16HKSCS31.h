@@ -30,13 +30,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSetZHT16HKSCS31 : public CharacterSet16bit {
     protected:
-        static typeunicode32 unicode_map_ZHT16HKSCS31_2b[(ZHT16HKSCS31_b1_max - ZHT16HKSCS31_b1_min + 1) *
+        static typeUnicode32 unicode_map_ZHT16HKSCS31_2b[(ZHT16HKSCS31_b1_max - ZHT16HKSCS31_b1_min + 1) *
                                                          (ZHT16HKSCS31_b2_max - ZHT16HKSCS31_b2_min + 1)];
-        virtual typeunicode readMap(uint64_t byte1, uint64_t byte2) const;
+        [[nodiscard]] typeUnicode readMap(uint64_t byte1, uint64_t byte2) const override;
 
     public:
         CharacterSetZHT16HKSCS31();
-        virtual ~CharacterSetZHT16HKSCS31();
+        ~CharacterSetZHT16HKSCS31() override;
     };
 }
 

@@ -1,4 +1,4 @@
-/* Header for OracleAnalyzerOnline class
+/* Header for ReplicatorOnline class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,16 +17,17 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
+#include "Replicator.h"
 
-#ifndef ORACLEANALYZERONLINE_H_
-#define ORACLEANALYZERONLINE_H_
+#ifndef REPLICATORONLINE_H_
+#define REPLICATORONLINE_H_
 
 namespace OpenLogReplicator {
     class DatabaseConnection;
     class DatabaseEnvironment;
+    class Schema;
 
-    class OracleAnalyzerOnline : public OracleAnalyzer {
+    class ReplicatorOnline : public Replicator {
     protected:
         static const char* SQL_GET_ARCHIVE_LOG_LIST;
         static const char* SQL_GET_DATABASE_INFORMATION;
@@ -67,32 +68,34 @@ namespace OpenLogReplicator {
         static const char* SQL_CHECK_CONNECTION;
         bool standby;
 
-        virtual void positionReader(void);
-        virtual void loadDatabaseMetadata(void);
-        virtual bool checkConnection(void);
-        std::string getParameterValue(const char* parameter);
-        std::string getPropertyValue(const char* property);
+        void positionReader() override;
+        void loadDatabaseMetadata() override;
+        bool checkConnection() override;
+        std::string getParameterValue(const char* parameter) const;
+        std::string getPropertyValue(const char* property) const;
         void checkTableForGrants(const char* tableName);
-        void checkTableForGrantsFlashback(const char* tableName, typeSCN scn);
-        virtual const char* getModeName(void) const;
-        virtual void createSchema(void);
-        void readSystemDictionariesDetails(typeUSER user, typeOBJ obj);
-        void readSystemDictionaries(std::string& owner, std::string& table, typeOPTIONS options);
-        void createSchemaForTable(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOPTIONS options);
-        virtual void updateOnlineRedoLogData(void);
+        void checkTableForGrantsFlashback(const char* tableName, typeScn scn);
+        const char* getModeName() const override;
+        void verifySchema(typeScn currentScn) override;
+        void createSchema() override;
+        void readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj);
+        void readSystemDictionaries(Schema* schema, typeScn targetScn, std::string& owner, std::string& table, typeOptions options);
+        void createSchemaForTable(typeScn targetScn, std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr,
+                                  typeOptions options);
+        void updateOnlineRedoLogData() override;
 
     public:
         DatabaseEnvironment* env;
         DatabaseConnection* conn;
         bool keepConnection;
 
-        OracleAnalyzerOnline(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
-                const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-                uint64_t disableChecks, const char* user, const char* password, const char* connectString);
-        virtual ~OracleAnalyzerOnline();
-        virtual void goStandby(void);
+        ReplicatorOnline(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer,
+                         std::string alias, const char* database, const char* user, const char* password, const char* connectString, bool keepConnection);
+        ~ReplicatorOnline() override;
 
-        static void archGetLogOnline(OracleAnalyzer* oracleAnalyzer);
+        void goStandby() override;
+
+        static void archGetLogOnline(Replicator* replicator);
     };
 }
 

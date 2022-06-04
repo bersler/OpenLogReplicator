@@ -26,17 +26,16 @@ namespace OpenLogReplicator {
     class OracleIncarnation {
     public:
         uint32_t incarnation;
-        typeSCN resetlogsScn;
-        typeSCN priorResetlogsScn;
+        typeScn resetlogsScn;
+        typeScn priorResetlogsScn;
         std::string status;
-        typeRESETLOGS resetlogs;
+        typeResetlogs resetlogs;
         uint32_t priorIncarnation;
 
         bool current;
 
-        OracleIncarnation(uint32_t incarnation, typeSCN resetlogsScn, typeSCN priorResetlogsScn, const char* status,
-                typeRESETLOGS resetlogs, uint32_t priorIncarnation);
-        virtual ~OracleIncarnation();
+        OracleIncarnation(uint32_t incarnation, typeScn resetlogsScn, typeScn priorResetlogsScn, const char* status,
+                          typeResetlogs resetlogs, uint32_t priorIncarnation);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i);
     };

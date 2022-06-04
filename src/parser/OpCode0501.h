@@ -25,15 +25,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class OpCode0501: public OpCode {
     protected:
-        static void init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
-        static void ktudb(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
-        static void kteoputrn(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
-        static void kdilk(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
-        static void rowDeps(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, uint64_t fieldPos, uint64_t fieldLength);
-        static void suppLog(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord, typeFIELD &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
-
+        static void init(Ctx* ctx, RedoLogRecord* redoLogRecord);
+        static void ktudb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void kteoputrn(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void kdilk(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void rowDeps(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void suppLog(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
     public:
-        static void process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord);
+        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

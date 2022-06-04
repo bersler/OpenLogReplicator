@@ -17,29 +17,32 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RowId.h"
+#include "types.h"
+#include "typeINTX.h"
+#include "typeRowId.h"
 
 #ifndef SYSUSER_H_
 #define SYSUSER_H_
 
-#define SYSUSER_ROWID_LENGTH     18
-#define SYSUSER_NAME_LENGTH      128
+#define SYSUSER_NAME_LENGTH                 128
+#define SYSUSER_SPARE1_SUPP_LOG_PRIMARY     1
+#define SYSUSER_SPARE1_SUPP_LOG_ALL         8
 
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(RowId& rowId, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched);
-        bool operator!=(const SysUser& other) const;
-        bool isSuppLogPrimary(void);
-        bool isSuppLogAll(void);
+        SysUser(typeRowId& rowId, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched);
 
-        RowId rowId;
-        typeUSER user;
+        bool operator!=(const SysUser& other) const;
+        [[nodiscard]] bool isSuppLogPrimary();
+        [[nodiscard]] bool isSuppLogAll();
+
+        typeRowId rowId;
+        typeUser user;
         std::string name;
-        uintX_t spare1;            //NULL
+        typeINTX spare1;            //NULL
         bool single;
         bool touched;
-        bool saved;
     };
 }
 

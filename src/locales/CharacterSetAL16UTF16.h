@@ -26,9 +26,9 @@ namespace OpenLogReplicator {
     class CharacterSetAL16UTF16 : public CharacterSet {
     public:
         CharacterSetAL16UTF16();
-        virtual ~CharacterSetAL16UTF16();
+        ~CharacterSetAL16UTF16() override;
 
-        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
+        typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

@@ -19,21 +19,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <atomic>
 #include <vector>
-#include "Thread.h"
+
+#include "../common/Thread.h"
+#include "../common/types.h"
+#include "../common/typeTime.h"
 
 #ifndef READER_H_
 #define READER_H_
 
 #define READER_STATUS_SLEEPING  0
-
 #define READER_STATUS_CHECK     1
 #define READER_STATUS_UPDATE    2
 #define READER_STATUS_READ      3
-
-#define REDO_VERSION_12_1       0x0C100000
-#define REDO_VERSION_12_2       0x0C200000
-#define REDO_VERSION_18_0       0x12000000
-#define REDO_VERSION_19_0       0x13000000
 
 #define REDO_END                0x0008
 #define REDO_ASYNC              0x0100
@@ -46,79 +43,113 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_OVERWRITTEN        1
 #define REDO_FINISHED           2
 #define REDO_STOPPED            3
-#define REDO_EMPTY              4
-#define REDO_ERROR_READ         5
-#define REDO_ERROR_WRITE        6
-#define REDO_ERROR_SEQUENCE     7
-#define REDO_ERROR_CRC          8
-#define REDO_ERROR_BLOCK        9
-#define REDO_ERROR_BAD_DATA    10
-#define REDO_ERROR             11
+#define REDO_SHUTDOWN           4
+#define REDO_EMPTY              5
+#define REDO_ERROR_READ         6
+#define REDO_ERROR_WRITE        7
+#define REDO_ERROR_SEQUENCE     8
+#define REDO_ERROR_CRC          9
+#define REDO_ERROR_BLOCK       10
+#define REDO_ERROR_BAD_DATA    11
+#define REDO_ERROR             12
 
 #define REDO_PAGE_SIZE_MAX      4096
 #define REDO_BAD_CDC_MAX_CNT    20
-#define REDO_BUFFER_FULL_SLEEP  1000
 #define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
-
+    class Checkpoint;
     class Reader : public Thread {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
+        Checkpoint* checkpoint;
+        Ctx* ctx;
+        std::string database;
+        int fileCopyDes;
+        uint64_t fileSize;
+        typeSeq fileCopySequence;
         bool hintDisplayed;
-        int64_t fileCopyDes;
-        typeSEQ fileCopySequence;
-
-        virtual void redoClose(void) = 0;
-        virtual uint64_t redoOpen(void) = 0;
-        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) = 0;
-        virtual uint64_t readSize(uint64_t lastRead);
-        virtual uint64_t reloadHeaderRead(void);
-
-        uint64_t checkBlockHeader(uint8_t* buffer, typeBLK blockNumber, bool checkSum, bool showHint);
-        uint64_t reloadHeader(void);
-
-    public:
-        static char* REDO_CODE[13];
-        uint8_t** redoBufferList;
-        uint8_t* headerBuffer;
-        int64_t group;
-        typeSEQ sequence;
-        std::vector<std::string> paths;
-        std::string fileName;
+        bool configuredBlockSum;
+        bool readBlocks;
+        bool reachedZero;
         std::string fileNameWrite;
-        uint64_t blockSize;
+        int64_t group;
+        typeSeq sequence;
+        typeBlk numBlocks;
+        typeResetlogs resetlogs;
+        typeActivation activation;
+        uint8_t* headerBuffer;
         uint32_t compatVsn;
-        typeBLK numBlocksHeader;
-        typeBLK numBlocks;
-        typeRESETLOGS resetlogsHeader;
-        typeACTIVATION activationHeader;
-        typeTIME firstTimeHeader;
-        typeSCN firstScnHeader;
-        typeSCN firstScn;
-        typeSCN nextScnHeader;
-        typeSCN nextScn;
+        typeTime firstTime;
+        typeScn firstScn;
+        typeScn firstScnHeader;
+        typeScn nextScn;
+        typeScn nextScnHeader;
+        uint64_t blockSize;
         uint64_t sumRead;
         uint64_t sumTime;
+        uint64_t bufferScan;
+        uint64_t lastRead;
+        time_t lastReadTime;
+        time_t readTime;
+        time_t loopTime;
 
-        uint64_t fileSize;
-        std::atomic<uint64_t> status;
-        std::atomic<uint64_t> ret;
+        std::mutex mtx;
         std::atomic<uint64_t> bufferStart;
         std::atomic<uint64_t> bufferEnd;
-        std::atomic<uint64_t> buffersFree;
-        uint64_t bufferSizeMax;
-        uint64_t buffersMaxUsed;
+        std::atomic<uint64_t> status;
+        std::atomic<uint64_t> ret;
+        std::condition_variable condBufferFull;
+        std::condition_variable condReaderSleeping;
+        std::condition_variable condParserSleeping;
 
-        Reader(const char* alias, OracleAnalyzer* oracleAnalyzer, int64_t group);
-        virtual ~Reader();
+        virtual void redoClose() = 0;
+        virtual uint64_t redoOpen() = 0;
+        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) = 0;
+        virtual uint64_t readSize(uint64_t lastRead);
+        virtual uint64_t reloadHeaderRead();
+        uint64_t checkBlockHeader(uint8_t* buffer, typeBlk blockNumber, bool showHint);
+        uint64_t reloadHeader();
+        bool read1();
+        bool read2();
 
-        void initialize(void);
-        void* run(void);
+    public:
+        const static char* REDO_CODE[13];
+        uint8_t** redoBufferList;
+        std::vector<std::string> paths;
+        std::string fileName;
+
+        Reader(Ctx* ctx, std::string alias, std::string& database, int64_t group, bool configuredBlockSum);
+        ~Reader() override;
+
+        void initialize();
+        virtual void wakeUp();
+        virtual void run();
         void bufferAllocate(uint64_t num);
         void bufferFree(uint64_t num);
-        typeSUM calcChSum(uint8_t* buffer, uint64_t size) const;
+        typeSum calcChSum(uint8_t* buffer, uint64_t size) const;
+        void printHeaderInfo(std::stringstream& ss, std::string& path) const;
+        [[nodiscard]] uint64_t getBlockSize();
+        [[nodiscard]] uint64_t getBufferStart();
+        [[nodiscard]] uint64_t getBufferEnd();
+        [[nodiscard]] uint64_t getRet();
+        [[nodiscard]] typeScn getFirstScn();
+        [[nodiscard]] typeScn getFirstScnHeader();
+        [[nodiscard]] typeScn getNextScn();
+        [[nodiscard]] typeBlk getNumBlocks();
+        [[nodiscard]] int64_t getGroup();
+        [[nodiscard]] typeSeq getSequence();
+        [[nodiscard]] typeResetlogs getResetlogs();
+        [[nodiscard]] typeActivation getActivation();
+        [[nodiscard]] uint64_t getSumRead();
+        [[nodiscard]] uint64_t getSumTime();
+
+        void setRet(uint64_t newRet);
+        void setBufferStartEnd(uint64_t newBufferStart, uint64_t newBufferEnd);
+        bool checkRedoLog();
+        bool updateRedoLog();
+        void setStatusRead();
+        void confirmReadData(uint64_t confirmedBufferStart);
+        [[nodiscard]] bool checkFinished(uint64_t confirmedBufferStart);
     };
 }
 

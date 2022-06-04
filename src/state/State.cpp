@@ -20,9 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "State.h"
 
 namespace OpenLogReplicator {
-    State::State() {
-    }
+    State::State() = default;
 
-    State::~State() {
-    }
+    State::~State() = default;
 }

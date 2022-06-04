@@ -20,21 +20,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysDeferredStg.h"
 
 namespace OpenLogReplicator {
-    SysDeferredStg::SysDeferredStg(RowId& rowId, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched) :
+    SysDeferredStg::SysDeferredStg(typeRowId& rowId, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched) :
             rowId(rowId),
             obj(obj),
-            touched(touched),
-            saved(false) {
-        flagsStg.set(flagsStg1, flagsStg2);
+            flagsStg(flagsStg1, flagsStg2),
+            touched(touched) {
     }
 
     bool SysDeferredStg::operator!=(const SysDeferredStg& other) const {
-        if (other.rowId != rowId || other.obj != obj || other.flagsStg != flagsStg)
-            return true;
-        return false;
+        return other.rowId != rowId || other.obj != obj || other.flagsStg != flagsStg;
     }
 
-    bool SysDeferredStg::isCompressed(void) {
-        return flagsStg.isSet64(4);
+    bool SysDeferredStg::isCompressed() {
+        return flagsStg.isSet64(SYSDEFERREDSTG_FLAGSSTG_COMPRESSED);
     }
 }

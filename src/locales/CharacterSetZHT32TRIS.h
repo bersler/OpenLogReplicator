@@ -33,15 +33,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSetZHT32TRIS : public CharacterSet {
     protected:
-        static typeunicode16 unicode_map_ZHT32TRIS_4b[(ZHT32TRIS_b2_max - ZHT32TRIS_b2_min + 1) *
+        static typeUnicode16 unicode_map_ZHT32TRIS_4b[(ZHT32TRIS_b2_max - ZHT32TRIS_b2_min + 1) *
                                                       (ZHT32TRIS_b3_max - ZHT32TRIS_b3_min + 1) *
                                                       (ZHT32TRIS_b4_max - ZHT32TRIS_b4_min + 1)];
 
     public:
         CharacterSetZHT32TRIS();
-        virtual ~CharacterSetZHT32TRIS();
+        ~CharacterSetZHT32TRIS() override;
 
-        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
+        typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

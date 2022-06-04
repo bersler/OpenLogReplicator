@@ -19,22 +19,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <oci.h>
 
-#include "types.h"
+#include "../common/types.h"
 
 #ifndef DATABASEENVIRONMENT_H_
 #define DATABASEENVIRONMENT_H_
 
 namespace OpenLogReplicator {
-    class DatabaseStatement;
+    class Ctx;
 
     class DatabaseEnvironment {
+        Ctx* ctx;
     public:
         OCIEnv* envhp;
 
-        DatabaseEnvironment();
+        explicit DatabaseEnvironment(Ctx* ctx);
         virtual ~DatabaseEnvironment();
 
-        void initialize(void);
+        void initialize();
         void checkErr(OCIError* errhp, sword status);
     };
 }

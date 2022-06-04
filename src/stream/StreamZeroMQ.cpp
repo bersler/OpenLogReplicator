@@ -20,13 +20,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 #include <zmq.h>
 
-#include "NetworkException.h"
-#include "RuntimeException.h"
+#include "../common/Ctx.h"
+#include "../common/NetworkException.h"
+#include "../common/RuntimeException.h"
 #include "StreamZeroMQ.h"
 
 namespace OpenLogReplicator {
-    StreamZeroMQ::StreamZeroMQ(const char* uri, uint64_t pollInterval) :
-        Stream(uri, pollInterval),
+    StreamZeroMQ::StreamZeroMQ(Ctx* ctx, const char* uri) :
+        Stream(ctx, uri),
         socket(nullptr),
         context(nullptr) {
     }
@@ -36,58 +37,53 @@ namespace OpenLogReplicator {
         zmq_ctx_term(context);
     }
 
-    void StreamZeroMQ::initialize(void) {
+    void StreamZeroMQ::initialize() {
         context = zmq_ctx_new();
-        if (context == nullptr) {
-            RUNTIME_FAIL("ZeroMQ context creation error");
-        }
+        if (context == nullptr)
+            throw RuntimeException("ZeroMQ context creation error");
+
         socket = zmq_socket(context, ZMQ_PAIR);
         if (socket == nullptr) {
-            RUNTIME_FAIL("ZeroMQ initializing socket error (errno: " << std::dec << errno << ")");
+            throw RuntimeException("ZeroMQ initializing socket error (errno: " + std::to_string(errno) + ")");
         }
     }
 
-    std::string StreamZeroMQ::getName(void) const {
+    std::string StreamZeroMQ::getName() const {
         return "ZeroMQ:" + uri;
     }
 
-    void StreamZeroMQ::initializeClient(std::atomic<bool>* shutdown) {
-        this->shutdown = shutdown;
-
-        if (zmq_connect(socket, uri.c_str()) != 0) {
-            RUNTIME_FAIL("ZeroMQ connect to " << uri << " error (errno: " << std::dec << errno << ")");
-        }
+    void StreamZeroMQ::initializeClient() {
+        if (zmq_connect(socket, uri.c_str()) != 0)
+            throw RuntimeException("ZeroMQ connect to " + uri + " error (errno: " + std::to_string(errno) + ")");
     }
 
-    void StreamZeroMQ::initializeServer(std::atomic<bool>* shutdown) {
-        this->shutdown = shutdown;
-        if (zmq_bind(socket, uri.c_str()) != 0) {
-            RUNTIME_FAIL("ZeroMQ bind to " << uri << " error (errno: " << std::dec << errno << ")");
-        }
+    void StreamZeroMQ::initializeServer() {
+        if (zmq_bind(socket, uri.c_str()) != 0)
+            throw RuntimeException("ZeroMQ bind to " + uri + " error (errno: " + std::to_string(errno) + ")");
     }
 
     void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
         int64_t ret = 0;
-        while (!*shutdown) {
+        while (!ctx->softShutdown) {
             ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
             if (ret == length)
                 return;
 
             if (ret < 0 && errno == EAGAIN) {
-                usleep(pollInterval);
+                usleep(ctx->pollIntervalUs);
                 continue;
             }
 
-            NETWORK_FAIL("network send error");
+            throw NetworkException("network send error");
         }
     }
 
     uint64_t StreamZeroMQ::receiveMessage(void* msg, uint64_t length) {
         int64_t ret = zmq_recv(socket, msg, length, 0);
 
-        if (ret < 0) {
-            NETWORK_FAIL("network receive error");
-        }
+        if (ret < 0)
+            throw NetworkException("network receive error");
+
         return ret;
     }
 
@@ -97,12 +93,12 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK || errno == EAGAIN)
                 return 0;
 
-            NETWORK_FAIL("network receive error");
+            throw NetworkException("network receive error");
         }
         return ret;
     }
 
-    bool StreamZeroMQ::connected(void) {
+    bool StreamZeroMQ::isConnected() {
         return true;
     }
 }

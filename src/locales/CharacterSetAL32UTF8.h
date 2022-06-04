@@ -24,12 +24,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class CharacterSetAL32UTF8 : public CharacterSet {
-    protected:
     public:
         CharacterSetAL32UTF8();
-        virtual ~CharacterSetAL32UTF8();
+        ~CharacterSetAL32UTF8() override;
 
-        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
+        typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
     };
 }
 

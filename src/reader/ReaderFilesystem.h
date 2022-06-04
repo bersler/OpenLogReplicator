@@ -23,19 +23,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define READERFILESYSTEM_H_
 
 namespace OpenLogReplicator {
-    class OracleAnalyzer;
-
     class ReaderFilesystem : public Reader {
     protected:
-        int64_t fileDes;
-        uint64_t flags;
-        virtual void redoClose(void);
-        virtual uint64_t redoOpen(void);
-        virtual int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size);
+        int fileDes;
+        int flags;
+        void redoClose() override;
+        uint64_t redoOpen() override;
+        int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) override;
 
     public:
-        ReaderFilesystem(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t group);
-        virtual ~ReaderFilesystem();
+        ReaderFilesystem(Ctx* ctx, std::string alias, std::string& database, int64_t group, bool configuredBlockSum);
+        ~ReaderFilesystem() override;
     };
 }
 

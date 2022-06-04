@@ -17,25 +17,27 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RowId.h"
+#include "types.h"
+#include "typeINTX.h"
+#include "typeRowId.h"
 
 #ifndef SYSDEFERREDSTG_H_
 #define SYSDEFERREDSTG_H_
 
-#define SYSDEFERREDSTG_ROWID_LENGTH    18
+#define SYSDEFERREDSTG_FLAGSSTG_COMPRESSED  4
 
 namespace OpenLogReplicator {
     class SysDeferredStg {
     public:
-        SysDeferredStg(RowId& rowId, typeOBJ obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched);
-        bool operator!=(const SysDeferredStg& other) const;
-        bool isCompressed(void);
+        SysDeferredStg(typeRowId& rowId, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched);
 
-        RowId rowId;
-        typeOBJ obj;
-        uintX_t flagsStg;          //NULL
+        bool operator!=(const SysDeferredStg& other) const;
+        [[nodiscard]] bool isCompressed();
+
+        typeRowId rowId;
+        typeObj obj;
+        typeINTX flagsStg;          //NULL
         bool touched;
-        bool saved;
     };
 }
 

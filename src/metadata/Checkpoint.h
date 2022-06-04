@@ -42,16 +42,12 @@ namespace OpenLogReplicator {
         std::mutex mtx;
         std::condition_variable condLoop;
 
-        void checkpoint();
-
     public:
         Checkpoint(Ctx* ctx, Metadata* metadata, std::string alias);
         virtual ~Checkpoint();
 
         virtual void wakeUp();
         virtual void run();
-
-        friend std::ostream& operator<<(std::ostream& os, const Checkpoint& checkpoint);
     };
 }
 

@@ -1,4 +1,4 @@
-/* Memory buffer for handling output data in JSON format
+/* Memory buffer for handling output buffer in JSON format
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,276 +17,273 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "OutputBufferJson.h"
-#include "RowId.h"
+#include "../common/OracleColumn.h"
+#include "../common/OracleObject.h"
+#include "../common/SysCol.h"
+#include "../common/typeRowId.h"
+#include "BuilderJson.h"
 
 namespace OpenLogReplicator {
-    OutputBufferJson::OutputBufferJson(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
-            uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
-            uint64_t flushBuffer) :
-        OutputBuffer(messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
+    BuilderJson::BuilderJson(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat,
+                             uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat,
+                             uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer) :
+        Builder(ctx, locales, metadata, messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat, columnFormat,
                 unknownType, flushBuffer),
-        hasPreviousValue(false),
-        hasPreviousRedo(false),
-        hasPreviousColumn(false) {
+                     hasPreviousValue(false),
+                     hasPreviousRedo(false),
+                     hasPreviousColumn(false) {
     }
 
-    OutputBufferJson::~OutputBufferJson() {
-    }
-
-    void OutputBufferJson::columnNull(OracleObject* object, typeCOL col) {
+    void BuilderJson::columnNull(OracleObject* object, typeCol col) {
         if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
             OracleColumn* column = object->columns[col];
             if (column->storedAsLob)
                 return;
-            if (column->constraint && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS) == 0)
+            if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
                 return;
-            if (column->nested && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_NESTED_COLUMNS) == 0)
+            if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
                 return;
-            if (column->invisible && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_INVISIBLE_COLUMNS) == 0)
+            if (column->invisible && !FLAG(REDO_FLAGS_SHOW_INVISIBLE_COLUMNS))
                 return;
-            if (column->unused && (oracleAnalyzer->flags & REDO_FLAGS_SHOW_UNUSED_COLUMNS) == 0)
+            if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
                 return;
 
-            uint64_t typeNo = object->columns[col]->typeNo;
-            if (typeNo != 1 //varchar2/nvarchar2
-                    && typeNo != 96 //char/nchar
-                    && typeNo != 2 //number/float
-                    && typeNo != 12 //date
-                    && typeNo != 180 //timestamp
-                    && typeNo != 23 //raw
-                    && typeNo != 100 //binary_float
-                    && typeNo != 101 //binary_double
-                    && typeNo != 181) //timestamp with time zone
+            uint64_t typeNo = object->columns[col]->type;
+            if (typeNo != SYSCOL_TYPE_VARCHAR
+                    && typeNo != SYSCOL_TYPE_CHAR
+                    && typeNo != SYSCOL_TYPE_NUMBER
+                    && typeNo != SYSCOL_TYPE_DATE
+                    && typeNo != SYSCOL_TYPE_TIMESTAMP
+                    && typeNo != SYSCOL_TYPE_RAW
+                    && typeNo != SYSCOL_TYPE_FLOAT
+                    && typeNo != SYSCOL_TYPE_DOUBLE
+                    && typeNo != SYSCOL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
 
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
+        builderAppend('"');
         if (object != nullptr)
-            outputBufferAppend(object->columns[col]->name);
+            builderAppend(object->columns[col]->name);
         else {
             std::string columnName("COL_" + std::to_string(col));
-            outputBufferAppend(columnName);
+            builderAppend(columnName);
         }
-        outputBufferAppend("\":null", sizeof("\":null") - 1);
+        builderAppend(R"(":null)", sizeof(R"(":null)") - 1);
     }
 
-    void OutputBufferJson::columnFloat(std::string& columnName, float value) {
+    void BuilderJson::columnFloat(std::string& columnName, float value) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":", sizeof("\":") - 1);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
         std::string valString(std::to_string(value));
-        outputBufferAppend(valString);
+        builderAppend(valString);
     }
 
-    void OutputBufferJson::columnDouble(std::string& columnName, double value) {
+    void BuilderJson::columnDouble(std::string& columnName, double value) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":", sizeof("\":") - 1);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
         std::string valString(std::to_string(value));
-        outputBufferAppend(valString);
+        builderAppend(valString);
     }
 
-    void OutputBufferJson::columnString(std::string& columnName) {
+    void BuilderJson::columnString(std::string& columnName) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":\"", sizeof("\":\"") - 1);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":")", sizeof(R"(":")") - 1);
         appendEscape(valueBuffer, valueLength);
-        outputBufferAppend('"');
+        builderAppend('"');
     }
 
-    void OutputBufferJson::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
+    void BuilderJson::columnNumber(std::string& columnName, uint64_t precision __attribute__((unused)), uint64_t scale __attribute__((unused))) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":", sizeof("\":") - 1);
-        outputBufferAppend(valueBuffer, valueLength);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":)", sizeof(R"(":)") - 1);
+        builderAppend(valueBuffer, valueLength);
     }
 
-    void OutputBufferJson::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
+    void BuilderJson::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":\"", sizeof("\":\"") - 1);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":")", sizeof(R"(":")") - 1);
         for (uint64_t j = 0; j < length; ++j)
             appendHex(*(data + j), 2);
-        outputBufferAppend('"');
+        builderAppend('"');
     }
 
-    void OutputBufferJson::columnTimestamp(std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+    void BuilderJson::columnTimestamp(std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousColumn = true;
 
-        outputBufferAppend('"');
-        outputBufferAppend(columnName);
-        outputBufferAppend("\":", sizeof("\":") - 1);
+        builderAppend('"');
+        builderAppend(columnName);
+        builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
         if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
             //2012-04-23T18:25:43.511Z - ISO 8601 format
-            outputBufferAppend('"');
+            builderAppend('"');
             if (epochTime.tm_year > 0) {
                 appendDec((uint64_t)epochTime.tm_year);
             } else {
                 appendDec((uint64_t)(-epochTime.tm_year));
-                outputBufferAppend("BC", sizeof("BC") - 1);
+                builderAppend("BC", sizeof("BC") - 1);
             }
-            outputBufferAppend('-');
+            builderAppend('-');
             appendDec(epochTime.tm_mon, 2);
-            outputBufferAppend('-');
+            builderAppend('-');
             appendDec(epochTime.tm_mday, 2);
-            outputBufferAppend('T');
+            builderAppend('T');
             appendDec(epochTime.tm_hour, 2);
-            outputBufferAppend(':');
+            builderAppend(':');
             appendDec(epochTime.tm_min, 2);
-            outputBufferAppend(':');
+            builderAppend(':');
             appendDec(epochTime.tm_sec, 2);
 
             if (fraction > 0) {
-                outputBufferAppend('.');
+                builderAppend('.');
                 appendDec(fraction, 9);
             }
 
             if (tz != nullptr) {
-                outputBufferAppend(' ');
-                outputBufferAppend(tz);
+                builderAppend(' ');
+                builderAppend(tz);
             }
-            outputBufferAppend('"');
+            builderAppend('"');
         } else {
             //unix epoch format
             if (epochTime.tm_year >= 1900) {
                 --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
-                appendDec(tmToEpoch(&epochTime) * 1000 + ((fraction + 500000) / 1000000));
+                appendSDec(tmToEpoch(&epochTime) * 1000 + ((fraction + 500000) / 1000000));
             } else
                 appendDec(0);
         }
     }
 
-    void OutputBufferJson::appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot) {
+    void BuilderJson::appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot) {
         if ((messageFormat & MESSAGE_FORMAT_ADD_SEQUENCES) != 0) {
-            outputBufferAppend(",\"num\":", sizeof(",\"num\":") - 1);
+            builderAppend(R"(,"num":)", sizeof(R"(,"num":)") - 1);
             appendDec(num);
         }
 
         if (ridFormat == RID_FORMAT_SKIP)
             return;
 
-        RowId rowId(dataObj, bdba, slot);
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        outputBufferAppend(",\"rid\":\"", sizeof(",\"rid\":\"") - 1);
-        outputBufferAppend(str, 18);
-        outputBufferAppend('"');
+        builderAppend(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
+        builderAppend(str, 18);
+        builderAppend('"');
     }
 
-    void OutputBufferJson::appendHeader(bool first, bool showXid) {
+    void BuilderJson::appendHeader(bool first, bool showXid) {
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
             if ((scnFormat & SCN_FORMAT_HEX) != 0) {
-                outputBufferAppend("\"scns\":\"0x", sizeof("\"scns\":\"0x") - 1);
+                builderAppend(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
                 appendHex(lastScn, 16);
-                outputBufferAppend('"');
+                builderAppend('"');
             } else {
-                outputBufferAppend("\"scn\":", sizeof("\"scn\":") - 1);
+                builderAppend(R"("scn":)", sizeof(R"("scn":)") - 1);
                 appendDec(lastScn);
             }
         }
 
         if (first || (timestampFormat & TIMESTAMP_FORMAT_ALL_PAYLOADS) != 0) {
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
             if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-                outputBufferAppend("\"tms\":\"", sizeof("\"tms\":\"") - 1);
+                builderAppend(R"("tms":")", sizeof(R"("tms":")") - 1);
                 char iso[21];
-                lastTime.toISO8601(iso);
-                outputBufferAppend(iso, 20);
-                outputBufferAppend('"');
+                lastTime.toIso8601(iso);
+                builderAppend(iso, 20);
+                builderAppend('"');
             } else {
-                outputBufferAppend("\"tm\":", sizeof("\"tm\":") - 1);
+                builderAppend(R"("tm":)", sizeof(R"("tm":)") - 1);
                 appendDec(lastTime.toTime() * 1000);
             }
         }
 
         if (showXid) {
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
             if (xidFormat == XID_FORMAT_TEXT) {
-                outputBufferAppend("\"xid\":\"", sizeof("\"xid\":\"") - 1);
-                appendDec(USN(lastXid));
-                outputBufferAppend('.');
-                appendDec(SLT(lastXid));
-                outputBufferAppend('.');
-                appendDec(SQN(lastXid));
-                outputBufferAppend('"');
+                builderAppend(R"("xid":")", sizeof(R"("xid":")") - 1);
+                appendDec(lastXid.usn());
+                builderAppend('.');
+                appendDec(lastXid.slt());
+                builderAppend('.');
+                appendDec(lastXid.sqn());
+                builderAppend('"');
             } else {
-                outputBufferAppend("\"xidn\":", sizeof("\"xidn\":") - 1);
-                appendDec(lastXid);
+                builderAppend(R"("xidn":)", sizeof(R"("xidn":)") - 1);
+                appendDec(lastXid.getVal());
             }
         }
     }
 
-    void OutputBufferJson::appendSchema(OracleObject* object, typeDATAOBJ dataObj) {
+    void BuilderJson::appendSchema(OracleObject* object, typeDataObj dataObj) {
         if (object == nullptr) {
-            outputBufferAppend("\"schema\":{\"table\":\"", sizeof("\"schema\":{\"table\":\"") - 1);
+            builderAppend(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
             std::string objectName("OBJ_" + std::to_string(dataObj));
-            outputBufferAppend(objectName);
-            outputBufferAppend('"}');
+            builderAppend(objectName);
+            builderAppend(R"(})"); //FIXME: add "
             return;
         }
 
-        outputBufferAppend("\"schema\":{\"owner\":\"", sizeof("\"schema\":{\"owner\":\"") - 1);
-        outputBufferAppend(object->owner);
-        outputBufferAppend("\",\"table\":\"", sizeof("\",\"table\":\"") - 1);
-        outputBufferAppend(object->name);
-        outputBufferAppend('"');
+        builderAppend(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
+        builderAppend(object->owner);
+        builderAppend(R"(","table":")", sizeof(R"(","table":")") - 1);
+        builderAppend(object->name);
+        builderAppend('"');
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
-            outputBufferAppend(",\"obj\":", sizeof(",\"obj\":") - 1);
+            builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
             appendDec(object->obj);
         }
 
@@ -298,129 +295,129 @@ namespace OpenLogReplicator {
                     objects.insert(object);
             }
 
-            outputBufferAppend(",\"columns\":[", sizeof(",\"columns\":[") - 1);
+            builderAppend(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
 
             bool hasPrev = false;
-            for (typeCOL column = 0; column < object->columns.size(); ++column) {
+            for (typeCol column = 0; column < (typeCol)object->columns.size(); ++column) {
                 if (object->columns[column] == nullptr)
                     continue;
 
                 if (hasPrev)
-                    outputBufferAppend(',');
+                    builderAppend(',');
                 else
                     hasPrev = true;
 
-                outputBufferAppend("{\"name\":\"", sizeof("{\"name\":\"") - 1);
-                outputBufferAppend(object->columns[column]->name);
+                builderAppend(R"({"name":")", sizeof(R"({"name":")") - 1);
+                builderAppend(object->columns[column]->name);
 
-                outputBufferAppend("\",\"type\":", sizeof("\",\"type\":") - 1);
-                switch(object->columns[column]->typeNo) {
-                case 1: //varchar2(n), nvarchar(n)
-                    outputBufferAppend("\"varchar2\",\"length\":", sizeof("\"varchar2\",\"length\":") - 1);
+                builderAppend(R"(","type":)", sizeof(R"(","type":)") - 1);
+                switch(object->columns[column]->type) {
+                case SYSCOL_TYPE_VARCHAR:
+                    builderAppend(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 2: //number(p, s), float(p)
-                    outputBufferAppend("\"number\",\"precision\":", sizeof("\"number\",\"precision\":") - 1);
+                case SYSCOL_TYPE_NUMBER:
+                    builderAppend(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
                     appendSDec(object->columns[column]->precision);
-                    outputBufferAppend(",\"scale\":", sizeof(",\"scale\":") - 1);
+                    builderAppend(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
                     appendSDec(object->columns[column]->scale);
                     break;
 
-                case 8: //long, not supported
-                    outputBufferAppend("\"long\"", sizeof("\"long\"") - 1);
+                case SYSCOL_TYPE_LONG: //long, not supported
+                    builderAppend(R"("long")", sizeof(R"("long")") - 1);
                     break;
 
-                case 12: //date
-                    outputBufferAppend("\"date\"", sizeof("\"date\"") - 1);
+                case SYSCOL_TYPE_DATE:
+                    builderAppend(R"("date")", sizeof(R"("date")") - 1);
                     break;
 
-                case 23: //raw(n)
-                    outputBufferAppend("\"raw\",\"length\":", sizeof("\"raw\",\"length\":") - 1);
+                case SYSCOL_TYPE_RAW:
+                    builderAppend(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 24: //long raw, not supported
-                    outputBufferAppend("\"long raw\"", sizeof("\"long raw\"") - 1);
+                case SYSCOL_TYPE_LONG_RAW: //not supported
+                    builderAppend(R"("long raw")", sizeof(R"("long raw")") - 1);
                     break;
 
-                case 69: //rowid, not supported
-                    outputBufferAppend("\"rowid\"", sizeof("\"rowid\"") - 1);
+                case SYSCOL_TYPE_ROWID: //not supported
+                    builderAppend(R"("rowid")", sizeof(R"("rowid")") - 1);
                     break;
 
-                case 96: //char(n), nchar(n)
-                    outputBufferAppend("\"char\",\"length\":", sizeof("\"char\",\"length\":") - 1);
+                case SYSCOL_TYPE_CHAR:
+                    builderAppend(R"("char","length":)", sizeof(R"("char","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 100: //binary_float
-                    outputBufferAppend("\"binary_float\"", sizeof("\"binary_float\"") - 1);
+                case SYSCOL_TYPE_FLOAT:
+                    builderAppend(R"("binary_float")", sizeof(R"("binary_float")") - 1);
                     break;
 
-                case 101: //binary_double
-                    outputBufferAppend("\"binary_double\"", sizeof("\"binary_double\"") - 1);
+                case SYSCOL_TYPE_DOUBLE:
+                    builderAppend(R"("binary_double")", sizeof(R"("binary_double")") - 1);
                     break;
 
-                case 112: //clob, nclob, not supported
-                    outputBufferAppend("\"clob\"", sizeof("\"clob\"") - 1);
+                case SYSCOL_TYPE_CLOB: //not supported
+                    builderAppend(R"("clob")", sizeof(R"("clob")") - 1);
                     break;
 
-                case 113: //blob, not supported
-                    outputBufferAppend("\"blob\"", sizeof("\"blob\"") - 1);
+                case SYSCOL_TYPE_BLOB: //not supported
+                    builderAppend(R"("blob")", sizeof(R"("blob")") - 1);
                     break;
 
-                case 180: //timestamp(n)
-                    outputBufferAppend("\"timestamp\",\"length\":", sizeof("\"timestamp\",\"length\":") - 1);
+                case SYSCOL_TYPE_TIMESTAMP:
+                    builderAppend(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 181: //timestamp with time zone(n)
-                    outputBufferAppend("\"timestamp with time zone\",\"length\":", sizeof("\"timestamp with time zone\",\"length\":") - 1);
+                case SYSCOL_TYPE_TIMESTAMP_WITH_TZ:
+                    builderAppend(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 182: //interval year to month(n)
-                    outputBufferAppend("\"interval year to month\",\"length\":", sizeof("\"interval year to month\",\"length\":") - 1);
+                case SYSCOL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                    builderAppend(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 183: //interval day to second(n)
-                    outputBufferAppend("\"interval day to second\",\"length\":", sizeof("\"interval day to second\",\"length\":") - 1);
+                case SYSCOL_TYPE_INTERVAL_DAY_TO_SECOND:
+                    builderAppend(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 208: //urawid(n)
-                    outputBufferAppend("\"urawid\",\"length\":", sizeof("\"urawid\",\"length\":") - 1);
+                case SYSCOL_TYPE_URAWID:
+                    builderAppend(R"("urawid","length":)", sizeof(R"("urawid","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case 231: //timestamp with local time zone(n), not supported
-                    outputBufferAppend("\"timestamp with local time zone\",\"length\":", sizeof("\"timestamp with local time zone\",\"length\":") - 1);
+                case SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: //not supported
+                    builderAppend(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
                 default:
-                    outputBufferAppend("\"unknown\"", sizeof("\"unknown\"") - 1);
+                    builderAppend(R"("unknown")", sizeof(R"("unknown")") - 1);
                     break;
                 }
 
-                outputBufferAppend(",\"nullable\":", sizeof(",\"nullable\":") - 1);
+                builderAppend(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
                 if (object->columns[column]->nullable)
-                    outputBufferAppend('1');
+                    builderAppend('1');
                 else
-                    outputBufferAppend('0');
+                    builderAppend('0');
 
-                outputBufferAppend('}');
+                builderAppend('}');
             }
-            outputBufferAppend(']');
+            builderAppend(']');
         }
 
-        outputBufferAppend('}');
+        builderAppend('}');
     }
 
-    time_t OutputBufferJson::tmToEpoch(struct tm* epoch) const {
+    time_t BuilderJson::tmToEpoch(struct tm* epoch) {
         static const int cumdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
-        uint64_t year;
+        long year;
         time_t result;
 
         year = 1900 + epoch->tm_year + epoch->tm_mon / 12;
@@ -441,32 +438,35 @@ namespace OpenLogReplicator {
         return result;
     }
 
-    void OutputBufferJson::processBegin(void) {
+    void BuilderJson::processBeginMessage() {
         newTran = false;
         hasPreviousRedo = false;
 
         if ((messageFormat & MESSAGE_FORMAT_SKIP_BEGIN) != 0)
             return;
 
-        outputBufferBegin(0);
-        outputBufferAppend('{');
+        builderBegin(0);
+        builderAppend('{');
         hasPreviousValue = false;
         appendHeader(true, true);
 
         if (hasPreviousValue)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousValue = true;
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
+            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         } else {
-            outputBufferAppend("\"payload\":[{\"op\":\"begin\"}]}", sizeof("\"payload\":[{\"op\":\"begin\"}]}") - 1);
-            outputBufferCommit(false);
+            builderAppend(R"("payload":[{"op":"begin"}]})", sizeof(R"("payload":[{"op":"begin"}]})") - 1);
+            builderCommit(false);
         }
     }
 
-    void OutputBufferJson::processCommit(void) {
+    void BuilderJson::processCommit(bool system) {
+        if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            return;
+
         //skip empty transaction
         if (newTran) {
             newTran = false;
@@ -474,207 +474,209 @@ namespace OpenLogReplicator {
         }
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
-            outputBufferAppend("]}", sizeof("]}") - 1);
-            outputBufferCommit(true);
-        } else
-        if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
-            outputBufferBegin(0);
-            outputBufferAppend('{');
+            builderAppend("]}", sizeof("]}") - 1);
+            builderCommit(true);
+        } else if ((messageFormat & MESSAGE_FORMAT_SKIP_COMMIT) == 0) {
+            builderBegin(0);
+            builderAppend('{');
 
             hasPreviousValue = false;
             appendHeader(false, true);
 
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[{\"op\":\"commit\"}]}", sizeof("\"payload\":[{\"op\":\"commit\"}]}") - 1);
-            outputBufferCommit(true);
+            builderAppend(R"("payload":[{"op":"commit"}]})", sizeof(R"("payload":[{"op":"commit"}]})") - 1);
+            builderCommit(true);
         }
         num = 0;
     }
 
-    void OutputBufferJson::processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderJson::processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
-            outputBufferAppend('{');
+            builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
 
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
+            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"c\",", sizeof("{\"op\":\"c\",") - 1);
+        builderAppend(R"({"op":"c",)", sizeof(R"({"op":"c",)") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendAfter(object);
-        outputBufferAppend('}');
+        builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}", sizeof("]}") - 1);
-            outputBufferCommit(false);
+            builderAppend("]}", sizeof("]}") - 1);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferJson::processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderJson::processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
-            outputBufferAppend('{');
+            builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
 
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
+            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"u\",", sizeof("{\"op\":\"u\",") - 1);
+        builderAppend(R"({"op":"u",)", sizeof(R"({"op":"u",)") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(object);
         appendAfter(object);
-        outputBufferAppend('}');
+        builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}", sizeof("]}") - 1);
-            outputBufferCommit(false);
+            builderAppend("]}", sizeof("]}") - 1);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferJson::processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
+    void BuilderJson::processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
-            outputBufferAppend('{');
+            builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
 
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
+            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"d\",", sizeof("{\"op\":\"d\",") - 1);
+        builderAppend(R"({"op":"d",)", sizeof(R"({"op":"d",)") - 1);
         appendSchema(object, dataObj);
         appendRowid(dataObj, bdba, slot);
         appendBefore(object);
-        outputBufferAppend('}');
+        builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}", sizeof("]}") - 1);
-            outputBufferCommit(false);
+            builderAppend("]}", sizeof("]}") - 1);
+            builderCommit(false);
         }
         ++num;
     }
 
-    void OutputBufferJson::processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) {
+    void BuilderJson::processDdl(OracleObject* object, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
-            processBegin();
+            processBeginMessage();
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) != 0) {
             if (hasPreviousRedo)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousRedo = true;
         } else {
             if (object != nullptr)
-                outputBufferBegin(object->obj);
+                builderBegin(object->obj);
             else
-                outputBufferBegin(0);
+                builderBegin(0);
 
-            outputBufferAppend('{');
+            builderAppend('{');
             hasPreviousValue = false;
             appendHeader(false, true);
 
             if (hasPreviousValue)
-                outputBufferAppend(',');
+                builderAppend(',');
             else
                 hasPreviousValue = true;
 
-            outputBufferAppend("\"payload\":[", sizeof("\"payload\":[") - 1);
+            builderAppend(R"("payload":[)", sizeof(R"("payload":[)") - 1);
         }
 
-        outputBufferAppend("{\"op\":\"ddl\",\"sql\":\"", sizeof("{\"op\":\"ddl\",\"sql\":\"") - 1);
+        builderAppend(R"({"op":"ddl","sql":")", sizeof(R"({"op":"ddl","sql":")") - 1);
         appendEscape(sql, sqlLength);
-        outputBufferAppend("\"}", sizeof("\"}") - 1);
+        builderAppend(R"("})", sizeof(R"("})") - 1);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
-            outputBufferAppend("]}", sizeof("]}") - 1);
-            outputBufferCommit(true);
+            builderAppend("]}", sizeof("]}") - 1);
+            builderCommit(true);
         }
         ++num;
     }
 
-    void OutputBufferJson::processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo) {
+    void BuilderJson::processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) {
+        if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
+            return;
+
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
-        outputBufferBegin(0);
-        outputBufferAppend('{');
+        builderBegin(0);
+        builderAppend('{');
         hasPreviousValue = false;
         appendHeader(true, false);
 
         if (hasPreviousValue)
-            outputBufferAppend(',');
+            builderAppend(',');
         else
             hasPreviousValue = true;
 
-        outputBufferAppend("\"payload\":[{\"op\":\"chkpt\",\"seq\":", sizeof("\"payload\":[{\"op\":\"chkpt\",\"seq\":") - 1);
+        builderAppend(R"("payload":[{"op":"chkpt","seq":)", sizeof(R"("payload":[{"op":"chkpt","seq":)") - 1);
         appendDec(sequence);
-        outputBufferAppend(",\"offset\":", sizeof(",\"offset\":") - 1);
+        builderAppend(R"(,"offset":)", sizeof(R"(,"offset":)") - 1);
         appendDec(offset);
         if (redo)
-            outputBufferAppend(",\"redo\":true", sizeof(",\"redo\":true") - 1);
-        outputBufferAppend("}]}", sizeof("}]}") - 1);
-        outputBufferCommit(true);
+            builderAppend(R"(,"redo":true)", sizeof(R"(,"redo":true)") - 1);
+        builderAppend("}]}", sizeof("}]}") - 1);
+        builderCommit(true);
     }
 }

@@ -17,16 +17,22 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <utility>
+
 #include "NetworkException.h"
 
 namespace OpenLogReplicator {
-    NetworkException::NetworkException(const char* msg) :
-        exception(),
-        msg(msg) {
+    NetworkException::NetworkException(const std::string newMsg) :
+            exception(),
+            msg(std::move(newMsg)) {
     }
 
-    NetworkException::~NetworkException() {
+    NetworkException::NetworkException(const char* msg) :
+            exception(),
+            msg(msg) {
     }
+
+    NetworkException::~NetworkException() = default;
 
     std::ostream& operator<<(std::ostream& os, const NetworkException& exception) {
         os << exception.msg;

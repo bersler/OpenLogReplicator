@@ -20,54 +20,51 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTab.h"
 
 namespace OpenLogReplicator {
-    SysTab::SysTab(RowId& rowId, typeOBJ obj, typeDATAOBJ dataObj, typeCOL cluCols, uint64_t flags1, uint64_t flags2,
-            uint64_t property1, uint64_t property2, bool touched) :
+    SysTab::SysTab(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
+                   uint64_t property1, uint64_t property2, bool touched) :
             rowId(rowId),
             obj(obj),
             dataObj(dataObj),
             cluCols(cluCols),
-            touched(touched),
-            saved(false) {
-        flags.set(flags1, flags2);
-        property.set(property1, property2);
+            flags(flags1, flags2),
+            property(property1, property2),
+            touched(touched) {
     }
 
     bool SysTab::operator!=(const SysTab& other) const {
-        if (other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.cluCols != cluCols || other.flags != flags ||
-                other.property != property)
-            return true;
-        return false;
+        return other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.cluCols != cluCols || other.flags != flags ||
+                other.property != property;
     }
 
-    bool SysTab::isBinary(void) {
-        return property.isSet64(1);
+    bool SysTab::isBinary() {
+        return property.isSet64(SYSTAB_PROPERTY_BINARY);
     }
 
-    bool SysTab::isClustered(void) {
-        return property.isSet64(1024);
+    bool SysTab::isClustered() {
+        return property.isSet64(SYSTAB_PROPERTY_CLUSTERED);
     }
 
-    bool SysTab::isIot(void) {
-        return property.isSet64(512) || flags.isSet64(536870912);
+    bool SysTab::isIot() {
+        return property.isSet64(SYSTAB_PROPERTY_IOT1) || flags.isSet64(SYSTAB_PROPERTY_IOT2);
     }
 
-    bool SysTab::isPartitioned(void) {
-        return property.isSet64(32);
+    bool SysTab::isPartitioned() {
+        return property.isSet64(SYSTAB_PROPERTY_PARTITIONED);
     }
 
-    bool SysTab::isNested(void) {
-        return property.isSet64(8192);
+    bool SysTab::isNested() {
+        return property.isSet64(SYSTAB_PROPERTY_NESTED);
     }
 
-    bool SysTab::isRowMovement(void) {
-        return flags.isSet64(131072);
+    bool SysTab::isRowMovement() {
+        return flags.isSet64(SYSTAB_PROPERTY_ROW_MOVEMENT);
     }
 
-    bool SysTab::isDependencies(void) {
-        return flags.isSet64(8388608);
+    bool SysTab::isDependencies() {
+        return flags.isSet64(SYSTAB_PROPERTY_DEPENDENCIES);
     }
 
-    bool SysTab::isInitial(void) {
-        return flags.isSet64(17179869184);
+    bool SysTab::isInitial() {
+        return flags.isSet64(SYSTAB_PROPERTY_INITIAL);
     }
 }

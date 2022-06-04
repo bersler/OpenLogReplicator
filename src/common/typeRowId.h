@@ -1,4 +1,4 @@
-/* Header for RowId class
+/* Header for typeRowId class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -18,36 +18,43 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <functional>
+
 #include "types.h"
 
-#ifndef ROWID_H_
-#define ROWID_H_
+#ifndef TYPEROWID_H_
+#define TYPEROWID_H_
+
+#define ROWID_LENGTH 18
 
 namespace OpenLogReplicator {
-    class RowId {
-    public:
+    class typeRowId {
+    protected:
         static const char map64[65];
         static const char map64R[256];
 
-        typeDATAOBJ dataObj;
-        typeDBA dba;
-        typeSLOT slot;
+    public:
+        typeDataObj dataObj;
+        typeDba dba;
+        typeSlot slot;
 
-        RowId();
-        RowId(const char* rowid);
-        RowId(typeDATAOBJ dataObj, typeDBA dba, typeSLOT slot);
-        bool operator<(const RowId& other) const;
-        bool operator!=(const RowId& other) const;
-        bool operator==(const RowId& other) const;
+        typeRowId();
+        explicit typeRowId(const char* rowid);
+        typeRowId(typeDataObj dataObj, typeDba dba, typeSlot slot);
+
+        bool operator<(const typeRowId& other) const;
+        bool operator!=(const typeRowId& other) const;
+        bool operator==(const typeRowId& other) const;
         void toString(char* str) const;
-        friend std::ostream& operator<<(std::ostream& os, const RowId& tran);
+        std::string toString() const;
+
+        friend std::ostream& operator<<(std::ostream& os, const typeRowId& tran);
     };
 }
 
 namespace std {
     template <>
-    struct hash<OpenLogReplicator::RowId> {
-        size_t operator()(const OpenLogReplicator::RowId& rowId) const;
+    struct hash<OpenLogReplicator::typeRowId> {
+        size_t operator()(const OpenLogReplicator::typeRowId& rowId) const;
     };
 }
 

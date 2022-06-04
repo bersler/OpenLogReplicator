@@ -17,18 +17,20 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 #include <fcntl.h>
 #include <netdb.h>
 #include <unistd.h>
 
-#include "NetworkException.h"
-#include "RuntimeException.h"
+#include "../common/Ctx.h"
+#include "../common/NetworkException.h"
+#include "../common/RuntimeException.h"
 #include "StreamNetwork.h"
 
 namespace OpenLogReplicator {
-    StreamNetwork::StreamNetwork(const char* uri, uint64_t pollInterval) :
-        Stream(uri, pollInterval),
+    StreamNetwork::StreamNetwork(Ctx* ctx, const char* uri) :
+        Stream(ctx, uri),
         socketFD(-1),
         serverFD(-1),
         readBufferLen(0),
@@ -52,75 +54,65 @@ namespace OpenLogReplicator {
         }
     }
 
-    void StreamNetwork::initialize(void) {
-        uint64_t colon = this->uri.find(":");
-        if (colon == std::string::npos) {
-            RUNTIME_FAIL("uri is missing \":\"");
-        }
+    void StreamNetwork::initialize() {
+        uint64_t colon = this->uri.find(':');
+        if (colon == std::string::npos)
+            throw NetworkException("uri is missing ':'");
+
         host = this->uri.substr(0, colon);
         port = this->uri.substr(colon + 1, this->uri.length() - 1);
     }
 
-    std::string StreamNetwork::getName(void) const {
+    std::string StreamNetwork::getName() const {
         return "Network:" + uri;
     }
 
-    void StreamNetwork::initializeClient(std::atomic<bool>* shutdown) {
-        this->shutdown = shutdown;
+    void StreamNetwork::initializeClient() {
         struct sockaddr_in addressC;
         memset((uint8_t*) &addressC, 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
 
-        if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-            RUNTIME_FAIL("socket creation failed - " << strerror(errno));
-        }
+        if ((socketFD = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+            throw NetworkException(std::string("socket creation failed - ") + strerror(errno));
 
         struct hostent* server = gethostbyname(host.c_str());
-        if (server == NULL) {
-            RUNTIME_FAIL("resolving host name: " << host << " - " << strerror(errno));
-        }
+        if (server == nullptr)
+            throw NetworkException("resolving host name: " + host + " - " + strerror(errno));
 
         memcpy((char*) &addressC.sin_addr.s_addr, (char*) server->h_addr, server->h_length);
-        if (connect(socketFD, (struct sockaddr*) &addressC, sizeof(addressC)) < 0) {
-            RUNTIME_FAIL("connecting to uri: " << uri << " - " << strerror(errno));
-        }
+        if (connect(socketFD, (struct sockaddr*) &addressC, sizeof(addressC)) < 0)
+            throw NetworkException("connecting to uri: " + uri + " - " + strerror(errno));
     }
 
-    void StreamNetwork::initializeServer(std::atomic<bool>* shutdown) {
-        this->shutdown = shutdown;
+    void StreamNetwork::initializeServer() {
         struct addrinfo hints;
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
 
-        getaddrinfo(host.c_str(), port.c_str(), &hints, &res);
+        if (getaddrinfo(host.c_str(), port.c_str(), &hints, &res) != 0)
+            throw NetworkException(std::string("getting information about host/port - ") + strerror(errno));
 
         serverFD = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-        if (serverFD == 0) {
-            RUNTIME_FAIL("socket creation failed - " << strerror(errno));
-        }
+        if (serverFD == 0)
+            throw NetworkException(std::string("socket creation failed - ") + strerror(errno));
 
         int flags = fcntl(serverFD, F_GETFL);
-        if (flags < 0) {
-            RUNTIME_FAIL("getting socket flags - " << strerror(errno));
-        }
-        if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0) {
-            RUNTIME_FAIL("setting socket flags - " << strerror(errno));
-        }
+        if (flags < 0)
+            throw NetworkException(std::string("getting socket flags - ") + strerror(errno));
+        if (fcntl(serverFD, F_SETFL, flags | O_NONBLOCK) < 0)
+            throw NetworkException(std::string("setting socket flags - ") + strerror(errno));
 
         int64_t opt = 1;
-        if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-            RUNTIME_FAIL("socket reusing failed - " << strerror(errno));
-        }
+        if (setsockopt(serverFD, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
+            throw NetworkException(std::string("socket reusing failed - ") + strerror(errno));
 
-        if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0) {
-            RUNTIME_FAIL("binding uri: " << uri << " - " << strerror(errno));
-        }
-        if (listen(serverFD, 1) < 0) {
-            RUNTIME_FAIL("starting listener - " << strerror(errno));
-        }
+        if (bind(serverFD, res->ai_addr, res->ai_addrlen) < 0)
+            throw NetworkException("binding uri: " + uri + " - " + strerror(errno));
+        if (listen(serverFD, 1) < 0)
+            throw NetworkException(std::string("starting listener - ") + strerror(errno));
 
         if (res != nullptr) {
             freeaddrinfo(res);
@@ -132,9 +124,8 @@ namespace OpenLogReplicator {
         uint32_t length32 = length;
         uint64_t sent = 0;
 
-        if (socketFD == -1) {
-            NETWORK_FAIL("network send error - no connection");
-        }
+        if (socketFD == -1)
+            throw NetworkException("network send error - no connection");
 
         fd_set wset;
         fd_set w;
@@ -145,20 +136,20 @@ namespace OpenLogReplicator {
         if (length < 0xFFFFFFFF) {
             //32-bit length
             while (sent < sizeof(uint32_t)) {
-                if (*shutdown)
+                if (ctx->softShutdown)
                     return;
 
                 w = wset;
                 //blocking select
-                select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
+                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
+                ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send - " << strerror(errno));
+                       throw NetworkException(std::string("network send - ") + strerror(errno));
                    }
                 }
                 sent += r;
@@ -167,20 +158,20 @@ namespace OpenLogReplicator {
             //64-bit length
             length32 = 0xFFFFFFFF;
             while (sent < sizeof(uint32_t)) {
-                if (*shutdown)
+                if (ctx->softShutdown)
                     return;
 
                 w = wset;
                 //blocking select
-                select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
+                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
+                ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send - " << strerror(errno));
+                       throw NetworkException(std::string("network send - ") + strerror(errno));
                    }
                 }
                 sent += r;
@@ -188,20 +179,20 @@ namespace OpenLogReplicator {
 
             sent = 0;
             while (sent < sizeof(uint64_t)) {
-                if (*shutdown)
+                if (ctx->softShutdown)
                     return;
 
                 w = wset;
                 //blocking select
-                select(socketFD + 1, NULL, &w, NULL, NULL);
-                int r = write(socketFD, ((uint8_t*) &length) + sent, sizeof(uint64_t) - sent);
+                select(socketFD + 1, nullptr, &w, nullptr, nullptr);
+                ssize_t r = write(socketFD, ((uint8_t*) &length) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
                    else {
                        close(socketFD);
                        socketFD = -1;
-                       NETWORK_FAIL("network send - " << strerror(errno));
+                       throw NetworkException(std::string("network send - ") + strerror(errno));
                    }
                 }
                 sent += r;
@@ -211,20 +202,20 @@ namespace OpenLogReplicator {
         sent = 0;
         //message content
         while (sent < length) {
-            if (*shutdown)
+            if (ctx->softShutdown)
                 return;
 
             w = wset;
             //blocking select
-            select(socketFD + 1, NULL, &w, NULL, NULL);
-            int r = write(socketFD, msg + sent, length - sent);
+            select(socketFD + 1, nullptr, &w, nullptr, nullptr);
+            ssize_t r = write(socketFD, (char*)msg + sent, length - sent);
             if (r <= 0) {
                if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                    r = 0;
                else {
                    close(socketFD);
                    socketFD = -1;
-                   NETWORK_FAIL("network send - " << strerror(errno));
+                   throw NetworkException(std::string("network send - ") + strerror(errno));
                }
             }
             sent += r;
@@ -236,29 +227,28 @@ namespace OpenLogReplicator {
 
         //read message length
         while (recvd < sizeof(uint32_t)) {
-            if (*shutdown)
+            if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, msg + recvd, sizeof(uint32_t) - recvd);
+            int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("host disconnected");
+                throw NetworkException("host disconnected");
             } else {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("network receive - " << strerror(errno));
+                throw NetworkException(std::string("network receive - ") + strerror(errno));
             }
         }
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
             //32-bit message length
-            if (length < *((uint32_t*) msg)) {
-                RUNTIME_FAIL("read buffer too small");
-            }
+            if (length < *((uint32_t*) msg))
+                throw NetworkException("read buffer too small");
 
             length = *((uint32_t*) msg);
             recvd = 0;
@@ -267,48 +257,47 @@ namespace OpenLogReplicator {
             recvd = 0;
 
             while (recvd < sizeof(uint64_t)) {
-                if (*shutdown)
+                if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, msg + recvd, sizeof(uint64_t) - recvd);
+                int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
                 else if (bytes == 0) {
                     close(socketFD);
                     socketFD = -1;
-                    NETWORK_FAIL("host disconnected");
+                    throw NetworkException("host disconnected");
                 } else {
                     close(socketFD);
                     socketFD = -1;
-                    NETWORK_FAIL("network receive - " << strerror(errno));
+                    throw NetworkException(std::string("network receive - ") + strerror(errno));
                 }
             }
 
-            if (length < *((uint64_t*) msg)) {
-                RUNTIME_FAIL("read buffer too small");
-            }
+            if (length < *((uint64_t*) msg))
+                throw NetworkException("read buffer too small");
 
             length = *((uint64_t*) msg);
             recvd = 0;
         }
 
         while (recvd < length) {
-            if (*shutdown)
+            if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, msg + recvd, length - recvd);
+            int64_t bytes = read(socketFD, (char*)msg + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("host disconnected");
+                throw NetworkException("host disconnected");
             } else {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("network receive - " << strerror(errno) );
+                throw NetworkException(std::string("network receive - ") + strerror(errno));
             }
         }
 
@@ -320,10 +309,10 @@ namespace OpenLogReplicator {
 
         //read message length
         while (recvd < sizeof(uint32_t)) {
-            if (*shutdown)
+            if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, msg + recvd, sizeof(uint32_t) - recvd);
+            int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -331,13 +320,13 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("host disconnected");
+                throw NetworkException("host disconnected");
             } else {
                 if (recvd == 0)
                     return 0;
 
                 if (errno == EWOULDBLOCK || errno == EAGAIN)
-                    usleep(pollInterval);
+                    usleep(ctx->pollIntervalUs);
                 else
                     return 0;
             }
@@ -345,9 +334,8 @@ namespace OpenLogReplicator {
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
             //32-bit message length
-            if (length < *((uint32_t*) msg)) {
-                RUNTIME_FAIL("read buffer too small");
-            }
+            if (length < *((uint32_t*) msg))
+                throw NetworkException("read buffer too small");
 
             length = *((uint32_t*) msg);
             recvd = 0;
@@ -356,10 +344,10 @@ namespace OpenLogReplicator {
             recvd = 0;
 
             while (recvd < sizeof(uint64_t)) {
-                if (*shutdown)
+                if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, msg + recvd, sizeof(uint64_t) - recvd);
+                int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -367,28 +355,27 @@ namespace OpenLogReplicator {
                 else if (bytes == 0) {
                     close(socketFD);
                     socketFD = -1;
-                    NETWORK_FAIL("host disconnected");
+                    throw NetworkException("host disconnected");
                 } else {
                     if (recvd == 0)
                         return 0;
 
                     if (errno == EWOULDBLOCK || errno == EAGAIN)
-                        usleep(pollInterval);
+                        usleep(ctx->pollIntervalUs);
                     else
                         return 0;
                 }
             }
 
-            if (length < *((uint64_t*) msg)) {
-                RUNTIME_FAIL("read buffer too small");
-            }
+            if (length < *((uint64_t*) msg))
+                throw NetworkException("read buffer too small");
 
             length = *((uint64_t*) msg);
             recvd = 0;
         }
 
         while (recvd < length) {
-            int64_t bytes = read(socketFD, msg + recvd, length - recvd);
+            int64_t bytes = read(socketFD, (char*)msg + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -396,10 +383,10 @@ namespace OpenLogReplicator {
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
-                NETWORK_FAIL("host disconnected");
+                throw NetworkException("host disconnected");
             } else {
                 if (errno == EWOULDBLOCK || errno == EAGAIN)
-                    usleep(pollInterval);
+                    usleep(ctx->pollIntervalUs);
                 else
                     return 0;
             }
@@ -408,7 +395,7 @@ namespace OpenLogReplicator {
         return recvd;
     }
 
-    bool StreamNetwork::connected(void) {
+    bool StreamNetwork::isConnected() {
         if (socketFD != -1)
             return true;
 
@@ -418,16 +405,14 @@ namespace OpenLogReplicator {
             if (errno == EWOULDBLOCK)
                 return false;
 
-            RUNTIME_FAIL("socket accept failed - " << strerror(errno));
+            throw NetworkException(std::string("socket accept failed - ") + strerror(errno));
         }
 
         int flags = fcntl(socketFD, F_GETFL);
-        if (flags < 0) {
-            RUNTIME_FAIL("getting socket flags - " << strerror(errno));
-        }
-        if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0) {
-            RUNTIME_FAIL("setting socket flags - " << strerror(errno));
-        }
+        if (flags < 0)
+            throw NetworkException(std::string("getting socket flags - ") + strerror(errno));
+        if (fcntl(socketFD, F_SETFL, flags | O_NONBLOCK) < 0)
+            throw NetworkException(std::string("setting socket flags - ") + strerror(errno));
 
         if (socketFD != -1)
             return true;

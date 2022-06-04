@@ -17,10 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <vector>
 #include <oci.h>
+#include <vector>
 
-#include "types.h"
+#include "../common/types.h"
 
 #ifndef DATABASESTATEMENT_H_
 #define DATABASESTATEMENT_H_
@@ -31,22 +31,23 @@ namespace OpenLogReplicator {
     class DatabaseStatement {
     protected:
         DatabaseConnection* conn;
-        bool isExecuted;
+        bool executed;
         OCIStmt* stmthp;
         std::vector<OCIBind*> binds;
         std::vector<OCIDefine*> defines;
 
     public:
-        DatabaseStatement(DatabaseConnection* conn);
+        explicit DatabaseStatement(DatabaseConnection* conn);
         virtual ~DatabaseStatement();
 
         void createStatement(const char* sql);
-        void unbindAll(void);
-        int64_t executeQuery(void);
-        int64_t next(void);
+        void unbindAll();
+        int64_t executeQuery();
+        int64_t next();
 
         void bindString(uint64_t col, const char* val);
         void bindString(uint64_t col, std::string& val);
+
         void bindInt32(uint64_t col, int32_t& val);
         void bindUInt32(uint64_t col, uint32_t& val);
         void bindInt64(uint64_t col, int64_t& val);
@@ -59,7 +60,7 @@ namespace OpenLogReplicator {
         void defineInt32(uint64_t col, int32_t& val);
         void defineUInt64(uint64_t col, uint64_t& val);
         void defineInt64(uint64_t col, int64_t& val);
-        bool isNull(uint64_t col);
+        [[nodiscard]] bool isNull(uint64_t col);
     };
 }
 

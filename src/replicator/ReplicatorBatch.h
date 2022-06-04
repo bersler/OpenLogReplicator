@@ -1,4 +1,4 @@
-/* Header for OracleAnalyzerBatch class
+/* Header for ReplicatorBatch class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,24 +17,23 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
+#include "Replicator.h"
 
-#ifndef ORACLEANALYZERBATCH_H_
-#define ORACLEANALYZERBATCH_H_
+#ifndef REPLICATORBATCH_H_
+#define REPLICATORBATCH_H_
 
 namespace OpenLogReplicator {
-    class OracleAnalyzerBatch : public OracleAnalyzer {
+    class ReplicatorBatch : public Replicator {
     protected:
-        virtual const char* getModeName(void) const;
-        virtual bool continueWithOnline(void);
-        virtual void positionReader(void);
-        virtual void createSchema(void);
+        const char* getModeName() const override;
+        bool continueWithOnline() override;
+        void positionReader() override;
+        void createSchema() override;
 
     public:
-        OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData, const char* dumpPath,
-                const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax,
-                uint64_t disableChecks, typeCONID conId);
-        virtual ~OracleAnalyzerBatch();
+        ReplicatorBatch(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer,
+                        std::string alias, const char* database);
+        ~ReplicatorBatch() override;
     };
 }
 

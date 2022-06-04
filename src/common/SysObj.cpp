@@ -20,38 +20,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysObj.h"
 
 namespace OpenLogReplicator {
-    SysObj::SysObj(RowId& rowId, typeUSER owner, typeOBJ obj, typeDATAOBJ dataObj, typeTYPE type, const char* name,
-            uint64_t flags1, uint64_t flags2, bool single, bool touched) :
+    SysObj::SysObj(typeRowId& rowId, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
+                   uint64_t flags1, uint64_t flags2, bool single, bool touched) :
             rowId(rowId),
             owner(owner),
             obj(obj),
             dataObj(dataObj),
             type(type),
             name(name),
+            flags(flags1, flags2),
             single(single),
-            touched(touched),
-            saved(false) {
-        flags.set(flags1, flags2);
+            touched(touched) {
     }
 
     bool SysObj::operator!=(const SysObj& other) const {
-        if (other.rowId != rowId || other.owner != owner || other.obj != obj || other.dataObj != dataObj || other.type != type || other.name.compare(name) != 0 ||
-                other.flags != flags)
-            return true;
-        return false;
+        return other.rowId != rowId || other.owner != owner || other.obj != obj || other.dataObj != dataObj || other.type != type || other.name != name ||
+                other.flags != flags;
     }
 
-    bool SysObj::isTable(void) {
+    bool SysObj::isTable() const {
         return (type == SYSOBJ_TYPE_TABLE);
     }
 
-    bool SysObj::isTemporary(void) {
-        return flags.isSet64(2)         //temporary
-                || flags.isSet64(16)    //secondary
-                || flags.isSet64(32);   //in-memory temp
+    bool SysObj::isTemporary() {
+        return flags.isSet64(SYSOBJ_FLAGS_TEMPORARY)
+                || flags.isSet64(SYSOBJ_FLAGS_SECONDARY)
+                || flags.isSet64(SYSOBJ_FLAGS_IN_MEMORY_TEMP);
     }
 
-    bool SysObj::isDropped(void) {
-        return flags.isSet64(128);
+    bool SysObj::isDropped() {
+        return flags.isSet64(SYSOBJ_FLAGS_DROPPED);
     }
 }

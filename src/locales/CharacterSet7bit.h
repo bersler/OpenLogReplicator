@@ -25,30 +25,30 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class CharacterSet7bit : public CharacterSet {
     protected:
-        const typeunicode16* map;
-        virtual typeunicode readMap(uint64_t character) const;
+        const typeUnicode16* map;
+        [[nodiscard]] virtual typeUnicode readMap(uint64_t character) const;
 
     public:
-        CharacterSet7bit(const char* name, const typeunicode16* map);
-        virtual ~CharacterSet7bit();
+        CharacterSet7bit(const char* name, const typeUnicode16* map);
+        ~CharacterSet7bit() override;
 
-        virtual typeunicode decode(const uint8_t*& str, uint64_t& length) const;
+        typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
 
         //conversion arrays for 7-bit character sets
-        static typeunicode16 unicode_map_D7DEC[128];
-        static typeunicode16 unicode_map_D7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_DK7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_E7DEC[128];
-        static typeunicode16 unicode_map_E7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_I7DEC[128];
-        static typeunicode16 unicode_map_I7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_N7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_NDK7DEC[128];
-        static typeunicode16 unicode_map_S7DEC[128];
-        static typeunicode16 unicode_map_S7SIEMENS9780X[128];
-        static typeunicode16 unicode_map_SF7ASCII[128];
-        static typeunicode16 unicode_map_SF7DEC[128];
-        static typeunicode16 unicode_map_US7ASCII[128];
+        static typeUnicode16 unicode_map_D7DEC[128];
+        static typeUnicode16 unicode_map_D7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_DK7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_E7DEC[128];
+        static typeUnicode16 unicode_map_E7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_I7DEC[128];
+        static typeUnicode16 unicode_map_I7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_N7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_NDK7DEC[128];
+        static typeUnicode16 unicode_map_S7DEC[128];
+        static typeUnicode16 unicode_map_S7SIEMENS9780X[128];
+        static typeUnicode16 unicode_map_SF7ASCII[128];
+        static typeUnicode16 unicode_map_SF7DEC[128];
+        static typeUnicode16 unicode_map_US7ASCII[128];
     };
 }
 

@@ -25,25 +25,25 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define THREAD_H_
 
 namespace OpenLogReplicator {
+    class Ctx;
+
     class Thread {
     protected:
-        virtual void* run(void) = 0;
+        virtual void run() = 0;
+        static void* runStatic(void* thread);
 
     public:
-        std::atomic<bool> stop;
-        std::atomic<bool> shutdown;
-        std::atomic<bool> started;
+        Ctx* ctx;
         pthread_t pthread;
         std::string alias;
+        std::atomic<bool> finished;
 
-        static void* runStatic(void* context);
-
-        virtual void doShutdown(void);
-        virtual void doStop(void);
-        time_t getTime(void);
-
-        Thread(const char* alias);
+        explicit Thread(Ctx* ctx, std::string alias);
         virtual ~Thread();
+        virtual void wakeUp();
+
+        static void spawnThread(Thread *thread);
+        static void finishThread(Thread *thread);
     };
 }
 

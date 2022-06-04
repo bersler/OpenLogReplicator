@@ -19,13 +19,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <set>
 
-#include <types.h>
+#include "../common/types.h"
 
 #ifndef STATE_H_
 #define STATE_H_
 
 #define STATE_TYPE_DISK 0
-#define STATE_TYPE_REDIS 1
 
 namespace OpenLogReplicator {
     class State {
@@ -34,7 +33,7 @@ namespace OpenLogReplicator {
         virtual ~State();
 
         virtual void list(std::set<std::string>& namesList) = 0;
-        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail) = 0;
+        [[nodiscard]] virtual bool read(std::string& name, uint64_t maxSize, std::string& in) = 0;
         virtual void write(std::string& name, std::stringstream& out) = 0;
         virtual void drop(std::string& name) = 0;
     };

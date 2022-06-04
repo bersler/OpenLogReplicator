@@ -29,28 +29,27 @@ namespace OpenLogReplicator {
 
     class OracleObject {
     public:
-        typeOBJ obj;
-        typeDATAOBJ dataObj;
-        typeUSER user;
-        typeCOL cluCols;
+        typeObj obj;
+        typeDataObj dataObj;
+        typeUser user;
+        typeCol cluCols;
         uint64_t totalPk;
-        typeOPTIONS options;
-        typeCOL maxSegCol;
-        typeCOL guardSegNo;
+        typeOptions options;
+        typeCol maxSegCol;
+        typeCol guardSegNo;
         std::string owner;
         std::string name;
         std::vector<OracleColumn*> columns;
-        std::vector<typeOBJ2> partitions;
-        std::vector<uint16_t> pk;
+        std::vector<typeObj2> partitions;
+        std::vector<typeCol> pk;
         uint64_t systemTable;
         bool sys;
 
-        void addColumn(OracleColumn* column);
-        void addPartition(typeOBJ partitionObj, typeDATAOBJ partitionDataObj);
-        void updatePK(void);
-
-        OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, std::string& owner, std::string& name);
+        OracleObject(typeObj obj, typeDataObj dataObj, typeUser user, typeCol cluCols, typeOptions options, std::string& owner, std::string& name);
         virtual ~OracleObject();
+
+        void addColumn(OracleColumn* column);
+        void addPartition(typeObj partitionObj, typeDataObj partitionDataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleObject& object);
     };

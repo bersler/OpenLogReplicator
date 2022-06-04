@@ -20,13 +20,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLogException.h"
 
 namespace OpenLogReplicator {
-    RedoLogException::~RedoLogException() {
+    RedoLogException::RedoLogException(std::string msg) :
+            exception(),
+            msg(std::move(msg)) {
     }
 
     RedoLogException::RedoLogException(const char* msg) :
-        exception(),
-        msg(msg) {
+            exception(),
+            msg(msg) {
     }
+
+    RedoLogException::~RedoLogException() = default;
 
     std::ostream& operator<<(std::ostream& os, const RedoLogException& exception) {
         os << exception.msg;

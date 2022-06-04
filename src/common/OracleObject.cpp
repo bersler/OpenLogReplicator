@@ -18,11 +18,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "ConfigurationException.h"
+#include "DataException.h"
 #include "OracleColumn.h"
 #include "OracleObject.h"
 
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeOBJ obj, typeDATAOBJ dataObj, typeUSER user, typeCOL cluCols, typeOPTIONS options, std::string& owner, std::string& name) :
+    OracleObject::OracleObject(typeObj obj, typeDataObj dataObj, typeUser user, typeCol cluCols, typeOptions options, std::string& owner, std::string& name) :
         obj(obj),
         dataObj(dataObj),
         user(user),
@@ -35,29 +36,29 @@ namespace OpenLogReplicator {
         name(name) {
 
         systemTable = 0;
-        if (this->owner.compare("SYS") == 0) {
+        if (this->owner == "SYS") {
             sys = true;
-            if (this->name.compare("CCOL$") == 0)
+            if (this->name == "CCOL$")
                 systemTable = TABLE_SYS_CCOL;
-            else if (this->name.compare("CDEF$") == 0)
+            else if (this->name == "CDEF$")
                 systemTable = TABLE_SYS_CDEF;
-            else if (this->name.compare("COL$") == 0)
+            else if (this->name == "COL$")
                 systemTable = TABLE_SYS_COL;
-            else if (this->name.compare("DEFERRED_STG$") == 0)
+            else if (this->name == "DEFERRED_STG$")
                 systemTable = TABLE_SYS_DEFERRED_STG;
-            else if (this->name.compare("ECOL$") == 0)
+            else if (this->name == "ECOL$")
                 systemTable = TABLE_SYS_ECOL;
-            else if (this->name.compare("OBJ$") == 0)
+            else if (this->name == "OBJ$")
                 systemTable = TABLE_SYS_OBJ;
-            else if (this->name.compare("TAB$") == 0)
+            else if (this->name == "TAB$")
                 systemTable = TABLE_SYS_TAB;
-            else if (this->name.compare("TABPART$") == 0)
+            else if (this->name == "TABPART$")
                 systemTable = TABLE_SYS_TABPART;
-            else if (this->name.compare("TABCOMPART$") == 0)
+            else if (this->name == "TABCOMPART$")
                 systemTable = TABLE_SYS_TABCOMPART;
-            else if (this->name.compare("TABSUBPART$") == 0)
+            else if (this->name == "TABSUBPART$")
                 systemTable = TABLE_SYS_TABSUBPART;
-            else if (this->name.compare("USER$") == 0)
+            else if (this->name == "USER$")
                 systemTable = TABLE_SYS_USER;
         } else
             sys = false;
@@ -72,38 +73,31 @@ namespace OpenLogReplicator {
     }
 
     void OracleObject::addColumn(OracleColumn* column) {
-        if (column->segColNo != columns.size() + 1) {
-            CONFIG_FAIL("trying to insert table: " << owner << "." << name << " (OBJ: " << std::dec << obj << ", DATAOBJ: " << std::dec << dataObj <<
-                ") column: " << column->name << " (COL#: " << std::dec << column->colNo << ", SEGCOL#: " << std::dec << column->segColNo <<
-                ") on position " << (columns.size() + 1));
-        }
-
-        if (column->segColNo > 1000) {
-            CONFIG_FAIL("invalid segColNo value (" << std::dec << column->segColNo << "), metadata error");
-        }
+        if (column->segCol != (typeCol)(columns.size() + 1))
+            throw DataException("trying to insert table: " + owner + "." + name + " (OBJ: " + std::to_string(obj) + ", DATAOBJ: " + std::to_string(dataObj) +
+                                ") column: " + column->name + " (COL#: " + std::to_string(column->col) + ", SEGCOL#: " + std::to_string(column->segCol) +
+                                ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
-            guardSegNo = column->segColNo - 1;
+            guardSegNo = column->segCol - (typeCol)1;
+
+        totalPk += column->numPk;
+        if (column->numPk > 0)
+            pk.push_back(columns.size());
+
+        if (column->segCol > maxSegCol)
+            maxSegCol = column->segCol;
 
         columns.push_back(column);
     }
 
-    void OracleObject::addPartition(typeOBJ partitionObj, typeDATAOBJ partitionDataObj) {
-        typeOBJ2 objx = (((typeOBJ2)partitionObj)<<32) | ((typeOBJ2)partitionDataObj);
+    void OracleObject::addPartition(typeObj partitionObj, typeDataObj partitionDataObj) {
+        typeObj2 objx = (((typeObj2)partitionObj) << 32) | ((typeObj2)partitionDataObj);
         partitions.push_back(objx);
     }
 
-    void OracleObject::updatePK(void) {
-        for (typeCOL i = 0; i < maxSegCol; ++i) {
-            if (columns[i] == nullptr)
-                continue;
-            if (columns[i]->numPk > 0)
-                pk.push_back(i);
-        }
-    }
-
     std::ostream& operator<<(std::ostream& os, const OracleObject& object) {
-        os << "(\"" << object.owner << "\".\"" << object.name << "\", " << std::dec << object.obj << ", " <<
+        os << "('" << object.owner << "'.'" << object.name << "', " << std::dec << object.obj << ", " <<
                 object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << std::endl;
         for (OracleColumn* column : object.columns)
             os << "     - " << *column << std::endl;

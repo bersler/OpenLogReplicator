@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <oci.h>
 
-#include "types.h"
+#include "../common/types.h"
 
 #ifndef DATABASEECONNECTION_H_
 #define DATABASEECONNECTION_H_
@@ -41,11 +41,11 @@ namespace OpenLogReplicator {
         OCISvcCtx* svchp;
         OCISession* authp;
 
-        void connect(void);
-        void disconnect(void);
-
         DatabaseConnection(DatabaseEnvironment* env, const char* user, const char* password, const char* connectString, bool sysASM);
         virtual ~DatabaseConnection();
+
+        void connect();
+        void disconnect();
     };
 }
 

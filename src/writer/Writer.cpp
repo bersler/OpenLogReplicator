@@ -17,41 +17,33 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <fstream>
 #include <thread>
 #include <unistd.h>
 
-#include "global.h"
-#include "ConfigurationException.h"
-#include "NetworkException.h"
-#include "OracleAnalyzer.h"
-#include "OutputBuffer.h"
-#include "RuntimeException.h"
-#include "State.h"
+#include "../builder/Builder.h"
+#include "../common/ConfigurationException.h"
+#include "../common/Ctx.h"
+#include "../common/NetworkException.h"
+#include "../common/RuntimeException.h"
+#include "../metadata/Metadata.h"
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t maxMessageMb, uint64_t pollIntervalUs,
-            uint64_t checkpointIntervalS, uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime,
-            int64_t startTimeRel) :
-        Thread(alias),
-        oracleAnalyzer(oracleAnalyzer),
-        confirmedMessages(0),
-        sentMessages(0),
-        tmpQueueSize(0),
-        maxQueueSize(0),
-        queue(nullptr),
-        maxMessageMb(maxMessageMb),
-        pollIntervalUs(pollIntervalUs),
-        previousCheckpoint(time(nullptr)),
-        checkpointIntervalS(checkpointIntervalS),
-        queueSize(queueSize),
-        confirmedScn(ZERO_SCN),
-        startScn(startScn),
-        startSequence(startSequence),
-        startTime(startTime),
-        startTimeRel(startTimeRel),
-        streaming(false),
-        outputBuffer(oracleAnalyzer->outputBuffer) {
+    Writer::Writer(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata) :
+            Thread(ctx, alias),
+            database(database),
+            builder(builder),
+            metadata(metadata),
+            checkpointScn(ZERO_SCN),
+            checkpointTime(time(nullptr)),
+            confirmedScn(ZERO_SCN),
+            confirmedMessages(0),
+            sentMessages(0),
+            tmpQueueSize(0),
+            maxQueueSize(0),
+            queue(nullptr),
+            streaming(false) {
     }
 
     Writer::~Writer() {
@@ -61,17 +53,13 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Writer::initialize(void) {
+    void Writer::initialize() {
         if (queue != nullptr)
             return;
-
-        queue = new OutputBufferMsg*[queueSize];
-        if (queue == nullptr) {
-            RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
-        }
+        queue = new BuilderMsg*[ctx->queueSize];
     }
 
-    void Writer::createMessage(OutputBufferMsg* msg) {
+    void Writer::createMessage(BuilderMsg* msg) {
         ++sentMessages;
 
         queue[tmpQueueSize++] = msg;
@@ -79,19 +67,12 @@ namespace OpenLogReplicator {
             maxQueueSize = tmpQueueSize;
     }
 
-    void Writer::sortQueue(void) {
+    void Writer::sortQueue() {
         if (tmpQueueSize == 0)
             return;
 
-        OutputBufferMsg** oldQueue = queue;
-        queue = new OutputBufferMsg*[queueSize];
-        if (queue == nullptr) {
-            if (oldQueue != nullptr) {
-                delete[] oldQueue;
-                oldQueue = nullptr;
-            }
-            RUNTIME_FAIL("couldn't allocate " << queueSize * sizeof(struct OutputBufferMsg) << " bytes memory (for: message queue)");
-        }
+        BuilderMsg** oldQueue = queue;
+        queue = new BuilderMsg*[ctx->queueSize];
         uint64_t oldQueueSize = tmpQueueSize;
 
         for (uint64_t newId = 0 ; newId < tmpQueueSize; ++newId) {
@@ -122,10 +103,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Writer::confirmMessage(OutputBufferMsg* msg) {
+    void Writer::confirmMessage(BuilderMsg* msg) {
         if (msg == nullptr) {
             if (tmpQueueSize == 0) {
-                WARNING("trying to confirm empty message");
+                WARNING("trying to confirm empty message")
                 return;
             }
             msg = queue[0];
@@ -167,252 +148,215 @@ namespace OpenLogReplicator {
             }
         }
 
-        OutputBufferQueue* tmpFirstBuffer = nullptr;
-        {
-            std::unique_lock<std::mutex> lck(outputBuffer->mtx);
-            tmpFirstBuffer = outputBuffer->firstBuffer;
-            while (outputBuffer->firstBuffer->id < maxId) {
-                outputBuffer->firstBuffer = outputBuffer->firstBuffer->next;
-                --outputBuffer->buffersAllocated;
-            }
-        }
-
-        if (tmpFirstBuffer != nullptr) {
-            while (tmpFirstBuffer->id < maxId) {
-                OutputBufferQueue* nextBuffer = tmpFirstBuffer->next;
-                oracleAnalyzer->freeMemoryChunk("KAFKA", (uint8_t*)tmpFirstBuffer, true);
-                tmpFirstBuffer = nextBuffer;
-            }
-
-            {
-                std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
-                oracleAnalyzer->memoryCond.notify_all();
-            }
-        }
+        builder->releaseBuffers(maxId);
     }
 
-    void* Writer::run(void) {
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") START");
+    void Writer::run() {
+        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") START")
 
-        INFO("writer is starting: " << getName());
+        INFO("writer is starting with " << getName())
 
         try {
             //external loop for client disconnection
-            while (!shutdown) {
+            while (!ctx->hardShutdown) {
                 try {
-                    //client connected
-                    readCheckpoint();
-
-                    OutputBufferMsg* msg = nullptr;
-                    OutputBufferQueue* curBuffer = outputBuffer->firstBuffer;
-                    uint64_t curLength = 0;
-                    uint64_t tmpLength = 0;
-                    tmpQueueSize = 0;
-
-                    //start streaming
-                    while (!shutdown) {
-
-                        //get message to send
-                        while (!shutdown) {
-                            //check for client checkpoint
-                            pollQueue();
-                            writeCheckpoint(false);
-
-                            {
-                                std::unique_lock<std::mutex> lck(outputBuffer->mtx);
-
-                                //next buffer
-                                if (curBuffer->length == curLength && curBuffer->next != nullptr) {
-                                    curBuffer = curBuffer->next;
-                                    curLength = 0;
-                                }
-
-                                //found something
-                                msg = (OutputBufferMsg*) (curBuffer->data + curLength);
-
-                                if (curBuffer->length > curLength + sizeof(struct OutputBufferMsg) && msg->length > 0) {
-                                    oracleAnalyzer->waitingForWriter = true;
-                                    tmpLength = curBuffer->length;
-                                    break;
-                                }
-
-                                oracleAnalyzer->waitingForWriter = false;
-                                oracleAnalyzer->memoryCond.notify_all();
-
-                                if (tmpQueueSize > 0) {
-                                    outputBuffer->writersCond.wait_for(lck, std::chrono::nanoseconds(pollIntervalUs));
-                                } else {
-                                    if (stop) {
-                                        INFO("writer flushed, shutting down");
-                                        doShutdown();
-                                    } else {
-                                        outputBuffer->writersCond.wait_for(lck, std::chrono::seconds(5));
-                                    }
-                                }
-                            }
-                        }
-
-                        if (shutdown)
-                            break;
-
-                        //send message
-                        while (curLength + sizeof(struct OutputBufferMsg) < tmpLength && !shutdown) {
-                            msg = (OutputBufferMsg*) (curBuffer->data + curLength);
-                            if (msg->length == 0)
-                                break;
-
-                            //queue is full
-                            pollQueue();
-                            while (tmpQueueSize >= queueSize && !shutdown) {
-                                DEBUG("output queue is full (" << std::dec << tmpQueueSize << " elements), sleeping " << std::dec << pollIntervalUs << "us");
-                                usleep(pollIntervalUs);
-                                pollQueue();
-                            }
-                            writeCheckpoint(false);
-                            if (shutdown)
-                                break;
-
-                            //outputBuffer->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
-                            uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
-                            curLength += sizeof(struct OutputBufferMsg);
-
-                            //message in one part - send directly from buffer
-                            if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
-                                createMessage(msg);
-                                sendMessage(msg);
-                                curLength += length8;
-                                msg = (OutputBufferMsg*) (curBuffer->data + curLength);
-
-                            //message in many parts - merge & copy
-                            } else {
-                                msg->data = (uint8_t*)malloc(msg->length);
-                                if (msg->data == nullptr) {
-                                    RUNTIME_FAIL("couldn't allocate " << std::dec << msg->length << " bytes memory (for: temporary buffer for JSON message)");
-                                }
-                                msg->flags |= OUTPUT_BUFFER_ALLOCATED;
-
-                                uint64_t copied = 0;
-                                while (msg->length - copied > 0) {
-                                    uint64_t toCopy = msg->length - copied;
-                                    if (toCopy > tmpLength - curLength) {
-                                        toCopy = tmpLength - curLength;
-                                        memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
-                                        curBuffer = curBuffer->next;
-                                        tmpLength = OUTPUT_BUFFER_DATA_SIZE;
-                                        curLength = 0;
-                                    } else {
-                                        memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
-                                        curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
-                                    }
-                                    copied += toCopy;
-                                }
-
-                                createMessage(msg);
-                                sendMessage(msg);
-                                pollQueue();
-                                writeCheckpoint(false);
-                                break;
-                            }
-                        }
-                    }
-
-                    writeCheckpoint(true);
-
+                    mainLoop();
                 } catch (NetworkException& ex) {
+                    WARNING(ex.msg)
                     streaming = false;
                     //client got disconnected
                 }
-            }
 
+                if (ctx->softShutdown && ctx->replicatorFinished)
+                    break;
+            }
         } catch (ConfigurationException& ex) {
-            stopMain();
+            ERROR(ex.msg)
+            ctx->stopHard();
         } catch (RuntimeException& ex) {
-            stopMain();
+            ERROR(ex.msg)
+            ctx->stopHard();
         }
 
-        INFO("writer is stopping: " << getName() << ", max queue size: " << std::dec << maxQueueSize);
+        INFO("writer is stopping: " << getName() << ", max queue size: " << std::dec << maxQueueSize)
 
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") STOP");
-        return 0;
+        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") STOP")
+    }
+
+    void Writer::mainLoop() {
+        //client isConnected
+        readCheckpoint();
+
+        BuilderMsg* msg = nullptr;
+        BuilderQueue* curBuffer = builder->firstBuffer;
+        uint64_t curLength = 0;
+        uint64_t tmpLength = 0;
+        tmpQueueSize = 0;
+
+        //start streaming
+        while (!ctx->hardShutdown) {
+
+            //get message to send
+            while (!ctx->hardShutdown) {
+                //check for client checkpoint
+                pollQueue();
+                writeCheckpoint(false);
+
+                //next buffer
+                if (curBuffer->length == curLength && curBuffer->next != nullptr) {
+                    curBuffer = curBuffer->next;
+                    curLength = 0;
+                }
+
+                //found something
+                msg = (BuilderMsg *) (curBuffer->data + curLength);
+
+                if (curBuffer->length > curLength + sizeof(struct BuilderMsg) && msg->length > 0) {
+                    tmpLength = curBuffer->length;
+                    break;
+                }
+
+                ctx->wakeAllOutOfMemory();
+                if (ctx->softShutdown && ctx->replicatorFinished)
+                    break;
+                builder->sleepForWriterWork(tmpQueueSize, ctx->pollIntervalUs);
+            }
+
+            if (ctx->hardShutdown)
+                break;
+
+            //send message
+            while (curLength + sizeof(struct BuilderMsg) < tmpLength && !ctx->hardShutdown) {
+                msg = (BuilderMsg*) (curBuffer->data + curLength);
+                if (msg->length == 0)
+                    break;
+
+                //queue is full
+                pollQueue();
+                while (tmpQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
+                    DEBUG("output queue is full (" << std::dec << tmpQueueSize << " schemaElements), sleeping " << std::dec << ctx->pollIntervalUs << "us")
+                    usleep(ctx->pollIntervalUs);
+                    pollQueue();
+                }
+
+                writeCheckpoint(false);
+                if (ctx->hardShutdown)
+                    break;
+
+                //builder->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
+                uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
+                curLength += sizeof(struct BuilderMsg);
+
+                //message in one part - send directly from buffer
+                if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
+                    createMessage(msg);
+                    sendMessage(msg);
+                    curLength += length8;
+                    msg = (BuilderMsg*) (curBuffer->data + curLength);
+
+                    //message in many parts - merge & copy
+                } else {
+                    msg->data = (uint8_t*)malloc(msg->length);
+                    if (msg->data == nullptr)
+                        throw RuntimeException("couldn't allocate " + std::to_string(msg->length) +
+                                               " bytes memory (for: temporary buffer for JSON message)");
+                    msg->flags |= OUTPUT_BUFFER_ALLOCATED;
+
+                    uint64_t copied = 0;
+                    while (msg->length - copied > 0) {
+                        uint64_t toCopy = msg->length - copied;
+                        if (toCopy > tmpLength - curLength) {
+                            toCopy = tmpLength - curLength;
+                            memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                            curBuffer = curBuffer->next;
+                            tmpLength = OUTPUT_BUFFER_DATA_SIZE;
+                            curLength = 0;
+                        } else {
+                            memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                            curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
+                        }
+                        copied += toCopy;
+                    }
+
+                    createMessage(msg);
+                    sendMessage(msg);
+                    pollQueue();
+                    writeCheckpoint(false);
+                    break;
+                }
+            }
+
+            //all work done?
+            if (ctx->softShutdown && ctx->replicatorFinished) {
+                //some data to send?
+                if (curBuffer->length != curLength || curBuffer->next != nullptr)
+                    continue;
+                break;
+            }
+        }
+
+        writeCheckpoint(true);
     }
 
     void Writer::writeCheckpoint(bool force) {
-        if (oracleAnalyzer->checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
+        //nothing changed
+        if (checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
             return;
-        if (oracleAnalyzer->schemaScn >= confirmedScn)
-            force = true;
 
+        //not yet
         time_t now = time(nullptr);
-        uint64_t timeSinceCheckpoint = (now - previousCheckpoint);
-        if (timeSinceCheckpoint < checkpointIntervalS && !force)
+        uint64_t timeSinceCheckpoint = (now - checkpointTime);
+        if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << std::dec << oracleAnalyzer->checkpointScn << " confirmed scn: " << confirmedScn);
-
-        std::string jsonName(oracleAnalyzer->database + "-chkpt");
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << std::dec << checkpointScn << " confirmed scn: " << confirmedScn)
+        std::string name(database + "-chkpt");
         std::stringstream ss;
-        ss << "{\"database\":\"" << oracleAnalyzer->database
-                << "\",\"scn\":" << std::dec << confirmedScn
-                << ",\"resetlogs\":" << std::dec << oracleAnalyzer->resetlogs
-                << ",\"activation\":" << std::dec << oracleAnalyzer->activation << "}";
-        oracleAnalyzer->state->write(jsonName, ss);
+        ss << R"({"database":")" << database
+                << R"(","scn":)" << std::dec << confirmedScn
+                << R"(,"resetlogs":)" << std::dec << metadata->resetlogs
+                << R"(,"activation":)" << std::dec << metadata->activation << "}";
 
-        oracleAnalyzer->checkpointScn = confirmedScn;
-        previousCheckpoint = now;
+        if (metadata->stateWrite(name, ss)) {
+            checkpointScn = confirmedScn;
+            checkpointTime = now;
+        }
     }
 
-    void Writer::readCheckpoint(void) {
+    void Writer::readCheckpoint() {
         std::ifstream infile;
-        std::string jsonName(oracleAnalyzer->database + "-chkpt");
+        std::string name(database + "-chkpt");
 
-        std::string checkpointJSON;
+        //checkpoint is present - read it
+        std::string checkpoint;
         rapidjson::Document document;
-        if (!oracleAnalyzer->state->read(jsonName, CHECKPOINT_FILE_MAX_SIZE, checkpointJSON, true)) {
-            startReader();
+        if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint)) {
+            metadata->setStatusReplicate();
             return;
         }
 
-        if (checkpointJSON.length() == 0 || document.Parse(checkpointJSON.c_str()).HasParseError()) {
-            RUNTIME_FAIL("parsing of: " << jsonName << " at offset: " << document.GetErrorOffset() <<
-                    ", message: " << GetParseError_En(document.GetParseError()));
-        }
+        if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
+            throw RuntimeException("parsing of: " + name + " at offset: " + std::to_string(document.GetErrorOffset()) +
+                                   ", message: " + GetParseError_En(document.GetParseError()));
 
-        const char* database = getJSONfieldS(jsonName, JSON_PARAMETER_LENGTH, document, "database");
-        if (oracleAnalyzer->database.compare(database) != 0) {
-            RUNTIME_FAIL("parsing of: " << jsonName << " - invalid database name");
-        }
+        const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
+        if (database != databaseJson)
+            throw RuntimeException("parsing of: " + name + " - invalid database name: " + databaseJson);
 
-        oracleAnalyzer->resetlogs = getJSONfieldU32(jsonName, document, "resetlogs");
-        oracleAnalyzer->activation = getJSONfieldU32(jsonName, document, "activation");
+        metadata->setResetlogs(Ctx::getJsonFieldU32(name, document, "resetlogs"));
+        metadata->setActivation(Ctx::getJsonFieldU32(name, document, "activation"));
 
         //started earlier - continue work & ignore default startup parameters
-        startScn = getJSONfieldU64(jsonName, document, "scn");
-        startSequence = ZERO_SEQ;
-        startTime.clear();
-        startTimeRel = 0;
-        INFO("checkpoint - reading scn: " << std::dec << startScn);
+        metadata->startScn = Ctx::getJsonFieldU64(name, document, "scn");
+        metadata->startSequence = ZERO_SEQ;
+        metadata->startTime.clear();
+        metadata->startTimeRel = 0;
+        INFO("checkpoint - reading scn: " << std::dec << metadata->startScn)
 
-        startReader();
+        metadata->setStatusReplicate();
     }
 
-    void Writer::startReader(void) {
-        if (startScn == ZERO_SCN && startSequence == ZERO_SEQ && startTime.length() == 0 && startTimeRel == 0)
-            startScn = 0;
-
-        oracleAnalyzer->startSequence = startSequence;
-        oracleAnalyzer->startScn = startScn;
-        oracleAnalyzer->startTime = startTime;
-        oracleAnalyzer->startTimeRel = startTimeRel;
-
-        DEBUG("attempt to start analyzer");
-        if (oracleAnalyzer->firstScn == ZERO_SCN && !shutdown) {
-            std::unique_lock<std::mutex> lck(oracleAnalyzer->mtx);
-            oracleAnalyzer->writerCond.notify_all();
-            outputBuffer->writersCond.wait(lck);
-        }
-
-        if (oracleAnalyzer->firstScn != ZERO_SCN && !shutdown) {
-            DEBUG("analyzer started");
-        }
-    }
+    void Writer::wakeUp() {
+        builder->wakeUp();
+    };
 }

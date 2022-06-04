@@ -19,7 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <vector>
 
-#include "types.h"
+#include "../common/types.h"
 
 #ifndef SCHEMAELEMENT_H_
 #define SCHEMAELEMENT_H_
@@ -32,11 +32,9 @@ namespace OpenLogReplicator {
         std::string table;
         std::vector<std::string> keys;
         std::string keysStr;
-        typeOPTIONS options;
+        typeOptions options;
 
-        SchemaElement(const char* owner, const char* table, typeOPTIONS options);
-        SchemaElement();
-        virtual ~SchemaElement();
+        SchemaElement(const char* owner, const char* table, typeOptions options);
     };
 }
 

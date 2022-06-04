@@ -1,4 +1,4 @@
-/* Header for OutputBufferJson class
+/* Header for BuilderJson class
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,47 +17,47 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleObject.h"
-#include "OutputBuffer.h"
+#include "../common/OracleObject.h"
+#include "Builder.h"
 
-#ifndef OUTPUTBUFFERJSON_H_
-#define OUTPUTBUFFERJSON_H_
+#ifndef BUILDERJSON_H_
+#define BUILDERJSON_H_
 
 namespace OpenLogReplicator {
-    class OutputBufferJson : public OutputBuffer {
+    class BuilderJson : public Builder {
     protected:
         bool hasPreviousValue;
         bool hasPreviousRedo;
         bool hasPreviousColumn;
-        void columnNull(OracleObject* object, typeCOL col);
-        virtual void columnFloat(std::string& columnName, float value);
-        virtual void columnDouble(std::string& columnName, double value);
-        virtual void columnString(std::string& columnName);
-        virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale);
-        virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length);
-        virtual void columnTimestamp(std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz);
-        void appendRowid(typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot);
+        void columnNull(OracleObject* object, typeCol col);
+        void columnFloat(std::string& columnName, float value) override;
+        void columnDouble(std::string& columnName, double value) override;
+        void columnString(std::string& columnName) override;
+        void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) override;
+        void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) override;
+        void columnTimestamp(std::string& columnName, struct tm& epochtime, uint64_t fraction, const char* tz) override;
+        void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(bool first, bool showXid);
-        void appendSchema(OracleObject* object, typeDATAOBJ dataObj);
+        void appendSchema(OracleObject* object, typeDataObj dataObj);
 
         void appendHex(uint64_t value, uint64_t length) {
             uint64_t j = (length - 1) * 4;
             for (uint64_t i = 0; i < length; ++i) {
-                outputBufferAppend(map16[(value >> j) & 0xF]);
+                builderAppend(map16[(value >> j) & 0xF]);
                 j -= 4;
-            };
+            }
         }
 
         void appendDec(uint64_t value, uint64_t length) {
             char buffer[21];
 
             for (uint64_t i = 0; i < length; ++i) {
-                buffer[i] = '0' + (value % 10);
+                buffer[i] = map10[value % 10];
                 value /= 10;
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                outputBufferAppend(buffer[length - i - 1]);
+                builderAppend(buffer[length - i - 1]);
         }
 
         void appendDec(uint64_t value) {
@@ -69,13 +69,13 @@ namespace OpenLogReplicator {
                 length = 1;
             } else {
                 while (value > 0) {
-                    buffer[length++] = '0' + (value % 10);
+                    buffer[length++] = map10[value % 10];
                     value /= 10;
                 }
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                outputBufferAppend(buffer[length - i - 1]);
+                builderAppend(buffer[length - i - 1]);
         }
 
         void appendSDec(int64_t value) {
@@ -89,40 +89,40 @@ namespace OpenLogReplicator {
                 if (value < 0) {
                     value = -value;
                     while (value > 0) {
-                        buffer[length++] = '0' + (value % 10);
+                        buffer[length++] = map10[value % 10];
                         value /= 10;
                     }
                     buffer[length++] = '-';
                 } else {
                     while (value > 0) {
-                        buffer[length++] = '0' + (value % 10);
+                        buffer[length++] = map10[value % 10];
                         value /= 10;
                     }
                 }
             }
 
             for (uint64_t i = 0; i < length; ++i)
-                outputBufferAppend(buffer[length - i - 1]);
+                builderAppend(buffer[length - i - 1]);
         }
 
         void appendEscape(const char* str, uint64_t length) {
             while (length > 0) {
                 if (*str == '\t') {
-                    outputBufferAppend("\\t", sizeof("\\t") - 1);
+                    builderAppend("\\t", sizeof("\\t") - 1);
                 } else if (*str == '\r') {
-                    outputBufferAppend("\\r", sizeof("\\r") - 1);
+                    builderAppend("\\r", sizeof("\\r") - 1);
                 } else if (*str == '\n') {
-                    outputBufferAppend("\\n", sizeof("\\n") - 1);
+                    builderAppend("\\n", sizeof("\\n") - 1);
                 } else if (*str == '\f') {
-                    outputBufferAppend("\\f", sizeof("\\f") - 1);
+                    builderAppend("\\f", sizeof("\\f") - 1);
                 } else if (*str == '\b') {
-                    outputBufferAppend("\\b", sizeof("\\b") - 1);
+                    builderAppend("\\b", sizeof("\\b") - 1);
                 } else if (*str == 0) {
-                    outputBufferAppend("\\u0000", sizeof("\\u0000") - 1);
+                    builderAppend("\\u0000", sizeof("\\u0000") - 1);
                 } else {
                     if (*str == '"' || *str == '\\' || *str == '/')
-                        outputBufferAppend('\\');
-                    outputBufferAppend(*str);
+                        builderAppend('\\');
+                    builderAppend(*str);
                 }
                 ++str;
                 --length;
@@ -130,11 +130,11 @@ namespace OpenLogReplicator {
         }
 
         void appendAfter(OracleObject* object) {
-            outputBufferAppend(",\"after\":{", sizeof(",\"after\":{") - 1);
+            builderAppend(R"(,"after":{)", sizeof(R"(,"after":{)") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {
-                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                for (typeCol column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
                         if (lengths[column][VALUE_AFTER] > 0)
                             processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
@@ -145,7 +145,7 @@ namespace OpenLogReplicator {
             } else {
                 uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    typeCOL column = base << 6;
+                    auto column = (typeCol)(base << 6);
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -161,15 +161,15 @@ namespace OpenLogReplicator {
                     }
                 }
             }
-            outputBufferAppend('}');
+            builderAppend('}');
         }
 
         void appendBefore(OracleObject* object) {
-            outputBufferAppend(",\"before\":{", sizeof(",\"before\":{") - 1);
+            builderAppend(R"(,"before":{)", sizeof(R"(,"before":{)") - 1);
 
             hasPreviousColumn = false;
             if (columnFormat > 0 && object != nullptr) {
-                for (typeCOL column = 0; column < object->maxSegCol; ++column) {
+                for (typeCol column = 0; column < object->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
                         if (lengths[column][VALUE_BEFORE] > 0)
                             processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
@@ -180,7 +180,7 @@ namespace OpenLogReplicator {
             } else {
                 uint64_t baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
-                    typeCOL column = base << 6;
+                    auto column = (typeCol)(base << 6);
                     for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                         if (valuesSet[base] < mask)
                             break;
@@ -196,23 +196,24 @@ namespace OpenLogReplicator {
                     }
                 }
             }
-            outputBufferAppend('}');
+            builderAppend('}');
         }
 
-        time_t tmToEpoch(struct tm* epoch) const;
-        virtual void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        virtual void processDDL(OracleObject* object, typeDATAOBJ dataObj, uint16_t type, uint16_t seq, const char* operation,
-                const char* sql, uint64_t sqlLength);
-        virtual void processBegin(void);
-    public:
-        OutputBufferJson(uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat,
-                uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
-        virtual ~OutputBufferJson();
+        static time_t tmToEpoch(struct tm* );
+        void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDdl(OracleObject* object, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation,
+                        const char* sql, uint64_t sqlLength) override;
+        void processBeginMessage() override;
 
-        virtual void processCommit(void);
-        virtual void processCheckpoint(typeSCN scn, typeTIME time_, typeSEQ sequence, uint64_t offset, bool redo);
+    public:
+        BuilderJson(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat,
+                    uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat,
+                    uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer);
+
+        void processCommit(bool system) override;
+        void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;
     };
 }
 

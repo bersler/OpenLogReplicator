@@ -19,18 +19,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <unistd.h>
 
-#include "NetworkException.h"
-#include "OracleAnalyzer.h"
-#include "OraProtoBuf.pb.h"
-#include "OutputBuffer.h"
-#include "RuntimeException.h"
-#include "Stream.h"
+#include "../builder/Builder.h"
+#include "../common/NetworkException.h"
+#include "../common/OraProtoBuf.pb.h"
+#include "../common/RuntimeException.h"
+#include "../metadata/Metadata.h"
+#include "../stream/Stream.h"
 #include "WriterStream.h"
 
 namespace OpenLogReplicator {
-    WriterStream::WriterStream(const char* alias, OracleAnalyzer* oracleAnalyzer, uint64_t pollIntervalUs, uint64_t checkpointIntervalS,
-            uint64_t queueSize, typeSCN startScn, typeSEQ startSequence, const char* startTime, uint64_t startTimeRel, Stream* stream) :
-        Writer(alias, oracleAnalyzer, 0, pollIntervalUs, checkpointIntervalS, queueSize, startScn, startSequence, startTime, startTimeRel),
+    WriterStream::WriterStream(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, Stream* stream) :
+        Writer(ctx, alias, database, builder, metadata),
         stream(stream) {
     }
 
@@ -41,21 +40,21 @@ namespace OpenLogReplicator {
         }
     }
 
-    void WriterStream::initialize(void) {
+    void WriterStream::initialize() {
         Writer::initialize();
 
-        stream->initializeServer(&shutdown);
+        stream->initializeServer();
     }
 
-    std::string WriterStream::getName(void) const {
+    std::string WriterStream::getName() const {
         return stream->getName();
     }
 
-    void WriterStream::readCheckpoint(void) {
-        while (!streaming && !shutdown && !stop) {
+    void WriterStream::readCheckpoint() {
+        while (!streaming && !ctx->softShutdown) {
             try {
-                usleep(pollIntervalUs);
-                if (stream->connected()) {
+                usleep(ctx->pollIntervalUs);
+                if (stream->isConnected()) {
                     pollQueue();
                 }
             } catch (NetworkException& ex) {
@@ -64,52 +63,53 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (oracleAnalyzer->firstScn != ZERO_SCN)
-            DEBUG("client requested scn: " << std::dec << startScn);
+        if (metadata->firstDataScn != ZERO_SCN) {
+            DEBUG("client requested scn: " << std::dec << metadata->firstDataScn)
+        }
     }
 
-    void WriterStream::processInfo(void) {
+    void WriterStream::processInfo() {
         response.Clear();
-        if (request.database_name().compare(oracleAnalyzer->database) != 0) {
+        if (request.database_name() != database) {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (oracleAnalyzer->firstScn != ZERO_SCN) {
+        } else if (metadata->firstDataScn != ZERO_SCN) {
             response.set_code(pb::ResponseCode::STARTED);
-            response.set_scn(oracleAnalyzer->firstScn);
+            response.set_scn(metadata->firstDataScn);
         } else {
             response.set_code(pb::ResponseCode::READY);
         }
     }
 
-    void WriterStream::processStart(void) {
+    void WriterStream::processStart() {
         response.Clear();
-        if (request.database_name().compare(oracleAnalyzer->database) != 0) {
+        if (request.database_name() != database) {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
-        } else if (oracleAnalyzer->firstScn != ZERO_SCN) {
+        } else if (metadata->firstDataScn != ZERO_SCN) {
             response.set_code(pb::ResponseCode::ALREADY_STARTED);
-            response.set_scn(oracleAnalyzer->firstScn);
+            response.set_scn(metadata->firstDataScn);
         } else {
-            startScn = 0;
+            metadata->startScn = 0;
             if (request.has_seq())
-                startSequence = request.seq();
+                metadata->startSequence = request.seq();
             else
-                startSequence = ZERO_SEQ;
-            startTime.clear();
-            startTimeRel = 0;
+                metadata->startSequence = ZERO_SEQ;
+            metadata->startTime.clear();
+            metadata->startTimeRel = 0;
 
             switch (request.tm_val_case()) {
                 case pb::RedoRequest::TmValCase::kScn:
-                    startScn = request.scn();
-                    startReader();
+                    metadata->startScn = request.scn();
+                    metadata->setStatusReplicate();
                     break;
 
                 case pb::RedoRequest::TmValCase::kTms:
-                    startTime = request.tms();
-                    startReader();
+                    metadata->startTime = request.tms();
+                    metadata->setStatusReplicate();
                     break;
 
                 case pb::RedoRequest::TmValCase::kTmRel:
-                    startTimeRel = request.tm_rel();
-                    startReader();
+                    metadata->startTimeRel = request.tm_rel();
+                    metadata->setStatusReplicate();
                     break;
 
                 default:
@@ -117,44 +117,42 @@ namespace OpenLogReplicator {
                     break;
             }
 
-            if (oracleAnalyzer->firstScn != ZERO_SCN) {
+            if (metadata->firstDataScn != ZERO_SCN) {
                 response.set_code(pb::ResponseCode::STARTED);
-                response.set_scn(oracleAnalyzer->firstScn);
+                response.set_scn(metadata->firstDataScn);
             } else {
                 response.set_code(pb::ResponseCode::FAILED_START);
             }
         }
     }
 
-    void WriterStream::processRedo(void) {
+    void WriterStream::processRedo() {
         response.Clear();
-        if (request.database_name().compare(oracleAnalyzer->database) == 0) {
+        if (request.database_name() == database) {
             response.set_code(pb::ResponseCode::STREAMING);
-            INFO("streaming to client");
+            INFO("streaming to client")
             streaming = true;
         } else {
             response.set_code(pb::ResponseCode::INVALID_DATABASE);
         }
     }
 
-    void WriterStream::processConfirm(void) {
-        uint64_t confirmed = 0;
-        if (request.database_name().compare(oracleAnalyzer->database) == 0) {
-            uint64_t oldSize = tmpQueueSize;
+    void WriterStream::processConfirm() {
+        if (request.database_name() == database) {
             while (tmpQueueSize > 0 && queue[0]->scn <= request.scn())
                 confirmMessage(queue[0]);
         }
     }
 
-    void WriterStream::pollQueue(void) {
+    void WriterStream::pollQueue() {
         uint8_t msgR[READ_NETWORK_BUFFER];
         std::string msgS;
 
-        int64_t length = stream->receiveMessageNB(msgR, READ_NETWORK_BUFFER);
+        uint64_t length = stream->receiveMessageNB(msgR, READ_NETWORK_BUFFER);
 
         if (length > 0) {
             request.Clear();
-            if (request.ParseFromArray(msgR, length)) {
+            if (request.ParseFromArray(msgR, (int)length)) {
                 if (streaming) {
                     switch (request.code()) {
                         case pb::RequestCode::INFO:
@@ -169,7 +167,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            {WARNING("unknown request code: " << request.code());}
+                            WARNING("unknown request code: " << request.code())
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);
@@ -198,7 +196,7 @@ namespace OpenLogReplicator {
                             break;
 
                         default:
-                            {WARNING("unknown request code: " << request.code());}
+                            WARNING("unknown request code: " << request.code())
                             response.Clear();
                             response.set_code(pb::ResponseCode::INVALID_COMMAND);
                             response.SerializeToString(&msgS);
@@ -208,20 +206,19 @@ namespace OpenLogReplicator {
                 }
             } else {
                 std::stringstream ss;
-                ss << "request data[" << std::dec << length << "]: ";
-                for (uint64_t i = 0; i < length; ++i)
+                ss << "request decoder[" << std::dec << length << "]: ";
+                for (uint64_t i = 0; i < (uint64_t)length; ++i)
                     ss << std::hex  << std::setw(2) << std::setfill('0') << (uint64_t)msgR[i] << " ";
-                WARNING(ss.str());
+                WARNING(ss.str())
             }
 
         } else if (length == 0) {
             //no request
-        } else if (errno != EAGAIN) {
-            RUNTIME_FAIL("socket error: (ret: " << std::dec << length << " errno: " << errno << ")");
-        }
+        } else if (errno != EAGAIN)
+            throw RuntimeException("socket error: (ret: "+ std::to_string(length) + " errno: " + std::to_string(errno) + ")");
     }
 
-    void WriterStream::sendMessage(OutputBufferMsg* msg) {
+    void WriterStream::sendMessage(BuilderMsg* msg) {
         stream->sendMessage(msg->data, msg->length);
     }
 }

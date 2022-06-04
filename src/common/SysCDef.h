@@ -17,39 +17,43 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RowId.h"
+#include "types.h"
+#include "typeRowId.h"
 
 #ifndef SYSCDEF_H_
 #define SYSCDEF_H_
 
-#define SYSCDEF_ROWID_LENGTH    18
+#define SYSCDEF_TYPE_PK                     2
+#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG       12
+#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG_PK    14
+#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG_ALL   17
 
 namespace OpenLogReplicator {
     class SysCDefKey {
     public:
-        SysCDefKey();
-        SysCDefKey(typeOBJ obj, typeCON intCon);
+        SysCDefKey(typeObj obj, typeCon intCon);
+
         bool operator<(const SysCDefKey& other) const;
 
-        typeOBJ obj;
-        typeCON con;
+        typeObj obj;
+        typeCon con;
     };
 
     class SysCDef {
     public:
-        SysCDef(RowId& rowId, typeCON con, typeOBJ obj, typeTYPE type, bool touched);
-        bool operator!=(const SysCDef& other) const;
-        bool isPK(void);
-        bool isSupplementalLog(void);
-        bool isSupplementalLogPK(void);
-        bool isSupplementalLogAll(void);
+        SysCDef(typeRowId& rowId, typeCon con, typeObj obj, typeType type, bool touched);
 
-        RowId rowId;
-        typeCON con;
-        typeOBJ obj;
-        typeTYPE type;
+        [[nodiscard]] bool operator!=(const SysCDef& other) const;
+        [[nodiscard]] bool isPK() const;
+        [[nodiscard]] bool isSupplementalLog() const;
+        [[nodiscard]] bool isSupplementalLogPK() const;
+        [[nodiscard]] bool isSupplementalLogAll() const;
+
+        typeRowId rowId;
+        typeCon con;
+        typeObj obj;
+        typeType type;
         bool touched;
-        bool saved;
     };
 }
 

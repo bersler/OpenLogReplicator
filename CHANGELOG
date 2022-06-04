@@ -1,3 +1,14 @@
+0.9.42
+- moved from Makefile to Cmake
+- major code refactor, removed spaghetti code, divided code into separate modules, name cleanup, style cleanup, etc.
+- fixed and extended logdump output
+- fixed minor issues
+- updated config file format
+- added new parameter: "keep-checkpoints"
+- removed experimental not working code: ASM support, RocketMQ, Redis"
+- changed "debug"."flush-buffer" to "debug"."flush-on-exit" in json config
+- fixed pre-1970 timestamp values in Unix format
+
 0.9.41-beta
 - conversion bug fixes
 
@@ -82,7 +93,7 @@
 - fixed bug: schemaless processing failed with DML commands
 - fixed bug: direct read mode was not working
 - fixed bug: null values where added for unknown values
-- added content checks for redo data/column integrity
+- added content checks for redo decoder/column integrity
 - added support for unused columns ("flags" parameter have shifted)
 - OpenLogReplicator.json: default for "redo-verify-delay-us" is 0 when direct io is used, else 500000
 - minor code cleanups
@@ -118,7 +129,7 @@
 0.9.24-beta
 - updated automake to version 1.16.3
 - fixed typo bugs in example JSON files
-- display performance data also for online redo logs ("trace2": 256)
+- display performance decoder also for online redo logs ("trace2": 256)
 - fixed null values for mode "column": 1, 2
 - enhanced read error messages
 - updated README.md
@@ -137,10 +148,10 @@
 - added length checks for string types
 - minor code cleanup & optimization to reduce memory allocations
 
-0.9.20-beta 
+0.9.20-beta
 - changed Oracle client to 19.12
 - build scripts compiled with newer autotools
-- fixed bug with output file path for json data
+- fixed bug with output file path for json decoder
 
 0.9.19-beta
 - added support for Oracle 19.12.0
@@ -155,7 +166,7 @@
 0.9.17-beta
 - code cleanup to be become more compliant
 - fixed memory leak on abnormal exit
-- fixed startup based on checkpoint data
+- fixed startup based on checkpoint decoder
 - fixed schema tracking after restart
 - fixed bug: sometimes log switch checkpoint was missing
 - minor code cleanup & fixes
@@ -205,7 +216,7 @@
 
 0.9.10-beta
 - change "name" to "output" for writer file mode
-- added "max-size", "new-line", "format", "append" elements to writer file mode
+- added "max-size", "new-line", "format", "append" schemaElements to writer file mode
 - file output can rotate output file with defined max size
 - internally changed identifier 0 value to -1 for file descriptor
 - fixed DDL tracking for some commands (alter table modify column, alter table add subpartition, etc.)
@@ -231,7 +242,7 @@
 0.9.5-beta
 - objects where SYS.OBJ$ is present but SYS.TAB$ entry missing are ignored
 - minor optimizations
-- moved config file location: OpenLogReplicator.json to scripts/OpenLogReplicator.json 
+- moved config file location: OpenLogReplicator.json to scripts/OpenLogReplicator.json
 - moved checkpoint file location: <database>-chkpt.json to checkpoints/<database>-chkpt.json
 - ./OpenLogReplicator -v|--version - to print banner and exit
 - ./OpenLogReplicator custom_path/config.json - to run with custom config file location

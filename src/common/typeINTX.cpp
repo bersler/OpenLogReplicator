@@ -17,26 +17,35 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstring>
+#include <iostream>
+#include <string>
+
 #include "types.h"
+#include "typeINTX.h"
 
 namespace OpenLogReplicator {
-    uintX_t uintX_t::BASE10[TYPEINTXDIGITS][10];
+    typeINTX typeINTX::BASE10[TYPEINTXDIGITS][10];
 
-    uintX_t::uintX_t() {
+    typeINTX::typeINTX() {
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
-            this->data[i] = 0;
+            data[i] = 0;
     }
 
-    uintX_t::uintX_t(uint64_t val) {
-        this->data[0] = val;
+    typeINTX::typeINTX(uint64_t val) {
+        data[0] = val;
         for (uint64_t i = 1; i < TYPEINTXLEN; ++i)
-            this->data[i] = 0;
+            data[i] = 0;
     }
 
-    uintX_t::~uintX_t() {
+    typeINTX::typeINTX(uint64_t val1, uint64_t val2) {
+        data[0] = val1;
+        data[1] = val2;
+        for (uint64_t i = 2; i < TYPEINTXLEN; ++i)
+            data[i] = 0;
     }
 
-    void uintX_t::initializeBASE10(void) {
+    void typeINTX::initializeBASE10() {
         memset(BASE10, 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
             BASE10[0][digit] = digit;
@@ -49,21 +58,21 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool uintX_t::operator!=(const uintX_t& other) const {
+    bool typeINTX::operator!=(const typeINTX& other) const {
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
             if (this->data[i] != other.data[i])
                 return true;
         return false;
     }
 
-    bool uintX_t::operator==(const uintX_t& other) const {
+    bool typeINTX::operator==(const typeINTX& other) const {
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
             if (this->data[i] != other.data[i])
                 return false;
         return true;
     }
 
-    uintX_t& uintX_t::operator+=(const uintX_t& val) {
+    typeINTX& typeINTX::operator+=(const typeINTX& val) {
         uint64_t carry = 0;
 
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
@@ -78,7 +87,7 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(const uintX_t& val) {
+    typeINTX& typeINTX::operator=(const typeINTX& val) {
         if (&val != this) {
             for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
                 this->data[i] = val.data[i];
@@ -86,31 +95,33 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(uint64_t val) {
+    typeINTX& typeINTX::operator=(uint64_t val) {
         this->data[0] = val;
         for (uint64_t i = 1; i < TYPEINTXLEN; ++i)
             this->data[i] = 0;
         return *this;
     }
 
-    uintX_t& uintX_t::operator=(const std::string& val) {
-        return setStr(val.c_str(), val.length());
+    typeINTX& typeINTX::operator=(const std::string& val) {
+        setStr(val.c_str(), val.length());
+        return *this;
     }
 
-    uintX_t& uintX_t::operator=(const char* val) {
-        return setStr(val, strlen(val));
+    typeINTX& typeINTX::operator=(const char* val) {
+        setStr(val, strlen(val));
+        return *this;
     }
 
-    uintX_t& uintX_t::setStr(const char* val, uint64_t length) {
+    typeINTX& typeINTX::setStr(const char* val, uint64_t length) {
         *this = (uint64_t)0;
         if (length > TYPEINTXDIGITS) {
-            ERROR("incorrect conversion of string: " << val);
+            ERROR("incorrect conversion of string: " << val)
             return *this;
         }
 
         for (uint64_t i = 0; i < length; ++i) {
             if (*val < '0' || *val > '9') {
-                ERROR("incorrect conversion of string: " << val);
+                ERROR("incorrect conversion of string: " << val)
                 return *this;
             }
 
@@ -120,22 +131,22 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uint64_t uintX_t::get64(void) {
+    uint64_t typeINTX::get64() {
         return data[0];
     }
 
-    bool uintX_t::isSet64(uint64_t mask) {
+    bool typeINTX::isSet64(uint64_t mask) {
         return data[0] & mask;
     }
 
-    bool uintX_t::isZero(void) {
+    bool typeINTX::isZero() {
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
             if (data[i] != 0)
                 return false;
         return true;
     }
 
-    uintX_t& uintX_t::set(uint64_t val1, uint64_t val2) {
+    typeINTX& typeINTX::set(uint64_t val1, uint64_t val2) {
         this->data[0] = val1;
         this->data[1] = val2;
         for (uint64_t i = 2; i < TYPEINTXLEN; ++i)
@@ -143,7 +154,7 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    std::ostream& operator<<(std::ostream& os, const uintX_t& val) {
+    std::ostream& operator<<(std::ostream& os, const typeINTX& val) {
         os << "[";
         for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
             if (i > 0)

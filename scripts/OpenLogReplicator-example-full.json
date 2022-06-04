@@ -1,5 +1,5 @@
 {
-  "version": "0.9.34",
+  "version": "0.9.42",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
@@ -10,7 +10,7 @@
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "online", 
+        "type": "online",
         "path-mapping": ["/db/fra", "/opt/fast-recovery-area"],
         "redo-copy-path": "copy",
         "user": "user1",
@@ -37,9 +37,8 @@
         "path": "checkpoint",
         "interval-s": 600,
         "interval-mb": 100,
-        "all-checkpoints": 0,
-        "output-checkpoint": 1,
-        "output-log-switch": 1
+        "keep-checkpoints": 100,
+        "schema-force-interval": 20
       },
       "debug": {
         "owner": "SYSTEM",
@@ -47,8 +46,7 @@
         "stop-log-switches": 0,
         "stop-checkpoints": 0,
         "stop-transactions": 0,
-        "stop-dmls": 0,
-        "flush-buffer": 0
+        "stop-dmls": 0
       },
       "arch": "online",
       "flags": 0,
@@ -60,20 +58,20 @@
       "arch-read-tries": 10,
       "redo-verify-delay-us": 250000,
       "refresh-interval-us": 10000000,
+      "transaction-max-mb": 1000,
       "filter": {
         "table": [
           {"owner": "OWNER1", "table": "TABLENAME1", "key": "col1, col2, col3"},
           {"owner": "OWNER1", "table": "TABLENAME2"},
           {"owner": "OWNER2", "table": "TAB.*"}
         ],
-        "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"],
-        "transaction-max-mb": 1000
+        "skip-xid": ["1234.ABC.12345678", "1234.0ABC.12345678", "09000D001D050000"]
       }
     }
   ],
   "target": [
     {
-      "alias": "K1", 
+      "alias": "K1",
       "source": "S1",
       "writer": {
         "type": "kafka",
@@ -83,7 +81,6 @@
         "max-messages": 200000,
         "enable-idempotence": 0,
         "poll-interval-us": 100000,
-        "checkpoint-interval-s": 10,
         "queue-size": 65536
       }
     }

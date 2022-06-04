@@ -20,27 +20,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysUser.h"
 
 namespace OpenLogReplicator {
-    SysUser::SysUser(RowId& rowId, typeUSER user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched) :
+    SysUser::SysUser(typeRowId& rowId, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched) :
             rowId(rowId),
             user(user),
             name(name),
+            spare1(spare11, spare12),
             single(single),
-            touched(touched),
-            saved(false) {
-        spare1.set(spare11, spare12);
+            touched(touched) {
     }
 
     bool SysUser::operator!=(const SysUser& other) const {
-        if (other.rowId != rowId || other.user != user || other.name.compare(name) != 0 || other.spare1 != spare1)
-            return true;
-        return false;
+        return other.rowId != rowId || other.user != user || other.name != name || other.spare1 != spare1;
     }
 
-    bool SysUser::isSuppLogPrimary(void) {
-        return spare1.isSet64(1);
+    bool SysUser::isSuppLogPrimary() {
+        return spare1.isSet64(SYSUSER_SPARE1_SUPP_LOG_PRIMARY);
     }
 
-    bool SysUser::isSuppLogAll(void) {
-        return spare1.isSet64(8);
+    bool SysUser::isSuppLogAll() {
+        return spare1.isSet64(SYSUSER_SPARE1_SUPP_LOG_ALL);
     }
 }

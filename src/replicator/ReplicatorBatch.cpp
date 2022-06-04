@@ -17,55 +17,46 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzerBatch.h"
-#include "RuntimeException.h"
+#include "../common/RuntimeException.h"
+#include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
+#include "ReplicatorBatch.h"
 
 namespace OpenLogReplicator {
-    OracleAnalyzerBatch::OracleAnalyzerBatch(OutputBuffer* outputBuffer, uint64_t dumpRedoLog, uint64_t dumpRawData,
-            const char* dumpPath, const char* alias, const char* database, uint64_t memoryMinMb, uint64_t memoryMaxMb,
-            uint64_t readBufferMax, uint64_t disableChecks, typeCONID conId) :
-        OracleAnalyzer(outputBuffer, dumpRedoLog, dumpRawData, dumpPath, alias, database, memoryMinMb, memoryMaxMb, readBufferMax,
-                disableChecks) {
-
-        this->conId = conId;
+    ReplicatorBatch::ReplicatorBatch(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata,
+                                     TransactionBuffer* transactionBuffer, std::string alias, const char* database) :
+            Replicator(ctx, archGetLog, builder, metadata, transactionBuffer, alias, database) {
     }
 
-    OracleAnalyzerBatch::~OracleAnalyzerBatch() {
-    }
+    ReplicatorBatch::~ReplicatorBatch() = default;
 
-    void OracleAnalyzerBatch::positionReader(void) {
-        if (startTime.length() > 0) {
-            RUNTIME_FAIL("starting by time is not supported for batch mode");
-        } else if (startTimeRel > 0) {
-            RUNTIME_FAIL("starting by relative time is not supported for batch mode");
-        }
-
-        if (startSequence != ZERO_SEQ)
-            sequence = startSequence;
+    void ReplicatorBatch::positionReader() {
+        if (metadata->startSequence != ZERO_SEQ)
+            metadata->setSeqOffset(metadata->startSequence, 0);
         else
-            sequence = 0;
-        offset = 0;
+            metadata->setSeqOffset(0, 0);
+        metadata->sequence = 0;
     }
 
-    void OracleAnalyzerBatch::createSchema(void) {
-        if ((flags & REDO_FLAGS_SCHEMALESS) != 0)
+    void ReplicatorBatch::createSchema() {
+        if (FLAG(REDO_FLAGS_SCHEMALESS))
             return;
 
-        ERROR("HINT: if you don't have earlier schema, try with schema-less mode (\"flags\": 2)");
-        if (schemaFirstScn != ZERO_SCN) {
-            ERROR("HINT: you can also set start SCN for writer: \"start-scn\": " << std::dec << schemaFirstScn);
+        ERROR("HINT: if you don't have earlier schema, try with schema-less mode ('flags': 2)")
+        if (metadata->schema->scn != ZERO_SCN) {
+            ERROR("HINT: you can also set start SCN for writer: 'start-scn': " << std::dec << metadata->schema->scn)
         }
 
-        RUNTIME_FAIL("schema file missing");
+        throw RuntimeException("schema file missing");
     }
 
-    const char* OracleAnalyzerBatch::getModeName(void) const {
+    const char* ReplicatorBatch::getModeName() const {
         return "batch";
     }
 
-    bool OracleAnalyzerBatch::continueWithOnline(void) {
-        INFO("finished batch processing, exiting");
-        stopMain();
+    bool ReplicatorBatch::continueWithOnline() {
+        INFO("finished batch processing, exiting")
+        ctx->stopSoft();
         return false;
     }
 }

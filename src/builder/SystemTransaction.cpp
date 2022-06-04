@@ -1,4 +1,4 @@
-/* System transaction to change schema
+/* System transaction to change metadata
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,20 +17,32 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
-#include "OracleColumn.h"
-#include "OracleObject.h"
-#include "OutputBuffer.h"
-#include "RuntimeException.h"
-#include "Schema.h"
+#include "../common/OracleColumn.h"
+#include "../common/OracleObject.h"
+#include "../common/RuntimeException.h"
+#include "../common/SysCCol.h"
+#include "../common/SysCDef.h"
+#include "../common/SysCol.h"
+#include "../common/SysDeferredStg.h"
+#include "../common/SysECol.h"
+#include "../common/SysObj.h"
+#include "../common/SysTab.h"
+#include "../common/SysTabComPart.h"
+#include "../common/SysTabPart.h"
+#include "../common/SysTabSubPart.h"
+#include "../common/SysUser.h"
+#include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
+#include "../metadata/SchemaElement.h"
+#include "Builder.h"
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
 
-    SystemTransaction::SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema) :
-                oracleAnalyzer(oracleAnalyzer),
-                outputBuffer(outputBuffer),
-                schema(schema),
+    SystemTransaction::SystemTransaction(Builder* builder, Metadata* metadata) :
+                ctx(metadata->ctx),
+                builder(builder),
+                metadata(metadata),
                 sysCCol(nullptr),
                 sysCDef(nullptr),
                 sysCol(nullptr),
@@ -42,7 +54,7 @@ namespace OpenLogReplicator {
                 sysTabPart(nullptr),
                 sysTabSubPart(nullptr),
                 sysUser(nullptr) {
-        TRACE(TRACE2_SYSTEM, "SYSTEM: begin");
+        TRACE(TRACE2_SYSTEM, "SYSTEM: begin")
     }
 
     SystemTransaction::~SystemTransaction() {
@@ -107,26 +119,26 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            int16_t newVal = strtol(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            auto newVal = (int16_t)strtol(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val = defVal;
                 return true;
             }
@@ -134,29 +146,30 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            uint16_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            uint16_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val = defVal;
                 return true;
             }
@@ -164,29 +177,30 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            uint32_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            uint32_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val = defVal;
                 return true;
             }
@@ -194,32 +208,33 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateObj(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateObj(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            typeOBJ newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            typeObj newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
-                schema->touchObj(val);
-                schema->touchObj(newVal);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
+                metadata->schema->touchObj(val);
+                metadata->schema->touchObj(newVal);
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
-                schema->touchObj(val);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
+                metadata->schema->touchObj(val);
                 val = 0;
                 return true;
             }
@@ -227,32 +242,33 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updatePart(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updatePart(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            typeOBJ newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            typeObj newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
-                schema->touchPart(val);
-                schema->touchPart(newVal);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
+                metadata->schema->touchPart(val);
+                metadata->schema->touchPart(newVal);
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
-                schema->touchPart(val);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
+                metadata->schema->touchPart(val);
                 val = 0;
                 return true;
             }
@@ -260,32 +276,33 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateUser(typeUSER& val, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateUser(typeUser& val, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            typeUSER newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            typeUser newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
-                schema->touchUser(val);
-                schema->touchUser(newVal);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
+                metadata->schema->touchUser(val);
+                metadata->schema->touchUser(newVal);
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
-                schema->touchUser(val);
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
+                metadata->schema->touchUser(val);
                 val = 0;
                 return true;
             }
@@ -293,29 +310,30 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            int64_t newVal = strtol(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            int64_t newVal = strtol(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val = defVal;
                 return true;
             }
@@ -323,29 +341,30 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
+    bool SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            uint64_t newVal = strtoul(outputBuffer->valueBuffer, &retPtr, 10);
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                       object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            uint64_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val = defVal;
                 return true;
             }
@@ -353,30 +372,30 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateNumberXu(uintX_t& val, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (object->columns[column]->typeNo != 2) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseNumber(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER]);
-            outputBuffer->valueBuffer[outputBuffer->valueLength] = 0;
-            if (outputBuffer->valueLength == 0 || (outputBuffer->valueLength > 0 && outputBuffer->valueBuffer[0] == '-')) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " value found " << outputBuffer->valueBuffer);
-            }
-            uintX_t newVal(0);
-            newVal.setStr(outputBuffer->valueBuffer, outputBuffer->valueLength);
+    bool SystemTransaction::updateNumberXu(typeINTX& val, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+            if (object->columns[column]->type != 2)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
+
+            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
+            builder->valueBuffer[builder->valueLength] = 0;
+            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " value found " + builder->valueBuffer);
+
+            typeINTX newVal(0);
+            newVal.setStr(builder->valueBuffer, builder->valueLength);
             if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (!val.isZero()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+                metadata->schema->touched = true;
                 val.set(0, 0);
                 return true;
             }
@@ -384,29 +403,28 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId) {
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr && outputBuffer->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (object->columns[column]->typeNo != 1 && object->columns[column]->typeNo != 96) {
-                RUNTIME_FAIL("ddl: column type mismatch for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << " type found " << object->columns[column]->typeNo);
-            }
-            outputBuffer->parseString(outputBuffer->values[column][VALUE_AFTER], outputBuffer->lengths[column][VALUE_AFTER], object->columns[column]->charsetId);
-            std::string newVal(outputBuffer->valueBuffer, outputBuffer->valueLength);
-            if (outputBuffer->valueLength > maxLength) {
-                RUNTIME_FAIL("ddl: value too long for " << object->owner << "." << object->name << ": column " << object->columns[column]->name << ", length " << outputBuffer->valueLength);
-            }
+    bool SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
+        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
+            if (object->columns[column]->type != SYSCOL_TYPE_VARCHAR && object->columns[column]->type != SYSCOL_TYPE_CHAR)
+                throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
+                        object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
 
-            if (val.compare(newVal) != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": '" << val << "' -> '" << newVal << "')");
-                schema->touched = true;
+            builder->parseString(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER], object->columns[column]->charsetId);
+            std::string newVal(builder->valueBuffer, builder->valueLength);
+            if (builder->valueLength > maxLength)
+                throw RuntimeException("ddl: value too long for " + object->owner + "." + object->name + ": column " + object->columns[column]->name +
+                        ", length " + std::to_string(builder->valueLength));
+
+            if (val != newVal) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": '" << val << "' -> '" << newVal << "')")
+                metadata->schema->touched = true;
                 val = newVal;
                 return true;
             }
-        } else
-        if (outputBuffer->values[column][VALUE_AFTER] != nullptr || outputBuffer->values[column][VALUE_BEFORE] != nullptr) {
+        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
             if (val.length() > 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": '" << val << "' -> NULL)");
-                schema->touched = true;
+                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << object->columns[column]->name << ": '" << val << "' -> NULL)")
+                metadata->schema->touched = true;
                 val.assign("");
                 return true;
             }
@@ -414,886 +432,831 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    void SystemTransaction::processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
+    void SystemTransaction::processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
 
-        TRACE(TRACE2_SYSTEM, "SYSTEM: insert table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")");
+        TRACE(TRACE2_SYSTEM, "SYSTEM: insert table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")")
 
         if (object->systemTable == TABLE_SYS_CCOL) {
-            if (schema->sysCColMapRowId.find(rowId) != schema->sysCColMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.CCOL$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysCColFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.CCOL$: (rowid: ") + str + ") for insert");
             sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
-            if (sysCCol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCCol) << " bytes memory (for: SysCCol)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("CON#") == 0)
+                    if (object->columns[column]->name == "CON#")
                         updateNumber32u(sysCCol->con, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("INTCOL#") == 0)
+                    else if (object->columns[column]->name == "INTCOL#")
                         updateNumber16(sysCCol->intCol, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("OBJ#") == 0)
+                    else if (object->columns[column]->name == "OBJ#")
                         updateObj(sysCCol->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("SPARE1") == 0)
+                    else if (object->columns[column]->name == "SPARE1")
                         updateNumberXu(sysCCol->spare1, column, object, rowId);
                 }
             }
 
-            schema->sysCColMapRowId[rowId] = sysCCol;
-            schema->sysCColTouched = true;
+            metadata->schema->sysCColMapRowId[rowId] = sysCCol;
+            metadata->schema->sysCColTouched = true;
             sysCCol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_CDEF) {
-            if (schema->sysCDefMapRowId.find(rowId) != schema->sysCDefMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.DEF$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysCDefFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.CDEF$: (rowid: ") + str + ") for insert");
             sysCDef = new SysCDef(rowId, 0, 0, 0, true);
-            if (sysCDef == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCDef) << " bytes memory (for: SysCDef)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("CON#") == 0)
+                    if (object->columns[column]->name == "CON#")
                         updateNumber32u(sysCDef->con, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("OBJ#") == 0)
+                    else if (object->columns[column]->name == "OBJ#")
                         updateObj(sysCDef->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("TYPE#") == 0)
+                    else if (object->columns[column]->name == "TYPE#")
                         updateNumber16u(sysCDef->type, 0, column, object, rowId);
                 }
             }
 
-            schema->sysCDefMapRowId[rowId] = sysCDef;
-            schema->sysCDefTouched = true;
+            metadata->schema->sysCDefMapRowId[rowId] = sysCDef;
+            metadata->schema->sysCDefTouched = true;
             sysCDef = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_COL) {
-            if (schema->sysColMapRowId.find(rowId) != schema->sysColMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.COL$: (rowid: " << rowId << ")for insert");
-            }
+            if (metadata->schema->dictSysColFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.COL$: (rowid: ") + str + ") for insert");
             sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1, 0, 0, 0, 0, 0, true);
-            if (sysCol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysCol) << " bytes memory (for: SysCol)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateObj(sysCol->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("COL#") == 0)
+                    else if (object->columns[column]->name == "COL#")
                         updateNumber16(sysCol->col, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("SEGCOL#") == 0)
+                    else if (object->columns[column]->name == "SEGCOL#")
                         updateNumber16(sysCol->segCol, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("INTCOL#") == 0)
+                    else if (object->columns[column]->name == "INTCOL#")
                         updateNumber16(sysCol->intCol, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("NAME") == 0)
+                    else if (object->columns[column]->name == "NAME")
                         updateString(sysCol->name, SYSCOL_NAME_LENGTH, column, object, rowId);
-                    else if (object->columns[column]->name.compare("TYPE#") == 0)
+                    else if (object->columns[column]->name == "TYPE#")
                         updateNumber16u(sysCol->type, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("LENGTH") == 0)
+                    else if (object->columns[column]->name == "LENGTH")
                         updateNumber64u(sysCol->length, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("PRECISION#") == 0)
+                    else if (object->columns[column]->name == "PRECISION#")
                         updateNumber64(sysCol->precision, -1, column, object, rowId);
-                    else if (object->columns[column]->name.compare("SCALE") == 0)
+                    else if (object->columns[column]->name == "SCALE")
                         updateNumber64(sysCol->scale, -1, column, object, rowId);
-                    else if (object->columns[column]->name.compare("CHARSETFORM") == 0)
+                    else if (object->columns[column]->name == "CHARSETFORM")
                         updateNumber64u(sysCol->charsetForm, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("CHARSETID") == 0)
+                    else if (object->columns[column]->name == "CHARSETID")
                         updateNumber64u(sysCol->charsetId, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("NULL$") == 0)
+                    else if (object->columns[column]->name == "NULL$")
                         updateNumber64(sysCol->null_, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("PROPERTY") == 0)
+                    else if (object->columns[column]->name == "PROPERTY")
                         updateNumberXu(sysCol->property, column, object, rowId);
                 }
             }
 
-            schema->sysColMapRowId[rowId] = sysCol;
-            schema->sysColTouched = true;
+            metadata->schema->sysColMapRowId[rowId] = sysCol;
+            metadata->schema->sysColTouched = true;
             sysCol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
-            if (schema->sysDeferredStgMapRowId.find(rowId) != schema->sysDeferredStgMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.DEFERRED_STG$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysDeferredStgFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.DEFERRED_STG$: (rowid: ") + str + ") for insert");
             sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
-            if (sysDeferredStg == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysDeferredStg) << " bytes memory (for: SysDeferredStg)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateObj(sysDeferredStg->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("FLAGS_STG") == 0)
+                    else if (object->columns[column]->name == "FLAGS_STG")
                         updateNumberXu(sysDeferredStg->flagsStg, column, object, rowId);
                 }
             }
 
-            schema->sysDeferredStgMapRowId[rowId] = sysDeferredStg;
-            schema->sysDeferredStgTouched = true;
-            schema->touchObj(sysDeferredStg->obj);
+            metadata->schema->sysDeferredStgMapRowId[rowId] = sysDeferredStg;
+            metadata->schema->sysDeferredStgTouched = true;
+            metadata->schema->touchObj(sysDeferredStg->obj);
             sysDeferredStg = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_ECOL) {
-            if (schema->sysEColMapRowId.find(rowId) != schema->sysEColMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.ECOL$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysEColFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.ECOL$: (rowid: ") + str + ") for insert");
             sysECol = new SysECol(rowId, 0, 0, -1, true);
-            if (sysECol == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysECol) << " bytes memory (for: SysECol)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("TABOBJ#") == 0)
+                    if (object->columns[column]->name == "TABOBJ#")
                         updateObj(sysECol->tabObj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("COLNUM") == 0)
+                    else if (object->columns[column]->name == "COLNUM")
                         updateNumber16(sysECol->colNum, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("GUARD_ID") == 0)
+                    else if (object->columns[column]->name == "GUARD_ID")
                         updateNumber16(sysECol->guardId, -1, column, object, rowId);
                 }
             }
 
-            schema->sysEColMapRowId[rowId] = sysECol;
-            schema->sysEColTouched = true;
+            metadata->schema->sysEColMapRowId[rowId] = sysECol;
+            metadata->schema->sysEColTouched = true;
             sysECol = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_OBJ) {
-            if (schema->sysObjMapRowId.find(rowId) != schema->sysObjMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.OBJ$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysObjFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + str + ") for insert");
             sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false, true);
-            if (sysObj == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysObj) << " bytes memory (for: SysObj)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OWNER#") == 0)
+                    if (object->columns[column]->name == "OWNER#")
                         updateNumber32u(sysObj->owner, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("OBJ#") == 0)
+                    else if (object->columns[column]->name == "OBJ#")
                         updateObj(sysObj->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
+                    else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysObj->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("NAME") == 0)
+                    else if (object->columns[column]->name == "NAME")
                         updateString(sysObj->name, SYSOBJ_NAME_LENGTH, column, object, rowId);
-                    else if (object->columns[column]->name.compare("TYPE#") == 0)
+                    else if (object->columns[column]->name == "TYPE#")
                         updateNumber16u(sysObj->type, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("FLAGS") == 0)
+                    else if (object->columns[column]->name == "FLAGS")
                         updateNumberXu(sysObj->flags, column, object, rowId);
                 }
             }
 
-            schema->sysObjMapRowId[rowId] = sysObj;
-            schema->sysObjTouched = true;
+            metadata->schema->sysObjMapRowId[rowId] = sysObj;
+            metadata->schema->sysObjTouched = true;
             sysObj = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TAB) {
-            if (schema->sysTabMapRowId.find(rowId) != schema->sysTabMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.TAB$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysTabFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TAB$: (rowid: ") + str + ") for insert");
             sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, true);
-            if (sysTab == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTab) << " bytes memory (for: SysTab)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateObj(sysTab->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
+                    else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysTab->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("CLUCOLS") == 0)
+                    else if (object->columns[column]->name == "CLUCOLS")
                         updateNumber16(sysTab->cluCols, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("FLAGS") == 0)
+                    else if (object->columns[column]->name == "FLAGS")
                         updateNumberXu(sysTab->flags, column, object, rowId);
-                    else if (object->columns[column]->name.compare("PROPERTY") == 0)
+                    else if (object->columns[column]->name == "PROPERTY")
                         updateNumberXu(sysTab->property, column, object, rowId);
                 }
             }
 
-            schema->sysTabMapRowId[rowId] = sysTab;
-            schema->sysTabTouched = true;
+            metadata->schema->sysTabMapRowId[rowId] = sysTab;
+            metadata->schema->sysTabTouched = true;
             sysTab = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
-            if (schema->sysTabComPartMapRowId.find(rowId) != schema->sysTabComPartMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.TABCOMPART$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysTabComPartFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABCOMPART$: (rowid: ") + str + ") for insert");
             sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
-            if (sysTabComPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabComPart) << " bytes memory (for: SysTabComPart)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateObj(sysTabComPart->obj, column, object, rowId);
-                    else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
+                    else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysTabComPart->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("BO#") == 0)
+                    else if (object->columns[column]->name == "BO#")
                         updateNumber32u(sysTabComPart->bo, 0, column, object, rowId);
                 }
             }
 
-            schema->sysTabComPartMapRowId[rowId] = sysTabComPart;
-            schema->sysTabComPartTouched = true;
+            metadata->schema->sysTabComPartMapRowId[rowId] = sysTabComPart;
+            metadata->schema->sysTabComPartTouched = true;
             sysTabComPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABPART) {
-            if (schema->sysTabPartMapRowId.find(rowId) != schema->sysTabPartMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.TABPART$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysTabPartFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABPART$: (rowid: ") + str + ") for insert");
             sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
-            if (sysTabPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabPart) << " bytes memory (for: SysTabPart)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateNumber32u(sysTabPart->obj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
+                    else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysTabPart->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("BO#") == 0)
+                    else if (object->columns[column]->name == "BO#")
                         updateObj(sysTabPart->bo, column, object, rowId);
                 }
             }
 
-            schema->sysTabPartMapRowId[rowId] = sysTabPart;
-            schema->sysTabPartTouched = true;
+            metadata->schema->sysTabPartMapRowId[rowId] = sysTabPart;
+            metadata->schema->sysTabPartTouched = true;
             sysTabPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
-            if (schema->sysTabSubPartMapRowId.find(rowId) != schema->sysTabSubPartMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.TABSUBPART$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysTabSubPartFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABSUBPART$: (rowid: ") + str + ") for insert");
             sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
-            if (sysTabSubPart == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysTabSubPart) << " bytes memory (for: SysTabSubPart)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0)
+                    if (object->columns[column]->name == "OBJ#")
                         updateNumber32u(sysTabSubPart->obj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("DATAOBJ#") == 0)
+                    else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysTabSubPart->dataObj, 0, column, object, rowId);
-                    else if (object->columns[column]->name.compare("POBJ#") == 0)
+                    else if (object->columns[column]->name == "POBJ#")
                         updatePart(sysTabSubPart->pObj, column, object, rowId);
                 }
             }
 
-            schema->sysTabSubPartMapRowId[rowId] = sysTabSubPart;
-            schema->sysTabSubPartTouched = true;
+            metadata->schema->sysTabSubPartMapRowId[rowId] = sysTabSubPart;
+            metadata->schema->sysTabSubPartTouched = true;
             sysTabSubPart = nullptr;
 
         } else if (object->systemTable == TABLE_SYS_USER) {
-            if (schema->sysUserMapRowId.find(rowId) != schema->sysUserMapRowId.end()) {
-                RUNTIME_FAIL("DDL: duplicate SYS.USER$: (rowid: " << rowId << ") for insert");
-            }
+            if (metadata->schema->dictSysUserFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.USER$: (rowid: ") + str + ") for insert");
             sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
-            if (sysUser == nullptr) {
-                RUNTIME_FAIL("couldn't allocate " << std::dec << sizeof(class SysUser) << " bytes memory (for: SysUser)");
-            }
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("USER#") == 0)
+                    if (object->columns[column]->name == "USER#")
                         updateUser(sysUser->user, column, object, rowId);
-                    else if (object->columns[column]->name.compare("NAME") == 0)
+                    else if (object->columns[column]->name == "NAME")
                         updateString(sysUser->name, SYSUSER_NAME_LENGTH, column, object, rowId);
-                    else if (object->columns[column]->name.compare("SPARE1") == 0)
+                    else if (object->columns[column]->name == "SPARE1")
                         updateNumberXu(sysUser->spare1, column, object, rowId);
                 }
             }
 
-            schema->sysUserMapRowId[rowId] = sysUser;
-            schema->sysUserTouched = true;
-            schema->touchUser(sysUser->user);
+            metadata->schema->sysUserMapRowId[rowId] = sysUser;
+            metadata->schema->sysUserTouched = true;
+            metadata->schema->touchUser(sysUser->user);
             sysUser = nullptr;
         }
     }
 
-    void SystemTransaction::processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
+    void SystemTransaction::processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        TRACE(TRACE2_SYSTEM, "SYSTEM: update table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")");
+        TRACE(TRACE2_SYSTEM, "SYSTEM: update table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")")
 
         if (object->systemTable == TABLE_SYS_CCOL) {
-            auto sysCColIt = schema->sysCColMapRowId.find(rowId);
-            if (sysCColIt == schema->sysCColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysCCol* sysCCol2 = metadata->schema->dictSysCColFind(rowId);
+            if (sysCCol2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysCCol* sysCCol = sysCColIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("CON#") == 0) {
-                        if (updateNumber32u(sysCCol->con, 0, column, object, rowId)) {
-                            sysCCol->touched = true;
-                            schema->sysCColTouched = true;
+                    if (object->columns[column]->name == "CON#") {
+                        if (updateNumber32u(sysCCol2->con, 0, column, object, rowId)) {
+                            sysCCol2->touched = true;
+                            metadata->schema->sysCColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("INTCOL#") == 0) {
-                        if (updateNumber16(sysCCol->intCol, 0, column, object, rowId)) {
-                            sysCCol->touched = true;
-                            schema->sysCColTouched = true;
+                    } else if (object->columns[column]->name == "INTCOL#") {
+                        if (updateNumber16(sysCCol2->intCol, 0, column, object, rowId)) {
+                            sysCCol2->touched = true;
+                            metadata->schema->sysCColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysCCol->obj, column, object, rowId)) {
-                            sysCCol->touched = true;
-                            schema->sysCColTouched = true;
+                    } else if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysCCol2->obj, column, object, rowId)) {
+                            sysCCol2->touched = true;
+                            metadata->schema->sysCColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("SPARE1") == 0) {
-                        if (updateNumberXu(sysCCol->spare1, column, object, rowId)) {
-                            sysCCol->touched = true;
-                            schema->sysCColTouched = true;
+                    } else if (object->columns[column]->name == "SPARE1") {
+                        if (updateNumberXu(sysCCol2->spare1, column, object, rowId)) {
+                            sysCCol2->touched = true;
+                            metadata->schema->sysCColTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_CDEF) {
-            auto sysCDefIt = schema->sysCDefMapRowId.find(rowId);
-            if (sysCDefIt == schema->sysCDefMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
+            if (sysCDef2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysCDef* sysCDef = sysCDefIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("CON#") == 0) {
-                        if (updateNumber32u(sysCDef->con, 0, column, object, rowId)) {
-                            sysCDef->touched = true;
-                            schema->sysCDefTouched = true;
+                    if (object->columns[column]->name == "CON#") {
+                        if (updateNumber32u(sysCDef2->con, 0, column, object, rowId)) {
+                            sysCDef2->touched = true;
+                            metadata->schema->sysCDefTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysCDef->obj, column, object, rowId)) {
-                            sysCDef->touched = true;
-                            schema->sysCDefTouched = true;
+                    } else if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysCDef2->obj, column, object, rowId)) {
+                            sysCDef2->touched = true;
+                            metadata->schema->sysCDefTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysCDef->type, 0, column, object, rowId)) {
-                            sysCDef->touched = true;
-                            schema->sysCDefTouched = true;
+                    } else if (object->columns[column]->name == "TYPE#") {
+                        if (updateNumber16u(sysCDef2->type, 0, column, object, rowId)) {
+                            sysCDef2->touched = true;
+                            metadata->schema->sysCDefTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_COL) {
-            auto sysColIt = schema->sysColMapRowId.find(rowId);
-            if (sysColIt == schema->sysColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysCol* sysCol2 = metadata->schema->dictSysColFind(rowId);
+            if (sysCol2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysCol* sysCol = sysColIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysCol->obj, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysCol2->obj, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("COL#") == 0) {
-                        if (updateNumber16(sysCol->col, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "COL#") {
+                        if (updateNumber16(sysCol2->col, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("SEGCOL#") == 0) {
-                        if (updateNumber16(sysCol->segCol, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "SEGCOL#") {
+                        if (updateNumber16(sysCol2->segCol, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("INTCOL#") == 0) {
-                        if (updateNumber16(sysCol->intCol, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "INTCOL#") {
+                        if (updateNumber16(sysCol2->intCol, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("NAME") == 0) {
-                        if (updateString(sysCol->name, SYSCOL_NAME_LENGTH, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "NAME") {
+                        if (updateString(sysCol2->name, SYSCOL_NAME_LENGTH, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysCol->type, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched= true;
+                    } else if (object->columns[column]->name == "TYPE#") {
+                        if (updateNumber16u(sysCol2->type, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched= true;
                         }
-                    } else if (object->columns[column]->name.compare("LENGTH") == 0) {
-                        if (updateNumber64u(sysCol->length, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "LENGTH") {
+                        if (updateNumber64u(sysCol2->length, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("PRECISION#") == 0) {
-                        if (updateNumber64(sysCol->precision, -1, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "PRECISION#") {
+                        if (updateNumber64(sysCol2->precision, -1, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("SCALE") == 0) {
-                        if (updateNumber64(sysCol->scale, -1, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "SCALE") {
+                        if (updateNumber64(sysCol2->scale, -1, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("CHARSETFORM") == 0) {
-                        if (updateNumber64u(sysCol->charsetForm, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "CHARSETFORM") {
+                        if (updateNumber64u(sysCol2->charsetForm, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("CHARSETID") == 0) {
-                        if (updateNumber64u(sysCol->charsetId, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "CHARSETID") {
+                        if (updateNumber64u(sysCol2->charsetId, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("NULL$") == 0) {
-                        if (updateNumber64(sysCol->null_, 0, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "NULL$") {
+                        if (updateNumber64(sysCol2->null_, 0, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("PROPERTY") == 0) {
-                        if (updateNumberXu(sysCol->property, column, object, rowId)) {
-                            sysCol->touched = true;
-                            schema->sysColTouched = true;
+                    } else if (object->columns[column]->name == "PROPERTY") {
+                        if (updateNumberXu(sysCol2->property, column, object, rowId)) {
+                            sysCol2->touched = true;
+                            metadata->schema->sysColTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
-            auto sysDeferredStgIt = schema->sysDeferredStgMapRowId.find(rowId);
-            if (sysDeferredStgIt == schema->sysDeferredStgMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysDeferredStg* sysDeferredStg2 = metadata->schema->dictSysDeferredStgFind(rowId);
+            if (sysDeferredStg2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysDeferredStg* sysDeferredStg = sysDeferredStgIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysDeferredStg->obj, column, object, rowId)) {
-                            sysDeferredStg->touched = true;
-                            schema->sysDeferredStgTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysDeferredStg2->obj, column, object, rowId)) {
+                            sysDeferredStg2->touched = true;
+                            metadata->schema->sysDeferredStgTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("FLAGS_STG") == 0) {
-                        if (updateNumberXu(sysDeferredStg->flagsStg, column, object, rowId)) {
-                            sysDeferredStg->touched = true;
-                            schema->sysDeferredStgTouched = true;
+                    } else if (object->columns[column]->name == "FLAGS_STG") {
+                        if (updateNumberXu(sysDeferredStg2->flagsStg, column, object, rowId)) {
+                            sysDeferredStg2->touched = true;
+                            metadata->schema->sysDeferredStgTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_ECOL) {
-            auto sysEColIt = schema->sysEColMapRowId.find(rowId);
-            if (sysEColIt == schema->sysEColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysECol* sysECol2 = metadata->schema->dictSysEColFind(rowId);
+            if (sysECol2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysECol* sysECol = sysEColIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("TABOBJ#") == 0) {
-                        if (updateObj(sysECol->tabObj, column, object, rowId)) {
-                            sysECol->touched = true;
-                            schema->sysEColTouched = true;
+                    if (object->columns[column]->name == "TABOBJ#") {
+                        if (updateObj(sysECol2->tabObj, column, object, rowId)) {
+                            sysECol2->touched = true;
+                            metadata->schema->sysEColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("COLNUM") == 0) {
-                        if (updateNumber16(sysECol->colNum, 0, column, object, rowId)) {
-                            sysECol->touched = true;
-                            schema->sysEColTouched = true;
+                    } else if (object->columns[column]->name == "COLNUM") {
+                        if (updateNumber16(sysECol2->colNum, 0, column, object, rowId)) {
+                            sysECol2->touched = true;
+                            metadata->schema->sysEColTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("GUARD_ID") == 0) {
-                        if (updateNumber16(sysECol->guardId, -1, column, object, rowId)) {
-                            sysECol->touched = true;
-                            schema->sysEColTouched = true;
+                    } else if (object->columns[column]->name == "GUARD_ID") {
+                        if (updateNumber16(sysECol2->guardId, -1, column, object, rowId)) {
+                            sysECol2->touched = true;
+                            metadata->schema->sysEColTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_OBJ) {
-            auto sysObjIt = schema->sysObjMapRowId.find(rowId);
-            if (sysObjIt == schema->sysObjMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
+            if (sysObj2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysObj* sysObj = sysObjIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OWNER#") == 0) {
-                        if (updateNumber32u(sysObj->owner, 0, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    if (object->columns[column]->name == "OWNER#") {
+                        if (updateNumber32u(sysObj2->owner, 0, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysObj->obj, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    } else if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysObj2->obj, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysObj->dataObj, 0, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    } else if (object->columns[column]->name == "DATAOBJ#") {
+                        if (updateNumber32u(sysObj2->dataObj, 0, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("NAME") == 0) {
-                        if (updateString(sysObj->name, SYSOBJ_NAME_LENGTH, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    } else if (object->columns[column]->name == "NAME") {
+                        if (updateString(sysObj2->name, SYSOBJ_NAME_LENGTH, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("TYPE#") == 0) {
-                        if (updateNumber16u(sysObj->type, 0, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    } else if (object->columns[column]->name == "TYPE#") {
+                        if (updateNumber16u(sysObj2->type, 0, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("FLAGS") == 0) {
-                        if (updateNumberXu(sysObj->flags, column, object, rowId)) {
-                            sysObj->touched = true;
-                            schema->sysObjTouched = true;
+                    } else if (object->columns[column]->name == "FLAGS") {
+                        if (updateNumberXu(sysObj2->flags, column, object, rowId)) {
+                            sysObj2->touched = true;
+                            metadata->schema->sysObjTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_TAB) {
-            auto sysTabIt = schema->sysTabMapRowId.find(rowId);
-            if (sysTabIt == schema->sysTabMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysTab* sysTab2 = metadata->schema->dictSysTabFind(rowId);
+            if (sysTab2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysTab* sysTab = sysTabIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateObj(sysTab->obj, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysTab2->obj, column, object, rowId)) {
+                            sysTab2->touched = true;
+                            metadata->schema->sysTabTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTab->dataObj, 0, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
+                    } else if (object->columns[column]->name == "DATAOBJ#") {
+                        if (updateNumber32u(sysTab2->dataObj, 0, column, object, rowId)) {
+                            sysTab2->touched = true;
+                            metadata->schema->sysTabTouched = true;
+                            metadata->schema->touchObj(sysTab2->obj);
                         }
-                    } else if (object->columns[column]->name.compare("CLUCOLS") == 0) {
-                        if (updateNumber16(sysTab->cluCols, 0, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
+                    } else if (object->columns[column]->name == "CLUCOLS") {
+                        if (updateNumber16(sysTab2->cluCols, 0, column, object, rowId)) {
+                            sysTab2->touched = true;
+                            metadata->schema->sysTabTouched = true;
+                            metadata->schema->touchObj(sysTab2->obj);
                         }
-                    } else if (object->columns[column]->name.compare("FLAGS") == 0) {
-                        if (updateNumberXu(sysTab->flags, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
+                    } else if (object->columns[column]->name == "FLAGS") {
+                        if (updateNumberXu(sysTab2->flags, column, object, rowId)) {
+                            sysTab2->touched = true;
+                            metadata->schema->sysTabTouched = true;
+                            metadata->schema->touchObj(sysTab2->obj);
                         }
-                    } else if (object->columns[column]->name.compare("PROPERTY") == 0) {
-                        if (updateNumberXu(sysTab->property, column, object, rowId)) {
-                            sysTab->touched = true;
-                            schema->sysTabTouched = true;
-                            schema->touchObj(sysTab->obj);
+                    } else if (object->columns[column]->name == "PROPERTY") {
+                        if (updateNumberXu(sysTab2->property, column, object, rowId)) {
+                            sysTab2->touched = true;
+                            metadata->schema->sysTabTouched = true;
+                            metadata->schema->touchObj(sysTab2->obj);
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
-            auto sysTabComPartIt = schema->sysTabComPartMapRowId.find(rowId);
-            if (sysTabComPartIt == schema->sysTabComPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysTabComPart* sysTabComPart2 = metadata->schema->dictSysTabComPartFind(rowId);
+            if (sysTabComPart2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysTabComPart* sysTabComPart = sysTabComPartIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabComPart->obj, 0, column, object, rowId)) {
-                            sysTabComPart->touched = true;
-                            schema->sysTabComPartTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateNumber32u(sysTabComPart2->obj, 0, column, object, rowId)) {
+                            sysTabComPart2->touched = true;
+                            metadata->schema->sysTabComPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabComPart->dataObj, 0, column, object, rowId)) {
-                            sysTabComPart->touched = true;
-                            schema->sysTabComPartTouched = true;
+                    } else if (object->columns[column]->name == "DATAOBJ#") {
+                        if (updateNumber32u(sysTabComPart2->dataObj, 0, column, object, rowId)) {
+                            sysTabComPart2->touched = true;
+                            metadata->schema->sysTabComPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("BO#") == 0) {
-                        if (updateObj(sysTabComPart->bo, column, object, rowId)) {
-                            sysTabComPart->touched = true;
-                            schema->sysTabComPartTouched = true;
+                    } else if (object->columns[column]->name == "BO#") {
+                        if (updateObj(sysTabComPart2->bo, column, object, rowId)) {
+                            sysTabComPart2->touched = true;
+                            metadata->schema->sysTabComPartTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_TABPART) {
-            auto sysTabPartIt = schema->sysTabPartMapRowId.find(rowId);
-            if (sysTabPartIt == schema->sysTabPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysTabPart* sysTabPart2 = metadata->schema->dictSysTabPartFind(rowId);
+            if (sysTabPart2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysTabPart* sysTabPart = sysTabPartIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabPart->obj, 0, column, object, rowId)) {
-                            sysTabPart->touched = true;
-                            schema->sysTabPartTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateNumber32u(sysTabPart2->obj, 0, column, object, rowId)) {
+                            sysTabPart2->touched = true;
+                            metadata->schema->sysTabPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabPart->dataObj, 0, column, object, rowId)) {
-                            sysTabPart->touched = true;
-                            schema->sysTabPartTouched = true;
+                    } else if (object->columns[column]->name == "DATAOBJ#") {
+                        if (updateNumber32u(sysTabPart2->dataObj, 0, column, object, rowId)) {
+                            sysTabPart2->touched = true;
+                            metadata->schema->sysTabPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("BO#") == 0) {
-                        if (updateObj(sysTabPart->bo, column, object, rowId)) {
-                            sysTabPart->touched = true;
-                            schema->sysTabPartTouched = true;
+                    } else if (object->columns[column]->name == "BO#") {
+                        if (updateObj(sysTabPart2->bo, column, object, rowId)) {
+                            sysTabPart2->touched = true;
+                            metadata->schema->sysTabPartTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
-            auto sysTabSubPartIt = schema->sysTabSubPartMapRowId.find(rowId);
-            if (sysTabSubPartIt == schema->sysTabSubPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysTabSubPart* sysTabSubPart2 = metadata->schema->dictSysTabSubPartFind(rowId);
+            if (sysTabSubPart2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysTabSubPart* sysTabSubPart = sysTabSubPartIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("OBJ#") == 0) {
-                        if (updateNumber32u(sysTabSubPart->obj, 0, column, object, rowId)) {
-                            sysTabSubPart->touched = true;
-                            schema->sysTabSubPartTouched = true;
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateNumber32u(sysTabSubPart2->obj, 0, column, object, rowId)) {
+                            sysTabSubPart2->touched = true;
+                            metadata->schema->sysTabSubPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("DATAOBJ#") == 0) {
-                        if (updateNumber32u(sysTabSubPart->dataObj, 0, column, object, rowId)) {
-                            sysTabSubPart->touched = true;
-                            schema->sysTabSubPartTouched = true;
+                    } else if (object->columns[column]->name == "DATAOBJ#") {
+                        if (updateNumber32u(sysTabSubPart2->dataObj, 0, column, object, rowId)) {
+                            sysTabSubPart2->touched = true;
+                            metadata->schema->sysTabSubPartTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("POBJ#") == 0) {
-                        if (updatePart(sysTabSubPart->pObj, column, object, rowId)) {
-                            sysTabSubPart->touched = true;
-                            schema->sysTabSubPartTouched = true;
+                    } else if (object->columns[column]->name == "POBJ#") {
+                        if (updatePart(sysTabSubPart2->pObj, column, object, rowId)) {
+                            sysTabSubPart2->touched = true;
+                            metadata->schema->sysTabSubPartTouched = true;
                         }
                     }
                 }
             }
 
         } else if (object->systemTable == TABLE_SYS_USER) {
-            auto sysUserIt = schema->sysUserMapRowId.find(rowId);
-            if (sysUserIt == schema->sysUserMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
+            SysUser* sysUser2 = metadata->schema->dictSysUserFind(rowId);
+            if (sysUser2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
                 return;
             }
-            SysUser* sysUser = sysUserIt->second;
 
-            typeCOL column;
-            uint64_t baseMax = outputBuffer->valuesMax >> 6;
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
             for (uint64_t base = 0; base <= baseMax; ++base) {
-                column = base << 6;
+                column = (typeCol)(base << 6);
                 for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                    if (outputBuffer->valuesSet[base] < mask)
+                    if (builder->valuesSet[base] < mask)
                         break;
-                    if ((outputBuffer->valuesSet[base] & mask) == 0)
+                    if ((builder->valuesSet[base] & mask) == 0)
                         continue;
 
-                    if (object->columns[column]->name.compare("USER#") == 0) {
-                        if (updateUser(sysUser->user, column, object, rowId)) {
-                            sysUser->touched = true;
-                            schema->sysUserTouched = true;
+                    if (object->columns[column]->name == "USER#") {
+                        if (updateUser(sysUser2->user, column, object, rowId)) {
+                            sysUser2->touched = true;
+                            metadata->schema->sysUserTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("NAME") == 0) {
-                        if (updateString(sysUser->name, SYSUSER_NAME_LENGTH, column, object, rowId)) {
-                            sysUser->touched = true;
-                            schema->sysUserTouched = true;
+                    } else if (object->columns[column]->name == "NAME") {
+                        if (updateString(sysUser2->name, SYSUSER_NAME_LENGTH, column, object, rowId)) {
+                            sysUser2->touched = true;
+                            metadata->schema->sysUserTouched = true;
                         }
-                    } else if (object->columns[column]->name.compare("SPARE1") == 0) {
-                        if (updateNumberXu(sysUser->spare1, column, object, rowId)) {
-                            sysUser->touched = true;
-                            schema->sysUserTouched = true;
+                    } else if (object->columns[column]->name == "SPARE1") {
+                        if (updateNumberXu(sysUser2->spare1, column, object, rowId)) {
+                            sysUser2->touched = true;
+                            metadata->schema->sysUserTouched = true;
                         }
                     }
                 }
@@ -1301,212 +1264,71 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid) {
-        RowId rowId(dataObj, bdba, slot);
+    void SystemTransaction::processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+        typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        TRACE(TRACE2_SYSTEM, "SYSTEM: delete table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")");
+        TRACE(TRACE2_SYSTEM, "SYSTEM: delete table (name: " << object->owner << "." << object->name << ", rowid: " << rowId << ")")
 
-        if (object->systemTable == TABLE_SYS_CCOL) {
-            auto sysCColIt = schema->sysCColMapRowId.find(rowId);
-            if (sysCColIt == schema->sysCColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysCCol* sysCCol = sysCColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << std::dec << sysCCol->con << ", INTCOL#: " << sysCCol->intCol << ", OBJ#: " <<
-                    sysCCol->obj << ", SPARE1: " << sysCCol->spare1 << ")");
-            schema->touched = true;
-            schema->sysCColMapRowId.erase(rowId);
-            schema->sysCColTouched = true;
-            schema->touchObj(sysCCol->obj);
-            if (sysCCol->saved)
-                schema->savedDeleted = true;
-            delete sysCCol;
-
-        } else if (object->systemTable == TABLE_SYS_CDEF) {
-            auto sysCDefIt = schema->sysCDefMapRowId.find(rowId);
-            if (sysCDefIt == schema->sysCDefMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysCDef* sysCDef = sysCDefIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (CON#: " << std::dec << sysCDef->con << ", OBJ#: " << sysCDef->obj << ", type: " << sysCDef->type << ")");
-            schema->touched = true;
-            schema->sysCDefMapRowId.erase(rowId);
-            schema->sysCDefTouched = true;
-            schema->touchObj(sysCDef->obj);
-            if (sysCDef->saved)
-                schema->savedDeleted = true;
-            delete sysCDef;
-
-        } else if (object->systemTable == TABLE_SYS_COL) {
-            auto sysColIt = schema->sysColMapRowId.find(rowId);
-            if (sysColIt == schema->sysColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysCol* sysCol = sysColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysCol->obj << ", COL#: " << sysCol->col << ", SEGCOL#: " << sysCol->segCol <<
-                    ", INTCOL#: " << sysCol->intCol << ", NAME: '" << sysCol->name << "', TYPE#: " << sysCol->type << ", LENGTH: " << sysCol->length <<
-                    ", PRECISION#: " << sysCol->precision << ", SCALE: " << sysCol->scale << ", CHARSETFORM: " << sysCol->charsetForm <<
-                    ", CHARSETID: " << sysCol->charsetId << ", NULL$: " << sysCol->null_ << ", PROPERTY: " << sysCol->property << ")");
-            schema->touched = true;
-            schema->sysColMapRowId.erase(rowId);
-            schema->sysColTouched = true;
-            schema->touchObj(sysCol->obj);
-            if (sysCol->saved)
-                schema->savedDeleted = true;
-            delete sysCol;
-
-        } else if (object->systemTable == TABLE_SYS_DEFERRED_STG) {
-            auto sysDeferredStgIt = schema->sysDeferredStgMapRowId.find(rowId);
-            if (sysDeferredStgIt == schema->sysDeferredStgMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysDeferredStg* sysDeferredStg = sysDeferredStgIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysDeferredStg->obj << ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")");
-            schema->touched = true;
-            schema->sysDeferredStgMapRowId.erase(rowId);
-            schema->sysDeferredStgTouched = true;
-            schema->touchObj(sysDeferredStg->obj);
-            if (sysDeferredStg->saved)
-                schema->savedDeleted = true;
-            delete sysDeferredStg;
-
-        } else if (object->systemTable == TABLE_SYS_ECOL) {
-            auto sysEColIt = schema->sysEColMapRowId.find(rowId);
-            if (sysEColIt == schema->sysEColMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysECol* sysECol = sysEColIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (TABOBJ#: " << std::dec << sysECol->tabObj << ", COLNUM: " << sysECol->colNum << ", GUARD_ID: " <<
-                    sysECol->guardId << ")");
-            schema->touched = true;
-            schema->sysEColMapRowId.erase(rowId);
-            schema->sysEColTouched = true;
-            schema->touchObj(sysECol->tabObj);
-            if (sysECol->saved)
-                schema->savedDeleted = true;
-            delete sysECol;
-
-        } else if (object->systemTable == TABLE_SYS_OBJ) {
-            auto sysObjIt = schema->sysObjMapRowId.find(rowId);
-            if (sysObjIt == schema->sysObjMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysObj* sysObj = sysObjIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OWNER#: " << std::dec << sysObj->owner << ", OBJ#: " << sysObj->obj << ", DATAOBJ#: " <<
-                    sysObj->dataObj << ", TYPE#: " << sysObj->type << ", NAME: '" << sysObj->name << "', FLAGS: " << sysObj->flags << ")");
-            schema->touched = true;
-            schema->sysObjMapRowId.erase(rowId);
-            schema->sysObjTouched = true;
-            schema->touchObj(sysObj->obj);
-            if (sysObj->saved)
-                schema->savedDeleted = true;
-            delete sysObj;
-
-        } else if (object->systemTable == TABLE_SYS_TAB) {
-            auto sysTabIt = schema->sysTabMapRowId.find(rowId);
-            if (sysTabIt == schema->sysTabMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysTab* sysTab = sysTabIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTab->obj << ", DATAOBJ#: " << sysTab->dataObj << ", CLUCOLS: " <<
-                    sysTab->cluCols << ", FLAGS: " << sysTab->flags << ", PROPERTY: " << sysTab->property << ")");
-            schema->touched = true;
-            schema->sysTabMapRowId.erase(rowId);
-            schema->sysTabTouched = true;
-            schema->touchObj(sysTab->obj);
-            if (sysTab->saved)
-                schema->savedDeleted = true;
-            delete sysTab;
-
-        } else if (object->systemTable == TABLE_SYS_TABCOMPART) {
-            auto sysTabComPartIt = schema->sysTabComPartMapRowId.find(rowId);
-            if (sysTabComPartIt == schema->sysTabComPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysTabComPart* sysTabComPart = sysTabComPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabComPart->obj << ", DATAOBJ#: " << sysTabComPart->dataObj << ", BO#: " <<
-                    sysTabComPart->bo << ")");
-            schema->touched = true;
-            schema->sysTabComPartMapRowId.erase(rowId);
-            schema->sysTabComPartTouched = true;
-            schema->touchObj(sysTabComPart->bo);
-            if (sysTabComPart->saved)
-                schema->savedDeleted = true;
-            delete sysTabComPart;
-
-        } else if (object->systemTable == TABLE_SYS_TABPART) {
-            auto sysTabPartIt = schema->sysTabPartMapRowId.find(rowId);
-            if (sysTabPartIt == schema->sysTabPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysTabPart* sysTabPart = sysTabPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabPart->obj << ", DATAOBJ#: " << sysTabPart->dataObj << ", BO#: " <<
-                    sysTabPart->bo << ")");
-            schema->touched = true;
-            schema->sysTabPartMapRowId.erase(rowId);
-            schema->sysTabPartTouched = true;
-            schema->touchObj(sysTabPart->bo);
-            if (sysTabPart->saved)
-                schema->savedDeleted = true;
-            delete sysTabPart;
-
-        } else if (object->systemTable == TABLE_SYS_TABSUBPART) {
-            auto sysTabSubPartIt = schema->sysTabSubPartMapRowId.find(rowId);
-            if (sysTabSubPartIt == schema->sysTabSubPartMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysTabSubPart* sysTabSubPart = sysTabSubPartIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysTabSubPart->obj << ", DATAOBJ#: " << sysTabSubPart->dataObj << ", POBJ#: " <<
-                    sysTabSubPart->pObj << ")");
-            schema->touched = true;
-            schema->sysTabSubPartMapRowId.erase(rowId);
-            schema->sysTabSubPartTouched = true;
-            schema->touchPart(sysTabSubPart->pObj);
-            if (sysTabSubPart->saved)
-                schema->savedDeleted = true;
-            delete sysTabSubPart;
-
-        } else if (object->systemTable == TABLE_SYS_USER) {
-            auto sysUserIt = schema->sysUserMapRowId.find(rowId);
-            if (sysUserIt == schema->sysUserMapRowId.end()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")");
-                return;
-            }
-            SysUser* sysUser = sysUserIt->second;
-            TRACE(TRACE2_SYSTEM, "SYSTEM: delete (USER#: " << std::dec << sysUser->user << ", NAME: " << sysUser->name << ", SPARE1: " <<
-                    sysUser->spare1 << ")");
-            schema->touched = true;
-            schema->sysUserMapRowId.erase(rowId);
-            schema->sysUserTouched = true;
-            schema->touchUser(sysUser->user);
-            if (sysUser->saved)
-                schema->savedDeleted = true;
-            delete sysUser;
+        switch (object->systemTable) {
+            case TABLE_SYS_CCOL:
+                metadata->schema->dictSysCColDrop(rowId);
+                break;
+            case TABLE_SYS_CDEF:
+                metadata->schema->dictSysCDefDrop(rowId);
+                break;
+            case TABLE_SYS_COL:
+                metadata->schema->dictSysColDrop(rowId);
+                break;
+            case TABLE_SYS_DEFERRED_STG:
+                metadata->schema->dictSysDeferredStgDrop(rowId);
+                break;
+            case TABLE_SYS_ECOL:
+                metadata->schema->dictSysEColDrop(rowId);
+                break;
+            case TABLE_SYS_OBJ:
+                metadata->schema->dictSysObjDrop(rowId);
+                break;
+            case TABLE_SYS_TAB:
+                metadata->schema->dictSysTabDrop(rowId);
+                break;
+            case TABLE_SYS_TABCOMPART:
+                metadata->schema->dictSysTabComPartDrop(rowId);
+                break;
+            case TABLE_SYS_TABPART:
+                metadata->schema->dictSysTabPartDrop(rowId);
+                break;
+            case TABLE_SYS_TABSUBPART:
+                metadata->schema->dictSysTabSubPartDrop(rowId);
+                break;
+            case TABLE_SYS_USER:
+                metadata->schema->dictSysUserDrop(rowId);
+                break;
         }
     }
 
-    void SystemTransaction::commit(typeSCN scn) {
-        TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
+    void SystemTransaction::commit(typeScn scn) {
+        TRACE(TRACE2_SYSTEM, "SYSTEM: commit")
 
-        if (!schema->touched)
+        if (!metadata->schema->touched)
             return;
 
-        if (schema->refreshIndexes()) {
-            oracleAnalyzer->schemaScn = scn;
-            oracleAnalyzer->schemaChanged = true;
-            schema->writeSchema();
+        metadata->schema->scn = scn;
+        metadata->schema->refreshIndexes(metadata->users);
+        std::set<std::string> msgs;
+        metadata->schema->rebuildMaps(msgs);
+        for (auto msg : msgs) {
+            INFO("dropped metadata: " << msg);
         }
-        schema->rebuildMaps();
+        msgs.clear();
+
+        for (SchemaElement* element : metadata->schemaElements)
+            metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
+                                        metadata->suppLogDbPrimary,
+                                        metadata->suppLogDbAll, metadata->defaultCharacterMapId,
+                                        metadata->defaultCharacterNcharMapId);
+        for (auto msg: msgs) {
+            INFO("updated metadata: " << msg)
+        }
     }
 }

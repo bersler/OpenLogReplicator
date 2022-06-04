@@ -17,44 +17,16 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "OracleAnalyzer.h"
 #include "RedoLogRecord.h"
+#include "typeXid.h"
 
 namespace OpenLogReplicator {
-    void RedoLogRecord::dumpHex(std::ostream& stream, OracleAnalyzer* oracleAnalyzer) const {
-        stream << "## 0: [" << std::dec << dataOffset << "] " << fieldLengthsDelta;
-        for (uint64_t j = 0; j < fieldLengthsDelta; ++j) {
-            if ((j & 0xF) == 0)
-                stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
-            if ((j & 0x07) == 0)
-                stream << " ";
-            stream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j] << " ";
-        }
-        stream << std::endl;
-
-        uint64_t fieldPosLocal = fieldPos;
-        for (uint64_t i = 1; i <= fieldCnt; ++i) {
-            uint16_t fieldLength = oracleAnalyzer->read16(data + fieldLengthsDelta + i * 2);
-            stream << "## " << std::dec << i << ": [" << (dataOffset + fieldPosLocal) << "] " << fieldLength;
-            for (uint64_t j = 0; j < fieldLength; ++j) {
-                if ((j & 0xF) == 0)
-                    stream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
-                if ((j & 0x07) == 0)
-                    stream << " ";
-                stream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[fieldPosLocal + j] << " ";
-            }
-            stream << std::endl;
-
-            fieldPosLocal += (fieldLength + 3) & 0xFFFC;
-        }
-    }
-
     std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo) {
         std::stringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
                 " scn: " << std::dec << redo.scn <<
                 " subScn: " << std::dec << redo.subScn <<
-                " xid: " << PRINTXID(redo.xid) <<
+                " xid: " << redo.xid <<
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
                 " cls: " << std::dec << redo.cls <<
                 " rbl: " << std::dec << redo.rbl <<

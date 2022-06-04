@@ -17,38 +17,36 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/RedoLogRecord.h"
 #include "OpCode050B.h"
-#include "OracleAnalyzer.h"
-#include "Reader.h"
-#include "RedoLogRecord.h"
 
 namespace OpenLogReplicator {
-    void OpCode050B::init(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
+    void OpCode050B::init(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         if (redoLogRecord->fieldCnt >= 1) {
             uint64_t fieldPos = redoLogRecord->fieldPos;
-            uint16_t fieldLength = oracleAnalyzer->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
+            uint16_t fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + 1 * 2);
             if (fieldLength < 8) {
-                WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+                WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
                 return;
             }
 
-            redoLogRecord->obj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 0);
-            redoLogRecord->dataObj = oracleAnalyzer->read32(redoLogRecord->data + fieldPos + 4);
+            redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
+            redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
         }
     }
 
-    void OpCode050B::process(OracleAnalyzer* oracleAnalyzer, RedoLogRecord* redoLogRecord) {
-        init(oracleAnalyzer, redoLogRecord);
-        OpCode::process(oracleAnalyzer, redoLogRecord);
+    void OpCode050B::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
+        init(ctx, redoLogRecord);
+        OpCode::process(ctx, redoLogRecord);
         uint64_t fieldPos = 0;
-        typeFIELD fieldNum = 0;
+        typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        oracleAnalyzer->nextField(redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050B01);
         //field: 1
-        if (oracleAnalyzer->version < REDO_VERSION_19_0)
-            ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, false);
+        if (ctx->version < REDO_VERSION_19_0)
+            ktub(ctx, redoLogRecord, fieldPos, fieldLength, false);
         else
-            ktub(oracleAnalyzer, redoLogRecord, fieldPos, fieldLength, true);
+            ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
     }
 }

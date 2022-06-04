@@ -28,13 +28,13 @@ namespace OpenLogReplicator {
         std::string path;
 
     public:
-        StateDisk(const char* path);
-        virtual ~StateDisk();
+        explicit StateDisk(const char* path);
+        ~StateDisk() override;
 
-        virtual void list(std::set<std::string>& namesList);
-        virtual bool read(std::string& name, uint64_t maxSize, std::string& in, bool noFail);
-        virtual void write(std::string& name, std::stringstream& out);
-        virtual void drop(std::string& name);
+        void list(std::set<std::string>& namesList) override;
+        [[nodiscard]] bool read(std::string& name, uint64_t maxSize, std::string& in) override;
+        void write(std::string& name, std::stringstream& out) override;
+        void drop(std::string& name) override;
     };
 }
 

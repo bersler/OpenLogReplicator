@@ -17,39 +17,39 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "Ctx.h"
+#include "RuntimeException.h"
 #include "Thread.h"
 
 namespace OpenLogReplicator {
-    Thread::Thread(const char* alias) :
-        stop(false),
-        shutdown(false),
-        started(false),
+    Thread::Thread(Ctx* ctx, std::string alias) :
+        ctx(ctx),
         pthread(0),
-        alias(alias) {
+        alias(alias),
+        finished(false) {
     }
 
-    Thread::~Thread() {
+    Thread::~Thread() = default;
+
+    void* Thread::runStatic(void* voidThread) {
+        Thread* thread = (Thread*)voidThread;
+        thread->run();
+        thread->finished = true;
+        return nullptr;
     }
 
-    void* Thread::runStatic(void* context) {
-        registerThread(((Thread*) context)->pthread);
-        ((Thread*) context)->started = true;
-        void* ret = ((Thread*) context)->run();
-        unRegisterThread(((Thread*) context)->pthread);
-        return ret;
+    void Thread::spawnThread(Thread *thread) {
+        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void *) thread)) {
+            throw RuntimeException("spawning thread - " + thread->alias);
+        }
+        thread->ctx->registerThread(thread);
     }
 
-    time_t Thread::getTime(void) {
-        struct timeval tv;
-        gettimeofday(&tv, nullptr);
-        return (1000000 * tv.tv_sec) + tv.tv_usec;
+    void Thread::finishThread(Thread *thread) {
+        thread->ctx->unRegisterThread(thread);
+        pthread_join(thread->pthread, nullptr);
     }
 
-    void Thread::doShutdown(void) {
-        shutdown = true;
-    }
-
-    void Thread::doStop(void) {
-        stop = true;
-    }
+    void Thread::wakeUp() {
+    };
 }

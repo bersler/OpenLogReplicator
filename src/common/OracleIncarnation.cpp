@@ -20,8 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleIncarnation.h"
 
 namespace OpenLogReplicator {
-    OracleIncarnation::OracleIncarnation(uint32_t incarnation, typeSCN resetlogsScn, typeSCN priorResetlogsScn, const char* status,
-            typeRESETLOGS resetlogs, uint32_t priorIncarnation) :
+    OracleIncarnation::OracleIncarnation(uint32_t incarnation, typeScn resetlogsScn, typeScn priorResetlogsScn, const char* status,
+                                         typeResetlogs resetlogs, uint32_t priorIncarnation) :
         incarnation(incarnation),
         resetlogsScn(resetlogsScn),
         priorResetlogsScn(priorResetlogsScn),
@@ -29,13 +29,10 @@ namespace OpenLogReplicator {
         resetlogs(resetlogs),
         priorIncarnation(priorIncarnation) {
 
-        if (this->status.compare("CURRENT") == 0)
+        if (this->status == "CURRENT")
             current = true;
         else
             current = false;
-    }
-
-    OracleIncarnation::~OracleIncarnation() {
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i) {

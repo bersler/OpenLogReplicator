@@ -17,7 +17,10 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <ctime>
 #include <exception>
+#include <sstream>
+#include <string>
 
 #include "types.h"
 
@@ -27,9 +30,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class RuntimeException: public std::exception {
     public:
-        const char* msg;
+        std::string msg;
 
-        RuntimeException(const char* msg);
+        explicit RuntimeException(const std::string msg);
+        explicit RuntimeException(const char* msg);
         virtual ~RuntimeException();
 
         friend std::ostream& operator<<(std::ostream& os, const RuntimeException& exception);

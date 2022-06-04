@@ -1,11 +1,11 @@
 {
-  "version": "0.9.34",
+  "version": "0.9.42",
   "source": [
     {
       "alias": "S1",
       "name": "O112A",
       "reader": {
-        "type": "online", 
+        "type": "online",
         "user": "user1",
         "password": "Password1",
         "server": "//host:1521/SERVICE"
@@ -26,7 +26,7 @@
   ],
   "target": [
     {
-      "alias": "K1", 
+      "alias": "K1",
       "source": "S1",
       "writer": {
         "type": "network",

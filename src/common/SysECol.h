@@ -17,36 +17,35 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "RowId.h"
+#include "types.h"
+#include "typeRowId.h"
 
 #ifndef SYSECOL_H_
 #define SYSECOL_H_
 
-#define SYSECOL_ROWID_LENGTH    18
-
 namespace OpenLogReplicator {
     class SysEColKey {
     public:
-        SysEColKey();
-        SysEColKey(typeOBJ tabObj, typeCOL colNum);
+        SysEColKey(typeObj tabObj, typeCol colNum);
+
         bool operator!=(const SysEColKey& other) const;
         bool operator==(const SysEColKey& other) const;
 
-        typeOBJ tabObj;
-        typeCOL colNum;
+        typeObj tabObj;
+        typeCol colNum;
     };
 
     class SysECol {
     public:
-        SysECol(RowId& rowId, typeOBJ tabObj, typeCOL colNum, typeCOL guardId, bool touched);
+        SysECol(typeRowId& rowId, typeObj tabObj, typeCol colNum, typeCol guardId, bool touched);
+
         bool operator!=(const SysECol& other) const;
 
-        RowId rowId;
-        typeOBJ tabObj;
-        typeCOL colNum;            //NULL
-        typeCOL guardId;           //NULL
+        typeRowId rowId;
+        typeObj tabObj;
+        typeCol colNum;            //NULL
+        typeCol guardId;           //NULL
         bool touched;
-        bool saved;
     };
 }
 

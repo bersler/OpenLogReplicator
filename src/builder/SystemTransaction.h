@@ -19,17 +19,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <set>
 
-#include "types.h"
-#include "RowId.h"
+#include "../common/types.h"
+#include "../common/typeINTX.h"
+#include "../common/typeRowId.h"
+#include "../common/typeXid.h"
 
 #ifndef SYSTEMTRANSACTION_H_
 #define SYSTEMTRANSACTION_H_
 
 namespace OpenLogReplicator {
+    class Ctx;
     class OracleObject;
-    class OracleAnalyzer;
-    class OutputBuffer;
-    class Schema;
+    class Builder;
+    class Metadata;
     class SysCCol;
     class SysCDef;
     class SysCol;
@@ -44,9 +46,9 @@ namespace OpenLogReplicator {
 
     class SystemTransaction {
     protected:
-        OracleAnalyzer* oracleAnalyzer;
-        OutputBuffer* outputBuffer;
-        Schema* schema;
+        Ctx* ctx;
+        Builder* builder;
+        Metadata* metadata;
         SysCCol* sysCCol;
         SysCDef* sysCDef;
         SysCol* sysCol;
@@ -59,26 +61,25 @@ namespace OpenLogReplicator {
         SysTabSubPart* sysTabSubPart;
         SysUser* sysUser;
 
-        bool updateNumber16(int16_t& val, int16_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateNumber32u(uint32_t& val, uint32_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateNumber64(int64_t& val, int64_t defVal, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateNumber64u(uint64_t& val, uint64_t devVal, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateNumberXu(uintX_t& val, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateObj(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updatePart(typeOBJ& val, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateUser(typeUSER& val, typeCOL column, OracleObject* object, RowId& rowId);
-        bool updateString(std::string& val, uint64_t maxLength, typeCOL column, OracleObject* object, RowId& rowId);
-        void toRemove(typeOBJ obj);
-        void toAdd(typeOBJ obj);
+        bool updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumber64u(uint64_t& val, uint64_t devVal, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumberXu(typeINTX& val, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateObj(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updatePart(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateUser(typeUser& val, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateString(std::string& val, uint64_t maxLength, typeCol column, OracleObject* object, typeRowId& rowId);
 
     public:
-        SystemTransaction(OracleAnalyzer* oracleAnalyzer, OutputBuffer* outputBuffer, Schema* schema);
+        SystemTransaction(Builder* builder, Metadata* metadata);
         ~SystemTransaction();
-        void processInsert(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processUpdate(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void processDelete(OracleObject* object, typeDATAOBJ dataObj, typeDBA bdba, typeSLOT slot, typeXID xid);
-        void commit(typeSCN scn);
+
+        void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
+        void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
+        void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
+        void commit(typeScn scn);
     };
 }
 

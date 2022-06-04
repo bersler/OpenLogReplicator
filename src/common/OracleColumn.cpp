@@ -17,37 +17,37 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/DataException.h"
 #include "OracleColumn.h"
 
 namespace OpenLogReplicator {
-    OracleColumn::OracleColumn(typeCOL colNo, typeCOL guardSegNo, typeCOL segColNo, std::string& name, uint64_t typeNo, uint64_t length, int64_t precision,
-            int64_t scale, typeCOL numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint, bool nested,
-            bool unused, bool added, bool guard) :
-        colNo(colNo),
-        guardSegNo(guardSegNo),
-        segColNo(segColNo),
-        name(name),
-        typeNo(typeNo),
-        length(length),
-        precision(precision),
-        scale(scale),
-        numPk(numPk),
-        charsetId(charsetId),
-        nullable(nullable),
-        invisible(invisible),
-        storedAsLob(storedAsLob),
-        constraint(constraint),
-        nested(nested),
-        unused(unused),
-        added(added),
-        guard(guard) {
-    }
-
-    OracleColumn::~OracleColumn() {
+    OracleColumn::OracleColumn(typeCol col, typeCol guardSeg, typeCol segCol, std::string& name, uint64_t type, uint64_t length, int64_t precision,
+                               int64_t scale, typeCol numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint, bool nested,
+                               bool unused, bool added, bool guard) :
+            col(col),
+            guardSeg(guardSeg),
+            segCol(segCol),
+            name(name),
+            type(type),
+            length(length),
+            precision(precision),
+            scale(scale),
+            numPk(numPk),
+            charsetId(charsetId),
+            nullable(nullable),
+            invisible(invisible),
+            storedAsLob(storedAsLob),
+            constraint(constraint),
+            nested(nested),
+            unused(unused),
+            added(added),
+            guard(guard) {
+        if (segCol > 1000)
+            throw DataException("invalid segCol value (" + std::to_string(segCol) + "), metadata error");
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleColumn& column) {
-        os << column.segColNo << ": (" << column.colNo << ", \"" << column.name << "\", " << column.typeNo << ", " << column.length << ")";
+        os << column.segCol << ": (" << column.col << ", '" << column.name << "', " << column.type << ", " << column.length << ")";
         return os;
     }
 }

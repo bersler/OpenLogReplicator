@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         authp(nullptr) {
     }
 
-    void DatabaseConnection::connect(void) {
+    void DatabaseConnection::connect() {
         disconnect();
 
         OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &errhp, OCI_HTYPE_ERROR, 0, nullptr);
@@ -57,7 +57,7 @@ namespace OpenLogReplicator {
         connected = true;
     }
 
-    void DatabaseConnection::disconnect(void) {
+    void DatabaseConnection::disconnect() {
         if (svchp != nullptr && errhp != nullptr)
             OCISessionEnd(svchp, errhp, nullptr, OCI_DEFAULT);
 

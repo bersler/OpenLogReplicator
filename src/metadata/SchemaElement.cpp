@@ -1,4 +1,4 @@
-/* Base class for handling of schema elements
+/* Base class for handling of schema schemaElements
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -20,17 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-
-    SchemaElement::SchemaElement(const char* owner, const char* table, typeOPTIONS options) :
+    SchemaElement::SchemaElement(const char* owner, const char* table, typeOptions options) :
         owner(owner),
         table(table),
         options(options) {
-    }
-
-    SchemaElement::SchemaElement() :
-        options(0) {
-    }
-
-    SchemaElement::~SchemaElement() {
     }
 }

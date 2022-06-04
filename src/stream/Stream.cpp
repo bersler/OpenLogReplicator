@@ -1,4 +1,4 @@
-/* Base class for streaming redo data to client
+/* Base class for streaming redo decoder to client
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,15 +17,14 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include "../common/Ctx.h"
 #include "Stream.h"
 
 namespace OpenLogReplicator {
-    Stream::Stream(const char* uri, uint64_t pollInterval) :
-        uri(uri),
-        pollInterval(pollInterval),
-        shutdown(shutdown) {
+    Stream::Stream(Ctx* ctx, const char* uri) :
+        ctx(ctx),
+        uri(uri) {
     }
 
-    Stream::~Stream() {
-    }
+    Stream::~Stream() = default;
 }

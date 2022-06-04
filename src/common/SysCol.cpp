@@ -20,12 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCol.h"
 
 namespace OpenLogReplicator {
-    SysColSeg::SysColSeg() :
-            obj(0),
-            segCol(0) {
-    }
-
-    SysColSeg::SysColSeg(typeOBJ obj, typeCOL segCol) :
+    SysColSeg::SysColSeg(typeObj obj, typeCol segCol) :
             obj(obj),
             segCol(segCol) {
     }
@@ -38,12 +33,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysColKey::SysColKey() :
-            obj(0),
-            intCol(0) {
-    }
-
-    SysColKey::SysColKey(typeOBJ obj, typeCOL intCol) :
+    SysColKey::SysColKey(typeObj obj, typeCol intCol) :
             obj(obj),
             intCol(intCol) {
     }
@@ -56,9 +46,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCol::SysCol(RowId& rowId, typeOBJ obj, typeCOL col, typeCOL segCol, typeCOL intCol, const char* name, typeTYPE type,
-        uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
-        uint64_t property1, uint64_t property2, bool touched) :
+    SysCol::SysCol(typeRowId& rowId, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type,
+                   uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
+                   uint64_t property1, uint64_t property2, bool touched) :
             rowId(rowId),
             obj(obj),
             col(col),
@@ -72,49 +62,46 @@ namespace OpenLogReplicator {
             charsetForm(charsetForm),
             charsetId(charsetId),
             null_(null_),
-            touched(touched),
-            saved(false) {
-        property.set(property1, property2);
+            property(property1, property2),
+            touched(touched) {
     }
 
     bool SysCol::operator!=(const SysCol& other) const {
-        if (other.rowId != rowId || other.obj != obj || other.col != col || other.segCol != segCol || other.segCol != segCol || other.name.compare(name) != 0 ||
+        return other.rowId != rowId || other.obj != obj || other.col != col || other.segCol != segCol || other.intCol != intCol || other.name != name ||
                 other.type != type || other.length != length || other.precision != precision || other.scale != scale || other.charsetForm != charsetForm ||
-                other.charsetId != charsetId || other.null_ != null_ || other.property != property)
-            return true;
-        return false;
+                other.charsetId != charsetId || other.null_ != null_ || other.property != property;
     }
 
-    bool SysCol::isInvisible(void) {
-        return property.isSet64(32);
+    bool SysCol::isInvisible() {
+        return property.isSet64(SYSCOL_PROPERTY_INVISIBLE);
     }
 
-    bool SysCol::isStoredAsLob(void) {
-        return property.isSet64(128);
+    bool SysCol::isStoredAsLob() {
+        return property.isSet64(SYSCOL_PROPERTY_STORED_AS_LOB);
     }
 
-    bool SysCol::isConstraint(void) {
-        return property.isSet64(256);
+    bool SysCol::isConstraint() {
+        return property.isSet64(SYSCOL_PROPERTY_CONSTRAINT);
     }
 
-    bool SysCol::isNested(void) {
-        return property.isSet64(1024);
+    bool SysCol::isNested() {
+        return property.isSet64(SYSCOL_PROPERTY_NESTED);
     }
 
-    bool SysCol::isUnused(void) {
-        return property.isSet64(32768);
+    bool SysCol::isUnused() {
+        return property.isSet64(SYSCOL_PROPERTY_UNUSED);
     }
 
-    bool SysCol::isAdded(void) {
-        return property.isSet64(1073741824);
+    bool SysCol::isAdded() {
+        return property.isSet64(SYSCOL_PROPERTY_ADDED);
     }
 
-    bool SysCol::isGuard(void) {
-        return property.isSet64(549755813888);
+    bool SysCol::isGuard() {
+        return property.isSet64(SYSCOL_PROPERTY_GUARD);
     }
 
-    bool SysCol::lengthInChars(void) {
-        return ((type == 1 || type == 96) && property.isSet64(8388608));
+    bool SysCol::lengthInChars() {
+        return ((type == SYSCOL_TYPE_VARCHAR || type == SYSCOL_TYPE_CHAR) && property.isSet64(SYSCOL_PROPERTY_LENGTH_IN_CHARS));
         //else in bytes
     }
 }
