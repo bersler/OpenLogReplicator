@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] virtual bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs,
                                                bool loadMetadata, bool storeSchema);
-        virtual void serialize(Metadata* metadata, std::stringstream &ss, bool noSchemaŹ);
+        virtual void serialize(Metadata* metadata, std::stringstream &ss, bool noSchema);
     };
 }
 

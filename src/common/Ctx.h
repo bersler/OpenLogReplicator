@@ -37,7 +37,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_VERSION_19_0       0x13000000
 
 #define MEMORY_CHUNK_SIZE_MB                    1
-#define MEMORY_CHUNK_SIZE_MB_CHR                "1"
 #define MEMORY_CHUNK_SIZE                       (MEMORY_CHUNK_SIZE_MB*1024*1024)
 #define MEMORY_CHUNK_MIN_MB                     16
 
