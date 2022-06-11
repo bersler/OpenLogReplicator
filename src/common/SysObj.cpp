@@ -20,17 +20,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysObj.h"
 
 namespace OpenLogReplicator {
-    SysObj::SysObj(typeRowId& rowId, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
-                   uint64_t flags1, uint64_t flags2, bool single, bool touched) :
-            rowId(rowId),
-            owner(owner),
-            obj(obj),
-            dataObj(dataObj),
-            type(type),
-            name(name),
-            flags(flags1, flags2),
-            single(single),
-            touched(touched) {
+    SysObj::SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName,
+                   uint64_t newFlags1, uint64_t newFlags2, bool newSingle, bool newTouched) :
+            rowId(newRowId),
+            owner(newOwner),
+            obj(newObj),
+            dataObj(newDataObj),
+            type(newType),
+            name(newName),
+            flags(newFlags1, newFlags2),
+            single(newSingle),
+            touched(newTouched) {
     }
 
     bool SysObj::operator!=(const SysObj& other) const {

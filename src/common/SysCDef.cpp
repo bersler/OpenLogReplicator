@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCDef.h"
 
 namespace OpenLogReplicator {
-    SysCDefKey::SysCDefKey(typeObj obj, typeCon con) :
-            obj(obj),
-            con(con) {
+    SysCDefKey::SysCDefKey(typeObj newObj, typeCon newCon) :
+            obj(newObj),
+            con(newCon) {
     }
 
     bool SysCDefKey::operator<(const SysCDefKey& other) const {
@@ -33,12 +33,12 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCDef::SysCDef(typeRowId& rowId, typeCon con, typeObj obj, typeType type, bool touched) :
-            rowId(rowId),
-            con(con),
-            obj(obj),
-            type(type),
-            touched(touched) {
+    SysCDef::SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType, bool newTouched) :
+            rowId(newRowId),
+            con(newCon),
+            obj(newObj),
+            type(newType),
+            touched(newTouched) {
     }
 
     bool SysCDef::operator!=(const SysCDef& other) const {

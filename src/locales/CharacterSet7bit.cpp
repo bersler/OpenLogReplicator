@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSet7bit.h"
 
 namespace OpenLogReplicator {
-    CharacterSet7bit::CharacterSet7bit(const char* name, const typeUnicode16* map) :
-        CharacterSet(name),
-        map(map) {
+    CharacterSet7bit::CharacterSet7bit(const char* newName, const typeUnicode16* newMap) :
+        CharacterSet(newName),
+        map(newMap) {
     }
 
     CharacterSet7bit::~CharacterSet7bit() = default;

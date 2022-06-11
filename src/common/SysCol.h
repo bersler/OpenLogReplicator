@@ -55,7 +55,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysColSeg {
     public:
-        SysColSeg(typeObj obj, typeCol segCol);
+        SysColSeg(typeObj newObj, typeCol newSegCol);
 
         bool operator<(const SysColSeg& other) const;
 
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
 
     class SysColKey {
     public:
-        SysColKey(typeObj obj, typeCol intCol);
+        SysColKey(typeObj newObj, typeCol newIntCol);
 
         bool operator<(const SysColKey& other) const;
 
@@ -75,9 +75,9 @@ namespace OpenLogReplicator {
 
     class SysCol {
     public:
-        SysCol(typeRowId& rowId, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type,
-               uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
-               uint64_t property1, uint64_t property2, bool touched);
+        SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
+               uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
+               uint64_t newProperty1, uint64_t newProperty2, bool newTouched);
 
         bool operator!=(const SysCol& other) const;
         [[nodiscard]] bool isInvisible();

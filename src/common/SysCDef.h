@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCDefKey {
     public:
-        SysCDefKey(typeObj obj, typeCon intCon);
+        SysCDefKey(typeObj newObj, typeCon newIntCon);
 
         bool operator<(const SysCDefKey& other) const;
 
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
 
     class SysCDef {
     public:
-        SysCDef(typeRowId& rowId, typeCon con, typeObj obj, typeType type, bool touched);
+        SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType, bool newTouched);
 
         [[nodiscard]] bool operator!=(const SysCDef& other) const;
         [[nodiscard]] bool isPK() const;

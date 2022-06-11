@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseEnvironment.h"
 
 namespace OpenLogReplicator {
-    DatabaseEnvironment::DatabaseEnvironment(Ctx* ctx) :
-        ctx(ctx),
+    DatabaseEnvironment::DatabaseEnvironment(Ctx* newCtx) :
+        ctx(newCtx),
         envhp(nullptr) {
     }
 

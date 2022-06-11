@@ -53,12 +53,12 @@ namespace OpenLogReplicator {
         void sortQueue();
 
     public:
-        Writer(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata);
+        Writer(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata);
         ~Writer() override;
 
         virtual void initialize();
         void confirmMessage(BuilderMsg* msg);
-        virtual void wakeUp();
+        void wakeUp() override;
     };
 }
 

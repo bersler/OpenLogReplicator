@@ -27,9 +27,9 @@ namespace OpenLogReplicator {
             msg(std::move(newMsg)) {
     }
 
-    NetworkException::NetworkException(const char* msg) :
+    NetworkException::NetworkException(const char* newMsg) :
             exception(),
-            msg(msg) {
+            msg(newMsg) {
     }
 
     NetworkException::~NetworkException() = default;

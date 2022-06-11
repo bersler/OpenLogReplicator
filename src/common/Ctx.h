@@ -134,7 +134,7 @@ namespace OpenLogReplicator {
         //checkpoint
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMb;
-            uint64_t checkpointKeep;
+        uint64_t checkpointKeep;
         uint64_t schemaForceInterval;
         //reader
         uint64_t redoReadSleepUs;
@@ -163,12 +163,12 @@ namespace OpenLogReplicator {
         Ctx();
         virtual ~Ctx();
 
-        [[nodiscard]] uint16_t (*read16)(const uint8_t* buf);
-        [[nodiscard]] uint32_t (*read32)(const uint8_t* buf);
-        [[nodiscard]] uint64_t (*read56)(const uint8_t* buf);
-        [[nodiscard]] uint64_t (*read64)(const uint8_t* buf);
-        [[nodiscard]] typeScn (*readScn)(const uint8_t* buf);
-        [[nodiscard]] typeScn (*readScnR)(const uint8_t* buf);
+        uint16_t (*read16)(const uint8_t* buf);
+        uint32_t (*read32)(const uint8_t* buf);
+        uint64_t (*read56)(const uint8_t* buf);
+        uint64_t (*read64)(const uint8_t* buf);
+        typeScn (*readScn)(const uint8_t* buf);
+        typeScn (*readScnR)(const uint8_t* buf);
         void (*write16)(uint8_t* buf, uint16_t val);
         void (*write32)(uint8_t* buf, uint32_t val);
         void (*write56)(uint8_t* buf, uint64_t val);
@@ -219,7 +219,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
         [[nodiscard]] static char* getJsonFieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
 
-        void initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax);
+        void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
         [[nodiscard]] uint64_t getMaxUsedMemory() const;
         [[nodiscard]] uint64_t getAllocatedMemory() const;

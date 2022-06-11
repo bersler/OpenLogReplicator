@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef ORACLEINCARNATION_H_
-#define ORACLEINCARNATION_H_
+#ifndef ORACLE_INCARNATION_H_
+#define ORACLE_INCARNATION_H_
 
 namespace OpenLogReplicator {
     class OracleIncarnation {
@@ -34,8 +34,8 @@ namespace OpenLogReplicator {
 
         bool current;
 
-        OracleIncarnation(uint32_t incarnation, typeScn resetlogsScn, typeScn priorResetlogsScn, const char* status,
-                          typeResetlogs resetlogs, uint32_t priorIncarnation);
+        OracleIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus,
+                          typeResetlogs newResetlogs, uint32_t newPriorIncarnation);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i);
     };

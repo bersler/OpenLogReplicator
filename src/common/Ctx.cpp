@@ -33,23 +33,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     Ctx::Ctx() :
             bigEndian(false),
-            version12(false),
-            version(0),
-            dumpRedoLog(0),
-            dumpRawData(0),
-            suppLogSize(0),
-            //
-            read16(read16Little),
-            read32(read32Little),
-            read56(read56Little),
-            read64(read64Little),
-            readScn(readScnLittle),
-            readScnR(readScnRLittle),
-            write16(write16Little),
-            write32(write32Little),
-            write56(write56Little),
-            write64(write64Little),
-            writeScn(writeScnLittle),
             memoryMinMb(0),
             memoryMaxMb(0),
             memoryChunks(nullptr),
@@ -59,10 +42,16 @@ namespace OpenLogReplicator {
             memoryChunksMax(0),
             memoryChunksHWM(0),
             memoryChunksReusable(0),
+            version12(false),
+            version(0),
+            dumpRedoLog(0),
+            dumpRawData(0),
+            //
             readBufferMax(0),
             buffersFree(0),
             bufferSizeMax(0),
             buffersMaxUsed(0),
+            suppLogSize(0),
             checkpointIntervalS(600),
             checkpointIntervalMb(500),
             checkpointKeep(100),
@@ -83,13 +72,20 @@ namespace OpenLogReplicator {
             trace2(0),
             flags(0),
             disableChecks(0),
-            mtx(),
-            condMainLoop(),
-            threads(),
-            mainThread(),
             hardShutdown(false),
             softShutdown(false),
-            replicatorFinished(false) {
+            replicatorFinished(false),
+            read16(read16Little),
+            read32(read32Little),
+            read56(read56Little),
+            read64(read64Little),
+            readScn(readScnLittle),
+            readScnR(readScnRLittle),
+            write16(write16Little),
+            write32(write32Little),
+            write56(write56Little),
+            write64(write64Little),
+            writeScn(writeScnLittle) {
         mainThread = pthread_self();
     }
 
@@ -506,13 +502,13 @@ namespace OpenLogReplicator {
         return (char*)ret.GetString();
     }
 
-    void Ctx::initialize(uint64_t memoryMinMb, uint64_t memoryMaxMb, uint64_t readBufferMax) {
-        this->memoryMinMb = memoryMinMb;
-        this->memoryMaxMb = memoryMaxMb;
+    void Ctx::initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax) {
+        memoryMinMb = newMemoryMinMb;
+        memoryMaxMb = newMemoryMaxMb;
         memoryChunksMin = (memoryMinMb / MEMORY_CHUNK_SIZE_MB);
         memoryChunksMax = memoryMaxMb / MEMORY_CHUNK_SIZE_MB;
-        this->readBufferMax = readBufferMax;
-        buffersFree = readBufferMax;
+        readBufferMax = newReadBufferMax;
+        buffersFree = newReadBufferMax;
         bufferSizeMax = readBufferMax * MEMORY_CHUNK_SIZE;
 
         memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];

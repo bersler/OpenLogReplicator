@@ -23,17 +23,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleObject.h"
 
 namespace OpenLogReplicator {
-    OracleObject::OracleObject(typeObj obj, typeDataObj dataObj, typeUser user, typeCol cluCols, typeOptions options, std::string& owner, std::string& name) :
-        obj(obj),
-        dataObj(dataObj),
-        user(user),
-        cluCols(cluCols),
+    OracleObject::OracleObject(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, std::string& newOwner,
+                               std::string& newName) :
+        obj(newObj),
+        dataObj(newDataObj),
+        user(newUser),
+        cluCols(newCluCols),
         totalPk(0),
-        options(options),
+        options(newOptions),
         maxSegCol(0),
         guardSegNo(-1),
-        owner(owner),
-        name(name) {
+        owner(newOwner),
+        name(newName) {
 
         systemTable = 0;
         if (this->owner == "SYS") {

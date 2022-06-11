@@ -25,8 +25,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/types.h"
 #include "../common/typeXid.h"
 
-#ifndef TRANSACTIONBUFFER_H_
-#define TRANSACTIONBUFFER_H_
+#ifndef TRANSACTION_BUFFER_H_
+#define TRANSACTION_BUFFER_H_
 
 #define ROW_HEADER_OP       (0)
 #define ROW_HEADER_REDO1    (sizeof(typeOp2))
@@ -68,7 +68,7 @@ namespace OpenLogReplicator {
         std::set<typeXidMap> brokenXidMapList;
         std::string dumpPath;
 
-        explicit TransactionBuffer(Ctx* ctx);
+        explicit TransactionBuffer(Ctx* newCtx);
         virtual ~TransactionBuffer();
 
         void purge();

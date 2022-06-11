@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef ORACLEOBJECT_H_
-#define ORACLEOBJECT_H_
+#ifndef ORACLE_OBJECT_H_
+#define ORACLE_OBJECT_H_
 
 namespace OpenLogReplicator {
     class OracleColumn;
@@ -45,7 +45,8 @@ namespace OpenLogReplicator {
         uint64_t systemTable;
         bool sys;
 
-        OracleObject(typeObj obj, typeDataObj dataObj, typeUser user, typeCol cluCols, typeOptions options, std::string& owner, std::string& name);
+        OracleObject(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, std::string& newOwner,
+                     std::string& newName);
         virtual ~OracleObject();
 
         void addColumn(OracleColumn* column);

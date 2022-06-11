@@ -24,17 +24,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef CONFIGURATIONEXCEPTION_H_
-#define CONFIGURATIONEXCEPTION_H_
+#ifndef CONFIGURATION_EXCEPTION_H_
+#define CONFIGURATION_EXCEPTION_H_
 
 namespace OpenLogReplicator {
     class ConfigurationException: public std::exception {
     public:
         std::string msg;
 
-        explicit ConfigurationException(const std::string& msg);
-        explicit ConfigurationException(const char* msg);
-        ~ConfigurationException() override = default;
+        explicit ConfigurationException(const std::string& newMsg);
+        explicit ConfigurationException(const char* newMsg);
+        ~ConfigurationException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
     };

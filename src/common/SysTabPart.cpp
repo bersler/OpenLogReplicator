@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTabPart.h"
 
 namespace OpenLogReplicator {
-    SysTabPartKey::SysTabPartKey(typeObj bo, typeObj obj) :
-            bo(bo),
-            obj(obj) {
+    SysTabPartKey::SysTabPartKey(typeObj newBo, typeObj newObj) :
+            bo(newBo),
+            obj(newObj) {
     }
 
     bool SysTabPartKey::operator<(const SysTabPartKey& other) const {
@@ -33,12 +33,12 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabPart::SysTabPart(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeObj bo, bool touched) :
-            rowId(rowId),
-            obj(obj),
-            dataObj(dataObj),
-            bo(bo),
-            touched(touched) {
+    SysTabPart::SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo, bool newTouched) :
+            rowId(newRowId),
+            obj(newObj),
+            dataObj(newDataObj),
+            bo(newBo),
+            touched(newTouched) {
     }
 
     bool SysTabPart::operator!=(const SysTabPart& other) const {

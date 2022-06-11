@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/DataException.h"
 
 namespace OpenLogReplicator {
-    CharacterSet::CharacterSet(const char* name) :
-        name(name) {
+    CharacterSet::CharacterSet(const char* newName) :
+        name(newName) {
     }
 
     CharacterSet::~CharacterSet() = default;

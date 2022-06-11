@@ -47,24 +47,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SerializerJson.h"
 
 namespace OpenLogReplicator {
-    Metadata::Metadata(Ctx* ctx, Locales* locales, const char* database, typeConId conId, typeScn startScn, typeSeq startSequence,
-                       const char* startTime, int64_t startTimeRel) :
-            schema(new Schema(ctx, locales)),
-            ctx(ctx),
-            locales(locales),
+    Metadata::Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
+                       const char* newStartTime, int64_t newStartTimeRel) :
+            schema(new Schema(newCtx, newLocales)),
+            ctx(newCtx),
+            locales(newLocales),
             state(nullptr),
             stateDisk(nullptr),
             serializer(nullptr),
             status(METADATA_STATUS_INITIALIZE),
-            database(database),
-            startScn(startScn),
-            startSequence(startSequence),
-            startTime(startTime),
-            startTimeRel(startTimeRel),
+            database(newDatabase),
+            startScn(newStartScn),
+            startSequence(newStartSequence),
+            startTime(newStartTime),
+            startTimeRel(newStartTimeRel),
             onlineData(false),
             suppLogDbPrimary(false),
             suppLogDbAll(false),
-            conId(conId),
+            conId(newConId),
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
             defaultCharacterNcharMapId(0),
@@ -76,6 +76,8 @@ namespace OpenLogReplicator {
             firstDataScn(ZERO_SCN),
             firstSchemaScn(ZERO_SCN),
             checkpointScn(ZERO_SCN),
+            firstScn(ZERO_SCN),
+            nextScn(ZERO_SCN),
             checkpointTime(0),
             checkpointOffset(0),
             checkpointBytes(0),
@@ -152,21 +154,21 @@ namespace OpenLogReplicator {
         redoLogs.clear();
     }
 
-    void Metadata::setResetlogs(typeResetlogs resetlogs) {
+    void Metadata::setResetlogs(typeResetlogs newResetlogs) {
         std::unique_lock<std::mutex> lck(mtx);
-        this->resetlogs = resetlogs;
-        this->activation = 0;
+        resetlogs = newResetlogs;
+        activation = 0;
     }
 
-    void Metadata::setActivation(typeActivation activation) {
+    void Metadata::setActivation(typeActivation newActivation) {
         std::unique_lock<std::mutex> lck(mtx);
-        this->activation = activation;
+        activation = newActivation;
     }
 
-    void Metadata::setSeqOffset(typeSeq sequence, uint64_t offset) {
+    void Metadata::setSeqOffset(typeSeq newSequence, uint64_t newOffset) {
         std::unique_lock<std::mutex> lck(mtx);
-        this->sequence = sequence;
-        this->offset = offset;
+        sequence = newSequence;
+        offset = newOffset;
     }
 
     void Metadata::initializeDisk(const char* path) {
@@ -240,16 +242,16 @@ namespace OpenLogReplicator {
         condStartedReplication.notify_all();
     }
 
-    void Metadata::checkpoint(typeScn checkpointScn, typeTime checkpointTime, uint64_t checkpointOffset, uint64_t checkpointBytes, typeSeq minSequence,
-                              uint64_t minOffset, typeXid minXid) {
+    void Metadata::checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, uint64_t newCheckpointOffset, uint64_t newCheckpointBytes,
+                              typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
         std::unique_lock<std::mutex> lck(mtx);
-        this->checkpointScn = checkpointScn;
-        this->checkpointTime = checkpointTime;
-        this->checkpointOffset = checkpointOffset;
-        this->checkpointBytes += checkpointBytes;
-        this->minSequence = minSequence;
-        this->minOffset = minOffset;
-        this->minXid = minXid;
+        checkpointScn = newCheckpointScn;
+        checkpointTime = newCheckpointTime;
+        checkpointOffset = newCheckpointOffset;
+        checkpointBytes += newCheckpointBytes;
+        minSequence = newMinSequence;
+        minOffset = newMinOffset;
+        minXid = newMinXid;
     }
 
     void Metadata::writeCheckpoint(bool force) {

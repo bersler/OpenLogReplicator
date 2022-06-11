@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-#ifndef CHARACTERSETZHT32TRIS_H_
-#define CHARACTERSETZHT32TRIS_H_
+#ifndef CHARACTER_SET_ZHT32TRIS_H_
+#define CHARACTER_SET_ZHT32TRIS_H_
 
 #define ZHT32TRIS_b1        0x8E
 #define ZHT32TRIS_b2_min    0xA1

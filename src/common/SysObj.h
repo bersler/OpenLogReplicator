@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 #include "typeRowId.h"
 
-#ifndef SYSOBJ_H_
-#define SYSOBJ_H_
+#ifndef SYS_OBJ_H_
+#define SYS_OBJ_H_
 
 #define SYSOBJ_FLAGS_TEMPORARY              2
 #define SYSOBJ_FLAGS_SECONDARY              16
@@ -76,8 +76,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysObj {
     public:
-        SysObj(typeRowId& rowId, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
-               uint64_t flags1, uint64_t flags2, bool single, bool touched);
+        SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName,
+               uint64_t newFlags1, uint64_t newFlags2, bool newSingle, bool newTouched);
 
         bool operator!=(const SysObj& other) const;
         [[nodiscard]] bool isTable() const;

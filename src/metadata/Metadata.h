@@ -90,6 +90,8 @@ namespace OpenLogReplicator {
         typeScn firstDataScn;
         typeScn firstSchemaScn;
         typeScn checkpointScn;
+        typeScn firstScn;
+        typeScn nextScn;
         typeTime checkpointTime;
         uint64_t checkpointOffset;
         uint64_t checkpointBytes;
@@ -111,27 +113,27 @@ namespace OpenLogReplicator {
         std::set<typeScn> checkpointScnList;
         std::unordered_map<typeScn, bool> checkpointSchemaMap;
 
-        Metadata(Ctx* ctx, Locales* locales, const char* database, typeConId conId, typeScn startScn, typeSeq startSequence,
-                 const char* startTime, int64_t startTimeRel);
+        Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
+                 const char* newStartTime, int64_t newStartTimeRel);
         ~Metadata();
 
         void setNlsCharset(std::string& nlsCharset, std::string& nlsNcharCharset);
         void purgeRedoLogs();
-        void setSeqOffset(typeSeq sequence, uint64_t offset);
-        void setResetlogs(typeResetlogs resetlogs);
-        void setActivation(typeActivation activation);
+        void setSeqOffset(typeSeq newSequence, uint64_t newOffset);
+        void setResetlogs(typeResetlogs newResetlogs);
+        void setActivation(typeActivation newActivation);
         void initializeDisk(const char* path);
         [[nodiscard]] bool stateRead(std::string& name, uint64_t maxSize, std::string& in);
         [[nodiscard]] bool stateDiskRead(std::string& name, uint64_t maxSize, std::string& in);
         [[nodiscard]] bool stateWrite(std::string& name, std::stringstream& out);
         [[nodiscard]] bool stateDrop(std::string& name);
-        [[nodiscard]] SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
+        SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
 
         void waitForReplication();
         void setStatusReplicate();
         void wakeUp();
-        void checkpoint(typeScn checkpointScn, typeTime checkpointTime, uint64_t checkpointOffset, uint64_t checkpointBytes, typeSeq minSequence,
-                        uint64_t minOffset, typeXid minXid);
+        void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, uint64_t newCheckpointOffset, uint64_t newCheckpointBytes,
+                        typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid);
         void writeCheckpoint(bool force);
         void readCheckpoints();
         void readCheckpoint(typeScn scn);

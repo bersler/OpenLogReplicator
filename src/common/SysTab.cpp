@@ -20,15 +20,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTab.h"
 
 namespace OpenLogReplicator {
-    SysTab::SysTab(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
-                   uint64_t property1, uint64_t property2, bool touched) :
-            rowId(rowId),
-            obj(obj),
-            dataObj(dataObj),
-            cluCols(cluCols),
-            flags(flags1, flags2),
-            property(property1, property2),
-            touched(touched) {
+    SysTab::SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2, uint64_t newProperty1,
+                   uint64_t newProperty2, bool newTouched) :
+            rowId(newRowId),
+            obj(newObj),
+            dataObj(newDataObj),
+            cluCols(newCluCols),
+            flags(newFlags1, newFlags2),
+            property(newProperty1, newProperty2),
+            touched(newTouched) {
     }
 
     bool SysTab::operator!=(const SysTab& other) const {

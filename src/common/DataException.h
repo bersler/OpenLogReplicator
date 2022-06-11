@@ -20,16 +20,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <exception>
 #include <sstream>
 
-#ifndef DATAEXCEPTION_H_
-#define DATAEXCEPTION_H_
+#ifndef DATA_EXCEPTION_H_
+#define DATA_EXCEPTION_H_
 
 namespace OpenLogReplicator {
     class DataException: public std::exception {
     public:
         std::string msg;
 
-        explicit DataException(const std::string msg);
-        explicit DataException(const char* msg);
+        explicit DataException(const std::string newMsg);
+        explicit DataException(const char* newMsg);
         ~DataException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const DataException& exception);

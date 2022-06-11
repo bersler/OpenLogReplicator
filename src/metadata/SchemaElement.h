@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/types.h"
 
-#ifndef SCHEMAELEMENT_H_
-#define SCHEMAELEMENT_H_
+#ifndef SCHEMA_ELEMENT_H_
+#define SCHEMA_ELEMENT_H_
 
 namespace OpenLogReplicator {
     class SchemaElement {
@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
         std::string keysStr;
         typeOptions options;
 
-        SchemaElement(const char* owner, const char* table, typeOptions options);
+        SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions);
     };
 }
 

@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 #include "typeRowId.h"
 
-#ifndef SYSUSER_H_
-#define SYSUSER_H_
+#ifndef SYS_USER_H_
+#define SYS_USER_H_
 
 #define SYSUSER_NAME_LENGTH                 128
 #define SYSUSER_SPARE1_SUPP_LOG_PRIMARY     1
@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(typeRowId& rowId, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single, bool touched);
+        SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle, bool newTouched);
 
         bool operator!=(const SysUser& other) const;
         [[nodiscard]] bool isSuppLogPrimary();

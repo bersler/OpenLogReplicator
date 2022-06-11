@@ -30,11 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata) :
-            Thread(ctx, alias),
-            database(database),
-            builder(builder),
-            metadata(metadata),
+    Writer::Writer(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+            Thread(newCtx, newAlias),
+            database(newDatabase),
+            builder(newBuilder),
+            metadata(newMetadata),
             checkpointScn(ZERO_SCN),
             checkpointTime(time(nullptr)),
             confirmedScn(ZERO_SCN),
@@ -97,10 +97,8 @@ namespace OpenLogReplicator {
             oldQueue[i] = oldQueue[oldQueueSize];
         }
 
-        if (oldQueue != nullptr) {
+        if (oldQueue != nullptr)
             delete[] oldQueue;
-            oldQueue = nullptr;
-        }
     }
 
     void Writer::confirmMessage(BuilderMsg* msg) {
@@ -267,12 +265,12 @@ namespace OpenLogReplicator {
                         uint64_t toCopy = msg->length - copied;
                         if (toCopy > tmpLength - curLength) {
                             toCopy = tmpLength - curLength;
-                            memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                            memcpy((void*)(msg->data + copied), (void*)(curBuffer->data + curLength), toCopy);
                             curBuffer = curBuffer->next;
                             tmpLength = OUTPUT_BUFFER_DATA_SIZE;
                             curLength = 0;
                         } else {
-                            memcpy(msg->data + copied, curBuffer->data + curLength, toCopy);
+                            memcpy((void*)(msg->data + copied), (void*)(curBuffer->data + curLength), toCopy);
                             curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
                         }
                         copied += toCopy;
@@ -358,5 +356,5 @@ namespace OpenLogReplicator {
 
     void Writer::wakeUp() {
         builder->wakeUp();
-    };
+    }
 }

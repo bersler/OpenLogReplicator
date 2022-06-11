@@ -25,11 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat,
-                                     uint64_t xidFormat, uint64_t timestampFormat, uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat,
-                                     uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType, uint64_t flushBuffer) :
-            Builder(ctx, locales, metadata, messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat, schemaFormat,
-                    columnFormat, unknownType, flushBuffer),
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
+                                     uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat, newUnknownFormat, newSchemaFormat,
+                    newColumnFormat, newUnknownType, newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),

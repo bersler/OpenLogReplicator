@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-#ifndef CHARACTERSET7BIT_H_
-#define CHARACTERSET7BIT_H_
+#ifndef CHARACTER_SET_7BIT_H_
+#define CHARACTER_SET_7BIT_H_
 
 namespace OpenLogReplicator {
     class CharacterSet7bit : public CharacterSet {
@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual typeUnicode readMap(uint64_t character) const;
 
     public:
-        CharacterSet7bit(const char* name, const typeUnicode16* map);
+        CharacterSet7bit(const char* newName, const typeUnicode16* newMap);
         ~CharacterSet7bit() override;
 
         typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;

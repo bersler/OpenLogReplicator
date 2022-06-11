@@ -20,8 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 #include "../common/OraProtoBuf.pb.h"
 
-#ifndef WRITERSTREAM_H_
-#define WRITERSTREAM_H_
+#ifndef WRITER_STREAM_H_
+#define WRITER_STREAM_H_
 
 namespace OpenLogReplicator {
     class Stream;
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         void sendMessage(BuilderMsg* msg) override;
 
     public:
-        WriterStream(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, Stream* stream);
+        WriterStream(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream);
         ~WriterStream() override;
 
         void initialize() override;

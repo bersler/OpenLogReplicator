@@ -403,16 +403,16 @@ namespace OpenLogReplicator {
     const char* ReplicatorOnline::SQL_CHECK_CONNECTION(
             "SELECT 1 FROM DUAL");
 
-    ReplicatorOnline::ReplicatorOnline(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata,
-                                       TransactionBuffer* transactionBuffer, std::string alias, const char* database, const char* user,
-                                       const char* password, const char* connectString, bool keepConnection) :
-            Replicator(ctx, archGetLog, builder, metadata, transactionBuffer, alias, database),
+    ReplicatorOnline::ReplicatorOnline(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+                                       TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase, const char* newUser,
+                                       const char* newPassword, const char* newConnectString, bool newKeepConnection) :
+            Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase),
             standby(false),
-            keepConnection(keepConnection) {
+            keepConnection(newKeepConnection) {
 
         env = new DatabaseEnvironment(ctx);
         env->initialize();
-        conn = new DatabaseConnection(env, user, password, connectString, false);
+        conn = new DatabaseConnection(env, newUser, newPassword, newConnectString, false);
     }
 
     ReplicatorOnline::~ReplicatorOnline() {
@@ -1228,6 +1228,7 @@ namespace OpenLogReplicator {
             return;
 
         //reload incarnation ctx
+        typeResetlogs oldResetlogs = metadata->resetlogs;
         for (OracleIncarnation* oi : metadata->oracleIncarnations)
             delete oi;
         metadata->oracleIncarnations.clear();
@@ -1273,7 +1274,11 @@ namespace OpenLogReplicator {
                 auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status, resetlogs, priorIncarnation);
                 metadata->oracleIncarnations.insert(oi);
 
-                if (oi->current) {
+                //search prev value
+                if (oldResetlogs != 0 && oi->resetlogs == oldResetlogs) {
+                    metadata->oracleIncarnationCurrent = oi;
+                } else
+                if (oi->current && metadata->oracleIncarnationCurrent == nullptr) {
                     metadata->oracleIncarnationCurrent = oi;
                     metadata->setResetlogs(oi->resetlogs);
                 }

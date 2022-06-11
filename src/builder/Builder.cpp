@@ -31,25 +31,26 @@ namespace OpenLogReplicator {
     const char Builder::map16[17] = "0123456789abcdef";
     const char Builder::map10[11] = "0123456789";
 
-    Builder::Builder(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
-                     uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
-                     uint64_t flushBuffer) :
-            ctx(ctx),
-            locales(locales),
-            metadata(metadata),
-            messageFormat(messageFormat),
-            ridFormat(ridFormat),
-            xidFormat(xidFormat),
-            timestampFormat(timestampFormat),
-            charFormat(charFormat),
-            scnFormat(scnFormat),
-            unknownFormat(unknownFormat),
-            schemaFormat(schemaFormat),
-            columnFormat(columnFormat),
-            unknownType(unknownType),
+    Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
+                     uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
+            ctx(newCtx),
+            locales(newLocales),
+            metadata(newMetadata),
+            msg(nullptr),
+            messageFormat(newMessageFormat),
+            ridFormat(newRidFormat),
+            xidFormat(newXidFormat),
+            timestampFormat(newTimestampFormat),
+            charFormat(newCharFormat),
+            scnFormat(newScnFormat),
+            unknownFormat(newUnknownFormat),
+            schemaFormat(newSchemaFormat),
+            columnFormat(newColumnFormat),
+            unknownType(newUnknownType),
             unconfirmedLength(0),
             messageLength(0),
-            flushBuffer(flushBuffer),
+            flushBuffer(newFlushBuffer),
             valueLength(0),
             lastTime(0),
             lastScn(0),
@@ -64,15 +65,13 @@ namespace OpenLogReplicator {
             compressedBefore(false),
             compressedAfter(false),
             systemTransaction(nullptr),
-            mtx(),
             buffersAllocated(0),
             firstBuffer(nullptr),
-            lastBuffer(nullptr),
-            msg(nullptr) {
-        memset(valuesSet, 0, sizeof(valuesSet));
-        memset(valuesMerge, 0, sizeof(valuesMerge));
-        memset(values, 0, sizeof(values));
-        memset(valuesPart, 0, sizeof(valuesPart));
+            lastBuffer(nullptr) {
+        memset((void*)valuesSet, 0, sizeof(valuesSet));
+        memset((void*)valuesMerge, 0, sizeof(valuesMerge));
+        memset((void*)values, 0, sizeof(values));
+        memset((void*)valuesPart, 0, sizeof(valuesPart));
     }
 
     Builder::~Builder() {
@@ -251,25 +250,25 @@ namespace OpenLogReplicator {
                         tz2[0] = '+';
 
                     if (data[11] < 20) {
-                        uint64_t num = 20 - data[11];
-                        tz2[1] = map10[num / 10];
-                        tz2[2] = map10[num % 10];
+                        uint64_t val = 20 - data[11];
+                        tz2[1] = map10[val / 10];
+                        tz2[2] = map10[val % 10];
                     } else {
-                        uint64_t num = data[11] - 20;
-                        tz2[1] = map10[num / 10];
-                        tz2[2] = map10[num % 10];
+                        uint64_t val = data[11] - 20;
+                        tz2[1] = map10[val / 10];
+                        tz2[2] = map10[val % 10];
                     }
 
                     tz2[3] = ':';
 
                     if (data[12] < 60) {
-                        uint64_t num = 60 - data[12];
-                        tz2[4] = map10[num / 10];
-                        tz2[5] = map10[num % 10];
+                        uint64_t val = 60 - data[12];
+                        tz2[4] = map10[val / 10];
+                        tz2[5] = map10[val % 10];
                     } else {
-                        uint64_t num = data[12] - 60;
-                        tz2[4] = map10[num / 10];
-                        tz2[5] = map10[num % 10];
+                        uint64_t val = data[12] - 60;
+                        tz2[4] = map10[val / 10];
+                        tz2[5] = map10[val % 10];
                     }
                     tz2[6] = 0;
                     tz = tz2;
@@ -308,7 +307,7 @@ namespace OpenLogReplicator {
 
         //message could potentially fit in one buffer
         if (copy && msg != nullptr && sizeof(struct BuilderMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
-            memcpy(nextBuffer->data, msg, sizeof(struct BuilderMsg) + messageLength);
+            memcpy((void*)nextBuffer->data, (void*)msg, sizeof(struct BuilderMsg) + messageLength);
             msg = (BuilderMsg*)nextBuffer->data;
             msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
             nextBuffer->length = sizeof(struct BuilderMsg) + messageLength;
@@ -352,7 +351,6 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
         typeField fieldNum = 0;
-        bool prevValue;
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
@@ -370,7 +368,6 @@ namespace OpenLogReplicator {
 
         for (uint64_t r = 0; r < redoLogRecord2->nrow; ++r) {
             pos = 0;
-            prevValue = false;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord2->data[fieldPos + pos + 2];
             pos = 3;
@@ -432,7 +429,6 @@ namespace OpenLogReplicator {
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
         typeField fieldNum = 0;
-        bool prevValue;
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
@@ -450,7 +446,6 @@ namespace OpenLogReplicator {
 
         for (uint64_t r = 0; r < redoLogRecord1->nrow; ++r) {
             pos = 0;
-            prevValue = false;
             fieldPos = fieldPosStart;
             uint8_t jcc = redoLogRecord1->data[fieldPos + pos + 2];
             pos = 3;
@@ -606,6 +601,12 @@ namespace OpenLogReplicator {
                 }
 
                 for (uint64_t i = 0; i < cc; ++i) {
+                    if (colNums != nullptr) {
+                        colNum = ctx->read16(colNums) + colShift;
+                        colNums += 2;
+                    } else
+                        colNum = i + colShift;
+
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
                         if (object != nullptr) {
                             WARNING("table: " << object->owner << "." << object->name << ": out of columns (Undo): " << std::dec << colNum << "/" <<
@@ -618,16 +619,11 @@ namespace OpenLogReplicator {
                         }
                         break;
                     }
-                    if (colNums != nullptr) {
-                        colNum = ctx->read16(colNums) + colShift;
-                        colNums += 2;
-                    } else
-                        colNum = i + colShift;
 
                     fb = 0;
                     if (i == 0 && (redoLogRecord1p->fb & FB_P) != 0)
                         fb |= FB_P;
-                    if (i == redoLogRecord1p->cc - 1 && (redoLogRecord1p->fb & FB_N) != 0)
+                    if (i == (uint64_t)(redoLogRecord1p->cc - 1) && (redoLogRecord1p->fb & FB_N) != 0)
                         fb |= FB_N;
 
                     if (object != nullptr) {
@@ -670,7 +666,8 @@ namespace OpenLogReplicator {
                 colNums = redoLogRecord1p->data + redoLogRecord1p->suppLogNumsDelta;
                 uint8_t* colSizes = redoLogRecord1p->data + redoLogRecord1p->suppLogLenDelta;
 
-                for (uint64_t i = 0; i < redoLogRecord1p->suppLogCC; ++i) {
+                for (uint64_t i = 0; i < (uint64_t)redoLogRecord1p->suppLogCC; ++i) {
+                    colNum = ctx->read16(colNums) - 1;
                     if (fieldNum + 1 > redoLogRecord1p->fieldCnt) {
                         if (object != nullptr)
                             throw RuntimeException("table: " + object->owner + "." + object->name + ": out of columns (Supp): " +
@@ -687,7 +684,6 @@ namespace OpenLogReplicator {
                     }
 
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000006);
-                    colNum = ctx->read16(colNums) - 1;
 
                     if (object != nullptr) {
                         if (colNum >= object->maxSegCol) {
@@ -712,7 +708,7 @@ namespace OpenLogReplicator {
                     fb = 0;
                     if (i == 0 && (redoLogRecord1p->suppLogFb & FB_P) != 0)
                         fb |= FB_P;
-                    if (i == redoLogRecord1p->suppLogCC - 1 && (redoLogRecord1p->suppLogFb & FB_N) != 0)
+                    if (i == (uint64_t)(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & FB_N) != 0)
                         fb |= FB_N;
 
                     //insert, lock, update, supplemental log data
@@ -784,7 +780,7 @@ namespace OpenLogReplicator {
                     fb = 0;
                     if (i == 0 && (redoLogRecord2p->fb & FB_P) != 0)
                         fb |= FB_P;
-                    if (i == redoLogRecord2p->cc - 1 && (redoLogRecord2p->fb & FB_N) != 0)
+                    if (i == (uint64_t)(redoLogRecord2p->cc - 1) && (redoLogRecord2p->fb & FB_N) != 0)
                         fb |= FB_N;
 
                     RedoLogRecord::nextField(ctx, redoLogRecord2p, fieldNum, fieldPos, fieldLength, 0x000008);
@@ -867,17 +863,17 @@ namespace OpenLogReplicator {
                         lengths[column][j] = length;
 
                         if (valuesPart[0][column][j] != nullptr) {
-                            memcpy(buffer, valuesPart[0][column][j], lengthsPart[0][column][j]);
+                            memcpy((void*)buffer, (void*)valuesPart[0][column][j], lengthsPart[0][column][j]);
                             buffer += lengthsPart[0][column][j];
                             valuesPart[0][column][j] = nullptr;
                         }
                         if (valuesPart[1][column][j] != nullptr) {
-                            memcpy(buffer, valuesPart[1][column][j], lengthsPart[1][column][j]);
+                            memcpy((void*)buffer, (void*)valuesPart[1][column][j], lengthsPart[1][column][j]);
                             buffer += lengthsPart[1][column][j];
                             valuesPart[1][column][j] = nullptr;
                         }
                         if (valuesPart[2][column][j] != nullptr) {
-                            memcpy(buffer, valuesPart[2][column][j], lengthsPart[2][column][j]);
+                            memcpy((void*)buffer, (void*)valuesPart[2][column][j], lengthsPart[2][column][j]);
                             buffer += lengthsPart[2][column][j];
                             valuesPart[2][column][j] = nullptr;
                         }
@@ -890,7 +886,7 @@ namespace OpenLogReplicator {
                     if (guardPos != -1 && object->columns[column]->guardSeg != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
                         typeCol column2 = object->columns[column]->guardSeg;
                         uint8_t* guardData = values[guardPos][VALUE_BEFORE];
-                        if (guardData != nullptr && ((column2 / (typeCol)8 < lengths[guardPos][VALUE_BEFORE]) != 0)) {
+                        if (guardData != nullptr && (uint64_t)(column2 / (typeCol)8) < lengths[guardPos][VALUE_BEFORE]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
                                 values[column][VALUE_BEFORE] = (uint8_t*)1;
@@ -910,7 +906,7 @@ namespace OpenLogReplicator {
                     if (guardPos != -1 && object->columns[column]->guardSeg != -1 && values[guardPos][VALUE_AFTER] != nullptr) {
                         typeCol column2 = object->columns[column]->guardSeg;
                         uint8_t* guardData = values[guardPos][VALUE_AFTER];
-                        if (guardData != nullptr && column2 / (typeCol)8 < lengths[guardPos][VALUE_AFTER]) {
+                        if (guardData != nullptr && (uint64_t)(column2 / (typeCol)8) < lengths[guardPos][VALUE_AFTER]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
                                 values[column][VALUE_AFTER] = (uint8_t*)1;
@@ -1178,7 +1174,7 @@ namespace OpenLogReplicator {
         uint64_t sqlLength;
         typeField fieldNum = 0;
         uint16_t seq = 0;
-        uint16_t cnt = 0;
+        //uint16_t cnt = 0;
         uint16_t type = 0;
         uint16_t fieldLength = 0;
         char* sqlText = nullptr;
@@ -1188,7 +1184,7 @@ namespace OpenLogReplicator {
         //field: 1
         type = ctx->read16(redoLogRecord1->data + fieldPos + 12);
         seq = ctx->read16(redoLogRecord1->data + fieldPos + 18);
-        cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
+        //cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000A))
             return;

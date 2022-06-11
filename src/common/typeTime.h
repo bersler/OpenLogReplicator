@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iomanip>
 #include <ostream>
 
-#ifndef TYPETIME_H_
-#define TYPETIME_H_
+#ifndef TYPE_TIME_H_
+#define TYPE_TIME_H_
 
 namespace OpenLogReplicator {
     class typeTime {
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         typeTime() : val(0) {
         }
 
-        explicit typeTime(uint32_t val) : val(val) {
+        explicit typeTime(uint32_t newVal) : val(newVal) {
         }
 
         [[nodiscard]] uint32_t getVal() const {
@@ -50,7 +50,7 @@ namespace OpenLogReplicator {
 
         [[nodiscard]] time_t toTime() const {
             struct tm epochtime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-            memset((void *) &epochtime, 0, sizeof(epochtime));
+            memset((void*)&epochtime, 0, sizeof(epochtime));
             uint64_t rest = val;
             epochtime.tm_sec = (int)(rest % 60);
             rest /= 60;

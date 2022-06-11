@@ -152,27 +152,27 @@ namespace OpenLogReplicator {
         bool sysUserTouched;
         bool touched;
 
-        Schema(Ctx* ctx, Locales* locales);
+        Schema(Ctx* newCtx, Locales* newLocales);
         virtual ~Schema();
 
         void purge();
         void refreshIndexes(std::set<std::string>& users);
         [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs);
-        [[nodiscard]] bool dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
-        [[nodiscard]] bool dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);
-        [[nodiscard]] bool dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name,
-                                         typeType type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
-                                         bool null_, uint64_t property1, uint64_t property2);
-        [[nodiscard]] bool dictSysDeferredStgAdd(const char* rowIdStr, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2);
-        [[nodiscard]] bool dictSysEColAdd(const char* rowIdStr, typeObj tabObj, typeCol colNum, typeCol guardId);
-        [[nodiscard]] bool dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
-                                         uint64_t flags1, uint64_t flags2, bool single);
-        [[nodiscard]] bool dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
-                                         uint64_t property1, uint64_t property2);
-        [[nodiscard]] bool dictSysTabComPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
-        [[nodiscard]] bool dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
-        [[nodiscard]] bool dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj);
-        [[nodiscard]] bool dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
+        bool dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
+        bool dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);
+        bool dictSysColAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name,
+                           typeType type, uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId,
+                           bool null_, uint64_t property1, uint64_t property2);
+        bool dictSysDeferredStgAdd(const char* rowIdStr, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2);
+        bool dictSysEColAdd(const char* rowIdStr, typeObj tabObj, typeCol colNum, typeCol guardId);
+        bool dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
+                           uint64_t flags1, uint64_t flags2, bool single);
+        bool dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
+                           uint64_t property1, uint64_t property2);
+        bool dictSysTabComPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
+        bool dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
+        bool dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj);
+        bool dictSysUserAdd(const char* rowIdStr, typeUser user, const char* name, uint64_t spare11, uint64_t spare12, bool single);
         void dictSysCColDrop(typeRowId rowId);
         void dictSysCDefDrop(typeRowId rowId);
         void dictSysColDrop(typeRowId rowId);

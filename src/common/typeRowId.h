@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "types.h"
 
-#ifndef TYPEROWID_H_
-#define TYPEROWID_H_
+#ifndef TYPE_ROWID_H_
+#define TYPE_ROWID_H_
 
 #define ROWID_LENGTH 18
 
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
 
         typeRowId();
         explicit typeRowId(const char* rowid);
-        typeRowId(typeDataObj dataObj, typeDba dba, typeSlot slot);
+        typeRowId(typeDataObj newDataObj, typeDba newDba, typeSlot newSlot);
 
         bool operator<(const typeRowId& other) const;
         bool operator!=(const typeRowId& other) const;

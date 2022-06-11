@@ -254,7 +254,7 @@ namespace OpenLogReplicator {
 
         void builderAppend(const char* str, uint64_t length) {
             if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
-                memcpy(lastBuffer->data + lastBuffer->length, str, length);
+                memcpy((void*)(lastBuffer->data + lastBuffer->length), (void*)str, length);
                 lastBuffer->length += length;
                 messageLength += length;
             } else {
@@ -519,9 +519,9 @@ namespace OpenLogReplicator {
         BuilderQueue* firstBuffer;
         BuilderQueue* lastBuffer;
 
-        Builder(Ctx* ctx, Locales* locales, Metadata* metadata, uint64_t messageFormat, uint64_t ridFormat, uint64_t xidFormat, uint64_t timestampFormat,
-                uint64_t charFormat, uint64_t scnFormat, uint64_t unknownFormat, uint64_t schemaFormat, uint64_t columnFormat, uint64_t unknownType,
-                uint64_t flushBuffer);
+        Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
+                uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
+                uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
         virtual ~Builder();
 
         [[nodiscard]] uint64_t builderSize() const;

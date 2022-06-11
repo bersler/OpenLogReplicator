@@ -24,8 +24,8 @@ namespace OpenLogReplicator {
         CharacterSet("JA16EUC") {
     }
 
-    CharacterSetJA16EUC::CharacterSetJA16EUC(const char* name) :
-        CharacterSet(name) {
+    CharacterSetJA16EUC::CharacterSetJA16EUC(const char* newName) :
+        CharacterSet(newName) {
     }
 
     CharacterSetJA16EUC::~CharacterSetJA16EUC() = default;

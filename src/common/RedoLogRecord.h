@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "typeXid.h"
 
-#ifndef REDOLOGRECORD_H_
-#define REDOLOGRECORD_H_
+#ifndef REDO_LOG_RECORD_H_
+#define REDO_LOG_RECORD_H_
 
 namespace OpenLogReplicator {
     class RedoLogRecord {

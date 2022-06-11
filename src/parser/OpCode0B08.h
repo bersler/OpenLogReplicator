@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "OpCode.h"
 
-#ifndef OPCODE0B08_H_
-#define OPCODE0B08_H_
+#ifndef OP_CODE_0B_08_H_
+#define OP_CODE_0B_08_H_
 
 namespace OpenLogReplicator {
     class OpCode0B08: public OpCode {

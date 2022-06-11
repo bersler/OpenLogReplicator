@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseStatement.h"
 
 namespace OpenLogReplicator {
-    DatabaseStatement::DatabaseStatement(DatabaseConnection* conn) :
-            conn(conn),
+    DatabaseStatement::DatabaseStatement(DatabaseConnection* newConn) :
+            conn(newConn),
             executed(false),
             stmthp(nullptr) {
 

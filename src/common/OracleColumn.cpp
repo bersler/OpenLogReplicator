@@ -21,27 +21,27 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleColumn.h"
 
 namespace OpenLogReplicator {
-    OracleColumn::OracleColumn(typeCol col, typeCol guardSeg, typeCol segCol, std::string& name, uint64_t type, uint64_t length, int64_t precision,
-                               int64_t scale, typeCol numPk, uint64_t charsetId, bool nullable, bool invisible, bool storedAsLob, bool constraint, bool nested,
-                               bool unused, bool added, bool guard) :
-            col(col),
-            guardSeg(guardSeg),
-            segCol(segCol),
-            name(name),
-            type(type),
-            length(length),
-            precision(precision),
-            scale(scale),
-            numPk(numPk),
-            charsetId(charsetId),
-            nullable(nullable),
-            invisible(invisible),
-            storedAsLob(storedAsLob),
-            constraint(constraint),
-            nested(nested),
-            unused(unused),
-            added(added),
-            guard(guard) {
+    OracleColumn::OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, std::string& newName, uint64_t newType, uint64_t newLength,
+                               int64_t newPrecision, int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newInvisible,
+                               bool newStoredAsLob, bool newConstraint, bool newNested, bool newUnused, bool newAdded, bool newGuard) :
+            col(newCol),
+            guardSeg(newGuardSeg),
+            segCol(newSegCol),
+            name(newName),
+            type(newType),
+            length(newLength),
+            precision(newPrecision),
+            scale(newScale),
+            numPk(newNumPk),
+            charsetId(newCharsetId),
+            nullable(newNullable),
+            invisible(newInvisible),
+            storedAsLob(newStoredAsLob),
+            constraint(newConstraint),
+            nested(newNested),
+            unused(newUnused),
+            added(newAdded),
+            guard(newGuard) {
         if (segCol > 1000)
             throw DataException("invalid segCol value (" + std::to_string(segCol) + "), metadata error");
     }

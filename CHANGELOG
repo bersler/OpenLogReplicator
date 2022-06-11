@@ -1,3 +1,9 @@
+0.9.43
+- fixed compilation errors for Release target
+- code style fixes
+- minor fixes
+- fixed issues related to standby database handling
+
 0.9.42
 - moved from Makefile to Cmake
 - major code refactor, removed spaghetti code, divided code into separate modules, name cleanup, style cleanup, etc.

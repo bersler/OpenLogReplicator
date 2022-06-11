@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet16bit.h"
 
-#ifndef CHARACTERSETZHS16GBK_H_
-#define CHARACTERSETZHS16GBK_H_
+#ifndef CHARACTER_SET_ZHS16GBK_H_
+#define CHARACTER_SET_ZHS16GBK_H_
 
 #define ZHS16GBK_b1_min         0x81
 #define ZHS16GBK_b1_max         0xFE

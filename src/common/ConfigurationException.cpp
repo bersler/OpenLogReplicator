@@ -20,15 +20,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 
 namespace OpenLogReplicator {
-    ConfigurationException::ConfigurationException(const std::string& msg) :
+    ConfigurationException::ConfigurationException(const std::string& newMsg) :
             exception(),
-            msg(std::move(msg)) {
+            msg(std::move(newMsg)) {
     }
 
-    ConfigurationException::ConfigurationException(const char* msg) :
+    ConfigurationException::ConfigurationException(const char* newMsg) :
             exception(),
-            msg(msg) {
+            msg(newMsg) {
     }
+
+    ConfigurationException::~ConfigurationException() = default;
 
     std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception) {
         os << exception.msg;

@@ -22,17 +22,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "DataException.h"
 
-#define TYPEINTXLEN                             2
-#define TYPEINTXDIGITS                          39
+#ifndef TYPE_INTX_T_H_
+#define TYPE_INTX_T_H_
 
-#ifndef TYPEINTX_T_H_
-#define TYPEINTX_T_H_
+#define TYPE_INTX_LEN                           2
+#define TYPE_INTX_DIGITS                        39
 
 namespace OpenLogReplicator {
     class typeINTX {
     private:
-        uint64_t data[TYPEINTXLEN];
-        static typeINTX BASE10[TYPEINTXDIGITS][10];
+        uint64_t data[TYPE_INTX_LEN];
+        static typeINTX BASE10[TYPE_INTX_DIGITS][10];
     public:
         explicit typeINTX(uint64_t val);
         typeINTX(uint64_t val1, uint64_t val2);

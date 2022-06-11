@@ -40,9 +40,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Schema.h"
 
 namespace OpenLogReplicator {
-    Schema::Schema(Ctx* ctx, Locales* locales) :
-            ctx(ctx),
-            locales(locales),
+    Schema::Schema(Ctx* newCtx, Locales* newLocales) :
+            ctx(newCtx),
+            locales(newLocales),
             sysUserAdaptive(sysUserRowId, 0, "", 0, 0, false, false),
             scn(ZERO_SCN),
             refScn(ZERO_SCN),
@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
 
     Schema::~Schema() {
         purge();
-    };
+    }
 
     void Schema::purge() {
         scn = ZERO_SCN;

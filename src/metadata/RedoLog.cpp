@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "RedoLog.h"
 
 namespace OpenLogReplicator {
-    RedoLog::RedoLog(int64_t group, const char* path) :
-            group(group),
-            path(path) {
+    RedoLog::RedoLog(int64_t newGroup, const char* newPath) :
+            group(newGroup),
+            path(newPath) {
     }
 
     bool RedoLog::operator<(const RedoLog& other) const {

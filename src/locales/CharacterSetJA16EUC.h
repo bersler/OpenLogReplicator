@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-#ifndef CHARACTERSETJA16EUC_H_
-#define CHARACTERSETJA16EUC_H_
+#ifndef CHARACTER_SET_JA16EUC_H_
+#define CHARACTER_SET_JA16EUC_H_
 
 #define JA16EUC_b1_min      0x8E
 #define JA16EUC_b1_max      0xFE
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
 
     public:
         CharacterSetJA16EUC();
-        explicit CharacterSetJA16EUC(const char* name);
+        explicit CharacterSetJA16EUC(const char* newName);
         ~CharacterSetJA16EUC() override;
 
         typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;

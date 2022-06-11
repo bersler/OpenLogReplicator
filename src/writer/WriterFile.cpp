@@ -31,21 +31,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterFile.h"
 
 namespace OpenLogReplicator {
-    WriterFile::WriterFile(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, const char* output,
-                           const char* format, uint64_t maxSize, uint64_t newLine, uint64_t append) :
-        Writer(ctx, alias, database, builder, metadata),
+    WriterFile::WriterFile(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
+                           const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend) :
+        Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
         prefixPos(0),
         suffixPos(0),
-        mode(WRITERFILE_MODE_STDOUT),
+        mode(WRITER_FILE_MODE_STDOUT),
         fill(0),
-        output(output),
-        format(format),
+        output(newOutput),
+        format(newFormat),
         outputFileNum(0),
         outputSize(0),
-        maxSize(maxSize),
+        maxSize(newMaxSize),
         outputDes(-1),
-        newLine(newLine),
-        append(append),
+        newLine(newNewLine),
+        append(newAppend),
         lastSequence(ZERO_SEQ),
         newLineMsg(nullptr),
         warningDisplayed(false) {
@@ -79,63 +79,63 @@ namespace OpenLogReplicator {
         }
 
         if ((prefixPos = this->output.find("%i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             suffixPos = prefixPos + 2;
         } else if ((prefixPos = this->output.find("%2i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 2;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%3i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 3;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%4i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 4;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%5i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 5;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%6i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 6;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%7i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 7;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%8i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 8;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%9i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 9;
             suffixPos = prefixPos + 3;
         } else if ((prefixPos = this->output.find("%10i")) != std::string::npos) {
-            mode = WRITERFILE_MODE_NUM;
+            mode = WRITER_FILE_MODE_NUM;
             fill = 10;
             suffixPos = prefixPos + 4;
         } else if ((prefixPos = this->output.find("%t")) != std::string::npos) {
-            mode = WRITERFILE_MODE_TIMETAMP;
+            mode = WRITER_FILE_MODE_TIMESTAMP;
             suffixPos = prefixPos + 2;
         } else if ((prefixPos = this->output.find("%s")) != std::string::npos) {
-            mode = WRITERFILE_MODE_SEQUENCE;
+            mode = WRITER_FILE_MODE_SEQUENCE;
             suffixPos = prefixPos + 2;
         } else {
             if ((prefixPos = this->output.find('%')) != std::string::npos)
                 throw RuntimeException("invalid value for 'output': " + this->output);
             if (append == 0)
                 throw RuntimeException("output file is with no rotation: " + this->output + " - 'append' must be set to 1");
-            mode = WRITERFILE_MODE_NOROTATE;
+            mode = WRITER_FILE_MODE_NO_ROTATE;
         }
 
-        if ((mode == WRITERFILE_MODE_TIMETAMP || mode == WRITERFILE_MODE_NUM) && maxSize == 0)
+        if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxSize == 0)
             throw RuntimeException("output file is with no max size: " + this->output + " - 'max-size' must be defined for output with rotation");
 
         //search for last used number
-        if (mode == WRITERFILE_MODE_NUM) {
+        if (mode == WRITER_FILE_MODE_NUM) {
             DIR* dir;
             if ((dir = opendir(outputPath.c_str())) == nullptr)
                 throw RuntimeException("can't access directory: " + outputPath + " to create output files defined with: " + this->output);
@@ -195,11 +195,11 @@ namespace OpenLogReplicator {
     }
 
     void WriterFile::checkFile(typeScn scn __attribute__((unused)), typeSeq sequence, uint64_t length) {
-        if (mode == WRITERFILE_MODE_STDOUT) {
+        if (mode == WRITER_FILE_MODE_STDOUT) {
             return;
-        } else if (mode == WRITERFILE_MODE_NOROTATE) {
+        } else if (mode == WRITER_FILE_MODE_NO_ROTATE) {
             outputFile = outputPath + "/" + outputFileMask;
-        } else if (mode == WRITERFILE_MODE_NUM) {
+        } else if (mode == WRITER_FILE_MODE_NUM) {
             if (outputSize + length > maxSize) {
                 closeFile();
                 ++outputFileNum;
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
                     zeros = fill - outputFileNumStr.length();
                 outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr + outputFileMask.substr(suffixPos);
             }
-        } else if (mode == WRITERFILE_MODE_TIMETAMP) {
+        } else if (mode == WRITER_FILE_MODE_TIMESTAMP) {
             bool shouldSwitch = false;
             if (outputSize + length > maxSize)
                 shouldSwitch = true;
@@ -245,7 +245,7 @@ namespace OpenLogReplicator {
                 closeFile();
                 outputSize = 0;
             }
-        } else if (mode == WRITERFILE_MODE_SEQUENCE) {
+        } else if (mode == WRITER_FILE_MODE_SEQUENCE) {
             if (sequence != lastSequence) {
                 closeFile();
             }

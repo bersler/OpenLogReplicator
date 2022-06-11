@@ -44,6 +44,8 @@ namespace OpenLogReplicator {
             Serializer() {
     }
 
+    SerializerJson::~SerializerJson() = default;
+
     void SerializerJson::serialize(Metadata* metadata, std::stringstream &ss, bool storeSchema) {
         ss << R"({"database":")" << metadata->database <<
            R"(","scn":)" << std::dec << metadata->checkpointScn <<

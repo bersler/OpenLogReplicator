@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Replicator.h"
 
-#ifndef REPLICATORBATCH_H_
-#define REPLICATORBATCH_H_
+#ifndef REPLICATOR_BATCH_H_
+#define REPLICATOR_BATCH_H_
 
 namespace OpenLogReplicator {
     class ReplicatorBatch : public Replicator {
@@ -31,8 +31,8 @@ namespace OpenLogReplicator {
         void createSchema() override;
 
     public:
-        ReplicatorBatch(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer,
-                        std::string alias, const char* database);
+        ReplicatorBatch(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+                        TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase);
         ~ReplicatorBatch() override;
     };
 }

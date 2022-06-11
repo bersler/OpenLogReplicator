@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-#ifndef CHARACTERSETUTF8_H_
-#define CHARACTERSETUTF8_H_
+#ifndef CHARACTER_SET_UTF8_H_
+#define CHARACTER_SET_UTF8_H_
 
 namespace OpenLogReplicator {
     class CharacterSetUTF8 : public CharacterSet {

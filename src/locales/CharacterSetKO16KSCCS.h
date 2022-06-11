@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet16bit.h"
 
-#ifndef CHARACTERSETKO16KSCCS_H_
-#define CHARACTERSETKO16KSCCS_H_
+#ifndef CHARACTER_SET_KO16KSCCS_H_
+#define CHARACTER_SET_KO16KSCCS_H_
 
 #define KO16KSCCS_b1_min    0x84
 #define KO16KSCCS_b1_max    0xF9

@@ -27,13 +27,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    TransactionBuffer::TransactionBuffer(Ctx* ctx) :
-        ctx(ctx) {
+    TransactionBuffer::TransactionBuffer(Ctx* newCtx) :
+        ctx(newCtx) {
     }
 
     TransactionBuffer::~TransactionBuffer() {
-        if (partiallyFullChunks.size() > 0)
-            throw RuntimeException("non free blocks in transaction buffer: " + std::to_string(partiallyFullChunks.size()));
+        if (partiallyFullChunks.size() > 0) {
+            WARNING("non free blocks in transaction buffer: " + std::to_string(partiallyFullChunks.size()))
+        }
 
         skipXidList.clear();
         brokenXidMapList.clear();
@@ -101,7 +102,7 @@ namespace OpenLogReplicator {
         }
 
         tc = (TransactionChunk*) (chunk + FULL_BUFFER_SIZE * pos);
-        memset(tc, 0, HEADER_BUFFER_SIZE);
+        memset((void*)tc, 0, HEADER_BUFFER_SIZE);
         tc->header = chunk;
         tc->pos = pos;
         return tc;
@@ -174,9 +175,9 @@ namespace OpenLogReplicator {
         //append to the chunk at the end
         TransactionChunk* tc = transaction->lastTc;
         *((typeOp2*) (tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord->opCode << 16);
-        memcpy(tc->buffer + tc->size + ROW_HEADER_REDO1, redoLogRecord, sizeof(RedoLogRecord));
-        memset(tc->buffer + tc->size + ROW_HEADER_REDO2, 0, sizeof(RedoLogRecord));
-        memcpy(tc->buffer + tc->size + ROW_HEADER_DATA, redoLogRecord->data, redoLogRecord->length);
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_REDO1), (void*)redoLogRecord, sizeof(RedoLogRecord));
+        memset((void*)(tc->buffer + tc->size + ROW_HEADER_REDO2), 0, sizeof(RedoLogRecord));
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_DATA), (void*)redoLogRecord->data, redoLogRecord->length);
 
         *((uint64_t*) (tc->buffer + tc->size + ROW_HEADER_SIZE + redoLogRecord->length)) = length;
 
@@ -244,10 +245,10 @@ namespace OpenLogReplicator {
         //append to the chunk at the end
         TransactionChunk* tc = transaction->lastTc;
         *((typeOp2*) (tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
-        memcpy(tc->buffer + tc->size + ROW_HEADER_REDO1, redoLogRecord1, sizeof(RedoLogRecord));
-        memcpy(tc->buffer + tc->size + ROW_HEADER_REDO2, redoLogRecord2, sizeof(RedoLogRecord));
-        memcpy(tc->buffer + tc->size + ROW_HEADER_DATA, redoLogRecord1->data, redoLogRecord1->length);
-        memcpy(tc->buffer + tc->size + ROW_HEADER_DATA + redoLogRecord1->length, redoLogRecord2->data, redoLogRecord2->length);
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_REDO1), (void*)redoLogRecord1, sizeof(RedoLogRecord));
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_REDO2), (void*)redoLogRecord2, sizeof(RedoLogRecord));
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_DATA), (void*)redoLogRecord1->data, redoLogRecord1->length);
+        memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_DATA + redoLogRecord1->length), (void*)redoLogRecord2->data, redoLogRecord2->length);
 
         *((uint64_t*) (tc->buffer + tc->size + ROW_HEADER_SIZE + redoLogRecord1->length + redoLogRecord2->length)) = length;
 
@@ -290,7 +291,7 @@ namespace OpenLogReplicator {
     }
 
     void TransactionBuffer::mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        memcpy(mergeBuffer, redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
+        memcpy((void*)mergeBuffer, (void*)redoLogRecord1->data, redoLogRecord1->fieldLengthsDelta);
         uint64_t pos = redoLogRecord1->fieldLengthsDelta;
         uint16_t fieldCnt;
         uint16_t fieldPos1;
@@ -306,19 +307,19 @@ namespace OpenLogReplicator {
         //field list
         fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
         ctx->write16(mergeBuffer + pos, fieldCnt);
-        memcpy(mergeBuffer + pos + 2, redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2, redoLogRecord1->fieldCnt * 2);
-        memcpy(mergeBuffer + pos + 2 + redoLogRecord1->fieldCnt * 2, redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6, redoLogRecord2->fieldCnt * 2 - 4);
+        memcpy((void*)(mergeBuffer + pos + 2), (void*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2), redoLogRecord1->fieldCnt * 2);
+        memcpy((void*)(mergeBuffer + pos + 2 + redoLogRecord1->fieldCnt * 2), (void*)(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 6), redoLogRecord2->fieldCnt * 2 - 4);
         pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
         fieldPos1 = pos;
 
         //ctx
-        memcpy(mergeBuffer + pos, redoLogRecord1->data + redoLogRecord1->fieldPos, redoLogRecord1->length - redoLogRecord1->fieldPos);
+        memcpy((void*)(mergeBuffer + pos), (void*)(redoLogRecord1->data + redoLogRecord1->fieldPos), redoLogRecord1->length - redoLogRecord1->fieldPos);
         pos += (redoLogRecord1->length - redoLogRecord1->fieldPos + 3) & (0xFFFC);
         fieldPos2 = redoLogRecord2->fieldPos +
                     ((ctx->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 2) + 3) & 0xFFFC) +
                     ((ctx->read16(redoLogRecord2->data + redoLogRecord2->fieldLengthsDelta + 4) + 3) & 0xFFFC);
 
-        memcpy(mergeBuffer + pos, redoLogRecord2->data + fieldPos2, redoLogRecord2->length - fieldPos2);
+        memcpy((void*)(mergeBuffer + pos), (void*)(redoLogRecord2->data + fieldPos2), redoLogRecord2->length - fieldPos2);
         pos += (redoLogRecord2->length - fieldPos2 + 3) & (0xFFFC);
 
         redoLogRecord1->length = pos;

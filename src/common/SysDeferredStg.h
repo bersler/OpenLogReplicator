@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysDeferredStg {
     public:
-        SysDeferredStg(typeRowId& rowId, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2, bool touched);
+        SysDeferredStg(typeRowId& newRowId, typeObj newObj, uint64_t newFlagsStg1, uint64_t newFlagsStg2, bool newTouched);
 
         bool operator!=(const SysDeferredStg& other) const;
         [[nodiscard]] bool isCompressed();

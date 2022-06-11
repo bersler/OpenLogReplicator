@@ -39,14 +39,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Replicator.h"
 
 namespace OpenLogReplicator {
-    Replicator::Replicator(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata,
-                           TransactionBuffer* transactionBuffer, std::string alias, const char* database) :
-            Thread(ctx, alias),
-            archGetLog(archGetLog),
-            builder(builder),
-            metadata(metadata),
-            transactionBuffer(transactionBuffer),
-            database(database),
+    Replicator::Replicator(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+                           TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase) :
+            Thread(newCtx, newAlias),
+            archGetLog(newArchGetLog),
+            builder(newBuilder),
+            metadata(newMetadata),
+            transactionBuffer(newTransactionBuffer),
+            database(newDatabase),
             archReader(nullptr) {
     }
 
@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::readerDropAll(void) {
-        bool wakingUp = true;
+        bool wakingUp;
         for (;;) {
             wakingUp = false;
             for (Reader* reader : readers) {
@@ -219,22 +219,12 @@ namespace OpenLogReplicator {
 
         INFO("Oracle replicator for: " << database << " is shutting down")
 
-        uint64_t buffersMax = getBuffersMax();
         ctx->replicatorFinished = true;
         //readerDropAll();
         INFO("Oracle replicator for: " << database << " is shut down, allocated at most " << std::dec <<
-                ctx->getMaxUsedMemory() << "MB memory, max disk read buffer: " << (buffersMax * MEMORY_CHUNK_SIZE_MB) << "MB")
+                ctx->getMaxUsedMemory() << "MB memory, max disk read buffer: " << (ctx->buffersMaxUsed * MEMORY_CHUNK_SIZE_MB) << "MB")
 
         TRACE(TRACE2_THREADS, "THREADS: Replicator (" << std::hex << std::this_thread::get_id() << ") STOP")
-    }
-
-    uint64_t Replicator::getBuffersMax() {
-        uint64_t buffersMaxUsed = 0;
-        for (Reader* reader : readers) {
-            if (ctx->buffersMaxUsed > buffersMaxUsed)
-                buffersMaxUsed = ctx->buffersMaxUsed;
-        }
-        return buffersMaxUsed;
     }
 
     Reader* Replicator::readerCreate(int64_t group) {
@@ -383,8 +373,8 @@ namespace OpenLogReplicator {
                     newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
                     memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
 
-                memcpy(pathBuffer, pathMapping[i * 2 + 1].c_str(), targetLength);
-                memcpy(pathBuffer + targetLength, path.c_str() + sourceLength, newPathLength - sourceLength);
+                memcpy((void*)pathBuffer, (void*)pathMapping[i * 2 + 1].c_str(), targetLength);
+                memcpy((void*)(pathBuffer + targetLength), (void*)(path.c_str() + sourceLength), newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH)
                     throw RuntimeException("After mapping path length (" + std::to_string(newPathLength - sourceLength + targetLength) +
@@ -585,11 +575,13 @@ namespace OpenLogReplicator {
 
         //resetlogs is changed
         for (OracleIncarnation* oi : metadata->oracleIncarnations) {
-            if (/*oi->resetlogsScn == checkpoint->nextScn && */
+            if (oi->resetlogsScn == metadata->nextScn &&
                     metadata->oracleIncarnationCurrent->resetlogs == metadata->resetlogs &&
                     oi->priorIncarnation == metadata->oracleIncarnationCurrent->incarnation) {
                 INFO("new resetlogs detected: " << std::dec << oi->resetlogs)
                 metadata->setResetlogs(oi->resetlogs);
+                metadata->sequence = 0;
+                metadata->offset = 0;
                 return;
             }
         }
@@ -630,7 +622,7 @@ namespace OpenLogReplicator {
 
     bool Replicator::processArchivedRedoLogs() {
         uint64_t ret = REDO_OK;
-        Parser* parser = nullptr;
+        Parser* parser;
         bool logsProcessed = false;
 
         while (!ctx->softShutdown) {
@@ -685,6 +677,8 @@ namespace OpenLogReplicator {
                 }
 
                 ret = parser->parse();
+                metadata->firstScn = parser->firstScn;
+                metadata->nextScn = parser->nextScn;
 
                 if (ctx->softShutdown)
                     break;
@@ -693,7 +687,6 @@ namespace OpenLogReplicator {
                     if  (ret == REDO_STOPPED) {
                         archiveRedoQueue.pop();
                         delete parser;
-                        parser = nullptr;
                         break;
                     }
                     throw RuntimeException(std::string("archive log processing returned: ") + Reader::REDO_CODE[ret] +
@@ -705,7 +698,6 @@ namespace OpenLogReplicator {
                 ++metadata->sequence;
                 archiveRedoQueue.pop();
                 delete parser;
-                parser = nullptr;
 
                 if (ctx->stopLogSwitches > 0) {
                     --ctx->stopLogSwitches;
@@ -725,7 +717,7 @@ namespace OpenLogReplicator {
 
     bool Replicator::processOnlineRedoLogs() {
         uint64_t ret = REDO_OK;
-        Parser* parser = nullptr;
+        Parser* parser;
         bool logsProcessed = false;
 
         TRACE(TRACE2_REDO, "REDO: checking online redo logs, seq: " << std::dec << metadata->sequence)
@@ -746,8 +738,7 @@ namespace OpenLogReplicator {
                         higher = true;
 
                     if (onlineRedo->reader->getSequence() == metadata->sequence &&
-                        (onlineRedo->reader->getNumBlocks() == ZERO_BLK ||
-                         metadata->offset < onlineRedo->reader->getNumBlocks() * onlineRedo->reader->getBlockSize())) {
+                        (onlineRedo->reader->getNumBlocks() == ZERO_BLK || metadata->offset < onlineRedo->reader->getNumBlocks() * onlineRedo->reader->getBlockSize())) {
                         parser = onlineRedo;
                     }
 
@@ -765,7 +756,7 @@ namespace OpenLogReplicator {
                     break;
 
                 clock_t endTime = Timer::getTime();
-                if (beginTime + ctx->refreshIntervalUs < endTime) {
+                if (beginTime + (clock_t)ctx->refreshIntervalUs < endTime) {
                     updateOnlineRedoLogData();
                     updateOnlineLogs();
                     goStandby();
@@ -784,6 +775,8 @@ namespace OpenLogReplicator {
             logsProcessed = true;
 
             ret = parser->parse();
+            metadata->firstScn = parser->firstScn;
+            metadata->nextScn = parser->nextScn;
 
             if (ctx->softShutdown)
                 break;

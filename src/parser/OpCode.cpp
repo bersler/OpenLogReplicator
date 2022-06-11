@@ -554,7 +554,7 @@ namespace OpenLogReplicator {
             if ((flag & 0x01) != 0) {
                 uint8_t fwd[4];
                 uint16_t fwd2 = ctx->read16(redoLogRecord->data + fieldPos + 20);
-                memcpy(fwd, redoLogRecord->data + fieldPos + 16, 4);
+                memcpy((void*)fwd, (void*)(redoLogRecord->data + fieldPos + 16), 4);
                 ctx->dumpStream << "fwd: 0x" <<
                         std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[0] <<
                         std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[1] <<
@@ -566,7 +566,7 @@ namespace OpenLogReplicator {
             if ((flag & 0x02) != 0) {
                 uint8_t bkw[4];
                 uint16_t bkw2 = ctx->read16(redoLogRecord->data + fieldPos + 26);
-                memcpy(bkw, redoLogRecord->data + fieldPos + 22, 4);
+                memcpy((void*)bkw, (void*)(redoLogRecord->data + fieldPos + 22), 4);
                 ctx->dumpStream << "bkw: 0x" <<
                         std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[0] <<
                         std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[1] <<

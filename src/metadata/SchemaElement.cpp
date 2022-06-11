@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SchemaElement.h"
 
 namespace OpenLogReplicator {
-    SchemaElement::SchemaElement(const char* owner, const char* table, typeOptions options) :
-        owner(owner),
-        table(table),
-        options(options) {
+    SchemaElement::SchemaElement(const char* newOwner, const char* newTable, typeOptions newOptions) :
+        owner(newOwner),
+        table(newTable),
+        options(newOptions) {
     }
 }

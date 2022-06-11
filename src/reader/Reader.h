@@ -58,10 +58,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_READ_VERIFY_MAX_BLOCKS (MEMORY_CHUNK_SIZE/blockSize)
 
 namespace OpenLogReplicator {
-    class Checkpoint;
     class Reader : public Thread {
     protected:
-        Checkpoint* checkpoint;
         Ctx* ctx;
         std::string database;
         int fileCopyDes;
@@ -74,12 +72,12 @@ namespace OpenLogReplicator {
         std::string fileNameWrite;
         int64_t group;
         typeSeq sequence;
-        typeBlk numBlocks;
+        typeBlk numBlocksHeader;
         typeResetlogs resetlogs;
         typeActivation activation;
         uint8_t* headerBuffer;
         uint32_t compatVsn;
-        typeTime firstTime;
+        typeTime firstTimeHeader;
         typeScn firstScn;
         typeScn firstScnHeader;
         typeScn nextScn;
@@ -111,6 +109,7 @@ namespace OpenLogReplicator {
         uint64_t reloadHeader();
         bool read1();
         bool read2();
+        void mainLoop();
 
     public:
         const static char* REDO_CODE[13];
@@ -118,12 +117,12 @@ namespace OpenLogReplicator {
         std::vector<std::string> paths;
         std::string fileName;
 
-        Reader(Ctx* ctx, std::string alias, std::string& database, int64_t group, bool configuredBlockSum);
+        Reader(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum);
         ~Reader() override;
 
         void initialize();
-        virtual void wakeUp();
-        virtual void run();
+        void wakeUp() override;
+        void run() override;
         void bufferAllocate(uint64_t num);
         void bufferFree(uint64_t num);
         typeSum calcChSum(uint8_t* buffer, uint64_t size) const;

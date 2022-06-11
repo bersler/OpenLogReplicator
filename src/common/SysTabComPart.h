@@ -26,7 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTabComPartKey {
     public:
-        SysTabComPartKey(typeObj bo, typeObj obj);
+        SysTabComPartKey(typeObj newBo, typeObj newObj);
 
         bool operator<(const SysTabComPartKey& other) const;
 
@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysTabComPart {
     public:
-        SysTabComPart(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeObj bo, bool touched);
+        SysTabComPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo, bool newTouched);
 
         bool operator!=(const SysTabComPart& other) const;
 

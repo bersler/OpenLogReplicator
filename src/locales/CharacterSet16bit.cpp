@@ -20,14 +20,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "CharacterSet16bit.h"
 
 namespace OpenLogReplicator {
-    CharacterSet16bit::CharacterSet16bit(const char* name, const typeUnicode16* map, uint64_t byte1min, uint64_t byte1max, uint64_t byte2min,
-            uint64_t byte2max) :
-        CharacterSet(name),
-        map(map),
-        byte1min(byte1min),
-        byte1max(byte1max),
-        byte2min(byte2min),
-        byte2max(byte2max) {
+    CharacterSet16bit::CharacterSet16bit(const char* newName, const typeUnicode16* newMap, uint64_t newByte1min, uint64_t newByte1max,
+            uint64_t newByte2min, uint64_t newByte2max) :
+        CharacterSet(newName),
+        map(newMap),
+        byte1min(newByte1min),
+        byte1max(newByte1max),
+        byte2min(newByte2min),
+        byte2max(newByte2max) {
     }
 
     CharacterSet16bit::~CharacterSet16bit() = default;

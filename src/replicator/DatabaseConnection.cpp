@@ -21,13 +21,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DatabaseEnvironment.h"
 
 namespace OpenLogReplicator {
-    DatabaseConnection::DatabaseConnection(DatabaseEnvironment* env, const char* user, const char* password, const char* connectString, bool sysASM) :
-        user(user),
-        password(password),
-        connectString(connectString),
-        sysASM(sysASM),
+    DatabaseConnection::DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString, bool newSysAsm) :
+        user(newUser),
+        password(newPassword),
+        connectString(newConnectString),
+        sysAsm(newSysAsm),
         connected(false),
-        env(env),
+        env(newEnv),
         errhp(nullptr),
         srvhp(nullptr),
         svchp(nullptr),
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) user.c_str(), user.length(), OCI_ATTR_USERNAME, (OCIError*) errhp));
         env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) password.c_str(), password.length(), OCI_ATTR_PASSWORD, (OCIError*) errhp));
 
-        if (sysASM)
+        if (sysAsm)
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_SYSASM));
         else
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_DEFAULT));

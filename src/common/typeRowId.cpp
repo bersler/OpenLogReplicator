@@ -73,8 +73,10 @@ namespace OpenLogReplicator {
                ((typeSlot)map64R[(uint8_t)rowid[17]]);
     }
 
-    typeRowId::typeRowId(typeDataObj dataObj, typeDba dba, typeSlot slot):
-            dataObj(dataObj), dba(dba), slot(slot) {
+    typeRowId::typeRowId(typeDataObj newDataObj, typeDba newDba, typeSlot newSlot):
+            dataObj(newDataObj),
+            dba(newDba),
+            slot(newSlot) {
     }
 
     bool typeRowId::operator<(const typeRowId& other) const {

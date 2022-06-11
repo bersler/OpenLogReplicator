@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Serializer.h"
 
 namespace OpenLogReplicator {
+    Serializer::Serializer() = default;
 
-    Serializer::Serializer() {
-    }
+    Serializer::~Serializer() = default;
 }

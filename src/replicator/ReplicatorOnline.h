@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Replicator.h"
 
-#ifndef REPLICATORONLINE_H_
-#define REPLICATORONLINE_H_
+#ifndef REPLICATOR_ONLINE_H_
+#define REPLICATOR_ONLINE_H_
 
 namespace OpenLogReplicator {
     class DatabaseConnection;
@@ -89,8 +89,9 @@ namespace OpenLogReplicator {
         DatabaseConnection* conn;
         bool keepConnection;
 
-        ReplicatorOnline(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer,
-                         std::string alias, const char* database, const char* user, const char* password, const char* connectString, bool keepConnection);
+        ReplicatorOnline(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+                         TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase, const char* newUser, const char* newPassword,
+                         const char* newConnectString, bool newKeepConnection);
         ~ReplicatorOnline() override;
 
         void goStandby() override;

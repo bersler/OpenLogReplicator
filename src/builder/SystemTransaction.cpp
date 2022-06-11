@@ -39,10 +39,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    SystemTransaction::SystemTransaction(Builder* builder, Metadata* metadata) :
-                ctx(metadata->ctx),
-                builder(builder),
-                metadata(metadata),
+    SystemTransaction::SystemTransaction(Builder* newBuilder, Metadata* newMetadata) :
+                ctx(newMetadata->ctx),
+                builder(newBuilder),
+                metadata(newMetadata),
                 sysCCol(nullptr),
                 sysCDef(nullptr),
                 sysCol(nullptr),

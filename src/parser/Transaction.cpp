@@ -27,17 +27,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Transaction::Transaction(typeXid xid) :
+    Transaction::Transaction(typeXid newXid) :
         deallocTc(nullptr),
-        merges(),
-        xid(xid),
+        opCodes(0),
+        xid(newXid),
         firstSequence(0),
         firstOffset(0),
         commitSequence(0),
         commitScn(0),
         firstTc(nullptr),
         lastTc(nullptr),
-        opCodes(0),
         commitTimestamp(0),
         begin(false),
         rollback(false),

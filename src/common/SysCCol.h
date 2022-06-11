@@ -21,15 +21,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 #include "typeRowId.h"
 
-#ifndef SYSCCOL_H_
-#define SYSCCOL_H_
+#ifndef SYS_CCOL_H_
+#define SYS_CCOL_H_
 
 #define SYSCOL_NAME_LENGTH                  128
 
 namespace OpenLogReplicator {
     class SysCColKey {
     public:
-        SysCColKey(typeObj obj, typeCol intCol, typeCon con);
+        SysCColKey(typeObj newObj, typeCol newIntCol, typeCon newCon);
 
         bool operator<(const SysCColKey& other) const;
 
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
 
     class SysCCol {
     public:
-        SysCCol(typeRowId& rowId, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12, bool touched);
+        SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12, bool newTouched);
 
         bool operator!=(const SysCCol& other) const;
 

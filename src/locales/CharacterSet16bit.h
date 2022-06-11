@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet.h"
 
-#ifndef CHARACTERSET16BIT_H_
-#define CHARACTERSET16BIT_H_
+#ifndef CHARACTER_SET_16BIT_H_
+#define CHARACTER_SET_16BIT_H_
 
 #define JA16VMS_b1_min          0xA1
 #define JA16VMS_b1_max          0xF4
@@ -73,7 +73,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] virtual typeUnicode readMap(uint64_t byte1, uint64_t byte2) const;
 
     public:
-        CharacterSet16bit(const char* name, const typeUnicode16* map, uint64_t byte1min, uint64_t byte1max, uint64_t byte2min, uint64_t byte2max);
+        CharacterSet16bit(const char* newName, const typeUnicode16* newMap, uint64_t newByte1min, uint64_t newByte1max, uint64_t newByte2min,
+                          uint64_t newByte2max);
         ~CharacterSet16bit() override;
 
         typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;

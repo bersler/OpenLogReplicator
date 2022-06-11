@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/types.h"
 
-#ifndef DATABASEECONNECTION_H_
-#define DATABASEECONNECTION_H_
+#ifndef DATABASE_CONNECTION_H_
+#define DATABASE_CONNECTION_H_
 
 namespace OpenLogReplicator {
     class DatabaseEnvironment;
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         std::string user;
         std::string password;
         std::string connectString;
-        bool sysASM;
+        bool sysAsm;
         bool connected;
 
         DatabaseEnvironment* env;
@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         OCISvcCtx* svchp;
         OCISession* authp;
 
-        DatabaseConnection(DatabaseEnvironment* env, const char* user, const char* password, const char* connectString, bool sysASM);
+        DatabaseConnection(DatabaseEnvironment* newEnv, const char* newUser, const char* newPassword, const char* newConnectString, bool newSysAsm);
         virtual ~DatabaseConnection();
 
         void connect();

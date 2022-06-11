@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "State.h"
 
-#ifndef STATEDISK_H_
-#define STATEDISK_H_
+#ifndef STATE_DISK_H_
+#define STATE_DISK_H_
 
 namespace OpenLogReplicator {
     class StateDisk : public State {
@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
         std::string path;
 
     public:
-        explicit StateDisk(const char* path);
+        explicit StateDisk(const char* newPath);
         ~StateDisk() override;
 
         void list(std::set<std::string>& namesList) override;

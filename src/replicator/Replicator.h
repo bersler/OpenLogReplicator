@@ -69,7 +69,6 @@ namespace OpenLogReplicator {
 
         void updateOnlineLogs();
         void readerDropAll(void);
-        [[nodiscard]] uint64_t getBuffersMax();
         static uint64_t getSequenceFromFileName(Replicator* replicator, const std::string& file);
         virtual const char* getModeName() const;
         virtual bool checkConnection();
@@ -79,8 +78,8 @@ namespace OpenLogReplicator {
         virtual void updateOnlineRedoLogData();
 
     public:
-        Replicator(Ctx* ctx, void (*archGetLog)(Replicator* replicator), Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer,
-                   std::string alias, const char* database);
+        Replicator(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
+                   TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase);
         ~Replicator() override;
 
         void initialize();
@@ -96,7 +95,7 @@ namespace OpenLogReplicator {
         static void archGetLogList(Replicator* replicator);
         void applyMapping(std::string& path);
         void updateResetlogs();
-        virtual void wakeUp();
+        void wakeUp() override;
         void printStartMsg();
         bool processArchivedRedoLogs();
         bool processOnlineRedoLogs();

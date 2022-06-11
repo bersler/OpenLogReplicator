@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Stream.h"
 
-#ifndef STREAMZEROMQ_H_
-#define STREAMZEROMQ_H_
+#ifndef STREAM_ZERO_MQ_H_
+#define STREAM_ZERO_MQ_H_
 
 namespace OpenLogReplicator {
     class StreamZeroMQ : public Stream {
@@ -29,7 +29,7 @@ namespace OpenLogReplicator {
         void* context;
 
     public:
-        StreamZeroMQ(Ctx* ctx, const char* uri);
+        StreamZeroMQ(Ctx* newCtx, const char* newUri);
         ~StreamZeroMQ() override;
 
         void initialize() override;

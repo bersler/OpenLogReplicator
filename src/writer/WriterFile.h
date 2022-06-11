@@ -19,14 +19,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Writer.h"
 
-#ifndef WRITERFILE_H_
-#define WRITERFILE_H_
+#ifndef WRITER_FILE_H_
+#define WRITER_FILE_H_
 
-#define WRITERFILE_MODE_STDOUT              0
-#define WRITERFILE_MODE_NOROTATE            1
-#define WRITERFILE_MODE_NUM                 2
-#define WRITERFILE_MODE_TIMETAMP            3
-#define WRITERFILE_MODE_SEQUENCE            4
+#define WRITER_FILE_MODE_STDOUT             0
+#define WRITER_FILE_MODE_NO_ROTATE          1
+#define WRITER_FILE_MODE_NUM                2
+#define WRITER_FILE_MODE_TIMESTAMP          3
+#define WRITER_FILE_MODE_SEQUENCE           4
 
 namespace OpenLogReplicator {
     class WriterFile : public Writer {
@@ -56,8 +56,8 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterFile(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, const char* output, const char* format,
-                   uint64_t maxSize, uint64_t newLine, uint64_t append);
+        WriterFile(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
+                   const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend);
         ~WriterFile() override;
 
         void initialize() override;

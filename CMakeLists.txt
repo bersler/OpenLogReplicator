@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.18)
-project(OpenLogReplicator VERSION 0.9.42)
+cmake_minimum_required(VERSION 3.16)
+project(OpenLogReplicator VERSION 0.9.43)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS FALSE)
 if (OSX_ARCH)
     set(CMAKE_OSX_ARCHITECTURES ${OSX_ARCH})

@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Reader.h"
 
-#ifndef READERFILESYSTEM_H_
-#define READERFILESYSTEM_H_
+#ifndef READER_FILESYSTEM_H_
+#define READER_FILESYSTEM_H_
 
 namespace OpenLogReplicator {
     class ReaderFilesystem : public Reader {
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         int64_t redoRead(uint8_t* buf, uint64_t offset, uint64_t size) override;
 
     public:
-        ReaderFilesystem(Ctx* ctx, std::string alias, std::string& database, int64_t group, bool configuredBlockSum);
+        ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum);
         ~ReaderFilesystem() override;
     };
 }

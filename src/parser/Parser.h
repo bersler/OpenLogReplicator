@@ -74,7 +74,7 @@ namespace OpenLogReplicator {
         typeScn nextScn;
         Reader* reader;
 
-        Parser(Ctx* ctx, Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer, int64_t group, std::string& path);
+        Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string& newPath);
         virtual ~Parser();
 
         uint64_t parse();

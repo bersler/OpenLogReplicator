@@ -470,7 +470,7 @@ namespace OpenLogReplicator {
             colNumsSupp += 2;
         }
 
-        suppLogSize += (redoLogRecord->fieldCnt * 2 + 2 & 0xFFFC) - ((redoLogRecord->fieldCnt - suppLogFieldCnt) * 2 + 2 & 0xFFFC);
+        suppLogSize += ((redoLogRecord->fieldCnt * 2 + 2) & 0xFFFC) - (((redoLogRecord->fieldCnt - suppLogFieldCnt) * 2 + 2) & 0xFFFC);
         ctx->suppLogSize += suppLogSize;
     }
 }

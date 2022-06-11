@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysCol.h"
 
 namespace OpenLogReplicator {
-    SysColSeg::SysColSeg(typeObj obj, typeCol segCol) :
-            obj(obj),
-            segCol(segCol) {
+    SysColSeg::SysColSeg(typeObj newObj, typeCol newSegCol) :
+            obj(newObj),
+            segCol(newSegCol) {
     }
 
     bool SysColSeg::operator<(const SysColSeg& other) const {
@@ -33,9 +33,9 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysColKey::SysColKey(typeObj obj, typeCol intCol) :
-            obj(obj),
-            intCol(intCol) {
+    SysColKey::SysColKey(typeObj newObj, typeCol newIntCol) :
+            obj(newObj),
+            intCol(newIntCol) {
     }
 
     bool SysColKey::operator<(const SysColKey& other) const {
@@ -46,24 +46,24 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysCol::SysCol(typeRowId& rowId, typeObj obj, typeCol col, typeCol segCol, typeCol intCol, const char* name, typeType type,
-                   uint64_t length, int64_t precision, int64_t scale, uint64_t charsetForm, uint64_t charsetId, int64_t null_,
-                   uint64_t property1, uint64_t property2, bool touched) :
-            rowId(rowId),
-            obj(obj),
-            col(col),
-            segCol(segCol),
-            intCol(intCol),
-            name(name),
-            type(type),
-            length(length),
-            precision(precision),
-            scale(scale),
-            charsetForm(charsetForm),
-            charsetId(charsetId),
-            null_(null_),
-            property(property1, property2),
-            touched(touched) {
+    SysCol::SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
+                   uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
+                   uint64_t newProperty1, uint64_t newProperty2, bool newTouched) :
+            rowId(newRowId),
+            obj(newObj),
+            col(newCol),
+            segCol(newSegCol),
+            intCol(newIntCol),
+            name(newName),
+            type(newType),
+            length(newLength),
+            precision(newPrecision),
+            scale(newScale),
+            charsetForm(newCharsetForm),
+            charsetId(newCharsetId),
+            null_(newNull),
+            property(newProperty1, newProperty2),
+            touched(newTouched) {
     }
 
     bool SysCol::operator!=(const SysCol& other) const {

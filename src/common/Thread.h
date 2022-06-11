@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         std::string alias;
         std::atomic<bool> finished;
 
-        explicit Thread(Ctx* ctx, std::string alias);
+        explicit Thread(Ctx* newCtx, std::string newAlias);
         virtual ~Thread();
         virtual void wakeUp();
 

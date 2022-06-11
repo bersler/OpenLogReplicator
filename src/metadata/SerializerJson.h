@@ -23,8 +23,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Serializer.h"
 
-#ifndef SERIALIZERJSON_H_
-#define SERIALIZERJSON_H_
+#ifndef SERIALIZER_JSON_H_
+#define SERIALIZER_JSON_H_
 
 #define SERIALIZER_ENDL     <<std::endl
 
@@ -47,10 +47,11 @@ namespace OpenLogReplicator {
 
     public:
         SerializerJson();
+        ~SerializerJson() override;
 
-        [[nodiscard]] virtual bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs,
-                                               bool loadMetadata, bool storeSchema);
-        virtual void serialize(Metadata* metadata, std::stringstream &ss, bool noSchema);
+        [[nodiscard]] bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs,
+                                       bool loadMetadata, bool storeSchema) override;
+        void serialize(Metadata* metadata, std::stringstream &ss, bool noSchema) override;
     };
 }
 

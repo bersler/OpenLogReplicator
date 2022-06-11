@@ -20,13 +20,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "typeRowId.h"
 
-#ifndef SYSTABSUBPART_H_
-#define SYSTABSUBPART_H_
+#ifndef SYS_TABSUBPART_H_
+#define SYS_TABSUBPART_H_
 
 namespace OpenLogReplicator {
     class SysTabSubPartKey {
     public:
-        SysTabSubPartKey(typeObj pObj, typeObj obj);
+        SysTabSubPartKey(typeObj newPObj, typeObj newObj);
 
         bool operator<(const SysTabSubPartKey& other) const;
 
@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysTabSubPart {
     public:
-        SysTabSubPart(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeObj pObj, bool touched);
+        SysTabSubPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newPObj, bool newTouched);
 
         bool operator!=(const SysTabSubPart& other) const;
 

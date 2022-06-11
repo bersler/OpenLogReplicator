@@ -26,8 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamZeroMQ.h"
 
 namespace OpenLogReplicator {
-    StreamZeroMQ::StreamZeroMQ(Ctx* ctx, const char* uri) :
-        Stream(ctx, uri),
+    StreamZeroMQ::StreamZeroMQ(Ctx* newCtx, const char* newUri) :
+        Stream(newCtx, newUri),
         socket(nullptr),
         context(nullptr) {
     }
@@ -63,9 +63,8 @@ namespace OpenLogReplicator {
     }
 
     void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
-        int64_t ret = 0;
         while (!ctx->softShutdown) {
-            ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
+            int64_t ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
             if (ret == length)
                 return;
 

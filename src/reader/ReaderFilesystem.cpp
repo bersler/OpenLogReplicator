@@ -31,8 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ReaderFilesystem.h"
 
 namespace OpenLogReplicator {
-    ReaderFilesystem::ReaderFilesystem(Ctx* ctx, std::string alias, std::string& database, int64_t group, bool configuredBlockSum) :
-        Reader(ctx, alias, database, group, configuredBlockSum),
+    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
+        Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum),
         fileDes(-1),
         flags(0) {
     }
@@ -51,9 +51,9 @@ namespace OpenLogReplicator {
     uint64_t ReaderFilesystem::redoOpen() {
         struct stat fileStat;
 
-        int ret = stat(fileName.c_str(), &fileStat);
+        int fileRet = stat(fileName.c_str(), &fileStat);
         TRACE(TRACE2_FILE, "FILE: stat for file: " << fileName << " - " << strerror(errno))
-        if (ret != 0) {
+        if (fileRet != 0) {
             WARNING("reading information for file: " << fileName << " - " << strerror(errno))
             return REDO_ERROR;
         }

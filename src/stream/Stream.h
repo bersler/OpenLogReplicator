@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
         std::string uri;
 
     public:
-        Stream(Ctx* ctx, const char* uri);
+        Stream(Ctx* newCtx, const char* newUri);
         virtual ~Stream();
 
         [[nodiscard]] virtual std::string getName() const = 0;

@@ -19,18 +19,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet7bit.h"
 
-#ifndef CHARACTERSET8BIT_H_
-#define CHARACTERSET8BIT_H_
+#ifndef CHARACTER_SET_8BIT_H_
+#define CHARACTER_SET_8BIT_H_
 
 namespace OpenLogReplicator {
     class CharacterSet8bit : public CharacterSet7bit {
     protected:
         [[nodiscard]] typeUnicode readMap(uint64_t character) const override;
-        bool customASCII;
+        bool customAscii;
 
     public:
-        CharacterSet8bit(const char* name, const typeUnicode16* map);
-        CharacterSet8bit(const char* name, const typeUnicode16* map, bool customASCII);
+        CharacterSet8bit(const char* newName, const typeUnicode16* newMap);
+        CharacterSet8bit(const char* newName, const typeUnicode16* newMap, bool newCustomAscii);
         ~CharacterSet8bit() override;
 
         typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;

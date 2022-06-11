@@ -29,8 +29,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "StreamNetwork.h"
 
 namespace OpenLogReplicator {
-    StreamNetwork::StreamNetwork(Ctx* ctx, const char* uri) :
-        Stream(ctx, uri),
+    StreamNetwork::StreamNetwork(Ctx* newCtx, const char* newUri) :
+        Stream(newCtx, newUri),
         socketFD(-1),
         serverFD(-1),
         readBufferLen(0),
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
 
     void StreamNetwork::initializeClient() {
         struct sockaddr_in addressC;
-        memset((uint8_t*) &addressC, 0, sizeof(addressC));
+        memset((void*)&addressC, 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
 
@@ -80,14 +80,14 @@ namespace OpenLogReplicator {
         if (server == nullptr)
             throw NetworkException("resolving host name: " + host + " - " + strerror(errno));
 
-        memcpy((char*) &addressC.sin_addr.s_addr, (char*) server->h_addr, server->h_length);
+        memcpy((void*)&addressC.sin_addr.s_addr, (void*)server->h_addr, server->h_length);
         if (connect(socketFD, (struct sockaddr*) &addressC, sizeof(addressC)) < 0)
             throw NetworkException("connecting to uri: " + uri + " - " + strerror(errno));
     }
 
     void StreamNetwork::initializeServer() {
         struct addrinfo hints;
-        memset(&hints, 0, sizeof hints);
+        memset((void*)&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;

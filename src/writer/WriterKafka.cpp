@@ -22,13 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterKafka.h"
 
 namespace OpenLogReplicator {
-    WriterKafka::WriterKafka(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, const char* brokers,
-                             const char* topic, uint64_t maxMessages, bool enableIdempotence) :
-        Writer(ctx, alias, database, builder, metadata),
-        brokers(brokers),
-        topic(topic),
-        maxMessages(maxMessages),
-        enableIdempotence(enableIdempotence),
+    WriterKafka::WriterKafka(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newBrokers,
+                             const char* newTopic, uint64_t newMaxMessages, bool newEnableIdempotence) :
+        Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
+        brokers(newBrokers),
+        topic(newTopic),
+        maxMessages(newMaxMessages),
+        enableIdempotence(newEnableIdempotence),
         rk(nullptr),
         rkt(nullptr),
         conf(nullptr) {

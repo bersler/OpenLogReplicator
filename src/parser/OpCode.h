@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/RedoLogRecord.h"
 #include "../common/types.h"
 
-#ifndef OPCODE_H_
-#define OPCODE_H_
+#ifndef OP_CODE_H_
+#define OP_CODE_H_
 
 namespace OpenLogReplicator {
     class OpCode {

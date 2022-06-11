@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
     }
 
     StateDisk::~StateDisk() {
-    };
+    }
 
     void StateDisk::list(std::set<std::string>& namesList) {
         DIR* dir;

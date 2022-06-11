@@ -47,24 +47,24 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Parser::Parser(Ctx* ctx, Builder* builder, Metadata* metadata, TransactionBuffer* transactionBuffer, int64_t group, std::string& path) :
-            ctx(ctx),
-            builder(builder),
-            metadata(metadata),
-            transactionBuffer(transactionBuffer),
+    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string& newPath) :
+            ctx(newCtx),
+            builder(newBuilder),
+            metadata(newMetadata),
+            transactionBuffer(newTransactionBuffer),
             lwnAllocated(0),
             lwnAllocatedMax(0),
             lwnTimestamp(0),
             lwnScn(0),
             lwnCheckpointBlock(0),
-            group(group),
-            path(path),
+            group(newGroup),
+            path(newPath),
             sequence(0),
             firstScn(ZERO_SCN),
             nextScn(ZERO_SCN),
             reader(nullptr) {
 
-        memset(&zero, 0, sizeof(RedoLogRecord));
+        memset((void*)&zero, 0, sizeof(RedoLogRecord));
 
         lwnChunks[0] = ctx->getMemoryChunk("parser", false);
         auto length = (uint64_t*)lwnChunks[0];
@@ -204,7 +204,7 @@ namespace OpenLogReplicator {
             else
                 vectorCur = 1 - vectorPrev;
 
-            memset(&redoLogRecord[vectorCur], 0, sizeof(RedoLogRecord));
+            memset((void*)&redoLogRecord[vectorCur], 0, sizeof(RedoLogRecord));
             redoLogRecord[vectorCur].vectorNo = (++vectors);
             redoLogRecord[vectorCur].cls = ctx->read16(data + offset + 2);
             redoLogRecord[vectorCur].afn = ctx->read32(data + offset + 4) & 0xFFFF;
@@ -259,10 +259,10 @@ namespace OpenLogReplicator {
                                        std::to_string(recordLength));
             }
 
-            uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
+            //uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectorCur].fieldCnt; ++i) {
                 redoLogRecord[vectorCur].length += (ctx->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+                //fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
                 if (offset + redoLogRecord[vectorCur].length > recordLength) {
                     dumpRedoVector(data, recordLength);
@@ -989,7 +989,7 @@ namespace OpenLogReplicator {
                     else
                         toCopy = recordLeftToCopy;
 
-                    memcpy(((uint8_t*)lwnMember) + sizeof(struct LwnMember) + recordPos, redoBlock + blockOffset, toCopy);
+                    memcpy((void*)(((uint8_t*)lwnMember) + sizeof(struct LwnMember) + recordPos), (void*)(redoBlock + blockOffset), toCopy);
                     recordLeftToCopy -= toCopy;
                     blockOffset += toCopy;
                     recordPos += toCopy;

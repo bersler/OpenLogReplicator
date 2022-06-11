@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSet16bit.h"
 
-#ifndef CHARACTERSETJA16SJIS_H_
-#define CHARACTERSETJA16SJIS_H_
+#ifndef CHARACTER_SET_JA16SJIS_H_
+#define CHARACTER_SET_JA16SJIS_H_
 
 #define JA16SJIS_b1_min     0x81
 #define JA16SJIS_b1_max     0xFC
@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
                                                      (JA16SJIS_b2_max - JA16SJIS_b2_min + 1)];
 
     public:
-        explicit CharacterSetJA16SJIS(const char* name);
+        explicit CharacterSetJA16SJIS(const char* newName);
         CharacterSetJA16SJIS();
         ~CharacterSetJA16SJIS() override;
 

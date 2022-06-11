@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 #include "typeRowId.h"
 
-#ifndef SYSTAB_H_
-#define SYSTAB_H_
+#ifndef SYS_TAB_H_
+#define SYS_TAB_H_
 
 #define SYSTAB_PROPERTY_BINARY              1
 #define SYSTAB_PROPERTY_PARTITIONED         32
@@ -37,8 +37,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTab {
     public:
-        SysTab(typeRowId& rowId, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1,
-               uint64_t property2, bool touched);
+        SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2, uint64_t newProperty1,
+               uint64_t newProperty2, bool newTouched);
 
         bool operator!=(const SysTab& other) const;
         [[nodiscard]] bool isBinary();

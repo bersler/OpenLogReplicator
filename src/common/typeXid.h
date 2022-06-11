@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DataException.h"
 #include "types.h"
 
-#ifndef TYPEXID_H_
-#define TYPEXID_H_
+#ifndef TYPE_XID_H_
+#define TYPE_XID_H_
 
 //#define USN(__xid)                              ((typeUsn)(((uint64_t)(__xid))>>48))
 //#define SLT(__xid)                              ((typeSlt)(((((uint64_t)(__xid))>>32)&0xFFFF)))
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         typeXid() : val(0) {
         };
 
-        explicit typeXid(uint64_t val) : val(val) {
+        explicit typeXid(uint64_t newVal) : val(newVal) {
         }
 
         typeXid(typeUsn usn, typeSlt slt, typeSqn sqn) {

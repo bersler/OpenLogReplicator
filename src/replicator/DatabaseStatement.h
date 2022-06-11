@@ -22,8 +22,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/types.h"
 
-#ifndef DATABASESTATEMENT_H_
-#define DATABASESTATEMENT_H_
+#ifndef DATABASE_STATEMENT_H_
+#define DATABASE_STATEMENT_H_
 
 namespace OpenLogReplicator {
     class DatabaseConnection;
@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         std::vector<OCIDefine*> defines;
 
     public:
-        explicit DatabaseStatement(DatabaseConnection* conn);
+        explicit DatabaseStatement(DatabaseConnection* newConn);
         virtual ~DatabaseStatement();
 
         void createStatement(const char* sql);

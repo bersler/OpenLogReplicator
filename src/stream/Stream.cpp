@@ -21,9 +21,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Stream.h"
 
 namespace OpenLogReplicator {
-    Stream::Stream(Ctx* ctx, const char* uri) :
-        ctx(ctx),
-        uri(uri) {
+    Stream::Stream(Ctx* newCtx, const char* newUri) :
+        ctx(newCtx),
+        uri(newUri) {
     }
 
     Stream::~Stream() = default;

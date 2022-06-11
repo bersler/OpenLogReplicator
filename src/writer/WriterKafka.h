@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Writer.h"
 
-#ifndef WRITERKAFKA_H_
-#define WRITERKAFKA_H_
+#ifndef WRITER_KAFKA_H_
+#define WRITER_KAFKA_H_
 
 #define MAX_KAFKA_MESSAGE_MB        953
 #define MAX_KAFKA_MAX_MESSAGES      10000000
@@ -47,8 +47,8 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterKafka(Ctx* ctx, std::string alias, std::string& database, Builder* builder, Metadata* metadata, const char* brokers, const char* topic,
-                    uint64_t maxMessages, bool enableIdempotence);
+        WriterKafka(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newBrokers,
+                    const char* newTopic, uint64_t newMaxMessages, bool newEnableIdempotence);
         ~WriterKafka() override;
 
         void initialize() override;

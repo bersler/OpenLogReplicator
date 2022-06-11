@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/types.h"
 
-#ifndef CHARACTERSET_H_
-#define CHARACTERSET_H_
+#ifndef CHARACTER_SET_H_
+#define CHARACTER_SET_H_
 
 #define UNICODE_UNKNOWN_CHARACTER           0xFFFD
 
@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
     public:
         const char* name;
 
-        explicit CharacterSet(const char* name);
+        explicit CharacterSet(const char* newName);
         virtual ~CharacterSet();
 
         virtual uint64_t decode(const uint8_t*& str, uint64_t& length) const = 0;

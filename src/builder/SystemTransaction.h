@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/typeRowId.h"
 #include "../common/typeXid.h"
 
-#ifndef SYSTEMTRANSACTION_H_
-#define SYSTEMTRANSACTION_H_
+#ifndef SYSTEM_TRANSACTION_H_
+#define SYSTEM_TRANSACTION_H_
 
 namespace OpenLogReplicator {
     class Ctx;
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         bool updateString(std::string& val, uint64_t maxLength, typeCol column, OracleObject* object, typeRowId& rowId);
 
     public:
-        SystemTransaction(Builder* builder, Metadata* metadata);
+        SystemTransaction(Builder* newBuilder, Metadata* newMetadata);
         ~SystemTransaction();
 
         void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);

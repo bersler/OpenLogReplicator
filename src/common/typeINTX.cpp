@@ -25,32 +25,32 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 
 namespace OpenLogReplicator {
-    typeINTX typeINTX::BASE10[TYPEINTXDIGITS][10];
+    typeINTX typeINTX::BASE10[TYPE_INTX_DIGITS][10];
 
     typeINTX::typeINTX() {
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
             data[i] = 0;
     }
 
     typeINTX::typeINTX(uint64_t val) {
         data[0] = val;
-        for (uint64_t i = 1; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 1; i < TYPE_INTX_LEN; ++i)
             data[i] = 0;
     }
 
     typeINTX::typeINTX(uint64_t val1, uint64_t val2) {
         data[0] = val1;
         data[1] = val2;
-        for (uint64_t i = 2; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 2; i < TYPE_INTX_LEN; ++i)
             data[i] = 0;
     }
 
     void typeINTX::initializeBASE10() {
-        memset(BASE10, 0, sizeof(BASE10));
+        memset((void*)BASE10, 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
             BASE10[0][digit] = digit;
 
-            for (uint64_t pos = 1; pos < TYPEINTXDIGITS; ++pos) {
+            for (uint64_t pos = 1; pos < TYPE_INTX_DIGITS; ++pos) {
                 BASE10[pos][digit] = BASE10[pos - 1][digit];
                 for (uint64_t j = 1; j < 10; ++j)
                     BASE10[pos][digit] += BASE10[pos - 1][digit];
@@ -59,14 +59,14 @@ namespace OpenLogReplicator {
     }
 
     bool typeINTX::operator!=(const typeINTX& other) const {
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
             if (this->data[i] != other.data[i])
                 return true;
         return false;
     }
 
     bool typeINTX::operator==(const typeINTX& other) const {
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
             if (this->data[i] != other.data[i])
                 return false;
         return true;
@@ -75,7 +75,7 @@ namespace OpenLogReplicator {
     typeINTX& typeINTX::operator+=(const typeINTX& val) {
         uint64_t carry = 0;
 
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i) {
             if (this->data[i] + val.data[i] + carry < (this->data[i] | val.data[i] | carry)) {
                 this->data[i] += val.data[i] + carry;
                 carry = 1;
@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
 
     typeINTX& typeINTX::operator=(const typeINTX& val) {
         if (&val != this) {
-            for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+            for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
                 this->data[i] = val.data[i];
         }
         return *this;
@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
 
     typeINTX& typeINTX::operator=(uint64_t val) {
         this->data[0] = val;
-        for (uint64_t i = 1; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 1; i < TYPE_INTX_LEN; ++i)
             this->data[i] = 0;
         return *this;
     }
@@ -114,7 +114,7 @@ namespace OpenLogReplicator {
 
     typeINTX& typeINTX::setStr(const char* val, uint64_t length) {
         *this = (uint64_t)0;
-        if (length > TYPEINTXDIGITS) {
+        if (length > TYPE_INTX_DIGITS) {
             ERROR("incorrect conversion of string: " << val)
             return *this;
         }
@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
     }
 
     bool typeINTX::isZero() {
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
             if (data[i] != 0)
                 return false;
         return true;
@@ -149,14 +149,14 @@ namespace OpenLogReplicator {
     typeINTX& typeINTX::set(uint64_t val1, uint64_t val2) {
         this->data[0] = val1;
         this->data[1] = val2;
-        for (uint64_t i = 2; i < TYPEINTXLEN; ++i)
+        for (uint64_t i = 2; i < TYPE_INTX_LEN; ++i)
             this->data[i] = 0;
         return *this;
     }
 
     std::ostream& operator<<(std::ostream& os, const typeINTX& val) {
         os << "[";
-        for (uint64_t i = 0; i < TYPEINTXLEN; ++i) {
+        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i) {
             if (i > 0)
                 os << ",";
             os << std::dec << val.data[i];

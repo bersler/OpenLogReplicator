@@ -19,8 +19,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "CharacterSetJA16SJIS.h"
 
-#ifndef CHARACTERSETJA16SJISTILDE_H_
-#define CHARACTERSETJA16SJISTILDE_H_
+#ifndef CHARACTER_SET_JA16SJISTILDE_H_
+#define CHARACTER_SET_JA16SJISTILDE_H_
 
 namespace OpenLogReplicator {
     class CharacterSetJA16SJISTILDE : public CharacterSetJA16SJIS {

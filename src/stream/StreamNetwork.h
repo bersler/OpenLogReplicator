@@ -21,8 +21,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "Stream.h"
 
-#ifndef STREAMNETWORK_H_
-#define STREAMNETWORK_H_
+#ifndef STREAM_NETWORK_H_
+#define STREAM_NETWORK_H_
 
 namespace OpenLogReplicator {
     class StreamNetwork : public Stream {
@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         struct addrinfo* res;
 
     public:
-        StreamNetwork(Ctx* ctx, const char* uri);
+        StreamNetwork(Ctx* newCtx, const char* newUri);
         ~StreamNetwork() override;
 
         void initialize() override;

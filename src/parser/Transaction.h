@@ -55,7 +55,7 @@ namespace OpenLogReplicator {
         bool lastSplit;
         uint64_t size;
 
-        explicit Transaction(typeXid xid);
+        explicit Transaction(typeXid newXid);
 
         void add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord);
         void add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);

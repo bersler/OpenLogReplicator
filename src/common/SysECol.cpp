@@ -20,9 +20,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysECol.h"
 
 namespace OpenLogReplicator {
-    SysEColKey::SysEColKey(typeObj tabObj, typeCol colNum) :
-            tabObj(tabObj),
-            colNum(colNum) {
+    SysEColKey::SysEColKey(typeObj newTabObj, typeCol newColNum) :
+            tabObj(newTabObj),
+            colNum(newColNum) {
     }
 
     bool SysEColKey::operator==(const SysEColKey& other) const {
@@ -35,12 +35,12 @@ namespace OpenLogReplicator {
                 (other.colNum != colNum);
     }
 
-    SysECol::SysECol(typeRowId& rowId, typeObj tabObj, typeCol colNum, typeCol guardId, bool touched) :
-            rowId(rowId),
-            tabObj(tabObj),
-            colNum(colNum),
-            guardId(guardId),
-            touched(touched) {
+    SysECol::SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId, bool newTouched) :
+            rowId(newRowId),
+            tabObj(newTabObj),
+            colNum(newColNum),
+            guardId(newGuardId),
+            touched(newTouched) {
     }
 
     bool SysECol::operator!=(const SysECol& other) const {

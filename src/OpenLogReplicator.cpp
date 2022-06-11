@@ -95,8 +95,8 @@ namespace OpenLogReplicator {
             delete writer;
         writers.clear();
 
-        for (Replicator* replicator : replicators)
-            delete replicator;
+        for (Replicator* replicatorTmp : replicators)
+            delete replicatorTmp;
         replicators.clear();
 
         for (Builder* builder : builders)
@@ -647,9 +647,9 @@ namespace OpenLogReplicator {
 
             INFO("adding target: " << alias)
             Replicator* replicator2 = nullptr;
-            for (Replicator* replicator : replicators)
-                if (replicator->alias == source)
-                    replicator2 = (Replicator*)replicator;
+            for (Replicator* replicatorTmp : replicators)
+                if (replicatorTmp->alias == source)
+                    replicator2 = (Replicator*)replicatorTmp;
             if (replicator2 == nullptr)
                 throw ConfigurationException(std::string("bad JSON, couldn't find reader for 'source' value: ") + source);
 
