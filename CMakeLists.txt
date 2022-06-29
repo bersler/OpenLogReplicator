@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(OpenLogReplicator VERSION 0.9.43)
+project(OpenLogReplicator VERSION 0.9.44)
 
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
@@ -8,7 +8,7 @@ if (OSX_ARCH)
     set(CMAKE_OSX_ARCHITECTURES ${OSX_ARCH})
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wextra -Wshadow -pedantic -Wno-gnu-statement-expression -pedantic-errors -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wextra -Wshadow -pedantic -O3")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Wshadow -pedantic -Wno-gnu-statement-expression -pedantic-errors -O0 -g -w -fmessage-length=0 -fno-omit-frame-pointer -fsanitize=address")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 configure_file(config.h.in ../config.h)

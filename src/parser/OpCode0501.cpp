@@ -117,11 +117,9 @@ namespace OpenLogReplicator {
     }
 
     void OpCode0501::opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
-        uint8_t* nulls = nullptr;
-        uint8_t* colNums = nullptr;
-
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
-        nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
+        uint8_t* colNums = nullptr;
+        uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
         if (ctx->dumpRedoLog >= 1) {
             if ((redoLogRecord->op & 0x1F) == OP_QMD) {

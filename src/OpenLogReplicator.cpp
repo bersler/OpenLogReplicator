@@ -167,11 +167,8 @@ namespace OpenLogReplicator {
                                              ", expected one of: {0, 1, 2}");
         }
 
-        const char* dumpPathStr = ".";
-        if (document.HasMember("dump-path")) {
-            dumpPathStr = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
-            ctx->dumpPath = dumpPathStr;
-        }
+        if (document.HasMember("dump-path"))
+            ctx->dumpPath = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
 
         if (document.HasMember("dump-raw-decoder")) {
             ctx->dumpRawData = Ctx::getJsonFieldU64(fileName, document, "dump-raw-decoder");
@@ -196,6 +193,9 @@ namespace OpenLogReplicator {
 
         //iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(fileName, document, "source");
+        if (sourceArrayJson.Size() > 1) {
+            throw ConfigurationException("bad JSON, only one 'source' element is allowed");
+        }
 
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
             const rapidjson::Value& sourceJson = Ctx::getJsonFieldO(fileName, sourceArrayJson, "source", j);
@@ -349,8 +349,7 @@ namespace OpenLogReplicator {
             ctx->initialize(memoryMinMb, memoryMaxMb, readBufferMax);
 
             //METADATA
-            Metadata* metadata = nullptr;
-            metadata = new Metadata(ctx, locales, name, conId, startScn, startSequence, startTime, startTimeRel);
+            Metadata* metadata = new Metadata(ctx, locales, name, conId, startScn, startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
 
             metadata->addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE);
@@ -482,7 +481,7 @@ namespace OpenLogReplicator {
 
             const char* formatType = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, formatJson, "type");
 
-            Builder* builder = nullptr;
+            Builder* builder;
             if (strcmp("json", formatType) == 0) {
                 builder = new BuilderJson(ctx, locales, metadata, messageFormat, ridFormat, xidFormat, timestampFormat, charFormat, scnFormat, unknownFormat,
                                           schemaFormat, columnFormat, unknownType, flushBuffer);
@@ -521,11 +520,8 @@ namespace OpenLogReplicator {
             if (sourceJson.HasMember("refresh-interval-us"))
                 ctx->refreshIntervalUs = Ctx::getJsonFieldU64(fileName, sourceJson, "refresh-interval-us");
 
-            const char* redoCopyPathStr = "";
-            if (readerJson.HasMember("redo-copy-path")) {
-                redoCopyPathStr = Ctx::getJsonFieldS(fileName, MAX_PATH_LENGTH, readerJson, "redo-copy-path");
-                ctx->redoCopyPath = redoCopyPathStr;
-            }
+            if (readerJson.HasMember("redo-copy-path"))
+                ctx->redoCopyPath = Ctx::getJsonFieldS(fileName, MAX_PATH_LENGTH, readerJson, "redo-copy-path");
 
             if (strcmp(readerType, "online") == 0) {
 #ifdef LINK_LIBRARY_OCI
@@ -639,6 +635,9 @@ namespace OpenLogReplicator {
 
         //iterate through targets
         const rapidjson::Value& targetArrayJson = Ctx::getJsonFieldA(fileName, document, "target");
+        if (targetArrayJson.Size() > 1) {
+            throw ConfigurationException("bad JSON, only one 'target' element is allowed");
+        }
 
         for (rapidjson::SizeType j = 0; j < targetArrayJson.Size(); ++j) {
             const rapidjson::Value& targetJson = targetArrayJson[j];
@@ -654,7 +653,7 @@ namespace OpenLogReplicator {
                 throw ConfigurationException(std::string("bad JSON, couldn't find reader for 'source' value: ") + source);
 
             //writer
-            Writer* writer = nullptr;
+            Writer* writer;
             const rapidjson::Value& writerJson = Ctx::getJsonFieldO(fileName, targetJson, "writer");
             const char* writerType = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "type");
 

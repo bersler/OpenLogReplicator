@@ -185,7 +185,7 @@ namespace OpenLogReplicator {
         //client isConnected
         readCheckpoint();
 
-        BuilderMsg* msg = nullptr;
+        BuilderMsg* msg;
         BuilderQueue* curBuffer = builder->firstBuffer;
         uint64_t curLength = 0;
         uint64_t tmpLength = 0;

@@ -744,6 +744,8 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::verifySchema(typeScn currentScn) {
+        if (standby)
+            throw RuntimeException("initial reading of schema is not supported for standby databases");
         if (!FLAG(REDO_FLAGS_VERIFY_SCHEMA))
             return;
         if (!checkConnection())
@@ -768,6 +770,8 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::createSchema() {
+        if (standby)
+            throw RuntimeException("initial reading of schema is not supported for standby databases");
         if (!checkConnection())
             return;
 

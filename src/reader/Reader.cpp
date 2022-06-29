@@ -1006,21 +1006,28 @@ namespace OpenLogReplicator {
     }
 
     bool Reader::updateRedoLog() {
-        std::unique_lock<std::mutex> lck(mtx);
-        status = READER_STATUS_UPDATE;
-        condBufferFull.notify_all();
-        condReaderSleeping.notify_all();
+        for(;;) {
+            std::unique_lock<std::mutex> lck(mtx);
+            status = READER_STATUS_UPDATE;
+            condBufferFull.notify_all();
+            condReaderSleeping.notify_all();
 
-        while (status == READER_STATUS_UPDATE) {
-            if (ctx->softShutdown)
-                break;
-            condParserSleeping.wait(lck);
+            while (status == READER_STATUS_UPDATE) {
+                if (ctx->softShutdown)
+                    break;
+                condParserSleeping.wait(lck);
+            }
+
+            if (ret == REDO_EMPTY) {
+                usleep(ctx->redoReadSleepUs);
+                continue;
+            }
+
+            if (ret == REDO_OK)
+                return true;
+            else
+                return false;
         }
-
-        if (ret == REDO_OK)
-            return true;
-        else
-            return false;
     }
 
     void Reader::setStatusRead() {

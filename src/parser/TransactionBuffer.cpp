@@ -51,7 +51,7 @@ namespace OpenLogReplicator {
 
     Transaction* TransactionBuffer::findTransaction(typeXid xid, typeConId conId, bool old, bool add, bool rollback) {
         typeXidMap xidMap = (xid.getVal() >> 32) | (((uint64_t)conId) << 32);
-        Transaction* transaction = nullptr;
+        Transaction* transaction;
 
         auto transactionIter = xidTransactionMap.find(xidMap);
         if (transactionIter != xidTransactionMap.end()) {

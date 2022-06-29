@@ -1,3 +1,7 @@
+0.9.44
+- fixed compilation errors for Release target
+- small fixes, minor code cleanup
+
 0.9.43
 - fixed compilation errors for Release target
 - code style fixes
