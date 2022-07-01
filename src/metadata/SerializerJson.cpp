@@ -355,20 +355,19 @@ namespace OpenLogReplicator {
 
             if (loadMetadata) {
                 metadata->checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
-                metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
-                metadata->offset = Ctx::getJsonFieldU64(name, document, "offset");
-                if ((metadata->offset & 511) != 0)
-                    throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
-                                        " is not a multiplication of 512 - skipping file");
 
                 if (document.HasMember("min-tran")) {
                     const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(name, document, "min-tran");
-                    metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");
+                    metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");std::cerr << "min tran.sequence: " << metadata->sequence << std::endl;
                     metadata->offset = Ctx::getJsonFieldU64(name, minTranJson, "offset");
-                    if ((metadata->offset & 511) != 0)
-                        throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
-                                            " is not a multiplication of 512 - skipping file");
+                } else {
+                    metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
+                    metadata->offset = Ctx::getJsonFieldU64(name, document, "offset");
                 }
+
+                if ((metadata->offset & 511) != 0)
+                    throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
+                                        " is not a multiplication of 512 - skipping file");
 
                 metadata->minSequence = ZERO_SEQ;
                 metadata->minOffset = 0;

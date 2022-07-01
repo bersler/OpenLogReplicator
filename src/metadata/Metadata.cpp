@@ -242,11 +242,12 @@ namespace OpenLogReplicator {
         condStartedReplication.notify_all();
     }
 
-    void Metadata::checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, uint64_t newCheckpointOffset, uint64_t newCheckpointBytes,
-                              typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
+    void Metadata::checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
+                              uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid) {
         std::unique_lock<std::mutex> lck(mtx);
         checkpointScn = newCheckpointScn;
         checkpointTime = newCheckpointTime;
+        checkpointSequence = newCheckpointSequence;
         checkpointOffset = newCheckpointOffset;
         checkpointBytes += newCheckpointBytes;
         minSequence = newMinSequence;

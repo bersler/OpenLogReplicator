@@ -93,6 +93,7 @@ namespace OpenLogReplicator {
         typeScn firstScn;
         typeScn nextScn;
         typeTime checkpointTime;
+        typeSeq checkpointSequence;
         uint64_t checkpointOffset;
         uint64_t checkpointBytes;
         typeSeq minSequence;
@@ -132,8 +133,8 @@ namespace OpenLogReplicator {
         void waitForReplication();
         void setStatusReplicate();
         void wakeUp();
-        void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, uint64_t newCheckpointOffset, uint64_t newCheckpointBytes,
-                        typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid);
+        void checkpoint(typeScn newCheckpointScn, typeTime newCheckpointTime, typeSeq newCheckpointSequence, uint64_t newCheckpointOffset,
+                        uint64_t newCheckpointBytes, typeSeq newMinSequence, uint64_t newMinOffset, typeXid newMinXid);
         void writeCheckpoint(bool force);
         void readCheckpoints();
         void readCheckpoint(typeScn scn);

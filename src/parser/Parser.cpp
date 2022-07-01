@@ -1022,8 +1022,10 @@ namespace OpenLogReplicator {
                         uint64_t minOffset = -1;
                         typeXid minXid;
                         transactionBuffer->checkpoint(minSequence, minOffset, minXid);
-                        metadata->checkpoint(lwnScn, lwnTimestamp, currentBlock * reader->getBlockSize(),
-                                             (currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence, minOffset, minXid);
+                        metadata->checkpoint(lwnScn, lwnTimestamp, sequence,
+                                             currentBlock * reader->getBlockSize(),
+                                             (currentBlock - lwnConfirmedBlock) * reader->getBlockSize(), minSequence,
+                                             minOffset, minXid);
 
                         if (ctx->stopCheckpoints > 0) {
                             --ctx->stopCheckpoints;

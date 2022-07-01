@@ -791,9 +791,9 @@ namespace OpenLogReplicator {
                 break;
             } else {
                 if (parser->group == 0) {
-                    throw RuntimeException("read archived redo log");
+                    throw RuntimeException("read archived redo log (code: " + std::to_string(ret) + ")");
                 } else {
-                    throw RuntimeException("read online redo log");
+                    throw RuntimeException("read online redo log (code: " + std::to_string(ret) + ")");
                 }
             }
 
