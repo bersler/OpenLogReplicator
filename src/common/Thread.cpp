@@ -23,10 +23,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Thread::Thread(Ctx* newCtx, std::string newAlias) :
-        ctx(newCtx),
-        pthread(0),
-        alias(newAlias),
-        finished(false) {
+            ctx(newCtx),
+            pthread(0),
+            alias(newAlias),
+            finished(false) {
     }
 
     Thread::~Thread() = default;

@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
                                ", build: " << OpenLogReplicator_CMAKE_BUILD_TYPE <<
                                ", modules:" HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ)
 
+    int ret = 1;
     const char* fileName = "scripts/OpenLogReplicator.json";
     try {
         std::regex regexTest(".*");
@@ -118,7 +119,7 @@ int main(int argc, char** argv) {
                     " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
 
         OpenLogReplicator::OpenLogReplicator openLogReplicator(fileName, &ctx);
-        return openLogReplicator.run();
+        ret = openLogReplicator.run();
     } catch (OpenLogReplicator::ConfigurationException& ex) {
         ERROR(ex.msg)
     } catch (OpenLogReplicator::RuntimeException& ex) {
@@ -127,5 +128,10 @@ int main(int argc, char** argv) {
         ERROR("memory allocation failed: " << ex.what())
     }
 
-    return 1;
+    signal(SIGINT, nullptr);
+    signal(SIGPIPE, nullptr);
+    signal(SIGSEGV, nullptr);
+    signal(SIGUSR1, nullptr);
+
+    return ret;
 }

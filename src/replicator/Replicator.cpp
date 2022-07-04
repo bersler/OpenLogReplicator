@@ -784,7 +784,7 @@ namespace OpenLogReplicator {
             if (ret == REDO_FINISHED) {
                 //verifySchema(metadata->nextScn);
                 ++metadata->sequence;
-            } else if (ret == REDO_STOPPED) {
+            } else if (ret == REDO_STOPPED || ret == REDO_OK) {
                 //nothing here
             } else if (ret == REDO_OVERWRITTEN) {
                 INFO("online redo log has been overwritten by new ctx, continuing reading from archived redo log")

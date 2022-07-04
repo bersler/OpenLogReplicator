@@ -653,6 +653,7 @@ namespace OpenLogReplicator {
                     stmt.executeQuery();
                 } catch (RuntimeException& ex) {
                     conn->disconnect();
+                    usleep(ctx->redoReadSleepUs);
                     INFO("re-connecting to Oracle instance of " << database << " to " << conn->connectString)
                     continue;
                 }

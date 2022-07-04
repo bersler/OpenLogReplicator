@@ -642,7 +642,7 @@ namespace OpenLogReplicator {
 
     void Ctx::printStacktrace() {
         std::unique_lock<std::mutex> lck(mtx);
-        ERROR("stacktrace for thread: " << std::dec << pthread_self());
+        ERROR("stacktrace for thread: 0x" << std::hex << pthread_self());
         void* array[128];
         int size = backtrace(array, 128);
         backtrace_symbols_fd(array, size, STDERR_FILENO);
