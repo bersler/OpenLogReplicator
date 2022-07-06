@@ -376,7 +376,7 @@ namespace OpenLogReplicator {
             //CHECKPOINT
             auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint");
             checkpoints.push_back(checkpoint);
-            Thread::spawnThread(checkpoint);
+            ctx->spawnThread(checkpoint);
 
             //TRANSACTION BUFFER
             TransactionBuffer* transactionBuffer = new TransactionBuffer(ctx);
@@ -629,7 +629,7 @@ namespace OpenLogReplicator {
                                                                             "log-archive-format");
 
             replicators.push_back(replicator);
-            Thread::spawnThread(replicator);
+            ctx->spawnThread(replicator);
             replicator = nullptr;
         }
 
@@ -767,7 +767,7 @@ namespace OpenLogReplicator {
 
             writers.push_back(writer);
             writer->initialize();
-            Thread::spawnThread(writer);
+            ctx->spawnThread(writer);
         }
 
         ctx->mainLoop();

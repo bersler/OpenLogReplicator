@@ -31,25 +31,13 @@ namespace OpenLogReplicator {
 
     Thread::~Thread() = default;
 
+    void Thread::wakeUp() {
+    }
+
     void* Thread::runStatic(void* voidThread) {
         Thread* thread = (Thread*)voidThread;
         thread->run();
         thread->finished = true;
         return nullptr;
-    }
-
-    void Thread::spawnThread(Thread *thread) {
-        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void *) thread)) {
-            throw RuntimeException("spawning thread - " + thread->alias);
-        }
-        thread->ctx->registerThread(thread);
-    }
-
-    void Thread::finishThread(Thread *thread) {
-        thread->ctx->unRegisterThread(thread);
-        pthread_join(thread->pthread, nullptr);
-    }
-
-    void Thread::wakeUp() {
     }
 }

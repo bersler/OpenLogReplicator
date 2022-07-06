@@ -233,8 +233,9 @@ namespace OpenLogReplicator {
         void printStacktrace();
         void signalHandler(int s);
 
-        void unRegisterThread(Thread* t);
-        void registerThread(Thread* t);
+        bool wakeThreads();
+        void spawnThread(Thread *thread);
+        void finishThread(Thread *thread);
         static std::stringstream& writeEscapeValue(std::stringstream& ss, std::string& str);
         static bool checkNameCase(const char* name);
         void releaseBuffer();

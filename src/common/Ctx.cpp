@@ -615,22 +615,19 @@ namespace OpenLogReplicator {
 
     void Ctx::mainFinish() {
         for (;;) {
-            bool wakingUp = false;
             wakeAllOutOfMemory();
-            for (Thread *thread: threads) {
-                if (!thread->finished) {
-                    thread->wakeUp();
-                    wakingUp = true;
-                }
-            }
-            if (!wakingUp)
+            if (!wakeThreads())
                 break;
             usleep(1000);
         }
 
         while (threads.size() > 0) {
-            Thread* thread = *(threads.begin());
-            Thread::finishThread(thread);
+            Thread *thread;
+            {
+                std::unique_lock<std::mutex> lck(mtx);
+                Thread *thread = *(threads.begin());
+            }
+            finishThread(thread);
         }
     }
 
@@ -656,14 +653,33 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::unRegisterThread(Thread* t) {
+    bool Ctx::wakeThreads() {
+        bool wakingUp = false;
         std::unique_lock<std::mutex> lck(mtx);
-        threads.erase(t);
+        for (Thread *thread: threads) {
+            if (!thread->finished) {
+                thread->wakeUp();
+                wakingUp = true;
+            }
+        }
+        return wakingUp;
     }
 
-    void Ctx::registerThread(Thread* t) {
+    void Ctx::spawnThread(Thread *thread) {
+        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void *) thread))
+            throw RuntimeException("spawning thread - " + thread->alias);
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            threads.insert(thread);
+        }
+    }
+
+    void Ctx::finishThread(Thread *thread) {
         std::unique_lock<std::mutex> lck(mtx);
-        threads.insert(t);
+        if (threads.find(thread) == threads.end())
+            return;
+        threads.erase(thread);
+        pthread_join(thread->pthread, nullptr);
     }
 
     std::stringstream& Ctx::writeEscapeValue(std::stringstream& ss, std::string& str) {
@@ -709,9 +725,9 @@ namespace OpenLogReplicator {
 
     void Ctx::signalDump() {
         if (mainThread == pthread_self()) {
-            for (Thread *thread : threads) {
+            std::unique_lock<std::mutex> lck(mtx);
+            for (Thread *thread : threads)
                 pthread_kill(thread->pthread, SIGUSR1);
-            }
         }
     }
 }

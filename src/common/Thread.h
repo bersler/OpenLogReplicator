@@ -30,7 +30,6 @@ namespace OpenLogReplicator {
     class Thread {
     protected:
         virtual void run() = 0;
-        static void* runStatic(void* thread);
 
     public:
         Ctx* ctx;
@@ -41,9 +40,7 @@ namespace OpenLogReplicator {
         explicit Thread(Ctx* newCtx, std::string newAlias);
         virtual ~Thread();
         virtual void wakeUp();
-
-        static void spawnThread(Thread *thread);
-        static void finishThread(Thread *thread);
+        static void* runStatic(void* thread);
     };
 }
 

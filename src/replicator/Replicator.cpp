@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
 
         while (readers.size() > 0) {
             Reader* reader = *(readers.begin());
-            finishThread(reader);
+            ctx->finishThread(reader);
             readers.erase(reader);
             delete reader;
         }
@@ -237,7 +237,7 @@ namespace OpenLogReplicator {
         readers.insert(readerFS);
         readerFS->initialize();
 
-        Thread::spawnThread(readerFS);
+        ctx->spawnThread(readerFS);
         return readerFS;
     }
 
@@ -785,7 +785,8 @@ namespace OpenLogReplicator {
                 //verifySchema(metadata->nextScn);
                 ++metadata->sequence;
             } else if (ret == REDO_STOPPED || ret == REDO_OK) {
-                //nothing here
+                updateOnlineRedoLogData();
+                updateOnlineLogs();
             } else if (ret == REDO_OVERWRITTEN) {
                 INFO("online redo log has been overwritten by new ctx, continuing reading from archived redo log")
                 break;

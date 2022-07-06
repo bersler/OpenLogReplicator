@@ -864,7 +864,7 @@ namespace OpenLogReplicator {
             throw RedoLogException("invalid resetlogs value (found: " + std::to_string(reader->getResetlogs()) + ", expected: " +
                                    std::to_string(metadata->resetlogs) + "): " + reader->fileName);
 
-        if (metadata->activation == 0 || metadata->activation != reader->getActivation()) {
+        if (reader->getActivation() != 0 && (metadata->activation == 0 || metadata->activation != reader->getActivation())) {
             INFO("new activation detected: " << std::dec << reader->getActivation())
             metadata->setActivation(reader->getActivation());
         }

@@ -358,7 +358,7 @@ namespace OpenLogReplicator {
 
                 if (document.HasMember("min-tran")) {
                     const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(name, document, "min-tran");
-                    metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");std::cerr << "min tran.sequence: " << metadata->sequence << std::endl;
+                    metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");
                     metadata->offset = Ctx::getJsonFieldU64(name, minTranJson, "offset");
                 } else {
                     metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
