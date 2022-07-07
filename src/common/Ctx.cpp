@@ -614,18 +614,16 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::mainFinish() {
-        for (;;) {
-            wakeAllOutOfMemory();
-            if (!wakeThreads())
-                break;
+        while (wakeThreads()) {
             usleep(1000);
+            wakeAllOutOfMemory();
         }
 
         while (threads.size() > 0) {
             Thread *thread;
             {
                 std::unique_lock<std::mutex> lck(mtx);
-                Thread *thread = *(threads.begin());
+                thread = *(threads.begin());
             }
             finishThread(thread);
         }
@@ -655,11 +653,13 @@ namespace OpenLogReplicator {
 
     bool Ctx::wakeThreads() {
         bool wakingUp = false;
-        std::unique_lock<std::mutex> lck(mtx);
-        for (Thread *thread: threads) {
-            if (!thread->finished) {
-                thread->wakeUp();
-                wakingUp = true;
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            for (Thread *thread: threads) {
+                if (!thread->finished) {
+                    thread->wakeUp();
+                    wakingUp = true;
+                }
             }
         }
         return wakingUp;
