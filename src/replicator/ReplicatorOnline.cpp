@@ -482,7 +482,7 @@ namespace OpenLogReplicator {
                 metadata->suppLogDbAll = suppLogDbAll;
                 metadata->context = context;
 
-                //12+
+                // 12+
                 metadata->conId = 0;
                 if (memcmp(banner, "Oracle Database 11g", 19) != 0) {
                     ctx->version12 = true;
@@ -545,7 +545,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::positionReader() {
-        //position by time
+        // Position by time
         if (metadata->startTime.length() > 0) {
             DatabaseStatement stmt(conn);
             if (standby)
@@ -578,7 +578,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException("can't find scn for " + metadata->startTime);
             metadata->firstDataScn = firstDataScn;
 
-        //NOW
+        // NOW
         } else if (metadata->firstDataScn == ZERO_SCN || metadata->firstDataScn == 0) {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_DATABASE_SCN)
@@ -590,7 +590,7 @@ namespace OpenLogReplicator {
             metadata->firstDataScn = firstDataScn;
         }
 
-        //first sequence
+        // First sequence
         if (metadata->startSequence != ZERO_SEQ) {
             metadata->setSeqOffset(metadata->startSequence, 0);
             if (metadata->firstDataScn == ZERO_SCN)
@@ -639,7 +639,6 @@ namespace OpenLogReplicator {
                 try {
                     conn->connect();
                 } catch (RuntimeException& ex) {
-                    //
                 }
             }
 
@@ -685,7 +684,7 @@ namespace OpenLogReplicator {
         if (stmt.executeQuery())
             return value;
 
-        //no value found
+        // No value found
         throw RuntimeException(std::string("can't get parameter value for ") + parameter);
     }
 
@@ -701,7 +700,7 @@ namespace OpenLogReplicator {
         if (stmt.executeQuery())
             return value;
 
-        //no value found
+        // No value found
         throw RuntimeException(std::string("can't get proprty value for ") + property);
     }
 
@@ -746,8 +745,6 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::verifySchema(typeScn currentScn) {
-        if (standby)
-            throw RuntimeException("initial reading of schema is not supported for standby databases");
         if (!FLAG(REDO_FLAGS_VERIFY_SCHEMA))
             return;
         if (!checkConnection())
@@ -772,8 +769,6 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::createSchema() {
-        if (standby)
-            throw RuntimeException("initial reading of schema is not supported for standby databases");
         if (!checkConnection())
             return;
 
@@ -790,7 +785,7 @@ namespace OpenLogReplicator {
     void ReplicatorOnline::readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj) {
         DEBUG("read dictionaries for user: " << std::dec << user << ", object: " << obj)
 
-        //reading SYS.CCOL$
+        // Reading SYS.CCOL$
         DatabaseStatement stmtCCol(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CCOL_OBJ)
@@ -825,7 +820,7 @@ namespace OpenLogReplicator {
             ccolRet = stmtCCol.next();
         }
 
-        //reading SYS.CDEF$
+        // Reading SYS.CDEF$
         DatabaseStatement stmtCDef(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_CDEF_OBJ)
@@ -856,7 +851,7 @@ namespace OpenLogReplicator {
             cdefRet = stmtCDef.next();
         }
 
-        //reading SYS.COL$
+        // Reading SYS.COL$
         DatabaseStatement stmtCol(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_COL_OBJ)
@@ -903,7 +898,7 @@ namespace OpenLogReplicator {
             colRet = stmtCol.next();
         }
 
-        //reading SYS.DEFERRED_STG$
+        // Reading SYS.DEFERRED_STG$
         DatabaseStatement stmtDeferredStg(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_DEFERRED_STG_OBJ)
@@ -936,7 +931,7 @@ namespace OpenLogReplicator {
             deferredStgRet = stmtDeferredStg.next();
         }
 
-        //reading SYS.ECOL$
+        // Reading SYS.ECOL$
         DatabaseStatement stmtECol(conn);
         if (ctx->version12) {
             if (obj != 0) {
@@ -989,7 +984,7 @@ namespace OpenLogReplicator {
             ecolRet = stmtECol.next();
         }
 
-        //reading SYS.TAB$
+        // Reading SYS.TAB$
         DatabaseStatement stmtTab(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TAB_OBJ)
@@ -1026,7 +1021,7 @@ namespace OpenLogReplicator {
             tabRet = stmtTab.next();
         }
 
-        //reading SYS.TABCOMPART$
+        // Reading SYS.TABCOMPART$
         DatabaseStatement stmtTabComPart(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABCOMPART_OBJ)
@@ -1058,7 +1053,7 @@ namespace OpenLogReplicator {
             tabComPartRet = stmtTabComPart.next();
         }
 
-        //reading SYS.TABPART$
+        // Reading SYS.TABPART$
         DatabaseStatement stmtTabPart(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABPART_OBJ)
@@ -1090,7 +1085,7 @@ namespace OpenLogReplicator {
             tabPartRet = stmtTabPart.next();
         }
 
-        //reading SYS.TABSUBPART$
+        // Reading SYS.TABSUBPART$
         DatabaseStatement stmtTabSubPart(conn);
         if (obj != 0) {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TABSUBPART_OBJ)
@@ -1132,7 +1127,7 @@ namespace OpenLogReplicator {
         try {
             DatabaseStatement stmtUser(conn);
 
-            //reading SYS.USER$
+            // Reading SYS.USER$
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_USER)
             TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
             TRACE(TRACE2_SQL, "PARAM2: " << ownerRegexp)
@@ -1156,7 +1151,7 @@ namespace OpenLogReplicator {
                 }
 
                 DatabaseStatement stmtObj(conn);
-                //reading SYS.OBJ$
+                // Reading SYS.OBJ$
                 if ((options & OPTIONS_SYSTEM_TABLE) == 0) {
                     TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_OBJ_USER)
                     TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
@@ -1224,7 +1219,7 @@ namespace OpenLogReplicator {
             INFO("- found: " << msg);
         }
 
-        //msgs
+        // Msgs
         if ((options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(owner) == metadata->users.end())
             metadata->users.insert(owner);
     }
@@ -1233,7 +1228,7 @@ namespace OpenLogReplicator {
         if (!checkConnection())
             return;
 
-        //reload incarnation ctx
+        // Reload incarnation ctx
         typeResetlogs oldResetlogs = metadata->resetlogs;
         for (OracleIncarnation* oi : metadata->oracleIncarnations)
             delete oi;
@@ -1280,7 +1275,7 @@ namespace OpenLogReplicator {
                 auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status, resetlogs, priorIncarnation);
                 metadata->oracleIncarnations.insert(oi);
 
-                //search prev value
+                // Search prev value
                 if (oldResetlogs != 0 && oi->resetlogs == oldResetlogs) {
                     metadata->oracleIncarnationCurrent = oi;
                 } else
@@ -1293,7 +1288,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //reload online redo log ctx
+        // Reload online redo log ctx
         {
             DatabaseStatement stmt(conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_LOGFILE_LIST)

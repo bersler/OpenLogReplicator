@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
             return REDO_ERROR_READ;
         }
 
-        //check file header
+        // Check file header
         if (headerBuffer[0] != 0) {
             ERROR("invalid header (header[0]: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[0] << "): " << fileName)
             return REDO_ERROR_BAD_DATA;
@@ -275,12 +275,12 @@ namespace OpenLogReplicator {
         if (compatVsn == 0)
             return REDO_EMPTY;
 
-        if ((compatVsn >= 0x0B200000 && compatVsn <= 0x0B200400) //11.2.0.0 - 11.2.0.4
-            || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200) //12.1.0.0 - 12.1.0.2
-            || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100) //12.2.0.0 - 12.2.0.1
-            || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000) //18.0.0.0 - 18.14.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x130F0000) //19.0.0.0 - 19.15.0.0
-            || (compatVsn >= 0x15000000 && compatVsn <= 0x15060000)) //21.0.0.0 - 21.6.0.0
+        if ((compatVsn >= 0x0B200000 && compatVsn <= 0x0B200400)     // 11.2.0.0 - 11.2.0.4
+            || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200)  // 12.1.0.0 - 12.1.0.2
+            || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100)  // 12.2.0.0 - 12.2.0.1
+            || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000)  // 18.0.0.0 - 18.14.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x130F0000)  // 19.0.0.0 - 19.15.0.0
+            || (compatVsn >= 0x15000000 && compatVsn <= 0x15060000)) // 21.0.0.0 - 21.6.0.0
             version = compatVsn;
         else {
             ERROR("invalid database version (found: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn << "): " << fileName)
@@ -355,7 +355,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //updating nextScn if changed
+        // Updating nextScn if changed
         if (nextScn == ZERO_SCN && nextScnHeader != ZERO_SCN) {
             DEBUG("updating next scn to: " << std::dec << nextScnHeader)
             nextScn = nextScnHeader;
@@ -408,7 +408,7 @@ namespace OpenLogReplicator {
         uint64_t goodBlocks = 0;
         uint64_t tmpRet = REDO_OK;
 
-        //check which blocks are good
+        // Check which blocks are good
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
                                       ctx->redoVerifyDelayUs == 0 || group == 0);
@@ -419,7 +419,7 @@ namespace OpenLogReplicator {
             ++goodBlocks;
         }
 
-        //partial online redo log file
+        // Partial online redo log file
         if (goodBlocks == 0 && group == 0) {
             if (nextScnHeader != ZERO_SCN) {
                 ret = REDO_FINISHED;
@@ -431,7 +431,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        //treat bad blocks as empty
+        // Treat bad blocks as empty
         if (tmpRet == REDO_ERROR_CRC && ctx->redoVerifyDelayUs > 0 && group != 0)
             tmpRet = REDO_EMPTY;
 
@@ -440,7 +440,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        //check for log switch
+        // Check for log switch
         if (goodBlocks == 0 && tmpRet == REDO_EMPTY) {
             tmpRet = reloadHeader();
             if (tmpRet != REDO_OK) {
@@ -471,7 +471,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //batch mode with partial online redo log file
+        // Batch mode with partial online redo log file
         if (tmpRet == REDO_ERROR_SEQUENCE && group == 0) {
             if (nextScnHeader != ZERO_SCN) {
                 ret = REDO_FINISHED;
@@ -502,7 +502,7 @@ namespace OpenLogReplicator {
                 ++goodBlocks;
             } else {
                 readTime = *readTimeP + (time_t)ctx->redoVerifyDelayUs;
-                return false;
+                break;
             }
         }
 
@@ -546,7 +546,7 @@ namespace OpenLogReplicator {
             maxNumBlock = actualRead / blockSize;
             typeBlk bufferEndBlock = bufferEnd / blockSize;
 
-            //check which blocks are good
+            // Check which blocks are good
             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
                 tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
                                           true);
@@ -557,7 +557,7 @@ namespace OpenLogReplicator {
                 ++goodBlocks;
             }
 
-            //verify header for online redo logs after every successful read
+            // Verify header for online redo logs after every successful read
             if (tmpRet == REDO_OK && group > 0)
                 tmpRet = reloadHeader();
 
@@ -585,7 +585,7 @@ namespace OpenLogReplicator {
                 if (status == READER_STATUS_SLEEPING && !ctx->softShutdown) {
                     condReaderSleeping.wait(lck);
                 } else if (status == READER_STATUS_READ && !ctx->softShutdown && ctx->buffersFree == 0 && (bufferEnd % MEMORY_CHUNK_SIZE) == 0) {
-                    //buffer full
+                    // Buffer full
                     condBufferFull.wait(lck);
                 }
             }
@@ -648,10 +648,11 @@ namespace OpenLogReplicator {
                         } else {
                             WARNING("end of online redo log file at position " << std::dec << bufferScan)
                             ret = REDO_STOPPED;
-                        } break;
+                        }
+                        break;
                     }
 
-                    //buffer full?
+                    // Buffer full?
                     if (bufferStart + ctx->bufferSizeMax == bufferEnd) {
                         std::unique_lock<std::mutex> lck(mtx);
                         if (!ctx->softShutdown && bufferStart + ctx->bufferSizeMax == bufferEnd) {
@@ -664,7 +665,7 @@ namespace OpenLogReplicator {
                         if (!read2())
                             break;
 
-                    //#1 read
+                    // #1 read
                     if (bufferScan < fileSize && (ctx->buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
                         && (!reachedZero || lastReadTime + (time_t)ctx->redoReadSleepUs < loopTime))
                         if (!read1())
@@ -681,7 +682,7 @@ namespace OpenLogReplicator {
                         break;
                     }
 
-                    //sleep some time
+                    // Sleep some time
                     if (!readBlocks) {
                         if (readTime == 0) {
                             usleep(ctx->redoReadSleepUs);
@@ -916,7 +917,7 @@ namespace OpenLogReplicator {
 
         uint16_t redoKeyFlag = ctx->read16(headerBuffer + blockSize + 480);
         ss << " redo log key flag is " << std::dec << redoKeyFlag << std::endl;
-        uint16_t enabledRedoThreads = 1; //TODO: find field position/size
+        uint16_t enabledRedoThreads = 1; // TODO: find field position/size
         ss << " Enabled redo threads: " << std::dec << enabledRedoThreads << " " << std::endl;
     }
 
@@ -1050,7 +1051,7 @@ namespace OpenLogReplicator {
         if (bufferStart < confirmedBufferStart)
             bufferStart = confirmedBufferStart;
 
-        //all work done
+        // All work done
         if (confirmedBufferStart == bufferEnd) {
             if (ret == REDO_STOPPED || ret == REDO_OVERWRITTEN || ret == REDO_FINISHED || status == READER_STATUS_SLEEPING)
                 return true;

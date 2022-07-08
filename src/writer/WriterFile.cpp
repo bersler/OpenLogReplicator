@@ -134,7 +134,7 @@ namespace OpenLogReplicator {
         if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxSize == 0)
             throw RuntimeException("output file is with no max size: " + this->output + " - 'max-size' must be defined for output with rotation");
 
-        //search for last used number
+        // Search for last used number
         if (mode == WRITER_FILE_MODE_NUM) {
             DIR* dir;
             if ((dir = opendir(outputPath.c_str())) == nullptr)
@@ -171,7 +171,7 @@ namespace OpenLogReplicator {
                 try {
                     fileNum = strtoull(fileNameFoundNum.c_str(), nullptr, 10);
                 } catch (std::exception& e) {
-                    //ignore other files
+                    // Ignore other files
                     continue;
                 }
                 if (append > 0) {
@@ -255,13 +255,13 @@ namespace OpenLogReplicator {
                 outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::to_string(sequence) + outputFileMask.substr(suffixPos);
         }
 
-        //file is closed, open it
+        // File is closed, open it
         if (outputDes == -1) {
             struct stat fileStat;
             int statRet = stat(outputFile.c_str(), &fileStat);
             TRACE(TRACE2_WRITER, "WRITER: stat for " << outputFile << " returns " << std::dec << statRet << ", errno = " << errno)
 
-            //file already exists, append?
+            // File already exists, append?
             if (append == 0 && statRet == 0)
                 throw RuntimeException("output file already exists but append mode is not used: " + outputFile);
 

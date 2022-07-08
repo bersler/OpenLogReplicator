@@ -131,15 +131,15 @@ namespace OpenLogReplicator {
         return *this;
     }
 
-    uint64_t typeINTX::get64() {
+    uint64_t typeINTX::get64() const {
         return data[0];
     }
 
-    bool typeINTX::isSet64(uint64_t mask) {
+    bool typeINTX::isSet64(uint64_t mask) const {
         return data[0] & mask;
     }
 
-    bool typeINTX::isZero() {
+    bool typeINTX::isZero() const {
         for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
             if (data[i] != 0)
                 return false;

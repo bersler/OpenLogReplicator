@@ -46,18 +46,18 @@ namespace OpenLogReplicator {
     }
 
     bool SysCDef::isPK() const {
-        return (type == SYSCDEF_TYPE_PK);
+        return (type == SYS_CDEF_TYPE_PK);
     }
 
     bool SysCDef::isSupplementalLog() const {
-        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG);
+        return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG);
     }
 
     bool SysCDef::isSupplementalLogPK() const {
-        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG_PK);
+        return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_PK);
     }
 
     bool SysCDef::isSupplementalLogAll() const {
-        return (type == SYSCDEF_TYPE_SUPPLEMENTAL_LOG_ALL);
+        return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL);
     }
 }

@@ -405,7 +405,7 @@ namespace OpenLogReplicator {
 
     bool SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, OracleObject* object, typeRowId& rowId __attribute__((unused))) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
-            if (object->columns[column]->type != SYSCOL_TYPE_VARCHAR && object->columns[column]->type != SYSCOL_TYPE_CHAR)
+            if (object->columns[column]->type != SYS_COL_TYPE_VARCHAR && object->columns[column]->type != SYS_COL_TYPE_CHAR)
                 throw RuntimeException("ddl: column type mismatch for " + object->owner + "." + object->name + ": column " +
                         object->columns[column]->name + " type found " + std::to_string(object->columns[column]->type));
 
@@ -521,7 +521,7 @@ namespace OpenLogReplicator {
                     else if (object->columns[column]->name == "INTCOL#")
                         updateNumber16(sysCol->intCol, 0, column, object, rowId);
                     else if (object->columns[column]->name == "NAME")
-                        updateString(sysCol->name, SYSCOL_NAME_LENGTH, column, object, rowId);
+                        updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, object, rowId);
                     else if (object->columns[column]->name == "TYPE#")
                         updateNumber16u(sysCol->type, 0, column, object, rowId);
                     else if (object->columns[column]->name == "LENGTH")
@@ -622,7 +622,7 @@ namespace OpenLogReplicator {
                     else if (object->columns[column]->name == "DATAOBJ#")
                         updateNumber32u(sysObj->dataObj, 0, column, object, rowId);
                     else if (object->columns[column]->name == "NAME")
-                        updateString(sysObj->name, SYSOBJ_NAME_LENGTH, column, object, rowId);
+                        updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, object, rowId);
                     else if (object->columns[column]->name == "TYPE#")
                         updateNumber16u(sysObj->type, 0, column, object, rowId);
                     else if (object->columns[column]->name == "FLAGS")
@@ -768,7 +768,7 @@ namespace OpenLogReplicator {
                     if (object->columns[column]->name == "USER#")
                         updateUser(sysUser->user, column, object, rowId);
                     else if (object->columns[column]->name == "NAME")
-                        updateString(sysUser->name, SYSUSER_NAME_LENGTH, column, object, rowId);
+                        updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, object, rowId);
                     else if (object->columns[column]->name == "SPARE1")
                         updateNumberXu(sysUser->spare1, column, object, rowId);
                 }
@@ -902,7 +902,7 @@ namespace OpenLogReplicator {
                             metadata->schema->sysColTouched = true;
                         }
                     } else if (object->columns[column]->name == "NAME") {
-                        if (updateString(sysCol2->name, SYSCOL_NAME_LENGTH, column, object, rowId)) {
+                        if (updateString(sysCol2->name, SYS_COL_NAME_LENGTH, column, object, rowId)) {
                             sysCol2->touched = true;
                             metadata->schema->sysColTouched = true;
                         }
@@ -1050,7 +1050,7 @@ namespace OpenLogReplicator {
                             metadata->schema->sysObjTouched = true;
                         }
                     } else if (object->columns[column]->name == "NAME") {
-                        if (updateString(sysObj2->name, SYSOBJ_NAME_LENGTH, column, object, rowId)) {
+                        if (updateString(sysObj2->name, SYS_OBJ_NAME_LENGTH, column, object, rowId)) {
                             sysObj2->touched = true;
                             metadata->schema->sysObjTouched = true;
                         }
@@ -1249,7 +1249,7 @@ namespace OpenLogReplicator {
                             metadata->schema->sysUserTouched = true;
                         }
                     } else if (object->columns[column]->name == "NAME") {
-                        if (updateString(sysUser2->name, SYSUSER_NAME_LENGTH, column, object, rowId)) {
+                        if (updateString(sysUser2->name, SYS_USER_NAME_LENGTH, column, object, rowId)) {
                             sysUser2->touched = true;
                             metadata->schema->sysUserTouched = true;
                         }

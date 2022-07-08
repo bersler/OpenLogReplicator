@@ -20,8 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "typeRowId.h"
 
-#ifndef SYS_TABSUBPART_H_
-#define SYS_TABSUBPART_H_
+#ifndef SYS_TAB_SUB_PART_H_
+#define SYS_TAB_SUB_PART_H_
 
 namespace OpenLogReplicator {
     class SysTabSubPartKey {
@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
 
         typeRowId rowId;
         typeObj obj;
-        typeDataObj dataObj;        //NULL
+        typeDataObj dataObj;        // NULL
         typeObj pObj;
         bool touched;
     };

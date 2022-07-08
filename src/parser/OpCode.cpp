@@ -262,7 +262,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //block cleanout record
+        // Block cleanout record
         if ((op & KTBOP_BLOCKCLEANOUT) != 0) {
             if (ctx->dumpRedoLog >= 1) {
                 typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 48);
@@ -283,7 +283,7 @@ namespace OpenLogReplicator {
                         bigscn = 'Y';
                     if ((ver2 & 0x04) != 0)
                         compat = 'Y';
-                    uint32_t spare = 0; //TODO: find field position/size
+                    uint32_t spare = 0; // TODO: find field position/size
                     ver2 &= 0x03;
                     ctx->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN64(scn) <<
@@ -384,14 +384,14 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << "hrid: 0x" << std::setfill('0') << std::setw(8) << std::hex << hrid1 << "." << std::hex << hrid2 << std::endl;
             }
 
-            //next DBA/SLT
+            // Next DBA/SLT
             if ((redoLogRecord->fb & FB_L) == 0) {
                 ctx->dumpStream << "nrid:  0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->nridBdba << "." << std::hex << redoLogRecord->nridSlot << std::endl;
             }
 
             if ((redoLogRecord->fb & FB_K) != 0) {
-                uint8_t curc = 0; //TODO: find field position/size
-                uint8_t comc = 0; //TODO: find field position/size
+                uint8_t curc = 0; // TODO: find field position/size
+                uint8_t comc = 0; // TODO: find field position/size
                 uint32_t pk = ctx->read32(redoLogRecord->data + fieldPos + 20);
                 uint16_t pk1 = ctx->read16(redoLogRecord->data + fieldPos + 24);
                 uint32_t nk = ctx->read32(redoLogRecord->data + fieldPos + 28);
@@ -496,7 +496,7 @@ namespace OpenLogReplicator {
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
             uint8_t ckix = redoLogRecord->data[fieldPos + 18];
             uint8_t ncol = redoLogRecord->data[fieldPos + 22];
-            auto size = (int16_t)ctx->read16(redoLogRecord->data + fieldPos + 24); //signed
+            auto size = (int16_t)ctx->read16(redoLogRecord->data + fieldPos + 24); // Signed
 
             ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
                     " slot: " << std::dec << redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" <<
@@ -705,18 +705,18 @@ namespace OpenLogReplicator {
 
             const char* opCode = "???";
             switch (redoLogRecord->op & 0x1F) {
-                case OP_IUR: opCode = "IUR"; break; //Interpret Undo Redo
-                case OP_IRP: opCode = "IRP"; break; //Insert Row Piece
-                case OP_DRP: opCode = "DRP"; break; //Delete Row Piece
-                case OP_LKR: opCode = "LKR"; break; //LocK Row
-                case OP_URP: opCode = "URP"; break; //Update Row Piece
-                case OP_ORP: opCode = "ORP"; break; //Overwrite Row Piece
-                case OP_MFC: opCode = "MFC"; break; //Manipulate First Column
-                case OP_CFA: opCode = "CFA"; break; //Change Forwarding Address
-                case OP_CKI: opCode = "CKI"; break; //Change Cluster key Index
-                case OP_SKL: opCode = "SKL"; break; //Set Key Links
-                case OP_QMI: opCode = "QMI"; break; //Quick Multi-row Insert
-                case OP_QMD: opCode = "QMD"; break; //Quick Multi-row Delete
+                case OP_IUR: opCode = "IUR"; break; // Interpret Undo Redo
+                case OP_IRP: opCode = "IRP"; break; // Insert Row Piece
+                case OP_DRP: opCode = "DRP"; break; // Delete Row Piece
+                case OP_LKR: opCode = "LKR"; break; // LocK Row
+                case OP_URP: opCode = "URP"; break; // Update Row Piece
+                case OP_ORP: opCode = "ORP"; break; // Overwrite Row Piece
+                case OP_MFC: opCode = "MFC"; break; // Manipulate First Column
+                case OP_CFA: opCode = "CFA"; break; // Change Forwarding Address
+                case OP_CKI: opCode = "CKI"; break; // Change Cluster key Index
+                case OP_SKL: opCode = "SKL"; break; // Set Key Links
+                case OP_QMI: opCode = "QMI"; break; // Quick Multi-row Insert
+                case OP_QMD: opCode = "QMD"; break; // Quick Multi-row Delete
                 case OP_DSC: opCode = "DSC"; break;
                 case OP_LMN: opCode = "LMN"; break;
                 case OP_LLB: opCode = "LLB"; break;
@@ -735,13 +735,13 @@ namespace OpenLogReplicator {
             const char* rtype("");
             switch (redoLogRecord->flags & 0x03) {
             case FLAGS_XA:
-                xtype = "XA"; //redo
+                xtype = "XA"; // Redo
                 break;
             case FLAGS_XR:
-                xtype = "XR"; //rollback
+                xtype = "XR"; // Rollback
                 break;
             case FLAGS_CR:
-                xtype = "CR"; //unknown
+                xtype = "CR"; // Unknown
                 break;
             }
             redoLogRecord->flags &= 0xFC;
@@ -970,7 +970,7 @@ namespace OpenLogReplicator {
             return;
 
         if (ktubl) {
-            //KTUBL
+            // KTUBL
             if (fieldLength < 28) {
                 WARNING("too short field ktubl: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
                 return;
@@ -1081,7 +1081,7 @@ namespace OpenLogReplicator {
                 }
             }
         } else {
-            //KTUBU
+            // KTUBU
             if (ctx->version < REDO_VERSION_19_0) {
                 ctx->dumpStream <<
                         "Undo type:  " << undoType << " " <<
@@ -1260,14 +1260,14 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::processFbFlags(uint8_t fb, char* fbStr) {
-        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; //Last column continues in Next piece
-        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; //First column continues from Previous piece
-        if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; //Last ctx piece
-        if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; //First ctx piece
-        if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; //Deleted row
-        if ((fb & FB_H) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; //Head piece of row
-        if ((fb & FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; //Clustered table member
-        if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; //Cluster Key
+        if ((fb & FB_N) != 0) fbStr[7] = 'N'; else fbStr[7] = '-'; // Last column continues in Next piece
+        if ((fb & FB_P) != 0) fbStr[6] = 'P'; else fbStr[6] = '-'; // First column continues from Previous piece
+        if ((fb & FB_L) != 0) fbStr[5] = 'L'; else fbStr[5] = '-'; // Last ctx piece
+        if ((fb & FB_F) != 0) fbStr[4] = 'F'; else fbStr[4] = '-'; // First ctx piece
+        if ((fb & FB_D) != 0) fbStr[3] = 'D'; else fbStr[3] = '-'; // Deleted row
+        if ((fb & FB_H) != 0) fbStr[2] = 'H'; else fbStr[2] = '-'; // Head piece of row
+        if ((fb & FB_C) != 0) fbStr[1] = 'C'; else fbStr[1] = '-'; // Clustered table member
+        if ((fb & FB_K) != 0) fbStr[0] = 'K'; else fbStr[0] = '-'; // Cluster Key
         fbStr[8] = 0;
     }
 }

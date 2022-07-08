@@ -15,7 +15,7 @@ Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
-<http://www.gnu.org/licenses/>.  */
+<http:////www.gnu.org/licenses/>.  */
 
 #include <fstream>
 #include <thread>
@@ -155,14 +155,14 @@ namespace OpenLogReplicator {
         INFO("writer is starting with " << getName())
 
         try {
-            //external loop for client disconnection
+            // External loop for client disconnection
             while (!ctx->hardShutdown) {
                 try {
                     mainLoop();
                 } catch (NetworkException& ex) {
                     WARNING(ex.msg)
                     streaming = false;
-                    //client got disconnected
+                    // Client got disconnected
                 }
 
                 if (ctx->softShutdown && ctx->replicatorFinished)
@@ -182,7 +182,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::mainLoop() {
-        //client isConnected
+        // Client isConnected
         readCheckpoint();
 
         BuilderMsg* msg;
@@ -191,22 +191,22 @@ namespace OpenLogReplicator {
         uint64_t tmpLength = 0;
         tmpQueueSize = 0;
 
-        //start streaming
+        // Start streaming
         while (!ctx->hardShutdown) {
 
-            //get message to send
+            // Get message to send
             while (!ctx->hardShutdown) {
-                //check for client checkpoint
+                // Check for client checkpoint
                 pollQueue();
                 writeCheckpoint(false);
 
-                //next buffer
+                // Next buffer
                 if (curBuffer->length == curLength && curBuffer->next != nullptr) {
                     curBuffer = curBuffer->next;
                     curLength = 0;
                 }
 
-                //found something
+                // Found something
                 msg = (BuilderMsg *) (curBuffer->data + curLength);
 
                 if (curBuffer->length > curLength + sizeof(struct BuilderMsg) && msg->length > 0) {
@@ -223,13 +223,13 @@ namespace OpenLogReplicator {
             if (ctx->hardShutdown)
                 break;
 
-            //send message
+            // Send message
             while (curLength + sizeof(struct BuilderMsg) < tmpLength && !ctx->hardShutdown) {
                 msg = (BuilderMsg*) (curBuffer->data + curLength);
                 if (msg->length == 0)
                     break;
 
-                //queue is full
+                // Queue is full
                 pollQueue();
                 while (tmpQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
                     DEBUG("output queue is full (" << std::dec << tmpQueueSize << " schemaElements), sleeping " << std::dec << ctx->pollIntervalUs << "us")
@@ -241,18 +241,18 @@ namespace OpenLogReplicator {
                 if (ctx->hardShutdown)
                     break;
 
-                //builder->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
+                // builder->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
                 uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
                 curLength += sizeof(struct BuilderMsg);
 
-                //message in one part - send directly from buffer
+                // Message in one part - send directly from buffer
                 if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     sendMessage(msg);
                     curLength += length8;
                     msg = (BuilderMsg*) (curBuffer->data + curLength);
 
-                    //message in many parts - merge & copy
+                    // Message in many parts - merge & copy
                 } else {
                     msg->data = (uint8_t*)malloc(msg->length);
                     if (msg->data == nullptr)
@@ -284,9 +284,9 @@ namespace OpenLogReplicator {
                 }
             }
 
-            //all work done?
+            // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
-                //some data to send?
+                // Some data to send?
                 if (curBuffer->length != curLength || curBuffer->next != nullptr)
                     continue;
                 break;
@@ -297,11 +297,11 @@ namespace OpenLogReplicator {
     }
 
     void Writer::writeCheckpoint(bool force) {
-        //nothing changed
+        // Nothing changed
         if (checkpointScn == confirmedScn || confirmedScn == ZERO_SCN)
             return;
 
-        //not yet
+        // Not yet
         time_t now = time(nullptr);
         uint64_t timeSinceCheckpoint = (now - checkpointTime);
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
@@ -325,7 +325,7 @@ namespace OpenLogReplicator {
         std::ifstream infile;
         std::string name(database + "-chkpt");
 
-        //checkpoint is present - read it
+        // Checkpoint is present - read it
         std::string checkpoint;
         rapidjson::Document document;
         if (!metadata->stateRead(name, CHECKPOINT_FILE_MAX_SIZE, checkpoint)) {
@@ -344,7 +344,7 @@ namespace OpenLogReplicator {
         metadata->setResetlogs(Ctx::getJsonFieldU32(name, document, "resetlogs"));
         metadata->setActivation(Ctx::getJsonFieldU32(name, document, "activation"));
 
-        //started earlier - continue work & ignore default startup parameters
+        // Started earlier - continue work & ignore default startup parameters
         metadata->startScn = Ctx::getJsonFieldU64(name, document, "scn");
         metadata->startSequence = ZERO_SEQ;
         metadata->startTime.clear();

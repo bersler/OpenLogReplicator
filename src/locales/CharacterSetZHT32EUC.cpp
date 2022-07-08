@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         if (length == 0)
             return badChar(byte1);
 
-        //4 bytes sequence
+        // 4 bytes sequence
         if (byte1 == ZHT32EUC_4_b1) {
             if (length == 0)
                 return badChar(byte1);
@@ -64,7 +64,7 @@ namespace OpenLogReplicator {
             return badChar(byte1, byte2, byte3, byte4);
         }
 
-        //2 bytes sequence
+        // 2 bytes sequence
         if (byte1 < ZHT32EUC_2_b1_min || byte1 > ZHT32EUC_2_b1_max || length == 0)
             return badChar(byte1);
 

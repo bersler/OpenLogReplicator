@@ -28,72 +28,72 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051301);
-        //field: 1
+        // Field: 1
         dumpMsgSessionSerial(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051302))
             return;
-        //field: 2
+        // Field: 2
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "current username = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051303))
             return;
-        //field: 3
+        // Field: 3
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "login   username = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051304))
             return;
-        //field: 4
+        // Field: 4
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "client info      = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051305))
             return;
-        //field: 5
+        // Field: 5
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "OS username      = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051306))
             return;
-        //field: 6
+        // Field: 6
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "Machine name     = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051307))
             return;
-        //field: 7
+        // Field: 7
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "OS terminal      = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051308))
             return;
-        //field: 8
+        // Field: 8
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "OS process id    = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051309))
             return;
-        //field: 9
+        // Field: 9
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "OS program name  = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130A))
             return;
-        //field: 10
+        // Field: 10
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "transaction name = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130B))
             return;
-        //field: 11
+        // Field: 11
         dumpMsgFlags(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130C))
             return;
-        //field: 12
+        // Field: 12
         dumpMsgVersion(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130D))
             return;
-        //field: 13
+        // Field: 13
         dumpMsgAuditSessionid(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05130E))
             return;
-        //field: 14
+        // Field: 14
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "Client Id  = ");
     }
 

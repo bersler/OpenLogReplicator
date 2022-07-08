@@ -28,17 +28,17 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B01);
-        //field: 1
+        // Field: 1
         ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B02))
             return;
-        //field: 2
+        // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B03))
             return;
-        //field: 3
+        // Field: 3
         redoLogRecord->rowLenghsDelta = fieldPos;
         if (fieldLength < redoLogRecord->nrow * 2) {
             WARNING("field length list length too short: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0B04))
             return;
-        //field: 4
+        // Field: 4
         redoLogRecord->rowData = fieldNum;
         dumpRows(ctx, redoLogRecord, redoLogRecord->data + fieldPos);
     }

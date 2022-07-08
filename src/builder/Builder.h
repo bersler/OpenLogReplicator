@@ -111,7 +111,7 @@ namespace OpenLogReplicator {
         uint64_t mergesMax;
         uint64_t id;
         uint64_t num;
-        uint64_t maxMessageMb;      //maximum message size able to handle by writer
+        uint64_t maxMessageMb;      // Maximum message size able to handle by writer
         bool newTran;
         bool compressedBefore;
         bool compressedAfter;
@@ -161,7 +161,7 @@ namespace OpenLogReplicator {
 
             uint64_t base = column >> 6;
             uint64_t mask = ((uint64_t)1) << (column & 0x3F);
-            //new value
+            // New value
             if ((valuesSet[base] & mask) == 0) {
                 valuesSet[base] |= mask;
                 if (column >= valuesMax)
@@ -318,24 +318,24 @@ namespace OpenLogReplicator {
                                        ", increase MAX_FIELD_LENGTH and recompile code");
 
             uint8_t digits = data[0];
-            //just zero
+            // Just zero
             if (digits == 0x80) {
                 valueBufferAppend('0');
             } else {
                 uint64_t j = 1;
                 uint64_t jMax = length - 1;
 
-                //positive number
+                // Positive number
                 if (digits > 0x80 && jMax >= 1) {
                     uint64_t value;
                     uint64_t zeros = 0;
-                    //part of the total
+                    // Part of the total
                     if (digits <= 0xC0) {
                         valueBufferAppend('0');
                         zeros = 0xC0 - digits;
                     } else {
                         digits -= 0xC0;
-                        //part of the total - omitting first zero for first digit
+                        // Part of the total - omitting first zero for first digit
                         value = data[j] - 1;
                         if (value < 10)
                             valueBufferAppend('0' + value);
@@ -361,7 +361,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    //fraction part
+                    // Fraction part
                     if (j <= jMax) {
                         valueBufferAppend('.');
 
@@ -378,13 +378,13 @@ namespace OpenLogReplicator {
                             ++j;
                         }
 
-                        //last digit - omitting 0 at the end
+                        // Last digit - omitting 0 at the end
                         value = data[j] - 1;
                         valueBufferAppend('0' + (value / 10));
                         if ((value % 10) != 0)
                             valueBufferAppend('0' + (value % 10));
                     }
-                //negative number
+                // Negative number
                 } else if (digits < 0x80 && jMax >= 1) {
                     uint64_t value;
                     uint64_t zeros = 0;
@@ -393,7 +393,7 @@ namespace OpenLogReplicator {
                     if (data[jMax] == 0x66)
                         --jMax;
 
-                    //part of the total
+                    // Part of the total
                     if (digits >= 0x3F) {
                         valueBufferAppend('0');
                         zeros = digits - 0x3F;
@@ -472,22 +472,22 @@ namespace OpenLogReplicator {
                 if ((charFormat & CHAR_FORMAT_HEX) != 0) {
                     valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
                 } else {
-                    //0xxxxxxx
+                    // 0xxxxxxx
                     if (unicodeCharacter <= 0x7F) {
                         valueBufferAppend(unicodeCharacter);
 
-                    //110xxxxx 10xxxxxx
+                    // 110xxxxx 10xxxxxx
                     } else if (unicodeCharacter <= 0x7FF) {
                         valueBufferAppend(0xC0 | (uint8_t)(unicodeCharacter >> 6));
                         valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
-                    //1110xxxx 10xxxxxx 10xxxxxx
+                    // 1110xxxx 10xxxxxx 10xxxxxx
                     } else if (unicodeCharacter <= 0xFFFF) {
                         valueBufferAppend(0xE0 | (uint8_t)(unicodeCharacter >> 12));
                         valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 6) & 0x3F));
                         valueBufferAppend(0x80 | (uint8_t)(unicodeCharacter & 0x3F));
 
-                    //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                    // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
                     } else if (unicodeCharacter <= 0x10FFFF) {
                         valueBufferAppend(0xF0 | (uint8_t)(unicodeCharacter >> 18));
                         valueBufferAppend(0x80 | (uint8_t)((unicodeCharacter >> 12) & 0x3F));

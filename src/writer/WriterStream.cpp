@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
                     pollQueue();
                 }
             } catch (NetworkException& ex) {
-                //client got disconnected
+                // Client got disconnected
                 streaming = false;
             }
         }
@@ -213,7 +213,7 @@ namespace OpenLogReplicator {
             }
 
         } else if (length == 0) {
-            //no request
+            // No request
         } else if (errno != EAGAIN)
             throw RuntimeException("socket error: (ret: "+ std::to_string(length) + " errno: " + std::to_string(errno) + ")");
     }

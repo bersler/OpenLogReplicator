@@ -42,9 +42,9 @@ namespace OpenLogReplicator {
         typeObj recordDataObj;
 
         typeSeq sequence;
-        typeScn scn;              //scn
-        typeSubScn subScn;        //subscn
-        uint8_t* data;            //ctx
+        typeScn scn;              // scn
+        typeSubScn subScn;        // subscn
+        uint8_t* data;            // ctx
         uint64_t dataOffset;
         typeField fieldCnt;
         uint64_t fieldPos;
@@ -56,37 +56,37 @@ namespace OpenLogReplicator {
         uint64_t nullsDelta;
         uint64_t colNumsDelta;
 
-        typeAfn afn;             //absolute file number
-        uint64_t length;          //length
+        typeAfn afn;              // absolute file number
+        uint64_t length;          // length
         typeDba dba;
-        typeDba bdba;             //block DBA
-        typeObj obj;              //object ID
-        typeObj dataObj;          //ctx object ID
+        typeDba bdba;             // block DBA
+        typeObj obj;              // object ID
+        typeObj dataObj;          // ctx object ID
         uint32_t tsn;
         uint32_t undo;
         typeUsn usn;
-        typeXid xid;              //transaction id
-        typeUba uba;              //Undo Block Address
+        typeXid xid;              // transaction id
+        typeUba uba;              // Undo Block Address
         uint32_t pdbId;
 
         typeSlt slt;
         typeRci rci;
-        uint16_t flg;             //flag
-        typeOp1 opCode;          //operation code
-        typeOp1 opc;             //operation code for UNDO
+        uint16_t flg;             // flag
+        typeOp1 opCode;           // operation code
+        typeOp1 opc;              // operation code for UNDO
 
         uint8_t op;
         uint8_t ccData;
         uint8_t cc;
         uint8_t itli;
         typeSlot slot;
-        uint8_t flags;            //flags like xtype, kdoOpCode
-        uint8_t fb;               //row flags like F,L
-        uint8_t tabn;             //table number for clustered tables, for nonclustered: 0
+        uint8_t flags;            // flags like xtype, kdoOpCode
+        uint8_t fb;               // row flags like F,L
+        uint8_t tabn;             // table number for clustered tables, for nonclustered: 0
         uint16_t sizeDelt;
 
-        typeDba nridBdba;         //next row id bdba
-        typeSlot nridSlot;        //next row id slot
+        typeDba nridBdba;         // next row id bdba
+        typeSlot nridSlot;        // next row id slot
 
         uint8_t suppLogType;
         uint8_t suppLogFb;

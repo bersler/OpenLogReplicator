@@ -29,12 +29,12 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0401);
-        //field: 1
+        // Field: 1
         ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0402))
             return;
-        //field: 2
+        // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 }

@@ -28,19 +28,19 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050201);
-        //field: 1
+        // Field: 1
         ktudh(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (ctx->version >= REDO_VERSION_12_1) {
-            //field: 2
+            // Field: 2
             if (RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050202)) {
                 if (fieldLength == 4) {
-                    //field: 2
+                    // Field: 2
                     pdb(ctx, redoLogRecord, fieldPos, fieldLength);
                 } else {
                     kteop(ctx, redoLogRecord, fieldPos, fieldLength);
 
-                    //field: 3
+                    // Field: 3
                     if (RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050203)) {
                         pdb(ctx, redoLogRecord, fieldPos, fieldLength);
                     }
@@ -60,11 +60,11 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             uint32_t highwater = ctx->read32(redoLogRecord->data + fieldPos + 16);
             uint32_t ext = ctx->read32(redoLogRecord->data + fieldPos + 4);
-            typeBlk blk = 0; //TODO: find field position/size
+            typeBlk blk = 0; // TODO: find field position/size
             uint32_t extSize = ctx->read32(redoLogRecord->data + fieldPos + 12);
-            uint32_t blocksFreelist = 0; //TODO: find field position/size
-            uint32_t blocksBelow = 0; //TODO: find field position/size
-            typeBlk mapblk = 0; //TODO: find field position/size
+            uint32_t blocksFreelist = 0; // TODO: find field position/size
+            uint32_t blocksBelow = 0; // TODO: find field position/size
+            typeBlk mapblk = 0; // TODO: find field position/size
             uint32_t offset = ctx->read32(redoLogRecord->data + fieldPos + 24);
 
             ctx->dumpStream << "kteop redo - redo operation on extent map" << std::endl;

@@ -63,6 +63,8 @@ list(APPEND ListParser
         parser/OpCode050B.cpp
         parser/OpCode0513.cpp
         parser/OpCode0514.cpp
+        parser/OpCode0A02.cpp
+        parser/OpCode0A12.cpp
         parser/OpCode0B02.cpp
         parser/OpCode0B03.cpp
         parser/OpCode0B04.cpp
@@ -73,6 +75,7 @@ list(APPEND ListParser
         parser/OpCode0B0C.cpp
         parser/OpCode0B10.cpp
         parser/OpCode0B16.cpp
+        parser/OpCode1301.cpp
         parser/OpCode1801.cpp
         parser/Parser.cpp
         parser/Transaction.cpp

@@ -28,12 +28,12 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050401);
-        //field: 1
+        // Field: 1
         ktucm(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050402))
             return;
-        //field: 2
+        // Field: 2
         if ((redoLogRecord->flg & FLG_KTUCF_OP0504) != 0)
             ktucf(ctx, redoLogRecord, fieldPos, fieldLength);
 
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         redoLogRecord->flg = redoLogRecord->data[fieldPos + 16];
 
         if (ctx->dumpRedoLog >= 1) {
-            uint16_t srt = ctx->read16(redoLogRecord->data + fieldPos + 8);  //TODO: find field position/size
+            uint16_t srt = ctx->read16(redoLogRecord->data + fieldPos + 8);  // TODO: find field position/size
             uint32_t sta = ctx->read32(redoLogRecord->data + fieldPos + 12);
 
             ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)redoLogRecord->xid.slt() <<

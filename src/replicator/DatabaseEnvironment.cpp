@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     DatabaseEnvironment::~DatabaseEnvironment() {
         if (envhp != nullptr)
             OCIHandleFree(envhp, OCI_HTYPE_ENV);
-        //OCITerminate(OCI_DEFAULT);
+        // OCITerminate(OCI_DEFAULT);
     }
 
     void DatabaseEnvironment::initialize() {
@@ -72,7 +72,8 @@ namespace OpenLogReplicator {
 
             case OCI_ERROR:
                 OCIErrorGet(errhp, 1, nullptr, &errcode, errbuf1, sizeof(errbuf1), OCI_HTYPE_ERROR);
-                if (errcode == 1405) //fetched column value is NULL
+                // Fetched column value is NULL
+                if (errcode == 1405)
                     return;
                 len = strlen((char*)errbuf1);
                 if (len > 0 && errbuf1[len - 1] == '\n')

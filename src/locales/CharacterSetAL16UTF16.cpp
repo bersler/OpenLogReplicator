@@ -54,9 +54,9 @@ namespace OpenLogReplicator {
         uint64_t byte4 = *str++;
         --length;
 
-        //U' = yyyy yyyy yyxx xxxx xxxx   // U - 0x10000
-        //W1 = 1101 10yy yyyy yyyy      // 0xD800 + yyyyyyyyyy
-        //W2 = 1101 11xx xxxx xxxx      // 0xDC00 + xxxxxxxxxx
+        // U' = yyyy yyyy yyxx xxxx xxxx   // U - 0x10000
+        // W1 = 1101 10yy yyyy yyyy        // 0xD800 + yyyyyyyyyy
+        // W2 = 1101 11xx xxxx xxxx        // 0xDC00 + xxxxxxxxxx
 
         if ((byte3 & 0xFC) == 0xDC) {
             return 0x10000 + (((byte1 & 0x03) << 18) | (byte2 << 10) | ((byte3 & 0x03) << 8) | byte4);

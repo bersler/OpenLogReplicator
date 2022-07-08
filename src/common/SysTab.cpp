@@ -37,34 +37,34 @@ namespace OpenLogReplicator {
     }
 
     bool SysTab::isBinary() {
-        return property.isSet64(SYSTAB_PROPERTY_BINARY);
+        return property.isSet64(SYS_TAB_PROPERTY_BINARY);
     }
 
     bool SysTab::isClustered() {
-        return property.isSet64(SYSTAB_PROPERTY_CLUSTERED);
+        return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED);
     }
 
     bool SysTab::isIot() {
-        return property.isSet64(SYSTAB_PROPERTY_IOT1) || flags.isSet64(SYSTAB_PROPERTY_IOT2);
+        return property.isSet64(SYS_TAB_PROPERTY_IOT1) || flags.isSet64(SYS_TAB_PROPERTY_IOT2);
     }
 
     bool SysTab::isPartitioned() {
-        return property.isSet64(SYSTAB_PROPERTY_PARTITIONED);
+        return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED);
     }
 
     bool SysTab::isNested() {
-        return property.isSet64(SYSTAB_PROPERTY_NESTED);
+        return property.isSet64(SYS_TAB_PROPERTY_NESTED);
     }
 
     bool SysTab::isRowMovement() {
-        return flags.isSet64(SYSTAB_PROPERTY_ROW_MOVEMENT);
+        return flags.isSet64(SYS_TAB_PROPERTY_ROW_MOVEMENT);
     }
 
     bool SysTab::isDependencies() {
-        return flags.isSet64(SYSTAB_PROPERTY_DEPENDENCIES);
+        return flags.isSet64(SYS_TAB_PROPERTY_DEPENDENCIES);
     }
 
     bool SysTab::isInitial() {
-        return flags.isSet64(SYSTAB_PROPERTY_INITIAL);
+        return flags.isSet64(SYS_TAB_PROPERTY_INITIAL);
     }
 }

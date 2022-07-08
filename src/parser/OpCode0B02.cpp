@@ -28,12 +28,12 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0201);
-        //field: 1
+        // Field: 1
         ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0202))
             return;
-        //field: 2
+        // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
         uint8_t bits = 1;
@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
             if (ctx->dumpRedoLog >= 1)
                 dumpCompressed(ctx, redoLogRecord, redoLogRecord->data + fieldPos, fieldLength);
         } else {
-            //fields: 3 .. to 3 + cc - 1
+            // Fields: 3 .. to 3 + cc - 1
             for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
                 if (fieldLength > 0 && (*nulls & bits) != 0) {
                     WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset)

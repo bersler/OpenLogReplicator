@@ -742,7 +742,7 @@ namespace OpenLogReplicator {
                 SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
                 sysTabSubPartMapKey[sysTabSubPartKey] = sysTabSubPart;
                 if (sysTabSubPart->touched) {
-                    //find SYS.TABCOMPART$
+                    // Find SYS.TABCOMPART$
                     auto it2 = sysTabComPartMapObj.find(sysTabSubPart->pObj);
                     if (it2 != sysTabComPartMapObj.end()) {
                         SysTabComPart* sysTabComPart = it2->second;
@@ -843,7 +843,7 @@ namespace OpenLogReplicator {
         if (sysColMapRowId.find(rowId) != sysColMapRowId.end())
             return false;
 
-        if (strlen(name) > SYSCOL_NAME_LENGTH)
+        if (strlen(name) > SYS_COL_NAME_LENGTH)
             throw DataException("SYS.COL$ too long value for NAME (value: '" + std::string(name) + "', length: " + std::to_string(strlen(name)) + ")");
         auto* sysCol = new SysCol(rowId, obj, col, segCol, intCol, name, type, length, precision, scale, charsetForm, charsetId,
                                   null_, property1, property2, false);
@@ -895,7 +895,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        if (strlen(name) > SYSOBJ_NAME_LENGTH)
+        if (strlen(name) > SYS_OBJ_NAME_LENGTH)
             throw DataException("SYS.OBJ$ too long value for NAME (value: '" + std::string(name) + "', length: " + std::to_string(strlen(name)) + ")");
         auto* sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2, single, false);
         sysObjMapRowId[rowId] = sysObj;
@@ -974,7 +974,7 @@ namespace OpenLogReplicator {
             return false;
         }
 
-        if (strlen(name) > SYSUSER_NAME_LENGTH)
+        if (strlen(name) > SYS_USER_NAME_LENGTH)
             throw DataException("SYS.USER$ too long value for NAME (value: '" + std::string(name) + "', length: " + std::to_string(strlen(name)) + ")");
         auto* sysUser = new SysUser(rowId, user, name, spare11, spare12, single, false);
         sysUserMapRowId[rowId] = sysUser;
@@ -1382,14 +1382,14 @@ namespace OpenLogReplicator {
                     continue;
             }
 
-            //table already added with another rule
+            // Table already added with another rule
             if (objectMap.find(sysObj->obj) != objectMap.end()) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - already added (skipped)");
                 continue;
             }
 
-            //object without SYS.TAB$
+            // Object without SYS.TAB$
             auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
             if (sysTabMapObjIt == sysTabMapObj.end()) {
                 if (ctx->trace >= TRACE_DEBUG)
@@ -1398,28 +1398,28 @@ namespace OpenLogReplicator {
             }
             SysTab* sysTab = sysTabMapObjIt->second;
 
-            //skip binary objects
+            // Skip binary objects
             if (sysTab->isBinary()) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - binary (skipped");
                 continue;
             }
 
-            //skip Index Organized Tables (IOT)
+            // Skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - IOT (skipped)");
                 continue;
             }
 
-            //skip temporary tables
+            // Skip temporary tables
             if (sysObj->isTemporary()) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - temporary table (skipped)");
                 continue;
             }
 
-            //skip nested tables
+            // Skip nested tables
             if (sysTab->isNested()) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - nested table (skipped)");
@@ -1434,7 +1434,8 @@ namespace OpenLogReplicator {
                 if (sysDeferredStg != nullptr)
                     compressed = sysDeferredStg->isCompressed();
             }
-            //skip compressed tables
+
+            // Skip compressed tables
             if (compressed) {
                 if (ctx->trace >= TRACE_DEBUG)
                     msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - compressed table (skipped)");
@@ -1516,7 +1517,7 @@ namespace OpenLogReplicator {
                 else
                     charmapId = sysCol->charsetId;
 
-                //check character set for char and varchar2
+                // Check character set for char and varchar2
                 if (sysCol->type == 1 || sysCol->type == 96) {
                     auto it = locales->characterMap.find(charmapId);
                     if (it == locales->characterMap.end()) {
@@ -1532,8 +1533,8 @@ namespace OpenLogReplicator {
                      ++itCCol) {
                     SysCCol* sysCCol = itCCol->second;
 
+                    // Count number of PK the column is part of
                     auto it = sysCDefMapCon.find(sysCCol->con);
-                    //count number of PK the column is part of
                     if (it == sysCDefMapCon.end()) {
                         WARNING("SYS.CDEF$ missing for CON: " << sysCCol->con)
                         continue;
@@ -1542,14 +1543,14 @@ namespace OpenLogReplicator {
                     if (sysCDef->isPK())
                         ++numPk;
 
-                    //supplemental logging
+                    // Supplemental logging
                     if (sysCCol->spare1.isZero() && sysCDef->isSupplementalLog())
                         ++numSup;
                 }
 
-                //part of defined primary key
+                // Part of defined primary key
                 if (!keys.empty()) {
-                    //manually defined pk overlaps with table pk
+                    // Manually defined pk overlaps with table pk
                     if (numPk > 0 && (suppLogTablePrimary || sysUser->isSuppLogPrimary() || suppLogDbPrimary))
                         numSup = 1;
                     numPk = 0;
@@ -1581,7 +1582,7 @@ namespace OpenLogReplicator {
                 schemaColumn = nullptr;
             }
 
-            //check if table has all listed columns
+            // Check if table has all listed columns
             if ((typeCol)keys.size() != keysCnt)
                 throw DataException("table " + std::string(sysUser->name) + "." + sysObj->name + " couldn't find all column set (" + keysStr + ")");
 
@@ -1598,14 +1599,14 @@ namespace OpenLogReplicator {
                 ss << ", row movement enabled";
 
             if (!DISABLE_CHECKS(DISABLE_CHECKS_SUPPLEMENTAL_LOG) && (options & OPTIONS_SYSTEM_TABLE) == 0) {
-                //use default primary key
+                // Use default primary key
                 if (keys.empty()) {
                     if (schemaObject->totalPk == 0)
                         ss << ", primary key missing";
                     else if (!suppLogTablePrimary && !suppLogTableAll && !sysUser->isSuppLogPrimary() && !sysUser->isSuppLogAll() &&
                              !suppLogDbPrimary && !suppLogDbAll && supLogColMissing)
                         ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;";
-                    //user defined primary key
+                    // User defined primary key
                 } else {
                     if (!suppLogTableAll && !sysUser->isSuppLogAll() && !suppLogDbAll && supLogColMissing)
                         ss << ", supplemental log missing, try: ALTER TABLE " << sysUser->name << "." << sysObj->name << " ADD SUPPLEMENTAL LOG GROUP GRP" << std::dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";

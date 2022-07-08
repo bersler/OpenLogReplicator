@@ -261,7 +261,7 @@ namespace OpenLogReplicator {
         {
             std::unique_lock<std::mutex> lck(mtx);
 
-            //nothing processed so far
+            // Nothing processed so far
             if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn)
                 return;
 
@@ -273,8 +273,8 @@ namespace OpenLogReplicator {
             if (schema->scn == ZERO_SCN)
                 schema->scn = checkpointScn;
 
+            // Schema not changed
             bool storeSchema = true;
-            //schema not changed
             if (schema->refScn != ZERO_SCN && schema->refScn >= schema->scn) {
                 if (schemaInterval < ctx->schemaForceInterval) {
                     storeSchema = false;
@@ -321,7 +321,7 @@ namespace OpenLogReplicator {
             try {
                 scn = strtoull(scnStr.c_str(), nullptr, 10);
             } catch (std::exception& e) {
-                //ignore other files
+                // Ignore other files
                 continue;
             }
 
@@ -369,7 +369,7 @@ namespace OpenLogReplicator {
         }
         msgs.clear();
 
-        //schema missing
+        // Schema missing
         if (schema->scn == ZERO_SCN) {
             if (schema->refScn == ZERO_SCN) {
                 ERROR("load checkpoint from " << name1 << ": SCN missing")
@@ -451,7 +451,7 @@ namespace OpenLogReplicator {
         std::string name("base-" + ctx->versionStr);
 
         INFO("reading adaptive schema from: " << name + ".json");
-        //TODO: change
+        // TODO: change
         std::string nlsCharset = "AL32UTF8";
         std::string nlsNcharCharset = "AL16UTF16";
         setNlsCharset(nlsCharset, nlsNcharCharset);

@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
 
         typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
 
-        //conversion arrays for 7-bit character sets
+        // Conversion arrays for 7-bit character sets
         static typeUnicode16 unicode_map_D7DEC[128];
         static typeUnicode16 unicode_map_D7SIEMENS9780X[128];
         static typeUnicode16 unicode_map_DK7SIEMENS9780X[128];

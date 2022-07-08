@@ -59,7 +59,7 @@ namespace OpenLogReplicator {
     }
 
     int64_t DatabaseStatement::executeQuery() {
-        sword status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, 1, 0, nullptr, nullptr, OCI_DEFAULT); //COMMIT_ON_SUCCESS
+        sword status = OCIStmtExecute(conn->svchp, stmthp, conn->errhp, 1, 0, nullptr, nullptr, OCI_DEFAULT); // COMMIT_ON_SUCCESS
         executed = true;
         if (status == OCI_NO_DATA)
             return 0;

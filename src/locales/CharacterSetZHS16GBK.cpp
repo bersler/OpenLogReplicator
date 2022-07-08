@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         if (byte1 <= 0x7F)
             return byte1;
 
-        //euro
+        // Euro
         if (byte1 == 0x80)
             return 0x20ac;
 

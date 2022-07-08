@@ -79,7 +79,7 @@ typedef uint64_t typeUnicode;
 #define MESSAGE_FORMAT_DEFAULT                  0
 #define MESSAGE_FORMAT_FULL                     1
 #define MESSAGE_FORMAT_ADD_SEQUENCES            2
-//JSON only:
+// JSON only:
 #define MESSAGE_FORMAT_SKIP_BEGIN               4
 #define MESSAGE_FORMAT_SKIP_COMMIT              8
 
@@ -112,11 +112,11 @@ typedef uint64_t typeUnicode;
 #define UNKNOWN_TYPE_HIDE                       0
 #define UNKNOWN_TYPE_SHOW                       1
 
-//default, only changed columns for update, or PK
+// Default, only changed columns for update, or PK
 #define COLUMN_FORMAT_CHANGED                   0
-//show full nulls from insert & delete
+// Show full nulls from insert & delete
 #define COLUMN_FORMAT_FULL_INS_DEC              1
-//show all from redo
+// Show all from redo
 #define COLUMN_FORMAT_FULL_UPD                  2
 
 #define TRANSACTION_INSERT                      1
@@ -151,6 +151,7 @@ typedef uint64_t typeUnicode;
 #define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
+#define PRINTLOBID(__lobid)                     std::uppercase<<std::setfill('0')<<std::hex<<(uint64_t)__lobid[0]<<(uint64_t)__lobid[1]<<(uint64_t)__lobid[2]<<(uint64_t)__lobid[3]<<(uint64_t)__lobid[4]<<(uint64_t)__lobid[5]<<(uint64_t)__lobid[6]<<(uint64_t)__lobid[7]<<(uint64_t)__lobid[8]<<(uint64_t)__lobid[9]<<std::nouppercase
 
 #define FLAGS_XA                0x01
 #define FLAGS_XR                0x02

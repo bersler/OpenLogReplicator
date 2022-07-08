@@ -24,15 +24,15 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_TAB_H_
 #define SYS_TAB_H_
 
-#define SYSTAB_PROPERTY_BINARY              1
-#define SYSTAB_PROPERTY_PARTITIONED         32
-#define SYSTAB_PROPERTY_IOT1                512
-#define SYSTAB_PROPERTY_CLUSTERED           1024
-#define SYSTAB_PROPERTY_NESTED              8192
-#define SYSTAB_PROPERTY_ROW_MOVEMENT        131072
-#define SYSTAB_PROPERTY_DEPENDENCIES        8388608
-#define SYSTAB_PROPERTY_IOT2                536870912
-#define SYSTAB_PROPERTY_INITIAL             17179869184
+#define SYS_TAB_PROPERTY_BINARY              1
+#define SYS_TAB_PROPERTY_PARTITIONED         32
+#define SYS_TAB_PROPERTY_IOT1                512
+#define SYS_TAB_PROPERTY_CLUSTERED           1024
+#define SYS_TAB_PROPERTY_NESTED              8192
+#define SYS_TAB_PROPERTY_ROW_MOVEMENT        131072
+#define SYS_TAB_PROPERTY_DEPENDENCIES        8388608
+#define SYS_TAB_PROPERTY_IOT2                536870912
+#define SYS_TAB_PROPERTY_INITIAL             17179869184
 
 namespace OpenLogReplicator {
     class SysTab {
@@ -52,8 +52,8 @@ namespace OpenLogReplicator {
 
         typeRowId rowId;
         typeObj obj;
-        typeDataObj dataObj;        //NULL
-        typeCol cluCols;            //NULL
+        typeDataObj dataObj;        // NULL
+        typeCol cluCols;            // NULL
         typeINTX flags;
         typeINTX property;
         bool touched;

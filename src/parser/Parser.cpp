@@ -31,6 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode050B.h"
 #include "OpCode0513.h"
 #include "OpCode0514.h"
+#include "OpCode0A02.h"
+#include "OpCode0A12.h"
 #include "OpCode0B02.h"
 #include "OpCode0B03.h"
 #include "OpCode0B04.h"
@@ -41,6 +43,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B0C.h"
 #include "OpCode0B10.h"
 #include "OpCode0B16.h"
+#include "OpCode1301.h"
 #include "OpCode1801.h"
 #include "Parser.h"
 #include "Transaction.h"
@@ -113,7 +116,7 @@ namespace OpenLogReplicator {
             headerLength = 24;
 
         if (ctx->dumpRedoLog >= 1) {
-            uint16_t thread = 1; //TODO: verify field length/position
+            uint16_t thread = 1; // TODO: verify field length/position
             ctx->dumpStream << " " << std::endl;
 
             if (ctx->version < REDO_VERSION_12_1)
@@ -210,7 +213,7 @@ namespace OpenLogReplicator {
             redoLogRecord[vectorCur].afn = ctx->read32(data + offset + 4) & 0xFFFF;
             redoLogRecord[vectorCur].dba = ctx->read32(data + offset + 8);
             redoLogRecord[vectorCur].scnRecord = ctx->readScn(data + offset + 12);
-            redoLogRecord[vectorCur].rbl = 0; //TODO: verify field length/position
+            redoLogRecord[vectorCur].rbl = 0; // TODO: verify field length/position
             redoLogRecord[vectorCur].seq = data[offset + 20];
             redoLogRecord[vectorCur].typ = data[offset + 21];
             typeUsn usn = (redoLogRecord[vectorCur].cls >= 15) ? (redoLogRecord[vectorCur].cls - 15) / 2 : -1;
@@ -259,10 +262,10 @@ namespace OpenLogReplicator {
                                        std::to_string(recordLength));
             }
 
-            //uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
+            // uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectorCur].fieldCnt; ++i) {
                 redoLogRecord[vectorCur].length += (ctx->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                //fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
+                // fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
                 if (offset + redoLogRecord[vectorCur].length > recordLength) {
                     dumpRedoVector(data, recordLength);
@@ -290,19 +293,23 @@ namespace OpenLogReplicator {
             offset += redoLogRecord[vectorCur].length;
 
             switch (redoLogRecord[vectorCur].opCode) {
-            case 0x0501: //Undo
+            // Undo
+            case 0x0501:
                 OpCode0501::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0502: //Begin transaction
+            // Begin transaction
+            case 0x0502:
                 OpCode0502::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0504: //Commit/rollback transaction
+            // Commit/rollback transaction
+            case 0x0504:
                 OpCode0504::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0506: //Partial rollback
+            // Partial rollback
+            case 0x0506:
                 OpCode0506::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
@@ -310,15 +317,40 @@ namespace OpenLogReplicator {
                 OpCode050B::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0513: //Session information
+            // Session information
+            case 0x0513:
                 OpCode0513::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0514: //Session information
+            // Session information
+            case 0x0514:
                 OpCode0514::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B02: //REDO: Insert row piece
+            // REDO: Insert leaf row
+            case 0x0A02:
+                if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                    }
+                    OpCode0A02::process(ctx, &redoLogRecord[vectorCur]);
+                }
+                break;
+
+            // REDO: Update key data in row
+            case 0x0A12:
+                if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
+                    }
+                    OpCode0A12::process(ctx, &redoLogRecord[vectorCur]);
+                }
+                break;
+
+            // REDO: Insert row piece
+            case 0x0B02:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -326,7 +358,8 @@ namespace OpenLogReplicator {
                 OpCode0B02::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B03: //REDO: Delete row piece
+            // REDO: Delete row piece
+            case 0x0B03:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -334,7 +367,8 @@ namespace OpenLogReplicator {
                 OpCode0B03::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B04: //REDO: Lock row piece
+            // REDO: Lock row piece
+            case 0x0B04:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -342,7 +376,8 @@ namespace OpenLogReplicator {
                 OpCode0B04::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B05: //REDO: Update row piece
+            // REDO: Update row piece
+            case 0x0B05:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -350,7 +385,8 @@ namespace OpenLogReplicator {
                 OpCode0B05::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B06: //REDO: Overwrite row piece
+            // REDO: Overwrite row piece
+            case 0x0B06:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -358,7 +394,8 @@ namespace OpenLogReplicator {
                 OpCode0B06::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B08: //REDO: Change forwarding address
+            // REDO: Change forwarding address
+            case 0x0B08:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -366,7 +403,8 @@ namespace OpenLogReplicator {
                 OpCode0B08::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B0B: //REDO: Insert multiple rows
+            // REDO: Insert multiple rows
+            case 0x0B0B:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -374,7 +412,8 @@ namespace OpenLogReplicator {
                 OpCode0B0B::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B0C: //REDO: Delete multiple rows
+            // REDO: Delete multiple rows
+            case 0x0B0C:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -382,7 +421,8 @@ namespace OpenLogReplicator {
                 OpCode0B0C::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B10: //REDO: Supplemental log for update
+            // REDO: Supplemental log for update
+            case 0x0B10:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -390,7 +430,8 @@ namespace OpenLogReplicator {
                 OpCode0B10::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x0B16: //REDO: Logminer support - KDOCMP
+            // REDO: Logminer support - KDOCMP
+            case 0x0B16:
                 if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                     redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                     redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -398,7 +439,16 @@ namespace OpenLogReplicator {
                 OpCode0B16::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
-            case 0x1801: //DDL
+            // LOB
+            case 0x1301:
+                if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (vectorPrev == -1)
+                        OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
+                }
+                break;
+
+            // DDL
+            case 0x1801:
                 OpCode1801::process(ctx, &redoLogRecord[vectorCur]);
                 break;
 
@@ -412,62 +462,64 @@ namespace OpenLogReplicator {
                   " flg: " << std::hex << redoLogRecord[vectorCur].flg)
 
             if (vectorPrev != -1) {
-                //UNDO - data
+                // UNDO - data
                 if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00) {
                     appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     vectorCur = -1;
                     continue;
                 }
 
-                //UNDO - index, ignore
+                // UNDO - index
                 if (redoLogRecord[vectorPrev].opCode == 0x0501 && (redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00) {
+                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     vectorCur = -1;
                     continue;
                 }
 
-                //ROLLBACK - data
+                // ROLLBACK - data
                 if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00 && (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)) {
                     appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     vectorCur = -1;
                     continue;
                 }
 
-                //ROLLBACK - index, ignore
+                // ROLLBACK - index
                 if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0A00 && (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)) {
+                    appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     vectorCur = -1;
                     continue;
                 }
             }
 
-            //UNDO - data
+            // UNDO - data
             if (redoLogRecord[vectorCur].opCode == 0x0501 && (redoLogRecord[vectorCur].flg & (FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0) {
                 appendToTransactionUndo(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
                 continue;
             }
 
-            //ROLLBACK - data
+            // ROLLBACK - data
             if (redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B) {
                 appendToTransactionUndo(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
                 continue;
             }
 
-            //BEGIN
+            // BEGIN
             if (redoLogRecord[vectorCur].opCode == 0x0502) {
                 appendToTransactionBegin(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
                 continue;
             }
 
-            //COMMIT
+            // COMMIT
             if (redoLogRecord[vectorCur].opCode == 0x0504) {
                 appendToTransactionCommit(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
                 continue;
             }
 
-            //DDL
+            // DDL
             if (redoLogRecord[vectorCur].opCode == 0x1801) {
                 appendToTransactionDdl(&redoLogRecord[vectorCur]);
                 vectorCur = -1;
@@ -480,11 +532,11 @@ namespace OpenLogReplicator {
         bool system = false;
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
-        //track DDL
+        // Track DDL
         if (!FLAG(REDO_FLAGS_TRACK_DDL))
             return;
 
-        //skip list
+        // Skip list
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
@@ -503,7 +555,7 @@ namespace OpenLogReplicator {
         if (system)
             transaction->system = true;
 
-        //transaction size limit
+        // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&
             transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
@@ -524,7 +576,7 @@ namespace OpenLogReplicator {
             if ((redoLogRecord1->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOMID | FLG_MULTIBLOCKUNDOTAIL)) == 0)
                 return;
 
-            //skip list
+            // Skip list
             if (redoLogRecord1->xid.getVal() != 0 && transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
                 return;
 
@@ -543,15 +595,15 @@ namespace OpenLogReplicator {
             if (system)
                 transaction->system = true;
 
-            //cluster key
+            // Cluster key
             if ((redoLogRecord1->fb & FB_K) != 0)
                 return;
 
-            //partition move
+            // Partition move
             if ((redoLogRecord1->suppLogFb & FB_K) != 0)
                 return;
 
-            //transaction size limit
+            // Transaction size limit
             if (ctx->transactionSizeMax > 0 &&
                 transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
                 transactionBuffer->skipXidList.insert(transaction->xid);
@@ -582,7 +634,7 @@ namespace OpenLogReplicator {
     void Parser::appendToTransactionBegin(RedoLogRecord* redoLogRecord1) {
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
-        //skip SQN cleanup
+        // Skip SQN cleanup
         if (redoLogRecord1->xid.sqn() == 0)
             return;
 
@@ -595,14 +647,14 @@ namespace OpenLogReplicator {
     void Parser::appendToTransactionCommit(RedoLogRecord* redoLogRecord1) {
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
 
-        //skip list
+        // Skip list
         auto it = transactionBuffer->skipXidList.find(redoLogRecord1->xid);
         if (it != transactionBuffer->skipXidList.end()) {
             transactionBuffer->skipXidList.erase(it);
             return;
         }
 
-        //broken transaction
+        // Broken transaction
         typeXidMap xidMap = (redoLogRecord1->xid.getVal() >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
         auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
         if (iter != transactionBuffer->brokenXidMapList.end())
@@ -654,7 +706,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord1)
         TRACE(TRACE2_DUMP, "DUMP: " << *redoLogRecord2)
 
-        //skip other PDB vectors
+        // Skip other PDB vectors
         if (metadata->conId > 0 && redoLogRecord2->conId != metadata->conId && redoLogRecord1->opCode == 0x0501)
             return;
 
@@ -662,7 +714,7 @@ namespace OpenLogReplicator {
             (redoLogRecord2->opCode == 0x0506 || redoLogRecord2->opCode == 0x050B))
             return;
 
-        //skip list
+        // Skip list
         if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
             return;
 
@@ -692,33 +744,39 @@ namespace OpenLogReplicator {
         if (object != nullptr && (object->options & OPTIONS_SYSTEM_TABLE) != 0)
             system = true;
 
-        //cluster key
+        // Cluster key
         if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
             return;
 
-        //partition move
+        // Partition move
         if ((redoLogRecord1->suppLogFb & FB_K) != 0 || (redoLogRecord2->suppLogFb & FB_K) != 0)
             return;
 
         long opCodeLong = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         switch (opCodeLong) {
-        //insert row piece
+        // REDO: Insert leaf row
+        case 0x05010A02:
+        // REDO: Update key data in row
+        case 0x05010A12:
+            if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
+                break;
+        // REDO: Insert row piece
         case 0x05010B02:
-        //delete row piece
+        // REDO: Delete row piece
         case 0x05010B03:
-        //update row piece
+        // REDO: Update row piece
         case 0x05010B05:
-        //overwrite row piece
+        // REDO: Overwrite row piece
         case 0x05010B06:
-        //change forwarding address
+        // REDO: Change forwarding address
         case 0x05010B08:
-        //insert multiple rows
+        // REDO: Insert multiple rows
         case 0x05010B0B:
-        //delete multiple rows
+        // REDO: Delete multiple rows
         case 0x05010B0C:
-        //supp log for update
+        // REDO: Supp log for update
         case 0x05010B10:
-        //logminer support - KDOCMP
+        // REDO: Logminer support - KDOCMP
         case 0x05010B16:
             {
                 Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
@@ -729,7 +787,7 @@ namespace OpenLogReplicator {
                 if (system)
                     transaction->system = true;
 
-                //transaction size limit
+                // Transaction size limit
                 if (ctx->transactionSizeMax > 0 &&
                         transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
                     transactionBuffer->skipXidList.insert(transaction->xid);
@@ -746,31 +804,39 @@ namespace OpenLogReplicator {
             }
             break;
 
-        //rollback: delete row piece
+        // Rollback: Insert leaf row
+        case 0x0A020506:
+        case 0x0A02050B:
+        // Rollback: Update key data in row
+        case 0x0A120506:
+        case 0x0A12050B:
+            if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
+                break;
+            // Rollback: Delete row piece
         case 0x0B030506:
         case 0x0B03050B:
-        //rollback: delete multiple rows
+        // Rollback: Delete multiple rows
         case 0x0B0C0506:
         case 0x0B0C050B:
-        //rollback: insert row piece
+        // Rollback: Insert row piece
         case 0x0B020506:
         case 0x0B02050B:
-        //rollback: insert multiple row
+        // Rollback: Insert multiple row
         case 0x0B0B0506:
         case 0x0B0B050B:
-        //rollback: update row piece
+        // Rollback: Update row piece
         case 0x0B050506:
         case 0x0B05050B:
-        //rollback: overwrite row piece
+        // Rollback: Overwrite row piece
         case 0x0B060506:
         case 0x0B06050B:
-        //change forwarding address
+        // Rollback: Change forwarding address
         case 0x0B080506:
         case 0x0B08050B:
-        //rollback: supp log for update
+        // Rollback: Supp log for update
         case 0x0B100506:
         case 0x0B10050B:
-        //rollback: logminer support - KDOCMP
+        // Rollback: Logminer support - KDOCMP
         case 0x0B160506:
         case 0x0B16050B:
             {
@@ -835,7 +901,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //continue started offset
+        // Continue started offset
         if (metadata->offset > 0) {
             if ((metadata->offset % reader->getBlockSize()) != 0)
                 throw RedoLogException("incorrect offset start: " + std::to_string(metadata->offset) +
@@ -889,14 +955,14 @@ namespace OpenLogReplicator {
         bool switchRedo = false;
 
         while (!ctx->softShutdown) {
-            //there is some work to do
+            // There is some work to do
             while (confirmedBufferStart < reader->getBufferEnd()) {
                 uint64_t redoBufferPos = (currentBlock * reader->getBlockSize()) % MEMORY_CHUNK_SIZE;
                 uint64_t redoBufferNum = ((currentBlock * reader->getBlockSize()) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
                 uint8_t* redoBlock = reader->redoBufferList[redoBufferNum] + redoBufferPos;
 
                 blockOffset = 16;
-                //new LWN block
+                // New LWN block
                 if (currentBlock == lwnEndBlock) {
                     uint8_t vld = redoBlock[blockOffset + 4];
 
@@ -911,7 +977,7 @@ namespace OpenLogReplicator {
                         if (lwnNumCnt == 0) {
                             lwnCheckpointBlock = currentBlock;
                             lwnNumMax = ctx->read16(redoBlock + blockOffset + 26);
-                            //verify LWN header start
+                            // Verify LWN header start
                             if (lwnScn < reader->getFirstScn() || (lwnScn > reader->getNextScn() && reader->getNextScn() != ZERO_SCN))
                                 throw RedoLogException("invalid LWN SCN: " + std::to_string(lwnScn));
                         } else {
@@ -929,7 +995,7 @@ namespace OpenLogReplicator {
                 }
 
                 while (blockOffset < reader->getBlockSize()) {
-                    //next record
+                    // Next record
                     if (recordLeftToCopy == 0) {
                         if (blockOffset + 20 >= reader->getBlockSize())
                             break;
@@ -979,7 +1045,7 @@ namespace OpenLogReplicator {
                         recordPos = 0;
                     }
 
-                    //nothing more
+                    // Nothing more
                     if (recordLeftToCopy == 0)
                         break;
 
@@ -999,7 +1065,7 @@ namespace OpenLogReplicator {
                 confirmedBufferStart += reader->getBlockSize();
                 redoBufferPos += reader->getBlockSize();
 
-                //checkpoint
+                // Checkpoint
                 TRACE(TRACE2_LWN, "LWN: checkpoint at " << std::dec << currentBlock << "/" << lwnEndBlock << " num: " << lwnNumCnt << "/" << lwnNumMax)
                 if (currentBlock == lwnEndBlock && lwnNumCnt == lwnNumMax) {
                     TRACE(TRACE2_LWN, "LWN: analyze")
@@ -1043,7 +1109,7 @@ namespace OpenLogReplicator {
                 } else if (lwnNumCnt > lwnNumMax)
                     throw RedoLogException("LWN overflow: " + std::to_string(lwnNumCnt) + "/" + std::to_string(lwnNumMax));
 
-                //free memory
+                // Free memory
                 if (redoBufferPos == MEMORY_CHUNK_SIZE) {
                     redoBufferPos = 0;
                     reader->bufferFree(redoBufferNum);
@@ -1053,7 +1119,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            //processing finished
+            // Processing finished
             if (!switchRedo && lwnScn > 0 && lwnScn > metadata->firstDataScn &&
                     confirmedBufferStart == reader->getBufferEnd() && reader->getRet() == REDO_FINISHED) {
                 switchRedo = true;
@@ -1077,7 +1143,7 @@ namespace OpenLogReplicator {
             }
         }
 
-        //print performance information
+        // Print performance information
         if ((ctx->trace2 & TRACE2_PERFORMANCE) != 0) {
             double suppLogPercent = 0.0;
             if (currentBlock != startBlock)

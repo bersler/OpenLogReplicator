@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         uint64_t byte2 = *str++;
         --length;
 
-        //3 bytes sequence
+        // 3 bytes sequence
         if (byte1 == 0x8F) {
             if (length == 0)
                 return badChar(byte1, byte2);
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
             return readMap3(byte2, byte3);
         }
 
-        //2 bytes sequence
+        // 2 bytes sequence
         if (byte1 < JA16EUC_b1_min || byte1 > JA16EUC_b1_max || byte2 < JA16EUC_b2_min || byte2 > JA16EUC_b2_max || !validCode(byte1, byte2))
             return badChar(byte1, byte2);
 

@@ -108,8 +108,8 @@ namespace OpenLogReplicator {
             buffer[17] = '0' + (char)ss;
             buffer[19] = 'Z';
             buffer[20] = 0;
-            //01234567890123456789
-            //YYYY-MM-DDThh:mm:ssZ
+            // 01234567890123456789
+            // YYYY-MM-DDThh:mm:ssZ
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeTime& time_) {
@@ -126,9 +126,9 @@ namespace OpenLogReplicator {
                std::setfill('0') << std::setw(2) << std::dec << mi << ":" <<
                std::setfill('0') << std::setw(2) << std::dec << ss;
             return os;
-            //0123456789012345678
-            //DDDDDDDDDD HHHHHHHH
-            //10/15/2018 22:25:36
+            // 0123456789012345678
+            // DDDDDDDDDD HHHHHHHH
+            // 10/15/2018 22:25:36
         }
     };
 }

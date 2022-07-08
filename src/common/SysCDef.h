@@ -20,13 +20,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "types.h"
 #include "typeRowId.h"
 
-#ifndef SYSCDEF_H_
-#define SYSCDEF_H_
+#ifndef SYS_CDEF_H_
+#define SYS_CDEF_H_
 
-#define SYSCDEF_TYPE_PK                     2
-#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG       12
-#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG_PK    14
-#define SYSCDEF_TYPE_SUPPLEMENTAL_LOG_ALL   17
+#define SYS_CDEF_TYPE_PK                     2
+#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG       12
+#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_PK    14
+#define SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL   17
 
 namespace OpenLogReplicator {
     class SysCDefKey {

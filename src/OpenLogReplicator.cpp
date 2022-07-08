@@ -170,10 +170,10 @@ namespace OpenLogReplicator {
         if (document.HasMember("dump-path"))
             ctx->dumpPath = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
 
-        if (document.HasMember("dump-raw-decoder")) {
-            ctx->dumpRawData = Ctx::getJsonFieldU64(fileName, document, "dump-raw-decoder");
+        if (document.HasMember("dump-raw-data")) {
+            ctx->dumpRawData = Ctx::getJsonFieldU64(fileName, document, "dump-raw-data");
             if (ctx->dumpRawData > 1)
-                throw ConfigurationException("bad JSON, invalid 'dump-raw-decoder' value: " + std::to_string(ctx->dumpRawData) +
+                throw ConfigurationException("bad JSON, invalid 'dump-raw-data' value: " + std::to_string(ctx->dumpRawData) +
                                              ", expected one of: {0, 1}");
         }
 
@@ -191,7 +191,7 @@ namespace OpenLogReplicator {
                                              ", expected one of: {0 .. 65535}");
         }
 
-        //iterate through sources
+        // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(fileName, document, "source");
         if (sourceArrayJson.Size() > 1) {
             throw ConfigurationException("bad JSON, only one 'source' element is allowed");
@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
 
             if (sourceJson.HasMember("flags")) {
                 ctx->flags = Ctx::getJsonFieldU64(fileName, sourceJson, "flags");
-                if (ctx->flags > 16383)
+                if (ctx->flags > 32767)
                     throw ConfigurationException("bad JSON, invalid 'flags' value: " + std::to_string(ctx->flags) +
                                                  ", expected one of: {0 .. 16383}");
                 if (FLAG(REDO_FLAGS_DIRECT_DISABLE))
@@ -327,8 +327,8 @@ namespace OpenLogReplicator {
                 }
 
                 if (debugJson.HasMember("owner") || debugJson.HasMember("table")) {
-                    debugOwner = Ctx::getJsonFieldS(fileName, SYSUSER_NAME_LENGTH, debugJson, "owner");
-                    debugTable = Ctx::getJsonFieldS(fileName, SYSOBJ_NAME_LENGTH, debugJson, "table");
+                    debugOwner = Ctx::getJsonFieldS(fileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
+                    debugTable = Ctx::getJsonFieldS(fileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
                     INFO("will shutdown after committed DML in " << debugOwner << "." << debugTable)
                 }
             }
@@ -345,10 +345,10 @@ namespace OpenLogReplicator {
                 ctx->transactionSizeMax = transactionMaxMb * 1024 * 1024;
             }
 
-            //MEMORY MANAGER
+            // MEMORY MANAGER
             ctx->initialize(memoryMinMb, memoryMaxMb, readBufferMax);
 
-            //METADATA
+            // METADATA
             Metadata* metadata = new Metadata(ctx, locales, name, conId, startScn, startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
 
@@ -373,16 +373,16 @@ namespace OpenLogReplicator {
             } else
                 throw RuntimeException("incorrect state chosen: " + std::to_string(stateType));
 
-            //CHECKPOINT
+            // CHECKPOINT
             auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint");
             checkpoints.push_back(checkpoint);
             ctx->spawnThread(checkpoint);
 
-            //TRANSACTION BUFFER
+            // TRANSACTION BUFFER
             TransactionBuffer* transactionBuffer = new TransactionBuffer(ctx);
             transactionBuffers.push_back(transactionBuffer);
 
-            //FORMAT
+            // FORMAT
             const rapidjson::Value& formatJson = Ctx::getJsonFieldO(fileName, sourceJson, "format");
 
             uint64_t messageFormat = MESSAGE_FORMAT_DEFAULT;
@@ -497,7 +497,7 @@ namespace OpenLogReplicator {
             builders.push_back(builder);
             builder->initialize();
 
-            //READER
+            // READER
             const char* readerType = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, readerJson, "type");
             void (*archGetLog)(Replicator* replicator) = Replicator::archGetLogPath;
 
@@ -593,8 +593,8 @@ namespace OpenLogReplicator {
                         const rapidjson::Value& tableElementJson = Ctx::getJsonFieldO(fileName, tableArrayJson, "table",
                                                                                       k);
 
-                        const char* owner = Ctx::getJsonFieldS(fileName, SYSUSER_NAME_LENGTH, tableElementJson, "owner");
-                        const char* table = Ctx::getJsonFieldS(fileName, SYSOBJ_NAME_LENGTH, tableElementJson, "table");
+                        const char* owner = Ctx::getJsonFieldS(fileName, SYS_USER_NAME_LENGTH, tableElementJson, "owner");
+                        const char* table = Ctx::getJsonFieldS(fileName, SYS_OBJ_NAME_LENGTH, tableElementJson, "table");
                         SchemaElement* element = metadata->addElement(owner, table, 0);
 
                         if (tableElementJson.HasMember("key")) {
@@ -633,7 +633,7 @@ namespace OpenLogReplicator {
             replicator = nullptr;
         }
 
-        //iterate through targets
+        // Iterate through targets
         const rapidjson::Value& targetArrayJson = Ctx::getJsonFieldA(fileName, document, "target");
         if (targetArrayJson.Size() > 1) {
             throw ConfigurationException("bad JSON, only one 'target' element is allowed");
@@ -652,7 +652,7 @@ namespace OpenLogReplicator {
             if (replicator2 == nullptr)
                 throw ConfigurationException(std::string("bad JSON, couldn't find reader for 'source' value: ") + source);
 
-            //writer
+            // Writer
             Writer* writer;
             const rapidjson::Value& writerJson = Ctx::getJsonFieldO(fileName, targetJson, "writer");
             const char* writerType = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "type");

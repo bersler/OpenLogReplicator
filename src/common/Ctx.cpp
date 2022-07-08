@@ -46,7 +46,6 @@ namespace OpenLogReplicator {
             version(0),
             dumpRedoLog(0),
             dumpRawData(0),
-            //
             readBufferMax(0),
             buffersFree(0),
             bufferSizeMax(0),
@@ -201,7 +200,7 @@ namespace OpenLogReplicator {
         if ((buf[1] & 0x80) == 0x80)
             return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
                    ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
-                   //((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
+                   // ((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
                    ((uint64_t)buf[0] << 48) | ((uint64_t)(buf[1] & 0x7F) << 56);
         else
             return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
@@ -215,7 +214,7 @@ namespace OpenLogReplicator {
         if ((buf[0] & 0x80) == 0x80)
             return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
                    ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
-                   //((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
+                   // ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
                    ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
         else
             return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
@@ -580,7 +579,7 @@ namespace OpenLogReplicator {
         if (memoryChunksFree == memoryChunksAllocated)
             throw RuntimeException(std::string("trying to free unknown memory block for: ") + module);
 
-        //keep memoryChunksMin reserved
+        // Keep memoryChunksMin reserved
         if (memoryChunksFree >= memoryChunksMin) {
             free(chunk);
             --memoryChunksAllocated;
@@ -686,7 +685,7 @@ namespace OpenLogReplicator {
         const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
-                //skip
+                // Skip
             } else if (*c_str == '"' || *c_str == '\\' /* || *c_str == '/' */) {
                 ss << '\\' << *c_str;
             } else {

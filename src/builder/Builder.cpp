@@ -129,41 +129,41 @@ namespace OpenLogReplicator {
             throw RuntimeException("trying to output null data for column: " + column->name);
 
         if (column->storedAsLob) {
-            //varchar2 stored as clob
-            if (typeNo == SYSCOL_TYPE_VARCHAR)
-                typeNo = SYSCOL_TYPE_CLOB;
-            //raw stored as blob
-            else if (typeNo == SYSCOL_TYPE_RAW)
-                typeNo = SYSCOL_TYPE_BLOB;
+            // VARCHAR2 stored as CLOB
+            if (typeNo == SYS_COL_TYPE_VARCHAR)
+                typeNo = SYS_COL_TYPE_CLOB;
+            // RAW stored as BLOB
+            else if (typeNo == SYS_COL_TYPE_RAW)
+                typeNo = SYS_COL_TYPE_BLOB;
         }
 
         switch(typeNo) {
-        case SYSCOL_TYPE_VARCHAR:
-        case SYSCOL_TYPE_CHAR:
+        case SYS_COL_TYPE_VARCHAR:
+        case SYS_COL_TYPE_CHAR:
             parseString(data, length, charsetId);
             columnString(column->name);
             break;
 
-        case SYSCOL_TYPE_NUMBER:
+        case SYS_COL_TYPE_NUMBER:
             parseNumber(data, length);
             columnNumber(column->name, column->precision, column->scale);
             break;
 
-        case SYSCOL_TYPE_DATE:
-        case SYSCOL_TYPE_TIMESTAMP:
+        case SYS_COL_TYPE_DATE:
+        case SYS_COL_TYPE_TIMESTAMP:
             if (length != 7 && length != 11)
                 columnUnknown(column->name, data, length);
             else {
                 struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-                epochTime.tm_sec = data[6] - 1; //0..59
-                epochTime.tm_min = data[5] - 1; //0..59
-                epochTime.tm_hour = data[4] - 1; //0..23
-                epochTime.tm_mday = data[3]; //1..31
-                epochTime.tm_mon = data[2]; //1..12
+                epochTime.tm_sec = data[6] - 1;  // 0..59
+                epochTime.tm_min = data[5] - 1;  // 0..59
+                epochTime.tm_hour = data[4] - 1; // 0..23
+                epochTime.tm_mday = data[3];     // 1..31
+                epochTime.tm_mon = data[2];      // 1..12
 
                 int val1 = data[0];
                 int val2 = data[1];
-                //AD
+                // AD
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
                     val2 -= 100;
@@ -191,39 +191,39 @@ namespace OpenLogReplicator {
             }
             break;
 
-        case SYSCOL_TYPE_RAW:
+        case SYS_COL_TYPE_RAW:
             columnRaw(column->name, data, length);
             break;
 
-        case SYSCOL_TYPE_FLOAT:
+        case SYS_COL_TYPE_FLOAT:
             if (length == 4) {
                 columnFloat(column->name, *((float*) data));
             } else
                 columnUnknown(column->name, data, length);
             break;
 
-        case SYSCOL_TYPE_DOUBLE:
+        case SYS_COL_TYPE_DOUBLE:
             if (length == 8) {
                 columnDouble(column->name, *((double*) data));
             } else
                 columnUnknown(column->name, data, length);
             break;
 
-        //case SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
-        case SYSCOL_TYPE_TIMESTAMP_WITH_TZ:
+        // case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ:
+        case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
             if (length != 9 && length != 13) {
                 columnUnknown(column->name, data, length);
             } else {
                 struct tm epochTime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
-                epochTime.tm_sec = data[6] - 1; //0..59
-                epochTime.tm_min = data[5] - 1; //0..59
-                epochTime.tm_hour = data[4] - 1; //0..23
-                epochTime.tm_mday = data[3]; //1..31
-                epochTime.tm_mon = data[2]; //1..12
+                epochTime.tm_sec = data[6] - 1;  // 0..59
+                epochTime.tm_min = data[5] - 1;  // 0..59
+                epochTime.tm_hour = data[4] - 1; // 0..23
+                epochTime.tm_mday = data[3];     // 1..31
+                epochTime.tm_mon = data[2];      // 1..12
 
                 int val1 = data[0];
                 int val2 = data[1];
-                //AD
+                // AD
                 if (val1 >= 100 && val2 >= 100) {
                     val1 -= 100;
                     val2 -= 100;
@@ -305,7 +305,7 @@ namespace OpenLogReplicator {
         nextBuffer->id = lastBuffer->id + 1;
         nextBuffer->data = ((uint8_t*)nextBuffer) + sizeof(struct BuilderQueue);
 
-        //message could potentially fit in one buffer
+        // Message could potentially fit in one buffer
         if (copy && msg != nullptr && sizeof(struct BuilderMsg) + messageLength < OUTPUT_BUFFER_DATA_SIZE) {
             memcpy((void*)nextBuffer->data, (void*)msg, sizeof(struct BuilderMsg) + messageLength);
             msg = (BuilderMsg*)nextBuffer->data;
@@ -345,7 +345,7 @@ namespace OpenLogReplicator {
         newTran = true;
     }
 
-    //0x05010B0B
+    // 0x05010B0B
     void Builder::processInsertMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
@@ -355,7 +355,7 @@ namespace OpenLogReplicator {
         uint16_t colLength = 0;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        //ignore DML statements during system transaction
+        // Ignore DML statements during system transaction
         if (system && object != nullptr && object->systemTable == 0)
             return;
         if (!system && object == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
@@ -423,7 +423,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    //0x05010B0C
+    // 0x05010B0C
     void Builder::processDeleteMultiple(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
@@ -433,7 +433,7 @@ namespace OpenLogReplicator {
         uint16_t colLength = 0;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        //ignore DML statements during system transaction
+        // Ignore DML statements during system transaction
         if (system && object != nullptr && object->systemTable == 0)
             return;
         if (!system && object == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
@@ -510,7 +510,7 @@ namespace OpenLogReplicator {
         RedoLogRecord* redoLogRecord2p = nullptr;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
-        //ignore DML statements during system transaction
+        // Ignore DML statements during system transaction
         if (system && object != nullptr && object->systemTable == 0)
             return;
         if (!system && object == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
@@ -556,7 +556,7 @@ namespace OpenLogReplicator {
         uint8_t bits;
         uint8_t* colNums;
 
-        //data in UNDO
+        // Data in UNDO
         redoLogRecord1p = redoLogRecord1;
         redoLogRecord2p = redoLogRecord2;
         colNums = nullptr;
@@ -566,7 +566,7 @@ namespace OpenLogReplicator {
             fieldNum = 0;
             fieldLength = 0;
 
-            //UNDO
+            // UNDO
             if (redoLogRecord1p->rowData > 0) {
                 nulls = redoLogRecord1p->data + redoLogRecord1p->nullsDelta;
                 bits = 1;
@@ -658,7 +658,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            //supplemental columns
+            // Supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
                 while (fieldNum < redoLogRecord1p->suppLogRowData - 1)
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000005);
@@ -711,11 +711,11 @@ namespace OpenLogReplicator {
                     if (i == (uint64_t)(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & FB_N) != 0)
                         fb |= FB_N;
 
-                    //insert, lock, update, supplemental log data
+                    // Insert, lock, update, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B10)
                         valueSet(VALUE_AFTER_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
 
-                    //delete, update, overwrite, supplemental log data
+                    // Delete, update, overwrite, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 || redoLogRecord2p->opCode == 0x0B10)
                         valueSet(VALUE_BEFORE_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
 
@@ -723,7 +723,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            //REDO
+            // REDO
             if (redoLogRecord2p->rowData > 0) {
                 fieldPos = 0;
                 fieldNum = 0;
@@ -837,7 +837,7 @@ namespace OpenLogReplicator {
                 if ((valuesSet[base] & mask) == 0)
                     continue;
 
-                //merge column values
+                // Merge column values
                 if ((valuesMerge[base] & mask) != 0) {
 
                     for (uint64_t j = 0; j < 4; ++j) {
@@ -979,7 +979,7 @@ namespace OpenLogReplicator {
 
                         if (object != nullptr && columnFormat < COLUMN_FORMAT_FULL_UPD) {
                             if (object->columns[column]->numPk == 0) {
-                                //remove unchanged column values - only for tables with defined primary key
+                                // Remove unchanged column values - only for tables with defined primary key
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == lengths[column][VALUE_AFTER] &&
                                         values[column][VALUE_AFTER] != nullptr) {
                                     if (lengths[column][VALUE_BEFORE] == 0 ||
@@ -993,7 +993,7 @@ namespace OpenLogReplicator {
                                     }
                                 }
 
-                                //remove columns additionally present, but null
+                                // Remove columns additionally present, but null
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
                                     valuesSet[base] &= ~mask;
                                     values[column][VALUE_BEFORE] = nullptr;
@@ -1011,7 +1011,7 @@ namespace OpenLogReplicator {
                                 }
 
                             } else {
-                                //leave null value & propagate
+                                // leave null value & propagate
                                 if (values[column][VALUE_BEFORE] != nullptr && lengths[column][VALUE_BEFORE] == 0 && values[column][VALUE_AFTER] == nullptr) {
                                     values[column][VALUE_AFTER] = values[column][VALUE_BEFORE];
                                     lengths[column][VALUE_AFTER] = lengths[column][VALUE_BEFORE];
@@ -1024,7 +1024,7 @@ namespace OpenLogReplicator {
                             }
                         }
 
-                        //for update assume null for missing columns
+                        // For update assume null for missing columns
                         if (values[column][VALUE_BEFORE] != nullptr && values[column][VALUE_AFTER] == nullptr) {
                             values[column][VALUE_AFTER] = (uint8_t*)1;
                             lengths[column][VALUE_AFTER] = 0;
@@ -1050,7 +1050,7 @@ namespace OpenLogReplicator {
 
         } else if (type == TRANSACTION_INSERT) {
             if (object != nullptr && !compressedAfter) {
-                //assume null values for all missing columns
+                // Assume null values for all missing columns
                 if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
                     auto maxCol = (typeCol)object->columns.size();
                     for (typeCol column = 0; column < maxCol; ++column) {
@@ -1063,7 +1063,7 @@ namespace OpenLogReplicator {
                         }
                     }
                 } else {
-                    //remove null values from insert if not PK
+                    // Remove null values from insert if not PK
                     baseMax = valuesMax >> 6;
                     for (uint64_t base = 0; base <= baseMax; ++base) {
                         auto column = (typeCol)(base << 6);
@@ -1083,7 +1083,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    //assume null values for pk missing columns
+                    // Assume null values for pk missing columns
                     for (typeCol column: object->pk) {
                         uint64_t base = column >> 6;
                         uint64_t mask = ((uint64_t)1) << (column & 0x3F);
@@ -1108,7 +1108,7 @@ namespace OpenLogReplicator {
 
         } else if (type == TRANSACTION_DELETE) {
             if (object != nullptr && !compressedBefore) {
-                //assume null values for all missing columns
+                // Assume null values for all missing columns
                 if (columnFormat >= COLUMN_FORMAT_FULL_INS_DEC) {
                     auto maxCol = (typeCol)object->columns.size();
                     for (typeCol column = 0; column < maxCol; ++column) {
@@ -1121,7 +1121,7 @@ namespace OpenLogReplicator {
                         }
                     }
                 } else {
-                    //remove null values from delete if not PK
+                    // Remove null values from delete if not PK
                     baseMax = valuesMax >> 6;
                     for (uint64_t base = 0; base <= baseMax; ++base) {
                         auto column = (typeCol)(base << 6);
@@ -1141,7 +1141,7 @@ namespace OpenLogReplicator {
                         }
                     }
 
-                    //assume null values for pk missing columns
+                    // Assume null values for pk missing columns
                     for (typeCol column: object->pk) {
                         uint64_t base = column >> 6;
                         uint64_t mask = ((uint64_t)1) << (column & 0x3F);
@@ -1168,51 +1168,51 @@ namespace OpenLogReplicator {
         valuesRelease();
     }
 
-    //0x18010000
+    // 0x18010000
     void Builder::processDdlHeader(RedoLogRecord* redoLogRecord1) {
         uint64_t fieldPos = 0;
         uint64_t sqlLength;
         typeField fieldNum = 0;
         uint16_t seq = 0;
-        //uint16_t cnt = 0;
+        // uint16_t cnt = 0;
         uint16_t type = 0;
         uint16_t fieldLength = 0;
         char* sqlText = nullptr;
         OracleObject* object = metadata->schema->checkDict(redoLogRecord1->obj, redoLogRecord1->dataObj);
 
         RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000009);
-        //field: 1
+        // Field: 1
         type = ctx->read16(redoLogRecord1->data + fieldPos + 12);
         seq = ctx->read16(redoLogRecord1->data + fieldPos + 18);
-        //cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
+        // cnt = ctx->read16(redoLogRecord1->data + fieldPos + 20);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000A))
             return;
-        //field: 2
+        // Field: 2
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000B))
             return;
-        //field: 3
+        // Field: 3
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000C))
             return;
-        //field: 4
+        // Field: 4
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000D))
             return;
-        //field: 5
+        // Field: 5
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000E))
             return;
-        //field: 6
+        // Field: 6
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x00000F))
             return;
-        //field: 7
+        // Field: 7
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000011))
             return;
-        //field: 8
+        // Field: 8
         sqlLength = fieldLength;
         sqlText = (char*)redoLogRecord1->data + fieldPos;
 

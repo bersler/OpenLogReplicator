@@ -88,50 +88,50 @@ namespace OpenLogReplicator {
         OracleObject* schemaObject;
         OracleColumn* schemaColumn;
 
-        //SYS.CCOL$
+        // SYS.CCOL$
         std::map<typeRowId, SysCCol*> sysCColMapRowId;
         std::map<SysCColKey, SysCCol*> sysCColMapKey;
 
-        //SYS.CDEF$
+        // SYS.CDEF$
         std::map<typeRowId, SysCDef*> sysCDefMapRowId;
         std::map<SysCDefKey, SysCDef*> sysCDefMapKey;
         std::unordered_map<typeCon, SysCDef*> sysCDefMapCon;
 
-        //SYS.COL$
+        // SYS.COL$
         std::map<typeRowId, SysCol*> sysColMapRowId;
         std::map<SysColKey, SysCol*> sysColMapKey;
         std::map<SysColSeg, SysCol*> sysColMapSeg;
 
-        //SYS.DEFERREDSTG$
+        // SYS.DEFERREDSTG$
         std::map<typeRowId, SysDeferredStg*> sysDeferredStgMapRowId;
         std::unordered_map<typeObj, SysDeferredStg*> sysDeferredStgMapObj;
 
-        //SYS.ECOL$
+        // SYS.ECOL$
         std::map<typeRowId, SysECol*> sysEColMapRowId;
         std::unordered_map<SysEColKey, SysECol*> sysEColMapKey;
 
-        //SYS.OBJ$
+        // SYS.OBJ$
         std::map<typeRowId, SysObj*> sysObjMapRowId;
         std::unordered_map<typeObj, SysObj*> sysObjMapObj;
 
-        //SYS.TAB$
+        // SYS.TAB$
         std::map<typeRowId, SysTab*> sysTabMapRowId;
         std::unordered_map<typeObj, SysTab*> sysTabMapObj;
 
-        //SYS.TABCOMPART$
+        // SYS.TABCOMPART$
         std::map<typeRowId, SysTabComPart*> sysTabComPartMapRowId;
         std::unordered_map<typeObj, SysTabComPart*> sysTabComPartMapObj;
         std::map<SysTabComPartKey, SysTabComPart*> sysTabComPartMapKey;
 
-        //SYS.TABPART$
+        // SYS.TABPART$
         std::map<typeRowId, SysTabPart*> sysTabPartMapRowId;
         std::map<SysTabPartKey, SysTabPart*> sysTabPartMapKey;
 
-        //SYS.TABSUBPART$
+        // SYS.TABSUBPART$
         std::map<typeRowId, SysTabSubPart*> sysTabSubPartMapRowId;
         std::map<SysTabSubPartKey, SysTabSubPart*> sysTabSubPartMapKey;
 
-        //SYS.USER$
+        // SYS.USER$
         std::map<typeRowId, SysUser*> sysUserMapRowId;
         std::unordered_map<typeUser, SysUser*> sysUserMapUser;
 

@@ -84,6 +84,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_HIDE_CHECKPOINT              0x00001000
 #define REDO_FLAGS_CHECKPOINT_KEEP              0x00002000
 #define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
+#define REDO_FLAGS_EXPERIMENTAL_LOBS            0x00008000
 #define FLAG(x)                                 ((ctx->flags&(x))!=0)
 
 #define DISABLE_CHECKS_GRANTS                   0x00000001
@@ -116,7 +117,7 @@ namespace OpenLogReplicator {
 
     public:
         bool version12;
-        std::atomic<uint64_t> version;                   //compatibility level of redo logs
+        std::atomic<uint64_t> version;                   // Compatibility level of redo logs
         std::string versionStr;
         std::atomic<uint64_t> dumpRedoLog;
         std::atomic<uint64_t> dumpRawData;
@@ -125,27 +126,27 @@ namespace OpenLogReplicator {
         void setBigEndian();
         [[nodiscard]] bool isBigEndian() const;
 
-        //disk read buffers
+        // Disk read buffers
         std::atomic<uint64_t> readBufferMax;
         std::atomic<uint64_t> buffersFree;
         std::atomic<uint64_t> bufferSizeMax;
         std::atomic<uint64_t> buffersMaxUsed;
         std::atomic<uint64_t> suppLogSize;
-        //checkpoint
+        // Checkpoint
         uint64_t checkpointIntervalS;
         uint64_t checkpointIntervalMb;
         uint64_t checkpointKeep;
         uint64_t schemaForceInterval;
-        //reader
+        // Reader
         uint64_t redoReadSleepUs;
         uint64_t redoVerifyDelayUs;
         uint64_t archReadSleepUs;
         uint64_t archReadTries;
         uint64_t refreshIntervalUs;
-        //writer
+        // Writer
         uint64_t pollIntervalUs;
         uint64_t queueSize;
-        //transaction buffer
+        // Transaction buffer
         std::string dumpPath;
         std::string redoCopyPath;
         uint64_t stopLogSwitches;

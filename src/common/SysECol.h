@@ -43,8 +43,8 @@ namespace OpenLogReplicator {
 
         typeRowId rowId;
         typeObj tabObj;
-        typeCol colNum;            //NULL
-        typeCol guardId;           //NULL
+        typeCol colNum;            // NULL
+        typeCol guardId;           // NULL
         bool touched;
     };
 }

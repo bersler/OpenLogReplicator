@@ -59,15 +59,15 @@ namespace OpenLogReplicator {
                 return;
 
             uint64_t typeNo = object->columns[col]->type;
-            if (typeNo != SYSCOL_TYPE_VARCHAR
-                    && typeNo != SYSCOL_TYPE_CHAR
-                    && typeNo != SYSCOL_TYPE_NUMBER
-                    && typeNo != SYSCOL_TYPE_DATE
-                    && typeNo != SYSCOL_TYPE_TIMESTAMP
-                    && typeNo != SYSCOL_TYPE_RAW
-                    && typeNo != SYSCOL_TYPE_FLOAT
-                    && typeNo != SYSCOL_TYPE_DOUBLE
-                    && typeNo != SYSCOL_TYPE_TIMESTAMP_WITH_TZ)
+            if (typeNo != SYS_COL_TYPE_VARCHAR
+                    && typeNo != SYS_COL_TYPE_CHAR
+                    && typeNo != SYS_COL_TYPE_NUMBER
+                    && typeNo != SYS_COL_TYPE_DATE
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP
+                    && typeNo != SYS_COL_TYPE_RAW
+                    && typeNo != SYS_COL_TYPE_FLOAT
+                    && typeNo != SYS_COL_TYPE_DOUBLE
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
 
@@ -202,85 +202,85 @@ namespace OpenLogReplicator {
                 columnPB->set_name(object->columns[column]->name);
 
                 switch(object->columns[column]->type) {
-                case SYSCOL_TYPE_VARCHAR:
+                case SYS_COL_TYPE_VARCHAR:
                     columnPB->set_type(pb::VARCHAR2);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_NUMBER:
+                case SYS_COL_TYPE_NUMBER:
                     columnPB->set_type(pb::NUMBER);
                     columnPB->set_precision((int32_t)object->columns[column]->precision);
                     columnPB->set_scale((int32_t)object->columns[column]->scale);
                     break;
 
-                case SYSCOL_TYPE_LONG: //long, not supported
+                case SYS_COL_TYPE_LONG: // long, not supported
                     columnPB->set_type(pb::LONG);
                     break;
 
-                case SYSCOL_TYPE_DATE:
+                case SYS_COL_TYPE_DATE:
                     columnPB->set_type(pb::DATE);
                     break;
 
-                case SYSCOL_TYPE_RAW:
+                case SYS_COL_TYPE_RAW:
                     columnPB->set_type(pb::RAW);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_LONG_RAW: //not supported
+                case SYS_COL_TYPE_LONG_RAW: // Not supported
                     columnPB->set_type(pb::LONG_RAW);
                     break;
 
-                case SYSCOL_TYPE_ROWID: //not supported
+                case SYS_COL_TYPE_ROWID: // Not supported
                     columnPB->set_type(pb::ROWID);
                     break;
 
-                case SYSCOL_TYPE_CHAR:
+                case SYS_COL_TYPE_CHAR:
                     columnPB->set_type(pb::CHAR);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_FLOAT:
+                case SYS_COL_TYPE_FLOAT:
                     columnPB->set_type(pb::BINARY_FLOAT);
                     break;
 
-                case SYSCOL_TYPE_DOUBLE:
+                case SYS_COL_TYPE_DOUBLE:
                     columnPB->set_type(pb::BINARY_DOUBLE);
                     break;
 
-                case SYSCOL_TYPE_CLOB: //not supported
+                case SYS_COL_TYPE_CLOB: // Not supported
                     columnPB->set_type(pb::CLOB);
                     break;
 
-                case SYSCOL_TYPE_BLOB: //not supported
+                case SYS_COL_TYPE_BLOB: // Not supported
                     columnPB->set_type(pb::BLOB);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP:
+                case SYS_COL_TYPE_TIMESTAMP:
                     columnPB->set_type(pb::TIMESTAMP);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP_WITH_TZ:
+                case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
                     columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_INTERVAL_DAY_TO_SECOND:
+                case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
                     columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_URAWID:
+                case SYS_COL_TYPE_URAWID:
                     columnPB->set_type(pb::UROWID);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: //not supported
+                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
                     columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
                     columnPB->set_length((int32_t)object->columns[column]->length);
                     break;
@@ -491,7 +491,7 @@ namespace OpenLogReplicator {
         if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
             return;
 
-        //skip empty transaction
+        // Skip empty transaction
         if (newTran) {
             newTran = false;
             return;

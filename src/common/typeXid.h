@@ -27,11 +27,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPE_XID_H_
 #define TYPE_XID_H_
 
-//#define USN(__xid)                              ((typeUsn)(((uint64_t)(__xid))>>48))
-//#define SLT(__xid)                              ((typeSlt)(((((uint64_t)(__xid))>>32)&0xFFFF)))
-//#define SQN(__xid)                              ((typeSqn)(((__xid)&0xFFFFFFFF)))
-//#define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
-//#define PRINTXID(__xid) "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<USN(__xid)<<"."<<std::setw(3)<<(uint64_t)SLT(__xid)<<"."<<std::setw(8)<<SQN(__xid)
+// #define USN(__xid)                              ((typeUsn)(((uint64_t)(__xid))>>48))
+// #define SLT(__xid)                              ((typeSlt)(((((uint64_t)(__xid))>>32)&0xFFFF)))
+// #define SQN(__xid)                              ((typeSqn)(((__xid)&0xFFFFFFFF)))
+// #define XID(__usn,__slt,__sqn)                  ((((uint64_t)(__usn))<<48)|(((uint64_t)(__slt))<<32)|((uint64_t)(__sqn)))
+// #define PRINTXID(__xid) "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<USN(__xid)<<"."<<std::setw(3)<<(uint64_t)SLT(__xid)<<"."<<std::setw(8)<<SQN(__xid)
 
 namespace OpenLogReplicator {
     class typeXid {
@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
             std::string sqn;
 
             uint64_t length = strnlen(str, 25);
-            //UUUUSSSSQQQQQQQQ
+            // UUUUSSSSQQQQQQQQ
             if (length == 16) {
                 for (uint64_t i = 0; i < 16; ++i)
                     if (!iswxdigit(str[i]))
@@ -62,7 +62,7 @@ namespace OpenLogReplicator {
                 slt.assign(str + 4, 4);
                 sqn.assign(str + 8, 8);
             } else
-                //UUUU.SSS.QQQQQQQQ
+                // UUUU.SSS.QQQQQQQQ
             if (length == 17) {
                 for (uint64_t i = 0; i < 17; ++i)
                     if (!iswxdigit(str[i]) && i != 4 && i != 8)
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
                 slt.assign(str + 5, 3);
                 sqn.assign(str + 9, 8);
             } else
-                //UUUU.SSSS.QQQQQQQQ
+                // UUUU.SSSS.QQQQQQQQ
             if (length == 18) {
                 for (uint64_t i = 0; i < 18; ++i)
                     if (!iswxdigit(str[i]) && i != 4 && i != 9)
@@ -84,7 +84,7 @@ namespace OpenLogReplicator {
                 slt.assign(str + 5, 4);
                 sqn.assign(str + 10, 8);
             } else
-                //0xUUUU.SSS.QQQQQQQQ
+                // 0xUUUU.SSS.QQQQQQQQ
             if (length == 19) {
                 for (uint64_t i = 2; i < 19; ++i)
                     if (!iswxdigit(str[i]) && i != 6 && i != 10)
@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
                 slt.assign(str + 7, 3);
                 sqn.assign(str + 11, 8);
             } else
-                //0xUUUU.SSSS.QQQQQQQQ
+                // 0xUUUU.SSSS.QQQQQQQQ
             if (length == 20) {
                 for (uint64_t i = 2; i < 20; ++i)
                     if (!iswxdigit(str[i]) && i != 6 && i != 11)

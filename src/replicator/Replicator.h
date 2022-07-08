@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
         TransactionBuffer* transactionBuffer;
         std::string database;
         std::string redoCopyPath;
-        //redo log files
+        // Redo log files
         Reader* archReader;
         std::string lastCheckedDay;
         std::priority_queue<Parser*, std::vector<Parser*>, parserCompare> archiveRedoQueue;
@@ -67,6 +67,7 @@ namespace OpenLogReplicator {
         std::vector<std::string> pathMapping;
         std::vector<std::string> redoLogsBatch;
 
+        void cleanArchList();
         void updateOnlineLogs();
         void readerDropAll(void);
         static uint64_t getSequenceFromFileName(Replicator* replicator, const std::string& file);

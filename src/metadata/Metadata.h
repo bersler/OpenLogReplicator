@@ -60,13 +60,13 @@ namespace OpenLogReplicator {
         Serializer* serializer;
         std::atomic<uint64_t> status;
         std::mutex mtx;
-        //startup parameters
+        // Startup parameters
         std::string database;
         typeScn startScn;
         typeSeq startSequence;
         std::string startTime;
         int64_t startTimeRel;
-        //database parameters
+        // Database parameters
         bool onlineData;
         bool suppLogDbPrimary;
         bool suppLogDbAll;
@@ -81,7 +81,7 @@ namespace OpenLogReplicator {
         std::string nlsNcharCharacterSet;
         uint64_t defaultCharacterMapId;
         uint64_t defaultCharacterNcharMapId;
-        //read position
+        // Read position
         typeSeq sequence;
         uint64_t offset;
         typeResetlogs resetlogs;
@@ -105,7 +105,7 @@ namespace OpenLogReplicator {
         uint64_t lastCheckpointOffset;
         typeTime lastCheckpointTime;
         uint64_t lastCheckpointBytes;
-        //schema
+        // Schema
         std::vector<SchemaElement*> schemaElements;
         std::set<std::string> users;
         std::set<RedoLog*> redoLogs;

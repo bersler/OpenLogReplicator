@@ -49,9 +49,9 @@ namespace OpenLogReplicator {
         typeINTX& operator=(const char* val);
         typeINTX& set(uint64_t val1, uint64_t val2);
         typeINTX& setStr(const char* val, uint64_t length);
-        [[nodiscard]] uint64_t get64();
-        [[nodiscard]] bool isSet64(uint64_t mask);
-        [[nodiscard]] bool isZero();
+        [[nodiscard]] uint64_t get64() const;
+        [[nodiscard]] bool isSet64(uint64_t mask) const;
+        [[nodiscard]] bool isZero() const;
 
         friend std::ostream& operator<<(std::ostream& os, const typeINTX& val);
     };

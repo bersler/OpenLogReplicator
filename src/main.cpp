@@ -109,10 +109,10 @@ int main(int argc, char** argv) {
             throw OpenLogReplicator::ConfigurationException("program is run as root, you should never do that");
 
         if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
-            // print banner and exit
+            // Print banner and exit
             return 0;
         } else if (argc == 3 && (strncmp(argv[1], "-f", 2) == 0 || strncmp(argv[1], "--file", 6) == 0)) {
-            // custom config path
+            // Custom config path
             fileName = argv[2];
         } else if (argc > 1)
             throw OpenLogReplicator::ConfigurationException(std::string("invalid arguments, run: ") + argv[0] +

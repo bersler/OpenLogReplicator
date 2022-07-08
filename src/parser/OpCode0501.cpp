@@ -27,10 +27,11 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050101))
             return;
+        // Field: 1
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050102))
             return;
-        //field: 2
+        // Field: 2
         if (fieldLength < 8) {
             WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
@@ -43,9 +44,9 @@ namespace OpenLogReplicator {
     void OpCode0501::opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         kdilk(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        //field: 5
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110))
             return;
+        // Field: 5
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "key :(" << std::dec << fieldLength << "): ";
@@ -61,9 +62,9 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        //field: 6
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
             return;
+        // Field: 6
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "keydata/bitmap: (" << std::dec << fieldLength << "): ";
@@ -79,9 +80,9 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        //field: 7
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
             return;
+        // Field: 7
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "selflock: (" << std::dec << fieldLength << "): ";
@@ -97,9 +98,9 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        //field: 8
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
             return;
+        // Field: 8
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "bitmap: (" << std::dec << fieldLength << "): ";
@@ -130,7 +131,7 @@ namespace OpenLogReplicator {
 
         if ((redoLogRecord->op & 0x1F) == OP_URP) {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050107);
-            //field: 5
+            // Field: 5
             if (fieldLength > 0 && redoLogRecord->cc > 0) {
                 redoLogRecord->colNumsDelta = fieldPos;
                 colNums = redoLogRecord->data + redoLogRecord->colNumsDelta;
@@ -256,21 +257,21 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103);
-        //field: 1
+        // Field: 1
         ktudb(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050104))
             return;
-        //field: 2
+        // Field: 2
         ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
 
-        //incomplete ctx, don't analyze further
+        // Incomplete ctx, don't analyze further
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0)
             return;
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050105))
             return;
-        //field: 3
+        // Field: 3
         if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
             ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
         } else if (redoLogRecord->opc == 0x0E08) {
@@ -279,7 +280,7 @@ namespace OpenLogReplicator {
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050106))
             return;
-        //field: 4
+        // Field: 4
 
         if (redoLogRecord->opc == 0x0B01)
             opc0B01(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);

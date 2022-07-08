@@ -24,8 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_CCOL_H_
 #define SYS_CCOL_H_
 
-#define SYSCOL_NAME_LENGTH                  128
-
 namespace OpenLogReplicator {
     class SysCColKey {
     public:
@@ -48,7 +46,7 @@ namespace OpenLogReplicator {
         typeCon con;
         typeCol intCol;
         typeObj obj;
-        typeINTX spare1;            //NULL
+        typeINTX spare1;            // NULL
         bool touched;
     };
 }

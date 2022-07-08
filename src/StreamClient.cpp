@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
                 request.set_scn(atoi(argv[4]));
                 INFO("START scn: " << std::dec << request.scn() << ", database: " << request.database_name())
             } else {
-                //start from now, when SCN is not given
+                // Start from now, when SCN is not given
                 request.set_scn(ZERO_SCN);
                 INFO("START NOW, database: " << request.database_name())
             }
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
             lastScn = response.scn();
             ++num;
 
-            //confirm every 1000 messages
+            // Confirm every 1000 messages
             if (num > 1000 && prevScn < lastScn) {
                 request.Clear();
                 request.set_code(OpenLogReplicator::pb::RequestCode::CONFIRM);

@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
         uint64_t byte1 = *str++;
         --length;
 
-        //0xxxxxxx
+        // 0xxxxxxx
         if ((byte1 & 0x80) == 0)
             return byte1;
 
@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         if ((byte2 & 0xC0) != 0x80)
             return badChar(byte1, byte2);
 
-        //110xxxxx 10xxxxxx
+        // 110xxxxx 10xxxxxx
         if ((byte1 & 0xE0) == 0xC0)
             return ((byte1 & 0x1F) << 6) | (byte2 & 0x3F);
 
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         if ((byte3 & 0xC0) != 0x80)
             return badChar(byte1, byte2, byte3);
 
-        //1110xxxx 10xxxxxx 10xxxxxx
+        // 1110xxxx 10xxxxxx 10xxxxxx
         if ((byte1 & 0xF0) == 0xE0)
             return ((byte1 & 0x0F) << 12) | ((byte2 & 0x3F) << 6) | (byte3 & 0x3F);
 
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
         if ((byte4 & 0xC0) != 0x80)
             return badChar(byte1, byte2, byte3, byte4);
 
-        //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
         if ((byte1 & 0xF8) == 0xF0) {
             typeUnicode character = ((byte1 & 0x07) << 18) | ((byte2 & 0x3F) << 12) | ((byte3 & 0x3F) << 6) | (byte4 & 0x3F);
             if (character <= 0x10FFFF && (character < 0xD800 || character > 0xDFFF))

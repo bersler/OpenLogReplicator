@@ -41,12 +41,12 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050601);
-        //field: 1
+        // Field: 1
         ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050602))
             return;
-        //field: 1
+        // Field: 2
         ktuxvoff(ctx, redoLogRecord, fieldPos, fieldLength);
     }
 

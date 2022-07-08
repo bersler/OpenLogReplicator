@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
                                    std::to_string(redoLogRecord->dataOffset));
 
         if (transaction->lastSplit) {
-            //should never happen
+            // Should never happen
             if ((redoLogRecord->opCode) != 0x0501)
                 throw RedoLogException("split undo no 5.1 offset: " + std::to_string(redoLogRecord->dataOffset));
 
@@ -158,13 +158,13 @@ namespace OpenLogReplicator {
             rollbackTransactionChunk(transaction);
         }
 
-        //empty list
+        // Empty list
         if (transaction->lastTc == nullptr) {
             transaction->lastTc = newTransactionChunk();
             transaction->firstTc = transaction->lastTc;
         }
 
-        //new block needed
+        // New block needed
         if (transaction->lastTc->size + length > DATA_BUFFER_SIZE) {
             TransactionChunk* tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
@@ -172,7 +172,7 @@ namespace OpenLogReplicator {
             transaction->lastTc = tcNew;
         }
 
-        //append to the chunk at the end
+        // Append to the chunk at the end
         TransactionChunk* tc = transaction->lastTc;
         *((typeOp2*) (tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord->opCode << 16);
         memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_REDO1), (void*)redoLogRecord, sizeof(RedoLogRecord));
@@ -228,13 +228,13 @@ namespace OpenLogReplicator {
             rollbackTransactionChunk(transaction);
         }
 
-        //empty list
+        // Empty list
         if (transaction->lastTc == nullptr) {
             transaction->lastTc = newTransactionChunk();
             transaction->firstTc = transaction->lastTc;
         }
 
-        //new block needed
+        // New block needed
         if (transaction->lastTc->size + length > DATA_BUFFER_SIZE) {
             TransactionChunk* tcNew = newTransactionChunk();
             tcNew->prev = transaction->lastTc;
@@ -242,7 +242,7 @@ namespace OpenLogReplicator {
             transaction->lastTc = tcNew;
         }
 
-        //append to the chunk at the end
+        // Append to the chunk at the end
         TransactionChunk* tc = transaction->lastTc;
         *((typeOp2*) (tc->buffer + tc->size + ROW_HEADER_OP)) = (redoLogRecord1->opCode << 16) | redoLogRecord2->opCode;
         memcpy((void*)(tc->buffer + tc->size + ROW_HEADER_REDO1), (void*)redoLogRecord1, sizeof(RedoLogRecord));
@@ -304,7 +304,7 @@ namespace OpenLogReplicator {
             --redoLogRecord1->fieldCnt;
         }
 
-        //field list
+        // Field list
         fieldCnt = redoLogRecord1->fieldCnt + redoLogRecord2->fieldCnt - 2;
         ctx->write16(mergeBuffer + pos, fieldCnt);
         memcpy((void*)(mergeBuffer + pos + 2), (void*)(redoLogRecord1->data + redoLogRecord1->fieldLengthsDelta + 2), redoLogRecord1->fieldCnt * 2);
@@ -312,7 +312,7 @@ namespace OpenLogReplicator {
         pos += (((fieldCnt + 1) * 2) + 2) & (0xFFFC);
         fieldPos1 = pos;
 
-        //ctx
+        // Ctx
         memcpy((void*)(mergeBuffer + pos), (void*)(redoLogRecord1->data + redoLogRecord1->fieldPos), redoLogRecord1->length - redoLogRecord1->fieldPos);
         pos += (redoLogRecord1->length - redoLogRecord1->fieldPos + 3) & (0xFFFC);
         fieldPos2 = redoLogRecord2->fieldPos +

@@ -58,7 +58,7 @@ namespace OpenLogReplicator {
 
     void Transaction::rollbackLastOp(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2 __attribute__((unused))) {
         uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        //RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        // RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
         auto lastRedoLogRecord2 = (RedoLogRecord *) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
         bool ok = false;
@@ -85,7 +85,7 @@ namespace OpenLogReplicator {
             return;
 
         uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        //RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        // RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
         auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
         bool ok = false;
@@ -169,22 +169,26 @@ namespace OpenLogReplicator {
 
                 opFlush = false;
                 switch (op) {
-                //single undo - ignore
+                // Single undo - ignore
                 case 0x05010000:
                     break;
-                //insert row piece
+                // Insert leaf row
+                case 0x05010A02:
+                // Update key data in row
+                case 0x05010A12:
+                // Insert row piece
                 case 0x05010B02:
-                //delete row piece
+                // Delete row piece
                 case 0x05010B03:
-                //update row piece
+                // Update row piece
                 case 0x05010B05:
-                //overwrite row piece
+                // Overwrite row piece
                 case 0x05010B06:
-                //change row forwarding address
+                // Change row forwarding address
                 case 0x05010B08:
-                //supp log for update
+                // Supp log for update
                 case 0x05010B10:
-                //Logminer support - KDOCMP
+                // Logminer support - KDOCMP
                 case 0x05010B16:
                     redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
@@ -247,7 +251,7 @@ namespace OpenLogReplicator {
                                 }
                             }
                         } else {
-                            //throw RuntimeException("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString());
+                            // throw RuntimeException("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString());
                         }
                     }
 
@@ -257,30 +261,30 @@ namespace OpenLogReplicator {
                     }
                     break;
 
-                //insert multiple rows
+                // Insert multiple rows
                 case 0x05010B0B:
                     builder->processInsertMultiple(redoLogRecord1, redoLogRecord2, system);
                     opFlush = true;
                     break;
 
-                //delete multiple rows
+                // Delete multiple rows
                 case 0x05010B0C:
                     builder->processDeleteMultiple(redoLogRecord1, redoLogRecord2, system);
                     opFlush = true;
                     break;
 
-                //truncate table
+                // Truncate table
                 case 0x18010000:
                     builder->processDdlHeader(redoLogRecord1);
                     opFlush = true;
                     break;
 
-                //should not happen
+                // Should not happen
                 default:
                     throw RedoLogException("Unknown OpCode " + std::to_string(op) + " offset: " + std::to_string(redoLogRecord1->dataOffset));
                 }
 
-                //split very big transactions
+                // Split very big transactions
                 if (maxMessageMb > 0 && builder->builderSize() + DATA_BUFFER_SIZE > maxMessageMb * 1024 * 1024) {
                     WARNING("big transaction divided (forced commit after " << builder->builderSize() << " bytes)")
 
@@ -339,7 +343,7 @@ namespace OpenLogReplicator {
             delete builder->systemTransaction;
             builder->systemTransaction = nullptr;
 
-            //unlock schema
+            // Unlock schema
             lck.unlock();
         }
         builder->processCommit(system);

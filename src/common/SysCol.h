@@ -21,36 +21,36 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "typeINTX.h"
 #include "typeRowId.h"
 
-#ifndef SYSCOL_H_
-#define SYSCOL_H_
+#ifndef SYS_COL_H_
+#define SYS_COL_H_
 
-#define SYSCOL_NAME_LENGTH                  128
-#define SYSCOL_PROPERTY_INVISIBLE           32
-#define SYSCOL_PROPERTY_STORED_AS_LOB       128
-#define SYSCOL_PROPERTY_CONSTRAINT          256
-#define SYSCOL_PROPERTY_NESTED              1024
-#define SYSCOL_PROPERTY_UNUSED              32768
-#define SYSCOL_PROPERTY_LENGTH_IN_CHARS     8388608
-#define SYSCOL_PROPERTY_ADDED               1073741824
-#define SYSCOL_PROPERTY_GUARD               549755813888
-#define SYSCOL_TYPE_VARCHAR                 1
-#define SYSCOL_TYPE_NUMBER                  2
-#define SYSCOL_TYPE_LONG                    8
-#define SYSCOL_TYPE_DATE                    12
-#define SYSCOL_TYPE_RAW                     23
-#define SYSCOL_TYPE_LONG_RAW                24
-#define SYSCOL_TYPE_ROWID                   69
-#define SYSCOL_TYPE_CHAR                    96
-#define SYSCOL_TYPE_FLOAT                   100
-#define SYSCOL_TYPE_DOUBLE                  101
-#define SYSCOL_TYPE_CLOB                    112
-#define SYSCOL_TYPE_BLOB                    113
-#define SYSCOL_TYPE_TIMESTAMP               180
-#define SYSCOL_TYPE_TIMESTAMP_WITH_TZ       181
-#define SYSCOL_TYPE_INTERVAL_YEAR_TO_MONTH  182
-#define SYSCOL_TYPE_INTERVAL_DAY_TO_SECOND  183
-#define SYSCOL_TYPE_URAWID                  208
-#define SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
+#define SYS_COL_NAME_LENGTH                  128
+#define SYS_COL_PROPERTY_INVISIBLE           32
+#define SYS_COL_PROPERTY_STORED_AS_LOB       128
+#define SYS_COL_PROPERTY_CONSTRAINT          256
+#define SYS_COL_PROPERTY_NESTED              1024
+#define SYS_COL_PROPERTY_UNUSED              32768
+#define SYS_COL_PROPERTY_LENGTH_IN_CHARS     8388608
+#define SYS_COL_PROPERTY_ADDED               1073741824
+#define SYS_COL_PROPERTY_GUARD               549755813888
+#define SYS_COL_TYPE_VARCHAR                 1
+#define SYS_COL_TYPE_NUMBER                  2
+#define SYS_COL_TYPE_LONG                    8
+#define SYS_COL_TYPE_DATE                    12
+#define SYS_COL_TYPE_RAW                     23
+#define SYS_COL_TYPE_LONG_RAW                24
+#define SYS_COL_TYPE_ROWID                   69
+#define SYS_COL_TYPE_CHAR                    96
+#define SYS_COL_TYPE_FLOAT                   100
+#define SYS_COL_TYPE_DOUBLE                  101
+#define SYS_COL_TYPE_CLOB                    112
+#define SYS_COL_TYPE_BLOB                    113
+#define SYS_COL_TYPE_TIMESTAMP               180
+#define SYS_COL_TYPE_TIMESTAMP_WITH_TZ       181
+#define SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH  182
+#define SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND  183
+#define SYS_COL_TYPE_URAWID                  208
+#define SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ 231
 
 namespace OpenLogReplicator {
     class SysColSeg {
@@ -97,10 +97,10 @@ namespace OpenLogReplicator {
         std::string name;
         typeType type;
         uint64_t length;
-        int64_t precision;          //NULL
-        int64_t scale;              //NULL
-        uint64_t charsetForm;       //NULL
-        uint64_t charsetId;         //NULL
+        int64_t precision;          // NULL
+        int64_t scale;              // NULL
+        uint64_t charsetForm;       // NULL
+        uint64_t charsetId;         // NULL
         int64_t null_;
         typeINTX property;
         bool touched;

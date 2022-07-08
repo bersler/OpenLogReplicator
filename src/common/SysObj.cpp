@@ -38,17 +38,21 @@ namespace OpenLogReplicator {
                 other.flags != flags;
     }
 
+    bool SysObj::isLob() const {
+        return (type == SYS_OBJ_TYPE_LOB);
+    }
+
     bool SysObj::isTable() const {
-        return (type == SYSOBJ_TYPE_TABLE);
+        return (type == SYS_OBJ_TYPE_TABLE);
     }
 
-    bool SysObj::isTemporary() {
-        return flags.isSet64(SYSOBJ_FLAGS_TEMPORARY)
-                || flags.isSet64(SYSOBJ_FLAGS_SECONDARY)
-                || flags.isSet64(SYSOBJ_FLAGS_IN_MEMORY_TEMP);
+    bool SysObj::isTemporary() const {
+        return flags.isSet64(SYS_OBJ_FLAGS_TEMPORARY)
+                || flags.isSet64(SYS_OBJ_FLAGS_SECONDARY)
+                || flags.isSet64(SYS_OBJ_FLAGS_IN_MEMORY_TEMP);
     }
 
-    bool SysObj::isDropped() {
-        return flags.isSet64(SYSOBJ_FLAGS_DROPPED);
+    bool SysObj::isDropped() const {
+        return flags.isSet64(SYS_OBJ_FLAGS_DROPPED);
     }
 }

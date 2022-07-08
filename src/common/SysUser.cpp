@@ -34,10 +34,10 @@ namespace OpenLogReplicator {
     }
 
     bool SysUser::isSuppLogPrimary() {
-        return spare1.isSet64(SYSUSER_SPARE1_SUPP_LOG_PRIMARY);
+        return spare1.isSet64(SYS_USER_SPARE1_SUPP_LOG_PRIMARY);
     }
 
     bool SysUser::isSuppLogAll() {
-        return spare1.isSet64(SYSUSER_SPARE1_SUPP_LOG_ALL);
+        return spare1.isSet64(SYS_USER_SPARE1_SUPP_LOG_ALL);
     }
 }

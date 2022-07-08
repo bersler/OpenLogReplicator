@@ -28,41 +28,41 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051401);
-        //field: 1
+        // Field: 1
         dumpMsgSessionSerial(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051402))
             return;
-        //field: 2
+        // Field: 2
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "transaction name = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051403))
             return;
-        //field: 3
+        // Field: 3
         dumpMsgFlags(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051404))
             return;
-        //field: 4
+        // Field: 4
         dumpMsgVersion(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051405))
             return;
-        //field: 5
+        // Field: 5
         dumpMsgAuditSessionid(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051406))
             return;
-        //field: 6
+        // Field: 6
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051407))
             return;
-        //field: 7
+        // Field: 7
         dumpVal(ctx, redoLogRecord,  fieldPos, fieldLength, "Client Id = ");
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x051408))
             return;
-        //field: 8
+        // Field: 8
         dumpVal(ctx, redoLogRecord, fieldPos, fieldLength, "login   username = ");
     }
 }

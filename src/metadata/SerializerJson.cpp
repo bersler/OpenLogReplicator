@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
 
         ss << "]," SERIALIZER_ENDL;
 
-        //schema did not change since last checkpoint file
+        // Schema did not change since last checkpoint file
         if (!storeSchema) {
             ss << R"("schema-ref-scn":)" << metadata->schema->refScn << "}";
             return;
@@ -138,7 +138,7 @@ namespace OpenLogReplicator {
         metadata->schema->refScn = metadata->checkpointScn;
         ss << R"("schema-scn":)" << metadata->schema->scn << "," SERIALIZER_ENDL;
 
-        //SYS.CCOL$
+        // SYS.CCOL$
         ss << R"("sys-ccol":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysCColMapRowId) {
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
                                   R"(,"spare1":)" << std::dec << sysCCol->spare1 << "}";
         }
 
-        //SYS.CDEF$
+        // SYS.CDEF$
         ss << "]," SERIALIZER_ENDL << R"("sys-cdef":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysCDefMapRowId) {
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
                                   R"(,"type":)" << std::dec << sysCDef->type << "}";
         }
 
-        //SYS.COL$
+        // SYS.COL$
         ss << "]," SERIALIZER_ENDL << R"("sys-col":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysColMapRowId) {
@@ -200,7 +200,7 @@ namespace OpenLogReplicator {
                                   R"(,"property":)" << sysCol->property << "}";
         }
 
-        //SYS.DEFERRED_STG$
+        // SYS.DEFERRED_STG$
         ss << "]," SERIALIZER_ENDL << R"("sys-deferredstg":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysDeferredStgMapRowId) {
@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
                                   R"(,"flags-stg":)" << std::dec << sysDeferredStg->flagsStg << "}";
         }
 
-        //SYS.ECOL$
+        // SYS.ECOL$
         ss << "]," SERIALIZER_ENDL << R"("sys-ecol":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysEColMapRowId) {
@@ -233,7 +233,7 @@ namespace OpenLogReplicator {
                                   R"(,"guard-id":)" << std::dec << sysECol->guardId << "}";
         }
 
-        //SYS.OBJ$
+        // SYS.OBJ$
         ss << "]," SERIALIZER_ENDL << R"("sys-obj":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysObjMapRowId) {
@@ -254,7 +254,7 @@ namespace OpenLogReplicator {
                                   R"(,"single":)" << std::dec << (uint64_t)sysObj->single << "}";
         }
 
-        //SYS.TAB$
+        // SYS.TAB$
         ss << "]," SERIALIZER_ENDL << R"("sys-tab":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysTabMapRowId) {
@@ -273,7 +273,7 @@ namespace OpenLogReplicator {
                                   R"(,"property":)" << std::dec << sysTab->property << "}";
         }
 
-        //SYS.TABCOMPART$
+        // SYS.TABCOMPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabcompart":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysTabComPartMapRowId) {
@@ -290,7 +290,7 @@ namespace OpenLogReplicator {
                                   R"(,"bo":)" << std::dec << sysTabComPart->bo << "}";
         }
 
-        //SYS.TABPART$
+        // SYS.TABPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabpart":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysTabPartMapRowId) {
@@ -307,7 +307,7 @@ namespace OpenLogReplicator {
                                   R"(,"bo":)" << std::dec << sysTabPart->bo << "}";
         }
 
-        //SYS.TABSUBPART$
+        // SYS.TABSUBPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysTabSubPartMapRowId) {
@@ -324,7 +324,7 @@ namespace OpenLogReplicator {
                                   R"(,"p-obj":)" << std::dec << sysTabSubPart->pObj << "}";
         }
 
-        //SYS.USER$
+        // SYS.USER$
         ss << "]," SERIALIZER_ENDL << R"("sys-user":[)";
         hasPrev = false;
         for (auto it : metadata->schema->sysUserMapRowId) {
@@ -379,7 +379,7 @@ namespace OpenLogReplicator {
                 metadata->lastCheckpointBytes = 0;
 
                 if (!metadata->onlineData) {
-                    //database metadata
+                    // Database metadata
                     metadata->database = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
                     metadata->resetlogs = Ctx::getJsonFieldU32(name, document, "resetlogs");
                     metadata->activation = Ctx::getJsonFieldU32(name, document, "activation");
@@ -447,7 +447,7 @@ namespace OpenLogReplicator {
             }
 
             if (loadSchema) {
-                //schema referenced to other checkpoint file
+                // Schema referenced to other checkpoint file
                 if (document.HasMember("schema-ref-scn")) {
                     metadata->schema->scn = ZERO_SCN;
                     metadata->schema->refScn = Ctx::getJsonFieldU64(name, document, "schema-ref-scn");
@@ -534,7 +534,7 @@ namespace OpenLogReplicator {
             typeCol col = Ctx::getJsonFieldI16(name, sysColJson[i], "col");
             typeCol segCol = Ctx::getJsonFieldI16(name, sysColJson[i], "seg-col");
             typeCol intCol = Ctx::getJsonFieldI16(name, sysColJson[i], "int-col");
-            const char* name_ = Ctx::getJsonFieldS(name, SYSCOL_NAME_LENGTH, sysColJson[i], "name");
+            const char* name_ = Ctx::getJsonFieldS(name, SYS_COL_NAME_LENGTH, sysColJson[i], "name");
             typeType type = Ctx::getJsonFieldU16(name, sysColJson[i], "type");
             uint64_t length = Ctx::getJsonFieldU64(name, sysColJson[i], "length");
             int64_t precision = Ctx::getJsonFieldI64(name, sysColJson[i], "precision");
@@ -586,7 +586,7 @@ namespace OpenLogReplicator {
             typeObj obj = Ctx::getJsonFieldU32(name, sysObjJson[i], "obj");
             typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysObjJson[i], "data-obj");
             typeType type = Ctx::getJsonFieldU16(name, sysObjJson[i], "type");
-            const char* name_ = Ctx::getJsonFieldS(name, SYSOBJ_NAME_LENGTH, sysObjJson[i], "name");
+            const char* name_ = Ctx::getJsonFieldS(name, SYS_OBJ_NAME_LENGTH, sysObjJson[i], "name");
 
             const rapidjson::Value &flagsJson = Ctx::getJsonFieldA(name, sysObjJson[i], "flags");
             if (flagsJson.Size() != 2)
@@ -659,7 +659,7 @@ namespace OpenLogReplicator {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysUserJson[i], "row-id");
             typeUser user = Ctx::getJsonFieldU32(name, sysUserJson[i], "user");
-            const char* name_ = Ctx::getJsonFieldS(name, SYSUSER_NAME_LENGTH, sysUserJson[i], "name");
+            const char* name_ = Ctx::getJsonFieldS(name, SYS_USER_NAME_LENGTH, sysUserJson[i], "name");
 
             const rapidjson::Value &spare1Json = Ctx::getJsonFieldA(name, sysUserJson[i], "spare1");
             if (spare1Json.Size() != 2)

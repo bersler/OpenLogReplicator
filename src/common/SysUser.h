@@ -24,9 +24,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_USER_H_
 #define SYS_USER_H_
 
-#define SYSUSER_NAME_LENGTH                 128
-#define SYSUSER_SPARE1_SUPP_LOG_PRIMARY     1
-#define SYSUSER_SPARE1_SUPP_LOG_ALL         8
+#define SYS_USER_NAME_LENGTH                 128
+#define SYS_USER_SPARE1_SUPP_LOG_PRIMARY     1
+#define SYS_USER_SPARE1_SUPP_LOG_ALL         8
 
 namespace OpenLogReplicator {
     class SysUser {
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         typeRowId rowId;
         typeUser user;
         std::string name;
-        typeINTX spare1;            //NULL
+        typeINTX spare1;            // NULL
         bool single;
         bool touched;
     };

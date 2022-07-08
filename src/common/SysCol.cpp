@@ -73,35 +73,35 @@ namespace OpenLogReplicator {
     }
 
     bool SysCol::isInvisible() {
-        return property.isSet64(SYSCOL_PROPERTY_INVISIBLE);
+        return property.isSet64(SYS_COL_PROPERTY_INVISIBLE);
     }
 
     bool SysCol::isStoredAsLob() {
-        return property.isSet64(SYSCOL_PROPERTY_STORED_AS_LOB);
+        return property.isSet64(SYS_COL_PROPERTY_STORED_AS_LOB);
     }
 
     bool SysCol::isConstraint() {
-        return property.isSet64(SYSCOL_PROPERTY_CONSTRAINT);
+        return property.isSet64(SYS_COL_PROPERTY_CONSTRAINT);
     }
 
     bool SysCol::isNested() {
-        return property.isSet64(SYSCOL_PROPERTY_NESTED);
+        return property.isSet64(SYS_COL_PROPERTY_NESTED);
     }
 
     bool SysCol::isUnused() {
-        return property.isSet64(SYSCOL_PROPERTY_UNUSED);
+        return property.isSet64(SYS_COL_PROPERTY_UNUSED);
     }
 
     bool SysCol::isAdded() {
-        return property.isSet64(SYSCOL_PROPERTY_ADDED);
+        return property.isSet64(SYS_COL_PROPERTY_ADDED);
     }
 
     bool SysCol::isGuard() {
-        return property.isSet64(SYSCOL_PROPERTY_GUARD);
+        return property.isSet64(SYS_COL_PROPERTY_GUARD);
     }
 
     bool SysCol::lengthInChars() {
-        return ((type == SYSCOL_TYPE_VARCHAR || type == SYSCOL_TYPE_CHAR) && property.isSet64(SYSCOL_PROPERTY_LENGTH_IN_CHARS));
-        //else in bytes
+        return ((type == SYS_COL_TYPE_VARCHAR || type == SYS_COL_TYPE_CHAR) && property.isSet64(SYS_COL_PROPERTY_LENGTH_IN_CHARS));
+        // Else in bytes
     }
 }

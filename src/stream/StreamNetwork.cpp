@@ -132,15 +132,15 @@ namespace OpenLogReplicator {
         FD_ZERO(&wset);
         FD_SET(socketFD, &wset);
 
-        //header content
+        // Header content
         if (length < 0xFFFFFFFF) {
-            //32-bit length
+            // 32-bit length
             while (sent < sizeof(uint32_t)) {
                 if (ctx->softShutdown)
                     return;
 
                 w = wset;
-                //blocking select
+                // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
@@ -155,14 +155,14 @@ namespace OpenLogReplicator {
                 sent += r;
             }
         } else {
-            //64-bit length
+            // 64-bit length
             length32 = 0xFFFFFFFF;
             while (sent < sizeof(uint32_t)) {
                 if (ctx->softShutdown)
                     return;
 
                 w = wset;
-                //blocking select
+                // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
@@ -183,7 +183,7 @@ namespace OpenLogReplicator {
                     return;
 
                 w = wset;
-                //blocking select
+                // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
                 ssize_t r = write(socketFD, ((uint8_t*) &length) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
@@ -200,13 +200,13 @@ namespace OpenLogReplicator {
         }
 
         sent = 0;
-        //message content
+        // Message content
         while (sent < length) {
             if (ctx->softShutdown)
                 return;
 
             w = wset;
-            //blocking select
+            // Blocking select
             select(socketFD + 1, nullptr, &w, nullptr, nullptr);
             ssize_t r = write(socketFD, (char*)msg + sent, length - sent);
             if (r <= 0) {
@@ -225,7 +225,7 @@ namespace OpenLogReplicator {
     uint64_t StreamNetwork::receiveMessage(void* msg, uint64_t length) {
         uint64_t recvd = 0;
 
-        //read message length
+        // Read message length
         while (recvd < sizeof(uint32_t)) {
             if (ctx->softShutdown)
                 return 0;
@@ -246,14 +246,14 @@ namespace OpenLogReplicator {
         }
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
-            //32-bit message length
+            // 32-bit message length
             if (length < *((uint32_t*) msg))
                 throw NetworkException("read buffer too small");
 
             length = *((uint32_t*) msg);
             recvd = 0;
         } else {
-            //64-bit message length
+            // 64-bit message length
             recvd = 0;
 
             while (recvd < sizeof(uint64_t)) {
@@ -307,7 +307,7 @@ namespace OpenLogReplicator {
     uint64_t StreamNetwork::receiveMessageNB(void* msg, uint64_t length) {
         uint64_t recvd = 0;
 
-        //read message length
+        // Read message length
         while (recvd < sizeof(uint32_t)) {
             if (ctx->softShutdown)
                 return 0;
@@ -316,7 +316,7 @@ namespace OpenLogReplicator {
 
             if (bytes > 0)
                 recvd += bytes;
-            //client disconnected
+            // Client disconnected
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;
@@ -333,14 +333,14 @@ namespace OpenLogReplicator {
         }
 
         if (*((uint32_t*)msg) < 0xFFFFFFFF) {
-            //32-bit message length
+            // 32-bit message length
             if (length < *((uint32_t*) msg))
                 throw NetworkException("read buffer too small");
 
             length = *((uint32_t*) msg);
             recvd = 0;
         } else {
-            //64-bit message length
+            // 64-bit message length
             recvd = 0;
 
             while (recvd < sizeof(uint64_t)) {
@@ -351,7 +351,7 @@ namespace OpenLogReplicator {
 
                 if (bytes > 0)
                     recvd += bytes;
-                //client disconnected
+                // Client disconnected
                 else if (bytes == 0) {
                     close(socketFD);
                     socketFD = -1;
@@ -379,7 +379,7 @@ namespace OpenLogReplicator {
 
             if (bytes > 0)
                 recvd += bytes;
-            //client disconnected
+            // Client disconnected
             else if (bytes == 0) {
                 close(socketFD);
                 socketFD = -1;

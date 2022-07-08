@@ -49,15 +49,15 @@ namespace OpenLogReplicator {
                 return;
 
             uint64_t typeNo = object->columns[col]->type;
-            if (typeNo != SYSCOL_TYPE_VARCHAR
-                    && typeNo != SYSCOL_TYPE_CHAR
-                    && typeNo != SYSCOL_TYPE_NUMBER
-                    && typeNo != SYSCOL_TYPE_DATE
-                    && typeNo != SYSCOL_TYPE_TIMESTAMP
-                    && typeNo != SYSCOL_TYPE_RAW
-                    && typeNo != SYSCOL_TYPE_FLOAT
-                    && typeNo != SYSCOL_TYPE_DOUBLE
-                    && typeNo != SYSCOL_TYPE_TIMESTAMP_WITH_TZ)
+            if (typeNo != SYS_COL_TYPE_VARCHAR
+                    && typeNo != SYS_COL_TYPE_CHAR
+                    && typeNo != SYS_COL_TYPE_NUMBER
+                    && typeNo != SYS_COL_TYPE_DATE
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP
+                    && typeNo != SYS_COL_TYPE_RAW
+                    && typeNo != SYS_COL_TYPE_FLOAT
+                    && typeNo != SYS_COL_TYPE_DOUBLE
+                    && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
 
@@ -154,7 +154,7 @@ namespace OpenLogReplicator {
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
         if ((timestampFormat & TIMESTAMP_FORMAT_ISO8601) != 0) {
-            //2012-04-23T18:25:43.511Z - ISO 8601 format
+            // 2012-04-23T18:25:43.511Z - ISO 8601 format
             builderAppend('"');
             if (epochTime.tm_year > 0) {
                 appendDec((uint64_t)epochTime.tm_year);
@@ -184,7 +184,7 @@ namespace OpenLogReplicator {
             }
             builderAppend('"');
         } else {
-            //unix epoch format
+            // Unix epoch format
             if (epochTime.tm_year >= 1900) {
                 --epochTime.tm_mon;
                 epochTime.tm_year -= 1900;
@@ -312,86 +312,86 @@ namespace OpenLogReplicator {
 
                 builderAppend(R"(","type":)", sizeof(R"(","type":)") - 1);
                 switch(object->columns[column]->type) {
-                case SYSCOL_TYPE_VARCHAR:
+                case SYS_COL_TYPE_VARCHAR:
                     builderAppend(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_NUMBER:
+                case SYS_COL_TYPE_NUMBER:
                     builderAppend(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
                     appendSDec(object->columns[column]->precision);
                     builderAppend(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
                     appendSDec(object->columns[column]->scale);
                     break;
 
-                case SYSCOL_TYPE_LONG: //long, not supported
+                case SYS_COL_TYPE_LONG: // long, not supported
                     builderAppend(R"("long")", sizeof(R"("long")") - 1);
                     break;
 
-                case SYSCOL_TYPE_DATE:
+                case SYS_COL_TYPE_DATE:
                     builderAppend(R"("date")", sizeof(R"("date")") - 1);
                     break;
 
-                case SYSCOL_TYPE_RAW:
+                case SYS_COL_TYPE_RAW:
                     builderAppend(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_LONG_RAW: //not supported
+                case SYS_COL_TYPE_LONG_RAW: // Not supported
                     builderAppend(R"("long raw")", sizeof(R"("long raw")") - 1);
                     break;
 
-                case SYSCOL_TYPE_ROWID: //not supported
+                case SYS_COL_TYPE_ROWID: // Not supported
                     builderAppend(R"("rowid")", sizeof(R"("rowid")") - 1);
                     break;
 
-                case SYSCOL_TYPE_CHAR:
+                case SYS_COL_TYPE_CHAR:
                     builderAppend(R"("char","length":)", sizeof(R"("char","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_FLOAT:
+                case SYS_COL_TYPE_FLOAT:
                     builderAppend(R"("binary_float")", sizeof(R"("binary_float")") - 1);
                     break;
 
-                case SYSCOL_TYPE_DOUBLE:
+                case SYS_COL_TYPE_DOUBLE:
                     builderAppend(R"("binary_double")", sizeof(R"("binary_double")") - 1);
                     break;
 
-                case SYSCOL_TYPE_CLOB: //not supported
+                case SYS_COL_TYPE_CLOB: // Not supported
                     builderAppend(R"("clob")", sizeof(R"("clob")") - 1);
                     break;
 
-                case SYSCOL_TYPE_BLOB: //not supported
+                case SYS_COL_TYPE_BLOB: // Not supported
                     builderAppend(R"("blob")", sizeof(R"("blob")") - 1);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP:
+                case SYS_COL_TYPE_TIMESTAMP:
                     builderAppend(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP_WITH_TZ:
+                case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
                     builderAppend(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_INTERVAL_YEAR_TO_MONTH:
+                case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     builderAppend(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_INTERVAL_DAY_TO_SECOND:
+                case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
                     builderAppend(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_URAWID:
+                case SYS_COL_TYPE_URAWID:
                     builderAppend(R"("urawid","length":)", sizeof(R"("urawid","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
 
-                case SYSCOL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: //not supported
+                case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
                     builderAppend(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
                     appendDec(object->columns[column]->length);
                     break;
@@ -467,7 +467,7 @@ namespace OpenLogReplicator {
         if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
             return;
 
-        //skip empty transaction
+        // Skip empty transaction
         if (newTran) {
             newTran = false;
             return;

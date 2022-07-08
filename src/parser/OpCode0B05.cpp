@@ -28,18 +28,18 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
 
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0501);
-        //field: 1
+        // Field: 1
         ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0502))
             return;
-        //field: 2
+        // Field: 2
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0503))
             return;
-        //field: 3
+        // Field: 3
         uint8_t* colNums = nullptr;
         if (fieldLength > 0 && redoLogRecord->cc > 0) {
             redoLogRecord->colNumsDelta = fieldPos;
@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
 
         if ((redoLogRecord->flags & FLAGS_KDO_KDOM2) != 0) {
             RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0504);
-            //field: 4
+            // Field: 4
             redoLogRecord->rowData = fieldNum;
             if (ctx->dumpRedoLog >= 1)
                 dumpColsVector(ctx, redoLogRecord, redoLogRecord->data + fieldPos, ctx->read16(colNums));
@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
             redoLogRecord->rowData = fieldNum + 1;
             uint8_t bits = 1;
 
-            //fields: 4 + cc .. 4 + cc - 1
+            // Fields: 4 + cc .. 4 + cc - 1
             for (uint64_t i = 0; i < redoLogRecord->cc; ++i) {
                 if (fieldNum >= redoLogRecord->fieldCnt)
                     break;
