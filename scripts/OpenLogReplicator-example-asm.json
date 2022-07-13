@@ -29,7 +29,7 @@
   ],
   "target": [
     {
-      "alias": "K1", 
+      "alias": "K1",
       "source": "S1",
       "writer": {
         "type": "kafka",

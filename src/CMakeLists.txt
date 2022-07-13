@@ -15,6 +15,7 @@ list(APPEND ListCommon
         common/SysCol.cpp
         common/SysDeferredStg.cpp
         common/SysECol.cpp
+        common/SysLob.cpp
         common/SysObj.cpp
         common/SysTab.cpp
         common/SysTabComPart.cpp

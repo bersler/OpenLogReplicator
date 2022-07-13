@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCol.h"
 #include "../common/SysDeferredStg.h"
 #include "../common/SysECol.h"
+#include "../common/SysLob.h"
 #include "../common/SysObj.h"
 #include "../common/SysTab.h"
 #include "../common/SysTabComPart.h"
@@ -48,6 +49,7 @@ namespace OpenLogReplicator {
                 sysCol(nullptr),
                 sysDeferredStg(nullptr),
                 sysECol(nullptr),
+                sysLob(nullptr),
                 sysObj(nullptr),
                 sysTab(nullptr),
                 sysTabComPart(nullptr),
@@ -86,6 +88,11 @@ namespace OpenLogReplicator {
         if (sysECol != nullptr) {
             delete sysECol;
             sysECol = nullptr;
+        }
+
+        if (sysLob != nullptr) {
+            delete sysLob;
+            sysLob = nullptr;
         }
 
         if (sysObj != nullptr) {
@@ -600,6 +607,37 @@ namespace OpenLogReplicator {
             metadata->schema->sysEColTouched = true;
             sysECol = nullptr;
 
+
+        } else if (object->systemTable == TABLE_SYS_LOB) {
+            if (metadata->schema->dictSysLobFind(rowId))
+                throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + str + ") for insert");
+            sysLob = new SysLob(rowId, 0, 0, 0, 0, true);
+
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
+            for (uint64_t base = 0; base <= baseMax; ++base) {
+                column = (typeCol)(base << 6);
+                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                    if (builder->valuesSet[base] < mask)
+                        break;
+                    if ((builder->valuesSet[base] & mask) == 0)
+                        continue;
+
+                    if (object->columns[column]->name == "OBJ#")
+                        updateObj(sysLob->obj, column, object, rowId);
+                    else if (object->columns[column]->name == "COL#")
+                        updateNumber16(sysLob->col, 0, column, object, rowId);
+                    else if (object->columns[column]->name == "INTCOL#")
+                        updateNumber16(sysLob->intCol, 0, column, object, rowId);
+                    else if (object->columns[column]->name == "LOBJ#")
+                        updateObj(sysLob->lObj, column, object, rowId);
+                }
+            }
+
+            metadata->schema->sysLobMapRowId[rowId] = sysLob;
+            metadata->schema->sysLobTouched = true;
+            sysLob = nullptr;
+
         } else if (object->systemTable == TABLE_SYS_OBJ) {
             if (metadata->schema->dictSysObjFind(rowId))
                 throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + str + ") for insert");
@@ -1017,6 +1055,50 @@ namespace OpenLogReplicator {
                 }
             }
 
+        } else if (object->systemTable == TABLE_SYS_LOB) {
+            SysLob* sysLob2 = metadata->schema->dictSysLobFind(rowId);
+            if (sysLob2 == nullptr) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
+                return;
+            }
+
+            typeCol column;
+            uint64_t baseMax = builder->valuesMax >> 6;
+            for (uint64_t base = 0; base <= baseMax; ++base) {
+                column = (typeCol)(base << 6);
+                for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                    if (builder->valuesSet[base] < mask)
+                        break;
+                    if ((builder->valuesSet[base] & mask) == 0)
+                        continue;
+
+                    if (object->columns[column]->name == "OBJ#") {
+                        if (updateObj(sysLob2->obj, column, object, rowId)) {
+                            sysLob2->touched = true;
+                            metadata->schema->sysLobTouched = true;
+                        }
+                    } else if (object->columns[column]->name == "COL#") {
+                        if (updateNumber16(sysLob2->col, 0, column, object, rowId)) {
+                            sysLob2->touched = true;
+                            metadata->schema->sysTabTouched = true;
+                            metadata->schema->touchObj(sysLob2->obj);
+                        }
+                    } else if (object->columns[column]->name == "INTCOL#") {
+                        if (updateNumber16(sysLob2->intCol, 0, column, object, rowId)) {
+                            sysLob2->touched = true;
+                            metadata->schema->sysLobTouched = true;
+                            metadata->schema->touchObj(sysLob2->obj);
+                        }
+                    } else if (object->columns[column]->name == "LOBJ#") {
+                        if (updateObj(sysLob2->lObj, column, object, rowId)) {
+                            sysLob2->touched = true;
+                            metadata->schema->sysLobTouched = true;
+                            metadata->schema->touchObj(sysLob2->obj);
+                        }
+                    }
+                }
+            }
+
         } else if (object->systemTable == TABLE_SYS_OBJ) {
             SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
             if (sysObj2 == nullptr) {
@@ -1285,6 +1367,9 @@ namespace OpenLogReplicator {
                 break;
             case TABLE_SYS_ECOL:
                 metadata->schema->dictSysEColDrop(rowId);
+                break;
+            case TABLE_SYS_LOB:
+                metadata->schema->dictSysLobDrop(rowId);
                 break;
             case TABLE_SYS_OBJ:
                 metadata->schema->dictSysObjDrop(rowId);

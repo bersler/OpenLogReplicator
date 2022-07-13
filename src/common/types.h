@@ -136,12 +136,13 @@ typedef uint64_t typeUnicode;
 #define TABLE_SYS_COL                           3
 #define TABLE_SYS_DEFERRED_STG                  4
 #define TABLE_SYS_ECOL                          5
-#define TABLE_SYS_OBJ                           6
-#define TABLE_SYS_TAB                           7
-#define TABLE_SYS_TABPART                       8
-#define TABLE_SYS_TABCOMPART                    9
-#define TABLE_SYS_TABSUBPART                    10
-#define TABLE_SYS_USER                          11
+#define TABLE_SYS_LOB                           6
+#define TABLE_SYS_OBJ                           7
+#define TABLE_SYS_TAB                           8
+#define TABLE_SYS_TABPART                       9
+#define TABLE_SYS_TABCOMPART                    10
+#define TABLE_SYS_TABSUBPART                    11
+#define TABLE_SYS_USER                          12
 
 #define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))

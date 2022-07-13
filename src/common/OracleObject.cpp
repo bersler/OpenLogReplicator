@@ -49,6 +49,8 @@ namespace OpenLogReplicator {
                 systemTable = TABLE_SYS_DEFERRED_STG;
             else if (this->name == "ECOL$")
                 systemTable = TABLE_SYS_ECOL;
+            else if (this->name == "LOB$")
+                systemTable = TABLE_SYS_LOB;
             else if (this->name == "OBJ$")
                 systemTable = TABLE_SYS_OBJ;
             else if (this->name == "TAB$")

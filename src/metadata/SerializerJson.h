@@ -38,6 +38,7 @@ namespace OpenLogReplicator {
         void deserializeSysCol(Metadata* metadata, std::string &name, const rapidjson::Value &sysColJson);
         void deserializeSysDeferredStg(Metadata* metadata, std::string &name, const rapidjson::Value &sysCDefJson);
         void deserializeSysECol(Metadata* metadata, std::string &name, const rapidjson::Value &sysEColJson);
+        void deserializeSysLob(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobJson);
         void deserializeSysObj(Metadata* metadata, std::string &name, const rapidjson::Value &sysObjJson);
         void deserializeSysTab(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabJson);
         void deserializeSysTabComPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabComPartJson);

@@ -294,6 +294,25 @@ namespace OpenLogReplicator {
             " WHERE"
             "   E.TABOBJ# = :k");
 
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_USER(
+            "SELECT"
+            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.LOB$ AS OF SCN :j L ON"
+            "     O.OBJ# = L.OBJ#"
+            " WHERE"
+            "   O.OWNER# = :k");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_OBJ(
+            "SELECT"
+            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#"
+            " FROM"
+            "   SYS.LOB$ AS OF SCN :j L"
+            " WHERE"
+            "   L.OBJ# = :k");
+
     const char* ReplicatorOnline::SQL_GET_SYS_OBJ_USER(
             "SELECT"
             "   O.ROWID, O.OWNER#, O.OBJ#, O.DATAOBJ#, O.NAME, O.TYPE#,"
@@ -511,6 +530,7 @@ namespace OpenLogReplicator {
             checkTableForGrantsFlashback("SYS.COL$", currentScn);
             checkTableForGrantsFlashback("SYS.DEFERRED_STG$", currentScn);
             checkTableForGrantsFlashback("SYS.ECOL$", currentScn);
+            checkTableForGrantsFlashback("SYS.LOB$", currentScn);
             checkTableForGrantsFlashback("SYS.OBJ$", currentScn);
             checkTableForGrantsFlashback("SYS.TAB$", currentScn);
             checkTableForGrantsFlashback("SYS.TABCOMPART$", currentScn);
@@ -982,6 +1002,38 @@ namespace OpenLogReplicator {
             ecolColNum = 0;
             ecolGuardId = -1;
             ecolRet = stmtECol.next();
+        }
+
+        // Reading SYS.LOB$
+        DatabaseStatement stmtLob(conn);
+        if (obj != 0) {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_OBJ)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << obj)
+            stmtLob.createStatement(SQL_GET_SYS_LOB_OBJ);
+            stmtLob.bindUInt64(1, targetScn);
+            stmtLob.bindUInt32(2, obj);
+        } else {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_USER)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << user)
+            stmtLob.createStatement(SQL_GET_SYS_LOB_USER);
+            stmtLob.bindUInt64(1, targetScn);
+            stmtLob.bindUInt64(2, targetScn);
+            stmtLob.bindUInt32(3, user);
+        }
+
+        char lobRowid[19]; stmtLob.defineString(1, lobRowid, sizeof(lobRowid));
+        typeObj lobObj; stmtLob.defineUInt32(2, lobObj);
+        typeCol lobCol = 0; stmtLob.defineInt16(3, lobCol);
+        typeCol lobIntCol = 0; stmtLob.defineInt16(4, lobIntCol);
+        typeObj lobLObj; stmtLob.defineUInt32(5, lobLObj);
+
+        int64_t lobRet = stmtLob.executeQuery();
+        while (lobRet) {
+            schema->dictSysLobAdd(lobRowid, lobObj, lobCol, lobIntCol, lobLObj);
+            lobRet = stmtLob.next();
         }
 
         // Reading SYS.TAB$

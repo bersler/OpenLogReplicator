@@ -25,6 +25,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCol.h"
 #include "../common/SysDeferredStg.h"
 #include "../common/SysECol.h"
+#include "../common/SysLob.h"
 #include "../common/SysObj.h"
 #include "../common/SysTab.h"
 #include "../common/SysTabComPart.h"
@@ -231,6 +232,24 @@ namespace OpenLogReplicator {
                                   R"(","tab-obj":)" << std::dec << sysECol->tabObj <<
                                   R"(,"col-num":)" << std::dec << sysECol->colNum <<
                                   R"(,"guard-id":)" << std::dec << sysECol->guardId << "}";
+        }
+
+        // SYS.LOB$
+        ss << "]," SERIALIZER_ENDL << R"("sys-lob":[)";
+        hasPrev = false;
+        for (auto it : metadata->schema->sysLobMapRowId) {
+            SysLob* sysLob = it.second;
+
+            if (hasPrev)
+                ss << ",";
+            else
+                hasPrev = true;
+
+            ss SERIALIZER_ENDL << R"({"row-id":")" << sysLob->rowId <<
+                                  R"(","obj":)" << std::dec << sysLob->obj <<
+                                  R"(,"col":)" << std::dec << sysLob->col <<
+                                  R"(,"int-col":)" << std::dec << sysLob->intCol <<
+                                  R"(,"l-obj":)" << std::dec << sysLob->lObj << "}";
         }
 
         // SYS.OBJ$
@@ -463,6 +482,7 @@ namespace OpenLogReplicator {
                     deserializeSysCDef(metadata, name, Ctx::getJsonFieldA(name, document, "sys-cdef"));
                     deserializeSysDeferredStg(metadata, name, Ctx::getJsonFieldA(name, document, "sys-deferredstg"));
                     deserializeSysECol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ecol"));
+                    deserializeSysLob(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob"));
                     deserializeSysTab(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tab"));
                     deserializeSysTabPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabpart"));
                     deserializeSysTabComPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabcompart"));
@@ -576,6 +596,18 @@ namespace OpenLogReplicator {
             typeCol guardId = Ctx::getJsonFieldI16(name, sysEColJson[i], "guard-id");
 
             metadata->schema->dictSysEColAdd(rowId, obj, colNum, guardId);
+        }
+    }
+
+    void SerializerJson::deserializeSysLob(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobJson) {
+        for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
+            const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobJson[i], "row-id");
+            typeObj obj = Ctx::getJsonFieldU32(name, sysLobJson[i], "obj");
+            typeCol col = Ctx::getJsonFieldI16(name, sysLobJson[i], "col");
+            typeCol intCol = Ctx::getJsonFieldI16(name, sysLobJson[i], "int-col");
+            typeObj lObj = Ctx::getJsonFieldU32(name, sysLobJson[i], "l-obj");
+
+            metadata->schema->dictSysLobAdd(rowId, obj, col, intCol, lObj);
         }
     }
 

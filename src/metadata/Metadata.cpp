@@ -411,20 +411,21 @@ namespace OpenLogReplicator {
             if (checkpoints < ctx->checkpointKeep)
                 return;
 
-            bool foundSchema;
+            bool foundSchema = false;
             uint64_t num = 0;
             std::set<typeScn>::iterator it = checkpointScnList.end();
             while (it != checkpointScnList.begin()) {
                 --it;
+                ++num;
 
                 if (num < ctx->checkpointKeep)
                     continue;
 
-                if (!checkpointSchemaMap[*it])
-                    foundSchema = true;
-
-                if (!foundSchema)
+                if (!foundSchema) {
+                    if (checkpointSchemaMap[*it])
+                        foundSchema = true;
                     continue;
+                }
 
                 scnToDrop.insert(*it);
             }

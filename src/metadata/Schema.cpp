@@ -30,6 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCol.h"
 #include "../common/SysDeferredStg.h"
 #include "../common/SysECol.h"
+#include "../common/SysLob.h""
 #include "../common/SysObj.h"
 #include "../common/SysTab.h"
 #include "../common/SysTabComPart.h"
@@ -54,6 +55,7 @@ namespace OpenLogReplicator {
             sysColTouched(false),
             sysDeferredStgTouched(false),
             sysEColTouched(false),
+            sysLobTouched(false),
             sysObjTouched(false),
             sysTabTouched(false),
             sysTabComPartTouched(false),
@@ -123,6 +125,13 @@ namespace OpenLogReplicator {
         }
         sysEColMapRowId.clear();
         sysEColMapKey.clear();
+
+        for (auto it : sysLobMapRowId) {
+            SysLob* sysLob = it.second;
+            delete sysLob;
+        }
+        sysLobMapRowId.clear();
+        sysLobMapKey.clear();
 
         for (auto it : sysObjMapRowId) {
             SysObj* sysObj = it.second;
@@ -283,6 +292,30 @@ namespace OpenLogReplicator {
         return true;
     }
 
+    bool Schema::compareSysLob(Schema* otherSchema, std::string& msgs) {
+        for (auto it : sysLobMapRowId) {
+            SysLob* sysLob = it.second;
+            auto sysLobIt = otherSchema->sysLobMapRowId.find(sysLob->rowId);
+            if (sysLobIt == otherSchema->sysLobMapRowId.end()) {
+                msgs.assign("schema mismatch: SYS.LOB$ lost ROWID: " + sysLob->rowId.toString());
+                return false;
+            } else if (*sysLob != *(sysLobIt->second)) {
+                msgs.assign("schema mismatch: SYS.LOB$ differs ROWID: " + sysLob->rowId.toString());
+                return false;
+            }
+        }
+        for (auto it : otherSchema->sysLobMapRowId) {
+            SysLob* sysLob = it.second;
+            auto sysLobIt = sysLobMapRowId.find(sysLob->rowId);
+            if (sysLobIt == sysLobMapRowId.end()) {
+                msgs.assign("schema mismatch: SYS.LOB$ lost ROWID: " + sysLob->rowId.toString());
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     bool Schema::compareSysObj(Schema* otherSchema, std::string& msgs) {
         for (auto it : sysObjMapRowId) {
             SysObj* sysObj = it.second;
@@ -421,18 +454,18 @@ namespace OpenLogReplicator {
     }
 
     bool Schema::compare(Schema* otherSchema, std::string& msgs) {
-        if (!compareSysCCol(otherSchema, msgs) ||
-            !compareSysCDef(otherSchema, msgs) ||
-            !compareSysCol(otherSchema, msgs) ||
-            !compareSysDeferredStg(otherSchema, msgs) ||
-            !compareSysECol(otherSchema, msgs) ||
-            !compareSysObj(otherSchema, msgs) ||
-            !compareSysTab(otherSchema, msgs) ||
-            !compareSysTabComPart(otherSchema, msgs) ||
-            !compareSysTabPart(otherSchema, msgs) ||
-            !compareSysTabSubPart(otherSchema, msgs) ||
-            !compareSysUser(otherSchema, msgs))
-            return false;
+        if (!compareSysCCol(otherSchema, msgs)) return false;
+        if (!compareSysCDef(otherSchema, msgs)) return false;
+        if (!compareSysCol(otherSchema, msgs)) return false;
+        if (!compareSysDeferredStg(otherSchema, msgs)) return false;
+        if (!compareSysECol(otherSchema, msgs)) return false;
+        if (!compareSysLob(otherSchema, msgs)) return false;
+        if (!compareSysObj(otherSchema, msgs)) return false;
+        if (!compareSysTab(otherSchema, msgs)) return false;
+        if (!compareSysTabComPart(otherSchema, msgs)) return false;
+        if (!compareSysTabPart(otherSchema, msgs)) return false;
+        if (!compareSysTabSubPart(otherSchema, msgs)) return false;
+        if (!compareSysUser(otherSchema, msgs)) return false;
 
         msgs.assign("");
         return true;
@@ -593,6 +626,37 @@ namespace OpenLogReplicator {
         for (typeRowId rowId: removeRowId)
             sysEColMapRowId.erase(rowId);
         sysEColTouched = false;
+    }
+
+
+    void Schema::refreshIndexesSysLob() {
+        if (!sysLobTouched)
+            return;
+        sysLobMapKey.clear();
+
+        std::list<typeRowId> removeRowId;
+        for (auto it : sysLobMapRowId) {
+            SysLob* sysLob = it.second;
+
+            if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA) || sysObjMapObj.find(sysLob->obj) != sysObjMapObj.end()) {
+                SysLobKey sysLobKey(sysLob->obj, sysLob->intCol);
+                sysLobMapKey[sysLobKey] = sysLob;
+                if (sysLob->touched) {
+                    touchObj(sysLob->obj);
+                    sysLob->touched = false;
+                }
+                continue;
+            }
+
+            TRACE(TRACE2_SYSTEM, "SYSTEM: garbage LOB$ (rowid: " << it.first << ", OBJ#: " << std::dec << sysLob->obj << ", COL#: " <<
+                                                                 sysLob->col << ", INTCOL#: " << sysLob->intCol << ", LOBJ#: " << sysLob->lObj << ")")
+            removeRowId.push_back(it.first);
+            delete sysLob;
+        }
+
+        for (typeRowId rowId: removeRowId)
+            sysLobMapRowId.erase(rowId);
+        sysLobTouched = false;
     }
 
     void Schema::refreshIndexesSysObj() {
@@ -881,6 +945,19 @@ namespace OpenLogReplicator {
         return true;
     }
 
+    bool Schema::dictSysLobAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol intCol, typeObj lObj) {
+        typeRowId rowId(rowIdStr);
+        if (sysLobMapRowId.find(rowId) != sysLobMapRowId.end())
+            return false;
+
+        auto* sysLob = new SysLob(rowId, obj, col, intCol, lObj, false);
+        sysLobMapRowId[rowId] = sysLob;
+        SysLobKey sysLobKey(obj, intCol);
+        sysLobMapKey[sysLobKey] = sysLob;
+
+        return true;
+    }
+
     bool Schema::dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
                                uint64_t flags1, uint64_t flags2, bool single) {
         typeRowId rowId(rowIdStr);
@@ -1063,6 +1140,22 @@ namespace OpenLogReplicator {
         delete sysECol;
     }
 
+    void Schema::dictSysLobDrop(typeRowId rowId) {
+        auto sysLobIt = sysLobMapRowId.find(rowId);
+        if (sysLobIt == sysLobMapRowId.end()) {
+            TRACE(TRACE2_SYSTEM, "SYSTEM: missing row (rowid: " << rowId << ")")
+            return;
+        }
+        SysLob* sysLob = sysLobIt->second;
+        TRACE(TRACE2_SYSTEM, "SYSTEM: delete (OBJ#: " << std::dec << sysLob->obj << ", COL#: " << sysLob->col <<
+                                              ", INTCOL#: " << sysLob->intCol << ", LOBJ#: " << sysLob->lObj << ")")
+        touched = true;
+        sysLobMapRowId.erase(rowId);
+        sysLobTouched = true;
+        touchObj(sysLob->obj);
+        delete sysLob;
+    }
+
     void Schema::dictSysObjDrop(typeRowId rowId) {
         auto sysObjIt = sysObjMapRowId.find(rowId);
         if (sysObjIt == sysObjMapRowId.end()) {
@@ -1195,6 +1288,14 @@ namespace OpenLogReplicator {
         auto sysEColIt = sysEColMapRowId.find(rowId);
         if (sysEColIt != sysEColMapRowId.end())
             return sysEColIt->second;
+        else
+            return nullptr;
+    }
+
+    SysLob* Schema::dictSysLobFind(typeRowId rowId) {
+        auto sysLobIt = sysLobMapRowId.find(rowId);
+        if (sysLobIt != sysLobMapRowId.end())
+            return sysLobIt->second;
         else
             return nullptr;
     }

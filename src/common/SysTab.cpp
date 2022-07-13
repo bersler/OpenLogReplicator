@@ -41,19 +41,19 @@ namespace OpenLogReplicator {
     }
 
     bool SysTab::isClustered() {
-        return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED);
+        return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED_TABLE);
     }
 
     bool SysTab::isIot() {
-        return property.isSet64(SYS_TAB_PROPERTY_IOT1) || flags.isSet64(SYS_TAB_PROPERTY_IOT2);
+        return property.isSet64(SYS_TAB_PROPERTY_IOT_OVERFLOW_SEGMENT) || flags.isSet64(SYS_TAB_PROPERTY_IOT2);
     }
 
     bool SysTab::isPartitioned() {
-        return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED);
+        return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED_TABLE);
     }
 
     bool SysTab::isNested() {
-        return property.isSet64(SYS_TAB_PROPERTY_NESTED);
+        return property.isSet64(SYS_TAB_PROPERTY_NESTED_TABLE);
     }
 
     bool SysTab::isRowMovement() {

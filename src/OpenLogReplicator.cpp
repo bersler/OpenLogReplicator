@@ -357,6 +357,7 @@ namespace OpenLogReplicator {
             metadata->addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE);
+            metadata->addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "OBJ\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "TAB\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "TABPART\\$", OPTIONS_SYSTEM_TABLE);

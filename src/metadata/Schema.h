@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/SysCCol.h"
 #include "../common/SysCDef.h"
 #include "../common/SysECol.h"
+#include "../common/SysLob.h"
 #include "../common/SysTabComPart.h"
 #include "../common/SysTabPart.h"
 #include "../common/SysTabSubPart.h"
@@ -60,6 +61,7 @@ namespace OpenLogReplicator {
         bool compareSysCol(Schema* otherSchema, std::string& msgs);
         bool compareSysDeferredStg(Schema* otherSchema, std::string& msgs);
         bool compareSysECol(Schema* otherSchema, std::string& msgs);
+        bool compareSysLob(Schema* otherSchema, std::string& msgs);
         bool compareSysObj(Schema* otherSchema, std::string& msgs);
         bool compareSysTab(Schema* otherSchema, std::string& msgs);
         bool compareSysTabComPart(Schema* otherSchema, std::string& msgs);
@@ -71,6 +73,7 @@ namespace OpenLogReplicator {
         void refreshIndexesSysCol();
         void refreshIndexesSysDeferredStg();
         void refreshIndexesSysECol();
+        void refreshIndexesSysLob();
         void refreshIndexesSysObj();
         void refreshIndexesSysTab();
         void refreshIndexesSysTabComPart();
@@ -110,6 +113,10 @@ namespace OpenLogReplicator {
         std::map<typeRowId, SysECol*> sysEColMapRowId;
         std::unordered_map<SysEColKey, SysECol*> sysEColMapKey;
 
+        // SYS.LOB$
+        std::map<typeRowId, SysLob*> sysLobMapRowId;
+        std::map<SysLobKey, SysLob*> sysLobMapKey;
+
         // SYS.OBJ$
         std::map<typeRowId, SysObj*> sysObjMapRowId;
         std::unordered_map<typeObj, SysObj*> sysObjMapObj;
@@ -144,6 +151,7 @@ namespace OpenLogReplicator {
         bool sysColTouched;
         bool sysDeferredStgTouched;
         bool sysEColTouched;
+        bool sysLobTouched;
         bool sysObjTouched;
         bool sysTabTouched;
         bool sysTabComPartTouched;
@@ -165,6 +173,7 @@ namespace OpenLogReplicator {
                            bool null_, uint64_t property1, uint64_t property2);
         bool dictSysDeferredStgAdd(const char* rowIdStr, typeObj obj, uint64_t flagsStg1, uint64_t flagsStg2);
         bool dictSysEColAdd(const char* rowIdStr, typeObj tabObj, typeCol colNum, typeCol guardId);
+        bool dictSysLobAdd(const char* rowIdStr, typeObj obj, typeCol col, typeCol intCol, typeObj lObj);
         bool dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name,
                            uint64_t flags1, uint64_t flags2, bool single);
         bool dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
@@ -178,6 +187,7 @@ namespace OpenLogReplicator {
         void dictSysColDrop(typeRowId rowId);
         void dictSysDeferredStgDrop(typeRowId rowId);
         void dictSysEColDrop(typeRowId rowId);
+        void dictSysLobDrop(typeRowId rowId);
         void dictSysObjDrop(typeRowId rowId);
         void dictSysTabDrop(typeRowId rowId);
         void dictSysTabComPartDrop(typeRowId rowId);
@@ -189,6 +199,7 @@ namespace OpenLogReplicator {
         [[nodiscard]] SysCol* dictSysColFind(typeRowId rowId);
         [[nodiscard]] SysDeferredStg* dictSysDeferredStgFind(typeRowId rowId);
         [[nodiscard]] SysECol* dictSysEColFind(typeRowId rowId);
+        [[nodiscard]] SysLob* dictSysLobFind(typeRowId rowId);
         [[nodiscard]] SysObj* dictSysObjFind(typeRowId rowId);
         [[nodiscard]] SysTab* dictSysTabFind(typeRowId rowId);
         [[nodiscard]] SysTabComPart* dictSysTabComPartFind(typeRowId rowId);

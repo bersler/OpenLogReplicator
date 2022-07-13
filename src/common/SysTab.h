@@ -24,15 +24,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef SYS_TAB_H_
 #define SYS_TAB_H_
 
-#define SYS_TAB_PROPERTY_BINARY              1
-#define SYS_TAB_PROPERTY_PARTITIONED         32
-#define SYS_TAB_PROPERTY_IOT1                512
-#define SYS_TAB_PROPERTY_CLUSTERED           1024
-#define SYS_TAB_PROPERTY_NESTED              8192
-#define SYS_TAB_PROPERTY_ROW_MOVEMENT        131072
-#define SYS_TAB_PROPERTY_DEPENDENCIES        8388608
-#define SYS_TAB_PROPERTY_IOT2                536870912
-#define SYS_TAB_PROPERTY_INITIAL             17179869184
+#define SYS_TAB_PROPERTY_BINARY                       1
+#define SYS_TAB_PROPERTY_PARTITIONED_TABLE            32
+#define SYS_TAB_PROPERTY_IOT_OVERFLOW_SEGMENT         512
+#define SYS_TAB_PROPERTY_CLUSTERED_TABLE              1024
+#define SYS_TAB_PROPERTY_NESTED_TABLE                 8192
+#define SYS_TAB_PROPERTY_ROW_MOVEMENT                 131072
+#define SYS_TAB_PROPERTY_GLOBAL_TEMPORARY_TABLE       4194304
+#define SYS_TAB_PROPERTY_DEPENDENCIES                 8388608
+#define SYS_TAB_PROPERTY_READ_ONLY_MATERIALIZED_VIEW  33554432
+#define SYS_TAB_PROPERTY_MATERIALIZED_VIEW_TABLE      67108864
+#define SYS_TAB_PROPERTY_IOT2                         536870912
+#define SYS_TAB_PROPERTY_INITIAL                      17179869184
 
 namespace OpenLogReplicator {
     class SysTab {
