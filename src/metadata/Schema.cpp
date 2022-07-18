@@ -24,13 +24,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../common/Ctx.h"
 #include "../common/DataException.h"
 #include "../common/OracleColumn.h"
+#include "../common/OracleLob.h"
 #include "../common/OracleObject.h"
 #include "../common/SysCCol.h"
 #include "../common/SysCDef.h"
 #include "../common/SysCol.h"
 #include "../common/SysDeferredStg.h"
 #include "../common/SysECol.h"
-#include "../common/SysLob.h""
+#include "../common/SysLob.h"
 #include "../common/SysObj.h"
 #include "../common/SysTab.h"
 #include "../common/SysTabComPart.h"
@@ -48,8 +49,9 @@ namespace OpenLogReplicator {
             scn(ZERO_SCN),
             refScn(ZERO_SCN),
             loaded(false),
-            schemaObject(nullptr),
             schemaColumn(nullptr),
+            schemaLob(nullptr),
+            schemaObject(nullptr),
             sysCColTouched(false),
             sysCDefTouched(false),
             sysColTouched(false),
@@ -71,14 +73,19 @@ namespace OpenLogReplicator {
 
     void Schema::purge() {
         scn = ZERO_SCN;
-        if (schemaObject != nullptr) {
-            delete schemaObject;
-            schemaObject = nullptr;
-        }
-
         if (schemaColumn != nullptr) {
             delete schemaColumn;
             schemaColumn = nullptr;
+        }
+
+        if (schemaLob != nullptr) {
+            delete schemaLob;
+            schemaLob = nullptr;
+        }
+
+        if (schemaObject != nullptr) {
+            delete schemaObject;
+            schemaObject = nullptr;
         }
 
         for (auto it : objectMap) {
@@ -865,7 +872,7 @@ namespace OpenLogReplicator {
         refreshIndexesSysCol();
         refreshIndexesSysDeferredStg();
         refreshIndexesSysECol();
-        refreshIndexesSysObj();
+        refreshIndexesSysLob();
         refreshIndexesSysTab();
         refreshIndexesSysTabComPart();
         refreshIndexesSysTabPart();
@@ -1594,9 +1601,7 @@ namespace OpenLogReplicator {
             }
 
             SysColSeg sysColSegFirst(sysObj->obj, 0);
-            for (auto itCol = sysColMapSeg.upper_bound(sysColSegFirst);
-                 itCol != sysColMapSeg.end() && itCol->first.obj == sysObj->obj; ++itCol) {
-
+            for (auto itCol = sysColMapSeg.upper_bound(sysColSegFirst); itCol != sysColMapSeg.end() && itCol->first.obj == sysObj->obj; ++itCol) {
                 SysCol* sysCol = itCol->second;
                 if (sysCol->segCol == 0)
                     continue;
@@ -1683,13 +1688,25 @@ namespace OpenLogReplicator {
                 schemaColumn = nullptr;
             }
 
+            SysLobKey sysLobKeyFirst(sysObj->obj, 0);
+            for (auto itLob = sysLobMapKey.upper_bound(sysLobKeyFirst); itLob != sysLobMapKey.end() && itLob->first.obj == sysObj->obj; ++itLob) {
+                SysLob* sysLob = itLob->second;
+
+                if (ctx->trace >= TRACE_DEBUG)
+                    msgs.insert("- lob: " + std::to_string(sysLob->col) + ":" + std::to_string(sysLob->intCol) + ":" + std::to_string(sysLob->lObj));
+
+                schemaLob = new OracleLob(sysLob->obj, sysLob->col, sysLob->intCol, sysLob->lObj);
+                schemaObject->addLob(schemaLob);
+                schemaLob = nullptr;
+            }
+
             // Check if table has all listed columns
             if ((typeCol)keys.size() != keysCnt)
                 throw DataException("table " + std::string(sysUser->name) + "." + sysObj->name + " couldn't find all column set (" + keysStr + ")");
 
             std::stringstream ss;
             ss << sysUser->name << "." << sysObj->name << " (dataobj: " << std::dec << sysTab->dataObj << ", obj: " << std::dec << sysObj->obj
-               << ", columns: " << std::dec << schemaObject->maxSegCol << ")";
+               << ", columns: " << std::dec << schemaObject->maxSegCol << ", lobs: " << std::dec << schemaObject->totalLobs << ")";
             if (sysTab->isClustered())
                 ss << ", part of cluster";
             if (sysTab->isPartitioned())

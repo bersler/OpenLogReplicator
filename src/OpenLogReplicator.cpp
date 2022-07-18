@@ -27,6 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <unistd.h>
 
 #include "builder/BuilderJson.h"
+#include "common/Ctx.h"
 #include "common/types.h"
 #include "common/ConfigurationException.h"
 #include "common/RuntimeException.h"
@@ -71,7 +72,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "writer/WriterKafka.h"
 #else
 #endif /* LINK_LIBRARY_RDKAFKA */
-
 
 namespace OpenLogReplicator {
 
@@ -186,7 +186,7 @@ namespace OpenLogReplicator {
 
         if (document.HasMember("trace2")) {
             ctx->trace2 = Ctx::getJsonFieldU64(fileName, document, "trace2");
-            if (ctx->trace2 > 16383)
+            if (ctx->trace2 > 65535)
                 throw ConfigurationException("bad JSON, invalid 'trace2' value: " + std::to_string(ctx->trace2) +
                                              ", expected one of: {0 .. 65535}");
         }
@@ -236,9 +236,9 @@ namespace OpenLogReplicator {
 
             if (sourceJson.HasMember("flags")) {
                 ctx->flags = Ctx::getJsonFieldU64(fileName, sourceJson, "flags");
-                if (ctx->flags > 32767)
+                if (ctx->flags > 65535)
                     throw ConfigurationException("bad JSON, invalid 'flags' value: " + std::to_string(ctx->flags) +
-                                                 ", expected one of: {0 .. 16383}");
+                                                 ", expected one of: {0 .. 65535}");
                 if (FLAG(REDO_FLAGS_DIRECT_DISABLE))
                     ctx->redoVerifyDelayUs = 500000;
             }

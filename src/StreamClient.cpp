@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define GLOBALS 1
+
 #include <atomic>
 #include <stdint.h>
 
@@ -30,6 +32,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifdef LINK_LIBRARY_ZEROMQ
 #include "stream/StreamZeroMQ.h"
 #endif /* LINK_LIBRARY_ZEROMQ */
+
+uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 
 void send(OpenLogReplicator::pb::RedoRequest& request, OpenLogReplicator::Stream* stream) {
     std::string buffer;
@@ -54,6 +58,13 @@ void receive(OpenLogReplicator::pb::RedoResponse& response, OpenLogReplicator::S
 }
 
 int main(int argc, char** argv) {
+    std::string olrLocales;
+    const char* olrLocalesStr = getenv("OLR_LOCALES");
+    if (olrLocalesStr != nullptr)
+        olrLocales = olrLocalesStr;
+    if (olrLocales == "MOCK")
+        OLR_LOCALES = OLR_LOCALES_MOCK;
+
     ALL("OpenLogReplicator v." << std::dec << OpenLogReplicator_VERSION_MAJOR << "." << OpenLogReplicator_VERSION_MINOR <<  "." << OpenLogReplicator_VERSION_PATCH <<
                                " StreamClient (C) 2018-2022 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information")
 

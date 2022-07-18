@@ -607,7 +607,6 @@ namespace OpenLogReplicator {
             metadata->schema->sysEColTouched = true;
             sysECol = nullptr;
 
-
         } else if (object->systemTable == TABLE_SYS_LOB) {
             if (metadata->schema->dictSysLobFind(rowId))
                 throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + str + ") for insert");

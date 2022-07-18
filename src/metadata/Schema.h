@@ -43,6 +43,7 @@ namespace OpenLogReplicator {
     class Ctx;
     class Locales;
     class OracleColumn;
+    class OracleLob;
     class OracleObject;
     class SysColSeg;
     class SysDeferredStg;
@@ -86,10 +87,12 @@ namespace OpenLogReplicator {
         typeScn refScn;
         bool loaded;
 
+        std::unordered_map<typeObj, OracleLob*> lobMap;
         std::unordered_map<typeObj, OracleObject*> objectMap;
         std::unordered_map<typeObj, OracleObject*> partitionMap;
-        OracleObject* schemaObject;
         OracleColumn* schemaColumn;
+        OracleLob *schemaLob;
+        OracleObject* schemaObject;
 
         // SYS.CCOL$
         std::map<typeRowId, SysCCol*> sysCColMapRowId;

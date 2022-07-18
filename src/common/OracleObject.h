@@ -26,6 +26,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class OracleColumn;
+    class OracleLob;
 
     class OracleObject {
     public:
@@ -34,12 +35,14 @@ namespace OpenLogReplicator {
         typeUser user;
         typeCol cluCols;
         uint64_t totalPk;
+        uint64_t totalLobs;
         typeOptions options;
         typeCol maxSegCol;
         typeCol guardSegNo;
         std::string owner;
         std::string name;
         std::vector<OracleColumn*> columns;
+        std::vector<OracleLob*> lobs;
         std::vector<typeObj2> partitions;
         std::vector<typeCol> pk;
         uint64_t systemTable;
@@ -50,6 +53,7 @@ namespace OpenLogReplicator {
         virtual ~OracleObject();
 
         void addColumn(OracleColumn* column);
+        void addLob(OracleLob* lob);
         void addPartition(typeObj partitionObj, typeDataObj partitionDataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleObject& object);

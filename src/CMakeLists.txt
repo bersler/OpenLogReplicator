@@ -5,6 +5,7 @@ list(APPEND ListCommon
         common/NetworkException.cpp
         common/OracleColumn.cpp
         common/OracleIncarnation.cpp
+        common/OracleLob.cpp
         common/OracleObject.cpp
         common/typeRowId.cpp
         common/RedoLogException.cpp

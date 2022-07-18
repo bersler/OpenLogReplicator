@@ -30,6 +30,7 @@ namespace OpenLogReplicator {
         user(newUser),
         cluCols(newCluCols),
         totalPk(0),
+        totalLobs(0),
         options(newOptions),
         maxSegCol(0),
         guardSegNo(-1),
@@ -73,6 +74,10 @@ namespace OpenLogReplicator {
         pk.clear();
         columns.clear();
         partitions.clear();
+
+        for (OracleLob* lob: lobs)
+            delete lob;
+        lobs.clear();
     }
 
     void OracleObject::addColumn(OracleColumn* column) {
@@ -92,6 +97,11 @@ namespace OpenLogReplicator {
             maxSegCol = column->segCol;
 
         columns.push_back(column);
+    }
+
+    void OracleObject::addLob(OracleLob* lob) {
+        ++totalLobs;
+        lobs.push_back(lob);
     }
 
     void OracleObject::addPartition(typeObj partitionObj, typeDataObj partitionDataObj) {
