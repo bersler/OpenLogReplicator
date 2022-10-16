@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
-#include "typeINTX.h"
+#include "typeIntX.h"
 #include "typeRowId.h"
 
 #ifndef SYS_USER_H_
@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         typeRowId rowId;
         typeUser user;
         std::string name;
-        typeINTX spare1;            // NULL
+        typeIntX spare1;            // NULL
         bool single;
         bool touched;
     };

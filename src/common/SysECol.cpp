@@ -26,13 +26,11 @@ namespace OpenLogReplicator {
     }
 
     bool SysEColKey::operator==(const SysEColKey& other) const {
-        return (other.tabObj == tabObj) &&
-                (other.colNum == colNum);
+        return (other.tabObj == tabObj) && (other.colNum == colNum);
     }
 
     bool SysEColKey::operator!=(const SysEColKey& other) const {
-        return (other.tabObj != tabObj) ||
-                (other.colNum != colNum);
+        return (other.tabObj != tabObj) || (other.colNum != colNum);
     }
 
     SysECol::SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId, bool newTouched) :
@@ -44,13 +42,12 @@ namespace OpenLogReplicator {
     }
 
     bool SysECol::operator!=(const SysECol& other) const {
-        return other.rowId != rowId || other.tabObj != tabObj || other.colNum != colNum || other.guardId != guardId;
+        return (other.rowId != rowId) || (other.tabObj != tabObj) || (other.colNum != colNum) || (other.guardId != guardId);
     }
 }
 
 namespace std {
     size_t std::hash<OpenLogReplicator::SysEColKey>::operator()(const OpenLogReplicator::SysEColKey &sysEColKey) const {
-        return hash<typeObj>()(sysEColKey.tabObj) ^
-               hash<typeCol>()(sysEColKey.colNum);
+        return hash<typeObj>()(sysEColKey.tabObj) ^ hash<typeCol>()(sysEColKey.colNum);
     }
 }

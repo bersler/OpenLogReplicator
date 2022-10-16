@@ -23,7 +23,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../builder/Builder.h"
 #include "../common/OracleColumn.h"
-#include "../common/OracleObject.h"
+#include "../common/OracleTable.h"
 #include "../common/OracleIncarnation.h"
 #include "../common/RuntimeException.h"
 #include "../metadata/Metadata.h"
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
 
     const char* ReplicatorOnline::SQL_GET_SYS_LOB_USER(
             "SELECT"
-            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#"
+            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#, L.TS#"
             " FROM"
             "   SYS.OBJ$ AS OF SCN :i O"
             " JOIN"
@@ -307,11 +307,67 @@ namespace OpenLogReplicator {
 
     const char* ReplicatorOnline::SQL_GET_SYS_LOB_OBJ(
             "SELECT"
-            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#"
+            "   L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#, L.TS#"
             " FROM"
-            "   SYS.LOB$ AS OF SCN :j L"
+            "   SYS.LOB$ AS OF SCN :i L"
+            " WHERE"
+            "   L.OBJ# = :j");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_COMP_PART_USER(
+            "SELECT"
+            "   LCP.ROWID, LCP.PARTOBJ#, LCP.LOBJ#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.LOB$ AS OF SCN :j L ON"
+            "     O.OBJ# = L.OBJ#"
+            " JOIN"
+            "   SYS.LOBCOMPPART$ AS OF SCN :k LCP ON"
+            "     LCP.LOBJ# = L.LOBJ#"
+            " WHERE"
+            "   O.OWNER# = :l");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_COMP_PART_OBJ(
+            "SELECT"
+            "   LCP.ROWID, LCP.PARTOBJ#, LCP.LOBJ#"
+            " FROM"
+            "   SYS.LOB$ AS OF SCN :i L"
+            " JOIN"
+            "   SYS.LOBCOMPPART$ AS OF SCN :j LCP ON"
+            "     LCP.LOBJ# = L.LOBJ#"
             " WHERE"
             "   L.OBJ# = :k");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_FRAG_USER(
+            "SELECT"
+            "   LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :i O"
+            " JOIN"
+            "   SYS.LOB$ AS OF SCN :j L ON"
+            "     O.OBJ# = L.OBJ#"
+            " JOIN"
+            "   SYS.LOBCOMPPART$ AS OF SCN :k LCP ON"
+            "     LCP.LOBJ# = L.LOBJ#"
+            " JOIN"
+            "   SYS.LOBFRAG$ AS OF SCN :l LF ON"
+            "     LCP.PARTOBJ# = LF.PARENTOBJ#"
+            " WHERE"
+            "   O.OWNER# = :m");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_LOB_FRAG_OBJ(
+            "SELECT"
+            "   LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#"
+            " FROM"
+            "   SYS.LOB$ AS OF SCN :i L"
+            " JOIN"
+            "   SYS.LOBCOMPPART$ AS OF SCN :j LCP ON"
+            "     LCP.LOBJ# = L.LOBJ#"
+            " JOIN"
+            "   SYS.LOBFRAG$ AS OF SCN :k LF ON"
+            "     LCP.PARTOBJ# = LF.PARENTOBJ#"
+            " WHERE"
+            "   L.OBJ# = :l");
 
     const char* ReplicatorOnline::SQL_GET_SYS_OBJ_USER(
             "SELECT"
@@ -410,6 +466,12 @@ namespace OpenLogReplicator {
             "   SYS.TABSUBPART$ AS OF SCN :j TSP"
             " WHERE"
             "   TSP.OBJ# = :k");
+
+    const char* ReplicatorOnline::SQL_GET_SYS_TS(
+            "SELECT"
+            "   T.ROWID, T.TS#, T.NAME, T.BLOCKSIZE"
+            " FROM"
+            "   SYS.TS$ AS OF SCN :i T");
 
     const char* ReplicatorOnline::SQL_GET_SYS_USER(
             "SELECT"
@@ -518,7 +580,7 @@ namespace OpenLogReplicator {
                 }
 
                 INFO("version: " << std::dec << banner << ", context: " << metadata->context << ", resetlogs: " << std::dec << metadata->resetlogs <<
-                     ", activation: " << metadata->activation << ", con_id: " << metadata->conId << ", con_name: " << metadata->conName)
+                        ", activation: " << metadata->activation << ", con_id: " << metadata->conId << ", con_name: " << metadata->conName)
             } else {
                 throw RuntimeException("trying to read SYS.V_$DATABASE");
             }
@@ -531,11 +593,14 @@ namespace OpenLogReplicator {
             checkTableForGrantsFlashback("SYS.DEFERRED_STG$", currentScn);
             checkTableForGrantsFlashback("SYS.ECOL$", currentScn);
             checkTableForGrantsFlashback("SYS.LOB$", currentScn);
+            checkTableForGrantsFlashback("SYS.LOBCOMPPART$", currentScn);
+            checkTableForGrantsFlashback("SYS.LOBFRAG$", currentScn);
             checkTableForGrantsFlashback("SYS.OBJ$", currentScn);
             checkTableForGrantsFlashback("SYS.TAB$", currentScn);
             checkTableForGrantsFlashback("SYS.TABCOMPART$", currentScn);
             checkTableForGrantsFlashback("SYS.TABPART$", currentScn);
             checkTableForGrantsFlashback("SYS.TABSUBPART$", currentScn);
+            checkTableForGrantsFlashback("SYS.TS$", currentScn);
             checkTableForGrantsFlashback("SYS.USER$", currentScn);
         }
 
@@ -796,10 +861,38 @@ namespace OpenLogReplicator {
         metadata->schema->purge();
         metadata->schema->scn = metadata->firstDataScn;
         metadata->firstSchemaScn = metadata->firstDataScn;
+        readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
 
         for (SchemaElement* element : metadata->schemaElements)
             createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys,
                                  element->keysStr, element->options);
+    }
+
+    void ReplicatorOnline::readSystemDictionariesMetadata(Schema* schema, typeScn targetScn) {
+        DEBUG("- reading metadata")
+
+        try {
+            DatabaseStatement stmtTs(conn);
+
+            // Reading SYS.TS$
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TS)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            stmtTs.createStatement(SQL_GET_SYS_TS);
+            stmtTs.bindUInt64(1, targetScn);
+            char tsRowid[19]; stmtTs.defineString(1, tsRowid, sizeof(tsRowid));
+            typeTs tsTs; stmtTs.defineUInt32(2, tsTs);
+            char tsName[129]; stmtTs.defineString(3, tsName, sizeof(tsName));
+            uint32_t tsBlockSize; stmtTs.defineUInt32(4, tsBlockSize);
+
+            int64_t retTs = stmtTs.executeQuery();
+            while (retTs) {
+                schema->dictSysTsAdd(tsRowid, tsTs, tsName, tsBlockSize);
+                retTs = stmtTs.next();
+            }
+        } catch (RuntimeException& ex) {
+            ERROR(ex.msg)
+            throw RuntimeException("Error reading metadata from flashback, try some later scn for start");
+        }
     }
 
     void ReplicatorOnline::readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj) {
@@ -909,8 +1002,9 @@ namespace OpenLogReplicator {
 
         int64_t colRet = stmtCol.executeQuery();
         while (colRet) {
-            schema->dictSysColAdd(colRowid, colObj, colCol, colSegCol, colIntCol, colName, colType, colLength, colPrecision, colScale, colCharsetForm,
-                    colCharsetId, colNull, colProperty1, colProperty2);
+            schema->dictSysColAdd(colRowid, colObj, colCol, colSegCol, colIntCol, colName, colType, colLength,
+                                  colPrecision, colScale, colCharsetForm, colCharsetId, colNull, colProperty1,
+                                  colProperty2);
             colPrecision = -1;
             colScale = -1;
             colCharsetForm = 0;
@@ -1029,11 +1123,85 @@ namespace OpenLogReplicator {
         typeCol lobCol = 0; stmtLob.defineInt16(3, lobCol);
         typeCol lobIntCol = 0; stmtLob.defineInt16(4, lobIntCol);
         typeObj lobLObj; stmtLob.defineUInt32(5, lobLObj);
+        typeTs lobTs; stmtLob.defineUInt32(6, lobTs);
 
         int64_t lobRet = stmtLob.executeQuery();
         while (lobRet) {
-            schema->dictSysLobAdd(lobRowid, lobObj, lobCol, lobIntCol, lobLObj);
+            schema->dictSysLobAdd(lobRowid, lobObj, lobCol, lobIntCol, lobLObj, lobTs);
             lobRet = stmtLob.next();
+        }
+
+        // Reading SYS.LOBCOMPPART$
+        DatabaseStatement stmtLobCompPart(conn);
+        if (obj != 0) {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_COMP_PART_OBJ)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << obj)
+            stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_OBJ);
+            stmtLobCompPart.bindUInt64(1, targetScn);
+            stmtLobCompPart.bindUInt64(2, targetScn);
+            stmtLobCompPart.bindUInt32(3, obj);
+        } else {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_COMP_PART_USER)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << user)
+            stmtLobCompPart.createStatement(SQL_GET_SYS_LOB_COMP_PART_USER);
+            stmtLobCompPart.bindUInt64(1, targetScn);
+            stmtLobCompPart.bindUInt64(2, targetScn);
+            stmtLobCompPart.bindUInt64(3, targetScn);
+            stmtLobCompPart.bindUInt32(4, user);
+        }
+
+        char lobCompPartRowid[19]; stmtLobCompPart.defineString(1, lobCompPartRowid, sizeof(lobCompPartRowid));
+        typeObj lobCompPartPartObj; stmtLobCompPart.defineUInt32(2, lobCompPartPartObj);
+        typeObj lobCompPartLObj; stmtLobCompPart.defineUInt32(3, lobCompPartLObj);
+
+        int64_t lobCompPartRet = stmtLobCompPart.executeQuery();
+        while (lobCompPartRet) {
+            schema->dictSysLobCompPartAdd(lobCompPartRowid, lobCompPartPartObj, lobCompPartLObj);
+            lobCompPartRet = stmtLobCompPart.next();
+        }
+
+        // Reading SYS.LOBFRAG$
+        DatabaseStatement stmtLobFrag(conn);
+        if (obj != 0) {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_FRAG_OBJ)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << obj)
+            stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_OBJ);
+            stmtLobFrag.bindUInt64(1, targetScn);
+            stmtLobFrag.bindUInt64(2, targetScn);
+            stmtLobFrag.bindUInt64(3, targetScn);
+            stmtLobFrag.bindUInt32(4, obj);
+        } else {
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_FRAG_USER)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM4: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM5: " << std::dec << user)
+            stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_USER);
+            stmtLobFrag.bindUInt64(1, targetScn);
+            stmtLobFrag.bindUInt64(2, targetScn);
+            stmtLobFrag.bindUInt64(3, targetScn);
+            stmtLobFrag.bindUInt64(4, targetScn);
+            stmtLobFrag.bindUInt32(5, user);
+        }
+
+        char lobFragRowid[19]; stmtLobFrag.defineString(1, lobFragRowid, sizeof(lobFragRowid));
+        typeObj lobFragFragObj; stmtLobFrag.defineUInt32(2, lobFragFragObj);
+        typeObj lobFragParentObj; stmtLobFrag.defineUInt32(3, lobFragParentObj);
+        typeTs lobFragTs; stmtLobFrag.defineUInt32(4, lobFragTs);
+
+        int64_t lobFragRet = stmtLobFrag.executeQuery();
+        while (lobFragRet) {
+            schema->dictSysLobFragAdd(lobRowid, lobFragFragObj, lobFragParentObj, lobFragTs);
+            lobFragRet = stmtLobFrag.next();
         }
 
         // Reading SYS.TAB$
@@ -1067,7 +1235,8 @@ namespace OpenLogReplicator {
 
         int64_t tabRet = stmtTab.executeQuery();
         while (tabRet) {
-            schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabCluCols, tabFlags1, tabFlags2, tabProperty1, tabProperty2);
+            schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabCluCols, tabFlags1, tabFlags2,
+                                  tabProperty1, tabProperty2);
             tabDataObj = 0;
             tabCluCols = 0;
             tabRet = stmtTab.next();
@@ -1177,6 +1346,24 @@ namespace OpenLogReplicator {
         DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << std::dec << (uint64_t)options)
 
         try {
+            DatabaseStatement stmtTs(conn);
+
+            // Reading SYS.TS$
+            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TS)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
+            stmtTs.createStatement(SQL_GET_SYS_TS);
+            stmtTs.bindUInt64(1, targetScn);
+            char tsRowid[19]; stmtTs.defineString(1, tsRowid, sizeof(tsRowid));
+            typeTs tsTs; stmtTs.defineUInt32(2, tsTs);
+            char tsName[129]; stmtTs.defineString(3, tsName, sizeof(tsName));
+            uint32_t tsBlockSize; stmtTs.defineUInt32(4, tsBlockSize);
+
+            int64_t retTs = stmtTs.executeQuery();
+            while (retTs) {
+                schema->dictSysTsAdd(tsRowid, tsTs, tsName, tsBlockSize);
+                retTs = stmtTs.next();
+            }
+
             DatabaseStatement stmtUser(conn);
 
             // Reading SYS.USER$
@@ -1233,8 +1420,8 @@ namespace OpenLogReplicator {
 
                 int64_t objRet = stmtObj.executeQuery();
                 while (objRet) {
-                    if (schema->dictSysObjAdd(objRowid, objOwner, objObj, objDataObj, objType, objName,
-                                                    objFlags1, objFlags2, single)) {
+                    if (schema->dictSysObjAdd(objRowid, objOwner, objObj, objDataObj, objType, objName, objFlags1,
+                                              objFlags2, single)) {
                         if (single)
                             readSystemDictionariesDetails(schema, targetScn, userUser, objObj);
                     }
@@ -1252,14 +1439,14 @@ namespace OpenLogReplicator {
                 retUser = stmtUser.next();
             }
         } catch (RuntimeException& ex) {
+            ERROR(ex.msg)
             throw RuntimeException("Error reading schema from flashback, try some later scn for start");
         }
     }
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, std::string& owner, std::string& table, std::vector<std::string>& keys,
                                                 std::string& keysStr, typeOptions options) {
-        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: "
-                                                    << (uint64_t) options)
+        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options)
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
@@ -1324,7 +1511,8 @@ namespace OpenLogReplicator {
 
             int64_t ret = stmt.executeQuery();
             while (ret) {
-                auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status, resetlogs, priorIncarnation);
+                auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn, status,
+                                                resetlogs, priorIncarnation);
                 metadata->oracleIncarnations.insert(oi);
 
                 // Search prev value
@@ -1366,7 +1554,7 @@ namespace OpenLogReplicator {
                 }
                 path = pathStr;
                 onlineReader->paths.push_back(path);
-                auto *redoLog = new RedoLog(group, pathStr);
+                auto* redoLog = new RedoLog(group, pathStr);
                 metadata->redoLogs.insert(redoLog);
 
                 ret = stmt.next();
@@ -1407,7 +1595,8 @@ namespace OpenLogReplicator {
                 std::string mappedPath(path);
                 replicator->applyMapping(mappedPath);
 
-                auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata, replicator->transactionBuffer, 0, mappedPath);
+                auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                         replicator->transactionBuffer, 0, mappedPath);
                 parser->firstScn = firstScn;
                 parser->nextScn = nextScn;
                 parser->sequence = sequence;

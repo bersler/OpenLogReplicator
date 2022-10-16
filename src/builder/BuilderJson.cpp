@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/OracleColumn.h"
-#include "../common/OracleObject.h"
+#include "../common/OracleTable.h"
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
 #include "BuilderJson.h"
@@ -27,18 +27,16 @@ namespace OpenLogReplicator {
     BuilderJson::BuilderJson(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
                              uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
                              uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat, newUnknownFormat, newSchemaFormat,
-                newColumnFormat, newUnknownType, newFlushBuffer),
-                     hasPreviousValue(false),
-                     hasPreviousRedo(false),
-                     hasPreviousColumn(false) {
+        Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat,
+                newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
+                hasPreviousValue(false),
+                hasPreviousRedo(false),
+                hasPreviousColumn(false) {
     }
 
-    void BuilderJson::columnNull(OracleObject* object, typeCol col) {
-        if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
-            OracleColumn* column = object->columns[col];
-            if (column->storedAsLob)
-                return;
+    void BuilderJson::columnNull(OracleTable* table, typeCol col, bool after) {
+        if (table != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
+            OracleColumn* column = table->columns[col];
             if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
                 return;
             if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))
@@ -48,7 +46,7 @@ namespace OpenLogReplicator {
             if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
                 return;
 
-            uint64_t typeNo = object->columns[col]->type;
+            uint64_t typeNo = table->columns[col]->type;
             if (typeNo != SYS_COL_TYPE_VARCHAR
                     && typeNo != SYS_COL_TYPE_CHAR
                     && typeNo != SYS_COL_TYPE_NUMBER
@@ -57,6 +55,8 @@ namespace OpenLogReplicator {
                     && typeNo != SYS_COL_TYPE_RAW
                     && typeNo != SYS_COL_TYPE_FLOAT
                     && typeNo != SYS_COL_TYPE_DOUBLE
+                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
+                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
                     && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
@@ -67,8 +67,8 @@ namespace OpenLogReplicator {
             hasPreviousColumn = true;
 
         builderAppend('"');
-        if (object != nullptr)
-            builderAppend(object->columns[col]->name);
+        if (table != nullptr)
+            builderAppend(table->columns[col]->name);
         else {
             std::string columnName("COL_" + std::to_string(col));
             builderAppend(columnName);
@@ -262,44 +262,44 @@ namespace OpenLogReplicator {
                 builderAppend('"');
             } else {
                 builderAppend(R"("xidn":)", sizeof(R"("xidn":)") - 1);
-                appendDec(lastXid.getVal());
+                appendDec(lastXid.getData());
             }
         }
     }
 
-    void BuilderJson::appendSchema(OracleObject* object, typeDataObj dataObj) {
-        if (object == nullptr) {
+    void BuilderJson::appendSchema(OracleTable* table, typeObj obj) {
+        if (table == nullptr) {
             builderAppend(R"("schema":{"table":")", sizeof(R"("schema":{"table":")") - 1);
-            std::string objectName("OBJ_" + std::to_string(dataObj));
-            builderAppend(objectName);
+            std::string tableName("OBJ_" + std::to_string(obj));
+            builderAppend(tableName);
             builderAppend(R"("})");
             return;
         }
 
         builderAppend(R"("schema":{"owner":")", sizeof(R"("schema":{"owner":")") - 1);
-        builderAppend(object->owner);
+        builderAppend(table->owner);
         builderAppend(R"(","table":")", sizeof(R"(","table":")") - 1);
-        builderAppend(object->name);
+        builderAppend(table->name);
         builderAppend('"');
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0) {
             builderAppend(R"(,"obj":)", sizeof(R"(,"obj":)") - 1);
-            appendDec(object->obj);
+            appendDec(table->obj);
         }
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
             if ((schemaFormat & SCHEMA_FORMAT_REPEATED) == 0) {
-                if (objects.count(object) > 0)
+                if (tables.count(table) > 0)
                     return;
                 else
-                    objects.insert(object);
+                    tables.insert(table);
             }
 
             builderAppend(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
 
             bool hasPrev = false;
-            for (typeCol column = 0; column < (typeCol)object->columns.size(); ++column) {
-                if (object->columns[column] == nullptr)
+            for (typeCol column = 0; column < (typeCol)table->columns.size(); ++column) {
+                if (table->columns[column] == nullptr)
                     continue;
 
                 if (hasPrev)
@@ -308,20 +308,20 @@ namespace OpenLogReplicator {
                     hasPrev = true;
 
                 builderAppend(R"({"name":")", sizeof(R"({"name":")") - 1);
-                builderAppend(object->columns[column]->name);
+                builderAppend(table->columns[column]->name);
 
                 builderAppend(R"(","type":)", sizeof(R"(","type":)") - 1);
-                switch(object->columns[column]->type) {
+                switch(table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
                     builderAppend(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_NUMBER:
                     builderAppend(R"("number","precision":)", sizeof(R"("number","precision":)") - 1);
-                    appendSDec(object->columns[column]->precision);
+                    appendSDec(table->columns[column]->precision);
                     builderAppend(R"(,"scale":)", sizeof(R"(,"scale":)") - 1);
-                    appendSDec(object->columns[column]->scale);
+                    appendSDec(table->columns[column]->scale);
                     break;
 
                 case SYS_COL_TYPE_LONG: // long, not supported
@@ -334,7 +334,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_RAW:
                     builderAppend(R"("raw","length":)", sizeof(R"("raw","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_LONG_RAW: // Not supported
@@ -347,7 +347,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_CHAR:
                     builderAppend(R"("char","length":)", sizeof(R"("char","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_FLOAT:
@@ -358,42 +358,42 @@ namespace OpenLogReplicator {
                     builderAppend(R"("binary_double")", sizeof(R"("binary_double")") - 1);
                     break;
 
-                case SYS_COL_TYPE_CLOB: // Not supported
+                case SYS_COL_TYPE_CLOB:
                     builderAppend(R"("clob")", sizeof(R"("clob")") - 1);
                     break;
 
-                case SYS_COL_TYPE_BLOB: // Not supported
+                case SYS_COL_TYPE_BLOB:
                     builderAppend(R"("blob")", sizeof(R"("blob")") - 1);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP:
                     builderAppend(R"("timestamp","length":)", sizeof(R"("timestamp","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
                     builderAppend(R"("timestamp with time zone","length":)", sizeof(R"("timestamp with time zone","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     builderAppend(R"("interval year to month","length":)", sizeof(R"("interval year to month","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
                     builderAppend(R"("interval day to second","length":)", sizeof(R"("interval day to second","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_URAWID:
                     builderAppend(R"("urawid","length":)", sizeof(R"("urawid","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
                     builderAppend(R"("timestamp with local time zone","length":)", sizeof(R"("timestamp with local time zone","length":)") - 1);
-                    appendDec(object->columns[column]->length);
+                    appendDec(table->columns[column]->length);
                     break;
 
                 default:
@@ -402,7 +402,7 @@ namespace OpenLogReplicator {
                 }
 
                 builderAppend(R"(,"nullable":)", sizeof(R"(,"nullable":)") - 1);
-                if (object->columns[column]->nullable)
+                if (table->columns[column]->nullable)
                     builderAppend('1');
                 else
                     builderAppend('0');
@@ -494,7 +494,8 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderJson::processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused))) {
+    void BuilderJson::processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                    typeXid xid  __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -504,8 +505,8 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -522,9 +523,9 @@ namespace OpenLogReplicator {
         }
 
         builderAppend(R"({"op":"c",)", sizeof(R"({"op":"c",)") - 1);
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendAfter(object);
+        appendAfter(lobCtx, table);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -534,7 +535,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid  __attribute__((unused))) {
+    void BuilderJson::processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                    typeXid xid  __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -544,8 +546,8 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -562,10 +564,10 @@ namespace OpenLogReplicator {
         }
 
         builderAppend(R"({"op":"u",)", sizeof(R"({"op":"u",)") - 1);
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(object);
-        appendAfter(object);
+        appendBefore(lobCtx, table);
+        appendAfter(lobCtx, table);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -575,7 +577,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+    void BuilderJson::processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                    typeXid xid __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -585,8 +588,8 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -603,9 +606,9 @@ namespace OpenLogReplicator {
         }
 
         builderAppend(R"({"op":"d",)", sizeof(R"({"op":"d",)") - 1);
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(object);
+        appendBefore(lobCtx, table);
         builderAppend('}');
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
@@ -615,7 +618,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderJson::processDdl(OracleObject* object, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
+    void BuilderJson::processDdl(OracleTable* table, typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)),
+                                 uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBeginMessage();
 
@@ -625,8 +629,8 @@ namespace OpenLogReplicator {
             else
                 hasPreviousRedo = true;
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 

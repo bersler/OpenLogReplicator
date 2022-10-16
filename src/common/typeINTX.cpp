@@ -1,4 +1,4 @@
-/* Definition of type uint256_t
+/* Definition of type typeIntX
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -22,30 +22,30 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <string>
 
 #include "types.h"
-#include "typeINTX.h"
+#include "typeIntX.h"
 
 namespace OpenLogReplicator {
-    typeINTX typeINTX::BASE10[TYPE_INTX_DIGITS][10];
+    typeIntX typeIntX::BASE10[TYPE_INTX_DIGITS][10];
 
-    typeINTX::typeINTX() {
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
+    typeIntX::typeIntX() {
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
             data[i] = 0;
     }
 
-    typeINTX::typeINTX(uint64_t val) {
-        data[0] = val;
-        for (uint64_t i = 1; i < TYPE_INTX_LEN; ++i)
+    typeIntX::typeIntX(uint64_t other) {
+        data[0] = other;
+        for (uint64_t i = 1; i < TYPE_INTX_LENGTH; ++i)
             data[i] = 0;
     }
 
-    typeINTX::typeINTX(uint64_t val1, uint64_t val2) {
-        data[0] = val1;
-        data[1] = val2;
-        for (uint64_t i = 2; i < TYPE_INTX_LEN; ++i)
+    typeIntX::typeIntX(uint64_t other1, uint64_t other2) {
+        data[0] = other1;
+        data[1] = other2;
+        for (uint64_t i = 2; i < TYPE_INTX_LENGTH; ++i)
             data[i] = 0;
     }
 
-    void typeINTX::initializeBASE10() {
+    void typeIntX::initializeBASE10() {
         memset((void*)BASE10, 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
             BASE10[0][digit] = digit;
@@ -58,108 +58,108 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool typeINTX::operator!=(const typeINTX& other) const {
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
+    bool typeIntX::operator!=(const typeIntX& other) const {
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
             if (this->data[i] != other.data[i])
                 return true;
         return false;
     }
 
-    bool typeINTX::operator==(const typeINTX& other) const {
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
+    bool typeIntX::operator==(const typeIntX& other) const {
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
             if (this->data[i] != other.data[i])
                 return false;
         return true;
     }
 
-    typeINTX& typeINTX::operator+=(const typeINTX& val) {
+    typeIntX& typeIntX::operator+=(const typeIntX& other) {
         uint64_t carry = 0;
 
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i) {
-            if (this->data[i] + val.data[i] + carry < (this->data[i] | val.data[i] | carry)) {
-                this->data[i] += val.data[i] + carry;
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i) {
+            if (this->data[i] + other.data[i] + carry < (this->data[i] | other.data[i] | carry)) {
+                this->data[i] += other.data[i] + carry;
                 carry = 1;
             } else {
-                this->data[i] += val.data[i] + carry;
+                this->data[i] += other.data[i] + carry;
                 carry = 0;
             }
         }
         return *this;
     }
 
-    typeINTX& typeINTX::operator=(const typeINTX& val) {
-        if (&val != this) {
-            for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
-                this->data[i] = val.data[i];
+    typeIntX& typeIntX::operator=(const typeIntX& other) {
+        if (&other != this) {
+            for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
+                this->data[i] = other.data[i];
         }
         return *this;
     }
 
-    typeINTX& typeINTX::operator=(uint64_t val) {
-        this->data[0] = val;
-        for (uint64_t i = 1; i < TYPE_INTX_LEN; ++i)
+    typeIntX& typeIntX::operator=(uint64_t other) {
+        this->data[0] = other;
+        for (uint64_t i = 1; i < TYPE_INTX_LENGTH; ++i)
             this->data[i] = 0;
         return *this;
     }
 
-    typeINTX& typeINTX::operator=(const std::string& val) {
-        setStr(val.c_str(), val.length());
+    typeIntX& typeIntX::operator=(const std::string& other) {
+        setStr(other.c_str(), other.length());
         return *this;
     }
 
-    typeINTX& typeINTX::operator=(const char* val) {
-        setStr(val, strlen(val));
+    typeIntX& typeIntX::operator=(const char* other) {
+        setStr(other, strlen(other));
         return *this;
     }
 
-    typeINTX& typeINTX::setStr(const char* val, uint64_t length) {
+    typeIntX& typeIntX::setStr(const char* other, uint64_t length) {
         *this = (uint64_t)0;
         if (length > TYPE_INTX_DIGITS) {
-            ERROR("incorrect conversion of string: " << val)
+            ERROR("incorrect conversion of string: " << other)
             return *this;
         }
 
         for (uint64_t i = 0; i < length; ++i) {
-            if (*val < '0' || *val > '9') {
-                ERROR("incorrect conversion of string: " << val)
+            if (*other < '0' || *other > '9') {
+                ERROR("incorrect conversion of string: " << other)
                 return *this;
             }
 
-            *this += BASE10[length - i - 1][*val - '0'];
-            ++val;
+            *this += BASE10[length - i - 1][*other - '0'];
+            ++other;
         }
         return *this;
     }
 
-    uint64_t typeINTX::get64() const {
+    uint64_t typeIntX::get64() const {
         return data[0];
     }
 
-    bool typeINTX::isSet64(uint64_t mask) const {
+    bool typeIntX::isSet64(uint64_t mask) const {
         return data[0] & mask;
     }
 
-    bool typeINTX::isZero() const {
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i)
+    bool typeIntX::isZero() const {
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i)
             if (data[i] != 0)
                 return false;
         return true;
     }
 
-    typeINTX& typeINTX::set(uint64_t val1, uint64_t val2) {
-        this->data[0] = val1;
-        this->data[1] = val2;
-        for (uint64_t i = 2; i < TYPE_INTX_LEN; ++i)
+    typeIntX& typeIntX::set(uint64_t other1, uint64_t other2) {
+        this->data[0] = other1;
+        this->data[1] = other2;
+        for (uint64_t i = 2; i < TYPE_INTX_LENGTH; ++i)
             this->data[i] = 0;
         return *this;
     }
 
-    std::ostream& operator<<(std::ostream& os, const typeINTX& val) {
+    std::ostream& operator<<(std::ostream& os, const typeIntX& other) {
         os << "[";
-        for (uint64_t i = 0; i < TYPE_INTX_LEN; ++i) {
+        for (uint64_t i = 0; i < TYPE_INTX_LENGTH; ++i) {
             if (i > 0)
                 os << ",";
-            os << std::dec << val.data[i];
+            os << std::dec << other.data[i];
         }
         os << "]";
         return os;

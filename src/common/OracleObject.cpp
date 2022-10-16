@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ConfigurationException.h"
 #include "DataException.h"
 #include "OracleColumn.h"
+#include "OracleLob.h"
 #include "OracleObject.h"
 
 namespace OpenLogReplicator {
@@ -82,9 +83,9 @@ namespace OpenLogReplicator {
 
     void OracleObject::addColumn(OracleColumn* column) {
         if (column->segCol != (typeCol)(columns.size() + 1))
-            throw DataException("trying to insert table: " + owner + "." + name + " (OBJ: " + std::to_string(obj) + ", DATAOBJ: " + std::to_string(dataObj) +
-                                ") column: " + column->name + " (COL#: " + std::to_string(column->col) + ", SEGCOL#: " + std::to_string(column->segCol) +
-                                ") on position " + std::to_string(columns.size() + 1));
+            throw DataException("trying to insert table: " + owner + "." + name + " (OBJ: " + std::to_string(obj) + ", DATAOBJ: " +
+                    std::to_string(dataObj) + ") column: " + column->name + " (COL#: " + std::to_string(column->col) + ", SEGCOL#: " +
+                    std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
             guardSegNo = column->segCol - (typeCol)1;
@@ -110,8 +111,8 @@ namespace OpenLogReplicator {
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleObject& object) {
-        os << "('" << object.owner << "'.'" << object.name << "', " << std::dec << object.obj << ", " <<
-                object.dataObj << ", " << object.cluCols << ", " << object.maxSegCol << ")" << std::endl;
+        os << "('" << object.owner << "'.'" << object.name << "', " << std::dec << object.obj << ", " << object.dataObj << ", " << object.cluCols << ", " <<
+                object.maxSegCol << ")" << std::endl;
         for (OracleColumn* column : object.columns)
             os << "     - " << *column << std::endl;
         return os;

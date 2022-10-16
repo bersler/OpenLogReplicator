@@ -272,7 +272,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.CCOL$ AS OF SCN v_SCN L
             WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -300,7 +300,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.CDEF$ AS OF SCN v_SCN D
             WHERE O.OBJ# = D.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY D.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -329,7 +329,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.COL$ AS OF SCN v_SCN C
             WHERE O.OBJ# = C.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY C.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -367,7 +367,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.DEFERRED_STG$ AS OF SCN v_SCN DS
             WHERE O.OBJ# = DS.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$','LOB$',  'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY DS.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -399,7 +399,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.ECOL$ AS OF SCN v_SCN E
             WHERE O.OBJ# = E.TABOBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY E.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -422,11 +422,11 @@ BEGIN
     DBMS_OUTPUT.PUT('"sys-lob":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_LOB IN (
-            SELECT L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#
+            SELECT L.ROWID, L.OBJ#, L.COL#, L.INTCOL#, L.LOBJ#, L.TS#
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L
             WHERE O.OBJ# = L.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY L.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -446,8 +446,73 @@ BEGIN
                 ',"obj":' || v_SYS_LOB.OBJ# ||
                 ',"col":' || v_SYS_LOB.COL# ||
                 ',"int-col":' || v_SYS_LOB.INTCOL# ||
-                ',"obj":' || v_SYS_LOB.OBJ# ||
-                ',"l-obj":' || v_SYS_LOB.LOBJ# || '}');
+                ',"l-obj":' || v_SYS_LOB.LOBJ# ||
+                ',"ts":' || v_SYS_LOB.TS# || '}');
+        END LOOP;
+    END LOOP;
+    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.NEW_LINE();
+
+    v_PREV := FALSE;
+    DBMS_OUTPUT.PUT('"sys-lob-comp-part":[');
+    FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
+        FOR v_SYS_LOB_COMP_PART IN (
+            SELECT LCP.ROWID, LCP.PARTOBJ#, LCP.LOBJ#
+            FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBCOMPPART$ AS OF SCN v_SCN LCP
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND O.OWNER# = v_USER_LIST(I) AND
+                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            ORDER BY LCP.ROWID
+        ) LOOP
+            IF v_PREV = TRUE THEN
+                DBMS_OUTPUT.PUT(',');
+            ELSE
+                v_PREV := TRUE;
+            END IF;
+
+            IF v_USERNAME_LIST(I) = 'SYS' THEN
+                v_OBJECT_SINGLE := v_SYS_SINGLE;
+            ELSE
+                v_OBJECT_SINGLE := 0;
+            END IF;
+
+            DBMS_OUTPUT.NEW_LINE();
+            DBMS_OUTPUT.PUT('{"row-id":"' || v_SYS_LOB_COMP_PART.ROWID || '"' ||
+                ',"part-obj":' || v_SYS_LOB_COMP_PART.PARTOBJ# ||
+                ',"l-obj":' || v_SYS_LOB_COMP_PART.LOBJ# || '}');
+        END LOOP;
+    END LOOP;
+    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.NEW_LINE();
+
+    v_PREV := FALSE;
+    DBMS_OUTPUT.PUT('"sys-lob-frag":[');
+    FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
+        FOR v_SYS_LOB_FRAG IN (
+            SELECT LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#
+            FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBCOMPPART$ AS OF SCN v_SCN LCP, SYS.LOBFRAG$ AS OF SCN v_SCN LF
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND LCP.PARTOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I) AND
+                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            ORDER BY LF.ROWID
+        ) LOOP
+            IF v_PREV = TRUE THEN
+                DBMS_OUTPUT.PUT(',');
+            ELSE
+                v_PREV := TRUE;
+            END IF;
+
+            IF v_USERNAME_LIST(I) = 'SYS' THEN
+                v_OBJECT_SINGLE := v_SYS_SINGLE;
+            ELSE
+                v_OBJECT_SINGLE := 0;
+            END IF;
+
+            DBMS_OUTPUT.NEW_LINE();
+            DBMS_OUTPUT.PUT('{"row-id":"' || v_SYS_LOB_FRAG.ROWID || '"' ||
+                ',"frag-obj":' || v_SYS_LOB_FRAG.FRAGOBJ# ||
+                ',"parent-obj":' || v_SYS_LOB_FRAG.PARENTOBJ# ||
+                ',"ts":' || v_SYS_LOB_FRAG.TS# || '}');
         END LOOP;
     END LOOP;
     DBMS_OUTPUT.PUT('],');
@@ -461,7 +526,7 @@ BEGIN
             MOD(TRUNC(NVL(O.FLAGS, 0) / 18446744073709551616), 18446744073709551616) AS FLAGS2
             FROM SYS.OBJ$ AS OF SCN v_SCN O WHERE O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY O.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -500,7 +565,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TAB$ AS OF SCN v_SCN T
             WHERE O.OBJ# = T.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY T.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -535,7 +600,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABCOMPART$ AS OF SCN v_SCN TCP
             WHERE O.OBJ# = TCP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TCP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -568,7 +633,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABPART$ AS OF SCN v_SCN TP
             WHERE O.OBJ# = TP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -601,7 +666,7 @@ BEGIN
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TABSUBPART$ AS OF SCN v_SCN TSP
             WHERE O.OBJ# = TSP.OBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
-                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'USER$'))
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
             ORDER BY TSP.ROWID
         ) LOOP
             IF v_PREV = TRUE THEN
@@ -622,6 +687,28 @@ BEGIN
                 ',"data-obj":' || v_SYS_TABSUBPART.DATAOBJ# ||
                 ',"p-obj":' || v_SYS_TABSUBPART.POBJ# || '}');
         END LOOP;
+    END LOOP;
+    DBMS_OUTPUT.PUT('],');
+    DBMS_OUTPUT.NEW_LINE();
+
+    v_PREV := FALSE;
+    DBMS_OUTPUT.PUT('"sys-ts":[');
+    FOR v_SYS_TS IN (
+        SELECT T.ROWID, T.TS#, T.NAME, T.BLOCKSIZE
+        FROM SYS.TS$ AS OF SCN v_SCN T
+        ORDER BY T.ROWID
+    ) LOOP
+        IF v_PREV = TRUE THEN
+            DBMS_OUTPUT.PUT(',');
+        ELSE
+            v_PREV := TRUE;
+        END IF;
+
+        DBMS_OUTPUT.NEW_LINE();
+        DBMS_OUTPUT.PUT('{"row-id":"' || v_SYS_TS.ROWID || '"' ||
+            ',"ts":' || v_SYS_TS.TS# ||
+            ',"name":"' || v_SYS_TS.NAME || '"' ||
+            ',"block-size":' || v_SYS_TS.BLOCKSIZE || '}');
     END LOOP;
     DBMS_OUTPUT.PUT('],');
     DBMS_OUTPUT.NEW_LINE();

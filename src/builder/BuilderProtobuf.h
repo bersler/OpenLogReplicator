@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include "../common/OracleObject.h"
+#include "../common/OracleTable.h"
 #include "../common/OraProtoBuf.pb.h"
 #include "Builder.h"
 
@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
         pb::Payload* payloadPB;
         pb::Schema* schemaPB;
 
-        void columnNull(OracleObject* object, typeCol col);
+        void columnNull(OracleTable* table, typeCol col, bool after);
         void columnFloat(std::string& columnName, float value) override;
         void columnDouble(std::string& columnName, double value) override;
         void columnString(std::string& columnName) override;
@@ -41,20 +41,21 @@ namespace OpenLogReplicator {
         void columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(bool first, bool showXid);
-        void appendSchema(OracleObject* object, typeDataObj dataObj);
+        void appendSchema(OracleTable* table, typeObj obj);
 
-        void appendAfter(OracleObject* object) {
-            if (columnFormat > 0 && object != nullptr) {
-                for (typeCol column = 0; column < object->maxSegCol; ++column) {
+        void appendAfter(LobCtx* lobCtx, OracleTable* table) {
+            if (columnFormat > 0 && table != nullptr) {
+                for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_AFTER] != nullptr) {
                         if (lengths[column][VALUE_AFTER] > 0) {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
+                            processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], true,
+                                         compressedAfter);
                         } else {
                             payloadPB->add_after();
                             valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                            columnNull(object, column);
+                            columnNull(table, column, true);
                         }
                     }
                 }
@@ -72,11 +73,12 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_AFTER] > 0) {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                processValue(object, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], compressedAfter);
+                                processValue(lobCtx, table, column, values[column][VALUE_AFTER], lengths[column][VALUE_AFTER], true,
+                                             compressedAfter);
                             } else {
                                 payloadPB->add_after();
                                 valuePB = payloadPB->mutable_after(payloadPB->after_size() - 1);
-                                columnNull(object, column);
+                                columnNull(table, column, true);
                             }
                         }
                     }
@@ -84,18 +86,19 @@ namespace OpenLogReplicator {
             }
         }
 
-        void appendBefore(OracleObject* object) {
-            if (columnFormat > 0 && object != nullptr) {
-                for (typeCol column = 0; column < object->maxSegCol; ++column) {
+        void appendBefore(LobCtx* lobCtx, OracleTable* table) {
+            if (columnFormat > 0 && table != nullptr) {
+                for (typeCol column = 0; column < table->maxSegCol; ++column) {
                     if (values[column][VALUE_BEFORE] != nullptr) {
                         if (lengths[column][VALUE_BEFORE] > 0) {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
+                            processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], false,
+                                         compressedBefore);
                         } else {
                             payloadPB->add_before();
                             valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                            columnNull(object, column);
+                            columnNull(table, column, false);
                         }
                     }
                 }
@@ -113,11 +116,12 @@ namespace OpenLogReplicator {
                             if (lengths[column][VALUE_BEFORE] > 0) {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                processValue(object, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], compressedBefore);
+                                processValue(lobCtx, table, column, values[column][VALUE_BEFORE], lengths[column][VALUE_BEFORE], false,
+                                             compressedBefore);
                             } else {
                                 payloadPB->add_before();
                                 valuePB = payloadPB->mutable_before(payloadPB->before_size() - 1);
-                                columnNull(object, column);
+                                columnNull(table, column, false);
                             }
                         }
                     }
@@ -132,10 +136,11 @@ namespace OpenLogReplicator {
         }
 
         static void numToString(uint64_t value, char* buf, uint64_t length);
-        void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
-        void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
-        void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
-        void processDdl(OracleObject* object, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength) override;
+        void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
+        void processDdl(OracleTable* table, typeDataObj dataObj, uint16_t type, uint16_t seq, const char* operation, const char* sql, uint64_t sqlLength)
+                override;
         void processBeginMessage() override;
 
     public:

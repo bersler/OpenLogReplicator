@@ -64,6 +64,7 @@ namespace OpenLogReplicator {
             onlineData(false),
             suppLogDbPrimary(false),
             suppLogDbAll(false),
+            logArchiveFormatCustom(false),
             conId(newConId),
             logArchiveFormat("o1_mf_%t_%s_%h_.arc"),
             defaultCharacterMapId(0),
@@ -298,8 +299,8 @@ namespace OpenLogReplicator {
 
         std::string checkpointName = database + "-chkpt-" + std::to_string(lastCheckpointScn);
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << std::dec << lastCheckpointScn << " time: " <<
-                               lastCheckpointTime.getVal() << " seq: " << lastSequence << " offset: " << lastCheckpointOffset)
+        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writing scn: " << std::dec << lastCheckpointScn << " time: " << lastCheckpointTime.getVal() << " seq: " <<
+                lastSequence << " offset: " << lastCheckpointOffset)
         if (!stateWrite(checkpointName, ss)) {
             WARNING("error writing checkpoint to " << checkpointName)
         }
@@ -452,7 +453,6 @@ namespace OpenLogReplicator {
         std::string name("base-" + ctx->versionStr);
 
         INFO("reading adaptive schema from: " << name + ".json");
-        // TODO: change
         std::string nlsCharset = "AL32UTF8";
         std::string nlsNcharCharset = "AL16UTF16";
         setNlsCharset(nlsCharset, nlsNcharCharset);

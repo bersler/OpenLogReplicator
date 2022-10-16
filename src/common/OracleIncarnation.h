@@ -34,8 +34,8 @@ namespace OpenLogReplicator {
 
         bool current;
 
-        OracleIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus,
-                          typeResetlogs newResetlogs, uint32_t newPriorIncarnation);
+        OracleIncarnation(uint32_t newIncarnation, typeScn newResetlogsScn, typeScn newPriorResetlogsScn, const char* newStatus, typeResetlogs newResetlogs,
+                          uint32_t newPriorIncarnation);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i);
     };

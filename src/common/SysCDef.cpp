@@ -28,7 +28,9 @@ namespace OpenLogReplicator {
     bool SysCDefKey::operator<(const SysCDefKey& other) const {
         if (other.obj > obj)
             return true;
-        if (other.obj == obj && other.con > con)
+        if (other.obj < obj)
+            return false;
+        if (other.con > con)
             return true;
         return false;
     }
@@ -42,7 +44,7 @@ namespace OpenLogReplicator {
     }
 
     bool SysCDef::operator!=(const SysCDef& other) const {
-        return other.rowId != rowId || other.con != con || other.obj != obj || other.type != type;
+        return (other.rowId != rowId) || (other.con != con) || (other.obj != obj) || (other.type != type);
     }
 
     bool SysCDef::isPK() const {

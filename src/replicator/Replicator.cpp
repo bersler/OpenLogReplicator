@@ -75,7 +75,7 @@ namespace OpenLogReplicator {
 
     void Replicator::cleanArchList() {
         while (!archiveRedoQueue.empty()) {
-            Parser *parser = archiveRedoQueue.top();
+            Parser* parser = archiveRedoQueue.top();
             archiveRedoQueue.pop();
             delete parser;
         }
@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::run() {
-        TRACE(TRACE2_THREADS, "THREADS: REPLICATOR (" << std::hex << std::this_thread::get_id() << ") START")
+        TRACE(TRACE2_THREADS, "THREADS: replicator (" << std::hex << std::this_thread::get_id() << ") start")
 
         try {
             loadDatabaseMetadata();
@@ -186,8 +186,8 @@ namespace OpenLogReplicator {
 
                 if ((metadata->dbBlockChecksum == "OFF" || metadata->dbBlockChecksum == "FALSE") && !DISABLE_CHECKS(DISABLE_CHECKS_BLOCK_SUM)) {
                     WARNING("HINT: set DB_BLOCK_CHECKSUM = TYPICAL on the database"
-                            " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
-                            << std::dec << DISABLE_CHECKS_BLOCK_SUM << " for the reader")
+                            " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: " << std::dec <<
+                            DISABLE_CHECKS_BLOCK_SUM << " for the reader")
                 }
             } while (metadata->status == METADATA_STATUS_INITIALIZE);
 
@@ -228,11 +228,10 @@ namespace OpenLogReplicator {
         INFO("Oracle replicator for: " << database << " is shutting down")
 
         ctx->replicatorFinished = true;
-        // readerDropAll();
         INFO("Oracle replicator for: " << database << " is shut down, allocated at most " << std::dec <<
                 ctx->getMaxUsedMemory() << "MB memory, max disk read buffer: " << (ctx->buffersMaxUsed * MEMORY_CHUNK_SIZE_MB) << "MB")
 
-        TRACE(TRACE2_THREADS, "THREADS: Replicator (" << std::hex << std::this_thread::get_id() << ") STOP")
+        TRACE(TRACE2_THREADS, "THREADS: replicator (" << std::hex << std::this_thread::get_id() << ") stop")
     }
 
     Reader* Replicator::readerCreate(int64_t group) {
@@ -264,7 +263,8 @@ namespace OpenLogReplicator {
                 applyMapping(reader->fileName);
                 if (reader->checkRedoLog()) {
                     foundPath = true;
-                    auto* parser = new Parser(ctx, builder, metadata, transactionBuffer,reader->getGroup(), reader->fileName);
+                    auto* parser = new Parser(ctx, builder, metadata, transactionBuffer,
+                                              reader->getGroup(), reader->fileName);
 
                     parser->reader = reader;
                     INFO("online redo log: " << reader->fileName)
@@ -386,7 +386,7 @@ namespace OpenLogReplicator {
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH)
                     throw RuntimeException("After mapping path length (" + std::to_string(newPathLength - sourceLength + targetLength) +
-                                           ") is too long for: " + pathBuffer);
+                            ") is too long for: " + pathBuffer);
                 path.assign(pathBuffer);
                 break;
             }
@@ -430,7 +430,7 @@ namespace OpenLogReplicator {
             struct stat fileStat;
             std::string mappedSubPath(mappedPath + "/" + ent->d_name);
             if (stat(mappedSubPath.c_str(), &fileStat)) {
-                WARNING("reading information for file: " << mappedSubPath << " - " << strerror(errno))
+                WARNING("Reading information for file: " << mappedSubPath << " - " << strerror(errno))
                 continue;
             }
 
@@ -465,8 +465,8 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
                     continue;
 
-                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata, replicator->transactionBuffer,
-                                          0, fileName);
+                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                          replicator->transactionBuffer, 0, fileName);
 
                 parser->firstScn = ZERO_SCN;
                 parser->nextScn = ZERO_SCN;
@@ -480,9 +480,8 @@ namespace OpenLogReplicator {
         }
         closedir(dir);
 
-        if (newLastCheckedDay.length() != 0 &&
-                (replicator->lastCheckedDay.length() == 0 ||
-                        (replicator->lastCheckedDay.length() > 0 && replicator->lastCheckedDay.compare(newLastCheckedDay) < 0))) {
+        if (newLastCheckedDay.length() != 0 && (replicator->lastCheckedDay.length() == 0 || (replicator->lastCheckedDay.length() > 0 &&
+                replicator->lastCheckedDay.compare(newLastCheckedDay) < 0))) {
             TRACE(TRACE2_ARCHIVE_LIST, "ARCHIVE LIST: updating last checked day to: " << newLastCheckedDay)
             replicator->lastCheckedDay = newLastCheckedDay;
         }
@@ -497,7 +496,7 @@ namespace OpenLogReplicator {
 
             struct stat fileStat;
             if (stat(mappedPath.c_str(), &fileStat)) {
-                WARNING("reading information for file: " << mappedPath << " - " << strerror(errno))
+                WARNING("Reading information for file: " << mappedPath << " - " << strerror(errno))
                 continue;
             }
 
@@ -520,8 +519,8 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
                     continue;
 
-                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata, replicator->transactionBuffer,
-                                        0, mappedPath);
+                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                          replicator->transactionBuffer, 0, mappedPath);
                 parser->firstScn = ZERO_SCN;
                 parser->nextScn = ZERO_SCN;
                 parser->sequence = sequence;
@@ -663,7 +662,7 @@ namespace OpenLogReplicator {
                     delete parser;
                     continue;
                 } else if (parser->sequence > metadata->sequence) {
-                    WARNING("couldn't find archive log for seq: " + std::to_string(metadata->sequence) + ", found: " +
+                    WARNING("Couldn't find archive log for seq: " + std::to_string(metadata->sequence) + ", found: " +
                                            std::to_string(parser->sequence) + ", sleeping " << std::dec << ctx->archReadSleepUs << " us")
                     usleep(ctx->archReadSleepUs);
                     cleanArchList();
@@ -703,8 +702,8 @@ namespace OpenLogReplicator {
                         delete parser;
                         break;
                     }
-                    throw RuntimeException(std::string("archive log processing returned: ") + Reader::REDO_CODE[ret] +
-                                           " (code: " + std::to_string(ret) + ")");
+                    throw RuntimeException(std::string("archive log processing returned: ") + Reader::REDO_CODE[ret] + " (code: " +
+                            std::to_string(ret) + ")");
                 }
 
                 // verifySchema(metadata->nextScn);
@@ -752,12 +751,13 @@ namespace OpenLogReplicator {
                         higher = true;
 
                     if (onlineRedo->reader->getSequence() == metadata->sequence &&
-                        (onlineRedo->reader->getNumBlocks() == ZERO_BLK || metadata->offset < onlineRedo->reader->getNumBlocks() * onlineRedo->reader->getBlockSize())) {
+                            (onlineRedo->reader->getNumBlocks() == ZERO_BLK || metadata->offset < onlineRedo->reader->getNumBlocks() *
+                            onlineRedo->reader->getBlockSize())) {
                         parser = onlineRedo;
                     }
 
                     TRACE(TRACE2_REDO, "REDO: " << onlineRedo->path << " is seq: " << std::dec << onlineRedo->sequence <<
-                                                ", scn: " << std::dec << onlineRedo->firstScn << ", blocks: " << std::dec << onlineRedo->reader->getNumBlocks())
+                            ", scn: " << std::dec << onlineRedo->firstScn << ", blocks: " << std::dec << onlineRedo->reader->getNumBlocks())
                 }
 
                 // All so far read, waiting for switch

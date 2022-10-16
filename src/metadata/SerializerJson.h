@@ -39,19 +39,22 @@ namespace OpenLogReplicator {
         void deserializeSysDeferredStg(Metadata* metadata, std::string &name, const rapidjson::Value &sysCDefJson);
         void deserializeSysECol(Metadata* metadata, std::string &name, const rapidjson::Value &sysEColJson);
         void deserializeSysLob(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobJson);
+        void deserializeSysLobCompPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobCompPartJson);
+        void deserializeSysLobFrag(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobFragJson);
         void deserializeSysObj(Metadata* metadata, std::string &name, const rapidjson::Value &sysObjJson);
         void deserializeSysTab(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabJson);
         void deserializeSysTabComPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabComPartJson);
         void deserializeSysTabPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabPartJson);
         void deserializeSysTabSubPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabSubPartJson);
+        void deserializeSysTs(Metadata* metadata, std::string &name, const rapidjson::Value &sysUserJson);
         void deserializeSysUser(Metadata* metadata, std::string &name, const rapidjson::Value &sysUserJson);
 
     public:
         SerializerJson();
         ~SerializerJson() override;
 
-        [[nodiscard]] bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs,
-                                       bool loadMetadata, bool storeSchema) override;
+        [[nodiscard]] bool deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs, bool loadMetadata,
+                                       bool storeSchema) override;
         void serialize(Metadata* metadata, std::stringstream &ss, bool noSchema) override;
     };
 }

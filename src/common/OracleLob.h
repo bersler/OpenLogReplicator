@@ -17,20 +17,29 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <vector>
+
 #include "types.h"
 
 #ifndef ORACLE_LOB_H_
 #define ORACLE_LOB_H_
 
 namespace OpenLogReplicator {
+    class OracleTable;
+
     class OracleLob {
     public:
+        OracleTable* table;
         typeObj obj;
         typeCol col;
         typeCol intCol;
         typeObj lObj;
+        std::vector<typeObj> lobIndexes;
 
-        OracleLob(typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj);
+        OracleLob(OracleTable* table, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj);
+        virtual ~OracleLob();
+
+        void addIndex(typeObj obj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleLob& column);
     };

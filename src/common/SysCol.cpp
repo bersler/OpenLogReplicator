@@ -28,7 +28,9 @@ namespace OpenLogReplicator {
     bool SysColSeg::operator<(const SysColSeg& other) const {
         if (other.obj > obj)
             return true;
-        if (other.obj == obj && other.segCol > segCol)
+        if (other.obj < obj)
+            return false;
+        if (other.segCol > segCol)
             return true;
         return false;
     }
@@ -41,7 +43,9 @@ namespace OpenLogReplicator {
     bool SysColKey::operator<(const SysColKey& other) const {
         if (other.obj > obj)
             return true;
-        if (other.obj == obj && other.intCol > intCol)
+        if (other.obj < obj)
+            return false;
+        if (other.intCol > intCol)
             return true;
         return false;
     }
@@ -67,9 +71,9 @@ namespace OpenLogReplicator {
     }
 
     bool SysCol::operator!=(const SysCol& other) const {
-        return other.rowId != rowId || other.obj != obj || other.col != col || other.segCol != segCol || other.intCol != intCol || other.name != name ||
-                other.type != type || other.length != length || other.precision != precision || other.scale != scale || other.charsetForm != charsetForm ||
-                other.charsetId != charsetId || other.null_ != null_ || other.property != property;
+        return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.segCol != segCol) || (other.intCol != intCol) ||
+                (other.name != name) || (other.type != type) || (other.length != length) || (other.precision != precision) || (other.scale != scale) ||
+                (other.charsetForm != charsetForm) || (other.charsetId != charsetId) || (other.null_ != null_) || (other.property != property);
     }
 
     bool SysCol::isInvisible() {

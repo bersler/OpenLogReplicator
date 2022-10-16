@@ -33,8 +33,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Reader.h"
 
 namespace OpenLogReplicator {
-    const char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "FINISHED", "STOPPED", "EMPTY", "READ ERROR", "WRITE ERROR", "SEQUENCE ERROR",
-            "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR", "OTHER ERROR"};
+    const char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "FINISHED", "STOPPED", "EMPTY", "READ ERROR", "WRITE ERROR",
+                                       "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR", "OTHER ERROR"};
 
     Reader::Reader(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
         Thread(newCtx, newAlias),
@@ -166,8 +166,8 @@ namespace OpenLogReplicator {
                     if (!hintDisplayed) {
                         if (!configuredBlockSum) {
                             WARNING("HINT: set DB_BLOCK_CHECKSUM = TYPICAL on the database"
-                                    " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: "
-                                    << std::dec << DISABLE_CHECKS_BLOCK_SUM << " for the reader")
+                                    " or turn off consistency checking in OpenLogReplicator setting parameter disable-checks: " << std::dec <<
+                                    DISABLE_CHECKS_BLOCK_SUM << " for the reader")
                         }
                         hintDisplayed = true;
                     }
@@ -279,8 +279,8 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200)  // 12.1.0.0 - 12.1.0.2
             || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100)  // 12.2.0.0 - 12.2.0.1
             || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000)  // 18.0.0.0 - 18.14.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x130F0000)  // 19.0.0.0 - 19.15.0.0
-            || (compatVsn >= 0x15000000 && compatVsn <= 0x15060000)) // 21.0.0.0 - 21.6.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x13100000)  // 19.0.0.0 - 19.16.0.0
+            || (compatVsn >= 0x15000000 && compatVsn <= 0x15070000)) // 21.0.0.0 - 21.7.0.0
             version = compatVsn;
         else {
             ERROR("invalid database version (found: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn << "): " << fileName)
@@ -313,13 +313,9 @@ namespace OpenLogReplicator {
                 ctx->versionStr = std::to_string(compatVsn >> 24) + "." + std::to_string((compatVsn >> 16) & 0xFF) + "." +
                         std::to_string((compatVsn >> 8) & 0xFF);
             }
-            INFO("found redo log version: " << ctx->versionStr
-                                            << ", activation: " << std::dec << activation
-                                            << ", resetlogs: " << std::dec << resetlogs
-                                            << ", page: " << std::dec << blockSize
-                                            << ", sequence: " << std::dec << sequenceHeader
-                                            << ", SID: " << SID
-                                            << ", endian: " << (ctx->isBigEndian() ? "BIG" : "LITTLE"))
+            INFO("found redo log version: " << ctx->versionStr << ", activation: " << std::dec << activation << ", resetlogs: " << std::dec << resetlogs <<
+                    ", page: " << std::dec << blockSize << ", sequence: " << std::dec << sequenceHeader << ", SID: " << SID << ", endian: " <<
+                    (ctx->isBigEndian() ? "BIG" : "LITTLE"))
         }
 
         if (version != ctx->version) {
@@ -385,10 +381,12 @@ namespace OpenLogReplicator {
         }
 
         bufferAllocate(redoBufferNum);
-        TRACE(TRACE2_DISK, "DISK: reading#1 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << std::dec << toRead)
+        TRACE(TRACE2_DISK, "DISK: reading#1 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" <<
+                " bytes: " << std::dec << toRead)
         int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferScan, toRead);
 
-        TRACE(TRACE2_DISK, "DISK: reading#1 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << std::dec << actualRead)
+        TRACE(TRACE2_DISK, "DISK: reading#1 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " <<
+                std::dec << actualRead)
         if (actualRead < 0) {
             ret = REDO_ERROR_READ;
             return false;
@@ -494,10 +492,9 @@ namespace OpenLogReplicator {
 
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
-            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) %
-                                     ctx->readBufferMax;
+            uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
-            auto *readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
+            auto* readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
             if (*readTimeP + (time_t)ctx->redoVerifyDelayUs < loopTime) {
                 ++goodBlocks;
             } else {
@@ -523,10 +520,12 @@ namespace OpenLogReplicator {
                 return false;
             }
 
-            TRACE(TRACE2_DISK, "DISK: reading#2 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " bytes: " << std::dec << toRead)
+            TRACE(TRACE2_DISK, "DISK: reading#2 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" <<
+                    " bytes: " << std::dec << toRead)
             int64_t actualRead = redoRead(redoBufferList[redoBufferNum] + redoBufferPos, bufferEnd, toRead);
 
-            TRACE(TRACE2_DISK, "DISK: reading#2 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" << " got: " << std::dec << actualRead)
+            TRACE(TRACE2_DISK, "DISK: reading#2 " << fileName << " at (" << std::dec << bufferStart << "/" << bufferEnd << "/" << bufferScan << ")" <<
+                    " got: " << std::dec << actualRead)
             if (actualRead < 0) {
                 ERROR("reading file: " << fileName << " - " << strerror(errno))
                 ret = REDO_ERROR_READ;
@@ -721,7 +720,7 @@ namespace OpenLogReplicator {
     }
 
     void Reader::run() {
-        TRACE(TRACE2_THREADS, "THREADS: READER (" << std::hex << std::this_thread::get_id() << ") START")
+        TRACE(TRACE2_THREADS, "THREADS: reader (" << std::hex << std::this_thread::get_id() << ") start")
 
         try {
             mainLoop();
@@ -736,7 +735,7 @@ namespace OpenLogReplicator {
             fileCopyDes = -1;
         }
 
-        TRACE(TRACE2_THREADS, "THREADS: READER (" << std::hex << std::this_thread::get_id() << ") STOP")
+        TRACE(TRACE2_THREADS, "THREADS: reader (" << std::hex << std::this_thread::get_id() << ") stop")
     }
 
     void Reader::bufferAllocate(uint64_t num) {
@@ -784,7 +783,8 @@ namespace OpenLogReplicator {
                 "\tCompatibility Vsn = " << std::dec << compatVsn << "=0x" << std::hex << compatVsn << std::endl <<
                 "\tDb ID=" << std::dec << dbid << "=0x" << std::hex << dbid << ", Db Name='" << SID << "'" << std::endl <<
                 "\tActivation ID=" << std::dec << activation << "=0x" << std::hex << activation << std::endl <<
-                "\tControl Seq=" << std::dec << controlSeq << "=0x" << std::hex << controlSeq << ", File size=" << std::dec << fileSizeHeader << "=0x" << std::hex << fileSizeHeader << std::endl <<
+                "\tControl Seq=" << std::dec << controlSeq << "=0x" << std::hex << controlSeq << ", File size=" << std::dec << fileSizeHeader << "=0x" <<
+                std::hex << fileSizeHeader << std::endl <<
                 "\tFile Number=" << std::dec << fileNumber << ", Blksiz=" << std::dec << blockSize << ", File Type=2 LOG" << std::endl;
 
         typeSeq seq = ctx->read32(headerBuffer + blockSize + 8);

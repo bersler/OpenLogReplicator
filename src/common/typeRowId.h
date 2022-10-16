@@ -47,14 +47,14 @@ namespace OpenLogReplicator {
         void toString(char* str) const;
         std::string toString() const;
 
-        friend std::ostream& operator<<(std::ostream& os, const typeRowId& tran);
+        friend std::ostream& operator<<(std::ostream& os, const typeRowId& other);
     };
 }
 
 namespace std {
     template <>
     struct hash<OpenLogReplicator::typeRowId> {
-        size_t operator()(const OpenLogReplicator::typeRowId& rowId) const;
+        size_t operator()(const OpenLogReplicator::typeRowId& other) const;
     };
 }
 

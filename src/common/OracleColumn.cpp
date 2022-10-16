@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/DataException.h"
+#include "../common/SysCol.h"
 #include "OracleColumn.h"
 
 namespace OpenLogReplicator {

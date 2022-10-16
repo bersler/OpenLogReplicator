@@ -6,8 +6,12 @@ list(APPEND ListCommon
         common/OracleColumn.cpp
         common/OracleIncarnation.cpp
         common/OracleLob.cpp
-        common/OracleObject.cpp
+        common/OracleTable.cpp
+        common/typeIntX.cpp
+        common/typeLobId.cpp
         common/typeRowId.cpp
+        common/LobCtx.cpp
+        common/LobData.cpp
         common/RedoLogException.cpp
         common/RedoLogRecord.cpp
         common/RuntimeException.cpp
@@ -17,15 +21,17 @@ list(APPEND ListCommon
         common/SysDeferredStg.cpp
         common/SysECol.cpp
         common/SysLob.cpp
+        common/SysLobCompPart.cpp
+        common/SysLobFrag.cpp
         common/SysObj.cpp
         common/SysTab.cpp
         common/SysTabComPart.cpp
         common/SysTabPart.cpp
         common/SysTabSubPart.cpp
+        common/SysTs.cpp
         common/SysUser.cpp
         common/Thread.cpp
-        common/Timer.cpp
-        common/typeINTX.cpp)
+        common/Timer.cpp)
 
 list(APPEND ListReplicator
         replicator/Replicator.cpp
@@ -66,6 +72,7 @@ list(APPEND ListParser
         parser/OpCode0513.cpp
         parser/OpCode0514.cpp
         parser/OpCode0A02.cpp
+        parser/OpCode0A08.cpp
         parser/OpCode0A12.cpp
         parser/OpCode0B02.cpp
         parser/OpCode0B03.cpp
@@ -79,6 +86,7 @@ list(APPEND ListParser
         parser/OpCode0B16.cpp
         parser/OpCode1301.cpp
         parser/OpCode1801.cpp
+        parser/OpCode1A06.cpp
         parser/Parser.cpp
         parser/Transaction.cpp
         parser/TransactionBuffer.cpp)

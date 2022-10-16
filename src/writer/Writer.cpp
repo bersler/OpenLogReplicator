@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
     }
 
     void Writer::run() {
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") START")
+        TRACE(TRACE2_THREADS, "THREADS: writer (" << std::hex << std::this_thread::get_id() << ") start")
 
         INFO("writer is starting with " << getName())
 
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
 
         INFO("writer is stopping: " << getName() << ", max queue size: " << std::dec << maxQueueSize)
 
-        TRACE(TRACE2_THREADS, "THREADS: WRITER (" << std::hex << std::this_thread::get_id() << ") STOP")
+        TRACE(TRACE2_THREADS, "THREADS: writer (" << std::hex << std::this_thread::get_id() << ") stop")
     }
 
     void Writer::mainLoop() {
@@ -207,7 +207,7 @@ namespace OpenLogReplicator {
                 }
 
                 // Found something
-                msg = (BuilderMsg *) (curBuffer->data + curLength);
+                msg = (BuilderMsg*) (curBuffer->data + curLength);
 
                 if (curBuffer->length > curLength + sizeof(struct BuilderMsg) && msg->length > 0) {
                     tmpLength = curBuffer->length;
@@ -250,14 +250,13 @@ namespace OpenLogReplicator {
                     createMessage(msg);
                     sendMessage(msg);
                     curLength += length8;
-                    msg = (BuilderMsg*) (curBuffer->data + curLength);
 
                     // Message in many parts - merge & copy
                 } else {
-                    msg->data = (uint8_t*)malloc(msg->length);
+                    msg->data = new uint8_t[msg->length];
                     if (msg->data == nullptr)
                         throw RuntimeException("couldn't allocate " + std::to_string(msg->length) +
-                                               " bytes memory (for: temporary buffer for JSON message)");
+                                " bytes memory (for: temporary buffer for JSON message)");
                     msg->flags |= OUTPUT_BUFFER_ALLOCATED;
 
                     uint64_t copied = 0;
@@ -334,8 +333,8 @@ namespace OpenLogReplicator {
         }
 
         if (checkpoint.length() == 0 || document.Parse(checkpoint.c_str()).HasParseError())
-            throw RuntimeException("parsing of: " + name + " at offset: " + std::to_string(document.GetErrorOffset()) +
-                                   ", message: " + GetParseError_En(document.GetParseError()));
+            throw RuntimeException("parsing of: " + name + " at offset: " + std::to_string(document.GetErrorOffset()) + ", message: " +
+                    GetParseError_En(document.GetParseError()));
 
         const char* databaseJson = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
         if (database != databaseJson)

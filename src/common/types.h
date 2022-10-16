@@ -39,7 +39,7 @@ typedef uint64_t typeUba;
 typedef uint32_t typeSeq;
 typedef uint64_t typeScn;
 typedef uint16_t typeSubScn;
-typedef uint8_t typeSlt;
+typedef uint16_t typeSlt;
 typedef uint32_t typeSqn;
 typedef uint8_t typeRci;
 typedef int16_t typeUsn;
@@ -54,6 +54,7 @@ typedef uint64_t typeObj2;
 typedef int16_t typeCol;
 typedef uint16_t typeType;
 typedef uint32_t typeCon;
+typedef uint32_t typeTs;
 typedef uint32_t typeUser;
 typedef uint8_t  typeOptions;
 typedef uint16_t typeField;
@@ -62,7 +63,7 @@ typedef uint16_t typeUnicode16;
 typedef uint32_t typeUnicode32;
 typedef uint64_t typeUnicode;
 
-#define CONFIG_SCHEMA_VERSION                   "0.9.41"
+#define CONFIG_SCHEMA_VERSION                   "0.9.50"
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
 #define CHECKPOINT_SCHEMA_FILE_MAX_SIZE         2147483648
@@ -71,7 +72,6 @@ typedef uint64_t typeUnicode;
 #define ZERO_BLK                                ((typeBlk)0xFFFFFFFF)
 #define MEMORY_ALIGNMENT                        512
 #define MAX_PATH_LENGTH                         2048
-#define MAX_FIELD_LENGTH                        1048576
 #define MAX_NO_COLUMNS                          1000
 #define MAX_TRANSACTIONS_LIMIT                  1048576
 #define MAX_RECORDS_IN_LWN                      1048576
@@ -137,12 +137,15 @@ typedef uint64_t typeUnicode;
 #define TABLE_SYS_DEFERRED_STG                  4
 #define TABLE_SYS_ECOL                          5
 #define TABLE_SYS_LOB                           6
-#define TABLE_SYS_OBJ                           7
-#define TABLE_SYS_TAB                           8
-#define TABLE_SYS_TABPART                       9
-#define TABLE_SYS_TABCOMPART                    10
-#define TABLE_SYS_TABSUBPART                    11
-#define TABLE_SYS_USER                          12
+#define TABLE_SYS_LOB_COMP_PART                 7
+#define TABLE_SYS_LOB_FRAG                      8
+#define TABLE_SYS_OBJ                           9
+#define TABLE_SYS_TAB                           10
+#define TABLE_SYS_TABPART                       11
+#define TABLE_SYS_TABCOMPART                    12
+#define TABLE_SYS_TABSUBPART                    13
+#define TABLE_SYS_TS                            14
+#define TABLE_SYS_USER                          15
 
 #define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
 #define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
@@ -152,26 +155,16 @@ typedef uint64_t typeUnicode;
 #define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
-#define PRINTLOBID(__lobid)                     std::uppercase<<std::setfill('0')<<std::hex<<(uint64_t)__lobid[0]<<(uint64_t)__lobid[1]<<(uint64_t)__lobid[2]<<(uint64_t)__lobid[3]<<(uint64_t)__lobid[4]<<(uint64_t)__lobid[5]<<(uint64_t)__lobid[6]<<(uint64_t)__lobid[7]<<(uint64_t)__lobid[8]<<(uint64_t)__lobid[9]<<std::nouppercase
 
-#define FLAGS_XA                0x01
-#define FLAGS_XR                0x02
-#define FLAGS_CR                0x03
-#define FLAGS_KDO_KDOM2         0x80
+#define JSON_PARAMETER_LENGTH   256
+#define JSON_BROKERS_LENGTH     4096
+#define JSON_TOPIC_LENGTH       256
 
-#define FLG_KTUCF_OP0504        0x0002
-#define FLG_ROLLBACK_OP0504     0x0004
-
-#define FLG_MULTIBLOCKUNDOHEAD  0x0001
-#define FLG_MULTIBLOCKUNDOTAIL  0x0002
-#define FLG_LASTBUFFERSPLIT     0x0004
-#define FLG_BEGIN_TRANS          0x0008
-#define FLG_USERUNDODDONE       0x0010
-#define FLG_ISTEMPOBJECT        0x0020
-#define FLG_USERONLY            0x0040
-#define FLG_TABLESPACEUNDO      0x0080
-#define FLG_MULTIBLOCKUNDOMID   0x0100
-#define FLG_BUEXT               0x0800
+#define JSON_USERNAME_LENGTH    128
+#define JSON_PASSWORD_LENGTH    128
+#define JSON_SERVER_LENGTH      4096
+#define JSON_KEY_LENGTH         4096
+#define JSON_XID_LIST_LENGTH    1048576
 
 #define FB_N                    0x01
 #define FB_P                    0x02
@@ -204,25 +197,6 @@ typedef uint64_t typeUnicode;
 #define OP_DCU                  0x17
 #define OP_MRK                  0x18
 #define OP_ROWDEPENDENCIES      0x40
-
-#define KTBOP_F                 0x01
-#define KTBOP_C                 0x02
-#define KTBOP_Z                 0x03
-#define KTBOP_L                 0x04
-#define KTBOP_N                 0x06
-#define KTBOP_BLOCKCLEANOUT     0x10
-
-#define OPFLAG_BEGIN_TRANS      0x01
-
-#define JSON_PARAMETER_LENGTH   256
-#define JSON_BROKERS_LENGTH     4096
-#define JSON_TOPIC_LENGTH       256
-
-#define JSON_USERNAME_LENGTH    128
-#define JSON_PASSWORD_LENGTH    128
-#define JSON_SERVER_LENGTH      4096
-#define JSON_KEY_LENGTH         4096
-#define JSON_XID_LIST_LENGTH    1048576
 
 #define VCONTEXT_LENGTH         30
 #define VPARAMETER_LENGTH       4000

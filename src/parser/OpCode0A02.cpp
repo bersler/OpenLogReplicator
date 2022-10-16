@@ -57,6 +57,9 @@ namespace OpenLogReplicator {
             return;
         // Field: 3
 
+        redoLogRecord->indKey = fieldPos;
+        redoLogRecord->indKeyLength = fieldLength;
+
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "insert key: (" << std::dec << fieldLength << "): ";
 
@@ -74,6 +77,9 @@ namespace OpenLogReplicator {
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0202))
             return;
         // Field: 4
+
+        redoLogRecord->indKeyData = fieldPos;
+        redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "keydata: (" << std::dec << fieldLength << "): ";

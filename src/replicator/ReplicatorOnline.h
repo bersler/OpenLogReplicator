@@ -56,6 +56,10 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_ECOL11_OBJ;
         static const char* SQL_GET_SYS_LOB_USER;
         static const char* SQL_GET_SYS_LOB_OBJ;
+        static const char* SQL_GET_SYS_LOB_COMP_PART_USER;
+        static const char* SQL_GET_SYS_LOB_COMP_PART_OBJ;
+        static const char* SQL_GET_SYS_LOB_FRAG_USER;
+        static const char* SQL_GET_SYS_LOB_FRAG_OBJ;
         static const char* SQL_GET_SYS_OBJ_USER;
         static const char* SQL_GET_SYS_OBJ_NAME;
         static const char* SQL_GET_SYS_TAB_USER;
@@ -66,6 +70,7 @@ namespace OpenLogReplicator {
         static const char* SQL_GET_SYS_TABPART_OBJ;
         static const char* SQL_GET_SYS_TABSUBPART_USER;
         static const char* SQL_GET_SYS_TABSUBPART_OBJ;
+        static const char* SQL_GET_SYS_TS;
         static const char* SQL_GET_SYS_USER;
         static const char* SQL_CHECK_CONNECTION;
         bool standby;
@@ -80,6 +85,7 @@ namespace OpenLogReplicator {
         const char* getModeName() const override;
         void verifySchema(typeScn currentScn) override;
         void createSchema() override;
+        void readSystemDictionariesMetadata(Schema* schema, typeScn targetScn);
         void readSystemDictionariesDetails(Schema* schema, typeScn targetScn, typeUser user, typeObj obj);
         void readSystemDictionaries(Schema* schema, typeScn targetScn, std::string& owner, std::string& table, typeOptions options);
         void createSchemaForTable(typeScn targetScn, std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr,

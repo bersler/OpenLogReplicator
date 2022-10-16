@@ -29,19 +29,19 @@ namespace OpenLogReplicator {
     bool SysCColKey::operator<(const SysCColKey& other) const {
         if (other.obj > obj)
             return true;
-        if (other.obj == obj) {
-            if (other.intCol > intCol)
-                return true;
-            if (other.intCol == intCol) {
-                if (other.con > con)
-                    return true;
-            }
-        }
+        if (other.obj < obj)
+            return false;
+        if (other.intCol > intCol)
+            return true;
+        if (other.intCol < intCol)
+            return false;
+        if (other.con > con)
+            return true;
         return false;
     }
 
     bool SysCCol::operator!=(const SysCCol& other) const {
-        return other.rowId != rowId || other.con != con || other.intCol != intCol || other.obj != obj || other.spare1 != spare1;
+        return (other.rowId != rowId) || (other.con != con) || (other.intCol != intCol) || (other.obj != obj) || (other.spare1 != spare1);
     }
 
     SysCCol::SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12, bool newTouched) :

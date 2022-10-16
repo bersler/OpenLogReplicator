@@ -70,6 +70,7 @@ namespace OpenLogReplicator {
         bool onlineData;
         bool suppLogDbPrimary;
         bool suppLogDbAll;
+        bool logArchiveFormatCustom;
         typeConId conId;
         std::string conName;
         std::string context;

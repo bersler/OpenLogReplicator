@@ -18,18 +18,19 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "../common/OracleColumn.h"
-#include "../common/OracleObject.h"
+#include "../common/OracleTable.h"
 #include "../common/RuntimeException.h"
 #include "../common/SysCol.h"
 #include "../common/typeRowId.h"
 #include "BuilderProtobuf.h"
 
 namespace OpenLogReplicator {
-    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
-                                     uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
-                                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer) :
-            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat, newUnknownFormat, newSchemaFormat,
-                    newColumnFormat, newUnknownType, newFlushBuffer),
+    BuilderProtobuf::BuilderProtobuf(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat,
+                                     uint64_t newXidFormat, uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat,
+                                     uint64_t newUnknownFormat, uint64_t newSchemaFormat, uint64_t newColumnFormat, uint64_t newUnknownType,
+                                     uint64_t newFlushBuffer) :
+            Builder(newCtx, newLocales, newMetadata, newMessageFormat, newRidFormat, newXidFormat, newTimestampFormat, newCharFormat, newScnFormat,
+                    newUnknownFormat, newSchemaFormat, newColumnFormat, newUnknownType, newFlushBuffer),
             redoResponsePB(nullptr),
             valuePB(nullptr),
             payloadPB(nullptr),
@@ -44,9 +45,9 @@ namespace OpenLogReplicator {
         google::protobuf::ShutdownProtobufLibrary();
     }
 
-    void BuilderProtobuf::columnNull(OracleObject* object, typeCol col) {
-        if (object != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
-            OracleColumn* column = object->columns[col];
+    void BuilderProtobuf::columnNull(OracleTable* table, typeCol col, bool after) {
+        if (table != nullptr && unknownType == UNKNOWN_TYPE_HIDE) {
+            OracleColumn* column = table->columns[col];
             if (column->storedAsLob)
                 return;
             if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
@@ -58,7 +59,7 @@ namespace OpenLogReplicator {
             if (column->unused && !FLAG(REDO_FLAGS_SHOW_UNUSED_COLUMNS))
                 return;
 
-            uint64_t typeNo = object->columns[col]->type;
+            uint64_t typeNo = table->columns[col]->type;
             if (typeNo != SYS_COL_TYPE_VARCHAR
                     && typeNo != SYS_COL_TYPE_CHAR
                     && typeNo != SYS_COL_TYPE_NUMBER
@@ -67,16 +68,19 @@ namespace OpenLogReplicator {
                     && typeNo != SYS_COL_TYPE_RAW
                     && typeNo != SYS_COL_TYPE_FLOAT
                     && typeNo != SYS_COL_TYPE_DOUBLE
+                    && (typeNo != SYS_COL_TYPE_BLOB || !after)
+                    && (typeNo != SYS_COL_TYPE_CLOB || !after)
                     && typeNo != SYS_COL_TYPE_TIMESTAMP_WITH_TZ)
                 return;
         }
 
-        if (object != nullptr)
-            valuePB->set_name(object->columns[col]->name);
-        else {
+        if (table == nullptr || FLAG(REDO_FLAGS_RAW_COLUMN_DATA)) {
             std::string columnName("COL_" + std::to_string(col));
             valuePB->set_name(columnName);
+            return;
         }
+
+        valuePB->set_name(table->columns[col]->name);
     }
 
     void BuilderProtobuf::columnFloat(std::string& columnName, float value) {
@@ -117,7 +121,8 @@ namespace OpenLogReplicator {
         valuePB->set_name(columnName);
     }
 
-    void BuilderProtobuf::columnTimestamp(std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)), const char* tz __attribute__((unused))) {
+    void BuilderProtobuf::columnTimestamp(std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
+            const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
@@ -166,51 +171,51 @@ namespace OpenLogReplicator {
                 sb << (uint64_t)lastXid.sqn();
                 redoResponsePB->set_xid(sb.str());
             } else {
-                redoResponsePB->set_xidn(lastXid.getVal());
+                redoResponsePB->set_xidn(lastXid.getData());
             }
         }
     }
 
-    void BuilderProtobuf::appendSchema(OracleObject* object, typeDataObj dataObj) {
-        if (object == nullptr) {
-            std::string objectName("OBJ_" + std::to_string(dataObj));
-            schemaPB->set_name(objectName);
+    void BuilderProtobuf::appendSchema(OracleTable* table, typeObj obj) {
+        if (table == nullptr) {
+            std::string tableName("OBJ_" + std::to_string(obj));
+            schemaPB->set_name(tableName);
             return;
         }
 
-        schemaPB->set_owner(object->owner);
-        schemaPB->set_name(object->name);
+        schemaPB->set_owner(table->owner);
+        schemaPB->set_name(table->name);
 
         if ((schemaFormat & SCHEMA_FORMAT_OBJ) != 0)
-            schemaPB->set_obj(object->obj);
+            schemaPB->set_obj(table->obj);
 
         if ((schemaFormat & SCHEMA_FORMAT_FULL) != 0) {
             if ((schemaFormat & SCHEMA_FORMAT_REPEATED) == 0) {
-                if (objects.count(object) > 0)
+                if (tables.count(table) > 0)
                     return;
                 else
-                    objects.insert(object);
+                    tables.insert(table);
             }
 
             schemaPB->add_column();
             pb::Column* columnPB = schemaPB->mutable_column(schemaPB->column_size() - 1);
 
-            for (typeCol column = 0; column < (typeCol)object->columns.size(); ++column) {
-                if (object->columns[column] == nullptr)
+            for (typeCol column = 0; column < (typeCol)table->columns.size(); ++column) {
+                if (table->columns[column] == nullptr)
                     continue;
 
-                columnPB->set_name(object->columns[column]->name);
+                columnPB->set_name(table->columns[column]->name);
 
-                switch(object->columns[column]->type) {
+                switch(table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
                     columnPB->set_type(pb::VARCHAR2);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_NUMBER:
                     columnPB->set_type(pb::NUMBER);
-                    columnPB->set_precision((int32_t)object->columns[column]->precision);
-                    columnPB->set_scale((int32_t)object->columns[column]->scale);
+                    columnPB->set_precision((int32_t)table->columns[column]->precision);
+                    columnPB->set_scale((int32_t)table->columns[column]->scale);
                     break;
 
                 case SYS_COL_TYPE_LONG: // long, not supported
@@ -223,7 +228,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_RAW:
                     columnPB->set_type(pb::RAW);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_LONG_RAW: // Not supported
@@ -236,7 +241,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_CHAR:
                     columnPB->set_type(pb::CHAR);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_FLOAT:
@@ -247,42 +252,42 @@ namespace OpenLogReplicator {
                     columnPB->set_type(pb::BINARY_DOUBLE);
                     break;
 
-                case SYS_COL_TYPE_CLOB: // Not supported
+                case SYS_COL_TYPE_CLOB:
                     columnPB->set_type(pb::CLOB);
                     break;
 
-                case SYS_COL_TYPE_BLOB: // Not supported
+                case SYS_COL_TYPE_BLOB:
                     columnPB->set_type(pb::BLOB);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP:
                     columnPB->set_type(pb::TIMESTAMP);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
                     columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
                     columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_URAWID:
                     columnPB->set_type(pb::UROWID);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
                     columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
-                    columnPB->set_length((int32_t)object->columns[column]->length);
+                    columnPB->set_length((int32_t)table->columns[column]->length);
                     break;
 
                 default:
@@ -290,7 +295,7 @@ namespace OpenLogReplicator {
                     break;
                 }
 
-                columnPB->set_nullable(object->columns[column]->nullable);
+                columnPB->set_nullable(table->columns[column]->nullable);
             }
         }
     }
@@ -328,7 +333,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+    void BuilderProtobuf::processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                        typeXid xid __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -336,8 +342,8 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException("PB insert processing failed, message missing, internal error");
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -350,9 +356,9 @@ namespace OpenLogReplicator {
         payloadPB->set_op(pb::INSERT);
 
         schemaPB = payloadPB->mutable_schema();
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendAfter(object);
+        appendAfter(lobCtx, table);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;
@@ -368,7 +374,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+    void BuilderProtobuf::processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                        typeXid xid __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -376,8 +383,8 @@ namespace OpenLogReplicator {
             if (redoResponsePB == nullptr)
                 throw RuntimeException("PB update processing failed, message missing, internal error");
         } else {
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -390,10 +397,10 @@ namespace OpenLogReplicator {
         payloadPB->set_op(pb::UPDATE);
 
         schemaPB = payloadPB->mutable_schema();
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(object);
-        appendAfter(object);
+        appendBefore(lobCtx, table);
+        appendAfter(lobCtx, table);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;
@@ -409,7 +416,8 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid __attribute__((unused))) {
+    void BuilderProtobuf::processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot,
+                                        typeXid xid __attribute__((unused))) {
         if (newTran)
             processBeginMessage();
 
@@ -418,8 +426,8 @@ namespace OpenLogReplicator {
                 throw RuntimeException("PB delete processing failed, message missing, internal error");
         } else {
 
-            if (object != nullptr)
-                builderBegin(object->obj);
+            if (table != nullptr)
+                builderBegin(table->obj);
             else
                 builderBegin(0);
 
@@ -432,9 +440,9 @@ namespace OpenLogReplicator {
         payloadPB->set_op(pb::DELETE);
 
         schemaPB = payloadPB->mutable_schema();
-        appendSchema(object, dataObj);
+        appendSchema(table, obj);
         appendRowid(dataObj, bdba, slot);
-        appendBefore(object);
+        appendBefore(lobCtx, table);
 
         if ((messageFormat & MESSAGE_FORMAT_FULL) == 0) {
             std::string output;
@@ -450,7 +458,9 @@ namespace OpenLogReplicator {
         ++num;
     }
 
-    void BuilderProtobuf::processDdl(OracleObject* object __attribute__((unused)), typeDataObj dataObj __attribute__((unused)), uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)), const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
+    void BuilderProtobuf::processDdl(OracleTable* table __attribute__((unused)), typeDataObj dataObj __attribute__((unused)),
+                                     uint16_t type __attribute__((unused)), uint16_t seq __attribute__((unused)),
+                                     const char* operation __attribute__((unused)), const char* sql, uint64_t sqlLength) {
         if (newTran)
             processBeginMessage();
 
@@ -524,7 +534,8 @@ namespace OpenLogReplicator {
         num = 0;
     }
 
-    void BuilderProtobuf::processCheckpoint(typeScn scn __attribute__((unused)), typeTime time_ __attribute__((unused)), typeSeq sequence, uint64_t offset, bool redo) {
+    void BuilderProtobuf::processCheckpoint(typeScn scn __attribute__((unused)), typeTime time_ __attribute__((unused)), typeSeq sequence, uint64_t offset,
+                                            bool redo) {
         if (FLAG(REDO_FLAGS_HIDE_CHECKPOINT))
             return;
 

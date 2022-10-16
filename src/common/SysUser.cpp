@@ -30,7 +30,7 @@ namespace OpenLogReplicator {
     }
 
     bool SysUser::operator!=(const SysUser& other) const {
-        return other.rowId != rowId || other.user != user || other.name != name || other.spare1 != spare1;
+        return (other.rowId != rowId) || (other.user != user) || (other.name != name) || (other.spare1 != spare1);
     }
 
     bool SysUser::isSuppLogPrimary() {

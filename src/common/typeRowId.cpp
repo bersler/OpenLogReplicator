@@ -155,18 +155,18 @@ namespace OpenLogReplicator {
         return std::string(str);
     }
 
-    std::ostream& operator<<(std::ostream& os, const typeRowId& tran) {
+    std::ostream& operator<<(std::ostream& os, const typeRowId& other) {
         char str[19];
-        tran.toString(str);
+        other.toString(str);
         os << str;
         return os;
     }
 }
 
 namespace std {
-    size_t std::hash<OpenLogReplicator::typeRowId>::operator()(const OpenLogReplicator::typeRowId& rowId) const {
-        return hash<typeDataObj>()(rowId.dataObj) ^
-               hash<typeDba>()(rowId.dba) ^
-               hash<typeSlot>()(rowId.slot);
+    size_t std::hash<OpenLogReplicator::typeRowId>::operator()(const OpenLogReplicator::typeRowId& other) const {
+        return hash<typeDataObj>()(other.dataObj) ^
+               hash<typeDba>()(other.dba) ^
+               hash<typeSlot>()(other.slot);
     }
 }

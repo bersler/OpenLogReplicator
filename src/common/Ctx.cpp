@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#define GLOBALS 1
+
 #include <cstdlib>
 #include <csignal>
 #include <execinfo.h>
@@ -29,6 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "DataException.h"
 #include "RuntimeException.h"
 #include "Thread.h"
+
+uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 
 namespace OpenLogReplicator {
     Ctx::Ctx() :
@@ -89,6 +93,8 @@ namespace OpenLogReplicator {
     }
 
     Ctx::~Ctx() {
+        lobIdToXidMap.clear();
+
         while (memoryChunksAllocated > 0) {
             --memoryChunksAllocated;
             free(memoryChunks[memoryChunksAllocated]);
@@ -126,6 +132,11 @@ namespace OpenLogReplicator {
 
     uint16_t Ctx::read16Big(const uint8_t* buf) {
         return ((uint16_t)buf[0] << 8) | (uint16_t)buf[1];
+    }
+
+    uint32_t Ctx::read24Big(const uint8_t* buf) {
+        return ((uint32_t)buf[0] << 16) |
+               ((uint32_t)buf[1] << 8) | (uint32_t)buf[2];
     }
 
     uint32_t Ctx::read32Little(const uint8_t* buf) {
@@ -419,8 +430,8 @@ namespace OpenLogReplicator {
         if (!ret.IsString())
             throw DataException("parsing " + fileName + ", field " + field + " is not a string");
         if (ret.GetStringLength() > maxLength)
-            throw DataException("parsing " + fileName + ", field " + field + " is too long (" +
-                                std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + " is too long (" + std::to_string(ret.GetStringLength()) + ", max: " +
+                    std::to_string(maxLength) + ")");
         return (char*)ret.GetString();
     }
 
@@ -437,7 +448,8 @@ namespace OpenLogReplicator {
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
+                    ")");
         return val;
     }
 
@@ -447,7 +459,8 @@ namespace OpenLogReplicator {
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000))
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
+                    ")");
         return (int16_t)val;
     }
 
@@ -457,7 +470,8 @@ namespace OpenLogReplicator {
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
+                    ")");
         return (uint32_t)val;
     }
 
@@ -467,7 +481,8 @@ namespace OpenLogReplicator {
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
         if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000))
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
+                    ")");
         return (int32_t)val;
     }
 
@@ -497,7 +512,8 @@ namespace OpenLogReplicator {
         if (!ret.IsString())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a string");
         if (ret.GetStringLength() > maxLength)
-            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too long (" + std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
+            throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too long (" +
+                    std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
         return (char*)ret.GetString();
     }
 
@@ -522,7 +538,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::wakeAllOutOfMemory() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(memoryMtx);
         condOutOfMemory.notify_all();
     }
 
@@ -539,7 +555,7 @@ namespace OpenLogReplicator {
     }
 
     uint8_t* Ctx::getMemoryChunk(const char* module, bool reusable) {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == 0) {
             while (memoryChunksAllocated == memoryChunksMax && !softShutdown) {
@@ -547,17 +563,15 @@ namespace OpenLogReplicator {
                     condOutOfMemory.wait(lck);
                 }
                 if (memoryChunksAllocated == memoryChunksMax && memoryChunksReusable == 0) {
-                    throw RuntimeException(
-                            "out of memory, HINT: try to restart with higher value of 'memory-max-mb' parameter or if big transaction - add to 'skip-xid' list; transaction would be skipped");
+                    throw RuntimeException("out of memory, HINT: try to restart with higher value of 'memory-max-mb' parameter or if big transaction "
+                            "- add to 'skip-xid' list; transaction would be skipped");
                 }
             }
 
             if (memoryChunksFree == 0) {
-                memoryChunks[0] = (uint8_t *) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
+                memoryChunks[0] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
                 if (memoryChunks[0] == nullptr) {
-                    throw RuntimeException(
-                            "couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory for: " +
-                            module);
+                    throw RuntimeException("couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory for: " + module);
                 }
                 ++memoryChunksFree;
                 ++memoryChunksAllocated;
@@ -574,7 +588,7 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::freeMemoryChunk(const char* module, uint8_t* chunk, bool reusable) {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(memoryMtx);
 
         if (memoryChunksFree == memoryChunksAllocated)
             throw RuntimeException(std::string("trying to free unknown memory block for: ") + module);
@@ -594,16 +608,29 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::stopHard() {
-        std::unique_lock<std::mutex> lck(mtx);
-        if (hardShutdown)
-            return;
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: stop hard")
 
-        hardShutdown = true;
-        softShutdown = true;
-        condMainLoop.notify_all();
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+
+            if (hardShutdown)
+                return;
+            hardShutdown = true;
+            softShutdown = true;
+
+            condMainLoop.notify_all();
+        }
+        {
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            condOutOfMemory.notify_all();
+        }
     }
 
     void Ctx::stopSoft() {
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: stop soft")
+
         std::unique_lock<std::mutex> lck(mtx);
         if (softShutdown)
             return;
@@ -613,32 +640,47 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::mainFinish() {
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: main finish start")
+
         while (wakeThreads()) {
             usleep(1000);
             wakeAllOutOfMemory();
         }
 
         while (threads.size() > 0) {
-            Thread *thread;
+            Thread* thread;
             {
                 std::unique_lock<std::mutex> lck(mtx);
                 thread = *(threads.begin());
             }
             finishThread(thread);
         }
+
+        TRACE(TRACE2_THREADS, "THREADS: main finish end")
     }
 
     void Ctx::mainLoop() {
-        std::unique_lock<std::mutex> lck(mtx);
-        if (!hardShutdown)
-            condMainLoop.wait(lck);
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: main loop start")
+
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            if (!hardShutdown)
+                condMainLoop.wait(lck);
+        }
+
+        TRACE(TRACE2_THREADS, "THREADS: main loop end")
     }
 
     void Ctx::printStacktrace() {
-        std::unique_lock<std::mutex> lck(mtx);
-        ERROR("stacktrace for thread: 0x" << std::hex << pthread_self());
         void* array[128];
-        int size = backtrace(array, 128);
+        int size;
+        ERROR("stacktrace for thread: 0x" << std::hex << pthread_self());
+        {
+            std::unique_lock<std::mutex> lck(mtx);
+            size = backtrace(array, 128);
+        }
         backtrace_symbols_fd(array, size, STDERR_FILENO);
         ERROR("stacktrace completed");
     }
@@ -651,10 +693,22 @@ namespace OpenLogReplicator {
     }
 
     bool Ctx::wakeThreads() {
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: wake threads")
+
         bool wakingUp = false;
         {
             std::unique_lock<std::mutex> lck(mtx);
-            for (Thread *thread: threads) {
+            for (Thread* thread: threads) {
+                if (!thread->finished) {
+                    thread->wakeUp();
+                    wakingUp = true;
+                }
+            }
+        }
+        {
+            std::unique_lock<std::mutex> lck(memoryMtx);
+            for (Thread* thread: threads) {
                 if (!thread->finished) {
                     thread->wakeUp();
                     wakingUp = true;
@@ -664,8 +718,11 @@ namespace OpenLogReplicator {
         return wakingUp;
     }
 
-    void Ctx::spawnThread(Thread *thread) {
-        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void *) thread))
+    void Ctx::spawnThread(Thread* thread) {
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: spawn: " << thread->alias)
+
+        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void*) thread))
             throw RuntimeException("spawning thread - " + thread->alias);
         {
             std::unique_lock<std::mutex> lck(mtx);
@@ -673,7 +730,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Ctx::finishThread(Thread *thread) {
+    void Ctx::finishThread(Thread* thread) {
+        Ctx* ctx = this;
+        TRACE(TRACE2_THREADS, "THREADS: finish: " << thread->alias)
+
         std::unique_lock<std::mutex> lck(mtx);
         if (threads.find(thread) == threads.end())
             return;
@@ -711,12 +771,12 @@ namespace OpenLogReplicator {
     }
 
     void Ctx::releaseBuffer() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(memoryMtx);
         ++buffersFree;
     }
 
     void Ctx::allocateBuffer() {
-        std::unique_lock<std::mutex> lck(mtx);
+        std::unique_lock<std::mutex> lck(memoryMtx);
         --buffersFree;
         if (readBufferMax - buffersFree > buffersMaxUsed)
             buffersMaxUsed = readBufferMax - buffersFree;
@@ -725,7 +785,7 @@ namespace OpenLogReplicator {
     void Ctx::signalDump() {
         if (mainThread == pthread_self()) {
             std::unique_lock<std::mutex> lck(mtx);
-            for (Thread *thread : threads)
+            for (Thread* thread : threads)
                 pthread_kill(thread->pthread, SIGUSR1);
         }
     }

@@ -65,6 +65,7 @@ namespace OpenLogReplicator {
 
     public:
         std::set<typeXid> skipXidList;
+        std::set<typeXid> dumpXidList;
         std::set<typeXidMap> brokenXidMapList;
         std::string dumpPath;
 
@@ -74,7 +75,7 @@ namespace OpenLogReplicator {
         void purge();
         [[nodiscard]] Transaction* findTransaction(typeXid xid, typeConId conId, bool old, bool add, bool rollback);
         void dropTransaction(typeXid xid, typeConId conId);
-        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1);
+        void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord);
         void addTransactionChunk(Transaction* transaction, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void rollbackTransactionChunk(Transaction* transaction);
         [[nodiscard]] TransactionChunk* newTransactionChunk();

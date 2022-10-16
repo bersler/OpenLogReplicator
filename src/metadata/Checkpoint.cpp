@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
     }
 
     void Checkpoint::run() {
-        TRACE(TRACE2_THREADS, "THREADS: CHECKPOINT (" << std::hex << std::this_thread::get_id() << ") START")
+        TRACE(TRACE2_THREADS, "THREADS: checkpoint (" << std::hex << std::this_thread::get_id() << ") start")
 
         try {
             while (!ctx->hardShutdown) {
@@ -69,6 +69,6 @@ namespace OpenLogReplicator {
             ERROR("memory allocation failed: " << ex.what())
         }
 
-        TRACE(TRACE2_THREADS, "THREADS: CHECKPOINT (" << std::hex << std::this_thread::get_id() << ") STOP")
+        TRACE(TRACE2_THREADS, "THREADS: checkpoint (" << std::hex << std::this_thread::get_id() << ") stop")
     }
 }

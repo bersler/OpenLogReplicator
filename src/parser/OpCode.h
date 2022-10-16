@@ -25,6 +25,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef OP_CODE_H_
 #define OP_CODE_H_
 
+#define KTBOP_F                 0x01
+#define KTBOP_C                 0x02
+#define KTBOP_Z                 0x03
+#define KTBOP_L                 0x04
+#define KTBOP_R                 0x05
+#define KTBOP_N                 0x06
+#define KTBOP_BLOCKCLEANOUT     0x10
+
+#define FLG_MULTIBLOCKUNDOHEAD  0x0001
+#define FLG_MULTIBLOCKUNDOTAIL  0x0002
+#define FLG_LASTBUFFERSPLIT     0x0004
+#define FLG_BEGIN_TRANS         0x0008
+#define FLG_USERUNDODDONE       0x0010
+#define FLG_ISTEMPOBJECT        0x0020
+#define FLG_USERONLY            0x0040
+#define FLG_TABLESPACEUNDO      0x0080
+#define FLG_MULTIBLOCKUNDOMID   0x0100
+#define FLG_BUEXT               0x0800
+
+#define FLAGS_XA                0x01
+#define FLAGS_XR                0x02
+#define FLAGS_CR                0x03
+#define FLAGS_KDO_KDOM2         0x80
+
+#define FLG_KTUCF_OP0504        0x0002
+#define FLG_ROLLBACK_OP0504     0x0004
+
+#define OPFLAG_BEGIN_TRANS      0x01
+
 namespace OpenLogReplicator {
     class OpCode {
     protected:
@@ -39,6 +68,7 @@ namespace OpenLogReplicator {
         static void kdoOpCodeSKL(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void kdoOpCodeQM(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void ktub(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, bool isKtubl);
+        static void dumpMemory(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void dumpCols(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum, uint16_t fieldLength, uint8_t isNull);
         static void dumpColsVector(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint64_t colnum);
         static void dumpCompressed(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint16_t fieldLength);

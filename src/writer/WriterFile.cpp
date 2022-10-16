@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        size_t pathPos = this->output.find_last_of('/');
+        auto pathPos = this->output.find_last_of('/');
         if (pathPos != std::string::npos) {
             outputPath =  this->output.substr(0, pathPos);
             outputFileMask = this->output.substr(pathPos + 1);
@@ -214,7 +214,8 @@ namespace OpenLogReplicator {
                 uint64_t zeros = 0;
                 if (fill > outputFileNumStr.length())
                     zeros = fill - outputFileNumStr.length();
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr + outputFileMask.substr(suffixPos);
+                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::string(zeros, '0') + outputFileNumStr +
+                        outputFileMask.substr(suffixPos);
             }
         } else if (mode == WRITER_FILE_MODE_TIMESTAMP) {
             bool shouldSwitch = false;
@@ -252,7 +253,8 @@ namespace OpenLogReplicator {
 
             lastSequence = sequence;
             if (outputDes == -1)
-                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::to_string(sequence) + outputFileMask.substr(suffixPos);
+                outputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + std::to_string(sequence) +
+                        outputFileMask.substr(suffixPos);
         }
 
         // File is closed, open it

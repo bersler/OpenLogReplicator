@@ -32,6 +32,7 @@ namespace OpenLogReplicator {
     Thread::~Thread() = default;
 
     void Thread::wakeUp() {
+        TRACE(TRACE2_THREADS, "THREADS: thread (" << std::hex << std::this_thread::get_id() << ") wake up")
     }
 
     void* Thread::runStatic(void* voidThread) {

@@ -18,7 +18,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
-#include "typeINTX.h"
 #include "typeRowId.h"
 
 #ifndef SYS_LOB_H_
@@ -37,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysLob {
     public:
-        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, bool newTouched);
+        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs, bool newTouched);
 
         bool operator!=(const SysLob& other) const;
 
@@ -46,6 +45,7 @@ namespace OpenLogReplicator {
         typeCol col;
         typeCol intCol;
         typeObj lObj;
+        typeTs ts;
         bool touched;
     };
 }

@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <set>
 
 #include "../common/types.h"
-#include "../common/typeINTX.h"
+#include "../common/typeIntX.h"
 #include "../common/typeRowId.h"
 #include "../common/typeXid.h"
 
@@ -29,7 +29,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class Ctx;
-    class OracleObject;
+    class OracleTable;
     class Builder;
     class Metadata;
     class SysCCol;
@@ -38,11 +38,14 @@ namespace OpenLogReplicator {
     class SysDeferredStg;
     class SysECol;
     class SysLob;
+    class SysLobCompPart;
+    class SysLobFrag;
     class SysObj;
     class SysTab;
     class SysTabComPart;
     class SysTabPart;
     class SysTabSubPart;
+    class SysTs;
     class SysUser;
 
     class SystemTransaction {
@@ -56,31 +59,65 @@ namespace OpenLogReplicator {
         SysDeferredStg* sysDeferredStg;
         SysECol* sysECol;
         SysLob* sysLob;
+        SysLobCompPart* sysLobCompPart;
+        SysLobFrag* sysLobFrag;
         SysObj* sysObj;
         SysTab* sysTab;
         SysTabComPart* sysTabComPart;
         SysTabPart* sysTabPart;
         SysTabSubPart* sysTabSubPart;
+        SysTs* sysTs;
         SysUser* sysUser;
 
-        bool updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateNumber64u(uint64_t& val, uint64_t devVal, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateNumberXu(typeINTX& val, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateObj(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updatePart(typeObj& val, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateUser(typeUser& val, typeCol column, OracleObject* object, typeRowId& rowId);
-        bool updateString(std::string& val, uint64_t maxLength, typeCol column, OracleObject* object, typeRowId& rowId);
+        bool updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateNumber16u(uint16_t& val, uint16_t devVal, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateNumber64u(uint64_t& val, uint64_t devVal, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateNumberXu(typeIntX& val, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateObj(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updatePartition(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateLob(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateUser(typeUser& val, typeCol column, OracleTable* table, typeRowId& rowId);
+        bool updateString(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table, typeRowId& rowId);
+        void processInsertCCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertCDef(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertDeferredStg(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertECol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertLob(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertLobCompPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertLobFrag(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertObj(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertTab(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertTabComPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertTabPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertTabSubPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertTs(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processInsertUser(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateCCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateCDef(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateDeferredStg(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateECol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateLob(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateLobCompPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateLobFrag(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateObj(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateTab(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateTabComPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateTabPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateTabSubPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateTs(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
+        void processUpdateUser(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId);
 
     public:
         SystemTransaction(Builder* newBuilder, Metadata* newMetadata);
         ~SystemTransaction();
 
-        void processInsert(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
-        void processUpdate(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
-        void processDelete(OracleObject* object, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid);
+        void processInsert(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot);
+        void processUpdate(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot);
+        void processDelete(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void commit(typeScn scn);
     };
 }

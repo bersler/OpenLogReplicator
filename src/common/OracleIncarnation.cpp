@@ -36,8 +36,8 @@ namespace OpenLogReplicator {
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleIncarnation& i) {
-        os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn << ", " << i.priorResetlogsScn  << ", " << i.status << ", " <<
-                i.resetlogs << ", " << i.priorIncarnation << ")";
+        os << "(" << std::dec << i.incarnation << ", " << i.resetlogsScn << ", " << i.priorResetlogsScn  << ", " << i.status << ", " << i.resetlogs << ", " <<
+                i.priorIncarnation << ")";
         return os;
     }
 }

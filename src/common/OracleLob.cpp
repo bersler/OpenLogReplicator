@@ -19,13 +19,23 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../common/DataException.h"
 #include "OracleLob.h"
+#include "OracleTable.h"
 
 namespace OpenLogReplicator {
-    OracleLob::OracleLob(typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj) :
+    OracleLob::OracleLob(OracleTable* table, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj) :
+            table(table),
             obj(newObj),
             col(newCol),
             intCol(newIntCol),
             lObj(newLObj) {
+    }
+
+    OracleLob::~OracleLob() {
+        lobIndexes.clear();
+    }
+
+    void OracleLob::addIndex(typeObj obj) {
+        lobIndexes.push_back(obj);
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleLob& lob) {

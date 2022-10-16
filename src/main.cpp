@@ -17,8 +17,6 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#define GLOBALS 1
-
 #include <algorithm>
 #include <csignal>
 #include <regex>
@@ -59,10 +57,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define HAS_KAFKA ""
 #endif /* LINK_LIBRARY_RDKAFKA */
 
-uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
-
 namespace OpenLogReplicator {
-    Ctx *mainCtx = nullptr;
+    Ctx* mainCtx = nullptr;
 
     void printStacktrace() {
         mainCtx->printStacktrace();
@@ -86,13 +82,11 @@ namespace OpenLogReplicator {
         int ret = 1;
         struct utsname name;
         if (uname(&name)) exit(-1);
-        ALL("OpenLogReplicator v." << std::dec << OpenLogReplicator_VERSION_MAJOR << "." << OpenLogReplicator_VERSION_MINOR <<  "." << OpenLogReplicator_VERSION_PATCH <<
-                                   " (C) 2018-2022 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" <<
-                                   ", arch: " << name.machine <<
-                                   ", system: " << name.sysname <<
-                                   ", release: " << name.release <<
-                                   ", build: " << OpenLogReplicator_CMAKE_BUILD_TYPE <<
-                                   ", modules:" HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ)
+        ALL("OpenLogReplicator v." << std::dec << OpenLogReplicator_VERSION_MAJOR << "." << OpenLogReplicator_VERSION_MINOR <<  "." <<
+                OpenLogReplicator_VERSION_PATCH <<
+                " (C) 2018-2022 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information" << ", arch: " << name.machine <<
+                ", system: " << name.sysname << ", release: " << name.release << ", build: " << OpenLogReplicator_CMAKE_BUILD_TYPE << ", modules:"
+                HAS_KAFKA HAS_OCI HAS_PROTOBUF HAS_ZEROMQ)
 
         const char* fileName = "scripts/OpenLogReplicator.json";
         try {
@@ -113,7 +107,7 @@ namespace OpenLogReplicator {
                 fileName = argv[2];
             } else if (argc > 1)
                 throw ConfigurationException(std::string("invalid arguments, run: ") + argv[0] +
-                                                        " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                        " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
 
             OpenLogReplicator openLogReplicator(fileName, mainCtx);
             ret = openLogReplicator.run();
@@ -150,6 +144,7 @@ int main(int argc, char** argv) {
     signal(SIGPIPE, nullptr);
     signal(SIGSEGV, nullptr);
     signal(SIGUSR1, nullptr);
+    OpenLogReplicator::mainCtx = nullptr;
 
     return ret;
 }

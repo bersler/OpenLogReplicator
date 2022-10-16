@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
-#include "typeINTX.h"
+#include "typeIntX.h"
 #include "typeRowId.h"
 
 #ifndef SYS_OBJ_H_
@@ -75,10 +75,21 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_OBJ_TYPE_QUEUE                   24
 
 namespace OpenLogReplicator {
+    class SysObjNameKey {
+    public:
+        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj);
+
+        bool operator<(const SysObjNameKey& other) const;
+
+        typeUser owner;
+        std::string name;
+        typeObj obj;
+    };
+
     class SysObj {
     public:
-        SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName,
-               uint64_t newFlags1, uint64_t newFlags2, bool newSingle, bool newTouched);
+        SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
+               uint64_t newFlags2, bool newSingle, bool newTouched);
 
         bool operator!=(const SysObj& other) const;
         [[nodiscard]] bool isLob() const;
@@ -92,7 +103,7 @@ namespace OpenLogReplicator {
         typeDataObj dataObj;        // NULL
         typeType type;
         std::string name;
-        typeINTX flags;             // NULL
+        typeIntX flags;             // NULL
         bool single;
         bool touched;
     };

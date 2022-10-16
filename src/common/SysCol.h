@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
-#include "typeINTX.h"
+#include "typeIntX.h"
 #include "typeRowId.h"
 
 #ifndef SYS_COL_H_
@@ -102,7 +102,7 @@ namespace OpenLogReplicator {
         uint64_t charsetForm;       // NULL
         uint64_t charsetId;         // NULL
         int64_t null_;
-        typeINTX property;
+        typeIntX property;
         bool touched;
     };
 }

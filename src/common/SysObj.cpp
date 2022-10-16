@@ -20,8 +20,29 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysObj.h"
 
 namespace OpenLogReplicator {
-    SysObj::SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName,
-                   uint64_t newFlags1, uint64_t newFlags2, bool newSingle, bool newTouched) :
+    SysObjNameKey::SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj) :
+            owner(newOwner),
+            name(newName),
+            obj(newObj) {
+    }
+
+    bool SysObjNameKey::operator<(const SysObjNameKey& other) const {
+        if (other.owner > owner)
+            return true;
+        if (other.owner < owner)
+            return false;
+        int cmp = other.name.compare(name);
+        if (cmp > 0)
+            return true;
+        if (cmp < 0)
+            return false;
+        if (other.obj > obj)
+            return true;
+        return false;
+    }
+
+    SysObj::SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
+                   uint64_t newFlags2, bool newSingle, bool newTouched) :
             rowId(newRowId),
             owner(newOwner),
             obj(newObj),
@@ -34,8 +55,8 @@ namespace OpenLogReplicator {
     }
 
     bool SysObj::operator!=(const SysObj& other) const {
-        return other.rowId != rowId || other.owner != owner || other.obj != obj || other.dataObj != dataObj || other.type != type || other.name != name ||
-                other.flags != flags;
+        return (other.rowId != rowId) || (other.owner != owner) || (other.obj != obj) || (other.dataObj != dataObj) || (other.type != type) ||
+                (other.name != name) || (other.flags != flags);
     }
 
     bool SysObj::isLob() const {
@@ -47,9 +68,9 @@ namespace OpenLogReplicator {
     }
 
     bool SysObj::isTemporary() const {
-        return flags.isSet64(SYS_OBJ_FLAGS_TEMPORARY)
-                || flags.isSet64(SYS_OBJ_FLAGS_SECONDARY)
-                || flags.isSet64(SYS_OBJ_FLAGS_IN_MEMORY_TEMP);
+        return flags.isSet64(SYS_OBJ_FLAGS_TEMPORARY) ||
+                flags.isSet64(SYS_OBJ_FLAGS_SECONDARY) ||
+                flags.isSet64(SYS_OBJ_FLAGS_IN_MEMORY_TEMP);
     }
 
     bool SysObj::isDropped() const {

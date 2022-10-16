@@ -1,3 +1,9 @@
+0.9.50
+- big fixes & code rewrite
+- added experimental support for LOBs
+- added support for Oracle 19.15 and 21.6
+- added "dump-xid" parameter to config file
+
 0.9.49
 - small fixes
 

@@ -19,9 +19,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include "../builder/Builder.h"
 #include "../builder/SystemTransaction.h"
+#include "../common/LobCtx.h"
+#include "../common/LobCtx.h"
+#include "../common/OracleLob.h"
+#include "../common/OracleTable.h"
 #include "../common/RedoLogRecord.h"
 #include "../common/RuntimeException.h"
 #include "../metadata/Metadata.h"
+#include "../metadata/Schema.h"
 #include "OpCode0501.h"
 #include "Transaction.h"
 #include "TransactionBuffer.h"
@@ -30,6 +35,7 @@ namespace OpenLogReplicator {
     Transaction::Transaction(typeXid newXid) :
         deallocTc(nullptr),
         opCodes(0),
+        mergeBuffer(nullptr),
         xid(newXid),
         firstSequence(0),
         firstOffset(0),
@@ -43,59 +49,132 @@ namespace OpenLogReplicator {
         system(false),
         shutdown(false),
         lastSplit(false),
+        dump(false),
         size(0) {
     }
 
-    void Transaction::add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord) {
-        transactionBuffer->addTransactionChunk(this, redoLogRecord);
+    void Transaction::add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1) {
+        log(metadata->ctx, "add ", redoLogRecord1);
+        transactionBuffer->addTransactionChunk(this, redoLogRecord1);
         ++opCodes;
     }
 
-    void Transaction::add(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+    void Transaction::add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+        log(metadata->ctx, "add1", redoLogRecord1);
+        log(metadata->ctx, "add2", redoLogRecord2);
         transactionBuffer->addTransactionChunk(this, redoLogRecord1, redoLogRecord2);
         ++opCodes;
     }
 
-    void Transaction::rollbackLastOp(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2 __attribute__((unused))) {
-        uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        // RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-        auto lastRedoLogRecord2 = (RedoLogRecord *) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
+        Ctx* ctx = metadata->ctx;
+        log(ctx, "rlb1", redoLogRecord1);
+        log(ctx, "rlb2", redoLogRecord2);
 
-        bool ok = false;
-        if (lastRedoLogRecord2 != nullptr) {
-            if ((lastRedoLogRecord2->opCode == 0x0B05 && redoLogRecord1->opCode == 0x0B05) ||
-                (lastRedoLogRecord2->opCode == 0x0B03 && redoLogRecord1->opCode == 0x0B02) ||
-                (lastRedoLogRecord2->opCode == 0x0B02 && redoLogRecord1->opCode == 0x0B03) ||
-                (lastRedoLogRecord2->opCode == 0x0B06 && redoLogRecord1->opCode == 0x0B06) ||
-                (lastRedoLogRecord2->opCode == 0x0B08 && redoLogRecord1->opCode == 0x0B08) ||
-                (lastRedoLogRecord2->opCode == 0x0B0B && redoLogRecord1->opCode == 0x0B0C))
-                ok = true;
+        if (lastTc == nullptr || lastTc->size == 0) {
+            WARNING("rollback2 failed, empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
+            return;
         }
 
-        if (!ok)
+        uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+        auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+
+        bool ok = false;
+        switch (lastRedoLogRecord2->opCode) {
+            case 0x0B05:
+                if (redoLogRecord1->opCode == 0x0B05) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B02:
+                if (redoLogRecord1->opCode == 0x0B03) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B03:
+                if (redoLogRecord1->opCode == 0x0B02) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B06:
+                if (redoLogRecord1->opCode == 0x0B06) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B08:
+                if (redoLogRecord1->opCode == 0x0B08) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B0B:
+                if (redoLogRecord1->opCode == 0x0B0C) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B0C:
+                if (redoLogRecord1->opCode == 0x0B0B) {
+                    ok = true;
+                    break;
+                }
+            case 0x0B16:
+                if (redoLogRecord1->opCode == 0x0B16) {
+                    ok = true;
+                    break;
+                }
+        }
+
+        if (lastRedoLogRecord2->obj != redoLogRecord1->obj)
+            ok = false;
+
+        if (!ok) {
+            log(metadata->ctx, "lst1", lastRedoLogRecord1);
+            log(metadata->ctx, "lst2", lastRedoLogRecord2);
+            WARNING("trying to rollback2: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
+                    " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                    ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
             return;
+        }
 
         transactionBuffer->rollbackTransactionChunk(this);
         if (opCodes > 0)
             --opCodes;
     }
 
-    void Transaction::rollbackLastOp(TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord  __attribute__((unused))) {
-        if (lastTc == nullptr || lastTc->size == 0)
+    void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1) {
+        Ctx* ctx = metadata->ctx;
+        log(ctx, "rlb ", redoLogRecord1);
+
+        if (lastTc == nullptr || lastTc->size == 0) {
+            WARNING("rollback1 failed, empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
             return;
+        }
 
         uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        // RedoLogRecord* lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+        auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
         auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
         bool ok = false;
-        if (lastRedoLogRecord2 != nullptr) {
-            if (lastRedoLogRecord2->opCode == 0x0B10)
-                ok = true;
-        }
+        if (lastRedoLogRecord2->opCode == 0)
+            ok = true;
+        else if (lastRedoLogRecord2->opCode == 0x0B10)
+            ok = true;
+        else if (lastRedoLogRecord2->opCode == 0x0513)
+            ok = true;
+        else if (lastRedoLogRecord2->opCode == 0x0514)
+            ok = true;
 
-        if (!ok)
+        if (lastRedoLogRecord1->obj != redoLogRecord1->obj)
+            ok = false;
+
+        if (!ok) {
+            log(metadata->ctx, "lst1", lastRedoLogRecord1);
+            log(metadata->ctx, "lst2", lastRedoLogRecord2);
+            WARNING("trying to rollback1: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
+                                             " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                                             ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
             return;
+        }
 
         transactionBuffer->rollbackTransactionChunk(this);
         if (opCodes > 0)
@@ -137,156 +216,235 @@ namespace OpenLogReplicator {
 
                 RedoLogRecord* redoLogRecord1 = ((RedoLogRecord*) (tc->buffer + pos + ROW_HEADER_REDO1));
                 RedoLogRecord* redoLogRecord2 = ((RedoLogRecord*) (tc->buffer + pos + ROW_HEADER_REDO2));
+                log(metadata->ctx, "flu1", redoLogRecord1);
+                log(metadata->ctx, "flu2", redoLogRecord2);
 
                 redoLogRecord1->data = tc->buffer + pos + ROW_HEADER_DATA;
                 redoLogRecord2->data = tc->buffer + pos + ROW_HEADER_DATA + redoLogRecord1->length;
                 pos += redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL;
 
                 TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord1->length <<
-                                    ":" << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord2->length <<
-                                " fb: " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
-                                    ":" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->fb << " " <<
-                                " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
-                                " scn: " << std::dec << redoLogRecord1->scn <<
-                                " subScn: " << std::dec << redoLogRecord1->subScn <<
-                                " scnRecord: " << std::dec << redoLogRecord1->scnRecord <<
-                                " obj: " << std::dec << redoLogRecord1->obj <<
-                                " dataObj: " << std::dec << redoLogRecord1->dataObj <<
-                                " flg1: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->flg <<
-                                " flg2: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->flg <<
-                                " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
-                                " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
-                                " bdba1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba << "." << std::hex << (uint64_t)redoLogRecord1->slot <<
-                                " nrid1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->nridBdba << "." << std::hex << redoLogRecord1->nridSlot <<
-                                " bdba2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->bdba << "." << std::hex << (uint64_t)redoLogRecord2->slot <<
-                                " nrid2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->nridBdba << "." << std::hex << redoLogRecord2->nridSlot <<
-                                " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
-                                    ", " << std::setfill(' ') << std::setw(3) << std::dec << (uint64_t)redoLogRecord1->suppLogType <<
-                                    ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogCC <<
-                                    ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogBefore <<
-                                    ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogAfter <<
-                                    ", 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba << "." << std::hex << redoLogRecord1->suppLogSlot << ")")
+                        ":" << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord2->length <<
+                        " fb: " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
+                        ":" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->fb << " " <<
+                        " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
+                        " scn: " << std::dec << redoLogRecord1->scn <<
+                        " subScn: " << std::dec << redoLogRecord1->subScn <<
+                        " scnRecord: " << std::dec << redoLogRecord1->scnRecord <<
+                        " obj: " << std::dec << redoLogRecord1->obj <<
+                        " dataObj: " << std::dec << redoLogRecord1->dataObj <<
+                        " flg1: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->flg <<
+                        " flg2: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->flg <<
+                        " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
+                        " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
+                        " bdba1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba << "." << std::hex <<
+                                (uint64_t)redoLogRecord1->slot <<
+                        " nrid1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->nridBdba << "." << std::hex <<
+                                redoLogRecord1->nridSlot <<
+                        " bdba2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->bdba << "." << std::hex <<
+                                (uint64_t)redoLogRecord2->slot <<
+                        " nrid2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->nridBdba << "." << std::hex <<
+                                redoLogRecord2->nridSlot <<
+                        " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
+                        ", " << std::setfill(' ') << std::setw(3) << std::dec << (uint64_t)redoLogRecord1->suppLogType <<
+                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogCC <<
+                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogBefore <<
+                        ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogAfter <<
+                        ", 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba << "." << std::hex <<
+                                redoLogRecord1->suppLogSlot << ")")
+
+                // Cluster key
+                if ((redoLogRecord1->fb & FB_K) != 0 || (redoLogRecord2->fb & FB_K) != 0)
+                    continue;
+
+                // Partition move
+                if ((redoLogRecord1->suppLogFb & FB_K) != 0 || (redoLogRecord2->suppLogFb & FB_K) != 0)
+                    continue;
 
                 opFlush = false;
                 switch (op) {
-                // Single undo - ignore
-                case 0x05010000:
-                    break;
-                // Insert leaf row
-                case 0x05010A02:
-                // Update key data in row
-                case 0x05010A12:
-                // Insert row piece
-                case 0x05010B02:
-                // Delete row piece
-                case 0x05010B03:
-                // Update row piece
-                case 0x05010B05:
-                // Overwrite row piece
-                case 0x05010B06:
-                // Change row forwarding address
-                case 0x05010B08:
-                // Supp log for update
-                case 0x05010B10:
-                // Logminer support - KDOCMP
-                case 0x05010B16:
-                    redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
+                    // Single undo - ignore
+                    case 0x05010000:
+                    // Session information
+                    case 0x05010513:
+                    case 0x05010514:
+                        break;
 
-                    if (type == 0) {
-                        if (op == 0x05010B02)
-                            type = TRANSACTION_INSERT;
-                        else if (op == 0x05010B03)
-                            type = TRANSACTION_DELETE;
-                        else
-                            type = TRANSACTION_UPDATE;
-                    } else if (type == TRANSACTION_INSERT) {
-                        if (op == 0x05010B03 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                            type = TRANSACTION_UPDATE;
-                    } else if (type == TRANSACTION_DELETE) {
-                        if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
-                            type = TRANSACTION_UPDATE;
-                    }
-
-                    if (first1 == nullptr) {
-                        first1 = redoLogRecord1;
-                        first2 = redoLogRecord2;
-                        last1 = redoLogRecord1;
-                        last2 = redoLogRecord2;
-                    } else {
-                        if (last1->suppLogBdba == redoLogRecord1->suppLogBdba && last1->suppLogSlot == redoLogRecord1->suppLogSlot &&
-                                first1->obj == redoLogRecord1->obj && first2->obj == redoLogRecord2->obj) {
-                            if (type == TRANSACTION_INSERT) {
-                                redoLogRecord1->next = first1;
-                                redoLogRecord2->next = first2;
-                                first1->prev = redoLogRecord1;
-                                first2->prev = redoLogRecord2;
-                                first1 = redoLogRecord1;
-                                first2 = redoLogRecord2;
-                            } else {
-                                if (op == 0x05010B06 && last2->opCode == 0x0B02) {
-                                    if (last1->prev == nullptr) {
-                                        first1 = redoLogRecord1;
-                                        first2 = redoLogRecord2;
-                                        first1->next = last1;
-                                        first2->next = last2;
-                                        last1->prev = first1;
-                                        last2->prev = first2;
-                                    } else {
-                                        redoLogRecord1->prev = last1->prev;
-                                        redoLogRecord2->prev = last2->prev;
-                                        redoLogRecord1->next = last1;
-                                        redoLogRecord2->next = last2;
-                                        last1->prev->next = redoLogRecord1;
-                                        last2->prev->next = redoLogRecord2;
-                                        last1->prev = redoLogRecord1;
-                                        last2->prev = redoLogRecord2;
-                                    }
-                                } else {
-                                    last1->next = redoLogRecord1;
-                                    last2->next = redoLogRecord2;
-                                    redoLogRecord1->prev = last1;
-                                    redoLogRecord2->prev = last2;
-                                    last1 = redoLogRecord1;
-                                    last2 = redoLogRecord2;
-                                }
-                            }
-                        } else {
-                            // throw RuntimeException("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString());
+                    // LOB data
+                    case 0x13010000:
+                    case 0x1A060000:
+                    {
+                        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        if (lob != nullptr) {
+                            TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
+                                              " (obj: " << std::dec << lob->obj <<
+                                              ", col: " << lob->intCol <<
+                                              ", lObj: " << lob->lObj <<
+                                              ") -> lobId: " << redoLogRecord1->lobId <<
+                                              ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->lobPageNo <<
+                                              " - DATA:  [0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba << "], " <<
+                                              " OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
                         }
                     }
+                    break;
 
-                    if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                        builder->processDml(first1, first2, type, system);
-                        opFlush = true;
+                    // Insert leaf row
+                    case 0x05010A02:
+                    // Init header
+                    case 0x05010A08:
+                    // Update key data in row
+                    case 0x05010A12:
+                    // Insert row piece
+                    {
+                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord1->obj);
+                        if (lob == nullptr) {
+                            WARNING("LOB is null for: " << std::dec << redoLogRecord1->obj << ", " << redoLogRecord2->obj <<
+                                    ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
+                            break;
+                        }
+
+                        std::stringstream pages;
+                        uint64_t start = 16;
+                        uint32_t pageNo = redoLogRecord2->lobPageNo;
+                        if (pageNo > 0)
+                            start = 0;
+                        for (uint64_t j = start; j < redoLogRecord2->indKeyDataLength; j += 4) {
+                            typeDba page = ctx->read32Big(redoLogRecord2->data + redoLogRecord2->indKeyData + j);
+                            if (page > 0) {
+                                lobCtx.setPage(redoLogRecord2->lobId, page, pageNo, xid);
+                                pages << " [0x" << std::setfill('0') << std::setw(8) << std::hex << page << "]";
+                            }
+                            ++pageNo;
+                        }
+
+                        if (op == 0x05010A12 && redoLogRecord2->lobPageNo == 0) {
+                            lobCtx.setLength(redoLogRecord2->lobId, redoLogRecord2->lobLengthPages, redoLogRecord2->lobLengthRest);
+                        }
+
+                        TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
+                                          " (obj: " << std::dec << redoLogRecord1->obj <<
+                                          ", col: " << lob->intCol <<
+                                          ", lObj: " << lob->lObj <<
+                                          ") -> lobId: " << redoLogRecord2->lobId <<
+                                          ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->lobPageNo <<
+                                          " - INDEX:" << pages.str() <<
+                                          ", PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
+                                          ", REST: " << redoLogRecord2->lobLengthRest <<
+                                          ", OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
+                        break;
                     }
-                    break;
 
-                // Insert multiple rows
-                case 0x05010B0B:
-                    builder->processInsertMultiple(redoLogRecord1, redoLogRecord2, system);
-                    opFlush = true;
-                    break;
+                    case 0x05010B02:
+                    // Delete row piece
+                    case 0x05010B03:
+                    // Update row piece
+                    case 0x05010B05:
+                    // Overwrite row piece
+                    case 0x05010B06:
+                    // Change row forwarding address
+                    case 0x05010B08:
+                    // Supp log for update
+                    case 0x05010B10:
+                    // Logminer support - KDOCMP
+                    case 0x05010B16:
+                        redoLogRecord2->suppLogAfter = redoLogRecord1->suppLogAfter;
 
-                // Delete multiple rows
-                case 0x05010B0C:
-                    builder->processDeleteMultiple(redoLogRecord1, redoLogRecord2, system);
-                    opFlush = true;
-                    break;
+                        if (type == 0) {
+                            if (op == 0x05010B02)
+                                type = TRANSACTION_INSERT;
+                            else if (op == 0x05010B03)
+                                type = TRANSACTION_DELETE;
+                            else
+                                type = TRANSACTION_UPDATE;
+                        } else if (type == TRANSACTION_INSERT) {
+                            if (op == 0x05010B03 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
+                                type = TRANSACTION_UPDATE;
+                        } else if (type == TRANSACTION_DELETE) {
+                            if (op == 0x05010B02 || op == 0x05010B05 || op == 0x05010B06 || op == 0x05010B08)
+                                type = TRANSACTION_UPDATE;
+                        }
 
-                // Truncate table
-                case 0x18010000:
-                    builder->processDdlHeader(redoLogRecord1);
-                    opFlush = true;
-                    break;
+                        if (first1 == nullptr) {
+                            first1 = redoLogRecord1;
+                            first2 = redoLogRecord2;
+                            last1 = redoLogRecord1;
+                            last2 = redoLogRecord2;
+                        } else {
+                            if (last1->suppLogBdba == redoLogRecord1->suppLogBdba && last1->suppLogSlot == redoLogRecord1->suppLogSlot &&
+                                    first1->obj == redoLogRecord1->obj && first2->obj == redoLogRecord2->obj) {
+                                if (type == TRANSACTION_INSERT) {
+                                    redoLogRecord1->next = first1;
+                                    redoLogRecord2->next = first2;
+                                    first1->prev = redoLogRecord1;
+                                    first2->prev = redoLogRecord2;
+                                    first1 = redoLogRecord1;
+                                    first2 = redoLogRecord2;
+                                } else {
+                                    if (op == 0x05010B06 && last2->opCode == 0x0B02) {
+                                        if (last1->prev == nullptr) {
+                                            first1 = redoLogRecord1;
+                                            first2 = redoLogRecord2;
+                                            first1->next = last1;
+                                            first2->next = last2;
+                                            last1->prev = first1;
+                                            last2->prev = first2;
+                                        } else {
+                                            redoLogRecord1->prev = last1->prev;
+                                            redoLogRecord2->prev = last2->prev;
+                                            redoLogRecord1->next = last1;
+                                            redoLogRecord2->next = last2;
+                                            last1->prev->next = redoLogRecord1;
+                                            last2->prev->next = redoLogRecord2;
+                                            last1->prev = redoLogRecord1;
+                                            last2->prev = redoLogRecord2;
+                                        }
+                                    } else {
+                                        last1->next = redoLogRecord1;
+                                        last2->next = redoLogRecord2;
+                                        redoLogRecord1->prev = last1;
+                                        redoLogRecord2->prev = last2;
+                                        last1 = redoLogRecord1;
+                                        last2 = redoLogRecord2;
+                                    }
+                                }
+                            } else {
+                                // throw RuntimeException("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString());
+                            }
+                        }
 
-                // Should not happen
-                default:
-                    throw RedoLogException("Unknown OpCode " + std::to_string(op) + " offset: " + std::to_string(redoLogRecord1->dataOffset));
+                        if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
+                            builder->processDml(&lobCtx, first1, first2, type, system);
+                            opFlush = true;
+                        }
+                        break;
+
+                    // Insert multiple rows
+                    case 0x05010B0B:
+                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system);
+                        opFlush = true;
+                        break;
+
+                    // Delete multiple rows
+                    case 0x05010B0C:
+                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system);
+                        opFlush = true;
+                        break;
+
+                    // Truncate table
+                    case 0x18010000:
+                        builder->processDdlHeader(redoLogRecord1);
+                        opFlush = true;
+                        break;
+
+                    // Should not happen
+                    default:
+                        throw RedoLogException("Unknown OpCode " + std::to_string(op) + " offset: " +
+                                std::to_string(redoLogRecord1->dataOffset));
                 }
 
                 // Split very big transactions
                 if (maxMessageMb > 0 && builder->builderSize() + DATA_BUFFER_SIZE > maxMessageMb * 1024 * 1024) {
-                    WARNING("big transaction divided (forced commit after " << builder->builderSize() << " bytes)")
+                    WARNING("Big transaction divided (forced commit after " << builder->builderSize() << " bytes), xid: " << xid)
 
                     if (system) {
                         TRACE(TRACE2_SYSTEM, "SYSTEM: commit");
@@ -314,10 +472,6 @@ namespace OpenLogReplicator {
                         transactionBuffer->deleteTransactionChunk(deallocTc);
                         deallocTc = nextTc;
                     }
-
-                    for (uint8_t* buf : merges)
-                        delete[] buf;
-                    merges.clear();
                 }
             }
 
@@ -363,9 +517,12 @@ namespace OpenLogReplicator {
         }
         deallocTc = nullptr;
 
-        for (uint8_t* buf : merges)
-            delete[] buf;
-        merges.clear();
+        if (mergeBuffer != nullptr) {
+            delete[] mergeBuffer;
+            mergeBuffer = nullptr;
+        }
+
+        lobCtx.purge();
 
         size = 0;
         opCodes = 0;

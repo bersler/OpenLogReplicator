@@ -20,8 +20,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTab.h"
 
 namespace OpenLogReplicator {
-    SysTab::SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2, uint64_t newProperty1,
-                   uint64_t newProperty2, bool newTouched) :
+    SysTab::SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
+                   uint64_t newProperty1, uint64_t newProperty2, bool newTouched) :
             rowId(newRowId),
             obj(newObj),
             dataObj(newDataObj),
@@ -32,8 +32,8 @@ namespace OpenLogReplicator {
     }
 
     bool SysTab::operator!=(const SysTab& other) const {
-        return other.rowId != rowId || other.obj != obj || other.dataObj != dataObj || other.cluCols != cluCols || other.flags != flags ||
-                other.property != property;
+        return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.cluCols != cluCols) || (other.flags != flags) ||
+                (other.property != property);
     }
 
     bool SysTab::isBinary() {

@@ -44,9 +44,12 @@ namespace OpenLogReplicator {
     void OpCode0501::opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         kdilk(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103))
             return;
         // Field: 5
+
+        redoLogRecord->indKey = fieldPos;
+        redoLogRecord->indKeyLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "key :(" << std::dec << fieldLength << "): ";
@@ -62,9 +65,12 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050104))
             return;
         // Field: 6
+
+        redoLogRecord->indKeyData = fieldPos;
+        redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "keydata/bitmap: (" << std::dec << fieldLength << "): ";
@@ -80,7 +86,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050105))
             return;
         // Field: 7
 
@@ -98,7 +104,7 @@ namespace OpenLogReplicator {
             ctx->dumpStream << std::endl;
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050106))
             return;
         // Field: 8
 
@@ -205,7 +211,7 @@ namespace OpenLogReplicator {
                         if (i > 0) {
                             if (fieldNum >= redoLogRecord->fieldCnt)
                                 return;
-                            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010C);
+                            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
                         }
                         if (fieldLength > 0 && (*nulls & bits) != 0) {
                             WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset)
@@ -223,17 +229,17 @@ namespace OpenLogReplicator {
             }
 
             if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
-                RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010D);
+                RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
                 rowDeps(ctx, redoLogRecord, fieldPos, fieldLength);
             }
 
             suppLog(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
 
         } else if ((redoLogRecord->op & 0x1F) == OP_QMI) {
-            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010E);
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
             redoLogRecord->rowLenghsDelta = fieldPos;
 
-            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05010F);
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110);
             redoLogRecord->rowData = fieldNum;
             if (ctx->dumpRedoLog >= 1)
                 dumpRows(ctx, redoLogRecord, redoLogRecord->data + fieldPos);
@@ -249,6 +255,51 @@ namespace OpenLogReplicator {
         }
     }
 
+    void OpCode0501::opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+        if (fieldLength < 20) {
+            WARNING("too short field Undo for Lev1 Bitmap Block: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+            return;
+        }
+
+        if (ctx->dumpRedoLog >= 1) {
+            redoLogRecord->bdba = ctx->read32(redoLogRecord->data + fieldPos + 0);
+            uint32_t fcls = ctx->read32(redoLogRecord->data + fieldPos + 4);
+            typeDba l2dba = ctx->read32(redoLogRecord->data + fieldPos + 8);
+            uint32_t scls = ctx->read32(redoLogRecord->data + fieldPos + 12);
+            uint32_t offset = ctx->read32(redoLogRecord->data + fieldPos + 16);
+
+            ctx->dumpStream << "Undo for Lev1 Bitmap Block" << std::endl;
+            ctx->dumpStream << "L1 DBA:  0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->bdba <<
+                            " L2 DBA:  0x" << std::setfill('0') << std::setw(8) << std::hex << l2dba <<
+                            " fcls: " << std::dec << fcls <<
+                            " scls: " << std::dec << scls <<
+                            " offset: " << std::dec << offset << std::endl;
+        }
+
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111);
+        // Field: 4
+
+        if (fieldLength < 8) {
+            WARNING("too short field Redo on Lev1 Bitmap Block: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+            return;
+        }
+
+        if (ctx->dumpRedoLog >= 1) {
+            ctx->dumpStream << "Redo on Level1 Bitmap Block" << std::endl;
+
+            if (fieldLength >= 16) {
+                uint32_t len = ctx->read32(redoLogRecord->data + fieldPos + 4);
+                uint32_t offset = ctx->read32(redoLogRecord->data + fieldPos + 12);
+                uint64_t netstate = 0; // random value observed
+
+                ctx->dumpStream << "Redo for state change" << std::endl;
+                ctx->dumpStream << "Len: " << std::dec << len <<
+                                " Offset: " << std::dec << offset <<
+                                " newstate: " << std::dec << netstate << std::endl;
+            }
+        }
+    }
+
     void OpCode0501::process(Ctx* ctx, RedoLogRecord* redoLogRecord) {
         init(ctx, redoLogRecord);
         OpCode::process(ctx, redoLogRecord);
@@ -256,11 +307,11 @@ namespace OpenLogReplicator {
         typeField fieldNum = 0;
         uint16_t fieldLength = 0;
 
-        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103);
+        RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050112);
         // Field: 1
         ktudb(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050104))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050113))
             return;
         // Field: 2
         ktub(ctx, redoLogRecord, fieldPos, fieldLength, true);
@@ -269,23 +320,35 @@ namespace OpenLogReplicator {
         if ((redoLogRecord->flg & (FLG_MULTIBLOCKUNDOHEAD | FLG_MULTIBLOCKUNDOTAIL | FLG_MULTIBLOCKUNDOMID)) != 0)
             return;
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050105))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050114))
             return;
         // Field: 3
-        if (redoLogRecord->opc == 0x0A16 || redoLogRecord->opc == 0x0B01) {
-            ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
-        } else if (redoLogRecord->opc == 0x0E08) {
-            kteoputrn(ctx, redoLogRecord, fieldPos, fieldLength);
+
+        switch(redoLogRecord->opc) {
+            case 0x0A16:
+                ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+
+                if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050115))
+                    return;
+                // Field: 4
+
+                opc0A16(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
+                break;
+
+            case 0x0B01:
+                ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+
+                if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050116))
+                    return;
+                // Field: 4
+
+                opc0B01(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
+                break;
+
+            case 0x0E08:
+                kteoputrn(ctx, redoLogRecord, fieldPos, fieldLength);
+                break;
         }
-
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050106))
-            return;
-        // Field: 4
-
-        if (redoLogRecord->opc == 0x0B01)
-            opc0B01(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
-        if (redoLogRecord->opc == 0x0A16)
-            opc0A16(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
     }
 
     void OpCode0501::ktudb(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength) {
@@ -371,7 +434,8 @@ namespace OpenLogReplicator {
                 uint32_t keySizes = ctx->read32(redoLogRecord->data + fieldPos + 20);
 
                 if (fieldLength < keySizes * 2 + 24) {
-                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+                    WARNING("too short field kdilk key sizes(" << std::dec << keySizes << "): " << std::dec << fieldLength << " offset: " <<
+                            redoLogRecord->dataOffset)
                     return;
                 }
                 ctx->dumpStream << "number of keys: " << std::dec << keySizes << " " << std::endl;
@@ -404,7 +468,7 @@ namespace OpenLogReplicator {
         uint64_t suppLogSize = 0;
         uint64_t suppLogFieldCnt = 0;
         RedoLogRecord::skipEmptyFields(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050110))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050117))
             return;
 
         if (fieldLength < 20) {
@@ -442,7 +506,7 @@ namespace OpenLogReplicator {
             redoLogRecord->suppLogSlot = redoLogRecord->slot;
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050111)) {
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050118)) {
             ctx->suppLogSize += suppLogSize;
             return;
         }
@@ -450,7 +514,7 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogNumsDelta = fieldPos;
         uint8_t* colNumsSupp = redoLogRecord->data + redoLogRecord->suppLogNumsDelta;
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050112)) {
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050119)) {
             ctx->suppLogSize += suppLogSize;
             return;
         }
@@ -460,7 +524,7 @@ namespace OpenLogReplicator {
         redoLogRecord->suppLogRowData = fieldNum + 1;
 
         for (uint64_t i = 0; i < redoLogRecord->suppLogCC; ++i) {
-            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050113);
+            RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05011A);
 
             ++suppLogFieldCnt;
             suppLogSize += (fieldLength + 3) & 0xFFFC;

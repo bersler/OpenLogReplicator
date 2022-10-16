@@ -1,4 +1,4 @@
-/* Definition of schema SYS.DEFERREDSTG$
+/* Definition of schema SYS.DEFERRED_STG$
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -28,7 +28,7 @@ namespace OpenLogReplicator {
     }
 
     bool SysDeferredStg::operator!=(const SysDeferredStg& other) const {
-        return other.rowId != rowId || other.obj != obj || other.flagsStg != flagsStg;
+        return (other.rowId != rowId) || (other.obj != obj) || (other.flagsStg != flagsStg);
     }
 
     bool SysDeferredStg::isCompressed() {

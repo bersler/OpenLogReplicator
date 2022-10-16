@@ -1,4 +1,4 @@
-/* Header for type typeINTX
+/* Header for type typeIntX
    Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -25,35 +25,35 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPE_INTX_T_H_
 #define TYPE_INTX_T_H_
 
-#define TYPE_INTX_LEN                           2
+#define TYPE_INTX_LENGTH                        2
 #define TYPE_INTX_DIGITS                        39
 
 namespace OpenLogReplicator {
-    class typeINTX {
+    class typeIntX {
     private:
-        uint64_t data[TYPE_INTX_LEN];
-        static typeINTX BASE10[TYPE_INTX_DIGITS][10];
+        uint64_t data[TYPE_INTX_LENGTH];
+        static typeIntX BASE10[TYPE_INTX_DIGITS][10];
     public:
-        explicit typeINTX(uint64_t val);
-        typeINTX(uint64_t val1, uint64_t val2);
-        typeINTX();
+        explicit typeIntX(uint64_t other);
+        typeIntX(uint64_t other1, uint64_t other2);
+        typeIntX();
 
         static void initializeBASE10();
 
-        bool operator!=(const typeINTX& other) const;
-        bool operator==(const typeINTX& other) const;
-        typeINTX& operator+=(const typeINTX& val);
-        typeINTX& operator=(const typeINTX& val);
-        typeINTX& operator=(uint64_t val);
-        typeINTX& operator=(const std::string& val);
-        typeINTX& operator=(const char* val);
-        typeINTX& set(uint64_t val1, uint64_t val2);
-        typeINTX& setStr(const char* val, uint64_t length);
+        bool operator!=(const typeIntX& other) const;
+        bool operator==(const typeIntX& other) const;
+        typeIntX& operator+=(const typeIntX& other);
+        typeIntX& operator=(const typeIntX& other);
+        typeIntX& operator=(uint64_t other);
+        typeIntX& operator=(const std::string& other);
+        typeIntX& operator=(const char* other);
+        typeIntX& set(uint64_t other1, uint64_t other2);
+        typeIntX& setStr(const char* other, uint64_t length);
         [[nodiscard]] uint64_t get64() const;
         [[nodiscard]] bool isSet64(uint64_t mask) const;
         [[nodiscard]] bool isZero() const;
 
-        friend std::ostream& operator<<(std::ostream& os, const typeINTX& val);
+        friend std::ostream& operator<<(std::ostream& os, const typeIntX& other);
     };
 }
 

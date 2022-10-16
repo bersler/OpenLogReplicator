@@ -28,21 +28,24 @@ namespace OpenLogReplicator {
     bool SysLobKey::operator<(const SysLobKey& other) const {
         if (other.obj > obj)
             return true;
-        if (other.obj == obj && other.intCol > intCol)
+        if (other.obj < obj)
+            return false;
+        if (other.intCol > intCol)
             return true;
         return false;
     }
 
-    SysLob::SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, bool newTouched) :
+    SysLob::SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs, bool newTouched) :
             rowId(newRowId),
             obj(newObj),
             col(newCol),
             intCol(newIntCol),
             lObj(newLObj),
+            ts(newTs),
             touched(newTouched) {
     }
 
     bool SysLob::operator!=(const SysLob& other) const {
-        return other.rowId != rowId || other.obj != obj || other.col != col || other.intCol != intCol || other.lObj != lObj;
+        return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.intCol != intCol) || (other.lObj != lObj) || (other.ts != ts);
     }
 }

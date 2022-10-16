@@ -114,7 +114,8 @@ namespace OpenLogReplicator {
 
         // Maybe direct IO does not work
         if (bytes < 0 && !FLAG(REDO_FLAGS_DIRECT_DISABLE)) {
-            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " << std::dec << REDO_FLAGS_DIRECT_DISABLE)
+            ERROR("HINT: if problem is related to Direct IO, try to restart with Direct IO mode disabled, set 'flags' to value: " << std::dec <<
+                    REDO_FLAGS_DIRECT_DISABLE)
         }
 
         if ((ctx->trace2 & TRACE2_PERFORMANCE) != 0) {

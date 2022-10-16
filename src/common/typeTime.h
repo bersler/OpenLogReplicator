@@ -27,31 +27,32 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     class typeTime {
-        uint32_t val;
+        uint32_t data;
     public:
-        typeTime() : val(0) {
+        typeTime() : data(0) {
         }
 
-        explicit typeTime(uint32_t newVal) : val(newVal) {
+        explicit typeTime(uint32_t newData) : data(newData) {
         }
 
         [[nodiscard]] uint32_t getVal() const {
-            return this->val;
+            return this->data;
         }
 
         bool operator== (const typeTime& other) const {
-            return val == other.val;
+            return data == other.data;
         }
 
-        typeTime& operator= (uint32_t newVal) {
-            val = newVal;
+        typeTime& operator= (uint32_t newData) {
+            data = newData;
             return *this;
         }
 
         [[nodiscard]] time_t toTime() const {
-            struct tm epochtime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, nullptr};
+            struct tm epochtime = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    nullptr};
             memset((void*)&epochtime, 0, sizeof(epochtime));
-            uint64_t rest = val;
+            uint64_t rest = data;
             epochtime.tm_sec = (int)(rest % 60);
             rest /= 60;
             epochtime.tm_min = (int)(rest % 60);
@@ -67,7 +68,7 @@ namespace OpenLogReplicator {
         }
 
         void toIso8601(char* buffer) const {
-            uint64_t rest = val;
+            uint64_t rest = data;
             uint64_t ss = rest % 60;
             rest /= 60;
             uint64_t mi = rest % 60;
@@ -112,8 +113,8 @@ namespace OpenLogReplicator {
             // YYYY-MM-DDThh:mm:ssZ
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const typeTime& time_) {
-            uint64_t rest = time_.val;
+        friend std::ostream& operator<<(std::ostream& os, const typeTime& other) {
+            uint64_t rest = other.data;
             uint64_t ss = rest % 60; rest /= 60;
             uint64_t mi = rest % 60; rest /= 60;
             uint64_t hh = rest % 24; rest /= 24;

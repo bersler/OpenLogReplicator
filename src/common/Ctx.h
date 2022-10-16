@@ -25,8 +25,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <rapidjson/error/en.h>
 #include <set>
 #include <thread>
+#include <unordered_map>
 
 #include "types.h"
+#include "typeLobId.h"
+#include "typeXid.h"
 
 #ifndef CTX_H_
 #define CTX_H_
@@ -156,19 +159,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define TRACE2_DML                              0x00000001
 #define TRACE2_DUMP                             0x00000002
-#define TRACE2_LWN                              0x00000004
-#define TRACE2_THREADS                          0x00000008
-#define TRACE2_SQL                              0x00000010
-#define TRACE2_FILE                             0x00000020
-#define TRACE2_DISK                             0x00000040
-#define TRACE2_PERFORMANCE                      0x00000080
-#define TRACE2_TRANSACTION                      0x00000100
-#define TRACE2_REDO                             0x00000200
-#define TRACE2_ARCHIVE_LIST                     0x00000400
-#define TRACE2_SCHEMA_LIST                      0x00000800
-#define TRACE2_WRITER                           0x00001000
-#define TRACE2_CHECKPOINT                       0x00002000
-#define TRACE2_SYSTEM                           0x00004000
+#define TRACE2_LOB                              0x00000004
+#define TRACE2_LWN                              0x00000008
+#define TRACE2_THREADS                          0x00000010
+#define TRACE2_SQL                              0x00000020
+#define TRACE2_FILE                             0x00000040
+#define TRACE2_DISK                             0x00000080
+#define TRACE2_PERFORMANCE                      0x00000100
+#define TRACE2_TRANSACTION                      0x00000200
+#define TRACE2_REDO                             0x00000400
+#define TRACE2_ARCHIVE_LIST                     0x00000800
+#define TRACE2_SCHEMA_LIST                      0x00001000
+#define TRACE2_WRITER                           0x00002000
+#define TRACE2_CHECKPOINT                       0x00004000
+#define TRACE2_SYSTEM                           0x00008000
 
 #define REDO_FLAGS_ARCH_ONLY                    0x00000001
 #define REDO_FLAGS_SCHEMALESS                   0x00000002
@@ -186,6 +190,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_CHECKPOINT_KEEP              0x00002000
 #define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
 #define REDO_FLAGS_EXPERIMENTAL_LOBS            0x00008000
+#define REDO_FLAGS_RAW_COLUMN_DATA              0x00010000
 #define FLAG(x)                                 ((ctx->flags&(x))!=0)
 
 #define DISABLE_CHECKS_GRANTS                   0x00000001
@@ -196,7 +201,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef GLOBALS
 extern uint64_t OLR_LOCALES;
 #endif
-
 
 namespace OpenLogReplicator {
     class Thread;
@@ -218,6 +222,7 @@ namespace OpenLogReplicator {
         std::condition_variable condMainLoop;
         std::condition_variable condOutOfMemory;
         std::mutex mtx;
+        std::mutex memoryMtx;
         std::set<Thread*> threads;
         pthread_t mainThread;
 
@@ -266,6 +271,7 @@ namespace OpenLogReplicator {
         std::atomic<bool> hardShutdown;
         std::atomic<bool> softShutdown;
         std::atomic<bool> replicatorFinished;
+        std::unordered_map<typeLobId, typeXid> lobIdToXidMap;
 
         Ctx();
         virtual ~Ctx();
@@ -284,6 +290,7 @@ namespace OpenLogReplicator {
 
         static uint16_t read16Little(const uint8_t* buf);
         static uint16_t read16Big(const uint8_t* buf);
+        static uint32_t read24Big(const uint8_t* buf);
         static uint32_t read32Little(const uint8_t* buf);
         static uint32_t read32Big(const uint8_t* buf);
         static uint64_t read56Little(const uint8_t* buf);
@@ -341,8 +348,8 @@ namespace OpenLogReplicator {
         void signalHandler(int s);
 
         bool wakeThreads();
-        void spawnThread(Thread *thread);
-        void finishThread(Thread *thread);
+        void spawnThread(Thread* thread);
+        void finishThread(Thread* thread);
         static std::stringstream& writeEscapeValue(std::stringstream& ss, std::string& str);
         static bool checkNameCase(const char* name);
         void releaseBuffer();

@@ -18,7 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "types.h"
-#include "typeINTX.h"
+#include "typeIntX.h"
 #include "typeRowId.h"
 
 #ifndef SYS_DEFERRED_STG_H_
@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
         typeRowId rowId;
         typeObj obj;
-        typeINTX flagsStg;          // NULL
+        typeIntX flagsStg;          // NULL
         bool touched;
     };
 }

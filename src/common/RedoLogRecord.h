@@ -20,6 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Ctx.h"
 #include "RedoLogException.h"
 #include "types.h"
+#include "typeLobId.h"
 #include "typeXid.h"
 
 #ifndef REDO_LOG_RECORD_H_
@@ -41,6 +42,17 @@ namespace OpenLogReplicator {
         typeObj recordObj;
         typeObj recordDataObj;
 
+        uint64_t lobData;
+        uint64_t indKey;
+        uint64_t indKeyData;
+        typeDba lobPageNo;
+        typeLobId lobId;
+        uint32_t lobLengthPages;
+        uint16_t lobLengthRest;
+        uint16_t lobDataLength;
+        uint16_t indKeyLength;
+        uint16_t indKeyDataLength;
+
         typeSeq sequence;
         typeScn scn;              // scn
         typeSubScn subScn;        // subscn
@@ -61,7 +73,8 @@ namespace OpenLogReplicator {
         typeDba dba;
         typeDba bdba;             // block DBA
         typeObj obj;              // object ID
-        typeObj dataObj;          // ctx object ID
+        typeCol col;              // LOB column ID
+        typeObj dataObj;          // data object ID
         uint32_t tsn;
         uint32_t undo;
         typeUsn usn;
@@ -112,26 +125,21 @@ namespace OpenLogReplicator {
             fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length)
-                throw RedoLogException("field length out of vector, field: " + std::to_string(fieldNum) + "/" + std::to_string(redoLogRecord->fieldCnt) +
-                        ", pos: " + std::to_string(fieldPos) +
-                        ", length:" + std::to_string(fieldLength) +
-                        ", max: " + std::to_string(redoLogRecord->length) +
-                        ", code: " + std::to_string(code));
+                throw RedoLogException("field length out of vector, field: " + std::to_string(fieldNum) + "/" +
+                        std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", length:" +
+                        std::to_string(fieldLength) + ", max: " + std::to_string(redoLogRecord->length) + ", code: " + std::to_string(code));
             return true;
         };
 
         static void nextField(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength, uint32_t code) {
             ++fieldNum;
             if (fieldNum > redoLogRecord->fieldCnt)
-                throw RedoLogException("field missing in vector, field: " + std::to_string(fieldNum) + "/" + std::to_string(redoLogRecord->fieldCnt) +
-                        ", ctx: " + std::to_string(redoLogRecord->rowData) +
-                        ", obj: " + std::to_string(redoLogRecord->obj) +
-                        ", dataObj: " + std::to_string(redoLogRecord->dataObj) +
-                        ", op: " + std::to_string(redoLogRecord->opCode) +
-                        ", cc: " + std::to_string((uint64_t)redoLogRecord->cc) +
-                        ", suppCC: " + std::to_string(redoLogRecord->suppLogCC) +
-                        ", fieldLength: " + std::to_string(fieldLength) +
-                        ", code: " + std::to_string(code));
+                throw RedoLogException("field missing in vector, field: " + std::to_string(fieldNum) + "/" +
+                        std::to_string(redoLogRecord->fieldCnt) + ", ctx: " + std::to_string(redoLogRecord->rowData) + ", obj: " +
+                        std::to_string(redoLogRecord->obj) + ", dataObj: " + std::to_string(redoLogRecord->dataObj) + ", op: " +
+                        std::to_string(redoLogRecord->opCode) + ", cc: " + std::to_string((uint64_t)redoLogRecord->cc) + ", suppCC: " +
+                        std::to_string(redoLogRecord->suppLogCC) + ", fieldLength: " + std::to_string(fieldLength) + ", code: " +
+                        std::to_string(code));
 
             if (fieldNum == 1)
                 fieldPos = redoLogRecord->fieldPos;
@@ -140,11 +148,9 @@ namespace OpenLogReplicator {
             fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + (((uint64_t)fieldNum) * 2));
 
             if (fieldPos + fieldLength > redoLogRecord->length)
-                throw RedoLogException("field length out of vector, field: " + std::to_string(fieldNum) + "/" + std::to_string(redoLogRecord->fieldCnt) +
-                        ", pos: " + std::to_string(fieldPos) +
-                        ", length:" + std::to_string(fieldLength) +
-                        ", max: " + std::to_string(redoLogRecord->length) +
-                        ", code: " + std::to_string(code));
+                throw RedoLogException("field length out of vector, field: " + std::to_string(fieldNum) + "/" +
+                        std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", length:" +
+                        std::to_string(fieldLength) + ", max: " + std::to_string(redoLogRecord->length) + ", code: " + std::to_string(code));
         };
 
         static void skipEmptyFields(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
@@ -162,10 +168,9 @@ namespace OpenLogReplicator {
                 fieldLength = nextFieldLength;
 
                 if (fieldPos + fieldLength > redoLogRecord->length)
-                    throw RedoLogException("field length out of vector: field: " + std::to_string(fieldNum) + "/" + std::to_string(redoLogRecord->fieldCnt) +
-                            ", pos: " + std::to_string(fieldPos) +
-                            ", length:" + std::to_string(fieldLength) +
-                            ", max: " + std::to_string(redoLogRecord->length));
+                    throw RedoLogException("field length out of vector: field: " + std::to_string(fieldNum) + "/" +
+                            std::to_string(redoLogRecord->fieldCnt) + ", pos: " + std::to_string(fieldPos) + ", length:" +
+                            std::to_string(fieldLength) + ", max: " + std::to_string(redoLogRecord->length));
             }
         }
 
