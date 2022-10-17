@@ -252,7 +252,15 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            if (xidFormat == XID_FORMAT_TEXT) {
+            if (xidFormat == XID_FORMAT_TEXT_HEX) {
+                builderAppend(R"("xid":"0x)", sizeof(R"("xid":"0x)") - 1);
+                appendHex(lastXid.usn(), 4);
+                builderAppend('.');
+                appendHex(lastXid.slt(), 3);
+                builderAppend('.');
+                appendHex(lastXid.sqn(), 8);
+                builderAppend('"');
+            } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
                 builderAppend(R"("xid":")", sizeof(R"("xid":")") - 1);
                 appendDec(lastXid.usn());
                 builderAppend('.');

@@ -247,8 +247,8 @@ namespace OpenLogReplicator {
                         std::to_string(recordLength));
             }
             redoLogRecord[vectorCur].fieldCnt = (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) - 2) / 2;
-            redoLogRecord[vectorCur].fieldPos = fieldOffset + ((ctx->read16(redoLogRecord[vectorCur].data +
-                    redoLogRecord[vectorCur].fieldLengthsDelta) + 2) & 0xFFFC);
+            redoLogRecord[vectorCur].fieldPos = fieldOffset +
+                    ((ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta) + 2) & 0xFFFC);
             if (redoLogRecord[vectorCur].fieldPos >= recordLength) {
                 dumpRedoVector(data, recordLength);
                 throw RedoLogException("block: " + std::to_string(lwnMember->block) + ", offset: " + std::to_string(lwnMember->offset) +
@@ -562,14 +562,16 @@ namespace OpenLogReplicator {
         if (transaction == nullptr)
             return;
 
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (table == nullptr && !FLAG(REDO_FLAGS_SCHEMALESS)) {
-            transaction->log(ctx, "tbl ", redoLogRecord1);
-            return;
-        }
+        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+            if (table == nullptr) {
+                transaction->log(ctx, "tbl ", redoLogRecord1);
+                return;
+            }
 
-        if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
+            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                transaction->system = true;
+        }
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&
@@ -638,13 +640,16 @@ namespace OpenLogReplicator {
             return;
         }
 
-        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (table == nullptr && !FLAG(REDO_FLAGS_SCHEMALESS)) {
-            transaction->log(ctx, "tbl ", redoLogRecord1);
-            return;
+        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+            if (table == nullptr) {
+                transaction->log(ctx, "tbl ", redoLogRecord1);
+                return;
+            }
+
+            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                transaction->system = true;
         }
-        if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
@@ -677,6 +682,14 @@ namespace OpenLogReplicator {
                 transactionBuffer->brokenXidMapList.insert(xidMap);
             }
             return;
+        }
+
+        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+            if (table == nullptr) {
+                transaction->log(ctx, "rls ", redoLogRecord1);
+                return;
+            }
         }
 
         transaction->rollbackLastOp(metadata, transactionBuffer, redoLogRecord1);
@@ -789,29 +802,50 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
             throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                     std::to_string(redoLogRecord2->bdba) + ")");
-        OracleTable* table = metadata->schema->checkTableDict(obj);
-        if (table == nullptr && !FLAG(REDO_FLAGS_SCHEMALESS)) {
-            transaction->log(ctx, "tbl1", redoLogRecord1);
-            transaction->log(ctx, "tbl2", redoLogRecord2);
-            return;
-        }
-        if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
 
-        if (redoLogRecord2->opCode != 0x0B02 && // Insert row piece
-            redoLogRecord2->opCode != 0x0B03 && // Delete row piece
-            redoLogRecord2->opCode != 0x0B05 && // Update row piece
-            redoLogRecord2->opCode != 0x0B06 && // Overwrite row piece
-            redoLogRecord2->opCode != 0x0B08 && // Change forwarding address
-            redoLogRecord2->opCode != 0x0B0B && // Insert multiple rows
-            redoLogRecord2->opCode != 0x0B0C && // Delete multiple rows
-            redoLogRecord2->opCode != 0x0B10 && // Supp log for update
-            redoLogRecord2->opCode != 0x0513 && // Session information
-            redoLogRecord2->opCode != 0x0514 && // Session information
-            redoLogRecord2->opCode != 0x0B16) { // Logminer support - KDOCMP
-            transaction->log(ctx, "skp1", redoLogRecord1);
-            transaction->log(ctx, "skp2", redoLogRecord2);
-            return;
+        switch (redoLogRecord2->opCode) {
+            // Session information
+            case 0x0513:
+            case 0x0514:
+                break;
+
+            // Insert row piece
+            case 0x0B02:
+            // Delete row piece
+            case 0x0B03:
+            // Update row piece
+            case 0x0B05:
+            // Overwrite row piece
+            case 0x0B06:
+            // Change forwarding address
+            case 0x0B08:
+            // Insert multiple rows
+            case 0x0B0B:
+            // Delete multiple rows
+            case 0x0B0C:
+            // Supp log for update
+            case 0x0B10:
+            // Logminer support - KDOCMP
+            case 0x0B16:
+                if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+                    OracleTable* table = metadata->schema->checkTableDict(obj);
+                    if (table == nullptr) {
+                        transaction->log(ctx, "tbl1", redoLogRecord1);
+                        transaction->log(ctx, "tbl2", redoLogRecord2);
+                        return;
+                    }
+                    if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                        transaction->system = true;
+
+                    if ((table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
+                        transaction->shutdown = true;
+                }
+                break;
+
+            default:
+                transaction->log(ctx, "skp1", redoLogRecord1);
+                transaction->log(ctx, "skp2", redoLogRecord2);
+                return;
         }
 
         // Transaction size limit
@@ -826,9 +860,6 @@ namespace OpenLogReplicator {
         }
 
         transaction->add(metadata, transactionBuffer, redoLogRecord1, redoLogRecord2);
-
-        if (table != nullptr && (table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
-            transaction->shutdown = true;
     }
 
     void Parser::appendToTransactionRollback(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
@@ -870,14 +901,17 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
             throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                     std::to_string(redoLogRecord2->bdba) + ")");
-        OracleTable* table = metadata->schema->checkTableDict(obj);
-        if (table == nullptr && !FLAG(REDO_FLAGS_SCHEMALESS)) {
-            transaction->log(ctx, "tbl1", redoLogRecord1);
-            transaction->log(ctx, "tbl2", redoLogRecord2);
-            return;
+
+        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            OracleTable* table = metadata->schema->checkTableDict(obj);
+            if (table == nullptr) {
+                transaction->log(ctx, "rls1", redoLogRecord1);
+                transaction->log(ctx, "rls2", redoLogRecord2);
+                return;
+            }
+            if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                transaction->system = true;
         }
-        if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
 
         if (redoLogRecord1->opCode != 0x0B02 && // Insert row piece
                 redoLogRecord1->opCode != 0x0B03 && // Delete row piece

@@ -162,7 +162,16 @@ namespace OpenLogReplicator {
         }
 
         if (showXid) {
-            if (xidFormat == XID_FORMAT_TEXT) {
+            if (xidFormat == XID_FORMAT_TEXT_HEX) {
+                std::stringstream sb;
+                sb << "0x";
+                sb << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)lastXid.usn();
+                sb << '.';
+                sb << std::setfill('0') << std::setw(3) << std::hex << (uint64_t)lastXid.slt();
+                sb << '.';
+                sb << std::setfill('0') << std::setw(8) << std::hex << (uint64_t)lastXid.sqn();
+                redoResponsePB->set_xid(sb.str());
+            } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
                 std::stringstream sb;
                 sb << (uint64_t)lastXid.usn();
                 sb << '.';

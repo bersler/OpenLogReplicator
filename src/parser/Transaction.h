@@ -68,6 +68,7 @@ namespace OpenLogReplicator {
         void rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder);
         void purge(TransactionBuffer* transactionBuffer);
+
         void log(Ctx* ctx, const char* msg, RedoLogRecord* redoLogRecord1) {
             if (!dump || (ctx->trace2 & TRACE2_DUMP) != 0)
                 return;
@@ -79,9 +80,11 @@ namespace OpenLogReplicator {
                      " bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba <<
                      " slot: " << std::dec << redoLogRecord1->slot <<
                      " fb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
+                     " cc: " << std::dec << (uint64_t)redoLogRecord1->cc <<
                      " suppbdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba <<
                      " suppslot: " << std::dec << redoLogRecord1->suppLogSlot <<
                      " suppfb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
+                     " suppcc: " << std::dec << (uint64_t)redoLogRecord1->suppLogCC <<
                      " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
                      " slt: " << std::dec << redoLogRecord1->slt <<
                      " rci: " << std::dec << (uint64_t)redoLogRecord1->rci <<

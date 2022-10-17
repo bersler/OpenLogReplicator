@@ -98,8 +98,9 @@ typedef uint64_t typeUnicode;
 #define RID_FORMAT_SKIP                         0
 #define RID_FORMAT_DEFAULT                      1
 
-#define XID_FORMAT_TEXT                         0
-#define XID_FORMAT_NUMERIC                      1
+#define XID_FORMAT_TEXT_HEX                     0
+#define XID_FORMAT_TEXT_DEC                     1
+#define XID_FORMAT_NUMERIC                      2
 
 #define UNKNOWN_FORMAT_QUESTION_MARK            0
 #define UNKNOWN_FORMAT_DUMP                     1

@@ -365,10 +365,16 @@ namespace OpenLogReplicator {
                         }
 
                         if (first1 == nullptr) {
-                            first1 = redoLogRecord1;
-                            first2 = redoLogRecord2;
-                            last1 = redoLogRecord1;
-                            last2 = redoLogRecord2;
+                            if (redoLogRecord1->suppLogBdba == 0 && op == 0x05010B16 && (redoLogRecord1->suppLogFb & FB_L) == 0) {
+                                log(metadata->ctx, "nul1", redoLogRecord1);
+                                log(metadata->ctx, "nul2", redoLogRecord2);
+                                //ignore
+                            } else {
+                                first1 = redoLogRecord1;
+                                first2 = redoLogRecord2;
+                                last1 = redoLogRecord1;
+                                last2 = redoLogRecord2;
+                            }
                         } else {
                             if (last1->suppLogBdba == redoLogRecord1->suppLogBdba && last1->suppLogSlot == redoLogRecord1->suppLogSlot &&
                                     first1->obj == redoLogRecord1->obj && first2->obj == redoLogRecord2->obj) {
@@ -408,7 +414,7 @@ namespace OpenLogReplicator {
                                     }
                                 }
                             } else {
-                                // throw RuntimeException("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString());
+                                WARNING("minimal supplemental log missing or redo log inconsistency for transaction " + xid.toString())
                             }
                         }
 

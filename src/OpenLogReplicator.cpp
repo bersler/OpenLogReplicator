@@ -409,11 +409,11 @@ namespace OpenLogReplicator {
                     throw ConfigurationException("bad JSON, invalid 'rid' value: " + std::to_string(ridFormat) + ", expected one of: {0, 1}");
             }
 
-            uint64_t xidFormat = XID_FORMAT_TEXT;
+            uint64_t xidFormat = XID_FORMAT_TEXT_HEX;
             if (formatJson.HasMember("xid")) {
                 xidFormat = Ctx::getJsonFieldU64(fileName, formatJson, "xid");
-                if (xidFormat > 1)
-                    throw ConfigurationException("bad JSON, invalid 'xid' value: " + std::to_string(xidFormat) + ", expected one of: {0, 1}");
+                if (xidFormat > 2)
+                    throw ConfigurationException("bad JSON, invalid 'xid' value: " + std::to_string(xidFormat) + ", expected one of: {0, 1, 2}");
             }
 
             uint64_t timestampFormat = TIMESTAMP_FORMAT_UNIX;
