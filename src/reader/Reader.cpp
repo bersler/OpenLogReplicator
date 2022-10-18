@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
     const char* Reader::REDO_CODE[] = {"OK", "OVERWRITTEN", "FINISHED", "STOPPED", "EMPTY", "READ ERROR", "WRITE ERROR",
                                        "SEQUENCE ERROR", "CRC ERROR", "BLOCK ERROR", "BAD DATA ERROR", "OTHER ERROR"};
 
-    Reader::Reader(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
+    Reader::Reader(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
         Thread(newCtx, newAlias),
         ctx(newCtx),
         database(newDatabase),
@@ -756,7 +756,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Reader::printHeaderInfo(std::stringstream& ss, std::string& path) const {
+    void Reader::printHeaderInfo(std::ostringstream& ss, const std::string& path) const {
         char SID[9];
         memcpy((void*)SID, (void*)(headerBuffer + blockSize + 28), 8);
         SID[8] = 0;

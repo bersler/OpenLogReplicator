@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
     }
 
-    void OpCode0501::opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0501::opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         kdilk(ctx, redoLogRecord, fieldPos, fieldLength);
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x050103))
@@ -123,7 +123,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0501::opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         kdoOpCode(ctx, redoLogRecord, fieldPos, fieldLength);
         uint8_t* colNums = nullptr;
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
@@ -255,7 +255,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode0501::opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
+    void OpCode0501::opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength) {
         if (fieldLength < 20) {
             WARNING("too short field Undo for Lev1 Bitmap Block: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;

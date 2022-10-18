@@ -89,7 +89,7 @@ namespace OpenLogReplicator {
         void refreshIndexesSysTabPart();
         void refreshIndexesSysTabSubPart();
         void refreshIndexesSysTs();
-        void refreshIndexesSysUser(std::set<std::string>& users);
+        void refreshIndexesSysUser(const std::set<std::string>& users);
 
     public:
         typeScn scn;
@@ -199,7 +199,7 @@ namespace OpenLogReplicator {
         virtual ~Schema();
 
         void purge();
-        void refreshIndexes(std::set<std::string>& users);
+        void refreshIndexes(const std::set<std::string>& users);
         [[nodiscard]] bool compare(Schema* otherSchema, std::string& msgs);
         bool dictSysCColAdd(const char* rowIdStr, typeCon con, typeCol intCol, typeObj obj, uint64_t spare11, uint64_t spare12);
         bool dictSysCDefAdd(const char* rowIdStr, typeCon con, typeObj obj, typeType type);
@@ -261,9 +261,9 @@ namespace OpenLogReplicator {
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);
         void addLobToDict(OracleLob* lob, uint16_t pageSize);
-        void rebuildMaps(std::set<std::string> &msgs);
-        void buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOptions options,
-                       std::set<std::string> &msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
+        void rebuildMaps(std::set<std::string>& msgs);
+        void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
+                       typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
                        uint64_t defaultCharacterNcharMapId);
         uint16_t getLobBlockSize(typeTs ts);
     };

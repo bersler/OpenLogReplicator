@@ -24,8 +24,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleTable.h"
 
 namespace OpenLogReplicator {
-    OracleTable::OracleTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, std::string& newOwner,
-                             std::string& newName) :
+    OracleTable::OracleTable(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
+                             const std::string& newName) :
         obj(newObj),
         dataObj(newDataObj),
         user(newUser),

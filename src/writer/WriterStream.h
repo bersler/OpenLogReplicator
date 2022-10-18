@@ -42,7 +42,7 @@ namespace OpenLogReplicator {
         void sendMessage(BuilderMsg* msg) override;
 
     public:
-        WriterStream(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream);
+        WriterStream(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream);
         ~WriterStream() override;
 
         void initialize() override;

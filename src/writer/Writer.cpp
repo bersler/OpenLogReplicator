@@ -30,7 +30,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Writer.h"
 
 namespace OpenLogReplicator {
-    Writer::Writer(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata) :
+    Writer::Writer(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata) :
             Thread(newCtx, newAlias),
             database(newDatabase),
             builder(newBuilder),
@@ -308,7 +308,7 @@ namespace OpenLogReplicator {
 
         TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << std::dec << checkpointScn << " confirmed scn: " << confirmedScn)
         std::string name(database + "-chkpt");
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << R"({"database":")" << database
                 << R"(","scn":)" << std::dec << confirmedScn
                 << R"(,"resetlogs":)" << std::dec << metadata->resetlogs

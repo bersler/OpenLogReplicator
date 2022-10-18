@@ -1083,7 +1083,7 @@ namespace OpenLogReplicator {
         sysTsTouched = false;
     }
 
-    void Schema::refreshIndexesSysUser(std::set<std::string>& users) {
+    void Schema::refreshIndexesSysUser(const std::set<std::string>& users) {
         if (!sysUserTouched)
             return;
         sysUserMapUser.clear();
@@ -1114,7 +1114,7 @@ namespace OpenLogReplicator {
         sysUserTouched = false;
     }
 
-    void Schema::refreshIndexes(std::set<std::string>& users) {
+    void Schema::refreshIndexes(const std::set<std::string>& users) {
         refreshIndexesSysUser(users);
         refreshIndexesSysObj();
         refreshIndexesSysCCol();
@@ -1924,7 +1924,7 @@ namespace OpenLogReplicator {
         lobPageMap[lob->lObj] = pageSize;
     }
 
-    void Schema::rebuildMaps(std::set<std::string> &msgs) {
+    void Schema::rebuildMaps(std::set<std::string>& msgs) {
         for (typeUser user : usersTouched) {
             for (auto tableMapIt : tableMap) {
                 OracleTable* table = tableMapIt.second;
@@ -1973,8 +1973,8 @@ namespace OpenLogReplicator {
         tablesTouched.clear();
     }
 
-    void Schema::buildMaps(std::string& owner, std::string& table, std::vector<std::string>& keys, std::string& keysStr, typeOptions options,
-                           std::set<std::string> &msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+    void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
+                           typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         uint64_t tabCnt = 0;
         std::regex regexOwner(owner);
@@ -2284,7 +2284,7 @@ namespace OpenLogReplicator {
             if ((typeCol)keys.size() != keysCnt)
                 throw DataException("table " + std::string(sysUser->name) + "." + sysObj->name + " couldn't find all column set (" + keysStr + ")");
 
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << sysUser->name << "." << sysObj->name << " (dataobj: " << std::dec << sysTab->dataObj << ", obj: " << std::dec << sysObj->obj <<
                     ", columns: " << std::dec << schemaTable->maxSegCol << ", lobs: " << std::dec << schemaTable->totalLobs << ", lob-idx: " <<
                     std::dec << lobIndexes << ")";

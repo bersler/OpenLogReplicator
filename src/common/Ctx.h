@@ -48,7 +48,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define ALL(__x)                                {                                                                       \
                                                     if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                         \
-                                                        std::stringstream __s;                                          \
+                                                        std::ostringstream __s;                                         \
                                                         time_t __now = time(nullptr);                                   \
                                                         tm __nowTm = *localtime(&__now);                                \
                                                         char __str[50];                                                 \
@@ -56,7 +56,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                         __s << __str << " [INFO] " << __x << std::endl;                 \
                                                         std::cerr << __s.str();                                         \
                                                     } else {                                                            \
-                                                        std::stringstream __s;                                          \
+                                                        std::ostringstream __s;                                         \
                                                         __s << "[INFO] " << __x << std::endl;                           \
                                                         std::cerr << __s.str();                                         \
                                                     }                                                                   \
@@ -64,7 +64,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #define ERROR(__x)                              {                                                                       \
                                                     if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                         \
-                                                        std::stringstream __s;                                          \
+                                                        std::ostringstream __s;                                         \
                                                         time_t __now = time(nullptr);                                   \
                                                         tm __nowTm = *localtime(&__now);                                \
                                                         char __str[50];                                                 \
@@ -72,7 +72,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                         __s << __str << " [ERROR] " << __x << std::endl;                \
                                                         std::cerr << __s.str();                                         \
                                                     } else {                                                            \
-                                                        std::stringstream __s;                                          \
+                                                        std::ostringstream __s;                                         \
                                                         __s << "[ERROR] " << __x << std::endl;                          \
                                                         std::cerr << __s.str();                                         \
                                                     }                                                                   \
@@ -81,7 +81,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define WARNING(__x)                            {                                                                       \
                                                     if (ctx->trace >= TRACE_WARNING) {                                  \
                                                         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             time_t __now = time(nullptr);                               \
                                                             tm __nowTm = *localtime(&__now);                            \
                                                             char __str[50];                                             \
@@ -89,7 +89,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                             __s << __str << " [WARNING] " << __x << std::endl;          \
                                                             std::cerr << __s.str();                                     \
                                                         } else {                                                        \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             __s << "[WARNING] " << __x << std::endl;                    \
                                                             std::cerr << __s.str();                                     \
                                                         }                                                               \
@@ -99,7 +99,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define INFO(__x)                               {                                                                       \
                                                     if (ctx->trace >= TRACE_INFO) {                                     \
                                                         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             time_t __now = time(nullptr);                               \
                                                             tm __nowTm = *localtime(&__now);                            \
                                                             char __str[50];                                             \
@@ -107,7 +107,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                             __s << __str << " [INFO] " << __x << std::endl;             \
                                                             std::cerr << __s.str();                                     \
                                                         } else {                                                        \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             __s << "[INFO] " << __x << std::endl;                       \
                                                             std::cerr << __s.str();                                     \
                                                         }                                                               \
@@ -117,7 +117,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define DEBUG(__x)                              {                                                                       \
                                                     if (ctx->trace >= TRACE_DEBUG) {                                    \
                                                         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             time_t __now = time(nullptr);                               \
                                                             tm __nowTm = *localtime(&__now);                            \
                                                             char __str[50];                                             \
@@ -125,7 +125,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                             __s << __str << " [DEBUG] " << __x << std::endl;            \
                                                             std::cerr << __s.str();                                     \
                                                         } else {                                                        \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             __s << "[DEBUG] " << __x << std::endl;                      \
                                                             std::cerr << __s.str();                                     \
                                                         }                                                               \
@@ -135,7 +135,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TRACE(__t,__x)                          {                                                                       \
                                                     if ((ctx->trace2 & (__t)) != 0) {                                   \
                                                         if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {                     \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             time_t __now = time(nullptr);                               \
                                                             tm __nowTm = *localtime(&__now);                            \
                                                             char __str[50];                                             \
@@ -143,7 +143,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
                                                             __s << __str << " [TRACE] " << __x << std::endl;            \
                                                             std::cerr << __s.str();                                     \
                                                         } else {                                                        \
-                                                            std::stringstream __s;                                      \
+                                                            std::ostringstream __s;                                     \
                                                             __s << "[TRACE] " << __x << std::endl;                      \
                                                             std::cerr << __s.str();                                     \
                                                         }                                                               \
@@ -313,25 +313,25 @@ namespace OpenLogReplicator {
         static void writeScnLittle(uint8_t* buf, typeScn val);
         static void writeScnBig(uint8_t* buf, typeScn val);
 
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static uint16_t getJsonFieldU16(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static int16_t getJsonFieldI16(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static uint32_t getJsonFieldU32(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static int32_t getJsonFieldI32(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static uint64_t getJsonFieldU64(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static int64_t getJsonFieldI64(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(std::string& fileName, const rapidjson::Value& value, const char* field);
-        [[nodiscard]] static char* getJsonFieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static uint32_t getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static int32_t getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field);
+        [[nodiscard]] static char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field);
 
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint16_t getJsonFieldU16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int16_t getJsonFieldI16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint32_t getJsonFieldU32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int32_t getJsonFieldI32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static uint64_t getJsonFieldU64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static int64_t getJsonFieldI64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static char* getJsonFieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static uint16_t getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static int16_t getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static uint32_t getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static int32_t getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
 
         void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
@@ -350,7 +350,7 @@ namespace OpenLogReplicator {
         bool wakeThreads();
         void spawnThread(Thread* thread);
         void finishThread(Thread* thread);
-        static std::stringstream& writeEscapeValue(std::stringstream& ss, std::string& str);
+        static std::ostringstream& writeEscapeValue(std::ostringstream& ss, std::string& str);
         static bool checkNameCase(const char* name);
         void releaseBuffer();
         void allocateBuffer();

@@ -83,22 +83,22 @@ namespace OpenLogReplicator {
         valuePB->set_name(table->columns[col]->name);
     }
 
-    void BuilderProtobuf::columnFloat(std::string& columnName, float value) {
+    void BuilderProtobuf::columnFloat(const std::string& columnName, float value) {
         valuePB->set_name(columnName);
         valuePB->set_value_float(value);
     }
 
-    void BuilderProtobuf::columnDouble(std::string& columnName, double value) {
+    void BuilderProtobuf::columnDouble(const std::string& columnName, double value) {
         valuePB->set_name(columnName);
         valuePB->set_value_double(value);
     }
 
-    void BuilderProtobuf::columnString(std::string& columnName) {
+    void BuilderProtobuf::columnString(const std::string& columnName) {
         valuePB->set_name(columnName);
         valuePB->set_value_string(valueBuffer, valueLength);
     }
 
-    void BuilderProtobuf::columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) {
+    void BuilderProtobuf::columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) {
         valuePB->set_name(columnName);
         valueBuffer[valueLength] = 0;
         char* retPtr;
@@ -117,11 +117,11 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderProtobuf::columnRaw(std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
+    void BuilderProtobuf::columnRaw(const std::string& columnName, const uint8_t* data __attribute__((unused)), uint64_t length __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
 
-    void BuilderProtobuf::columnTimestamp(std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
+    void BuilderProtobuf::columnTimestamp(const std::string& columnName, struct tm& time_ __attribute__((unused)), uint64_t fraction __attribute__((unused)),
             const char* tz __attribute__((unused))) {
         valuePB->set_name(columnName);
     }
@@ -163,22 +163,22 @@ namespace OpenLogReplicator {
 
         if (showXid) {
             if (xidFormat == XID_FORMAT_TEXT_HEX) {
-                std::stringstream sb;
-                sb << "0x";
-                sb << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)lastXid.usn();
-                sb << '.';
-                sb << std::setfill('0') << std::setw(3) << std::hex << (uint64_t)lastXid.slt();
-                sb << '.';
-                sb << std::setfill('0') << std::setw(8) << std::hex << (uint64_t)lastXid.sqn();
-                redoResponsePB->set_xid(sb.str());
+                std::ostringstream ss;
+                ss << "0x";
+                ss << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)lastXid.usn();
+                ss << '.';
+                ss << std::setfill('0') << std::setw(3) << std::hex << (uint64_t)lastXid.slt();
+                ss << '.';
+                ss << std::setfill('0') << std::setw(8) << std::hex << (uint64_t)lastXid.sqn();
+                redoResponsePB->set_xid(ss.str());
             } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
-                std::stringstream sb;
-                sb << (uint64_t)lastXid.usn();
-                sb << '.';
-                sb << (uint64_t)lastXid.slt();
-                sb << '.';
-                sb << (uint64_t)lastXid.sqn();
-                redoResponsePB->set_xid(sb.str());
+                std::ostringstream ss;
+                ss << (uint64_t)lastXid.usn();
+                ss << '.';
+                ss << (uint64_t)lastXid.slt();
+                ss << '.';
+                ss << (uint64_t)lastXid.sqn();
+                redoResponsePB->set_xid(ss.str());
             } else {
                 redoResponsePB->set_xidn(lastXid.getData());
             }

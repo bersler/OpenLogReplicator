@@ -119,16 +119,16 @@ namespace OpenLogReplicator {
                  const char* newStartTime, int64_t newStartTimeRel);
         ~Metadata();
 
-        void setNlsCharset(std::string& nlsCharset, std::string& nlsNcharCharset);
+        void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);
         void purgeRedoLogs();
         void setSeqOffset(typeSeq newSequence, uint64_t newOffset);
         void setResetlogs(typeResetlogs newResetlogs);
         void setActivation(typeActivation newActivation);
         void initializeDisk(const char* path);
-        [[nodiscard]] bool stateRead(std::string& name, uint64_t maxSize, std::string& in);
-        [[nodiscard]] bool stateDiskRead(std::string& name, uint64_t maxSize, std::string& in);
-        [[nodiscard]] bool stateWrite(std::string& name, std::stringstream& out);
-        [[nodiscard]] bool stateDrop(std::string& name);
+        [[nodiscard]] bool stateRead(const std::string& name, uint64_t maxSize, std::string& in);
+        [[nodiscard]] bool stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in);
+        [[nodiscard]] bool stateWrite(const std::string& name, std::ostringstream& out);
+        [[nodiscard]] bool stateDrop(const std::string& name);
         SchemaElement* addElement(const char* owner, const char* table, typeOptions options);
 
         void waitForReplication();

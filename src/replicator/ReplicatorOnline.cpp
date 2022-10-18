@@ -640,7 +640,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "PARAM1: " << metadata->startTime)
             stmt.createStatement(SQL_GET_SCN_FROM_TIME);
 
-            std::stringstream ss;
+            std::ostringstream ss;
             stmt.bindString(1, metadata->startTime);
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
@@ -1339,7 +1339,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void ReplicatorOnline::readSystemDictionaries(Schema* schema, typeScn targetScn, std::string& owner, std::string& table, typeOptions options) {
+    void ReplicatorOnline::readSystemDictionaries(Schema* schema, typeScn targetScn, const std::string& owner, const std::string& table, typeOptions options) {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
         bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
@@ -1444,8 +1444,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void ReplicatorOnline::createSchemaForTable(typeScn targetScn, std::string& owner, std::string& table, std::vector<std::string>& keys,
-                                                std::string& keysStr, typeOptions options) {
+    void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
+                                                const std::string& keysStr, typeOptions options) {
         DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options)
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);

@@ -32,9 +32,9 @@ namespace OpenLogReplicator {
         ~StateDisk() override;
 
         void list(std::set<std::string>& namesList) override;
-        [[nodiscard]] bool read(std::string& name, uint64_t maxSize, std::string& in) override;
-        void write(std::string& name, std::stringstream& out) override;
-        void drop(std::string& name) override;
+        [[nodiscard]] bool read(const std::string& name, uint64_t maxSize, std::string& in) override;
+        void write(const std::string& name, const std::ostringstream& out) override;
+        void drop(const std::string& name) override;
     };
 }
 

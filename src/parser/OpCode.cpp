@@ -1224,7 +1224,7 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::dumpCompressed(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint16_t fieldLength) {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "kdrhccnt=" << std::dec << (uint64_t)redoLogRecord->cc << ",full row:";
         ss << std::uppercase;
 

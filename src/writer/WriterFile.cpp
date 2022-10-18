@@ -31,8 +31,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterFile.h"
 
 namespace OpenLogReplicator {
-    WriterFile::WriterFile(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
-                           const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend) :
+    WriterFile::WriterFile(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
+                           const char* newOutput, const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend) :
         Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
         prefixPos(0),
         suffixPos(0),

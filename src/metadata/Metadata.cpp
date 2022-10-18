@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
         oracleIncarnationCurrent = nullptr;
     }
 
-    void Metadata::setNlsCharset(std::string& nlsCharset, std::string& nlsNcharCharset) {
+    void Metadata::setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset) {
         for (auto elem: locales->characterMap) {
             if (nlsCharset == elem.second->name) {
                 defaultCharacterMapId = elem.first;
@@ -178,7 +178,7 @@ namespace OpenLogReplicator {
         serializer = new SerializerJson();
     }
 
-    bool Metadata::stateRead(std::string& name, uint64_t maxSize, std::string& in) {
+    bool Metadata::stateRead(const std::string& name, uint64_t maxSize, std::string& in) {
         try {
             return state->read(name, maxSize, in);
         } catch (DataException& ex) {
@@ -187,7 +187,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateDiskRead(std::string& name, uint64_t maxSize, std::string& in) {
+    bool Metadata::stateDiskRead(const std::string& name, uint64_t maxSize, std::string& in) {
         try {
             return stateDisk->read(name, maxSize, in);
         } catch (DataException& ex) {
@@ -196,7 +196,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateWrite(std::string& name, std::stringstream& out) {
+    bool Metadata::stateWrite(const std::string& name, std::ostringstream& out) {
         try {
             state->write(name, out);
             return true;
@@ -206,7 +206,7 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    bool Metadata::stateDrop(std::string& name) {
+    bool Metadata::stateDrop(const std::string& name) {
         try {
             state->drop(name);
             return true;
@@ -257,7 +257,7 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::writeCheckpoint(bool force) {
-        std::stringstream ss;
+        std::ostringstream ss;
 
         {
             std::unique_lock<std::mutex> lck(mtx);

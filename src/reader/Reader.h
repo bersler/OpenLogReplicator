@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         std::vector<std::string> paths;
         std::string fileName;
 
-        Reader(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum);
+        Reader(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum);
         ~Reader() override;
 
         void initialize();
@@ -126,7 +126,7 @@ namespace OpenLogReplicator {
         void bufferAllocate(uint64_t num);
         void bufferFree(uint64_t num);
         typeSum calcChSum(uint8_t* buffer, uint64_t size) const;
-        void printHeaderInfo(std::stringstream& ss, std::string& path) const;
+        void printHeaderInfo(std::ostringstream& ss, const std::string& path) const;
         [[nodiscard]] uint64_t getBlockSize();
         [[nodiscard]] uint64_t getBufferStart();
         [[nodiscard]] uint64_t getBufferEnd();

@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
         closedir(dir);
     }
 
-    bool StateDisk::read(std::string& name, uint64_t maxSize, std::string& in) {
+    bool StateDisk::read(const std::string& name, uint64_t maxSize, std::string& in) {
         std::string fileName(path + "/" + name + ".json");
         struct stat fileStat;
         int ret = stat(fileName.c_str(), &fileStat);
@@ -87,7 +87,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void StateDisk::write(std::string& name, std::stringstream& out) {
+    void StateDisk::write(const std::string& name, const std::ostringstream& out) {
         std::string fileName(path + "/" + name + ".json");
         std::ofstream outputStream;
         outputStream.open(fileName.c_str(), std::ios::out | std::ios::trunc);
@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
         outputStream.close();
     }
 
-    void StateDisk::drop(std::string& name) {
+    void StateDisk::drop(const std::string& name) {
         std::string fileName(path + "/" + name + ".json");
         if (unlink(fileName.c_str()) != 0)
             throw DataException("can't remove file: " + fileName + " - " + strerror(errno));

@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo) {
-        std::stringstream ss;
+        std::ostringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
                 " scn: " << std::dec << redo.scn <<
                 " subScn: " << std::dec << redo.subScn <<

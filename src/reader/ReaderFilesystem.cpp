@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "ReaderFilesystem.h"
 
 namespace OpenLogReplicator {
-    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, std::string newAlias, std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
+    ReaderFilesystem::ReaderFilesystem(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, int64_t newGroup, bool newConfiguredBlockSum) :
         Reader(newCtx, newAlias, newDatabase, newGroup, newConfiguredBlockSum),
         fileDes(-1),
         flags(0) {

@@ -54,7 +54,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, std::string& newPath) :
+    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, const std::string& newPath) :
             ctx(newCtx),
             builder(newBuilder),
             metadata(newMetadata),
@@ -1037,7 +1037,7 @@ namespace OpenLogReplicator {
                 " xid: " << redoLogRecord1->xid << " pageNo: " << std::dec << redoLogRecord2->lobPageNo)
 
         if ((ctx->trace2 & TRACE2_LOB) != 0) {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "LOB: indKey: ";
             for (uint64_t i = 0; i < redoLogRecord1->indKeyLength; ++i)
                 ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->data[redoLogRecord1->indKey + i] << " ";
@@ -1150,7 +1150,7 @@ namespace OpenLogReplicator {
 
     void Parser::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
         if (ctx->trace >= TRACE_WARNING) {
-            std::stringstream ss;
+            std::ostringstream ss;
             ss << "dumping redo vector" << std::endl;
             ss << "##: " << std::dec << recordLength;
             for (uint64_t j = 0; j < recordLength; ++j) {
@@ -1182,7 +1182,7 @@ namespace OpenLogReplicator {
                     WARNING("Can't open " << fileName << " for write. Aborting log dump.")
                     ctx->dumpRedoLog = 0;
                 }
-                std::stringstream ss;
+                std::ostringstream ss;
                 reader->printHeaderInfo(ss, path);
                 ctx->dumpStream << ss.str();
             }

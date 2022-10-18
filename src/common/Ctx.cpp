@@ -339,7 +339,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldA(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -348,7 +348,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    uint16_t Ctx::getJsonFieldU16(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -360,7 +360,7 @@ namespace OpenLogReplicator {
         return val;
     }
 
-    int16_t Ctx::getJsonFieldI16(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -372,7 +372,7 @@ namespace OpenLogReplicator {
         return (int16_t)val;
     }
 
-    uint32_t Ctx::getJsonFieldU32(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -384,7 +384,7 @@ namespace OpenLogReplicator {
         return (uint32_t)val;
     }
 
-    int32_t Ctx::getJsonFieldI32(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
         return (int32_t)val;
     }
 
-    uint64_t Ctx::getJsonFieldU64(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -405,7 +405,7 @@ namespace OpenLogReplicator {
         return ret.GetUint64();
     }
 
-    int64_t Ctx::getJsonFieldI64(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -414,7 +414,7 @@ namespace OpenLogReplicator {
         return ret.GetInt64();
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldO(std::string& fileName, const rapidjson::Value& value, const char* field) {
+    const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -423,7 +423,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    char* Ctx::getJsonFieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
+    char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -435,14 +435,14 @@ namespace OpenLogReplicator {
         return (char*)ret.GetString();
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldA(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsArray())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an array");
         return ret;
     }
 
-    uint16_t Ctx::getJsonFieldU16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint16_t Ctx::getJsonFieldU16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
@@ -453,7 +453,7 @@ namespace OpenLogReplicator {
         return val;
     }
 
-    int16_t Ctx::getJsonFieldI16(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int16_t Ctx::getJsonFieldI16(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
@@ -464,7 +464,7 @@ namespace OpenLogReplicator {
         return (int16_t)val;
     }
 
-    uint32_t Ctx::getJsonFieldU32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint32_t Ctx::getJsonFieldU32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
@@ -475,7 +475,7 @@ namespace OpenLogReplicator {
         return (uint32_t)val;
     }
 
-    int32_t Ctx::getJsonFieldI32(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
@@ -486,28 +486,28 @@ namespace OpenLogReplicator {
         return (int32_t)val;
     }
 
-    uint64_t Ctx::getJsonFieldU64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsUint64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an unsigned 64-bit number");
         return ret.GetUint64();
     }
 
-    int64_t Ctx::getJsonFieldI64(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    int64_t Ctx::getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
         return ret.GetInt64();
     }
 
-    const rapidjson::Value& Ctx::getJsonFieldO(std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const rapidjson::Value& Ctx::getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsObject())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not an object");
         return ret;
     }
 
-    char* Ctx::getJsonFieldS(std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
+    char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsString())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a string");
@@ -741,7 +741,7 @@ namespace OpenLogReplicator {
         pthread_join(thread->pthread, nullptr);
     }
 
-    std::stringstream& Ctx::writeEscapeValue(std::stringstream& ss, std::string& str) {
+    std::ostringstream& Ctx::writeEscapeValue(std::ostringstream& ss, std::string& str) {
         const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {

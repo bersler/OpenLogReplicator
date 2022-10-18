@@ -21,6 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     SysTs::SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize, bool newTouched) :
+            rowId(newRowId),
             ts(newTs),
             name(newName),
             blockSize(newBlockSize),

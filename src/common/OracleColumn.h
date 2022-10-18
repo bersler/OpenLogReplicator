@@ -44,9 +44,9 @@ namespace OpenLogReplicator {
         bool added;
         bool guard;
 
-        OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, std::string& newName, uint64_t newType, uint64_t newLength, int64_t newPrecision,
-                     int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newInvisible, bool newStoredAsLob, bool newConstraint,
-                     bool newNested, bool newUnused, bool newAdded, bool newGuard);
+        OracleColumn(typeCol newCol, typeCol newGuardSeg, typeCol newSegCol, const std::string& newName, uint64_t newType, uint64_t newLength,
+                     int64_t newPrecision,  int64_t newScale, typeCol newNumPk, uint64_t newCharsetId, bool newNullable, bool newInvisible,
+                     bool newStoredAsLob, bool newConstraint, bool newNested, bool newUnused, bool newAdded, bool newGuard);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleColumn& column);
     };

@@ -28,7 +28,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "WriterStream.h"
 
 namespace OpenLogReplicator {
-    WriterStream::WriterStream(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, Stream* newStream) :
+    WriterStream::WriterStream(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
+                               Stream* newStream) :
         Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
         stream(newStream) {
     }
@@ -205,7 +206,7 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                std::stringstream ss;
+                std::ostringstream ss;
                 ss << "request decoder[" << std::dec << length << "]: ";
                 for (uint64_t i = 0; i < (uint64_t)length; ++i)
                     ss << std::hex  << std::setw(2) << std::setfill('0') << (uint64_t)msgR[i] << " ";

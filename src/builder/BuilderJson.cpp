@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
         builderAppend(R"(":null)", sizeof(R"(":null)") - 1);
     }
 
-    void BuilderJson::columnFloat(std::string& columnName, float value) {
+    void BuilderJson::columnFloat(const std::string& columnName, float value) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
         builderAppend(valString);
     }
 
-    void BuilderJson::columnDouble(std::string& columnName, double value) {
+    void BuilderJson::columnDouble(const std::string& columnName, double value) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
         builderAppend(valString);
     }
 
-    void BuilderJson::columnString(std::string& columnName) {
+    void BuilderJson::columnString(const std::string& columnName) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         builderAppend('"');
     }
 
-    void BuilderJson::columnNumber(std::string& columnName, uint64_t precision __attribute__((unused)), uint64_t scale __attribute__((unused))) {
+    void BuilderJson::columnNumber(const std::string& columnName, uint64_t precision __attribute__((unused)), uint64_t scale __attribute__((unused))) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -129,7 +129,7 @@ namespace OpenLogReplicator {
         builderAppend(valueBuffer, valueLength);
     }
 
-    void BuilderJson::columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) {
+    void BuilderJson::columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -143,7 +143,7 @@ namespace OpenLogReplicator {
         builderAppend('"');
     }
 
-    void BuilderJson::columnTimestamp(std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
+    void BuilderJson::columnTimestamp(const std::string& columnName, struct tm &epochTime, uint64_t fraction, const char* tz) {
         if (hasPreviousColumn)
             builderAppend(',');
         else

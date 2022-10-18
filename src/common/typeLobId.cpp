@@ -60,33 +60,33 @@ namespace OpenLogReplicator {
     }
 
     std::string typeLobId::lower() {
-        std::stringstream  os;
-        os << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
+        std::ostringstream ss;
+        ss << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
                 std::setw(2) << (uint64_t)data[2] << std::setw(2) << (uint64_t)data[3] <<
                 std::setw(2) << (uint64_t)data[4] << std::setw(2) << (uint64_t)data[5] <<
                 std::setw(2) << (uint64_t)data[6] << std::setw(2) << (uint64_t)data[7] <<
                 std::setw(2) << (uint64_t)data[8] << std::setw(2) << (uint64_t)data[9];
-        return os.str();
+        return ss.str();
     }
 
     std::string typeLobId::upper() {
-        std::stringstream  os;
-        os << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
+        std::ostringstream ss;
+        ss << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
                 std::setw(2) << (uint64_t)data[2] << std::setw(2) << (uint64_t)data[3] <<
                 std::setw(2) << (uint64_t)data[4] << std::setw(2) << (uint64_t)data[5] <<
                 std::setw(2) << (uint64_t)data[6] << std::setw(2) << (uint64_t)data[7] <<
                 std::setw(2) << (uint64_t)data[8] << std::setw(2) << (uint64_t)data[9] << std::nouppercase;
-        return os.str();
+        return ss.str();
     }
 
     std::string typeLobId::narrow() {
-        std::stringstream  os;
-        os << std::uppercase << std::setfill('0') << std::hex << (uint64_t)data[0] << (uint64_t)data[1] <<
+        std::ostringstream ss;
+        ss << std::uppercase << std::setfill('0') << std::hex << (uint64_t)data[0] << (uint64_t)data[1] <<
                 (uint64_t)data[2] << (uint64_t)data[3] <<
                 (uint64_t)data[4] << (uint64_t)data[5] <<
                 (uint64_t)data[6] << (uint64_t)data[7] <<
                 (uint64_t)data[8] << (uint64_t)data[9] << std::nouppercase;
-        return os.str();
+        return ss.str();
     }
 
     std::ostream& operator<<(std::ostream& os, const typeLobId& other) {

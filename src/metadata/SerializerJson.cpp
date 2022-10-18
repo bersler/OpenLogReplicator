@@ -49,9 +49,10 @@ namespace OpenLogReplicator {
 
     SerializerJson::~SerializerJson() = default;
 
-    void SerializerJson::serialize(Metadata* metadata, std::stringstream &ss, bool storeSchema) {
-        ss << R"({"database":")" << metadata->database <<
-                R"(","scn":)" << std::dec << metadata->checkpointScn <<
+    void SerializerJson::serialize(Metadata* metadata, std::ostringstream& ss, bool storeSchema) {
+        ss << R"({"database":")";
+        Ctx::writeEscapeValue(ss, metadata->database);
+        ss << R"(","scn":)" << std::dec << metadata->checkpointScn <<
                 R"(,"resetlogs":)" << std::dec << metadata->resetlogs <<
                 R"(,"activation":)" << std::dec << metadata->activation <<
                 R"(,"time":)" << std::dec << metadata->checkpointTime.getVal() <<
@@ -64,10 +65,12 @@ namespace OpenLogReplicator {
                     R"(,"xid:":")" << metadata->minXid << R"("})";
         }
         ss << R"(,"big-endian":)" << std::dec << (metadata->ctx->isBigEndian() ? 1 : 0) <<
-                R"(,"context":")" << metadata->context <<
-                R"(","con-id":)" << std::dec << metadata->conId <<
-                R"(,"con-name":")" << metadata->conName <<
-                R"(","db-recovery-file-dest":")";
+                R"(,"context":")";
+        Ctx::writeEscapeValue(ss, metadata->context);
+        ss << R"(","con-id":)" << std::dec << metadata->conId <<
+                R"(,"con-name":")";
+        Ctx::writeEscapeValue(ss, metadata->conName);
+        ss << R"(","db-recovery-file-dest":")";
         Ctx::writeEscapeValue(ss, metadata->dbRecoveryFileDest);
         ss << R"(",)" << R"("db-block-checksum":")";
         Ctx::writeEscapeValue(ss, metadata->dbBlockChecksum);
@@ -115,14 +118,15 @@ namespace OpenLogReplicator {
             ss SERIALIZER_ENDL << R"({"incarnation":)" << oi->incarnation <<
                     R"(,"resetlogs-scn":)" << oi->resetlogsScn <<
                     R"(,"prior-resetlogs-scn":)" << oi->priorResetlogsScn <<
-                    R"(,"status":")" << oi->status <<
-                    R"(","resetlogs":)" << oi->resetlogs <<
+                    R"(,"status":")";
+            Ctx::writeEscapeValue(ss, oi->status);
+            ss << R"(","resetlogs":)" << oi->resetlogs <<
                     R"(,"prior-incarnation":)" << oi->priorIncarnation << "}";
         }
 
         ss << "]," SERIALIZER_ENDL << R"("users":[)";
         hasPrev = false;
-        for (const std::string &user: metadata->users) {
+        for (const std::string& user: metadata->users) {
             if (hasPrev)
                 ss << ",";
             else
@@ -192,8 +196,9 @@ namespace OpenLogReplicator {
                     R"(,"col":)" << std::dec << sysCol->col <<
                     R"(,"seg-col":)" << std::dec << sysCol->segCol <<
                     R"(,"int-col":)" << std::dec << sysCol->intCol <<
-                    R"(,"name":")" << sysCol->name <<
-                    R"(","type":)" << std::dec << sysCol->type <<
+                    R"(,"name":")";
+            Ctx::writeEscapeValue(ss,  sysCol->name);
+            ss << R"(","type":)" << std::dec << sysCol->type <<
                     R"(,"length":)" << std::dec << sysCol->length <<
                     R"(,"precision":)" << std::dec << sysCol->precision <<
                     R"(,"scale":)" << std::dec << sysCol->scale <<
@@ -303,8 +308,9 @@ namespace OpenLogReplicator {
                     R"(","owner":)" << std::dec << sysObj->owner <<
                     R"(,"obj":)" << std::dec << sysObj->obj <<
                     R"(,"data-obj":)" << std::dec << sysObj->dataObj <<
-                    R"(,"name":")" << sysObj->name <<
-                    R"(","type":)" << std::dec << sysObj->type <<
+                    R"(,"name":")";
+            Ctx::writeEscapeValue(ss, sysObj->name);
+            ss << R"(","type":)" << std::dec << sysObj->type <<
                     R"(,"flags":)" << std::dec << sysObj->flags <<
                     R"(,"single":)" << std::dec << (uint64_t)sysObj->single << "}";
         }
@@ -392,8 +398,9 @@ namespace OpenLogReplicator {
 
             ss SERIALIZER_ENDL << R"({"row-id":")" << sysTs->rowId <<
                     R"(","ts":)" << std::dec << sysTs->ts <<
-                    R"(,"name":")" << sysTs->name <<
-                    R"(","block-size":)" << std::dec << sysTs->blockSize << "}";
+                    R"(,"name":")";
+            Ctx::writeEscapeValue(ss, sysTs->name);
+            ss << R"(","block-size":)" << std::dec << sysTs->blockSize << "}";
         }
 
         // SYS.USER$
@@ -409,15 +416,16 @@ namespace OpenLogReplicator {
 
             ss SERIALIZER_ENDL << R"({"row-id":")" << sysUser->rowId <<
                     R"(","user":)" << std::dec << sysUser->user <<
-                    R"(,"name":")" << sysUser->name <<
-                    R"(","spare1":)" << std::dec << sysUser->spare1 <<
+                    R"(,"name":")";
+            Ctx::writeEscapeValue(ss, sysUser->name);
+            ss << R"(","spare1":)" << std::dec << sysUser->spare1 <<
                     R"(,"single":)" << std::dec << (uint64_t)sysUser->single << "}";
         }
 
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, std::string &ss, std::string &name, std::set<std::string> &msgs, bool loadMetadata, bool loadSchema) {
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::set<std::string>& msgs, bool loadMetadata, bool loadSchema) {
         try {
             rapidjson::Document document;
             if (ss.length() == 0 || document.Parse(ss.c_str()).HasParseError())
@@ -471,19 +479,19 @@ namespace OpenLogReplicator {
                     metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(name, document, "supp-log-db-primary");
                     metadata->suppLogDbAll = Ctx::getJsonFieldU64(name, document, "supp-log-db-all");
 
-                    const rapidjson::Value &onlineRedoJson = Ctx::getJsonFieldA(name, document, "online-redo");
+                    const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(name, document, "online-redo");
                     for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
                         int64_t group = Ctx::getJsonFieldI64(name, onlineRedoJson[i], "group");
-                        const rapidjson::Value &path = Ctx::getJsonFieldA(name, onlineRedoJson[i], "path");
+                        const rapidjson::Value& path = Ctx::getJsonFieldA(name, onlineRedoJson[i], "path");
 
                         for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
-                            const rapidjson::Value &pathVal = path[j];
+                            const rapidjson::Value& pathVal = path[j];
                             auto* redoLog = new RedoLog(group, pathVal.GetString());
                             metadata->redoLogs.insert(redoLog);
                         }
                     }
 
-                    const rapidjson::Value &incarnationsJson = Ctx::getJsonFieldA(name, document, "incarnations");
+                    const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(name, document, "incarnations");
                     for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
                         uint32_t incarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "incarnation");
                         typeScn resetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "resetlogs-scn");
@@ -503,9 +511,9 @@ namespace OpenLogReplicator {
                     }
                 }
 
-                const rapidjson::Value &usersJson = Ctx::getJsonFieldA(name, document, "users");
+                const rapidjson::Value& usersJson = Ctx::getJsonFieldA(name, document, "users");
                 for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
-                    const rapidjson::Value &userJson = usersJson[i];;
+                    const rapidjson::Value& userJson = usersJson[i];;
                     metadata->users.insert(userJson.GetString());
                 }
             }
@@ -565,13 +573,13 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void SerializerJson::deserializeSysCCol(Metadata* metadata, std::string &name, const rapidjson::Value &sysCColJson) {
+    void SerializerJson::deserializeSysCCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCColJson) {
         for (rapidjson::SizeType i = 0; i < sysCColJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysCColJson[i], "row-id");
             typeCon con = Ctx::getJsonFieldU32(name, sysCColJson[i], "con");
             typeCol intCol = Ctx::getJsonFieldI16(name, sysCColJson[i], "int-col");
             typeObj obj = Ctx::getJsonFieldU32(name, sysCColJson[i], "obj");
-            const rapidjson::Value &spare1Json = Ctx::getJsonFieldA(name, sysCColJson[i], "spare1");
+            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysCColJson[i], "spare1");
             if (spare1Json.Size() != 2)
                 throw DataException("bad JSON in " + name + ", spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);
@@ -581,7 +589,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysCDef(Metadata* metadata, std::string &name, const rapidjson::Value &sysCDefJson) {
+    void SerializerJson::deserializeSysCDef(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCDefJson) {
         for (rapidjson::SizeType i = 0; i < sysCDefJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysCDefJson[i], "row-id");
             typeCon con = Ctx::getJsonFieldU32(name, sysCDefJson[i], "con");
@@ -592,7 +600,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysCol(Metadata* metadata, std::string &name, const rapidjson::Value &sysColJson) {
+    void SerializerJson::deserializeSysCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysColJson) {
         for (rapidjson::SizeType i = 0; i < sysColJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysColJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysColJson[i], "obj");
@@ -607,7 +615,7 @@ namespace OpenLogReplicator {
             uint64_t charsetForm = Ctx::getJsonFieldU64(name, sysColJson[i], "charset-form");
             uint64_t charsetId = Ctx::getJsonFieldU64(name, sysColJson[i], "charset-id");
             int64_t null_ = Ctx::getJsonFieldI64(name, sysColJson[i], "null");
-            const rapidjson::Value &propertyJson = Ctx::getJsonFieldA(name, sysColJson[i], "property");
+            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysColJson[i], "property");
             if (propertyJson.Size() != 2)
                 throw DataException("bad JSON in " + name + ", property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
@@ -618,12 +626,12 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, std::string &name, const rapidjson::Value &sysDeferredStgJson) {
+    void SerializerJson::deserializeSysDeferredStg(Metadata* metadata, const std::string& name, const rapidjson::Value& sysDeferredStgJson) {
         for (rapidjson::SizeType i = 0; i < sysDeferredStgJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysDeferredStgJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysDeferredStgJson[i], "obj");
 
-            const rapidjson::Value &flagsStgJson = Ctx::getJsonFieldA(name, sysDeferredStgJson[i], "flags-stg");
+            const rapidjson::Value& flagsStgJson = Ctx::getJsonFieldA(name, sysDeferredStgJson[i], "flags-stg");
             if (flagsStgJson.Size() != 2)
                 throw DataException("bad JSON in " + name + ", flags-stg should be an array with 2 elements");
             uint64_t flagsStg1 = Ctx::getJsonFieldU64(name, flagsStgJson, "flags-stg", 0);
@@ -633,7 +641,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysECol(Metadata* metadata, std::string &name, const rapidjson::Value &sysEColJson) {
+    void SerializerJson::deserializeSysECol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysEColJson) {
         for (rapidjson::SizeType i = 0; i < sysEColJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysEColJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysEColJson[i], "tab-obj");
@@ -644,7 +652,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysLob(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobJson) {
+    void SerializerJson::deserializeSysLob(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobJson) {
         for (rapidjson::SizeType i = 0; i < sysLobJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysLobJson[i], "obj");
@@ -657,7 +665,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobCompPartJson) {
+    void SerializerJson::deserializeSysLobCompPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobCompPartJson) {
         for (rapidjson::SizeType i = 0; i < sysLobCompPartJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobCompPartJson[i], "row-id");
             typeObj partObj = Ctx::getJsonFieldU32(name, sysLobCompPartJson[i], "part-obj");
@@ -667,7 +675,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysLobFrag(Metadata* metadata, std::string &name, const rapidjson::Value &sysLobFragJson) {
+    void SerializerJson::deserializeSysLobFrag(Metadata* metadata, const std::string& name, const rapidjson::Value& sysLobFragJson) {
         for (rapidjson::SizeType i = 0; i < sysLobFragJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysLobFragJson[i], "row-id");
             typeObj fragObj = Ctx::getJsonFieldU32(name, sysLobFragJson[i], "frag-obj");
@@ -678,7 +686,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysObj(Metadata* metadata, std::string &name, const rapidjson::Value &sysObjJson) {
+    void SerializerJson::deserializeSysObj(Metadata* metadata, const std::string& name, const rapidjson::Value& sysObjJson) {
         for (rapidjson::SizeType i = 0; i < sysObjJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysObjJson[i], "row-id");
             typeUser owner = Ctx::getJsonFieldU32(name, sysObjJson[i], "owner");
@@ -687,7 +695,7 @@ namespace OpenLogReplicator {
             typeType type = Ctx::getJsonFieldU16(name, sysObjJson[i], "type");
             const char* name_ = Ctx::getJsonFieldS(name, SYS_OBJ_NAME_LENGTH, sysObjJson[i], "name");
 
-            const rapidjson::Value &flagsJson = Ctx::getJsonFieldA(name, sysObjJson[i], "flags");
+            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysObjJson[i], "flags");
             if (flagsJson.Size() != 2)
                 throw DataException("bad Json in " + name + ", flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
@@ -698,20 +706,20 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysTab(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabJson) {
+    void SerializerJson::deserializeSysTab(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabJson) {
         for (rapidjson::SizeType i = 0; i < sysTabJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabJson[i], "obj");
             typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabJson[i], "data-obj");
             typeCol cluCols = Ctx::getJsonFieldI16(name, sysTabJson[i], "clu-cols");
 
-            const rapidjson::Value &flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");
+            const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");
             if (flagsJson.Size() != 2)
                 throw DataException("bad JSON in " + name + ", flags should be an array with 2 elements");
             uint64_t flags1 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 0);
             uint64_t flags2 = Ctx::getJsonFieldU64(name, flagsJson, "flags", 1);
 
-            const rapidjson::Value &propertyJson = Ctx::getJsonFieldA(name, sysTabJson[i], "property");
+            const rapidjson::Value& propertyJson = Ctx::getJsonFieldA(name, sysTabJson[i], "property");
             if (propertyJson.Size() != 2)
                 throw DataException("bad Json in " + name + ", property should be an array with 2 elements");
             uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
@@ -721,7 +729,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysTabComPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabComPartJson) {
+    void SerializerJson::deserializeSysTabComPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabComPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabComPartJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabComPartJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabComPartJson[i], "obj");
@@ -732,7 +740,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysTabPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabPartJson) {
+    void SerializerJson::deserializeSysTabPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabPartJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabPartJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabPartJson[i], "obj");
@@ -743,7 +751,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, std::string &name, const rapidjson::Value &sysTabSubPartJson) {
+    void SerializerJson::deserializeSysTabSubPart(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTabSubPartJson) {
         for (rapidjson::SizeType i = 0; i < sysTabSubPartJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabSubPartJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabSubPartJson[i], "obj");
@@ -754,7 +762,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysTs(Metadata* metadata, std::string &name, const rapidjson::Value &sysTsJson) {
+    void SerializerJson::deserializeSysTs(Metadata* metadata, const std::string& name, const rapidjson::Value& sysTsJson) {
         for (rapidjson::SizeType i = 0; i < sysTsJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTsJson[i], "row-id");
             typeTs ts = Ctx::getJsonFieldU32(name, sysTsJson[i], "ts");
@@ -765,13 +773,13 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SerializerJson::deserializeSysUser(Metadata* metadata, std::string &name, const rapidjson::Value &sysUserJson) {
+    void SerializerJson::deserializeSysUser(Metadata* metadata, const std::string& name, const rapidjson::Value& sysUserJson) {
         for (rapidjson::SizeType i = 0; i < sysUserJson.Size(); ++i) {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysUserJson[i], "row-id");
             typeUser user = Ctx::getJsonFieldU32(name, sysUserJson[i], "user");
             const char* name_ = Ctx::getJsonFieldS(name, SYS_USER_NAME_LENGTH, sysUserJson[i], "name");
 
-            const rapidjson::Value &spare1Json = Ctx::getJsonFieldA(name, sysUserJson[i], "spare1");
+            const rapidjson::Value& spare1Json = Ctx::getJsonFieldA(name, sysUserJson[i], "spare1");
             if (spare1Json.Size() != 2)
                 throw DataException("bad JSON in " + name + ", spare1 should be an array with 2 elements");
             uint64_t spare11 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 0);

@@ -159,13 +159,13 @@ namespace OpenLogReplicator {
 
         void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {
             if ((ctx->trace2 & TRACE2_DML) != 0) {
-                std::stringstream strStr;
-                strStr << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" << std::setfill('0') <<
+                std::ostringstream ss;
+                ss << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" << std::setfill('0') <<
                         std::setw(2) << std::hex << (uint64_t)fb << " to: ";
                 for (uint64_t i = 0; i < length && i < 10; ++i) {
-                    strStr << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[i] << ", ";
+                    ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[i] << ", ";
                 }
-                TRACE(TRACE2_DML, strStr.str())
+                TRACE(TRACE2_DML, ss.str())
             }
 
             uint64_t base = column >> 6;
@@ -280,7 +280,7 @@ namespace OpenLogReplicator {
             }
         };
 
-        void builderAppend(std::string& str) {
+        void builderAppend(const std::string& str) {
             uint64_t length = str.length();
             if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
                 memcpy(lastBuffer->data + lastBuffer->length, str.c_str(), length);
@@ -293,12 +293,12 @@ namespace OpenLogReplicator {
             }
         };
 
-        void columnUnknown(std::string& columnName, const uint8_t* data, uint64_t length) {
+        void columnUnknown(const std::string& columnName, const uint8_t* data, uint64_t length) {
             valueBuffer[0] = '?';
             valueLength = 1;
             columnString(columnName);
             if (unknownFormat == UNKNOWN_FORMAT_DUMP) {
-                std::stringstream ss;
+                std::ostringstream ss;
                 for (uint64_t j = 0; j < length; ++j)
                     ss << " " << std::hex << std::setfill('0') << std::setw(2) << (uint64_t) data[j];
                 WARNING("unknown value (column: " << columnName << "): " << std::dec << length << " - " << ss.str())
@@ -456,7 +456,7 @@ namespace OpenLogReplicator {
         };
 
         std::string dumpLob(const uint8_t* data, uint64_t length) {
-            std::stringstream ss;
+            std::ostringstream ss;
             for (uint64_t j = 0; j < length; ++j) {
                 ss << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j];
             }
@@ -693,12 +693,12 @@ namespace OpenLogReplicator {
             valueBufferLength = VALUE_BUFFER_MIN;
         };
 
-        virtual void columnFloat(std::string& columnName, float value) = 0;
-        virtual void columnDouble(std::string& columnName, double value) = 0;
-        virtual void columnString(std::string& columnName) = 0;
-        virtual void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) = 0;
-        virtual void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) = 0;
-        virtual void columnTimestamp(std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
+        virtual void columnFloat(const std::string& columnName, float value) = 0;
+        virtual void columnDouble(const std::string& columnName, double value) = 0;
+        virtual void columnString(const std::string& columnName) = 0;
+        virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) = 0;
+        virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) = 0;
+        virtual void columnTimestamp(const std::string& columnName, struct tm &time_, uint64_t fraction, const char* tz) = 0;
         virtual void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;
         virtual void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;
         virtual void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) = 0;

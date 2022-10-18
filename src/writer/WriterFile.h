@@ -56,7 +56,7 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterFile(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
+        WriterFile(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newOutput,
                    const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend);
         ~WriterFile() override;
 

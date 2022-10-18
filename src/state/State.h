@@ -33,9 +33,9 @@ namespace OpenLogReplicator {
         virtual ~State();
 
         virtual void list(std::set<std::string>& namesList) = 0;
-        [[nodiscard]] virtual bool read(std::string& name, uint64_t maxSize, std::string& in) = 0;
-        virtual void write(std::string& name, std::stringstream& out) = 0;
-        virtual void drop(std::string& name) = 0;
+        [[nodiscard]] virtual bool read(const std::string& name, uint64_t maxSize, std::string& in) = 0;
+        virtual void write(const std::string& name, const std::ostringstream& out) = 0;
+        virtual void drop(const std::string& name) = 0;
     };
 }
 

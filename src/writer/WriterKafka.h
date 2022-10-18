@@ -47,7 +47,7 @@ namespace OpenLogReplicator {
         void pollQueue() override;
 
     public:
-        WriterKafka(Ctx* newCtx, std::string newAlias, std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newBrokers,
+        WriterKafka(Ctx* newCtx, const std::string newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata, const char* newBrokers,
                     const char* newTopic, uint64_t newMaxMessages, bool newEnableIdempotence);
         ~WriterKafka() override;
 

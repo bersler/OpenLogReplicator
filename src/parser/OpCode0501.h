@@ -30,10 +30,10 @@ namespace OpenLogReplicator {
         static void kteoputrn(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void kdilk(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
         static void rowDeps(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void suppLog(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
-        static void opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField &fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void suppLog(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void opc0A16(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void opc0B01(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
+        static void opc0D17(Ctx* ctx, RedoLogRecord* redoLogRecord, typeField& fieldNum, uint64_t& fieldPos, uint16_t& fieldLength);
     public:
         static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };

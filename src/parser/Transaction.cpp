@@ -303,7 +303,7 @@ namespace OpenLogReplicator {
                             break;
                         }
 
-                        std::stringstream pages;
+                        std::ostringstream pages;
                         uint64_t start = 16;
                         uint32_t pageNo = redoLogRecord2->lobPageNo;
                         if (pageNo > 0)

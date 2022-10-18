@@ -33,12 +33,12 @@ namespace OpenLogReplicator {
         pb::Schema* schemaPB;
 
         void columnNull(OracleTable* table, typeCol col, bool after);
-        void columnFloat(std::string& columnName, float value) override;
-        void columnDouble(std::string& columnName, double value) override;
-        void columnString(std::string& columnName) override;
-        void columnNumber(std::string& columnName, uint64_t precision, uint64_t scale) override;
-        void columnRaw(std::string& columnName, const uint8_t* data, uint64_t length) override;
-        void columnTimestamp(std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
+        void columnFloat(const std::string& columnName, float value) override;
+        void columnDouble(const std::string& columnName, double value) override;
+        void columnString(const std::string& columnName) override;
+        void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
+        void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
+        void columnTimestamp(const std::string& columnName, struct tm& time_, uint64_t fraction, const char* tz) override;
         void appendRowid(typeDataObj dataObj, typeDba bdba, typeSlot slot);
         void appendHeader(bool first, bool showXid);
         void appendSchema(OracleTable* table, typeObj obj);

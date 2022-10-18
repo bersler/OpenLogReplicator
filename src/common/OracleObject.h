@@ -48,8 +48,8 @@ namespace OpenLogReplicator {
         uint64_t systemTable;
         bool sys;
 
-        OracleObject(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, std::string& newOwner,
-                     std::string& newName);
+        OracleObject(typeObj newObj, typeDataObj newDataObj, typeUser newUser, typeCol newCluCols, typeOptions newOptions, const std::string& newOwner,
+                     const std::string& newName);
         virtual ~OracleObject();
 
         void addColumn(OracleColumn* column);

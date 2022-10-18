@@ -140,7 +140,7 @@ namespace OpenLogReplicator {
         }
 
         std::string toString() {
-            std::stringstream  ss;
+            std::ostringstream ss;
             ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << (data >> 48) << "." << std::setw(3) <<
                     (uint64_t)((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
             return ss.str();
