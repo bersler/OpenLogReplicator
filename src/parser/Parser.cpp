@@ -601,7 +601,7 @@ namespace OpenLogReplicator {
 
         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
         if (lob == nullptr) {
-            transaction->log(ctx, "lob ", redoLogRecord1);
+            transaction->log(ctx, "idx ", redoLogRecord1);
             return;
         }
 
@@ -965,8 +965,8 @@ namespace OpenLogReplicator {
                     std::to_string(redoLogRecord2->bdba) + ")");
         OracleLob* lob = metadata->schema->checkLobIndexDict(obj);
         if (lob == nullptr) {
-            transaction->log(ctx, "lob1", redoLogRecord1);
-            transaction->log(ctx, "lob2", redoLogRecord2);
+            transaction->log(ctx, "idx1", redoLogRecord1);
+            transaction->log(ctx, "idx2", redoLogRecord2);
             return;
         }
 
@@ -1051,7 +1051,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_LOB, "LOB map  lob: " << redoLogRecord2->lobId << " to xid: " << redoLogRecord1->xid)
             ctx->lobIdToXidMap[redoLogRecord2->lobId] = redoLogRecord1->xid;
 
-            INFO("searching for: " << redoLogRecord2->lobId)
+            TRACE(TRACE2_LOB, "searching for: " << redoLogRecord2->lobId)
             uint32_t pageSize = 0;
             uint8_t* data = nullptr;
             auto orphanedLobIter = orphanedLobs.find(redoLogRecord2->lobId);

@@ -506,10 +506,7 @@ namespace OpenLogReplicator {
         GOOGLE_PROTOBUF_VERIFY_VERSION;
     }
 
-    void BuilderProtobuf::processCommit(bool system) {
-        if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-            return;
-
+    void BuilderProtobuf::processCommit() {
         // Skip empty transaction
         if (newTran) {
             newTran = false;

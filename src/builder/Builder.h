@@ -491,8 +491,8 @@ namespace OpenLogReplicator {
                     uint32_t pageNoLob = iLobPage.first;
                     typeDba page = iLobPage.second;
                     if (pageNo != pageNoLob) {
-                        WARNING("LOB: " << lobId.upper() << " incorrect page: " << pageNoLob << " while expected: "
-                                         << pageNo << " data: " << dumpLob(data, length))
+                        WARNING("LOB: " << lobId.upper() << " incorrect page: " << pageNoLob << " while expected: " << pageNo << " data: " <<
+                                dumpLob(data, length))
                         pageNo = pageNoLob;
                     }
 
@@ -551,7 +551,7 @@ namespace OpenLogReplicator {
                 // in-row value
                 if ((flg2 & 0x0800) == 0x0800) {
                     if (sizeRest != bodyLength - 6) {
-                        WARNING("incorrect LOB3, data: " << dumpLob(data, length))
+                        WARNING("incorrect LOB3, sizeRest: " << std::dec << sizeRest << ", bodyLength: " << bodyLength << ", data: " << dumpLob(data, length))
                         return;
                     }
                     parseString(data + dataOffset, lobLength, charsetId, false);
@@ -720,13 +720,13 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t builderSize() const;
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
-        void processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid, bool system);
-        void processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
-        void processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system);
-        void processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system);
+        void processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid);
+        void processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
+        void processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type);
         void processDdlHeader(RedoLogRecord* redoLogRecord1);
         virtual void initialize();
-        virtual void processCommit(bool system) = 0;
+        virtual void processCommit() = 0;
         virtual void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) = 0;
         void releaseBuffers(uint64_t maxId);
         void sleepForWriterWork(uint64_t queueSize, uint64_t nanoseconds);

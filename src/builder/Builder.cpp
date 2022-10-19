@@ -374,9 +374,7 @@ namespace OpenLogReplicator {
         maxMessageMb = maxMessageMb_;
     }
 
-    void Builder::processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid, bool system) {
-        if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-            return;
+    void Builder::processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid) {
         lastTime = time_;
         lastScn = scn;
         lastSequence = sequence;
@@ -385,7 +383,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
+    void Builder::processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -393,12 +391,6 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-
-        // Ignore DML statements during system transaction
-        if (system && table != nullptr && table->systemTable == 0)
-            return;
-        if (!system && table == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
-            return;
 
         while (fieldNum < redoLogRecord2->rowData)
             RedoLogRecord::nextField(ctx, redoLogRecord2, fieldNum, fieldPos, fieldLength, 0x000001);
@@ -443,18 +435,12 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            if (system) {
-                if (table != nullptr)
-                    systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                                     ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2));
-                if (FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-                    processInsert(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
-            } else {
-                if (table == nullptr || (table->options & OPTIONS_DEBUG_TABLE) == 0)
-                    processInsert(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
-            }
+            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                                                 ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2));
+            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+                processInsert(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                              ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
 
             valuesRelease();
 
@@ -463,7 +449,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system) {
+    void Builder::processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -471,12 +457,6 @@ namespace OpenLogReplicator {
         uint16_t fieldLength = 0;
         uint16_t colLength = 0;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-
-        // Ignore DML statements during system transaction
-        if (system && table != nullptr && table->systemTable == 0)
-            return;
-        if (!system && table == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
-            return;
 
         while (fieldNum < redoLogRecord1->rowData)
             RedoLogRecord::nextField(ctx, redoLogRecord1, fieldNum, fieldPos, fieldLength, 0x000002);
@@ -521,18 +501,13 @@ namespace OpenLogReplicator {
                 pos += colLength;
             }
 
-            if (system) {
-                if (table != nullptr)
-                    systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                                     ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2));
-                if (FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-                    processDelete(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                  ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
-            } else {
-                if (table == nullptr || (table->options & OPTIONS_DEBUG_TABLE) == 0)
-                    processDelete(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
-                                  ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
-            }
+            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                                                 ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2));
+
+            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+                processDelete(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
+                              ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
 
             valuesRelease();
 
@@ -540,7 +515,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system) {
+    void Builder::processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
@@ -549,12 +524,6 @@ namespace OpenLogReplicator {
         RedoLogRecord* redoLogRecord1p;
         RedoLogRecord* redoLogRecord2p = nullptr;
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-
-        // Ignore DML statements during system transaction
-        if (system && table != nullptr && table->systemTable == 0)
-            return;
-        if (!system && table == nullptr && FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
-            return;
 
         if (type == TRANSACTION_INSERT) {
             redoLogRecord2p = redoLogRecord2;
@@ -1086,15 +1055,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system) {
-                if (table != nullptr)
-                    systemTransaction->processUpdate(table, dataObj, bdba, slot);
-                if (FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-                    processUpdate(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            } else {
-                if (table == nullptr || (table->options & OPTIONS_DEBUG_TABLE) == 0)
-                    processUpdate(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            }
+            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                systemTransaction->processUpdate(table, dataObj, bdba, slot);
+
+            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+                processUpdate(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
 
         } else if (type == TRANSACTION_INSERT) {
             if (table != nullptr && !compressedAfter) {
@@ -1144,15 +1109,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system) {
-                if (table != nullptr)
-                    systemTransaction->processInsert(table, dataObj, bdba, slot);
-                if (FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-                    processInsert(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            } else {
-                if (table == nullptr || (table->options & OPTIONS_DEBUG_TABLE) == 0)
-                    processInsert(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            }
+            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                systemTransaction->processInsert(table, dataObj, bdba, slot);
+
+            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+                processInsert(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
 
         } else if (type == TRANSACTION_DELETE) {
             if (table != nullptr && !compressedBefore) {
@@ -1202,15 +1163,11 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (system) {
-                if (table != nullptr)
-                    systemTransaction->processDelete(table, dataObj, bdba, slot);
-                if (FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-                    processDelete(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            } else {
-                if (table == nullptr || (table->options & OPTIONS_DEBUG_TABLE) == 0)
-                    processDelete(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
-            }
+            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                systemTransaction->processDelete(table, dataObj, bdba, slot);
+
+            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+                processDelete(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
         }
 
         valuesRelease();

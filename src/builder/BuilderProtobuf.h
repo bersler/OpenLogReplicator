@@ -150,7 +150,7 @@ namespace OpenLogReplicator {
         ~BuilderProtobuf() override;
 
         void initialize() override;
-        void processCommit(bool system) override;
+        void processCommit() override;
         void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;
     };
 }

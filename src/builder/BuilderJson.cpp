@@ -471,10 +471,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void BuilderJson::processCommit(bool system) {
-        if (system && !FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
-            return;
-
+    void BuilderJson::processCommit() {
         // Skip empty transaction
         if (newTran) {
             newTran = false;

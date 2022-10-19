@@ -199,7 +199,7 @@ namespace OpenLogReplicator {
                 throw RedoLogException("system transaction already active:1");
             builder->systemTransaction = new SystemTransaction(builder, metadata);
         }
-        builder->processBegin(commitScn, commitTimestamp, commitSequence, xid, system);
+        builder->processBegin(commitScn, commitTimestamp, commitSequence, xid);
 
         uint64_t pos;
         uint64_t type = 0;
@@ -277,13 +277,14 @@ namespace OpenLogReplicator {
                         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
                             TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
-                                              " (obj: " << std::dec << lob->obj <<
-                                              ", col: " << lob->intCol <<
-                                              ", lObj: " << lob->lObj <<
-                                              ") -> lobId: " << redoLogRecord1->lobId <<
-                                              ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->lobPageNo <<
-                                              " - DATA:  [0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba << "], " <<
-                                              " OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
+                                    " xid: " << xid <<
+                                    " (obj: " << std::dec << lob->obj <<
+                                    ", col: " << lob->intCol <<
+                                    ", lObj: " << lob->lObj <<
+                                    ") -> lobId: " << redoLogRecord1->lobId <<
+                                    ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->lobPageNo <<
+                                    " - DATA:  [0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba << "], " <<
+                                    " OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
                         }
                     }
                     break;
@@ -322,15 +323,16 @@ namespace OpenLogReplicator {
                         }
 
                         TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
-                                          " (obj: " << std::dec << redoLogRecord1->obj <<
-                                          ", col: " << lob->intCol <<
-                                          ", lObj: " << lob->lObj <<
-                                          ") -> lobId: " << redoLogRecord2->lobId <<
-                                          ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->lobPageNo <<
-                                          " - INDEX:" << pages.str() <<
-                                          ", PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
-                                          ", REST: " << redoLogRecord2->lobLengthRest <<
-                                          ", OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
+                                " xid: " << xid <<
+                                " (obj: " << std::dec << redoLogRecord1->obj <<
+                                ", col: " << lob->intCol <<
+                                ", lObj: " << lob->lObj <<
+                                ") -> lobId: " << redoLogRecord2->lobId <<
+                                ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->lobPageNo <<
+                                " - INDEX:" << pages.str() <<
+                                ", PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
+                                ", REST: " << redoLogRecord2->lobLengthRest <<
+                                ", OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
                         break;
                     }
 
@@ -419,20 +421,20 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            builder->processDml(&lobCtx, first1, first2, type, system);
+                            builder->processDml(&lobCtx, first1, first2, type);
                             opFlush = true;
                         }
                         break;
 
                     // Insert multiple rows
                     case 0x05010B0B:
-                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system);
+                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
                     // Delete multiple rows
                     case 0x05010B0C:
-                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system);
+                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2);
                         opFlush = true;
                         break;
 
@@ -462,8 +464,8 @@ namespace OpenLogReplicator {
                         builder->systemTransaction = new SystemTransaction(builder, metadata);
                     }
 
-                    builder->processCommit(system);
-                    builder->processBegin(commitScn, commitTimestamp, commitSequence, xid, system);
+                    builder->processCommit();
+                    builder->processBegin(commitScn, commitTimestamp, commitSequence, xid);
                 }
 
                 if (opFlush) {
@@ -506,7 +508,7 @@ namespace OpenLogReplicator {
             // Unlock schema
             lck.unlock();
         }
-        builder->processCommit(system);
+        builder->processCommit();
     }
 
     void Transaction::purge(TransactionBuffer* transactionBuffer) {

@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
                     uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
                     uint64_t newColumnFormat, uint64_t newUnknownType, uint64_t newFlushBuffer);
 
-        void processCommit(bool system) override;
+        void processCommit() override;
         void processCheckpoint(typeScn scn, typeTime time_, typeSeq sequence, uint64_t offset, bool redo) override;
     };
 }
