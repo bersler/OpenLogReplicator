@@ -94,7 +94,7 @@ namespace OpenLogReplicator {
 
         if (!outputStream.is_open())
             throw DataException("writing checkpoint decoder to " + fileName);
-        outputStream << out.rdbuf();
+        outputStream << out.str();
         outputStream.close();
     }
 
