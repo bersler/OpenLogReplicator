@@ -86,8 +86,8 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        std::stringstream ss;
-        ss << std::scientific << value;
+        std::ostringstream ss;
+        ss << value;
         builderAppend(ss.str());
     }
 
@@ -101,8 +101,8 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        std::stringstream ss;
-        ss << std::scientific << value;
+        std::ostringstream ss;
+        ss << value;
         builderAppend(ss.str());
     }
 
