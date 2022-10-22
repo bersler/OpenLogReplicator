@@ -83,12 +83,13 @@ namespace OpenLogReplicator {
         valuePB->set_name(table->columns[col]->name);
     }
 
-    void BuilderProtobuf::columnFloat(const std::string& columnName, float value) {
+    void BuilderProtobuf::columnFloat(const std::string& columnName, double value) {
         valuePB->set_name(columnName);
-        valuePB->set_value_float(value);
+        valuePB->set_value_double(value);
     }
 
-    void BuilderProtobuf::columnDouble(const std::string& columnName, double value) {
+    // TODO: possible precession loss
+    void BuilderProtobuf::columnDouble(const std::string& columnName, long double value) {
         valuePB->set_name(columnName);
         valuePB->set_value_double(value);
     }

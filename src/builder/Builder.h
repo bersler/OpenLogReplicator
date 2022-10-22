@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include <atomic>
+#include <cmath>
 #include <cstring>
 #include <map>
 #include <mutex>
@@ -126,8 +127,8 @@ namespace OpenLogReplicator {
         std::mutex mtx;
         std::condition_variable condNoWriterWork;
 
-        float decodeFloat(const uint8_t* data);
-        double decodeDouble(const uint8_t* data);
+        double decodeFloat(const uint8_t* data);
+        long double decodeDouble(const uint8_t* data);
         void builderRotate(bool copy);
         void processValue(LobCtx* lobCtx, OracleTable* table, typeCol col, const uint8_t* data, uint64_t length, bool after, bool compressed);
 
@@ -693,8 +694,8 @@ namespace OpenLogReplicator {
             valueBufferLength = VALUE_BUFFER_MIN;
         };
 
-        virtual void columnFloat(const std::string& columnName, float value) = 0;
-        virtual void columnDouble(const std::string& columnName, double value) = 0;
+        virtual void columnFloat(const std::string& columnName, double value) = 0;
+        virtual void columnDouble(const std::string& columnName, long double value) = 0;
         virtual void columnString(const std::string& columnName) = 0;
         virtual void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) = 0;
         virtual void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) = 0;

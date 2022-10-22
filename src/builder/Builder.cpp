@@ -330,12 +330,61 @@ namespace OpenLogReplicator {
         }
     }
 
-    float Builder::decodeFloat(const uint8_t* data) {
-        return 0.0f;
+    double Builder::decodeFloat(const uint8_t* data) {
+        uint8_t sign = data[0] & 0x80;
+        int64_t exponent = ((((uint64_t)data[0]) & 0x7F) << 1) | (((uint64_t)data[1]) >> 7);
+        uint64_t significand = ((((uint64_t)data[1]) & 0x7F) << 16) | (((uint64_t)data[2]) << 8) | ((uint64_t)data[3]);
+
+        if (sign && exponent == 0 && significand == 0)
+            return 0.0;
+        if (sign && exponent == 0xFF && significand == 0)
+            return INFINITY;
+        if (!sign && exponent == 0 && significand == 0x7FFFFF)
+            return -INFINITY;
+        if (sign && exponent == 0xFF && significand == 0x400000)
+            return NAN;
+
+        if (sign) {
+            if (exponent > 0)
+                significand += 0x800000;
+            exponent -= 0x7F;
+            return ldexp(((double) significand) / ((double) 0x800000), exponent);
+        } else {
+            significand = 0x7FFFFF - significand;
+            if (exponent < 0xFF)
+                significand += 0x800000;
+            exponent = 0x80 - exponent;
+            return -ldexp((((double) significand / (double) 0x800000)), exponent);
+        }
     }
 
-    double Builder::decodeDouble(const uint8_t* data) {
-        return 0.0;
+    long double Builder::decodeDouble(const uint8_t* data) {
+        uint8_t sign = data[0] & 0x80;
+        int64_t exponent = ((((uint64_t)data[0]) & 0x7F) << 4) | (((uint64_t)data[1]) >> 4);
+        uint64_t significand = ((((uint64_t)data[1]) & 0x0F) << 48) | (((uint64_t)data[2]) << 40) | (((uint64_t)data[3]) << 32) | (((uint64_t)data[4]) << 24) |
+                               (((uint64_t)data[5])  << 16) | (((uint64_t)data[6]) << 8) | ((uint64_t)data[7]);
+
+        if (sign && exponent == 0 && significand == 0)
+            return 0.0;
+        if (sign && exponent == 0x7FF && significand == 0)
+            return INFINITY;
+        if (!sign && exponent == 0 && significand == 0xFFFFFFFFFFFFF)
+            return -INFINITY;
+        if (sign && exponent == 0x7FF && significand == 0x8000000000000)
+            return NAN;
+
+        if (sign) {
+            if (exponent > 0)
+                significand += 0x10000000000000;
+            exponent -= 0x3FF;
+            return ldexpl(((long double) significand) / ((long double) 0x10000000000000), exponent);
+        } else {
+            significand = 0xFFFFFFFFFFFFF - significand;
+            if (exponent > 0)
+                significand += 0x10000000000000;
+            exponent = 0x400 - exponent;
+            return -ldexpl((((long double) significand / (long double) 0x10000000000000)), exponent);
+        }
     }
 
     void Builder::builderRotate(bool copy) {

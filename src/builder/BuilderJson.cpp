@@ -76,7 +76,7 @@ namespace OpenLogReplicator {
         builderAppend(R"(":null)", sizeof(R"(":null)") - 1);
     }
 
-    void BuilderJson::columnFloat(const std::string& columnName, float value) {
+    void BuilderJson::columnFloat(const std::string& columnName, double value) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -86,11 +86,12 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        std::string valString(std::to_string(value));
-        builderAppend(valString);
+        std::stringstream ss;
+        ss << std::scientific << value;
+        builderAppend(ss.str());
     }
 
-    void BuilderJson::columnDouble(const std::string& columnName, double value) {
+    void BuilderJson::columnDouble(const std::string& columnName, long double value) {
         if (hasPreviousColumn)
             builderAppend(',');
         else
@@ -100,8 +101,9 @@ namespace OpenLogReplicator {
         builderAppend(columnName);
         builderAppend(R"(":)", sizeof(R"(":)") - 1);
 
-        std::string valString(std::to_string(value));
-        builderAppend(valString);
+        std::stringstream ss;
+        ss << std::scientific << value;
+        builderAppend(ss.str());
     }
 
     void BuilderJson::columnString(const std::string& columnName) {

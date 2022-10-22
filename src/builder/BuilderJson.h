@@ -30,8 +30,8 @@ namespace OpenLogReplicator {
         bool hasPreviousRedo;
         bool hasPreviousColumn;
         void columnNull(OracleTable* table, typeCol col, bool after);
-        void columnFloat(const std::string& columnName, float value) override;
-        void columnDouble(const std::string& columnName, double value) override;
+        void columnFloat(const std::string& columnName, double value) override;
+        void columnDouble(const std::string& columnName, long double value) override;
         void columnString(const std::string& columnName) override;
         void columnNumber(const std::string& columnName, uint64_t precision, uint64_t scale) override;
         void columnRaw(const std::string& columnName, const uint8_t* data, uint64_t length) override;
