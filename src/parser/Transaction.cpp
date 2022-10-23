@@ -276,15 +276,16 @@ namespace OpenLogReplicator {
                     {
                         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
                         if (lob != nullptr) {
-                            TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
+                            TRACE(TRACE2_LOB, "LOB" <<
+                                    " id: " << redoLogRecord1->lobId <<
                                     " xid: " << xid <<
-                                    " (obj: " << std::dec << lob->obj <<
-                                    ", col: " << lob->intCol <<
-                                    ", lObj: " << lob->lObj <<
-                                    ") -> lobId: " << redoLogRecord1->lobId <<
-                                    ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->lobPageNo <<
-                                    " - DATA:  [0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba << "], " <<
-                                    " OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
+                                    " obj: " << std::dec << lob->obj <<
+                                    " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
+                                    " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
+                                    " page: " << std::dec << redoLogRecord1->lobPageNo <<
+                                    " col: " << lob->intCol <<
+                                    " table: " << lob->table->owner << "." << lob->table->name <<
+                                    " lObj: " << lob->lObj)
                         }
                     }
                     break;
@@ -322,17 +323,19 @@ namespace OpenLogReplicator {
                             lobCtx.setLength(redoLogRecord2->lobId, redoLogRecord2->lobLengthPages, redoLogRecord2->lobLengthRest);
                         }
 
-                        TRACE(TRACE2_LOB, "LOB: " << lob->table->owner << "." << lob->table->name <<
+                        TRACE(TRACE2_LOB, "LOB" <<
+                                " id: " << redoLogRecord2->lobId <<
                                 " xid: " << xid <<
-                                " (obj: " << std::dec << redoLogRecord1->obj <<
-                                ", col: " << lob->intCol <<
-                                ", lObj: " << lob->lObj <<
-                                ") -> lobId: " << redoLogRecord2->lobId <<
-                                ", page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->lobPageNo <<
+                                " obj: " << std::dec << redoLogRecord1->obj <<
+                                " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
+                                " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->dba <<
+                                " page: " << std::dec << redoLogRecord2->lobPageNo <<
+                                " col: " << lob->intCol <<
+                                " table: " << lob->table->owner << "." << lob->table->name <<
+                                " lObj: " << lob->lObj <<
                                 " - INDEX:" << pages.str() <<
-                                ", PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
-                                ", REST: " << redoLogRecord2->lobLengthRest <<
-                                ", OP: 0x" << std::setfill('0') << std::setw(8) << std::hex << op)
+                                " PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
+                                " REST: " << redoLogRecord2->lobLengthRest)
                         break;
                     }
 

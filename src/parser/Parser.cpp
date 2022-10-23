@@ -590,28 +590,11 @@ namespace OpenLogReplicator {
         if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
             return;
 
-        // Skip list
-        if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
-            return;
-
-        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
-                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
-        if (transaction == nullptr)
-            return;
-
         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
-        if (lob == nullptr) {
-            transaction->log(ctx, "idx ", redoLogRecord1);
+        if (lob == nullptr)
             return;
-        }
 
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
         uint32_t pageSize = metadata->schema->checkLobPageSize(redoLogRecord1->obj);
-
-        TRACE(TRACE2_LOB, "LOB: data lob: " << redoLogRecord1->lobId << " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex <<
-                redoLogRecord1->dba << " obj: " << std::dec << redoLogRecord1->obj << " pageSize: " << std::dec << pageSize << " pageNo: " << std::dec <<
-                redoLogRecord1->lobPageNo)
 
         if (redoLogRecord1->xid.toUint() == 0) {
             auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
@@ -621,6 +604,26 @@ namespace OpenLogReplicator {
             } else
                 redoLogRecord1->xid = lobKeyIter->second;
         }
+
+        // Skip list
+        if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
+            return;
+
+        Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                      true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+        if (transaction == nullptr)
+            return;
+        if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            transaction->system = true;
+
+        TRACE(TRACE2_LOB, "LOB" <<
+                " id: " << redoLogRecord1->lobId <<
+                " xid: " << transaction->xid <<
+                " obj: " << std::dec << redoLogRecord1->obj <<
+                " op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode << "    " <<
+                " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
+                " page: " << std::dec << redoLogRecord1->lobPageNo <<
+                " pg: " << std::dec << pageSize)
 
         transaction->lobCtx.addLob(redoLogRecord1->lobId, pageSize, redoLogRecord1->dba, allocateLob(redoLogRecord1), transaction->xid);
     }
@@ -1003,7 +1006,10 @@ namespace OpenLogReplicator {
                 typeXid parentXid = lobKeyIter->second;
 
                 if (parentXid != redoLogRecord1->xid) {
-                    TRACE(TRACE2_LOB, "LOB xid: " << parentXid << " sub: " << redoLogRecord1->xid)
+                    TRACE(TRACE2_LOB, "LOB" <<
+                            " id: " << redoLogRecord2->lobId <<
+                            " xid: " << parentXid <<
+                            " sub-xid: " << redoLogRecord1->xid)
                     redoLogRecord1->xid = parentXid;
                 }
             }
@@ -1031,27 +1037,36 @@ namespace OpenLogReplicator {
             redoLogRecord2->lobId.data[2] != 0 || redoLogRecord2->lobId.data[3] != 1)
             return;
 
-        TRACE(TRACE2_LOB, "LOB: idx  lob: " << redoLogRecord2->lobId << " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex <<
-                redoLogRecord2->lobPageNo << " obj: " << std::dec << redoLogRecord2->obj << " op1: " << std::setfill('0') << std::setw(4) <<
-                std::hex << redoLogRecord1->opCode << " op2: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->opCode <<
-                " xid: " << redoLogRecord1->xid << " pageNo: " << std::dec << redoLogRecord2->lobPageNo)
-
         if ((ctx->trace2 & TRACE2_LOB) != 0) {
             std::ostringstream ss;
-            ss << "LOB: indKey: ";
+            if (redoLogRecord1->indKeyLength > 0)
+                ss << "0x";
             for (uint64_t i = 0; i < redoLogRecord1->indKeyLength; ++i)
-                ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->data[redoLogRecord1->indKey + i] << " ";
+                ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->data[redoLogRecord1->indKey + i];
+            if (redoLogRecord2->indKeyLength > 0)
+                ss << " 0x";
             for (uint64_t i = 0; i < redoLogRecord2->indKeyLength; ++i)
-                ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + i] << " ";
-            TRACE(TRACE2_LOB, ss.str())
+                ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + i];
+
+            TRACE(TRACE2_LOB, "LOB" <<
+                    " id: " << redoLogRecord2->lobId <<
+                    " xid: " << redoLogRecord1->xid <<
+                    " obj: " << std::dec << redoLogRecord2->obj <<
+                    " op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode <<
+                        std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->opCode <<
+                    " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->dba <<
+                    " page: " << std::dec << redoLogRecord2->lobPageNo <<
+                    " ind key: " << ss.str())
         }
 
         auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
         if (lobKeyIter == ctx->lobIdToXidMap.end()) {
-            TRACE(TRACE2_LOB, "LOB map  lob: " << redoLogRecord2->lobId << " to xid: " << redoLogRecord1->xid)
+            TRACE(TRACE2_LOB, "LOB" <<
+                    " id: " << redoLogRecord2->lobId <<
+                    " xid: " << redoLogRecord1->xid <<
+                    " MAP")
             ctx->lobIdToXidMap[redoLogRecord2->lobId] = redoLogRecord1->xid;
 
-            TRACE(TRACE2_LOB, "searching for: " << redoLogRecord2->lobId)
             uint32_t pageSize = 0;
             uint8_t* data = nullptr;
             auto orphanedLobIter = orphanedLobs.find(redoLogRecord2->lobId);
@@ -1062,7 +1077,10 @@ namespace OpenLogReplicator {
                 pageSize = metadata->schema->checkLobPageSize(redoLogRecordLob->obj);
                 redoLogRecordLob->data = data + sizeof(uint64_t) + sizeof(RedoLogRecord);
 
-                TRACE(TRACE2_LOB, "LOB: matched LOBID: " << redoLogRecordLob->lobId << " to xid: " << redoLogRecord1->xid)
+                TRACE(TRACE2_LOB, "LOB" <<
+                        " id: " << redoLogRecordLob->lobId <<
+                        " xid: " << redoLogRecord1->xid <<
+                        " ORPHAN FOUND")
             }
 
             transaction->lobCtx.addLob(redoLogRecord2->lobId, pageSize, redoLogRecord2->dba, data, transaction->xid);
@@ -1483,7 +1501,9 @@ namespace OpenLogReplicator {
     }
 
     void Parser::addOrphanedLob(OpenLogReplicator::RedoLogRecord* redoLogRecord1) {
-        TRACE(TRACE2_LOB, "LOB: can't find transaction for LOBID: " + redoLogRecord1->lobId.upper())
+        TRACE(TRACE2_LOB, "LOB" <<
+                " id: " + redoLogRecord1->lobId.upper() <<
+                " CAN'T MATCH")
 
         for (auto lobChunk: orphanedLobs) {
             typeLobId lobId = lobChunk.first;
