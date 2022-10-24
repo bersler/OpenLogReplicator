@@ -34,7 +34,7 @@ namespace OpenLogReplicator {
 
         auto iLobData = lobData->dataMap.find(page);
         if (iLobData != lobData->dataMap.end())
-            throw RedoLogException("duplicate data LOBID: " + lobId.upper() + ", PAGE: " + std::to_string(page) + ", XID: " + xid.toString());
+            delete[] lobData->dataMap[page];
 
         lobData->pageSize = pageSize;
         lobData->dataMap[page] = data;

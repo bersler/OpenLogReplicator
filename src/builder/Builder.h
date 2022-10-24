@@ -531,20 +531,20 @@ namespace OpenLogReplicator {
 
                 uint16_t lobLength;
                 uint64_t dataOffset;
-                if ((flg3 & 0x0F) == 0) {
+                if ((flg3 & 0x03) == 0) {
                     lobLength = data[28];
                     dataOffset = 30;
-                } else if ((flg3 & 0x0F) == 1) {
+                } else if ((flg3 & 0x03) == 1) {
                     lobLength = ctx->read16Big(data + 28);
                     dataOffset = 31;
-                } else if ((flg3 & 0x0F) == 2) {
+                } else if ((flg3 & 0x03) == 2) {
                     lobLength = ctx->read24Big(data + 28);
                     dataOffset = 32;
-                } else if ((flg3 & 0x0F) == 3) {
+                } else if ((flg3 & 0x03) == 3) {
                     lobLength = ctx->read32Big(data + 28);
                     dataOffset = 33;
                 } else {
-                    WARNING("incorrect LOB2, data: " << dumpLob(data, length))
+                    WARNING("incorrect LOB2, flag: " << std::dec << (uint64_t)flg3 << ", data: " << dumpLob(data, length))
                     return;
                 }
 
