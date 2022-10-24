@@ -527,7 +527,6 @@ namespace OpenLogReplicator {
                     return;
                 }
                 uint16_t flg2 = ctx->read16Big(data + 22);
-                uint16_t sizeRest = ctx->read16Big(data + 24);
                 uint8_t flg3 = data[26];
 
                 uint16_t lobLength;
@@ -551,12 +550,33 @@ namespace OpenLogReplicator {
 
                 // in-row value
                 if ((flg2 & 0x0800) == 0x0800) {
-                    if (sizeRest != bodyLength - 6) {
-                        WARNING("incorrect LOB3, sizeRest: " << std::dec << sizeRest << ", bodyLength: " << bodyLength << ", data: " << dumpLob(data, length))
+                    if (bodyLength < 16) {
+                        WARNING("incorrect LOB3, bodyLength: " << std::dec << bodyLength << ", data: " << dumpLob(data, length))
                         return;
                     }
-                    parseString(data + dataOffset, lobLength, charsetId, false);
+
+                    uint32_t zero1 = ctx->read32Big(data + 24);
+                    uint16_t chunkLength = ctx->read16Big(data + 28);
+                    uint32_t zero2 = ctx->read32Big(data + 30);
+
+                    if (zero1 != 0 || zero2 != 0 || chunkLength + 16  != bodyLength) {
+                        WARNING("incorrect LOB4, length: " << std::dec << chunkLength << ", " << bodyLength << ", data: " << zero1 << ", " << zero2 <<
+                                ", data: " << dumpLob(data, length))
+                        return;
+                    }
+
+                    if (chunkLength == 0) {
+                        //null value
+                    } else {
+                        if (isClob) {
+                            parseString(data + 36, chunkLength, charsetId, false);
+                        } else {
+                            memcpy(valueBuffer + valueLength, data + 36, chunkLength);
+                            valueLength += chunkLength;
+                        };
+                    }
                 } else {
+                    uint16_t sizeRest = ctx->read16Big(data + 24);
                     bool append = false;
                     uint8_t lobPages = data[dataOffset++] + 1;
 
@@ -579,7 +599,7 @@ namespace OpenLogReplicator {
                             pageCnt = ctx->read16Big(data + dataOffset);
                             dataOffset += 2;
                         } else {
-                            WARNING("incorrect LOB4, data: " << dumpLob(data, length))
+                            WARNING("incorrect LOB5, data: " << dumpLob(data, length))
                             return;
                         }
 
@@ -610,7 +630,7 @@ namespace OpenLogReplicator {
                     }
 
                     if (lobLength != 0) {
-                        WARNING("incorrect LOB5, data: " << dumpLob(data, length) << ", left: " << std::dec << lobLength)
+                        WARNING("incorrect LOB6, data: " << dumpLob(data, length) << ", left: " << std::dec << lobLength)
                     }
                 }
             }
