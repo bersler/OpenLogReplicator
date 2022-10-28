@@ -491,7 +491,7 @@ namespace OpenLogReplicator {
             if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2));
-            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            if ((table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
                 processInsert(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2), redoLogRecord1->xid);
 
@@ -558,7 +558,7 @@ namespace OpenLogReplicator {
                 systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2));
 
-            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            if ((table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
                 processDelete(lobCtx, table, redoLogRecord2->obj, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                               ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2), redoLogRecord1->xid);
 
@@ -1111,7 +1111,7 @@ namespace OpenLogReplicator {
             if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processUpdate(table, dataObj, bdba, slot);
 
-            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            if ((table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
                 processUpdate(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
 
         } else if (type == TRANSACTION_INSERT) {
@@ -1165,7 +1165,7 @@ namespace OpenLogReplicator {
             if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, dataObj, bdba, slot);
 
-            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            if ((table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
                 processInsert(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
 
         } else if (type == TRANSACTION_DELETE) {
@@ -1219,7 +1219,7 @@ namespace OpenLogReplicator {
             if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processDelete(table, dataObj, bdba, slot);
 
-            if ((table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
+            if ((table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) || FLAG(REDO_FLAGS_SHOW_SYSTEM_TRANSACTIONS))
                 processDelete(lobCtx, table, obj, dataObj, bdba, slot, redoLogRecord1->xid);
         }
 
