@@ -113,12 +113,12 @@ namespace OpenLogReplicator {
         else if (redoLogRecord->opc == 0x0B01)
             ctx->dumpStream << "KDO undo record:" << std::endl;
 
-        auto op = (int8_t)redoLogRecord->data[fieldPos + 0];
+        auto ktbOp = (int8_t)redoLogRecord->data[fieldPos + 0];
         uint8_t flg = redoLogRecord->data[fieldPos + 1];
         uint8_t ver = flg & 0x03;
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KTB Redo " << std::endl;
-            ctx->dumpStream << "op: 0x" << std::setfill('0') << std::setw(2) << std::hex << (int32_t)op << " " <<
+            ctx->dumpStream << "op: 0x" << std::setfill('0') << std::setw(2) << std::hex << (int32_t)ktbOp << " " <<
                     " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)ver << "  " << std::endl;
             ctx->dumpStream << "compat bit: " << std::dec << (uint64_t)(flg & 0x04) << " ";
             if ((flg & 0x04) != 0)
@@ -131,7 +131,7 @@ namespace OpenLogReplicator {
         }
         char opCode = '?';
 
-        if ((op & 0x0F) == KTBOP_C) {
+        if ((ktbOp & 0x0F) == KTBOP_C) {
             if (fieldLength < 16) {
                 WARNING("too short field KTB Redo C: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
                 return;
@@ -145,12 +145,12 @@ namespace OpenLogReplicator {
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << " " << " uba: " << PRINTUBA(redoLogRecord->uba) << std::endl;
             }
-        } else if ((op & 0x0F) == KTBOP_Z) {
+        } else if ((ktbOp & 0x0F) == KTBOP_Z) {
             opCode = 'Z';
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << std::endl;
             }
-        } else if ((op & 0x0F) == KTBOP_L) {
+        } else if ((ktbOp & 0x0F) == KTBOP_L) {
             opCode = 'L';
             if ((flg & 0x08) == 0) {
                 if (fieldLength < 28) {
@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-        } else if ((op & 0x0F) == KTBOP_R) {
+        } else if ((ktbOp & 0x0F) == KTBOP_R) {
             opCode = 'R';
 
             if (ctx->dumpRedoLog >= 1) {
@@ -283,13 +283,13 @@ namespace OpenLogReplicator {
                 }
             }
 
-        } else if ((op & 0x0F) == KTBOP_N) {
+        } else if ((ktbOp & 0x0F) == KTBOP_N) {
             opCode = 'N';
             if (ctx->dumpRedoLog >= 1) {
                 ctx->dumpStream << "op: " << opCode << std::endl;
             }
 
-        } else if ((op & 0x0F) == KTBOP_F) {
+        } else if ((ktbOp & 0x0F) == KTBOP_F) {
             if (fieldLength < 24) {
                 WARNING("too short field KTB Redo F: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
                 return;
@@ -310,7 +310,7 @@ namespace OpenLogReplicator {
         }
 
         // Block cleanout record
-        if ((op & KTBOP_BLOCKCLEANOUT) != 0) {
+        if ((ktbOp & KTBOP_BLOCKCLEANOUT) != 0) {
             if (ctx->dumpRedoLog >= 1) {
                 typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 48);
                 uint8_t opt = redoLogRecord->data[fieldPos + 44];

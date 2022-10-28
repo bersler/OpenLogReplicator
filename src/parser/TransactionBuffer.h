@@ -17,11 +17,13 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <map>
 #include <mutex>
 #include <set>
 #include <unordered_map>
 
 #include "../common/Ctx.h"
+#include "../common/LobKey.h"
 #include "../common/types.h"
 #include "../common/typeXid.h"
 
@@ -62,6 +64,7 @@ namespace OpenLogReplicator {
 
         std::mutex mtx;
         std::unordered_map<typeXidMap, Transaction*> xidTransactionMap;
+        std::map<LobKey, uint8_t*> orphanedLobs;
 
     public:
         std::set<typeXid> skipXidList;
@@ -83,6 +86,8 @@ namespace OpenLogReplicator {
         void deleteTransactionChunks(TransactionChunk* tc);
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
+        void addOrphanedLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize);
+        uint8_t* allocateLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize);
     };
 }
 

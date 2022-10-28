@@ -12,6 +12,7 @@ list(APPEND ListCommon
         common/typeRowId.cpp
         common/LobCtx.cpp
         common/LobData.cpp
+        common/LobKey.cpp
         common/RedoLogException.cpp
         common/RedoLogRecord.cpp
         common/RuntimeException.cpp

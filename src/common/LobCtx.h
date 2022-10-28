@@ -29,11 +29,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define LOBCTX_H_
 
 namespace OpenLogReplicator {
+    class Ctx;
+    class Schema;
+
     class LobCtx {
     public:
         std::unordered_map<typeLobId, LobData*> lobs;
+        std::map<LobKey, uint8_t*>* orphanedLobs;
 
-        void addLob(typeLobId lobId, uint32_t pageSize, typeDba page, uint8_t* data, typeXid xid);
+        void checkOrphanedLobs(Ctx* ctx, typeLobId lobId);
+        void addLob(typeLobId lobId, typeDba page, uint8_t* data);
         void setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest);
         void setPage(typeLobId lobId, typeDba page, uint32_t  pageNo, typeXid xid);
         void purge();

@@ -54,7 +54,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup, const std::string& newPath) :
+    Parser::Parser(Ctx* newCtx, Builder* newBuilder, Metadata* newMetadata, TransactionBuffer* newTransactionBuffer, int64_t newGroup,
+                const std::string& newPath) :
             ctx(newCtx),
             builder(newBuilder),
             metadata(newMetadata),
@@ -84,12 +85,6 @@ namespace OpenLogReplicator {
         while (lwnAllocated > 0) {
             ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
         }
-
-        for (auto lobChunk: orphanedLobs) {
-            uint8_t* data = lobChunk.second;
-            delete[] data;
-        }
-        orphanedLobs.clear();
     }
 
     void Parser::freeLwn() {
@@ -471,7 +466,8 @@ namespace OpenLogReplicator {
                     if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00)
                         appendToTransactionIndex(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     // UNDO - data
-                    else if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00 || redoLogRecord[vectorCur].opCode == 0x0513 || redoLogRecord[vectorCur].opCode == 0x0514)
+                    else if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00 || redoLogRecord[vectorCur].opCode == 0x0513 ||
+                            redoLogRecord[vectorCur].opCode == 0x0514)
                         appendToTransaction(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     // single 5.1
                     else if (redoLogRecord[vectorCur].opCode == 0x0501) {
@@ -485,11 +481,7 @@ namespace OpenLogReplicator {
                 }
 
                 if ((redoLogRecord[vectorCur].opCode == 0x0506 || redoLogRecord[vectorCur].opCode == 0x050B)) {
-                    // ROLLBACK - index
-                    if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0A00)
-                        appendToTransactionIndexRollback(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
-                    // ROLLBACK - data
-                    else if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00)
+                    if ((redoLogRecord[vectorPrev].opCode & 0xFF00) == 0x0B00)
                         appendToTransactionRollback(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     else if (redoLogRecord[vectorCur].opc == 0x0B01) {
                         WARNING("Unknown rollback OP: " << std::hex << redoLogRecord[vectorPrev].opCode << " opc: " << redoLogRecord[vectorCur].opc)
@@ -599,7 +591,7 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->xid.toUint() == 0) {
             auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
             if (lobKeyIter == ctx->lobIdToXidMap.end()) {
-                addOrphanedLob(redoLogRecord1);
+                transactionBuffer->addOrphanedLob(redoLogRecord1, pageSize);
                 return;
             } else
                 redoLogRecord1->xid = lobKeyIter->second;
@@ -625,7 +617,7 @@ namespace OpenLogReplicator {
                 " page: " << std::dec << redoLogRecord1->lobPageNo <<
                 " pg: " << std::dec << pageSize)
 
-        transaction->lobCtx.addLob(redoLogRecord1->lobId, pageSize, redoLogRecord1->dba, allocateLob(redoLogRecord1), transaction->xid);
+        transaction->lobCtx.addLob(redoLogRecord1->lobId, redoLogRecord1->dba, transactionBuffer->allocateLob(redoLogRecord1, pageSize));
     }
 
     void Parser::appendToTransaction(RedoLogRecord* redoLogRecord1) {
@@ -916,18 +908,31 @@ namespace OpenLogReplicator {
                 transaction->system = true;
         }
 
-        if (redoLogRecord1->opCode != 0x0B02 && // Insert row piece
-                redoLogRecord1->opCode != 0x0B03 && // Delete row piece
-                redoLogRecord1->opCode != 0x0B05 && // Update row piece
-                redoLogRecord1->opCode != 0x0B06 && // Overwrite row piece
-                redoLogRecord1->opCode != 0x0B08 && // Change forwarding address
-                redoLogRecord1->opCode != 0x0B0B && // Insert multiple rows
-                redoLogRecord1->opCode != 0x0B0C && // Delete multiple rows
-                redoLogRecord1->opCode != 0x0B10 && // Supp log for update
-                redoLogRecord1->opCode != 0x0B16) { // Logminer support - KDOCMP
-            transaction->log(ctx, "skp1", redoLogRecord1);
-            transaction->log(ctx, "skp2", redoLogRecord2);
-            return;
+        switch (redoLogRecord1->opCode) {
+            // Insert row piece
+            case 0x0B02:
+            // Delete row piece
+            case 0x0B03:
+            // Update row piece
+            case 0x0B05:
+            // Overwrite row piece
+            case 0x0B06:
+            // Change forwarding address
+            case 0x0B08:
+            // Insert multiple rows
+            case 0x0B0B:
+            // Delete multiple rows
+            case 0x0B0C:
+            // Supp log for update
+            case 0x0B10:
+            // Logminer support - KDOCMP
+            case 0x0B16:
+                break;
+
+            default:
+                transaction->log(ctx, "skp1", redoLogRecord1);
+                transaction->log(ctx, "skp2", redoLogRecord2);
+                return;
         }
 
         transaction->rollbackLastOp(metadata, transactionBuffer, redoLogRecord1, redoLogRecord2);
@@ -1025,12 +1030,19 @@ namespace OpenLogReplicator {
                 return;
         }
 
-        if (redoLogRecord2->opCode != 0x0A02 && // Insert leaf row
-            redoLogRecord2->opCode != 0x0A08 && // Init header
-            redoLogRecord2->opCode != 0x0A12) { // Update key data in row
-            transaction->log(ctx, "skp1", redoLogRecord1);
-            transaction->log(ctx, "skp2", redoLogRecord2);
-            return;
+        switch (redoLogRecord2->opCode) {
+            // Insert leaf row
+            case 0x0A02:
+            // Init header
+            case 0x0A08:
+            // Update key data in row
+            case 0x0A12:
+                break;
+
+            default:
+                transaction->log(ctx, "skp1", redoLogRecord1);
+                transaction->log(ctx, "skp2", redoLogRecord2);
+                return;
         }
 
         if (redoLogRecord2->lobId.data[0] != 0 || redoLogRecord2->lobId.data[1] != 0 ||
@@ -1066,31 +1078,15 @@ namespace OpenLogReplicator {
                     " xid: " << redoLogRecord1->xid <<
                     " MAP")
             ctx->lobIdToXidMap[redoLogRecord2->lobId] = redoLogRecord1->xid;
-
-            uint32_t pageSize = 0;
-            uint8_t* data = nullptr;
-            auto orphanedLobIter = orphanedLobs.find(redoLogRecord2->lobId);
-            if (orphanedLobIter != orphanedLobs.end()) {
-                data = orphanedLobIter->second;
-                orphanedLobs.erase(redoLogRecord2->lobId);
-                RedoLogRecord* redoLogRecordLob = (RedoLogRecord*)(data + sizeof(uint64_t));
-                pageSize = metadata->schema->checkLobPageSize(redoLogRecordLob->obj);
-                redoLogRecordLob->data = data + sizeof(uint64_t) + sizeof(RedoLogRecord);
-
-                TRACE(TRACE2_LOB, "LOB" <<
-                        " id: " << redoLogRecordLob->lobId <<
-                        " xid: " << redoLogRecord1->xid <<
-                        " ORPHAN FOUND")
-            }
-
-            transaction->lobCtx.addLob(redoLogRecord2->lobId, pageSize, redoLogRecord2->dba, data, transaction->xid);
+            transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId);
         }
 
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
             transaction->system = true;
 
         // Transaction size limit
-        if (ctx->transactionSizeMax > 0 && transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
+        if (ctx->transactionSizeMax > 0 &&
+                transaction->size + redoLogRecord1->length + redoLogRecord2->length + ROW_HEADER_TOTAL >= ctx->transactionSizeMax) {
             transactionBuffer->skipXidList.insert(transaction->xid);
             transactionBuffer->dropTransaction(redoLogRecord1->xid, redoLogRecord1->conId);
             transaction->purge(transactionBuffer);
@@ -1099,71 +1095,6 @@ namespace OpenLogReplicator {
         }
 
         transaction->add(metadata, transactionBuffer, redoLogRecord1, redoLogRecord2);
-    }
-
-    void Parser::appendToTransactionIndexRollback(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
-            return;
-
-        // Skip other PDB vectors
-        if (metadata->conId > 0 && redoLogRecord1->conId != metadata->conId)
-            return;
-
-        typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
-        Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord2->conId, true, false, true);
-        if (transaction == nullptr) {
-            typeXidMap xidMap = (redoLogRecord2->xid.getData() >> 32) | (((uint64_t) redoLogRecord2->conId) << 32);
-            auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
-            if (iter == transactionBuffer->brokenXidMapList.end()) {
-                WARNING("No match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t) redoLogRecord2->slt << " USN: " <<
-                        (uint64_t) redoLogRecord2->usn)
-                transactionBuffer->brokenXidMapList.insert(xidMap);
-            }
-            return;
-        }
-        redoLogRecord1->xid = transaction->xid;
-
-        // Skip list
-        if (transactionBuffer->skipXidList.find(redoLogRecord1->xid) != transactionBuffer->skipXidList.end())
-            return;
-
-        typeObj obj;
-        typeDataObj dataObj;
-        if (redoLogRecord1->dataObj != 0) {
-            obj = redoLogRecord1->obj;
-            dataObj = redoLogRecord1->dataObj;
-            redoLogRecord2->obj = redoLogRecord1->obj;
-            redoLogRecord2->dataObj = redoLogRecord1->dataObj;
-        } else {
-            obj = redoLogRecord2->obj;
-            dataObj = redoLogRecord2->dataObj;
-            redoLogRecord1->obj = redoLogRecord2->obj;
-            redoLogRecord1->dataObj = redoLogRecord2->dataObj;
-        }
-
-        if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
-            throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
-                    std::to_string(redoLogRecord2->bdba) + ")");
-
-        OracleLob* lob = metadata->schema->checkLobIndexDict(obj);
-        if (lob == nullptr) {
-            transaction->log(ctx, "lbi1", redoLogRecord1);
-            transaction->log(ctx, "lbi2", redoLogRecord2);
-            return;
-        }
-
-        if (redoLogRecord1->opCode != 0x0A02 && // Insert leaf row
-            redoLogRecord1->opCode != 0x0A08 && // Init header
-            redoLogRecord1->opCode != 0x0A12) { // Update key data in row
-            transaction->log(ctx, "skp1", redoLogRecord1);
-            transaction->log(ctx, "skp2", redoLogRecord2);
-            return;
-        }
-
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
-
-        transaction->rollbackLastOp(metadata, transactionBuffer, redoLogRecord1, redoLogRecord2);
     }
 
     void Parser::dumpRedoVector(uint8_t* data, uint64_t recordLength) const {
@@ -1488,31 +1419,6 @@ namespace OpenLogReplicator {
 
         freeLwn();
         return reader->getRet();
-    }
-
-    uint8_t* Parser::allocateLob(RedoLogRecord* redoLogRecord1) {
-        uint64_t length = redoLogRecord1->length + sizeof(RedoLogRecord) + sizeof(uint64_t);
-        uint8_t* data = new uint8_t[length];
-        *((uint64_t*)data) = length;
-        memcpy((void*)(data + sizeof(uint64_t)), (void*)redoLogRecord1, sizeof(RedoLogRecord));
-        memcpy((void*)(data + sizeof(uint64_t) + sizeof(RedoLogRecord)), redoLogRecord1->data, redoLogRecord1->length);
-
-        return data;
-    }
-
-    void Parser::addOrphanedLob(OpenLogReplicator::RedoLogRecord* redoLogRecord1) {
-        TRACE(TRACE2_LOB, "LOB" <<
-                " id: " + redoLogRecord1->lobId.upper() <<
-                " CAN'T MATCH")
-
-        for (auto lobChunk: orphanedLobs) {
-            typeLobId lobId = lobChunk.first;
-
-            if (lobId == redoLogRecord1->lobId)
-                return;
-        }
-
-        orphanedLobs[redoLogRecord1->lobId] = allocateLob(redoLogRecord1);
     }
 
     std::ostream& operator<<(std::ostream& os, const Parser& parser) {

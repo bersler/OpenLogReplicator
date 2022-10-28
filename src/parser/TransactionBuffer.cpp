@@ -39,6 +39,12 @@ namespace OpenLogReplicator {
         skipXidList.clear();
         dumpXidList.clear();
         brokenXidMapList.clear();
+
+        for (auto lobChunk: orphanedLobs) {
+            uint8_t* data = lobChunk.second;
+            delete[] data;
+        }
+        orphanedLobs.clear();
     }
 
     void TransactionBuffer::purge() {
@@ -63,7 +69,7 @@ namespace OpenLogReplicator {
             if (!add)
                 return nullptr;
 
-            transaction = new Transaction(xid);
+            transaction = new Transaction(xid, &orphanedLobs);
             {
                 std::unique_lock<std::mutex> lck(mtx);
                 xidTransactionMap[xidMap] = transaction;
@@ -339,5 +345,35 @@ namespace OpenLogReplicator {
                 minXid = transaction->xid;
             }
         }
+    }
+
+    void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize) {
+        TRACE(TRACE2_LOB, "LOB" <<
+                                " id: " << redoLogRecord1->lobId.upper() <<
+                                " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
+                                " can't match, offset: " << std::dec << redoLogRecord1->dataOffset)
+
+        LobKey lobKey(redoLogRecord1->lobId, redoLogRecord1->dba);
+
+        if (orphanedLobs.find(lobKey) != orphanedLobs.end()) {
+            WARNING("duplicate orphaned lob: " << redoLogRecord1->lobId << " page: 0x" << std::setfill('0') << std::setw(8) << std::hex <<
+                                               redoLogRecord1->dba)
+            return;
+        }
+
+        orphanedLobs[lobKey] = allocateLob(redoLogRecord1, pageSize);
+    }
+
+    uint8_t* TransactionBuffer::allocateLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize) {
+        uint64_t length = redoLogRecord1->length + sizeof(RedoLogRecord) + sizeof(uint64_t) + sizeof(uint32_t);
+        uint8_t* data = new uint8_t[length];
+        *((uint64_t*)data) = length;
+        *((uint32_t*)data + sizeof(uint32_t)) = pageSize;
+        memcpy((void*)(data + sizeof(uint64_t) + sizeof(uint32_t)), (void*)redoLogRecord1, sizeof(RedoLogRecord));
+        memcpy((void*)(data + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord)), redoLogRecord1->data, redoLogRecord1->length);
+        redoLogRecord1 = (RedoLogRecord*)(data + sizeof(uint64_t) + sizeof(uint32_t));
+        redoLogRecord1->data = data + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord);
+
+        return data;
     }
 }

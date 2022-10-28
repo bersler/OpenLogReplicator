@@ -32,7 +32,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "TransactionBuffer.h"
 
 namespace OpenLogReplicator {
-    Transaction::Transaction(typeXid newXid) :
+    Transaction::Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs) :
         deallocTc(nullptr),
         opCodes(0),
         mergeBuffer(nullptr),
@@ -51,6 +51,7 @@ namespace OpenLogReplicator {
         lastSplit(false),
         dump(false),
         size(0) {
+        lobCtx.orphanedLobs = newOrphanedLobs;
     }
 
     void Transaction::add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1) {
@@ -71,114 +72,124 @@ namespace OpenLogReplicator {
         log(ctx, "rlb1", redoLogRecord1);
         log(ctx, "rlb2", redoLogRecord2);
 
-        if (lastTc == nullptr || lastTc->size == 0) {
-            WARNING("rollback2 failed, empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
-            return;
-        }
+        while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
+            uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
-        uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-        auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            bool ok = false;
+            switch (lastRedoLogRecord2->opCode) {
+                case 0x0A02:
+                case 0x0A08:
+                case 0x0A12:
+                    transactionBuffer->rollbackTransactionChunk(this);
+                    --opCodes;
+                    continue;
 
-        bool ok = false;
-        switch (lastRedoLogRecord2->opCode) {
-            case 0x0B05:
-                if (redoLogRecord1->opCode == 0x0B05) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B02:
-                if (redoLogRecord1->opCode == 0x0B03) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B03:
-                if (redoLogRecord1->opCode == 0x0B02) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B06:
-                if (redoLogRecord1->opCode == 0x0B06) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B08:
-                if (redoLogRecord1->opCode == 0x0B08) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B0B:
-                if (redoLogRecord1->opCode == 0x0B0C) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B0C:
-                if (redoLogRecord1->opCode == 0x0B0B) {
-                    ok = true;
-                    break;
-                }
-            case 0x0B16:
-                if (redoLogRecord1->opCode == 0x0B16) {
-                    ok = true;
-                    break;
-                }
-        }
+                case 0x0B05:
+                    if (redoLogRecord1->opCode == 0x0B05) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B02:
+                    if (redoLogRecord1->opCode == 0x0B03) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B03:
+                    if (redoLogRecord1->opCode == 0x0B02) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B06:
+                    if (redoLogRecord1->opCode == 0x0B06) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B08:
+                    if (redoLogRecord1->opCode == 0x0B08) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B0B:
+                    if (redoLogRecord1->opCode == 0x0B0C) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B0C:
+                    if (redoLogRecord1->opCode == 0x0B0B) {
+                        ok = true;
+                        break;
+                    }
+                case 0x0B16:
+                    if (redoLogRecord1->opCode == 0x0B16) {
+                        ok = true;
+                        break;
+                    }
+            }
 
-        if (lastRedoLogRecord2->obj != redoLogRecord1->obj)
-            ok = false;
+            if (lastRedoLogRecord2->obj != redoLogRecord1->obj)
+                ok = false;
 
-        if (!ok) {
-            log(metadata->ctx, "lst1", lastRedoLogRecord1);
-            log(metadata->ctx, "lst2", lastRedoLogRecord2);
-            WARNING("trying to rollback2: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
-                    " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
-                    ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
-            return;
-        }
+            if (!ok) {
+                WARNING("trying to rollback2: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
+                        " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                        ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
+                return;
+            }
 
-        transactionBuffer->rollbackTransactionChunk(this);
-        if (opCodes > 0)
+            transactionBuffer->rollbackTransactionChunk(this);
             --opCodes;
+            return;
+        }
+
+        WARNING("rollback2 failed for 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                " empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
     }
 
     void Transaction::rollbackLastOp(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1) {
         Ctx* ctx = metadata->ctx;
         log(ctx, "rlb ", redoLogRecord1);
 
-        if (lastTc == nullptr || lastTc->size == 0) {
-            WARNING("rollback1 failed, empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
-            return;
-        }
+        while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
+            uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
-        uint64_t lengthLast = *((uint64_t*) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-        auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-        auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            bool ok = false;
+            switch (lastRedoLogRecord2->opCode) {
+                case 0x0A02:
+                case 0x0A08:
+                case 0x0A12:
+                    transactionBuffer->rollbackTransactionChunk(this);
+                    --opCodes;
+                    continue;
 
-        bool ok = false;
-        if (lastRedoLogRecord2->opCode == 0)
-            ok = true;
-        else if (lastRedoLogRecord2->opCode == 0x0B10)
-            ok = true;
-        else if (lastRedoLogRecord2->opCode == 0x0513)
-            ok = true;
-        else if (lastRedoLogRecord2->opCode == 0x0514)
-            ok = true;
+                case 0x0000:
+                case 0x0B10:
+                case 0x0513:
+                case 0x0514:
+                    ok = true;
+                    break;
+            }
 
-        if (lastRedoLogRecord1->obj != redoLogRecord1->obj)
-            ok = false;
+            if (lastRedoLogRecord1->obj != redoLogRecord1->obj)
+                ok = false;
 
-        if (!ok) {
-            log(metadata->ctx, "lst1", lastRedoLogRecord1);
-            log(metadata->ctx, "lst2", lastRedoLogRecord2);
-            WARNING("trying to rollback1: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
-                                             " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
-                                             ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
-            return;
-        }
+            if (!ok) {
+                WARNING("trying to rollback1: 0x" << std::hex << std::setfill('0') << std::setw(4) << lastRedoLogRecord2->opCode <<
+                        " with: 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                        ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
+                return;
+            }
 
-        transactionBuffer->rollbackTransactionChunk(this);
-        if (opCodes > 0)
+            transactionBuffer->rollbackTransactionChunk(this);
             --opCodes;
+            return;
+        }
+
+        WARNING("rollback1 failed for 0x" << std::hex << std::setfill('0') << std::setw(4) << redoLogRecord1->opCode <<
+                " empty buffer, offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
     }
 
     void Transaction::flush(Metadata* metadata, TransactionBuffer* transactionBuffer, Builder* builder) {

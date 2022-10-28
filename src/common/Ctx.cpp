@@ -157,10 +157,10 @@ namespace OpenLogReplicator {
     }
 
     uint64_t Ctx::read56Big(const uint8_t* buf) {
-        return (((uint64_t)buf[0] << 24) | ((uint64_t)buf[1] << 16) |
+        return ((uint64_t)buf[0] << 24) | ((uint64_t)buf[1] << 16) |
                 ((uint64_t)buf[2] << 8) | ((uint64_t)buf[3]) |
                 ((uint64_t)buf[4] << 40) | ((uint64_t)buf[5] << 32) |
-                ((uint64_t)buf[6] << 48));
+                ((uint64_t)buf[6] << 48);
     }
 
     uint64_t Ctx::read64Little(const uint8_t* buf) {

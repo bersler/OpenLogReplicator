@@ -20,9 +20,26 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "LobCtx.h"
 #include "LobData.h"
 #include "RedoLogException.h"
+#include "RedoLogRecord.h"
+#include "../metadata/Schema.h"
 
 namespace OpenLogReplicator {
-    void LobCtx::addLob(typeLobId lobId, uint32_t pageSize, typeDba page, uint8_t* data, typeXid xid) {
+    void LobCtx::checkOrphanedLobs(Ctx* ctx, typeLobId lobId) {
+        LobKey lobKey(lobId, 0);
+        for (auto itLobKey = orphanedLobs->upper_bound(lobKey);
+             itLobKey != orphanedLobs->end() && itLobKey->first.lobId == lobId; ) {
+
+            addLob(lobId, itLobKey->first.page, itLobKey->second);
+
+            TRACE(TRACE2_LOB, "LOB" <<
+                    " id: " << lobId <<
+                    " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << itLobKey->first.page)
+
+            itLobKey = orphanedLobs->erase(itLobKey);
+        }
+    }
+
+    void LobCtx::addLob(typeLobId lobId, typeDba page, uint8_t* data) {
         LobData* lobData;
         auto iLob = lobs.find(lobId);
         if (iLob != lobs.end()) {
@@ -36,7 +53,7 @@ namespace OpenLogReplicator {
         if (iLobData != lobData->dataMap.end())
             delete[] lobData->dataMap[page];
 
-        lobData->pageSize = pageSize;
+        lobData->pageSize = *((uint32_t*)(data + sizeof(uint64_t)));
         lobData->dataMap[page] = data;
     }
 

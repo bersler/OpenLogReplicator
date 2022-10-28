@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -60,7 +61,7 @@ namespace OpenLogReplicator {
         bool dump;
         uint64_t size;
 
-        explicit Transaction(typeXid newXid);
+        explicit Transaction(typeXid newXid, std::map<LobKey, uint8_t*>* newOrphanedLobs);
 
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1);
         void add(Metadata* metadata, TransactionBuffer* transactionBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
