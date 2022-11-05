@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
         INFO("INFO database: " << request.database_name())
         send(request, stream);
         receive(response, stream);
-        INFO("- code: " << (uint64_t)response.code() << ", scn: " << response.scn())
+        INFO("- code: " << static_cast<uint64_t>(response.code()) << ", scn: " << response.scn())
 
         uint64_t scn = 0;
         if (response.code() == OpenLogReplicator::pb::ResponseCode::STARTED) {
@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
             }
             send(request, stream);
             receive(response, stream);
-            INFO("- code: " << (uint64_t)response.code() << ", scn: " << response.scn())
+            INFO("- code: " << static_cast<uint64_t>(response.code()) << ", scn: " << response.scn())
 
             if (response.code() == OpenLogReplicator::pb::ResponseCode::STARTED || response.code() == OpenLogReplicator::pb::ResponseCode::ALREADY_STARTED) {
                 scn = response.scn();
@@ -136,14 +136,15 @@ int main(int argc, char** argv) {
         INFO("REDO database: " << request.database_name())
         send(request, stream);
         receive(response, stream);
-        INFO("- code: " << (uint64_t)response.code())
+        INFO("- code: " << static_cast<uint64_t>(response.code()))
 
         if (response.code() != OpenLogReplicator::pb::ResponseCode::STREAMING)
             return 1;
 
         for (;;) {
             receive(response, stream);
-            INFO("- scn: " << std::dec << response.scn() << ", code: " << (uint64_t) response.code() << " payload size: " << response.payload_size())
+            INFO("- scn: " << std::dec << response.scn() << ", code: " << static_cast<uint64_t>(response.code()) << " payload size: " <<
+                    response.payload_size())
             lastScn = response.scn();
             ++num;
 

@@ -31,12 +31,13 @@ namespace OpenLogReplicator {
     public:
         OracleTable* table;
         typeObj obj;
+        typeDataObj dataObj;
+        typeObj lObj;
         typeCol col;
         typeCol intCol;
-        typeObj lObj;
         std::vector<typeObj> lobIndexes;
 
-        OracleLob(OracleTable* table, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj);
+        OracleLob(OracleTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
         virtual ~OracleLob();
 
         void addIndex(typeObj obj);

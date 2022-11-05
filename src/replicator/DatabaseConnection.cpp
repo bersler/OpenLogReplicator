@@ -38,27 +38,33 @@ namespace OpenLogReplicator {
     void DatabaseConnection::connect() {
         disconnect();
 
-        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &errhp, OCI_HTYPE_ERROR, 0, nullptr);
-        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &srvhp, OCI_HTYPE_SERVER, 0, nullptr);
-        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &svchp, OCI_HTYPE_SVCCTX, 0, nullptr);
-        OCIHandleAlloc((dvoid*) env->envhp, (dvoid**) &authp, OCI_HTYPE_SESSION, 0, nullptr);
+        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&errhp), OCI_HTYPE_ERROR,
+                       0, nullptr);
+        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&srvhp), OCI_HTYPE_SERVER,
+                       0, nullptr);
+        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&svchp), OCI_HTYPE_SVCCTX,
+                       0, nullptr);
+        OCIHandleAlloc(reinterpret_cast<dvoid*>(env->envhp), reinterpret_cast<dvoid**>(&authp), OCI_HTYPE_SESSION,
+                       0, nullptr);
 
         env->checkErr(errhp, OCIServerAttach(srvhp, errhp, (const OraText*) connectString.c_str(), connectString.length(),
                                              OCI_DEFAULT));
-        env->checkErr(errhp, OCIAttrSet((dvoid*) svchp, OCI_HTYPE_SVCCTX, srvhp, 0, OCI_ATTR_SERVER,
-                                        (OCIError*) errhp));
-        env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) user.c_str(), user.length(),
-                                        OCI_ATTR_USERNAME, (OCIError*) errhp));
-        env->checkErr(errhp, OCIAttrSet((dvoid*) authp, OCI_HTYPE_SESSION, (dvoid*) password.c_str(), password.length(),
-                                        OCI_ATTR_PASSWORD, (OCIError*) errhp));
+        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX, srvhp, 0,
+                                        OCI_ATTR_SERVER, reinterpret_cast<OCIError*>(errhp)));
+        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
+                                        const_cast<dvoid*>(reinterpret_cast<const dvoid*>(user.c_str())), user.length(),
+                                        OCI_ATTR_USERNAME, reinterpret_cast<OCIError*>(errhp)));
+        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION,
+                                        const_cast<dvoid*>(reinterpret_cast<const dvoid*>(password.c_str())), password.length(),
+                                        OCI_ATTR_PASSWORD, reinterpret_cast<OCIError*>(errhp)));
 
         if (sysAsm)
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_SYSASM));
         else
             env->checkErr(errhp, OCISessionBegin(svchp, errhp, authp, OCI_CRED_RDBMS, OCI_DEFAULT));
 
-        env->checkErr(errhp, OCIAttrSet((dvoid*) svchp, OCI_HTYPE_SVCCTX, (dvoid*) authp, 0, OCI_ATTR_SESSION,
-                                        errhp));
+        env->checkErr(errhp, OCIAttrSet(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX,
+                                        reinterpret_cast<dvoid*>(authp), 0, OCI_ATTR_SESSION, errhp));
 
         connected = true;
     }
@@ -71,7 +77,7 @@ namespace OpenLogReplicator {
             OCIServerDetach(srvhp, errhp, OCI_DEFAULT);
 
         if (authp != nullptr) {
-            OCIHandleFree((dvoid*) authp, OCI_HTYPE_SESSION);
+            OCIHandleFree(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SESSION);
             authp = nullptr;
         }
 
@@ -81,17 +87,17 @@ namespace OpenLogReplicator {
         }
 
         if (svchp != nullptr) {
-            OCIHandleFree((dvoid*) svchp, OCI_HTYPE_SVCCTX);
+            OCIHandleFree(reinterpret_cast<dvoid*>(svchp), OCI_HTYPE_SVCCTX);
             svchp = nullptr;
         }
 
         if (authp != nullptr) {
-            OCIHandleFree((dvoid*) authp, OCI_HTYPE_SERVER);
+            OCIHandleFree(reinterpret_cast<dvoid*>(authp), OCI_HTYPE_SERVER);
             authp = nullptr;
         }
 
         if (errhp != nullptr) {
-            OCIHandleFree((dvoid*) errhp, OCI_HTYPE_ERROR);
+            OCIHandleFree(reinterpret_cast<dvoid*>(errhp), OCI_HTYPE_ERROR);
             errhp = nullptr;
         }
 

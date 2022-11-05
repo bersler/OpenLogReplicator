@@ -95,7 +95,7 @@ namespace OpenLogReplicator {
         while (tries > 0) {
             if (ctx->hardShutdown)
                 break;
-            bytes = pread(fileDes, buf, size, (int64_t)offset);
+            bytes = pread(fileDes, buf, size, static_cast<int64_t>(offset));
             TRACE(TRACE2_FILE, "FILE: read " << fileName << ", " << std::dec << offset << ", " << std::dec << size << " returns " << std::dec << bytes)
 
             if (bytes > 0)

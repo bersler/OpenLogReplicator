@@ -128,9 +128,9 @@ namespace OpenLogReplicator {
     }
 
     void Metadata::setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset) {
-        for (auto elem: locales->characterMap) {
-            if (nlsCharset == elem.second->name) {
-                defaultCharacterMapId = elem.first;
+        for (auto characterMapIt: locales->characterMap) {
+            if (nlsCharset == characterMapIt.second->name) {
+                defaultCharacterMapId = characterMapIt.first;
                 break;
             }
         }
@@ -138,9 +138,9 @@ namespace OpenLogReplicator {
         if (defaultCharacterMapId == 0)
             throw DataException("unsupported NLS_CHARACTERSET value");
 
-        for (auto elem: locales->characterMap) {
-            if (strcmp(nlsNcharCharset.c_str(), elem.second->name) == 0) {
-                defaultCharacterNcharMapId = elem.first;
+        for (auto characterMapIt: locales->characterMap) {
+            if (strcmp(nlsNcharCharset.c_str(), characterMapIt.second->name) == 0) {
+                defaultCharacterNcharMapId = characterMapIt.first;
                 break;
             }
         }
@@ -221,7 +221,7 @@ namespace OpenLogReplicator {
             throw DataException("owner '" + std::string(owner) + "' contains lower case characters, value must be upper case");
         if (!Ctx::checkNameCase(table))
             throw DataException("table '" + std::string(table) + "' contains lower case characters, value must be upper case");
-        auto* element = new SchemaElement(owner, table, options);
+        auto element = new SchemaElement(owner, table, options);
         schemaElements.push_back(element);
         return element;
     }

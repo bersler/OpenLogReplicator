@@ -40,8 +40,8 @@ namespace OpenLogReplicator {
     Locales::Locales() = default;
 
     Locales::~Locales() {
-        for (auto it : Locales::characterMap) {
-            CharacterSet* cs = it.second;
+        for (auto characterMapIt : Locales::characterMap) {
+            CharacterSet* cs = characterMapIt.second;
             delete cs;
         }
         timeZoneMap.clear();

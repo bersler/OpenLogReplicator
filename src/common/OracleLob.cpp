@@ -22,12 +22,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OracleTable.h"
 
 namespace OpenLogReplicator {
-    OracleLob::OracleLob(OracleTable* table, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj) :
+    OracleLob::OracleLob(OracleTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol) :
             table(table),
             obj(newObj),
+            dataObj(newDataObj),
+            lObj(newLObj),
             col(newCol),
-            intCol(newIntCol),
-            lObj(newLObj) {
+            intCol(newIntCol) {
     }
 
     OracleLob::~OracleLob() {

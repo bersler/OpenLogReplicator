@@ -110,10 +110,12 @@ namespace OpenLogReplicator {
             uint16_t poff = ctx->read32(redoLogRecord->data + fieldPos + 6);
 
             ctx->dumpStream << "KDLI common [" << std::dec << fieldLength << "]" << std::endl;
-            ctx->dumpStream << "  op    0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)op << " [" << opCode << "]" << std::endl;
-            ctx->dumpStream << "  type  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)type << " [" << typeCode << "]" << std::endl;
-            ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg0 << std::endl;
-            ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg1 << std::endl;
+            ctx->dumpStream << "  op    0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(op) <<
+                    " [" << opCode << "]" << std::endl;
+            ctx->dumpStream << "  type  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(type) <<
+                    " [" << typeCode << "]" << std::endl;
+            ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg0) << std::endl;
+            ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg1) << std::endl;
             ctx->dumpStream << "  psiz  " << std::dec << psiz << std::endl;
             ctx->dumpStream << "  poff  " << std::dec << poff << std::endl;
             ctx->dumpStream << "  dba   0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->dba << std::endl;
@@ -122,7 +124,7 @@ namespace OpenLogReplicator {
         RedoLogRecord::nextField(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x1A0604);
         // Field: 2
 
-        redoLogRecord->xid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 16),
+        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 16)),
                                      ctx->read16(redoLogRecord->data + fieldPos + 18),
                                      ctx->read32(redoLogRecord->data + fieldPos + 20));
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 24);
@@ -133,7 +135,7 @@ namespace OpenLogReplicator {
             uint16_t bsz = ctx->read16(redoLogRecord->data + fieldPos + 4);
             typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 8);
 
-            ctx->dumpStream << "KDLI fpload [" << std::dec << (uint64_t)code << "." << fieldLength << "]" << std::endl;
+            ctx->dumpStream << "KDLI fpload [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             ctx->dumpStream << "  bsz   " << std::dec << bsz << std::endl;
             if (ctx->version < REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   " << PRINTSCN48(scn) << std::endl;
@@ -205,16 +207,17 @@ namespace OpenLogReplicator {
             uint8_t pskip = redoLogRecord->data[fieldPos + 30];
             uint8_t sskip = redoLogRecord->data[fieldPos + 31];
             uint8_t hash[20];
-            memcpy((void*)hash, (void*)(redoLogRecord->data + fieldPos + 32), 20);
+            memcpy(reinterpret_cast<void*>(hash),
+                   reinterpret_cast<const void*>(redoLogRecord->data + fieldPos + 32), 20);
             uint16_t hwm = ctx->read16(redoLogRecord->data + fieldPos + 52);
             uint16_t spr = ctx->read16(redoLogRecord->data + fieldPos + 54);
 
-            ctx->dumpStream << "KDLI load data [" << std::dec << (uint64_t)code << "." << fieldLength << "]" << std::endl;
+            ctx->dumpStream << "KDLI load data [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             ctx->dumpStream << "bdba    [0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->dba << "]" << std::endl;
             ctx->dumpStream << "kdlich  [0xXXXXXXXXXXXX 0]" << std::endl;
-            ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg0 << " [ver=" << flg0var << " typ=" <<
-                    flg0typ << " lock=" << flg0lock << "]" << std::endl;
-            ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg1 << std::endl;
+            ctx->dumpStream << "  flg0  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg0) <<
+                    " [ver=" << flg0var << " typ=" << flg0typ << " lock=" << flg0lock << "]" << std::endl;
+            ctx->dumpStream << "  flg1  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg1) << std::endl;
             if (ctx->version < REDO_VERSION_12_2)
                 ctx->dumpStream << "  scn   " << PRINTSCN48(scn) << std::endl;
             else
@@ -223,14 +226,14 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "  rid   0x" << std::setfill('0') << std::setw(8) << std::hex << rid2 << "." << std::setfill('0') <<
                     std::setw(4) << std::hex << rid1 << std::endl;
             ctx->dumpStream << "kdlidh  [0xXXXXXXXXXXXX 24]" << std::endl;
-            ctx->dumpStream << "  flg2  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg2 << " [ver=" << flg2ver1 << " lid=" <<
-                    flg2lid << " hash=" << flg2hash << " cmap=" << flg2cmap << " pfill=" << flg2pfill << "]" << std::endl;
-            ctx->dumpStream << "  flg3  0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flg3 << std::endl;
-            ctx->dumpStream << "  pskip " << std::dec << (uint64_t)pskip << std::endl;
-            ctx->dumpStream << "  sskip " << std::dec << (uint64_t)sskip << std::endl;
+            ctx->dumpStream << "  flg2  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg2) <<
+                    " [ver=" << flg2ver1 << " lid=" << flg2lid << " hash=" << flg2hash << " cmap=" << flg2cmap << " pfill=" << flg2pfill << "]" << std::endl;
+            ctx->dumpStream << "  flg3  0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flg3) << std::endl;
+            ctx->dumpStream << "  pskip " << std::dec << static_cast<uint64_t>(pskip) << std::endl;
+            ctx->dumpStream << "  sskip " << std::dec << static_cast<uint64_t>(sskip) << std::endl;
             ctx->dumpStream << "  hash  ";
             for (uint64_t j = 0; j < 20; ++j)
-                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)hash[j];
+                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(hash[j]);
             ctx->dumpStream << std::endl;
             ctx->dumpStream << "  hwm   " << std::dec << hwm << std::endl;
             ctx->dumpStream << "  spr   " << std::dec << spr << std::endl;
@@ -246,10 +249,10 @@ namespace OpenLogReplicator {
             ctx->dumpStream << "KDLI data load [0xXXXXXXXXXXXX." << std::dec << fieldLength << "]" << std::endl;
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
-                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
                 if ((j % 26) < 25)
                     ctx->dumpStream << " ";
-                if ((j % 26) == 25 || j == (uint64_t)fieldLength - 1)
+                if ((j % 26) == 25 || j == static_cast<uint64_t>(fieldLength) - 1)
                     ctx->dumpStream << std::endl;
             }
         }
@@ -268,13 +271,13 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             if (op == OP266_OP_BIMG) {
                 uint8_t code = redoLogRecord->data[fieldPos + 0];
-                typeXid xid = typeXid((typeUsn) ctx->read16(redoLogRecord->data + fieldPos + 4),
+                typeXid xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
                                       ctx->read16(redoLogRecord->data + fieldPos + 6),
                                       ctx->read32(redoLogRecord->data + fieldPos + 8));
                 uint16_t objv = ctx->read16(redoLogRecord->data + fieldPos + 16);
                 uint32_t flag = ctx->read32(redoLogRecord->data + fieldPos + 20);
 
-                ctx->dumpStream << "KDLI suplog [" << std::dec << (uint64_t) code << "." << std::dec << fieldLength
+                ctx->dumpStream << "KDLI suplog [" << std::dec << static_cast<uint64_t>(code) << "." << std::dec << fieldLength
                                 << "]" << std::endl;
                 ctx->dumpStream << "  xid   " << xid << std::endl;
                 ctx->dumpStream << "  objn  " << std::dec << objn << std::endl;
@@ -285,10 +288,10 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << "KDLI data load [0xXXXXXXXXXXXX." << std::dec << fieldLength << "]" << std::endl;
 
                 for (uint64_t j = 0; j < fieldLength; ++j) {
-                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
                     if ((j % 26) < 25)
                         ctx->dumpStream << " ";
-                    if ((j % 26) == 25 || j == (uint64_t)fieldLength - 1)
+                    if ((j % 26) == 25 || j == static_cast<uint64_t>(fieldLength) - 1)
                         ctx->dumpStream << std::endl;
                 }
             }

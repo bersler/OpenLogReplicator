@@ -44,7 +44,7 @@ namespace OpenLogReplicator {
         std::vector<OracleColumn*> columns;
         std::vector<OracleLob*> lobs;
         std::vector<typeObj2> tablePartitions;
-        std::vector<typeObj> lobPartitions;
+        std::vector<typeDataObj> lobPartitions;
         std::vector<typeObj> lobIndexes;
         std::vector<typeCol> pk;
         uint64_t systemTable;

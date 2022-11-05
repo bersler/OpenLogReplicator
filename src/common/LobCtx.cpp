@@ -26,42 +26,42 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     void LobCtx::checkOrphanedLobs(Ctx* ctx, typeLobId lobId) {
         LobKey lobKey(lobId, 0);
-        for (auto itLobKey = orphanedLobs->upper_bound(lobKey);
-             itLobKey != orphanedLobs->end() && itLobKey->first.lobId == lobId; ) {
+        for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
+             orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId; ) {
 
-            addLob(lobId, itLobKey->first.page, itLobKey->second);
+            addLob(lobId, orphanedLobsIt->first.page, orphanedLobsIt->second);
 
             TRACE(TRACE2_LOB, "LOB" <<
                     " id: " << lobId <<
-                    " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << itLobKey->first.page)
+                    " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << orphanedLobsIt->first.page)
 
-            itLobKey = orphanedLobs->erase(itLobKey);
+            orphanedLobsIt = orphanedLobs->erase(orphanedLobsIt);
         }
     }
 
     void LobCtx::addLob(typeLobId lobId, typeDba page, uint8_t* data) {
         LobData* lobData;
-        auto iLob = lobs.find(lobId);
-        if (iLob != lobs.end()) {
-            lobData = iLob->second;
+        auto lobsIt = lobs.find(lobId);
+        if (lobsIt != lobs.end()) {
+            lobData = lobsIt->second;
         } else {
             lobData = new LobData();
             lobs[lobId] = lobData;
         }
 
-        auto iLobData = lobData->dataMap.find(page);
-        if (iLobData != lobData->dataMap.end())
+        auto dataMapIt = lobData->dataMap.find(page);
+        if (dataMapIt != lobData->dataMap.end())
             delete[] lobData->dataMap[page];
 
-        lobData->pageSize = *((uint32_t*)(data + sizeof(uint64_t)));
+        lobData->pageSize = *(reinterpret_cast<uint32_t*>(data + sizeof(uint64_t)));
         lobData->dataMap[page] = data;
     }
 
     void LobCtx::setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest) {
         LobData* lobData;
-        auto iLob = lobs.find(lobId);
-        if (iLob != lobs.end()) {
-            lobData = iLob->second;
+        auto lobsIt = lobs.find(lobId);
+        if (lobsIt != lobs.end()) {
+            lobData = lobsIt->second;
         } else {
             lobData = new LobData();
             lobs[lobId] = lobData;
@@ -73,24 +73,24 @@ namespace OpenLogReplicator {
 
     void LobCtx::setPage(typeLobId lobId, typeDba page, uint32_t  pageNo, typeXid xid) {
         LobData* lobData;
-        auto iLob = lobs.find(lobId);
-        if (iLob != lobs.end()) {
-            lobData = iLob->second;
+        auto lobsIt = lobs.find(lobId);
+        if (lobsIt != lobs.end()) {
+            lobData = lobsIt->second;
         } else {
             lobData = new LobData();
             lobs[lobId] = lobData;
         }
 
-        auto iLobIndex = lobData->indexMap.find(page);
-        if (iLobIndex != lobData->indexMap.end())
+        auto indexMapIt = lobData->indexMap.find(page);
+        if (indexMapIt != lobData->indexMap.end())
             throw RedoLogException("duplicate index LOBID: " + lobId.upper() + ", PAGE: " + std::to_string(page) + ", XID: " + xid.toString());
 
         lobData->indexMap[pageNo] = page;
     }
 
     void LobCtx::purge() {
-        for (auto iLob: lobs) {
-            LobData* lobData = iLob.second;
+        for (auto lobsIt: lobs) {
+            LobData* lobData = lobsIt.second;
             delete lobData;
         }
         lobs.clear();

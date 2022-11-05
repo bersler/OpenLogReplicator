@@ -56,6 +56,7 @@ namespace OpenLogReplicator {
         bool begin;
         bool rollback;
         bool system;
+        bool schema;
         bool shutdown;
         bool lastSplit;
         bool dump;
@@ -80,16 +81,16 @@ namespace OpenLogReplicator {
                      " obj: " << std::dec << redoLogRecord1->obj <<
                      " bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba <<
                      " slot: " << std::dec << redoLogRecord1->slot <<
-                     " fb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
-                     " cc: " << std::dec << (uint64_t)redoLogRecord1->cc <<
+                     " fb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->fb) <<
+                     " cc: " << std::dec << static_cast<uint64_t>(redoLogRecord1->cc) <<
                      " suppbdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->suppLogBdba <<
                      " suppslot: " << std::dec << redoLogRecord1->suppLogSlot <<
-                     " suppfb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
-                     " suppcc: " << std::dec << (uint64_t)redoLogRecord1->suppLogCC <<
+                     " suppfb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->suppLogFb) <<
+                     " suppcc: " << std::dec << static_cast<uint64_t>(redoLogRecord1->suppLogCC) <<
                      " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
                      " slt: " << std::dec << redoLogRecord1->slt <<
-                     " rci: " << std::dec << (uint64_t)redoLogRecord1->rci <<
-                     " seq: " << std::dec << (uint64_t)redoLogRecord1->seq <<
+                     " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord1->rci) <<
+                     " seq: " << std::dec << static_cast<uint64_t>(redoLogRecord1->seq) <<
                      " flg: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->flg <<
                      " split: " << std::dec << lastSplit <<
                      " offset: " << std::dec << redoLogRecord1->dataOffset)

@@ -264,12 +264,14 @@ namespace OpenLogReplicator {
                         uint64_t toCopy = msg->length - copied;
                         if (toCopy > tmpLength - curLength) {
                             toCopy = tmpLength - curLength;
-                            memcpy((void*)(msg->data + copied), (void*)(curBuffer->data + curLength), toCopy);
+                            memcpy(reinterpret_cast<void*>(msg->data + copied),
+                                   reinterpret_cast<const void*>(curBuffer->data + curLength), toCopy);
                             curBuffer = curBuffer->next;
                             tmpLength = OUTPUT_BUFFER_DATA_SIZE;
                             curLength = 0;
                         } else {
-                            memcpy((void*)(msg->data + copied), (void*)(curBuffer->data + curLength), toCopy);
+                            memcpy(reinterpret_cast<void*>(msg->data + copied),
+                                   reinterpret_cast<const void*>(curBuffer->data + curLength), toCopy);
                             curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
                         }
                         copied += toCopy;

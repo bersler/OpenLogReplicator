@@ -97,7 +97,7 @@ namespace OpenLogReplicator {
         bool loaded;
 
         std::unordered_map<typeObj, OracleLob*> lobMap;
-        std::unordered_map<typeObj, OracleLob*> lobPartitionMap;
+        std::unordered_map<typeDataObj, OracleLob*> lobPartitionMap;
         std::unordered_map<typeObj, OracleLob*> lobIndexMap;
         std::unordered_map<typeObj, uint16_t> lobPageMap;
         std::unordered_map<typeObj, OracleTable*> tableMap;
@@ -173,7 +173,7 @@ namespace OpenLogReplicator {
         std::unordered_map<typeUser, SysUser*> sysUserMapUser;
 
         std::set<typeObj> lobsTouched;
-        std::set<typeObj> lobPartitionsTouched;
+        std::set<typeDataObj> lobPartitionsTouched;
         std::set<typeObj> tablesTouched;
         std::set<typeObj> tablePartitionsTouched;
         std::set<typeUser> usersTouched;
@@ -250,14 +250,14 @@ namespace OpenLogReplicator {
         [[nodiscard]] SysTs* dictSysTsFind(typeRowId rowId);
         [[nodiscard]] SysUser* dictSysUserFind(typeRowId rowId);
         void touchLob(typeObj obj);
-        void touchLobPartition(typeObj obj);
+        void touchLobPartition(typeDataObj dataObj);
         void touchTable(typeObj obj);
         void touchTablePartition(typeObj obj);
         void touchUser(typeUser user);
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
-        [[nodiscard]] OracleLob* checkLobDict(typeObj obj);
+        [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
         [[nodiscard]] OracleLob* checkLobIndexDict(typeObj obj);
-        [[nodiscard]] uint32_t checkLobPageSize(typeObj obj);
+        [[nodiscard]] uint32_t checkLobPageSize(typeDataObj dataObj);
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);
         void addLobToDict(OracleLob* lob, uint16_t pageSize);

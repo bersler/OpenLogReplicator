@@ -501,7 +501,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -531,7 +531,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -560,7 +560,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -608,7 +608,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -635,7 +635,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -663,7 +663,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -695,7 +695,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -721,7 +721,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -749,7 +749,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -783,7 +783,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -815,7 +815,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -843,7 +843,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -871,7 +871,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -899,7 +899,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -927,7 +927,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol)(base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1027,7 +1027,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1068,7 +1068,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1104,7 +1104,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1190,7 +1190,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1221,7 +1221,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1257,7 +1257,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1307,7 +1307,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1339,7 +1339,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1377,7 +1377,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1428,7 +1428,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1478,7 +1478,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1514,7 +1514,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1550,7 +1550,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1586,7 +1586,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;
@@ -1622,7 +1622,7 @@ namespace OpenLogReplicator {
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
-            typeCol column = (typeCol) (base << 6);
+            auto column = static_cast<typeCol>(base << 6);
             for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
                 if (builder->valuesSet[base] < mask)
                     break;

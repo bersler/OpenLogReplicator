@@ -148,8 +148,8 @@ namespace OpenLogReplicator {
         // SYS.CCOL$
         ss << R"("sys-ccol":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysCColMapRowId) {
-            SysCCol* sysCCol = it.second;
+        for (auto sysCColMapRowIdIt : metadata->schema->sysCColMapRowId) {
+            SysCCol* sysCCol = sysCColMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -166,8 +166,8 @@ namespace OpenLogReplicator {
         // SYS.CDEF$
         ss << "]," SERIALIZER_ENDL << R"("sys-cdef":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysCDefMapRowId) {
-            SysCDef* sysCDef = it.second;
+        for (auto sysCDefMapRowIdIt : metadata->schema->sysCDefMapRowId) {
+            SysCDef* sysCDef = sysCDefMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -183,8 +183,8 @@ namespace OpenLogReplicator {
         // SYS.COL$
         ss << "]," SERIALIZER_ENDL << R"("sys-col":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysColMapRowId) {
-            SysCol* sysCol = it.second;
+        for (auto sysColMapRowIdIt : metadata->schema->sysColMapRowId) {
+            SysCol* sysCol = sysColMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -211,8 +211,8 @@ namespace OpenLogReplicator {
         // SYS.DEFERRED_STG$
         ss << "]," SERIALIZER_ENDL << R"("sys-deferredstg":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysDeferredStgMapRowId) {
-            SysDeferredStg* sysDeferredStg = it.second;
+        for (auto sysDeferredStgMapRowIdIt : metadata->schema->sysDeferredStgMapRowId) {
+            SysDeferredStg* sysDeferredStg = sysDeferredStgMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -227,8 +227,8 @@ namespace OpenLogReplicator {
         // SYS.ECOL$
         ss << "]," SERIALIZER_ENDL << R"("sys-ecol":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysEColMapRowId) {
-            SysECol* sysECol = it.second;
+        for (auto sysEColMapRowIdIt : metadata->schema->sysEColMapRowId) {
+            SysECol* sysECol = sysEColMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -244,8 +244,8 @@ namespace OpenLogReplicator {
         // SYS.LOB$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysLobMapRowId) {
-            SysLob* sysLob = it.second;
+        for (auto sysLobMapRowIdIt : metadata->schema->sysLobMapRowId) {
+            SysLob* sysLob = sysLobMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -263,8 +263,8 @@ namespace OpenLogReplicator {
         // SYS.LOBCOMPPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-comp-part":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysLobCompPartMapRowId) {
-            SysLobCompPart* sysLobCompPart = it.second;
+        for (auto sysLobCompPartMapRowIdIt : metadata->schema->sysLobCompPartMapRowId) {
+            SysLobCompPart* sysLobCompPart = sysLobCompPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -279,8 +279,8 @@ namespace OpenLogReplicator {
         // SYS.LOBFRAG$
         ss << "]," SERIALIZER_ENDL << R"("sys-lob-frag":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysLobFragMapRowId) {
-            SysLobFrag* sysLobFrag = it.second;
+        for (auto sysLobFragMapRowIdIt : metadata->schema->sysLobFragMapRowId) {
+            SysLobFrag* sysLobFrag = sysLobFragMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -296,8 +296,8 @@ namespace OpenLogReplicator {
         // SYS.OBJ$
         ss << "]," SERIALIZER_ENDL << R"("sys-obj":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysObjMapRowId) {
-            SysObj* sysObj = it.second;
+        for (auto sysObjMapRowIdIt : metadata->schema->sysObjMapRowId) {
+            SysObj* sysObj = sysObjMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -312,14 +312,14 @@ namespace OpenLogReplicator {
             Ctx::writeEscapeValue(ss, sysObj->name);
             ss << R"(","type":)" << std::dec << sysObj->type <<
                     R"(,"flags":)" << std::dec << sysObj->flags <<
-                    R"(,"single":)" << std::dec << (uint64_t)sysObj->single << "}";
+                    R"(,"single":)" << std::dec << static_cast<uint64_t>(sysObj->single) << "}";
         }
 
         // SYS.TAB$
         ss << "]," SERIALIZER_ENDL << R"("sys-tab":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysTabMapRowId) {
-            SysTab* sysTab = it.second;
+        for (auto sysTabMapRowIdIt : metadata->schema->sysTabMapRowId) {
+            SysTab* sysTab = sysTabMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -337,8 +337,8 @@ namespace OpenLogReplicator {
         // SYS.TABCOMPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabcompart":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysTabComPartMapRowId) {
-            SysTabComPart* sysTabComPart = it.second;
+        for (auto sysTabComPartMapRowIdIt : metadata->schema->sysTabComPartMapRowId) {
+            SysTabComPart* sysTabComPart = sysTabComPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -354,8 +354,8 @@ namespace OpenLogReplicator {
         // SYS.TABPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabpart":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysTabPartMapRowId) {
-            SysTabPart* sysTabPart = it.second;
+        for (auto sysTabPartMapRowIdIt : metadata->schema->sysTabPartMapRowId) {
+            SysTabPart* sysTabPart = sysTabPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -371,8 +371,8 @@ namespace OpenLogReplicator {
         // SYS.TABSUBPART$
         ss << "]," SERIALIZER_ENDL << R"("sys-tabsubpart":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysTabSubPartMapRowId) {
-            SysTabSubPart* sysTabSubPart = it.second;
+        for (auto sysTabSubPartMapRowIdIt : metadata->schema->sysTabSubPartMapRowId) {
+            SysTabSubPart* sysTabSubPart = sysTabSubPartMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -388,8 +388,8 @@ namespace OpenLogReplicator {
         // SYS.TS$
         ss << "]," SERIALIZER_ENDL << R"("sys-ts":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysTsMapRowId) {
-            SysTs* sysTs = it.second;
+        for (auto sysTsMapRowIdIt : metadata->schema->sysTsMapRowId) {
+            SysTs* sysTs = sysTsMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -406,8 +406,8 @@ namespace OpenLogReplicator {
         // SYS.USER$
         ss << "]," SERIALIZER_ENDL << R"("sys-user":[)";
         hasPrev = false;
-        for (auto it : metadata->schema->sysUserMapRowId) {
-            SysUser* sysUser = it.second;
+        for (auto sysUserMapRowIdIt : metadata->schema->sysUserMapRowId) {
+            SysUser* sysUser = sysUserMapRowIdIt.second;
 
             if (hasPrev)
                 ss << ",";
@@ -419,7 +419,7 @@ namespace OpenLogReplicator {
                     R"(,"name":")";
             Ctx::writeEscapeValue(ss, sysUser->name);
             ss << R"(","spare1":)" << std::dec << sysUser->spare1 <<
-                    R"(,"single":)" << std::dec << (uint64_t)sysUser->single << "}";
+                    R"(,"single":)" << std::dec << static_cast<uint64_t>(sysUser->single) << "}";
         }
 
         ss << "]}";
@@ -486,7 +486,7 @@ namespace OpenLogReplicator {
 
                         for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
                             const rapidjson::Value& pathVal = path[j];
-                            auto* redoLog = new RedoLog(group, pathVal.GetString());
+                            auto redoLog = new RedoLog(group, pathVal.GetString());
                             metadata->redoLogs.insert(redoLog);
                         }
                     }
@@ -500,8 +500,8 @@ namespace OpenLogReplicator {
                         typeResetlogs resetlogs = Ctx::getJsonFieldU32(name, incarnationsJson[i], "resetlogs");
                         uint32_t priorIncarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "prior-incarnation");
 
-                        auto* oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
-                                                         status, resetlogs, priorIncarnation);
+                        auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
+                                                        status, resetlogs, priorIncarnation);
                         metadata->oracleIncarnations.insert(oi);
 
                         if (oi->current)

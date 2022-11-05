@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
         int ret = stat(fileName.c_str(), &fileStat);
         if (ret != 0)
             return false;
-        if ((uint64_t)fileStat.st_size > maxSize || fileStat.st_size == 0)
+        if (static_cast<uint64_t>(fileStat.st_size) > maxSize || fileStat.st_size == 0)
             throw DataException("checkpoint file: " + fileName + " wrong size: " + std::to_string(fileStat.st_size));
 
         std::ifstream inputStream;

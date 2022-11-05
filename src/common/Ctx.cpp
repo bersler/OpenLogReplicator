@@ -127,110 +127,110 @@ namespace OpenLogReplicator {
     }
 
     uint16_t Ctx::read16Little(const uint8_t* buf) {
-        return (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
+        return static_cast<uint16_t>(buf[0]) | (static_cast<uint16_t>(buf[1]) << 8);
     }
 
     uint16_t Ctx::read16Big(const uint8_t* buf) {
-        return ((uint16_t)buf[0] << 8) | (uint16_t)buf[1];
+        return (static_cast<uint16_t>(buf[0]) << 8) | static_cast<uint16_t>(buf[1]);
     }
 
     uint32_t Ctx::read24Big(const uint8_t* buf) {
-        return ((uint32_t)buf[0] << 16) |
-               ((uint32_t)buf[1] << 8) | (uint32_t)buf[2];
+        return (static_cast<uint32_t>(buf[0]) << 16) |
+               (static_cast<uint32_t>(buf[1]) << 8) | static_cast<uint32_t>(buf[2]);
     }
 
     uint32_t Ctx::read32Little(const uint8_t* buf) {
-        return (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) |
-               ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
+        return static_cast<uint32_t>(buf[0]) | (static_cast<uint32_t>(buf[1]) << 8) |
+               (static_cast<uint32_t>(buf[2]) << 16) | (static_cast<uint32_t>(buf[3]) << 24);
     }
 
     uint32_t Ctx::read32Big(const uint8_t* buf) {
-        return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
-               ((uint32_t)buf[2] << 8) | (uint32_t)buf[3];
+        return (static_cast<uint32_t>(buf[0]) << 24) | (static_cast<uint32_t>(buf[1]) << 16) |
+               (static_cast<uint32_t>(buf[2]) << 8) | static_cast<uint32_t>(buf[3]);
     }
 
     uint64_t Ctx::read56Little(const uint8_t* buf) {
-        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
-               ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-               ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
-               ((uint64_t)buf[6] << 48);
+        return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
+               (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
+               (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
+               (static_cast<uint64_t>(buf[6]) << 48);
     }
 
     uint64_t Ctx::read56Big(const uint8_t* buf) {
-        return ((uint64_t)buf[0] << 24) | ((uint64_t)buf[1] << 16) |
-                ((uint64_t)buf[2] << 8) | ((uint64_t)buf[3]) |
-                ((uint64_t)buf[4] << 40) | ((uint64_t)buf[5] << 32) |
-                ((uint64_t)buf[6] << 48);
+        return (static_cast<uint64_t>(buf[0]) << 24) | (static_cast<uint64_t>(buf[1]) << 16) |
+                (static_cast<uint64_t>(buf[2]) << 8) | (static_cast<uint64_t>(buf[3])) |
+                (static_cast<uint64_t>(buf[4]) << 40) | (static_cast<uint64_t>(buf[5]) << 32) |
+                (static_cast<uint64_t>(buf[6]) << 48);
     }
 
     uint64_t Ctx::read64Little(const uint8_t* buf) {
-        return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
-               ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-               ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
-               ((uint64_t)buf[6] << 48) | ((uint64_t)buf[7] << 56);
+        return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
+               (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
+               (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40) |
+               (static_cast<uint64_t>(buf[6]) << 48) | (static_cast<uint64_t>(buf[7]) << 56);
     }
 
     uint64_t Ctx::read64Big(const uint8_t* buf) {
-        return ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48) |
-               ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
-               ((uint64_t)buf[4] << 24) | ((uint64_t)buf[5] << 16) |
-               ((uint64_t)buf[6] << 8) | (uint64_t)buf[7];
+        return (static_cast<uint64_t>(buf[0]) << 56) | (static_cast<uint64_t>(buf[1]) << 48) |
+               (static_cast<uint64_t>(buf[2]) << 40) | (static_cast<uint64_t>(buf[3]) << 32) |
+               (static_cast<uint64_t>(buf[4]) << 24) | (static_cast<uint64_t>(buf[5]) << 16) |
+               (static_cast<uint64_t>(buf[6]) << 8) | static_cast<uint64_t>(buf[7]);
     }
 
     typeScn Ctx::readScnLittle(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[5] & 0x80) == 0x80)
-            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
-                   ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-                   ((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
-                   ((uint64_t)buf[4] << 48) | ((uint64_t)(buf[5] & 0x7F) << 56);
+            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
+                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
+                   (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
+                   (static_cast<uint64_t>(buf[4]) << 48) | (static_cast<uint64_t>(buf[5] & 0x7F) << 56);
         else
-            return (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
-                   ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
-                   ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40);
+            return static_cast<uint64_t>(buf[0]) | (static_cast<uint64_t>(buf[1]) << 8) |
+                   (static_cast<uint64_t>(buf[2]) << 16) | (static_cast<uint64_t>(buf[3]) << 24) |
+                   (static_cast<uint64_t>(buf[4]) << 32) | (static_cast<uint64_t>(buf[5]) << 40);
     }
 
     typeScn Ctx::readScnBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[4] & 0x80) == 0x80)
-            return (uint64_t)buf[3] | ((uint64_t)buf[2] << 8) |
-                   ((uint64_t)buf[1] << 16) | ((uint64_t)buf[0] << 24) |
-                   ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
-                   ((uint64_t)buf[5] << 48) | ((uint64_t)(buf[4] & 0x7F) << 56);
+            return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
+                   (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
+                   (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
+                   (static_cast<uint64_t>(buf[5]) << 48) | (static_cast<uint64_t>(buf[4] & 0x7F) << 56);
         else
-            return (uint64_t)buf[3] | ((uint64_t)buf[2] << 8) |
-                   ((uint64_t)buf[1] << 16) | ((uint64_t)buf[0] << 24) |
-                   ((uint64_t)buf[5] << 32) | ((uint64_t)buf[4] << 40);
+            return static_cast<uint64_t>(buf[3]) | (static_cast<uint64_t>(buf[2]) << 8) |
+                   (static_cast<uint64_t>(buf[1]) << 16) | (static_cast<uint64_t>(buf[0]) << 24) |
+                   (static_cast<uint64_t>(buf[5]) << 32) | (static_cast<uint64_t>(buf[4]) << 40);
     }
 
     typeScn Ctx::readScnRLittle(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[1] & 0x80) == 0x80)
-            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
-                   ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
-                   // ((uint64_t)buf[6] << 32) | ((uint64_t)buf[7] << 40) |
-                   ((uint64_t)buf[0] << 48) | ((uint64_t)(buf[1] & 0x7F) << 56);
+            return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
+                   (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
+                   // (static_cast<uint64_t>(buf[6]) << 32) | (static_cast<uint64_t>(buf[7]) << 40) |
+                   (static_cast<uint64_t>(buf[0]) << 48) | (static_cast<uint64_t>(buf[1] & 0x7F) << 56);
         else
-            return (uint64_t)buf[2] | ((uint64_t)buf[3] << 8) |
-                   ((uint64_t)buf[4] << 16) | ((uint64_t)buf[5] << 24) |
-                   ((uint64_t)buf[0] << 32) | ((uint64_t)buf[1] << 40);
+            return static_cast<uint64_t>(buf[2]) | (static_cast<uint64_t>(buf[3]) << 8) |
+                   (static_cast<uint64_t>(buf[4]) << 16) | (static_cast<uint64_t>(buf[5]) << 24) |
+                   (static_cast<uint64_t>(buf[0]) << 32) | (static_cast<uint64_t>(buf[1]) << 40);
     }
 
     typeScn Ctx::readScnRBig(const uint8_t* buf) {
         if (buf[0] == 0xFF && buf[1] == 0xFF && buf[2] == 0xFF && buf[3] == 0xFF && buf[4] == 0xFF && buf[5] == 0xFF)
             return ZERO_SCN;
         if ((buf[0] & 0x80) == 0x80)
-            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
-                   ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
-                   // ((uint64_t)buf[7] << 32) | ((uint64_t)buf[6] << 40) |
-                   ((uint64_t)buf[1] << 48) | ((uint64_t)(buf[0] & 0x7F) << 56);
+            return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
+                   (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
+                   // (static_cast<uint64_t>(buf[7]) << 32) | (static_cast<uint64_t>(buf[6]) << 40) |
+                   (static_cast<uint64_t>(buf[1]) << 48) | (static_cast<uint64_t>(buf[0] & 0x7F) << 56);
         else
-            return (uint64_t)buf[5] | ((uint64_t)buf[4] << 8) |
-                   ((uint64_t)buf[3] << 16) | ((uint64_t)buf[2] << 24) |
-                   ((uint64_t)buf[1] << 32) | ((uint64_t)buf[0] << 40);
+            return static_cast<uint64_t>(buf[5]) | (static_cast<uint64_t>(buf[4]) << 8) |
+                   (static_cast<uint64_t>(buf[3]) << 16) | (static_cast<uint64_t>(buf[2]) << 24) |
+                   (static_cast<uint64_t>(buf[1]) << 32) | (static_cast<uint64_t>(buf[0]) << 40);
     }
 
     void Ctx::write16Little(uint8_t* buf, uint16_t val) {
@@ -367,7 +367,7 @@ namespace OpenLogReplicator {
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000))
+        if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
             throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
         return (int16_t)val;
     }
@@ -381,7 +381,7 @@ namespace OpenLogReplicator {
         uint64_t val = ret.GetUint64();
         if (val > 0xFFFFFFFF)
             throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
-        return (uint32_t)val;
+        return static_cast<uint32_t>(val);
     }
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field) {
@@ -391,9 +391,9 @@ namespace OpenLogReplicator {
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + " is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000))
+        if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
             throw DataException("parsing " + fileName + ", field " + field + " is too big (" + std::to_string(val) + ")");
-        return (int32_t)val;
+        return static_cast<int32_t>(val);
     }
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field) {
@@ -423,7 +423,7 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
+    const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field) {
         if (!value.HasMember(field))
             throw DataException("parsing " + fileName + ", field " + field + " not found");
         const rapidjson::Value& ret = value[field];
@@ -432,7 +432,7 @@ namespace OpenLogReplicator {
         if (ret.GetStringLength() > maxLength)
             throw DataException("parsing " + fileName + ", field " + field + " is too long (" + std::to_string(ret.GetStringLength()) + ", max: " +
                     std::to_string(maxLength) + ")");
-        return (char*)ret.GetString();
+        return ret.GetString();
     }
 
     const rapidjson::Value& Ctx::getJsonFieldA(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
@@ -458,7 +458,7 @@ namespace OpenLogReplicator {
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > (int64_t)0x7FFF) || (val < -(int64_t)0x8000))
+        if ((val > static_cast<int64_t>(0x7FFF)) || (val < -static_cast<int64_t>(0x8000)))
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
                     ")");
         return (int16_t)val;
@@ -472,7 +472,7 @@ namespace OpenLogReplicator {
         if (val > 0xFFFFFFFF)
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
                     ")");
-        return (uint32_t)val;
+        return static_cast<uint32_t>(val);
     }
 
     int32_t Ctx::getJsonFieldI32(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
@@ -480,10 +480,10 @@ namespace OpenLogReplicator {
         if (!ret.IsInt64())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a signed 64-bit number");
         int64_t val = ret.GetInt64();
-        if ((val > (int64_t)0x7FFFFFFF) || (val < -(int64_t)0x80000000))
+        if ((val > static_cast<int64_t>(0x7FFFFFFF)) || (val < -static_cast<int64_t>(0x80000000)))
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too big (" + std::to_string(val) +
                     ")");
-        return (int32_t)val;
+        return static_cast<int32_t>(val);
     }
 
     uint64_t Ctx::getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num) {
@@ -507,14 +507,14 @@ namespace OpenLogReplicator {
         return ret;
     }
 
-    char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
+    const char* Ctx::getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num) {
         const rapidjson::Value& ret = value[num];
         if (!ret.IsString())
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is not a string");
         if (ret.GetStringLength() > maxLength)
             throw DataException("parsing " + fileName + ", field " + field + "[" + std::to_string(num) + "] is too long (" +
                     std::to_string(ret.GetStringLength()) + ", max: " + std::to_string(maxLength) + ")");
-        return (char*)ret.GetString();
+        return ret.GetString();
     }
 
     void Ctx::initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax) {
@@ -528,13 +528,13 @@ namespace OpenLogReplicator {
 
         memoryChunks = new uint8_t*[memoryMaxMb / MEMORY_CHUNK_SIZE_MB];
         for (uint64_t i = 0; i < memoryChunksMin; ++i) {
-            memoryChunks[i] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
+            memoryChunks[i] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
             if (memoryChunks[i] == nullptr)
                 throw RuntimeException("couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory (for: memory chunks#2)");
             ++memoryChunksAllocated;
             ++memoryChunksFree;
         }
-        memoryChunksHWM = (uint64_t)memoryChunksMin;
+        memoryChunksHWM = static_cast<uint64_t>(memoryChunksMin);
     }
 
     void Ctx::wakeAllOutOfMemory() {
@@ -569,7 +569,7 @@ namespace OpenLogReplicator {
             }
 
             if (memoryChunksFree == 0) {
-                memoryChunks[0] = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE);
+                memoryChunks[0] = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, MEMORY_CHUNK_SIZE));
                 if (memoryChunks[0] == nullptr) {
                     throw RuntimeException("couldn't allocate " + std::to_string(MEMORY_CHUNK_SIZE_MB) + " bytes memory for: " + module);
                 }
@@ -578,7 +578,7 @@ namespace OpenLogReplicator {
             }
 
             if (memoryChunksAllocated > memoryChunksHWM)
-                memoryChunksHWM = (uint64_t)memoryChunksAllocated;
+                memoryChunksHWM = static_cast<uint64_t>(memoryChunksAllocated);
         }
 
         --memoryChunksFree;
@@ -722,7 +722,7 @@ namespace OpenLogReplicator {
         Ctx* ctx = this;
         TRACE(TRACE2_THREADS, "THREADS: spawn: " << thread->alias)
 
-        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, (void*) thread))
+        if (pthread_create(&thread->pthread, nullptr, &Thread::runStatic, reinterpret_cast<void*>(thread)))
             throw RuntimeException("spawning thread - " + thread->alias);
         {
             std::unique_lock<std::mutex> lck(mtx);

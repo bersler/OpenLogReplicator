@@ -35,7 +35,7 @@ namespace OpenLogReplicator {
             WARNING("too short field for 24.1: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
-        redoLogRecord->xid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 4),
+        redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
                                      ctx->read16(redoLogRecord->data + fieldPos + 6),
                                      ctx->read32(redoLogRecord->data + fieldPos + 8));
         // uint16_t type = ctx->read16(redoLogRecord->ctx + fieldPos + 12);

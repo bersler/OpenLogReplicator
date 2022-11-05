@@ -159,9 +159,9 @@ namespace OpenLogReplicator {
             // 2012-04-23T18:25:43.511Z - ISO 8601 format
             builderAppend('"');
             if (epochTime.tm_year > 0) {
-                appendDec((uint64_t)epochTime.tm_year);
+                appendDec(static_cast<uint64_t>(epochTime.tm_year));
             } else {
-                appendDec((uint64_t)(-epochTime.tm_year));
+                appendDec(static_cast<uint64_t>(-epochTime.tm_year));
                 builderAppend("BC", sizeof("BC") - 1);
             }
             builderAppend('-');
@@ -308,7 +308,7 @@ namespace OpenLogReplicator {
             builderAppend(R"(,"columns":[)", sizeof(R"(,"columns":[)") - 1);
 
             bool hasPrev = false;
-            for (typeCol column = 0; column < (typeCol)table->columns.size(); ++column) {
+            for (typeCol column = 0; column < static_cast<typeCol>(table->columns.size()); ++column) {
                 if (table->columns[column] == nullptr)
                     continue;
 

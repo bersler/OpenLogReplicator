@@ -239,8 +239,8 @@ namespace OpenLogReplicator {
             if (reader->getGroup() == group)
                 return reader;
 
-        auto* readerFS = new ReaderFilesystem(ctx, alias + "-reader-" + std::to_string(group) , database, group,
-                                              metadata->dbBlockChecksum != "OFF" && metadata->dbBlockChecksum != "FALSE");
+        auto readerFS = new ReaderFilesystem(ctx, alias + "-reader-" + std::to_string(group) , database, group,
+                                             metadata->dbBlockChecksum != "OFF" && metadata->dbBlockChecksum != "FALSE");
         readers.insert(readerFS);
         readerFS->initialize();
 
@@ -263,8 +263,8 @@ namespace OpenLogReplicator {
                 applyMapping(reader->fileName);
                 if (reader->checkRedoLog()) {
                     foundPath = true;
-                    auto* parser = new Parser(ctx, builder, metadata, transactionBuffer,
-                                              reader->getGroup(), reader->fileName);
+                    auto parser = new Parser(ctx, builder, metadata, transactionBuffer,
+                                             reader->getGroup(), reader->fileName);
 
                     parser->reader = reader;
                     INFO("online redo log: " << reader->fileName)
@@ -381,8 +381,10 @@ namespace OpenLogReplicator {
                     newPathLength - sourceLength + targetLength < MAX_PATH_LENGTH - 1 &&
                     memcmp(path.c_str(), pathMapping[i * 2].c_str(), sourceLength) == 0) {
 
-                memcpy((void*)pathBuffer, (void*)pathMapping[i * 2 + 1].c_str(), targetLength);
-                memcpy((void*)(pathBuffer + targetLength), (void*)(path.c_str() + sourceLength), newPathLength - sourceLength);
+                memcpy(reinterpret_cast<void*>(pathBuffer),
+                       reinterpret_cast<const void*>(pathMapping[i * 2 + 1].c_str()), targetLength);
+                memcpy(reinterpret_cast<void*>(pathBuffer + targetLength),
+                       reinterpret_cast<const void*>(path.c_str() + sourceLength),newPathLength - sourceLength);
                 pathBuffer[newPathLength - sourceLength + targetLength] = 0;
                 if (newPathLength - sourceLength + targetLength >= MAX_PATH_LENGTH)
                     throw RuntimeException("After mapping path length (" + std::to_string(newPathLength - sourceLength + targetLength) +
@@ -465,8 +467,8 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
                     continue;
 
-                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
-                                          replicator->transactionBuffer, 0, fileName);
+                auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                         replicator->transactionBuffer, 0, fileName);
 
                 parser->firstScn = ZERO_SCN;
                 parser->nextScn = ZERO_SCN;
@@ -519,8 +521,8 @@ namespace OpenLogReplicator {
                 if (sequence == 0 || sequence < replicator->metadata->sequence)
                     continue;
 
-                auto* parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
-                                          replicator->transactionBuffer, 0, mappedPath);
+                auto parser = new Parser(replicator->ctx, replicator->builder, replicator->metadata,
+                                         replicator->transactionBuffer, 0, mappedPath);
                 parser->firstScn = ZERO_SCN;
                 parser->nextScn = ZERO_SCN;
                 parser->sequence = sequence;
@@ -549,8 +551,8 @@ namespace OpenLogReplicator {
                     if (sequence == 0 || sequence < replicator->metadata->sequence)
                         continue;
 
-                    auto* parser = new Parser(replicator->ctx,replicator->builder, replicator->metadata, replicator->transactionBuffer,
-                                             0, fileName);
+                    auto parser = new Parser(replicator->ctx,replicator->builder, replicator->metadata,
+                                             replicator->transactionBuffer,0, fileName);
                     parser->firstScn = ZERO_SCN;
                     parser->nextScn = ZERO_SCN;
                     parser->sequence = sequence;

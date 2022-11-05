@@ -353,11 +353,11 @@ namespace OpenLogReplicator {
                                               startSequence, startTime, startTimeRel);
             metadatas.push_back(metadata);
 
-            metadata->addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE);
+            metadata->addElement("SYS", "CCOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+            metadata->addElement("SYS", "CDEF\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
+            metadata->addElement("SYS", "COL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
             metadata->addElement("SYS", "DEFERRED_STG\\$", OPTIONS_SYSTEM_TABLE);
-            metadata->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE);
+            metadata->addElement("SYS", "ECOL\\$", OPTIONS_SYSTEM_TABLE | OPTIONS_SCHEMA_TABLE);
             metadata->addElement("SYS", "LOB\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "LOBCOMPPART\\$", OPTIONS_SYSTEM_TABLE);
             metadata->addElement("SYS", "LOBFRAG\\$", OPTIONS_SYSTEM_TABLE);
@@ -663,7 +663,7 @@ namespace OpenLogReplicator {
             Replicator* replicator2 = nullptr;
             for (Replicator* replicatorTmp : replicators)
                 if (replicatorTmp->alias == source)
-                    replicator2 = (Replicator*)replicatorTmp;
+                    replicator2 = replicatorTmp;
             if (replicator2 == nullptr)
                 throw ConfigurationException(std::string("bad JSON, couldn't find reader for 'source' value: ") + source);
 

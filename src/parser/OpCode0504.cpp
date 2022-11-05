@@ -59,7 +59,8 @@ namespace OpenLogReplicator {
             uint16_t srt = ctx->read16(redoLogRecord->data + fieldPos + 8);  // TODO: find field position/size
             uint32_t sta = ctx->read32(redoLogRecord->data + fieldPos + 12);
 
-            ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)redoLogRecord->xid.slt() <<
+            ctx->dumpStream << "ktucm redo: slt: 0x" << std::setfill('0') << std::setw(4) << std::hex <<
+                    static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
                     " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
                     " srt: " << std::dec << srt <<
                     " sta: " << std::dec << sta <<
@@ -84,7 +85,7 @@ namespace OpenLogReplicator {
                     " uba: " << PRINTUBA(redoLogRecord->uba) <<
                     " ext: " << std::dec << ext <<
                     " spc: " << std::dec << spc <<
-                    " fbi: " << std::dec << (uint64_t)fbi <<
+                    " fbi: " << std::dec << static_cast<uint64_t>(fbi) <<
                     " ";
         }
     }

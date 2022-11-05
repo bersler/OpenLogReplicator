@@ -1,3 +1,8 @@
+0.9.52
+- experimental LOB processing fixes
+- minor bug fixes
+- code style cleanup
+
 0.9.51
 - added support for binary_float, binary_double types
 

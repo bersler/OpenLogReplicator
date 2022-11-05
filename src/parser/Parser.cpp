@@ -72,10 +72,10 @@ namespace OpenLogReplicator {
             nextScn(ZERO_SCN),
             reader(nullptr) {
 
-        memset((void*)&zero, 0, sizeof(RedoLogRecord));
+        memset(reinterpret_cast<void*>(&zero), 0, sizeof(RedoLogRecord));
 
         lwnChunks[0] = ctx->getMemoryChunk("parser", false);
-        auto length = (uint64_t*)lwnChunks[0];
+        auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *length = sizeof(uint64_t);
         lwnAllocated = 1;
         lwnAllocatedMax = 1;
@@ -92,7 +92,7 @@ namespace OpenLogReplicator {
             ctx->freeMemoryChunk("parser", lwnChunks[--lwnAllocated], false);
         }
 
-        auto length = (uint64_t*)lwnChunks[0];
+        auto length = reinterpret_cast<uint64_t*>(lwnChunks[0]);
         *length = sizeof(uint64_t);
     }
 
@@ -100,7 +100,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_LWN, "LWN: analyze blk: " << std::dec << lwnMember->block << " offset: " << lwnMember->offset << " scn: " << lwnMember->scn <<
                 " subscn: " << lwnMember->subScn)
 
-        uint8_t *data = ((uint8_t*) lwnMember) + sizeof(struct LwnMember);
+        uint8_t* data = reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember);
         RedoLogRecord redoLogRecord[2];
         int64_t vectorCur = -1;
         int64_t vectorPrev = -1;
@@ -127,13 +127,13 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence << "." <<
                         std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                         std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t) vld << std::endl;
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << std::endl;
             else {
                 uint32_t conUid = ctx->read32(data + 16);
                 ctx->dumpStream << "REDO RECORD - Thread:" << thread << " RBA: 0x" << std::setfill('0') << std::setw(6) << std::hex << sequence <<
                         "." << std::setfill('0') << std::setw(8) << std::hex << lwnMember->block << "." << std::setfill('0') << std::setw(4) <<
                         std::hex << lwnMember->offset << " LEN: 0x" << std::setfill('0') << std::setw(4) << std::hex << recordLength << " VLD: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t) vld << " CON_UID: " << std::dec << conUid << std::endl;
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(vld) << " CON_UID: " << std::dec << conUid << std::endl;
             }
 
             if (ctx->dumpRawData > 0) {
@@ -144,7 +144,7 @@ namespace OpenLogReplicator {
                                         << ": ";
                     if ((j & 0x07) == 0)
                         ctx->dumpStream << " ";
-                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t) data[j] << " ";
+                    ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
                 }
                 ctx->dumpStream << std::endl;
             }
@@ -195,7 +195,7 @@ namespace OpenLogReplicator {
             else
                 vectorCur = 1 - vectorPrev;
 
-            memset((void*)&redoLogRecord[vectorCur], 0, sizeof(RedoLogRecord));
+            memset(reinterpret_cast<void*>(&redoLogRecord[vectorCur]), 0, sizeof(RedoLogRecord));
             redoLogRecord[vectorCur].vectorNo = (++vectors);
             redoLogRecord[vectorCur].cls = ctx->read16(data + offset + 2);
             redoLogRecord[vectorCur].afn = ctx->read32(data + offset + 4) & 0xFFFF;
@@ -210,7 +210,7 @@ namespace OpenLogReplicator {
             if (ctx->version >= REDO_VERSION_12_1) {
                 fieldOffset = 32;
                 redoLogRecord[vectorCur].flgRecord = ctx->read16(data + offset + 28);
-                redoLogRecord[vectorCur].conId = (typeConId)ctx->read16(data + offset + 24);
+                redoLogRecord[vectorCur].conId = static_cast<typeConId>(ctx->read16(data + offset + 24));
             } else {
                 fieldOffset = 24;
                 redoLogRecord[vectorCur].flgRecord = 0;
@@ -226,7 +226,7 @@ namespace OpenLogReplicator {
 
             uint8_t* fieldList = data + offset + fieldOffset;
 
-            redoLogRecord[vectorCur].opCode = (((typeOp1)data[offset + 0]) << 8) | data[offset + 1];
+            redoLogRecord[vectorCur].opCode = (static_cast<typeOp1>(data[offset + 0]) << 8) | data[offset + 1];
             redoLogRecord[vectorCur].length = fieldOffset + ((ctx->read16(fieldList) + 2) & 0xFFFC);
             redoLogRecord[vectorCur].sequence = sequence;
             redoLogRecord[vectorCur].scn = lwnMember->scn;
@@ -563,6 +563,8 @@ namespace OpenLogReplicator {
 
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
+            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                transaction->schema = true;
         }
 
         // Transaction size limit
@@ -589,12 +591,12 @@ namespace OpenLogReplicator {
         uint32_t pageSize = metadata->schema->checkLobPageSize(redoLogRecord1->obj);
 
         if (redoLogRecord1->xid.toUint() == 0) {
-            auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
-            if (lobKeyIter == ctx->lobIdToXidMap.end()) {
+            auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
+            if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
                 transactionBuffer->addOrphanedLob(redoLogRecord1, pageSize);
                 return;
             } else
-                redoLogRecord1->xid = lobKeyIter->second;
+                redoLogRecord1->xid = lobIdToXidMapIt->second;
         }
 
         // Skip list
@@ -607,6 +609,8 @@ namespace OpenLogReplicator {
             return;
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
             transaction->system = true;
+        if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            transaction->schema = true;
 
         TRACE(TRACE2_LOB, "LOB" <<
                 " id: " << redoLogRecord1->lobId <<
@@ -644,6 +648,8 @@ namespace OpenLogReplicator {
 
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
+            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                transaction->schema = true;
         }
 
         // Transaction size limit
@@ -669,11 +675,11 @@ namespace OpenLogReplicator {
         typeXid xid(redoLogRecord1->usn, redoLogRecord1->slt,  0);
         Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord1->conId, true, false, true);
         if (transaction == nullptr) {
-            typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
-            auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
-            if (iter == transactionBuffer->brokenXidMapList.end()) {
-                WARNING("No match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord1->slt << " USN: " <<
-                        (uint64_t)redoLogRecord1->usn)
+            typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
+            auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
+            if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
+                WARNING("No match found for transaction rollback, skipping, SLT: " << std::dec << static_cast<uint64_t>(redoLogRecord1->slt) << " USN: " <<
+                        static_cast<uint64_t>(redoLogRecord1->usn))
                 transactionBuffer->brokenXidMapList.insert(xidMap);
             }
             return;
@@ -705,24 +711,24 @@ namespace OpenLogReplicator {
 
     void Parser::appendToTransactionCommit(RedoLogRecord* redoLogRecord1) {
         // Clean LOB's if used
-        for (auto it = ctx->lobIdToXidMap.begin(); it != ctx->lobIdToXidMap.end();) {
-            if (it->second == redoLogRecord1->xid) {
-                it = ctx->lobIdToXidMap.erase(it);
+        for (auto lobIdToXidMapIt = ctx->lobIdToXidMap.begin(); lobIdToXidMapIt != ctx->lobIdToXidMap.end();) {
+            if (lobIdToXidMapIt->second == redoLogRecord1->xid) {
+                lobIdToXidMapIt = ctx->lobIdToXidMap.erase(lobIdToXidMapIt);
             } else
-                ++it;
+                ++lobIdToXidMapIt;
         }
 
         // Skip list
-        auto it = transactionBuffer->skipXidList.find(redoLogRecord1->xid);
-        if (it != transactionBuffer->skipXidList.end()) {
-            transactionBuffer->skipXidList.erase(it);
+        auto skipXidListIt = transactionBuffer->skipXidList.find(redoLogRecord1->xid);
+        if (skipXidListIt != transactionBuffer->skipXidList.end()) {
+            transactionBuffer->skipXidList.erase(skipXidListIt);
             return;
         }
 
         // Broken transaction
-        typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (((uint64_t)redoLogRecord1->conId) << 32);
-        auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
-        if (iter != transactionBuffer->brokenXidMapList.end())
+        typeXidMap xidMap = (redoLogRecord1->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord1->conId) << 32);
+        auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
+        if (brokenXidMapListIt != transactionBuffer->brokenXidMapList.end())
             transactionBuffer->brokenXidMapList.erase(xidMap);
 
         Transaction* transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
@@ -831,7 +837,8 @@ namespace OpenLogReplicator {
                     }
                     if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                         transaction->system = true;
-
+                    if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                        transaction->schema = true;
                     if ((table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
                         transaction->shutdown = true;
                 }
@@ -865,11 +872,11 @@ namespace OpenLogReplicator {
         typeXid xid(redoLogRecord2->usn, redoLogRecord2->slt, 0);
         Transaction* transaction = transactionBuffer->findTransaction(xid, redoLogRecord2->conId, true, false, true);
         if (transaction == nullptr) {
-            typeXidMap xidMap = (redoLogRecord2->xid.getData() >> 32) | (((uint64_t)redoLogRecord2->conId) << 32);
-            auto iter = transactionBuffer->brokenXidMapList.find(xidMap);
-            if (iter == transactionBuffer->brokenXidMapList.end()) {
-                WARNING("No match found for transaction rollback, skipping, SLT: " << std::dec << (uint64_t)redoLogRecord2->slt << " USN: " <<
-                        (uint64_t)redoLogRecord2->usn)
+            typeXidMap xidMap = (redoLogRecord2->xid.getData() >> 32) | (static_cast<uint64_t>(redoLogRecord2->conId) << 32);
+            auto brokenXidMapListIt = transactionBuffer->brokenXidMapList.find(xidMap);
+            if (brokenXidMapListIt == transactionBuffer->brokenXidMapList.end()) {
+                WARNING("No match found for transaction rollback, skipping, SLT: " << std::dec << static_cast<uint64_t>(redoLogRecord2->slt) << " USN: " <<
+                        static_cast<uint64_t>(redoLogRecord2->usn))
                 transactionBuffer->brokenXidMapList.insert(xidMap);
             }
             return;
@@ -906,6 +913,8 @@ namespace OpenLogReplicator {
             }
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
+            if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                transaction->schema = true;
         }
 
         switch (redoLogRecord1->opCode) {
@@ -999,16 +1008,16 @@ namespace OpenLogReplicator {
                 redoLogRecord2->indKeyDataLength = 32;
             } else {
                 WARNING("Verify redo log file for OP:10.8, len: " << std::dec << redoLogRecord2->indKeyLength << ", data = [" <<
-                        std::dec << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey] << ", " <<
-                        std::dec << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + 1] << ", " <<
-                        std::dec << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + 34] << ", " <<
-                        std::dec << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + 45] << "]")
+                        std::dec << static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKey]) << ", " <<
+                        std::dec << static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKey + 1]) << ", " <<
+                        std::dec << static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKey + 34]) << ", " <<
+                        std::dec << static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKey + 45]) << "]")
                 return;
             }
 
-            auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
-            if (lobKeyIter != ctx->lobIdToXidMap.end()) {
-                typeXid parentXid = lobKeyIter->second;
+            auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
+            if (lobIdToXidMapIt != ctx->lobIdToXidMap.end()) {
+                typeXid parentXid = lobIdToXidMapIt->second;
 
                 if (parentXid != redoLogRecord1->xid) {
                     TRACE(TRACE2_LOB, "LOB" <<
@@ -1016,6 +1025,14 @@ namespace OpenLogReplicator {
                             " xid: " << parentXid <<
                             " sub-xid: " << redoLogRecord1->xid)
                     redoLogRecord1->xid = parentXid;
+                    redoLogRecord2->xid = parentXid;
+
+                    transaction = transactionBuffer->findTransaction(redoLogRecord1->xid, redoLogRecord1->conId,
+                                                                     true, FLAG(REDO_FLAGS_SHOW_INCOMPLETE_TRANSACTIONS), false);
+                    if (transaction == nullptr) {
+                        TRACE(TRACE2_LOB, "LOB parent transaction not found")
+                        return;
+                    }
                 }
             }
         } else
@@ -1054,11 +1071,11 @@ namespace OpenLogReplicator {
             if (redoLogRecord1->indKeyLength > 0)
                 ss << "0x";
             for (uint64_t i = 0; i < redoLogRecord1->indKeyLength; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->data[redoLogRecord1->indKey + i];
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->data[redoLogRecord1->indKey + i]);
             if (redoLogRecord2->indKeyLength > 0)
                 ss << " 0x";
             for (uint64_t i = 0; i < redoLogRecord2->indKeyLength; ++i)
-                ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->data[redoLogRecord2->indKey + i];
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKey + i]);
 
             TRACE(TRACE2_LOB, "LOB" <<
                     " id: " << redoLogRecord2->lobId <<
@@ -1071,8 +1088,8 @@ namespace OpenLogReplicator {
                     " ind key: " << ss.str())
         }
 
-        auto lobKeyIter = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
-        if (lobKeyIter == ctx->lobIdToXidMap.end()) {
+        auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord2->lobId);
+        if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
             TRACE(TRACE2_LOB, "LOB" <<
                     " id: " << redoLogRecord2->lobId <<
                     " xid: " << redoLogRecord1->xid <<
@@ -1083,6 +1100,8 @@ namespace OpenLogReplicator {
 
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
             transaction->system = true;
+        if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
+            transaction->schema = true;
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&
@@ -1107,7 +1126,7 @@ namespace OpenLogReplicator {
                     ss << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
                 if ((j & 0x07) == 0)
                     ss << " ";
-                ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j] << " ";
+                ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
             }
             WARNING(ss.str())
         }
@@ -1235,9 +1254,9 @@ namespace OpenLogReplicator {
                         if (blockOffset + 20 >= reader->getBlockSize())
                             break;
 
-                        recordLength4 = (((uint64_t)ctx->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
+                        recordLength4 = (static_cast<uint64_t>(ctx->read32(redoBlock + blockOffset)) + 3) & 0xFFFFFFFC;
                         if (recordLength4 > 0) {
-                            uint64_t* length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
+                            uint64_t* length = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
 
                             if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024) {
                                 if (lwnAllocated == MAX_LWN_CHUNKS)
@@ -1246,17 +1265,17 @@ namespace OpenLogReplicator {
                                 lwnChunks[lwnAllocated++] = ctx->getMemoryChunk("parser", false);
                                 if (lwnAllocated > lwnAllocatedMax)
                                     lwnAllocatedMax = lwnAllocated;
-                                length = (uint64_t*) (lwnChunks[lwnAllocated - 1]);
+                                length = reinterpret_cast<uint64_t*>(lwnChunks[lwnAllocated - 1]);
                                 *length = sizeof(uint64_t);
                             }
 
                             if (((*length + sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8) > MEMORY_CHUNK_SIZE_MB * 1024 * 1024)
                                 throw RedoLogException("Too big redo log record, length: " + std::to_string(recordLength4));
 
-                            lwnMember = (struct LwnMember*) (lwnChunks[lwnAllocated - 1] + *length);
+                            lwnMember = reinterpret_cast<struct LwnMember*>(lwnChunks[lwnAllocated - 1] + *length);
                             *length += (sizeof(struct LwnMember) + recordLength4 + 7) & 0xFFFFFFF8;
                             lwnMember->scn = ctx->read32(redoBlock + blockOffset + 8) |
-                                             ((uint64_t)(ctx->read16(redoBlock + blockOffset + 6)) << 32);
+                                             (static_cast<uint64_t>(ctx->read16(redoBlock + blockOffset + 6)) << 32);
                             lwnMember->subScn = ctx->read16(redoBlock + blockOffset + 12);
                             lwnMember->block = currentBlock;
                             lwnMember->offset = blockOffset;
@@ -1290,7 +1309,8 @@ namespace OpenLogReplicator {
                     else
                         toCopy = recordLeftToCopy;
 
-                    memcpy((void*)(((uint8_t*)lwnMember) + sizeof(struct LwnMember) + recordPos), (void*)(redoBlock + blockOffset), toCopy);
+                    memcpy(reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(lwnMember) + sizeof(struct LwnMember) + recordPos),
+                           reinterpret_cast<const void*>(redoBlock + blockOffset), toCopy);
                     recordLeftToCopy -= toCopy;
                     blockOffset += toCopy;
                     recordPos += toCopy;

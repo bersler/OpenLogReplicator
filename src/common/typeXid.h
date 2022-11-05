@@ -38,7 +38,7 @@ namespace OpenLogReplicator {
         }
 
         typeXid(typeUsn usn, typeSlt slt, typeSqn sqn) {
-            data = (((uint64_t)usn) << 48) | (((uint64_t)slt) << 32) | ((uint64_t)sqn);
+            data = (static_cast<uint64_t>(usn) << 48) | (static_cast<uint64_t>(slt) << 32) | static_cast<uint64_t>(sqn);
         }
 
         typeXid(const char* str) {
@@ -98,8 +98,9 @@ namespace OpenLogReplicator {
             } else
                 throw DataException(std::string("bad XID value: ") + str);
 
-            data = (((uint64_t)stoul(usn, nullptr, 16)) << 48) | (((uint64_t)stoul(slt, nullptr, 16)) << 32) |
-                    ((uint64_t)stoul(sqn, nullptr, 16));
+            data = (static_cast<uint64_t>(stoul(usn, nullptr, 16)) << 48) |
+                    (static_cast<uint64_t>(stoul(slt, nullptr, 16)) << 32) |
+                    static_cast<uint64_t>(stoul(sqn, nullptr, 16));
         }
 
         uint64_t getData() const {
@@ -107,15 +108,15 @@ namespace OpenLogReplicator {
         }
 
         typeUsn usn() const {
-            return (typeUsn)(data >> 48);
+            return static_cast<typeUsn>(data >> 48);
         }
 
         typeSlt slt() const {
-            return (typeSlt)((data >> 32) & 0xFFFF);
+            return static_cast<typeSlt>((data >> 32) & 0xFFFF);
         }
 
         typeSqn sqn() const {
-            return (typeSqn)(data & 0xFFFFFFFF);
+            return static_cast<typeSqn>(data & 0xFFFFFFFF);
         }
 
         bool operator!=(const typeXid& other) const {
@@ -142,13 +143,13 @@ namespace OpenLogReplicator {
         std::string toString() {
             std::ostringstream ss;
             ss << "0x" << std::setfill('0') << std::setw(4) << std::hex << (data >> 48) << "." << std::setw(3) <<
-                    (uint64_t)((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
+                    ((data >> 32) & 0xFFFF) << "." << std::setw(8) << (data & 0xFFFFFFFF);
             return ss.str();
         }
 
         friend std::ostream& operator<<(std::ostream& os, const typeXid& xid) {
             os << "0x" << std::setfill('0') << std::setw(4) << std::hex << (xid.data >> 48) << "." << std::setw(3) <<
-                    (uint64_t)((xid.data >> 32) & 0xFFFF) << "." << std::setw(8) << (xid.data & 0xFFFFFFFF);
+                    ((xid.data >> 32) & 0xFFFF) << "." << std::setw(8) << (xid.data & 0xFFFFFFFF);
             return os;
         }
     };

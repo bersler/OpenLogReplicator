@@ -153,7 +153,7 @@ namespace OpenLogReplicator {
 
         if (length > 0) {
             request.Clear();
-            if (request.ParseFromArray(msgR, (int)length)) {
+            if (request.ParseFromArray(msgR, static_cast<int>(length))) {
                 if (streaming) {
                     switch (request.code()) {
                         case pb::RequestCode::INFO:
@@ -208,8 +208,8 @@ namespace OpenLogReplicator {
             } else {
                 std::ostringstream ss;
                 ss << "request decoder[" << std::dec << length << "]: ";
-                for (uint64_t i = 0; i < (uint64_t)length; ++i)
-                    ss << std::hex  << std::setw(2) << std::setfill('0') << (uint64_t)msgR[i] << " ";
+                for (uint64_t i = 0; i < static_cast<uint64_t>(length); ++i)
+                    ss << std::hex  << std::setw(2) << std::setfill('0') << static_cast<uint64_t>(msgR[i]) << " ";
                 WARNING(ss.str())
             }
 

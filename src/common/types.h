@@ -67,9 +67,9 @@ typedef uint64_t typeUnicode;
 #define CHECKPOINT_FILE_MAX_SIZE                1024
 #define CONFIG_FILE_MAX_SIZE                    1048576
 #define CHECKPOINT_SCHEMA_FILE_MAX_SIZE         2147483648
-#define ZERO_SEQ                                ((typeSeq)0xFFFFFFFF)
-#define ZERO_SCN                                ((typeScn)0xFFFFFFFFFFFFFFFF)
-#define ZERO_BLK                                ((typeBlk)0xFFFFFFFF)
+#define ZERO_SEQ                                (static_cast<typeSeq>(0xFFFFFFFF))
+#define ZERO_SCN                                (static_cast<typeScn>(0xFFFFFFFFFFFFFFFF))
+#define ZERO_BLK                                (static_cast<typeBlk>(0xFFFFFFFF))
 #define MEMORY_ALIGNMENT                        512
 #define MAX_PATH_LENGTH                         2048
 #define MAX_NO_COLUMNS                          1000
@@ -131,6 +131,7 @@ typedef uint64_t typeUnicode;
 
 #define OPTIONS_DEBUG_TABLE                     1
 #define OPTIONS_SYSTEM_TABLE                    2
+#define OPTIONS_SCHEMA_TABLE                    4
 
 #define TABLE_SYS_CCOL                          1
 #define TABLE_SYS_CDEF                          2
@@ -148,13 +149,13 @@ typedef uint64_t typeUnicode;
 #define TABLE_SYS_TS                            14
 #define TABLE_SYS_USER                          15
 
-#define BLOCK(__uba)                            ((uint32_t)((__uba)&0xFFFFFFFF))
-#define SEQUENCE(__uba)                         ((uint16_t)((((uint64_t)(__uba))>>32)&0xFFFF))
-#define RECORD(__uba)                           ((uint8_t)((((uint64_t)(__uba))>>48)&0xFF))
-#define PRINTUBA(__uba)                         "0x"<<std::setfill('0')<<std::setw(8)<<std::hex<<BLOCK(__uba)<<"."<<std::setfill('0')<<std::setw(4)<<std::hex<<SEQUENCE(__uba)<<"."<<std::setfill('0')<<std::setw(2)<<std::hex<<(uint32_t)RECORD(__uba)
+#define BLOCK(__uba)                            (static_cast<uint32_t>((__uba)&0xFFFFFFFF))
+#define SEQUENCE(__uba)                         (static_cast<uint16_t>(((static_cast<uint64_t>(__uba))>>32)&0xFFFF))
+#define RECORD(__uba)                           (static_cast<uint8_t>(((static_cast<uint64_t>(__uba))>>48)&0xFF))
+#define PRINTUBA(__uba)                         "0x"<<std::setfill('0')<<std::setw(8)<<std::hex<<BLOCK(__uba)<<"."<<std::setfill('0')<<std::setw(4)<<std::hex<<SEQUENCE(__uba)<<"."<<std::setfill('0')<<std::setw(2)<<std::hex<<static_cast<uint32_t>RECORD(__uba)
 
-#define SCN(__scn1,__scn2)                      ((((uint64_t)(__scn1))<<32)|(__scn2))
-#define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<((uint32_t)((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
+#define SCN(__scn1,__scn2)                      (((static_cast<uint64_t>(__scn1))<<32)|(__scn2))
+#define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
 
 #define JSON_PARAMETER_LENGTH   256

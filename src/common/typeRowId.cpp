@@ -49,28 +49,28 @@ namespace OpenLogReplicator {
         if (strlen(rowid) != 18) {
             ERROR("RowID: incorrect format: " << rowid)
         }
-        dataObj = (((typeDba)map64R[(uint8_t)rowid[0]]) << 30) |
-                  (((typeDba)map64R[(uint8_t)rowid[1]]) << 24) |
-                  (((typeDba)map64R[(uint8_t)rowid[2]]) << 18) |
-                  (((typeDba)map64R[(uint8_t)rowid[3]]) << 12) |
-                  (((typeDba)map64R[(uint8_t)rowid[4]]) << 6) |
-                  ((typeDba)map64R[(uint8_t)rowid[5]]);
+        dataObj = (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[0])]) << 30) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[1])]) << 24) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[2])]) << 18) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[3])]) << 12) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[4])]) << 6) |
+                static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[5])]);
 
-        typeAfn afn = (((typeAfn)map64R[(uint8_t)rowid[6]]) << 12) |
-                      (((typeAfn)map64R[(uint8_t)rowid[7]]) << 6) |
-                      ((typeAfn)map64R[(uint8_t)rowid[8]]);
+        typeAfn afn = (static_cast<typeAfn>(map64R[static_cast<uint8_t>(rowid[6])]) << 12) |
+                (static_cast<typeAfn>(map64R[static_cast<uint8_t>(rowid[7])]) << 6) |
+                static_cast<typeAfn>(map64R[static_cast<uint8_t>(rowid[8])]);
 
-        dba = (((typeDba)map64R[(uint8_t)rowid[9]]) << 30) |
-              (((typeDba)map64R[(uint8_t)rowid[10]]) << 24) |
-              (((typeDba)map64R[(uint8_t)rowid[11]]) << 18) |
-              (((typeDba)map64R[(uint8_t)rowid[12]]) << 12) |
-              (((typeDba)map64R[(uint8_t)rowid[13]]) << 6) |
-              ((typeDba)map64R[(uint8_t)rowid[14]]) |
-              (((typeDba)afn) << 22);
+        dba = (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[9])]) << 30) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[10])]) << 24) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[11])]) << 18) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[12])]) << 12) |
+                (static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[13])]) << 6) |
+                static_cast<typeDba>(map64R[static_cast<uint8_t>(rowid[14])]) |
+                (static_cast<typeDba>(afn) << 22);
 
-        slot = (((typeSlot)map64R[(uint8_t)rowid[15]]) << 12) |
-               (((typeSlot)map64R[(uint8_t)rowid[16]]) << 6) |
-               ((typeSlot)map64R[(uint8_t)rowid[17]]);
+        slot = (static_cast<typeSlot>(map64R[static_cast<uint8_t>(rowid[15])]) << 12) |
+                (static_cast<typeSlot>(map64R[static_cast<uint8_t>(rowid[16])]) << 6) |
+                static_cast<typeSlot>(map64R[static_cast<uint8_t>(rowid[17])]);
     }
 
     typeRowId::typeRowId(typeDataObj newDataObj, typeDba newDba, typeSlot newSlot):

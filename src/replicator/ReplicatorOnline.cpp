@@ -1343,7 +1343,7 @@ namespace OpenLogReplicator {
         std::string ownerRegexp("^" + owner + "$");
         std::string tableRegexp("^" + table + "$");
         bool single = ((options & OPTIONS_SYSTEM_TABLE) != 0);
-        DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << std::dec << (uint64_t)options)
+        DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << std::dec << static_cast<uint64_t>(options))
 
         try {
             DatabaseStatement stmtTs(conn);
@@ -1446,7 +1446,7 @@ namespace OpenLogReplicator {
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
                                                 const std::string& keysStr, typeOptions options) {
-        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << (uint64_t) options)
+        DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << static_cast<uint64_t>(options))
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
@@ -1554,7 +1554,7 @@ namespace OpenLogReplicator {
                 }
                 path = pathStr;
                 onlineReader->paths.push_back(path);
-                auto* redoLog = new RedoLog(group, pathStr);
+                auto redoLog = new RedoLog(group, pathStr);
                 metadata->redoLogs.insert(redoLog);
 
                 ret = stmt.next();
@@ -1571,18 +1571,18 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::archGetLogOnline(Replicator* replicator) {
-        if (!((ReplicatorOnline*)replicator)->checkConnection())
+        if (!(reinterpret_cast<ReplicatorOnline*>(replicator))->checkConnection())
             return;
 
         Ctx* ctx = replicator->ctx;
         {
-            DatabaseStatement stmt(((ReplicatorOnline*)replicator)->conn);
+            DatabaseStatement stmt((dynamic_cast<ReplicatorOnline*>(replicator))->conn);
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_ARCHIVE_LOG_LIST)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << ((ReplicatorOnline*)replicator)->metadata->sequence)
+            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence)
             TRACE(TRACE2_SQL, "PARAM2: " << std::dec << replicator->metadata->resetlogs)
 
             stmt.createStatement(SQL_GET_ARCHIVE_LOG_LIST);
-            stmt.bindUInt32(1, ((ReplicatorOnline*)replicator)->metadata->sequence);
+            stmt.bindUInt32(1, (reinterpret_cast<ReplicatorOnline*>(replicator))->metadata->sequence);
             stmt.bindUInt32(2, replicator->metadata->resetlogs);
 
             char path[513]; stmt.defineString(1, path, sizeof(path));
@@ -1600,7 +1600,7 @@ namespace OpenLogReplicator {
                 parser->firstScn = firstScn;
                 parser->nextScn = nextScn;
                 parser->sequence = sequence;
-                ((ReplicatorOnline*)replicator)->archiveRedoQueue.push(parser);
+                (reinterpret_cast<ReplicatorOnline*>(replicator))->archiveRedoQueue.push(parser);
                 ret = stmt.next();
             }
         }

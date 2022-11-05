@@ -80,8 +80,8 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::dr_msg_cb(rd_kafka_t* rkCb __attribute__((unused)), const rd_kafka_message_t* rkmessage, void* opaque __attribute__((unused))) {
-        auto* msg = (BuilderMsg*) rkmessage->_private;
-        auto writer = (Writer*)opaque;
+        auto msg = reinterpret_cast<BuilderMsg*>(rkmessage->_private);
+        auto writer = reinterpret_cast<Writer*>(opaque);
         Ctx* ctx = writer->ctx;
         if (rkmessage->err) {
             WARNING("Kafka: " << msg->id << " delivery failed: " << rd_kafka_err2str(rkmessage->err))
@@ -91,7 +91,7 @@ namespace OpenLogReplicator {
     }
 
     void WriterKafka::error_cb(rd_kafka_t* rkCb, int err, const char* reason, void* opaque) {
-        auto writer = (Writer*)opaque;
+        auto writer = reinterpret_cast<Writer*>(opaque);
         Ctx* ctx = writer->ctx;
 
         WARNING("Kafka: " << rd_kafka_err2name((rd_kafka_resp_err_t)err) << ", reason: " << reason)
@@ -124,7 +124,7 @@ namespace OpenLogReplicator {
 
                 if (err == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
                     WARNING("Queue, full, sleeping " << (ctx->pollIntervalUs / 1000) << "ms, then retrying")
-                    rd_kafka_poll(rk, (int)(ctx->pollIntervalUs / 1000));
+                    rd_kafka_poll(rk, static_cast<int>((ctx->pollIntervalUs / 1000)));
                     continue;
                 } else {
                     WARNING("OTHER ERROR?")

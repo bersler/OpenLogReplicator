@@ -67,7 +67,7 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << std::endl;
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
-                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
                 if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
                     ctx->dumpStream << std::endl;
             }
@@ -88,7 +88,7 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << std::endl;
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
-                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPos + j];
+                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPos + j]);
                 if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
                     ctx->dumpStream << std::endl;
             }

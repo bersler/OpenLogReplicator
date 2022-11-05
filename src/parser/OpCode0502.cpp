@@ -97,16 +97,16 @@ namespace OpenLogReplicator {
             uint8_t fbi = redoLogRecord->data[fieldPos + 20];
             uint16_t siz = ctx->read16(redoLogRecord->data + fieldPos + 18);
 
-            typeXid pXid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 24),
+            typeXid pXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 24)),
                                    ctx->read16(redoLogRecord->data + fieldPos + 26),
                                    ctx->read32(redoLogRecord->data + fieldPos + 28));
 
             ctx->dumpStream << "ktudh redo:" <<
-                    " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)redoLogRecord->xid.slt() <<
+                    " slt: 0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(redoLogRecord->xid.slt()) <<
                     " sqn: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->xid.sqn() <<
                     " flg: 0x" << std::setfill('0') << std::setw(4) << redoLogRecord->flg <<
                     " siz: " << std::dec << siz <<
-                    " fbi: " << std::dec << (uint64_t)fbi << std::endl;
+                    " fbi: " << std::dec << static_cast<uint64_t>(fbi) << std::endl;
             /*if (ctx->version < REDO_VERSION_12_1 || redoLogRecord->conId == 0)
                 ctx->dumpStream << "           " <<
                         " uba: " << PRINTUBA(redoLogRecord->uba) << "   " <<

@@ -24,8 +24,8 @@ namespace OpenLogReplicator {
     }
 
     LobData::~LobData()  {
-        for (auto it: dataMap) {
-            uint8_t* ptr = it.second;
+        for (auto dataMapIt: dataMap) {
+            uint8_t* ptr = dataMapIt.second;
             delete[] ptr;
         }
         dataMap.clear();

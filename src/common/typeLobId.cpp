@@ -26,83 +26,99 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     typeLobId::typeLobId() {
-        memset((void*)data, 0, TYPE_LOBID_LENGTH);
+        memset(reinterpret_cast<void*>(data), 0, TYPE_LOBID_LENGTH);
     }
 
     typeLobId::typeLobId(const typeLobId& other) {
-        memcpy((void*)data, (void*)other.data, TYPE_LOBID_LENGTH);
+        memcpy(reinterpret_cast<void*>(data),
+               reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
     }
 
 
     bool typeLobId::operator!=(const typeLobId& other) const {
-        int ret = memcmp((void*)data, (void*)other.data, TYPE_LOBID_LENGTH);
+        int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
         return ret != 0;
     }
 
     bool typeLobId::operator==(const typeLobId& other) const {
-        int ret = memcmp((void*)data, (void*)other.data, TYPE_LOBID_LENGTH);
+        int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
         return ret == 0;
     }
 
     bool typeLobId::operator<(const typeLobId& other) const {
-        int ret = memcmp((void*)data, (void*)other.data, TYPE_LOBID_LENGTH);
+        int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
         return ret < 0;
     }
 
     typeLobId& typeLobId::operator=(const typeLobId& other) {
         if (&other != this)
-            memcpy((void*)data, (void*)other.data, TYPE_LOBID_LENGTH);
+            memcpy(reinterpret_cast<void*>(data),
+                   reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
         return *this;
     }
 
     void typeLobId::set(const uint8_t* newData) {
-        memcpy((void*)data, (void*)newData, TYPE_LOBID_LENGTH);
+        memcpy(reinterpret_cast<void*>(data),
+               reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
     }
 
     std::string typeLobId::lower() {
         std::ostringstream ss;
-        ss << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
-                std::setw(2) << (uint64_t)data[2] << std::setw(2) << (uint64_t)data[3] <<
-                std::setw(2) << (uint64_t)data[4] << std::setw(2) << (uint64_t)data[5] <<
-                std::setw(2) << (uint64_t)data[6] << std::setw(2) << (uint64_t)data[7] <<
-                std::setw(2) << (uint64_t)data[8] << std::setw(2) << (uint64_t)data[9];
+        ss << std::setfill('0') << std::hex << std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
+                std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
+                std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
+                std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
+                std::setw(2) << static_cast<uint64_t>(data[8]) << std::setw(2) << static_cast<uint64_t>(data[9]);
         return ss.str();
     }
 
     std::string typeLobId::upper() {
         std::ostringstream ss;
-        ss << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)data[0] << std::setw(2) << (uint64_t)data[1] <<
-                std::setw(2) << (uint64_t)data[2] << std::setw(2) << (uint64_t)data[3] <<
-                std::setw(2) << (uint64_t)data[4] << std::setw(2) << (uint64_t)data[5] <<
-                std::setw(2) << (uint64_t)data[6] << std::setw(2) << (uint64_t)data[7] <<
-                std::setw(2) << (uint64_t)data[8] << std::setw(2) << (uint64_t)data[9] << std::nouppercase;
+        ss << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
+                std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
+                std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
+                std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
+                std::setw(2) << static_cast<uint64_t>(data[8]) << std::setw(2) << static_cast<uint64_t>(data[9]) << std::nouppercase;
         return ss.str();
     }
 
     std::string typeLobId::narrow() {
         std::ostringstream ss;
-        ss << std::uppercase << std::setfill('0') << std::hex << (uint64_t)data[0] << (uint64_t)data[1] <<
-                (uint64_t)data[2] << (uint64_t)data[3] <<
-                (uint64_t)data[4] << (uint64_t)data[5] <<
-                (uint64_t)data[6] << (uint64_t)data[7] <<
-                (uint64_t)data[8] << (uint64_t)data[9] << std::nouppercase;
+        ss << std::uppercase << std::setfill('0') << std::hex << static_cast<uint64_t>(data[0]) << static_cast<uint64_t>(data[1]) <<
+                static_cast<uint64_t>(data[2]) << static_cast<uint64_t>(data[3]) <<
+                static_cast<uint64_t>(data[4]) << static_cast<uint64_t>(data[5]) <<
+                static_cast<uint64_t>(data[6]) << static_cast<uint64_t>(data[7]) <<
+                static_cast<uint64_t>(data[8]) << static_cast<uint64_t>(data[9]) << std::nouppercase;
         return ss.str();
     }
 
     std::ostream& operator<<(std::ostream& os, const typeLobId& other) {
-        os << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << (uint64_t)other.data[0] << std::setw(2) << (uint64_t)other.data[1] <<
-                std::setw(2) << (uint64_t)other.data[2] << std::setw(2) << (uint64_t)other.data[3] <<
-                std::setw(2) << (uint64_t)other.data[4] << std::setw(2) << (uint64_t)other.data[5] <<
-                std::setw(2) << (uint64_t)other.data[6] << std::setw(2) << (uint64_t)other.data[7] <<
-                std::setw(2) << (uint64_t)other.data[8] << std::setw(2) << (uint64_t)other.data[9] << std::nouppercase;
+        os << std::uppercase << std::setfill('0') << std::hex <<
+                std::setw(2) << static_cast<uint64_t>(other.data[0]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[1]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[2]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[3]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[4]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[5]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[6]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[7]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[8]) <<
+                std::setw(2) << static_cast<uint64_t>(other.data[9]) << std::nouppercase;
         return os;
     }
 }
 
 namespace std {
     size_t std::hash<OpenLogReplicator::typeLobId>::operator()(const OpenLogReplicator::typeLobId& lobId) const {
-        return (((size_t)lobId.data[0]) << 56) ^ (((size_t)lobId.data[0]) << 48) ^ (((size_t)lobId.data[0]) << 40) ^ (((size_t)lobId.data[0]) << 32) ^
-             (((size_t)lobId.data[0]) << 24) ^ (((size_t)lobId.data[0]) << 16) ^ (((size_t)lobId.data[0]) << 8) ^ ((size_t)lobId.data[0]) ^
-             (((size_t)lobId.data[0]) << 8) ^ ((size_t)lobId.data[0]);
+        return (static_cast<size_t>(lobId.data[9]) << 56) ^
+                (static_cast<size_t>(lobId.data[8]) << 50) ^
+                (static_cast<size_t>(lobId.data[7]) << 42) ^
+                (static_cast<size_t>(lobId.data[6]) << 36) ^
+                (static_cast<size_t>(lobId.data[5]) << 30) ^
+                (static_cast<size_t>(lobId.data[4]) << 24) ^
+                (static_cast<size_t>(lobId.data[3]) << 18) ^
+                (static_cast<size_t>(lobId.data[2]) << 12) ^
+                (static_cast<size_t>(lobId.data[1]) << 6) ^
+                (static_cast<size_t>(lobId.data[0]));
     }
 }

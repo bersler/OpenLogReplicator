@@ -166,19 +166,19 @@ namespace OpenLogReplicator {
             if (xidFormat == XID_FORMAT_TEXT_HEX) {
                 std::ostringstream ss;
                 ss << "0x";
-                ss << std::setfill('0') << std::setw(4) << std::hex << (uint64_t)lastXid.usn();
+                ss << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint64_t>(lastXid.usn());
                 ss << '.';
-                ss << std::setfill('0') << std::setw(3) << std::hex << (uint64_t)lastXid.slt();
+                ss << std::setfill('0') << std::setw(3) << std::hex << static_cast<uint64_t>(lastXid.slt());
                 ss << '.';
-                ss << std::setfill('0') << std::setw(8) << std::hex << (uint64_t)lastXid.sqn();
+                ss << std::setfill('0') << std::setw(8) << std::hex << static_cast<uint64_t>(lastXid.sqn());
                 redoResponsePB->set_xid(ss.str());
             } else if (xidFormat == XID_FORMAT_TEXT_DEC) {
                 std::ostringstream ss;
-                ss << (uint64_t)lastXid.usn();
+                ss << static_cast<uint64_t>(lastXid.usn());
                 ss << '.';
-                ss << (uint64_t)lastXid.slt();
+                ss << static_cast<uint64_t>(lastXid.slt());
                 ss << '.';
-                ss << (uint64_t)lastXid.sqn();
+                ss << static_cast<uint64_t>(lastXid.sqn());
                 redoResponsePB->set_xid(ss.str());
             } else {
                 redoResponsePB->set_xidn(lastXid.getData());
@@ -210,7 +210,7 @@ namespace OpenLogReplicator {
             schemaPB->add_column();
             pb::Column* columnPB = schemaPB->mutable_column(schemaPB->column_size() - 1);
 
-            for (typeCol column = 0; column < (typeCol)table->columns.size(); ++column) {
+            for (typeCol column = 0; column < static_cast<typeCol>(table->columns.size()); ++column) {
                 if (table->columns[column] == nullptr)
                     continue;
 
@@ -219,13 +219,13 @@ namespace OpenLogReplicator {
                 switch(table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
                     columnPB->set_type(pb::VARCHAR2);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_NUMBER:
                     columnPB->set_type(pb::NUMBER);
-                    columnPB->set_precision((int32_t)table->columns[column]->precision);
-                    columnPB->set_scale((int32_t)table->columns[column]->scale);
+                    columnPB->set_precision(static_cast<int32_t>(table->columns[column]->precision));
+                    columnPB->set_scale(static_cast<int32_t>(table->columns[column]->scale));
                     break;
 
                 case SYS_COL_TYPE_LONG: // long, not supported
@@ -238,7 +238,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_RAW:
                     columnPB->set_type(pb::RAW);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_LONG_RAW: // Not supported
@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_CHAR:
                     columnPB->set_type(pb::CHAR);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_FLOAT:
@@ -272,32 +272,32 @@ namespace OpenLogReplicator {
 
                 case SYS_COL_TYPE_TIMESTAMP:
                     columnPB->set_type(pb::TIMESTAMP);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_TZ:
                     columnPB->set_type(pb::TIMESTAMP_WITH_TZ);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_YEAR_TO_MONTH:
                     columnPB->set_type(pb::INTERVAL_YEAR_TO_MONTH);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_INTERVAL_DAY_TO_SECOND:
                     columnPB->set_type(pb::INTERVAL_DAY_TO_SECOND);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_URAWID:
                     columnPB->set_type(pb::UROWID);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 case SYS_COL_TYPE_TIMESTAMP_WITH_LOCAL_TZ: // Not supported
                     columnPB->set_type(pb::TIMESTAMP_WITH_LOCAL_TZ);
-                    columnPB->set_length((int32_t)table->columns[column]->length);
+                    columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));
                     break;
 
                 default:

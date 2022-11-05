@@ -82,13 +82,13 @@ namespace OpenLogReplicator {
     }
 
     void OracleObject::addColumn(OracleColumn* column) {
-        if (column->segCol != (typeCol)(columns.size() + 1))
+        if (column->segCol != static_cast<typeCol>(columns.size() + 1))
             throw DataException("trying to insert table: " + owner + "." + name + " (OBJ: " + std::to_string(obj) + ", DATAOBJ: " +
                     std::to_string(dataObj) + ") column: " + column->name + " (COL#: " + std::to_string(column->col) + ", SEGCOL#: " +
                     std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
         if (column->guard)
-            guardSegNo = column->segCol - (typeCol)1;
+            guardSegNo = column->segCol - static_cast<typeCol>(1);
 
         totalPk += column->numPk;
         if (column->numPk > 0)
@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
     }
 
     void OracleObject::addPartition(typeObj partitionObj, typeDataObj partitionDataObj) {
-        typeObj2 objx = (((typeObj2)partitionObj) << 32) | ((typeObj2)partitionDataObj);
+        typeObj2 objx = (static_cast<typeObj2>(partitionObj) << 32) | static_cast<typeObj2>(partitionDataObj);
         partitions.push_back(objx);
     }
 

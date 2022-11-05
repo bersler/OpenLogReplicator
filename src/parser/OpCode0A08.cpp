@@ -89,19 +89,19 @@ namespace OpenLogReplicator {
         }
 
         if (ctx->dumpRedoLog >= 1) {
-            auto itl = (uint8_t) redoLogRecord->data[fieldPos];
-            auto nco = (uint8_t) redoLogRecord->data[fieldPos + 1];
-            auto dsz = (uint8_t) redoLogRecord->data[fieldPos + 2];
-            auto col = (uint8_t) redoLogRecord->data[fieldPos + 3];
-            auto flg = (uint8_t) redoLogRecord->data[fieldPos + 4];
+            auto itl = static_cast<uint8_t>(redoLogRecord->data[fieldPos]);
+            auto nco = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 1]);
+            auto dsz = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 2]);
+            auto col = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 3]);
+            auto flg = static_cast<uint8_t>(redoLogRecord->data[fieldPos + 4]);
             typeDba nxt = ctx->read32(redoLogRecord->data + fieldPos + 8);
             typeDba prv = ctx->read32(redoLogRecord->data + fieldPos + 12);
 
-            ctx->dumpStream << "kdxlnitl = " << std::dec << (uint64_t)itl << std::endl;
-            ctx->dumpStream << "kdxlnnco = " << std::dec << (uint64_t)nco << std::endl;
-            ctx->dumpStream << "kdxlndsz = " << std::dec << (uint64_t)dsz << std::endl;
-            ctx->dumpStream << "kdxlncol = " << std::dec << (uint64_t)col << std::endl;
-            ctx->dumpStream << "kdxlnflg = " << std::dec << (uint64_t)flg << std::endl;
+            ctx->dumpStream << "kdxlnitl = " << std::dec << static_cast<uint64_t>(itl) << std::endl;
+            ctx->dumpStream << "kdxlnnco = " << std::dec << static_cast<uint64_t>(nco) << std::endl;
+            ctx->dumpStream << "kdxlndsz = " << std::dec << static_cast<uint64_t>(dsz) << std::endl;
+            ctx->dumpStream << "kdxlncol = " << std::dec << static_cast<uint64_t>(col) << std::endl;
+            ctx->dumpStream << "kdxlnflg = " << std::dec << static_cast<uint64_t>(flg) << std::endl;
             ctx->dumpStream << "kdxlnnxt = 0x" << std::hex << nxt << std::endl;
             ctx->dumpStream << "kdxlnprv = 0x" << std::hex << prv << std::endl;
         }

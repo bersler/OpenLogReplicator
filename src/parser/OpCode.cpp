@@ -31,70 +31,70 @@ namespace OpenLogReplicator {
 
             if (ctx->version < REDO_VERSION_12_1) {
                 if (redoLogRecord->typ == 6)
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                         " MEDIA RECOVERY MARKER" <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted << std::endl;
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) << std::endl;
                 else
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
-                        " TYP:" << (uint64_t)redoLogRecord->typ <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
+                        " TYP:" << static_cast<uint64_t>(redoLogRecord->typ) <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->dba <<
                         " OBJ:" << std::dec << redoLogRecord->recordDataObj <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted <<
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                         " RBL:" << std::dec << redoLogRecord->rbl << std::endl;
             } else if (ctx->version < REDO_VERSION_12_2) {
                 if (redoLogRecord->typ == 6)
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                         " MEDIA RECOVERY MARKER" <<
                         " CON_ID:" << redoLogRecord->conId <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted <<
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                         " FLG:0x" << std::setw(4) << std::hex << redoLogRecord->flgRecord << std::endl;
                 else
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                         " CON_ID:" << redoLogRecord->conId <<
-                        " TYP:" << (uint64_t)redoLogRecord->typ <<
+                        " TYP:" << static_cast<uint64_t>(redoLogRecord->typ) <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->dba <<
                         " OBJ:" << std::dec << redoLogRecord->recordDataObj <<
                         " SCN:" << PRINTSCN48(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted <<
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                         " RBL:" << std::dec << redoLogRecord->rbl <<
                         " FLG:0x" << std::setw(4) << std::hex << redoLogRecord->flgRecord << std::endl;
             } else {
                 if (redoLogRecord->typ == 6)
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                         " MEDIA RECOVERY MARKER" <<
                         " CON_ID:" << redoLogRecord->conId <<
                         " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted <<
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                         " FLG:0x" << std::setw(4) << std::hex << redoLogRecord->flgRecord << std::endl;
                 else
-                    ctx->dumpStream << "CHANGE #" << std::dec << (uint64_t)redoLogRecord->vectorNo <<
+                    ctx->dumpStream << "CHANGE #" << std::dec << static_cast<uint64_t>(redoLogRecord->vectorNo) <<
                         " CON_ID:" << redoLogRecord->conId <<
-                        " TYP:" << (uint64_t)redoLogRecord->typ <<
+                        " TYP:" << static_cast<uint64_t>(redoLogRecord->typ) <<
                         " CLS:" << redoLogRecord->cls <<
                         " AFN:" << redoLogRecord->afn <<
                         " DBA:0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->dba <<
                         " OBJ:" << std::dec << redoLogRecord->recordDataObj <<
                         " SCN:" << PRINTSCN64(redoLogRecord->scnRecord) <<
-                        " SEQ:" << std::dec << (uint64_t)redoLogRecord->seq <<
-                        " OP:" << (uint64_t)(redoLogRecord->opCode >> 8) << "." << (uint64_t)(redoLogRecord->opCode & 0xFF) <<
-                        " ENC:" << std::dec << (uint64_t)encrypted <<
+                        " SEQ:" << std::dec << static_cast<uint64_t>(redoLogRecord->seq) <<
+                        " OP:" << static_cast<uint64_t>(redoLogRecord->opCode >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opCode & 0xFF) <<
+                        " ENC:" << std::dec << static_cast<uint64_t>(encrypted) <<
                         " RBL:" << std::dec << redoLogRecord->rbl <<
                         " FLG:0x" << std::setw(4) << std::hex << redoLogRecord->flgRecord << std::endl;
             }
@@ -118,9 +118,9 @@ namespace OpenLogReplicator {
         uint8_t ver = flg & 0x03;
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KTB Redo " << std::endl;
-            ctx->dumpStream << "op: 0x" << std::setfill('0') << std::setw(2) << std::hex << (int32_t)ktbOp << " " <<
-                    " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)ver << "  " << std::endl;
-            ctx->dumpStream << "compat bit: " << std::dec << (uint64_t)(flg & 0x04) << " ";
+            ctx->dumpStream << "op: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<int32_t>(ktbOp) << " " <<
+                    " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(ver) << "  " << std::endl;
+            ctx->dumpStream << "compat bit: " << std::dec << static_cast<uint64_t>(flg & 0x04) << " ";
             if ((flg & 0x04) != 0)
                 ctx->dumpStream << "(post-11)";
             else
@@ -160,7 +160,7 @@ namespace OpenLogReplicator {
                 redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 12);
 
                 if (ctx->dumpRedoLog >= 1) {
-                    typeXid itlXid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 4),
+                    typeXid itlXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 4)),
                                              ctx->read16(redoLogRecord->data + fieldPos + 6),
                                              ctx->read32(redoLogRecord->data + fieldPos + 8));
 
@@ -181,12 +181,12 @@ namespace OpenLogReplicator {
                     if (ctx->version < REDO_VERSION_12_2)
                         ctx->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint64_t)lkc << "    " <<
+                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
                                 " fac: " << PRINTSCN48(scnx) << std::endl;
                     else
                         ctx->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint64_t)lkc << "    " <<
+                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
                                 " fac:  " << PRINTSCN64(scnx) << std::endl;
                 }
 
@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
                 redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 16);
 
                 if (ctx->dumpRedoLog >= 1) {
-                    typeXid itlXid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 8),
+                    typeXid itlXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 8)),
                                              ctx->read16(redoLogRecord->data + fieldPos + 10),
                                              ctx->read32(redoLogRecord->data + fieldPos + 12));
 
@@ -226,12 +226,12 @@ namespace OpenLogReplicator {
                     if (ctx->version < REDO_VERSION_12_2)
                         ctx->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint64_t)lkc << "    " <<
+                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
                                 " scn: " << PRINTSCN48(scnx) << std::endl;
                     else
                         ctx->dumpStream << "                     " <<
                                 " flg: " << flagStr << "   " <<
-                                " lkc:  " << (uint64_t)lkc << "    " <<
+                                " lkc:  " << static_cast<uint64_t>(lkc) << "    " <<
                                 " scn:  " << PRINTSCN64(scnx) << std::endl;
                 }
             }
@@ -252,7 +252,7 @@ namespace OpenLogReplicator {
 
                 ctx->dumpStream << " Itl           Xid                  Uba         Flag  Lck        Scn/Fsc" << std::endl;
                 for (uint64_t i = 0; i < itc; ++i) {
-                    typeXid itcXid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 20 + i * 24),
+                    typeXid itcXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 20 + i * 24)),
                                              ctx->read16(redoLogRecord->data + fieldPos + 20 + 2 + i * 24),
                                              ctx->read32(redoLogRecord->data + fieldPos + 20 + 4 + i * 24));
 
@@ -270,15 +270,15 @@ namespace OpenLogReplicator {
                         lck = 0;
                         scnfsc = ctx->readScn(redoLogRecord->data + fieldPos + 20 + 18 + i * 24);
                     } else
-                        scnfsc = ((uint64_t)ctx->read16(redoLogRecord->data + fieldPos + 20 + 18 + i * 24) << 32) |
-                                 (uint64_t)ctx->read32(redoLogRecord->data + fieldPos + 20 + 20 + i * 24);
+                        scnfsc = (static_cast<uint64_t>(ctx->read16(redoLogRecord->data + fieldPos + 20 + 18 + i * 24) << 32)) |
+                                static_cast<uint64_t>(ctx->read32(redoLogRecord->data + fieldPos + 20 + 20 + i * 24));
                     lck &= 0x0FFF;
 
 
                     ctx->dumpStream << "0x" << std::setfill('0') << std::setw(2) << std::hex << (i + 1) << "   " <<
                            itcXid.toString() << "  " <<
                            PRINTUBA(itcUba) << "  " << flagsStr << "  " <<
-                           std::setfill(' ') << std::setw(3) << std::dec << (uint64_t)lck << "  " << scnfscStr << " " <<
+                           std::setfill(' ') << std::setw(3) << std::dec << static_cast<uint64_t>(lck) << "  " << scnfscStr << " " <<
                            PRINTSCN48(scnfsc) << std::endl;
                 }
             }
@@ -296,7 +296,7 @@ namespace OpenLogReplicator {
             }
 
             opCode = 'F';
-            redoLogRecord->xid = typeXid((typeUsn)ctx->read16(redoLogRecord->data + fieldPos + 8),
+            redoLogRecord->xid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 8)),
                                          ctx->read16(redoLogRecord->data + fieldPos + 10),
                                          ctx->read32(redoLogRecord->data + fieldPos + 12));
             redoLogRecord->uba = ctx->read56(redoLogRecord->data + fieldPos + 16);
@@ -320,8 +320,8 @@ namespace OpenLogReplicator {
                 if (ctx->version < REDO_VERSION_12_2)
                     ctx->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN48(scn) <<
-                            " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)ver2 <<
-                            " opt: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)opt <<
+                            " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(ver2) <<
+                            " opt: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(opt) <<
                             ", entries follow..." << std::endl;
                 else {
                     char bigscn = 'N';
@@ -334,15 +334,15 @@ namespace OpenLogReplicator {
                     ver2 &= 0x03;
                     ctx->dumpStream << "Block cleanout record, scn: " <<
                             " " << PRINTSCN64(scn) <<
-                            " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)ver2 <<
-                            " opt: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)opt <<
+                            " ver: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(ver2) <<
+                            " opt: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(opt) <<
                             " bigscn: " << bigscn <<
                             " compact: " << compat <<
                             " spare: " << std::setfill('0') << std::setw(8) << std::hex << spare <<
                             ", entries follow..." << std::endl;
                 }
 
-                if (fieldLength < 56 + entries * (uint64_t)8) {
+                if (fieldLength < 56 + entries * static_cast<uint64_t>(8)) {
                     WARNING("too short field KTB Redo F2: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
                     return;
                 }
@@ -352,18 +352,18 @@ namespace OpenLogReplicator {
                     uint8_t flg2 = redoLogRecord->data[fieldPos + 57 + j * 8];
                     typeScn scnx = ctx->readScnR(redoLogRecord->data + fieldPos + 58 + j * 8);
                     if (ctx->version < REDO_VERSION_12_1)
-                        ctx->dumpStream << "  itli: " << std::dec << (uint64_t)itli << " " <<
-                                " flg: " << (uint64_t)flg2 << " " <<
+                        ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
+                                " flg: " << static_cast<uint64_t>(flg2) << " " <<
                                 " scn: " << PRINTSCN48(scnx) << std::endl;
                     else if (ctx->version < REDO_VERSION_12_2)
-                        ctx->dumpStream << "  itli: " << std::dec << (uint64_t)itli << " " <<
-                                " flg: (opt=" << (uint64_t)(flg2 & 0x03) << " whr=" << (uint64_t)(flg2 >> 2) << ") " <<
+                        ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
+                                " flg: (opt=" << static_cast<uint64_t>(flg2 & 0x03) << " whr=" << static_cast<uint64_t>(flg2 >> 2) << ") " <<
                                 " scn: " << PRINTSCN48(scnx) << std::endl;
                     else {
                         uint8_t opt2 = flg2 & 0x03;
                         uint8_t whr = flg2 >> 2;
-                        ctx->dumpStream << "  itli: " << std::dec << (uint64_t)itli << " " <<
-                                " flg: (opt=" << (uint64_t)opt2 << " whr=" << (uint64_t)whr << ") " <<
+                        ctx->dumpStream << "  itli: " << std::dec << static_cast<uint64_t>(itli) << " " <<
+                                " flg: (opt=" << static_cast<uint64_t>(opt2) << " whr=" << static_cast<uint64_t>(whr) << ") " <<
                                 " scn:  " << PRINTSCN64(scnx) << std::endl;
                     }
                 }
@@ -388,16 +388,16 @@ namespace OpenLogReplicator {
             redoLogRecord->nridSlot = ctx->read16(redoLogRecord->data + fieldPos + 32);
         }
 
-        if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 45 + (static_cast<uint64_t>(redoLogRecord->cc) + 7) / 8) {
             WARNING("too short field KDO OpCode IRP for nulls: " << std::dec << fieldLength <<
-                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ") offset: " << redoLogRecord->dataOffset)
+                    " (cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc) << ") offset: " << redoLogRecord->dataOffset)
             return;
         }
 
         redoLogRecord->nullsDelta = fieldPos + 45;
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
         uint8_t bits = 1;
-        for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+        for (uint64_t i = 0; i < static_cast<uint64_t>(redoLogRecord->cc); ++i) {
             if ((*nulls & bits) == 0)
                 redoLogRecord->ccData = i + 1;
             bits <<= 1;
@@ -408,8 +408,8 @@ namespace OpenLogReplicator {
         }
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
-                    " slot: " << std::dec << (uint64_t)redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" <<
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
+                    " slot: " << std::dec << static_cast<uint64_t>(redoLogRecord->slot) << "(0x" << std::hex << redoLogRecord->slot << ")" <<
                     " size/delt: " << std::dec << redoLogRecord->sizeDelt << std::endl;
 
             char fbStr[9] = "--------";
@@ -417,11 +417,11 @@ namespace OpenLogReplicator {
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
 
             ctx->dumpStream << "fb: " << fbStr <<
-                    " lb: 0x" << std::hex << (uint64_t)lb << " " <<
-                    " cc: " << std::dec << (uint64_t)redoLogRecord->cc;
+                    " lb: 0x" << std::hex << static_cast<uint64_t>(lb) << " " <<
+                    " cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc);
             if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
-                ctx->dumpStream << " cki: " << std::dec << (uint64_t)cki << std::endl;
+                ctx->dumpStream << " cki: " << std::dec << static_cast<uint64_t>(cki) << std::endl;
             } else
                 ctx->dumpStream << std::endl;
 
@@ -445,8 +445,8 @@ namespace OpenLogReplicator {
                 uint32_t nk = ctx->read32(redoLogRecord->data + fieldPos + 28);
                 uint16_t nk1 = ctx->read16(redoLogRecord->data + fieldPos + 32);
 
-                ctx->dumpStream << "curc: " << std::dec << (uint64_t)curc <<
-                        " comc: " << std::dec << (uint64_t)comc <<
+                ctx->dumpStream << "curc: " << std::dec << static_cast<uint64_t>(curc) <<
+                        " comc: " << std::dec << static_cast<uint64_t>(comc) <<
                         " pk: 0x" << std::setfill('0') << std::setw(8) << std::hex << pk << "." << std::hex << pk1 <<
                         " nk: 0x" << std::setfill('0') << std::setw(8) << std::hex << nk << "." << std::hex << nk1 << std::endl;
             }
@@ -488,8 +488,8 @@ namespace OpenLogReplicator {
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 18];
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
-                    " slot: " << std::dec << (uint64_t)redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" << std::endl;
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
+                    " slot: " << std::dec << static_cast<uint64_t>(redoLogRecord->slot) << "(0x" << std::hex << redoLogRecord->slot << ")" << std::endl;
         }
     }
 
@@ -504,9 +504,9 @@ namespace OpenLogReplicator {
 
         if (ctx->dumpRedoLog >= 1) {
             uint8_t to = redoLogRecord->data[fieldPos + 19];
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
                 " slot: " << std::dec << redoLogRecord->slot <<
-                " to: " << std::dec << (uint64_t)to << std::endl;
+                " to: " << std::dec << static_cast<uint64_t>(to) << std::endl;
         }
     }
 
@@ -521,16 +521,16 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = ctx->read16(redoLogRecord->data + fieldPos + 20);
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 23];
 
-        if (fieldLength < 26 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 26 + (static_cast<uint64_t>(redoLogRecord->cc) + 7) / 8) {
             WARNING("too short field KDO OpCode IRP for nulls: " << std::dec << fieldLength <<
-                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ") offset: " << redoLogRecord->dataOffset)
+                    " (cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc) << ") offset: " << redoLogRecord->dataOffset)
             return;
         }
 
         redoLogRecord->nullsDelta = fieldPos + 26;
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
         uint8_t bits = 1;
-        for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+        for (uint64_t i = 0; i < static_cast<uint64_t>(redoLogRecord->cc); ++i) {
             if ((*nulls & bits) == 0)
                 redoLogRecord->ccData = i + 1;
             bits <<= 1;
@@ -546,13 +546,13 @@ namespace OpenLogReplicator {
             uint8_t ncol = redoLogRecord->data[fieldPos + 22];
             auto size = (int16_t)ctx->read16(redoLogRecord->data + fieldPos + 24); // Signed
 
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
                     " slot: " << std::dec << redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" <<
-                    " flag: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->fb <<
-                    " lock: " << std::dec << (uint64_t)lock <<
-                    " ckix: " << std::dec << (uint64_t)ckix << std::endl;
-            ctx->dumpStream << "ncol: " << std::dec << (uint64_t)ncol <<
-                    " nnew: " << std::dec << (uint64_t)redoLogRecord->cc <<
+                    " flag: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->fb) <<
+                    " lock: " << std::dec << static_cast<uint64_t>(lock) <<
+                    " ckix: " << std::dec << static_cast<uint64_t>(ckix) << std::endl;
+            ctx->dumpStream << "ncol: " << std::dec << static_cast<uint64_t>(ncol) <<
+                    " nnew: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc) <<
                     " size: " << std::dec << size << std::endl;
         }
     }
@@ -572,10 +572,10 @@ namespace OpenLogReplicator {
             uint8_t flag = redoLogRecord->data[fieldPos + 26];
             uint8_t lock = redoLogRecord->data[fieldPos + 28];
             ctx->dumpStream <<
-                    "tabn: " << std::dec << (uint64_t)redoLogRecord->tabn <<
+                    "tabn: " << std::dec << static_cast<uint64_t>(redoLogRecord->tabn) <<
                     " slot: " << std::dec << redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" <<
-                    " flag: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)flag << std::endl <<
-                    "lock: " << std::dec << (uint64_t)lock <<
+                    " flag: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(flag) << std::endl <<
+                    "lock: " << std::dec << static_cast<uint64_t>(lock) <<
                     " nrid: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->nridBdba << "." << std::hex <<
                     redoLogRecord->nridSlot << std::endl;
         }
@@ -597,30 +597,32 @@ namespace OpenLogReplicator {
             if ((flag & 0x02) != 0) flagStr[1] = 'B';
 
             ctx->dumpStream << "flag: " << flagStr <<
-                    " lock: " << std::dec << (uint64_t)lock <<
+                    " lock: " << std::dec << static_cast<uint64_t>(lock) <<
                     " slot: " << std::dec << redoLogRecord->slot << "(0x" << std::hex << redoLogRecord->slot << ")" << std::endl;
 
             if ((flag & 0x01) != 0) {
                 uint8_t fwd[4];
                 uint16_t fwd2 = ctx->read16(redoLogRecord->data + fieldPos + 20);
-                memcpy((void*)fwd, (void*)(redoLogRecord->data + fieldPos + 16), 4);
+                memcpy(reinterpret_cast<void*>(fwd),
+                       reinterpret_cast<const void*>(redoLogRecord->data + fieldPos + 16), 4);
                 ctx->dumpStream << "fwd: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[0] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[1] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[2] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)fwd[3] << "." <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(fwd[0]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(fwd[1]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(fwd[2]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(fwd[3]) << "." <<
                         std::dec << fwd2 << " " << std::endl;
             }
 
             if ((flag & 0x02) != 0) {
                 uint8_t bkw[4];
                 uint16_t bkw2 = ctx->read16(redoLogRecord->data + fieldPos + 26);
-                memcpy((void*)bkw, (void*)(redoLogRecord->data + fieldPos + 22), 4);
+                memcpy(reinterpret_cast<void*>(bkw),
+                       reinterpret_cast<const void*>(redoLogRecord->data + fieldPos + 22), 4);
                 ctx->dumpStream << "bkw: 0x" <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[0] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[1] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[2] <<
-                        std::setfill('0') << std::setw(2) << std::hex << (uint64_t)bkw[3] << "." <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(bkw[0]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(bkw[1]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(bkw[2]) <<
+                        std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(bkw[3]) << "." <<
                         std::dec << bkw2 << std::endl;
             }
         }
@@ -637,16 +639,16 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = ctx->read16(redoLogRecord->data + fieldPos + 42);
         redoLogRecord->tabn = redoLogRecord->data[fieldPos + 44];
 
-        if (fieldLength < 45 + ((uint64_t)redoLogRecord->cc + 7) / 8) {
+        if (fieldLength < 45 + (static_cast<uint64_t>(redoLogRecord->cc) + 7) / 8) {
             WARNING("too short field KDO OpCode ORP for nulls: " << std::dec << fieldLength <<
-                    " (cc: " << std::dec << (uint64_t)redoLogRecord->cc << ") offset: " << redoLogRecord->dataOffset)
+                    " (cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc) << ") offset: " << redoLogRecord->dataOffset)
             return;
         }
 
         redoLogRecord->nullsDelta = fieldPos + 45;
         uint8_t* nulls = redoLogRecord->data + redoLogRecord->nullsDelta;
         uint8_t bits = 1;
-        for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+        for (uint64_t i = 0; i < static_cast<uint64_t>(redoLogRecord->cc); ++i) {
             if ((*nulls & bits) == 0)
                 redoLogRecord->ccData = i + 1;
             bits <<= 1;
@@ -663,8 +665,9 @@ namespace OpenLogReplicator {
         redoLogRecord->sizeDelt = ctx->read16(redoLogRecord->data + fieldPos + 40);
 
         if (ctx->dumpRedoLog >= 1) {
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
-                " slot: " << std::dec << (uint64_t)redoLogRecord->slot << "(0x" << std::hex << (uint64_t)redoLogRecord->slot << ")" <<
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
+                " slot: " << std::dec << static_cast<uint64_t>(redoLogRecord->slot) <<
+                "(0x" << std::hex << static_cast<uint64_t>(redoLogRecord->slot) << ")" <<
                 " size/delt: " << std::dec << redoLogRecord->sizeDelt << std::endl;
 
             char fbStr[9] = "--------";
@@ -672,11 +675,11 @@ namespace OpenLogReplicator {
             uint8_t lb = redoLogRecord->data[fieldPos + 17];
 
             ctx->dumpStream << "fb: " << fbStr <<
-                    " lb: 0x" << std::hex << (uint64_t)lb << " " <<
-                    " cc: " << std::dec << (uint64_t)redoLogRecord->cc;
+                    " lb: 0x" << std::hex << static_cast<uint64_t>(lb) << " " <<
+                    " cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc);
             if (fbStr[1] == 'C') {
                 uint8_t cki = redoLogRecord->data[fieldPos + 19];
-                ctx->dumpStream << " cki: " << std::dec << (uint64_t)cki << std::endl;
+                ctx->dumpStream << " cki: " << std::dec << static_cast<uint64_t>(cki) << std::endl;
             } else
                 ctx->dumpStream << std::endl;
 
@@ -725,13 +728,13 @@ namespace OpenLogReplicator {
         if (ctx->dumpRedoLog >= 1) {
             uint8_t lock = redoLogRecord->data[fieldPos + 17];
 
-            ctx->dumpStream << "tabn: " << (uint64_t)redoLogRecord->tabn <<
-                " lock: " << std::dec << (uint64_t)lock <<
-                " nrow: " << std::dec << (uint64_t)redoLogRecord->nrow << std::endl;
+            ctx->dumpStream << "tabn: " << static_cast<uint64_t>(redoLogRecord->tabn) <<
+                " lock: " << std::dec << static_cast<uint64_t>(lock) <<
+                " nrow: " << std::dec << static_cast<uint64_t>(redoLogRecord->nrow) << std::endl;
 
-            if (fieldLength < 22 + (uint64_t)redoLogRecord->nrow * 2) {
+            if (fieldLength < 22 + static_cast<uint64_t>(redoLogRecord->nrow) * 2) {
                 WARNING("too short field KDO OpCode QMI (2): " << std::dec << fieldLength << ", " <<
-                        (uint64_t)redoLogRecord->nrow << " offset: " << redoLogRecord->dataOffset)
+                        static_cast<uint64_t>(redoLogRecord->nrow) << " offset: " << redoLogRecord->dataOffset)
                 return;
             }
         }
@@ -778,7 +781,7 @@ namespace OpenLogReplicator {
                 default:
                     opCode = "XXX";
                     if (ctx->dumpRedoLog >= 1)
-                        ctx->dumpStream << "DEBUG op: " << std::dec << (uint64_t)(redoLogRecord->op & 0x1F) << std::endl;
+                        ctx->dumpStream << "DEBUG op: " << std::dec << static_cast<uint64_t>(redoLogRecord->op & 0x1F) << std::endl;
             }
 
             const char* xtype("0");
@@ -805,30 +808,30 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "KDO Op code: " << opCode << " row dependencies " << rowDependencies << std::endl;
             ctx->dumpStream << "  xtype: " << xtype << rtype <<
-                    " flags: 0x" << std::setfill('0') << std::setw(8) << std::hex << (uint64_t)redoLogRecord->flags << " " <<
+                    " flags: 0x" << std::setfill('0') << std::setw(8) << std::hex << static_cast<uint64_t>(redoLogRecord->flags) << " " <<
                     " bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord->bdba << " " <<
                     " hdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << hdba << std::endl;
-            ctx->dumpStream << "itli: " << std::dec << (uint64_t)redoLogRecord->itli << " " <<
-                    " ispac: " << std::dec << (uint64_t)ispac << " " <<
-                    " maxfr: " << std::dec << (uint64_t)maxFr << std::endl;
+            ctx->dumpStream << "itli: " << std::dec << static_cast<uint64_t>(redoLogRecord->itli) << " " <<
+                    " ispac: " << std::dec << static_cast<uint64_t>(ispac) << " " <<
+                    " maxfr: " << std::dec << static_cast<uint64_t>(maxFr) << std::endl;
 
             switch ((redoLogRecord->op & 0x1F)) {
             case OP_SKL:
                 if (fieldLength >= 32) {
                     char fwdFl = '-';
-                    uint32_t fwd = (((uint32_t)redoLogRecord->data[fieldPos + 16]) << 24) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 17]) << 16) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 18]) << 8) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 19]));
-                    uint16_t fwdPos = (((uint16_t)redoLogRecord->data[fieldPos + 20]) << 8) |
-                            (((uint16_t)redoLogRecord->data[fieldPos + 21]));
+                    uint32_t fwd = (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 16]) << 24) |
+                            (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 17]) << 16) |
+                            (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 18]) << 8) |
+                            static_cast<uint32_t>(redoLogRecord->data[fieldPos + 19]);
+                    uint16_t fwdPos = (static_cast<uint16_t>(redoLogRecord->data[fieldPos + 20]) << 8) |
+                            static_cast<uint16_t>(redoLogRecord->data[fieldPos + 21]);
                     char bkwFl = '-';
-                    uint32_t bkw = (((uint32_t)redoLogRecord->data[fieldPos + 22]) << 24) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 23]) << 16) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 24]) << 8) |
-                            (((uint32_t)redoLogRecord->data[fieldPos + 25]));
-                    uint16_t bkwPos = (((uint16_t)redoLogRecord->data[fieldPos + 26]) << 8) |
-                            (((uint16_t)redoLogRecord->data[fieldPos + 27]));
+                    uint32_t bkw = (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 22]) << 24) |
+                            (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 23]) << 16) |
+                            (static_cast<uint32_t>(redoLogRecord->data[fieldPos + 24]) << 8) |
+                            static_cast<uint32_t>(redoLogRecord->data[fieldPos + 25]);
+                    uint16_t bkwPos = (static_cast<uint16_t>(redoLogRecord->data[fieldPos + 26]) << 8) |
+                            static_cast<uint16_t>(redoLogRecord->data[fieldPos + 27]);
                     uint8_t fl = redoLogRecord->data[fieldPos + 28];
                     uint8_t lock = redoLogRecord->data[fieldPos + 29];
                     uint8_t slot = redoLogRecord->data[fieldPos + 30];
@@ -837,8 +840,9 @@ namespace OpenLogReplicator {
                     if (fl & 0x02) bkwFl = 'B';
 
                     ctx->dumpStream << "flag: " << fwdFl << bkwFl <<
-                            " lock: " << std::dec << (uint64_t)lock <<
-                            " slot: " << std::dec << (uint64_t)slot << "(0x" << std::hex << (uint64_t)slot << ")" << std::endl;
+                            " lock: " << std::dec << static_cast<uint64_t>(lock) <<
+                            " slot: " << std::dec << static_cast<uint64_t>(slot) <<
+                            "(0x" << std::hex << static_cast<uint64_t>(slot) << ")" << std::endl;
 
                     if (fwdFl == 'F')
                         ctx->dumpStream << "fwd: 0x" << std::setfill('0') << std::setw(8) << std::hex << fwd << "." << fwdPos << " " << std::endl;
@@ -853,8 +857,9 @@ namespace OpenLogReplicator {
                     uint8_t tabn = redoLogRecord->data[fieldPos + 18];
                     uint8_t rel = redoLogRecord->data[fieldPos + 19];
 
-                    ctx->dumpStream << "tabn: " << std::dec << (uint64_t)tabn << " slot: " << slot << "(0x" << std::hex << slot << ")" << std::endl;
-                    ctx->dumpStream << "piece relative column number: " << std::dec << (uint64_t)rel << std::endl;
+                    ctx->dumpStream << "tabn: " << std::dec << static_cast<uint64_t>(tabn) << " slot: " << slot <<
+                            "(0x" << std::hex << slot << ")" << std::endl;
+                    ctx->dumpStream << "piece relative column number: " << std::dec << static_cast<uint64_t>(rel) << std::endl;
                 }
                 break;
             }
@@ -891,7 +896,7 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 4);
         redoLogRecord->tsn = ctx->read32(redoLogRecord->data + fieldPos + 8);
         redoLogRecord->undo = ctx->read32(redoLogRecord->data + fieldPos + 12);
-        redoLogRecord->opc = (((typeOp1)redoLogRecord->data[fieldPos + 16]) << 8) | redoLogRecord->data[fieldPos + 17];
+        redoLogRecord->opc = (static_cast<typeOp1>(redoLogRecord->data[fieldPos + 16]) << 8) | redoLogRecord->data[fieldPos + 17];
         redoLogRecord->slt = redoLogRecord->data[fieldPos + 18];
         redoLogRecord->rci = redoLogRecord->data[fieldPos + 19];
         redoLogRecord->flg = ctx->read16(redoLogRecord->data + fieldPos + 20);
@@ -913,9 +918,9 @@ namespace OpenLogReplicator {
         if (ctx->version < REDO_VERSION_19_0) {
             ctx->dumpStream <<
                     ktuType << " redo:" <<
-                    " slt: " << std::dec << (uint64_t)redoLogRecord->slt <<
-                    " rci: " << std::dec << (uint64_t)redoLogRecord->rci <<
-                    " opc: " << std::dec << (uint64_t)(redoLogRecord->opc >> 8) << "." << (uint64_t)(redoLogRecord->opc & 0xFF) <<
+                    " slt: " << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
+                    " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
+                    " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
                     " " << prevObj << "objn: " << std::dec << redoLogRecord->obj <<
                     " objd: " << std::dec << redoLogRecord->dataObj <<
                     " tsn: " << std::dec << redoLogRecord->tsn << postObj << std::endl;
@@ -925,12 +930,12 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream <<
                     ktuType << " redo:" <<
-                    " slt: "  << std::dec << (uint64_t)redoLogRecord->slt <<
+                    " slt: "  << std::dec << static_cast<uint64_t>(redoLogRecord->slt) <<
                     " wrp: " << std::dec << wrp <<
                     " flg: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord->flg <<
                     " prev dba:  0x" << std::setfill('0') << std::setw(8) << std::hex << prevDba <<
-                    " rci: " << std::dec << (uint64_t)redoLogRecord->rci <<
-                    " opc: " << std::dec << (uint64_t)(redoLogRecord->opc >> 8) << "." << (uint64_t)(redoLogRecord->opc & 0xFF) <<
+                    " rci: " << std::dec << static_cast<uint64_t>(redoLogRecord->rci) <<
+                    " opc: " << std::dec << static_cast<uint64_t>(redoLogRecord->opc >> 8) << "." << static_cast<uint64_t>(redoLogRecord->opc & 0xFF) <<
                     " [objn: " << std::dec << redoLogRecord->obj <<
                     " objd: " << std::dec << redoLogRecord->dataObj <<
                     " tsn: " << std::dec << redoLogRecord->tsn << "]" << std::endl;
@@ -1225,11 +1230,11 @@ namespace OpenLogReplicator {
 
     void OpCode::dumpCompressed(Ctx* ctx, RedoLogRecord* redoLogRecord, uint8_t* data, uint16_t fieldLength) {
         std::ostringstream ss;
-        ss << "kdrhccnt=" << std::dec << (uint64_t)redoLogRecord->cc << ",full row:";
+        ss << "kdrhccnt=" << std::dec << static_cast<uint64_t>(redoLogRecord->cc) << ",full row:";
         ss << std::uppercase;
 
         for (uint64_t j = 0; j < fieldLength; ++j) {
-            ss << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j];
+            ss << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]);
             if (ss.str().length() > 256) {
                 ctx->dumpStream << ss.str() << std::endl;
                 ss.str(std::string());
@@ -1255,8 +1260,8 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << std::endl;
 
             for (uint64_t j = 0; j < fieldLength; ++j) {
-                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)data[j];
-                if ((j % 25) == 24 && j != (uint64_t)fieldLength - 1)
+                ctx->dumpStream << " " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]);
+                if ((j % 25) == 24 && j != static_cast<uint64_t>(fieldLength) - 1)
                     ctx->dumpStream << std::endl;
             }
 
@@ -1279,8 +1284,8 @@ namespace OpenLogReplicator {
 
                 ctx->dumpStream << "tl: " << std::dec << tl <<
                         " fb: " << fbStr <<
-                        " lb: 0x" << std::hex << (uint64_t)lb << " " <<
-                        " cc: " << std::dec << (uint64_t)jcc << std::endl;
+                        " lb: 0x" << std::hex << static_cast<uint64_t>(lb) << " " <<
+                        " cc: " << std::dec << static_cast<uint64_t>(jcc) << std::endl;
                 pos += 3;
 
                 if ((redoLogRecord->op & OP_ROWDEPENDENCIES) != 0) {
@@ -1325,7 +1330,7 @@ namespace OpenLogReplicator {
                 ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
             if ((j & 0x07) == 0)
                 ctx->dumpStream << " ";
-            ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[j] << " ";
+            ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[j]) << " ";
         }
         ctx->dumpStream << std::endl;
 
@@ -1338,7 +1343,7 @@ namespace OpenLogReplicator {
                     ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
                 if ((j & 0x07) == 0)
                     ctx->dumpStream << " ";
-                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord->data[fieldPosLocal + j] << " ";
+                ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPosLocal + j]) << " ";
             }
             ctx->dumpStream << std::endl;
 

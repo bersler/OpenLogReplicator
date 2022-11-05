@@ -77,11 +77,11 @@ namespace OpenLogReplicator {
     void Reader::initialize() {
         if (redoBufferList == nullptr) {
             redoBufferList = new uint8_t*[ctx->readBufferMax];
-            memset((void*)redoBufferList, 0, ctx->readBufferMax * sizeof(uint8_t*));
+            memset(reinterpret_cast<void*>(redoBufferList), 0, ctx->readBufferMax * sizeof(uint8_t*));
         }
 
         if (headerBuffer == nullptr) {
-            headerBuffer = (uint8_t*) aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2);
+            headerBuffer = reinterpret_cast<uint8_t*>(aligned_alloc(MEMORY_ALIGNMENT, REDO_PAGE_SIZE_MAX * 2));
             if (headerBuffer == nullptr)
                 throw RuntimeException("couldn't allocate " + std::to_string(REDO_PAGE_SIZE_MAX * 2) + " bytes memory (for: read header)");
         }
@@ -127,7 +127,7 @@ namespace OpenLogReplicator {
                 (blockSize == 1024 && buffer[1] != 0x22) ||
                 (blockSize == 4096 && buffer[1] != 0x82)) {
             ERROR("invalid block size (found: " << std::dec << blockSize << ", block: " << std::dec << blockNumber <<
-                    ", header[1]: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)buffer[1] << "): " << fileName)
+                    ", header[1]: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(buffer[1]) << "): " << fileName)
             return REDO_ERROR_BAD_DATA;
         }
 
@@ -202,7 +202,8 @@ namespace OpenLogReplicator {
 
         // Check file header
         if (headerBuffer[0] != 0) {
-            ERROR("invalid header (header[0]: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[0] << "): " << fileName)
+            ERROR("invalid header (header[0]: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[0]) <<
+                    "): " << fileName)
             return REDO_ERROR_BAD_DATA;
         }
 
@@ -210,10 +211,10 @@ namespace OpenLogReplicator {
             if (!ctx->isBigEndian())
                 ctx->setBigEndian();
         } else if (headerBuffer[28] != 0x7D || headerBuffer[29] != 0x7C || headerBuffer[30] != 0x7B || headerBuffer[31] != 0x7A || ctx->isBigEndian()) {
-            ERROR("invalid header (header[28-31]: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[28] <<
-                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[29] <<
-                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[30] <<
-                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[31] << "): " << fileName)
+            ERROR("invalid header (header[28-31]: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[28]) <<
+                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[29]) <<
+                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[30]) <<
+                    ", 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[31]) << "): " << fileName)
             return REDO_ERROR_BAD_DATA;
         }
 
@@ -224,19 +225,19 @@ namespace OpenLogReplicator {
 
         if (!blockSizeOK) {
             ERROR("invalid block size (found: " << std::dec << blockSize <<
-                    ", header[1]: 0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[1] << "): " << fileName)
+                    ", header[1]: 0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[1]) << "): " << fileName)
             blockSize = 0;
             return REDO_ERROR_BAD_DATA;
         }
 
-        if (bytes < ((int64_t)blockSize * 2)) {
+        if (bytes < static_cast<int64_t>(blockSize * 2)) {
             ERROR("reading file: " << fileName << " - " << strerror(errno))
             return REDO_ERROR_READ;
         }
 
         if (bytes > 0 && ctx->redoCopyPath.length() > 0) {
-            if ((uint64_t)bytes > blockSize * 2)
-                bytes = (int64_t)(blockSize * 2);
+            if (static_cast<uint64_t>(bytes) > blockSize * 2)
+                bytes = static_cast<int64_t>(blockSize * 2);
 
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
             if (fileCopySequence != sequenceHeader) {
@@ -294,14 +295,15 @@ namespace OpenLogReplicator {
         firstTimeHeader = ctx->read32(headerBuffer + blockSize + 188);
         nextScnHeader = ctx->readScn(headerBuffer + blockSize + 192);
 
-        if (numBlocksHeader != ZERO_BLK && fileSize > ((uint64_t)numBlocksHeader) * blockSize && group == 0) {
-            fileSize = ((uint64_t)numBlocksHeader) * blockSize;
+        if (numBlocksHeader != ZERO_BLK && fileSize > static_cast<uint64_t>(numBlocksHeader) * blockSize && group == 0) {
+            fileSize = static_cast<uint64_t>(numBlocksHeader) * blockSize;
             INFO("updating redo log size to: " << std::dec << fileSize << " for: " << fileName)
         }
 
         if (ctx->version == 0) {
             char SID[9];
-            memcpy((void*)SID, (void*)(headerBuffer + blockSize + 28), 8);
+            memcpy(reinterpret_cast<void*>(SID),
+                   reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
             SID[8] = 0;
             ctx->version = version;
             typeSeq sequenceHeader = ctx->read32(headerBuffer + blockSize + 8);
@@ -393,7 +395,8 @@ namespace OpenLogReplicator {
         }
 
         if (actualRead > 0 && fileCopyDes != -1 && (ctx->redoVerifyDelayUs == 0 || group == 0)) {
-            int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, (int64_t)bufferEnd);
+            int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
+                                          static_cast<int64_t>(bufferEnd));
             if (bytesWritten != actualRead) {
                 ERROR("writing file: " << fileNameWrite << " - " << strerror(errno))
                 ret = REDO_ERROR_WRITE;
@@ -458,7 +461,7 @@ namespace OpenLogReplicator {
                 bufferScan += goodBlocks * blockSize;
 
                 for (uint64_t numBlock = 0; numBlock < goodBlocks; ++numBlock) {
-                    auto readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
+                    auto readTimeP = reinterpret_cast<time_t*>(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize);
                     *readTimeP = lastReadTime;
                 }
             } else {
@@ -494,11 +497,11 @@ namespace OpenLogReplicator {
             uint64_t redoBufferPos = (bufferEnd + numBlock * blockSize) % MEMORY_CHUNK_SIZE;
             uint64_t redoBufferNum = ((bufferEnd + numBlock * blockSize) / MEMORY_CHUNK_SIZE) % ctx->readBufferMax;
 
-            auto* readTimeP = (time_t*) (redoBufferList[redoBufferNum] + redoBufferPos);
-            if (*readTimeP + (time_t)ctx->redoVerifyDelayUs < loopTime) {
+            auto readTimeP = reinterpret_cast<time_t*>(redoBufferList[redoBufferNum] + redoBufferPos);
+            if (*readTimeP + static_cast<time_t>(ctx->redoVerifyDelayUs) < loopTime) {
                 ++goodBlocks;
             } else {
-                readTime = *readTimeP + (time_t)ctx->redoVerifyDelayUs;
+                readTime = *readTimeP + static_cast<time_t>(ctx->redoVerifyDelayUs);
                 break;
             }
         }
@@ -532,7 +535,8 @@ namespace OpenLogReplicator {
                 return false;
             }
             if (actualRead > 0 && fileCopyDes != -1) {
-                int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead, (int64_t)bufferEnd);
+                int64_t bytesWritten = pwrite(fileCopyDes, redoBufferList[redoBufferNum] + redoBufferPos, actualRead,
+                                              static_cast<int64_t>(bufferEnd));
                 if (bytesWritten != actualRead) {
                     ERROR("writing file: " << fileNameWrite << " - " << strerror(errno))
                     ret = REDO_ERROR_WRITE;
@@ -666,11 +670,11 @@ namespace OpenLogReplicator {
 
                     // #1 read
                     if (bufferScan < fileSize && (ctx->buffersFree > 0 || (bufferScan % MEMORY_CHUNK_SIZE) > 0)
-                        && (!reachedZero || lastReadTime + (time_t)ctx->redoReadSleepUs < loopTime))
+                        && (!reachedZero || lastReadTime + static_cast<time_t>(ctx->redoReadSleepUs) < loopTime))
                         if (!read1())
                             break;
 
-                    if (numBlocksHeader != ZERO_BLK && bufferEnd == ((uint64_t)numBlocksHeader) * blockSize) {
+                    if (numBlocksHeader != ZERO_BLK && bufferEnd == static_cast<uint64_t>(numBlocksHeader) * blockSize) {
                         if (nextScnHeader != ZERO_SCN) {
                             ret = REDO_FINISHED;
                             nextScn = nextScnHeader;
@@ -688,7 +692,7 @@ namespace OpenLogReplicator {
                         } else {
                             time_t nowTime = Timer::getTime();
                             if (readTime > nowTime) {
-                                if ((time_t)ctx->redoReadSleepUs < readTime - nowTime)
+                                if (static_cast<time_t>(ctx->redoReadSleepUs) < readTime - nowTime)
                                     usleep(ctx->redoReadSleepUs);
                                 else
                                     usleep(readTime - nowTime);
@@ -711,7 +715,7 @@ namespace OpenLogReplicator {
         uint64_t sum = 0;
 
         for (uint64_t i = 0; i < size / 8; ++i, buffer += 8)
-            sum ^= *((uint64_t*)buffer);
+            sum ^= *(reinterpret_cast<uint64_t*>(buffer));
         sum ^= (sum >> 32);
         sum ^= (sum >> 16);
         sum ^= oldChSum;
@@ -758,7 +762,8 @@ namespace OpenLogReplicator {
 
     void Reader::printHeaderInfo(std::ostringstream& ss, const std::string& path) const {
         char SID[9];
-        memcpy((void*)SID, (void*)(headerBuffer + blockSize + 28), 8);
+        memcpy(reinterpret_cast<void*>(SID),
+               reinterpret_cast<const void*>(headerBuffer + blockSize + 28), 8);
         SID[8] = 0;
 
         ss << "DUMP OF REDO FROM FILE '" << path << "'" << std::endl;
@@ -789,7 +794,8 @@ namespace OpenLogReplicator {
 
         typeSeq seq = ctx->read32(headerBuffer + blockSize + 8);
         uint8_t descrip[65];
-        memcpy ((void*)descrip, (void*)(headerBuffer + blockSize + 92), 64);
+        memcpy (reinterpret_cast<void*>(descrip),
+                reinterpret_cast<const void*>(headerBuffer + blockSize + 92), 64);
         descrip[64] = 0;
         uint16_t thread = ctx->read16(headerBuffer + blockSize + 176);
         uint32_t hws = ctx->read32(headerBuffer + blockSize + 172);
@@ -799,10 +805,10 @@ namespace OpenLogReplicator {
         ss << R"( descrip:")" << descrip << R"(")" << std::endl <<
            " thread: " << std::dec << thread <<
            " nab: 0x" << std::hex << numBlocksHeader <<
-           " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << (typeSeq)seq <<
+           " seq: 0x" << std::setfill('0') << std::setw(8) << std::hex << seq <<
            " hws: 0x" << std::hex << hws <<
-                " eot: " << std::dec << (uint64_t)eot <<
-                " dis: " << std::dec << (uint64_t)dis << std::endl;
+                " eot: " << std::dec << static_cast<uint64_t>(eot) <<
+                " dis: " << std::dec << static_cast<uint64_t>(dis) << std::endl;
 
         typeScn resetlogsScn = ctx->readScn(headerBuffer + blockSize + 164);
         typeResetlogs prevResetlogsCnt = ctx->read32(headerBuffer + blockSize + 292);
@@ -884,8 +890,8 @@ namespace OpenLogReplicator {
             ss << " Miscellaneous second flags: 0x" << std::hex << miscFlags2 << std::endl;
         }
 
-        auto thr = (int32_t)ctx->read32(headerBuffer + blockSize + 432);
-        auto seq2 = (int32_t)ctx->read32(headerBuffer + blockSize + 436);
+        auto thr = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 432));
+        auto seq2 = static_cast<int32_t>(ctx->read32(headerBuffer + blockSize + 436));
         typeScn scn2 = ctx->readScn(headerBuffer + blockSize + 440);
         uint8_t zeroBlocks = headerBuffer[blockSize + 206];
         uint8_t formatId = headerBuffer[blockSize + 207];
@@ -893,14 +899,14 @@ namespace OpenLogReplicator {
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                     " seq: " << std::dec << seq2 <<
                     " scn: " << PRINTSCN48(scn2) << std::endl <<
-                    " Zero blocks: " << std::dec << (uint64_t)zeroBlocks << std::endl <<
-                    " Format ID is " << std::dec << (uint64_t)formatId << std::endl;
+                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << std::endl <<
+                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << std::endl;
         else
             ss << " Thread internal enable indicator: thr: " << std::dec << thr << "," <<
                     " seq: " << std::dec << seq2 <<
                     " scn: " << PRINTSCN64(scn2) << std::endl <<
-                    " Zero blocks: " << std::dec << (uint64_t)zeroBlocks << std::endl <<
-                    " Format ID is " << std::dec << (uint64_t)formatId << std::endl;
+                    " Zero blocks: " << std::dec << static_cast<uint64_t>(zeroBlocks) << std::endl <<
+                    " Format ID is " << std::dec << static_cast<uint64_t>(formatId) << std::endl;
 
         uint32_t standbyApplyDelay = ctx->read32(headerBuffer + blockSize + 280);
         if (standbyApplyDelay > 0)
@@ -912,7 +918,7 @@ namespace OpenLogReplicator {
 
         ss << " redo log key is ";
         for (uint64_t i = 448; i < 448 + 16; ++i)
-            ss << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)headerBuffer[blockSize + i];
+            ss << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(headerBuffer[blockSize + i]);
         ss << std::endl;
 
         uint16_t redoKeyFlag = ctx->read16(headerBuffer + blockSize + 480);

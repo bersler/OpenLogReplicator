@@ -48,7 +48,7 @@ namespace OpenLogReplicator {
                 dumpCompressed(ctx, redoLogRecord, redoLogRecord->data + fieldPos, fieldLength);
         } else {
             // Fields: 3 .. to 3 + cc - 1
-            for (uint64_t i = 0; i < (uint64_t)redoLogRecord->cc; ++i) {
+            for (uint64_t i = 0; i < static_cast<uint64_t>(redoLogRecord->cc); ++i) {
                 if (fieldLength > 0 && (*nulls & bits) != 0) {
                     WARNING("length: " << std::dec << fieldLength << " for NULL column offset: " << redoLogRecord->dataOffset)
                 }

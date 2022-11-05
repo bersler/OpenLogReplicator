@@ -46,7 +46,7 @@ namespace OpenLogReplicator {
     }
 
     void typeIntX::initializeBASE10() {
-        memset((void*)BASE10, 0, sizeof(BASE10));
+        memset(reinterpret_cast<void*>(BASE10), 0, sizeof(BASE10));
         for (uint64_t digit = 0; digit < 10; ++digit) {
             BASE10[0][digit] = digit;
 
@@ -113,7 +113,7 @@ namespace OpenLogReplicator {
     }
 
     typeIntX& typeIntX::setStr(const char* other, uint64_t length) {
-        *this = (uint64_t)0;
+        *this = static_cast<uint64_t>(0);
         if (length > TYPE_INTX_DIGITS) {
             ERROR("incorrect conversion of string: " << other)
             return *this;

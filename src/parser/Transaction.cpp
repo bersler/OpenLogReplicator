@@ -47,6 +47,7 @@ namespace OpenLogReplicator {
         begin(false),
         rollback(false),
         system(false),
+        schema(false),
         shutdown(false),
         lastSplit(false),
         dump(false),
@@ -73,9 +74,9 @@ namespace OpenLogReplicator {
         log(ctx, "rlb2", redoLogRecord2);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -152,9 +153,9 @@ namespace OpenLogReplicator {
         log(ctx, "rlb ", redoLogRecord1);
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
-            uint64_t lengthLast = *((uint64_t *) (lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            auto lastRedoLogRecord1 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
-            auto lastRedoLogRecord2 = (RedoLogRecord*) (lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
+            uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
+            auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
             switch (lastRedoLogRecord2->opCode) {
@@ -223,10 +224,10 @@ namespace OpenLogReplicator {
         while (tc != nullptr) {
             pos = 0;
             for (uint64_t i = 0; i < tc->elements; ++i) {
-                typeOp2 op = *((typeOp2*) (tc->buffer + pos));
+                typeOp2 op = *(reinterpret_cast<typeOp2*>(tc->buffer + pos));
 
-                RedoLogRecord* redoLogRecord1 = ((RedoLogRecord*) (tc->buffer + pos + ROW_HEADER_REDO1));
-                RedoLogRecord* redoLogRecord2 = ((RedoLogRecord*) (tc->buffer + pos + ROW_HEADER_REDO2));
+                RedoLogRecord* redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + ROW_HEADER_REDO1);
+                RedoLogRecord* redoLogRecord2 = reinterpret_cast<RedoLogRecord*>(tc->buffer + pos + ROW_HEADER_REDO2);
                 log(metadata->ctx, "flu1", redoLogRecord1);
                 log(metadata->ctx, "flu2", redoLogRecord2);
 
@@ -236,8 +237,8 @@ namespace OpenLogReplicator {
 
                 TRACE(TRACE2_TRANSACTION, "TRANSACTION: " << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord1->length <<
                         ":" << std::setfill(' ') << std::setw(4) << std::dec << redoLogRecord2->length <<
-                        " fb: " << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->fb <<
-                        ":" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord2->fb << " " <<
+                        " fb: " << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->fb) <<
+                        ":" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord2->fb) << " " <<
                         " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
                         " scn: " << std::dec << redoLogRecord1->scn <<
                         " subScn: " << std::dec << redoLogRecord1->subScn <<
@@ -249,15 +250,15 @@ namespace OpenLogReplicator {
                         " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
                         " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
                         " bdba1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba << "." << std::hex <<
-                                (uint64_t)redoLogRecord1->slot <<
+                                static_cast<uint64_t>(redoLogRecord1->slot) <<
                         " nrid1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->nridBdba << "." << std::hex <<
                                 redoLogRecord1->nridSlot <<
                         " bdba2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->bdba << "." << std::hex <<
-                                (uint64_t)redoLogRecord2->slot <<
+                                static_cast<uint64_t>(redoLogRecord2->slot) <<
                         " nrid2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->nridBdba << "." << std::hex <<
                                 redoLogRecord2->nridSlot <<
-                        " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << (uint64_t)redoLogRecord1->suppLogFb <<
-                        ", " << std::setfill(' ') << std::setw(3) << std::dec << (uint64_t)redoLogRecord1->suppLogType <<
+                        " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->suppLogFb) <<
+                        ", " << std::setfill(' ') << std::setw(3) << std::dec << static_cast<uint64_t>(redoLogRecord1->suppLogType) <<
                         ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogCC <<
                         ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogBefore <<
                         ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogAfter <<
@@ -321,6 +322,7 @@ namespace OpenLogReplicator {
                         uint32_t pageNo = redoLogRecord2->lobPageNo;
                         if (pageNo > 0)
                             start = 0;
+
                         for (uint64_t j = start; j < redoLogRecord2->indKeyDataLength; j += 4) {
                             typeDba page = ctx->read32Big(redoLogRecord2->data + redoLogRecord2->indKeyData + j);
                             if (page > 0) {
@@ -435,20 +437,20 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            builder->processDml(&lobCtx, first1, first2, type);
+                            builder->processDml(&lobCtx, first1, first2, type, schema);
                             opFlush = true;
                         }
                         break;
 
                     // Insert multiple rows
                     case 0x05010B0B:
-                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2);
+                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, schema);
                         opFlush = true;
                         break;
 
                     // Delete multiple rows
                     case 0x05010B0C:
-                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2);
+                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, schema);
                         opFlush = true;
                         break;
 

@@ -69,10 +69,10 @@ namespace OpenLogReplicator {
             return;
         }
 
-        auto pathPos = this->output.find_last_of('/');
-        if (pathPos != std::string::npos) {
-            outputPath =  this->output.substr(0, pathPos);
-            outputFileMask = this->output.substr(pathPos + 1);
+        auto outputIt = this->output.find_last_of('/');
+        if (outputIt != std::string::npos) {
+            outputPath =  this->output.substr(0, outputIt);
+            outputFileMask = this->output.substr(outputIt + 1);
         } else {
             outputPath = ".";
             outputFileMask = this->output;
@@ -288,13 +288,13 @@ namespace OpenLogReplicator {
             checkFile(msg->scn, msg->sequence, msg->length);
 
         int64_t bytesWritten = write(outputDes, (const char*)msg->data, msg->length);
-        if ((uint64_t)bytesWritten != msg->length)
+        if (static_cast<uint64_t>(bytesWritten) != msg->length)
             throw RuntimeException("writing file: " + outputFile + " - " + strerror(errno));
         outputSize += bytesWritten;
 
         if (newLine > 0) {
             bytesWritten = write(outputDes, newLineMsg, newLine);
-            if ((uint64_t)bytesWritten != newLine)
+            if (static_cast<uint64_t>(bytesWritten) != newLine)
                 throw RuntimeException("writing file: " + outputFile + " - " + strerror(errno));
             outputSize += bytesWritten;
         }

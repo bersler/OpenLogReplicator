@@ -55,12 +55,13 @@ namespace OpenLogReplicator {
     }
 
     void StreamNetwork::initialize() {
-        auto colon = this->uri.find(':');
-        if (colon == std::string::npos)
+        //colon
+        auto uriIt = this->uri.find(':');
+        if (uriIt == std::string::npos)
             throw NetworkException("uri is missing ':'");
 
-        host = this->uri.substr(0, colon);
-        port = this->uri.substr(colon + 1, this->uri.length() - 1);
+        host = this->uri.substr(0, uriIt);
+        port = this->uri.substr(uriIt + 1, this->uri.length() - 1);
     }
 
     std::string StreamNetwork::getName() const {
@@ -69,7 +70,7 @@ namespace OpenLogReplicator {
 
     void StreamNetwork::initializeClient() {
         struct sockaddr_in addressC;
-        memset((void*)&addressC, 0, sizeof(addressC));
+        memset(reinterpret_cast<void*>(&addressC), 0, sizeof(addressC));
         addressC.sin_family = AF_INET;
         addressC.sin_port = htons(atoi(port.c_str()));
 
@@ -80,14 +81,15 @@ namespace OpenLogReplicator {
         if (server == nullptr)
             throw NetworkException("resolving host name: " + host + " - " + strerror(errno));
 
-        memcpy((void*)&addressC.sin_addr.s_addr, (void*)server->h_addr, server->h_length);
-        if (connect(socketFD, (struct sockaddr*) &addressC, sizeof(addressC)) < 0)
+        memcpy(reinterpret_cast<void*>(&addressC.sin_addr.s_addr),
+               reinterpret_cast<const void*>(server->h_addr), server->h_length);
+        if (connect(socketFD, reinterpret_cast<struct sockaddr*>(&addressC), sizeof(addressC)) < 0)
             throw NetworkException("connecting to uri: " + uri + " - " + strerror(errno));
     }
 
     void StreamNetwork::initializeServer() {
         struct addrinfo hints;
-        memset((void*)&hints, 0, sizeof hints);
+        memset(reinterpret_cast<void*>(&hints), 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_flags = AI_PASSIVE;
@@ -142,7 +144,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -164,7 +166,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, ((uint8_t*) &length32) + sent, sizeof(uint32_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length32)) + sent, sizeof(uint32_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -185,7 +187,7 @@ namespace OpenLogReplicator {
                 w = wset;
                 // Blocking select
                 select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-                ssize_t r = write(socketFD, ((uint8_t*) &length) + sent, sizeof(uint64_t) - sent);
+                ssize_t r = write(socketFD, (reinterpret_cast<uint8_t*>(&length)) + sent, sizeof(uint64_t) - sent);
                 if (r <= 0) {
                    if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                        r = 0;
@@ -208,7 +210,7 @@ namespace OpenLogReplicator {
             w = wset;
             // Blocking select
             select(socketFD + 1, nullptr, &w, nullptr, nullptr);
-            ssize_t r = write(socketFD, (char*)msg + sent, length - sent);
+            ssize_t r = write(socketFD, reinterpret_cast<const char*>(msg) + sent, length - sent);
             if (r <= 0) {
                if (r < 0 && (errno == EWOULDBLOCK || errno == EAGAIN))
                    r = 0;
@@ -230,7 +232,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint32_t) - recvd);
+            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -245,12 +247,12 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*((uint32_t*)msg) < 0xFFFFFFFF) {
+        if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
             // 32-bit message length
-            if (length < *((uint32_t*) msg))
+            if (length < *(reinterpret_cast<uint32_t*>(msg)))
                 throw NetworkException("read buffer too small");
 
-            length = *((uint32_t*) msg);
+            length = *(reinterpret_cast<uint32_t*>(msg));
             recvd = 0;
         } else {
             // 64-bit message length
@@ -260,7 +262,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint64_t) - recvd);
+                int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -275,10 +277,10 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *((uint64_t*) msg))
+            if (length < *(reinterpret_cast<uint64_t*>(msg)))
                 throw NetworkException("read buffer too small");
 
-            length = *((uint64_t*) msg);
+            length = *(reinterpret_cast<uint64_t*>(msg));
             recvd = 0;
         }
 
@@ -286,7 +288,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, (char*)msg + recvd, length - recvd);
+            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -312,7 +314,7 @@ namespace OpenLogReplicator {
             if (ctx->softShutdown)
                 return 0;
 
-            int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint32_t) - recvd);
+            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint32_t) - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -332,12 +334,12 @@ namespace OpenLogReplicator {
             }
         }
 
-        if (*((uint32_t*)msg) < 0xFFFFFFFF) {
+        if (*(reinterpret_cast<uint32_t*>(msg)) < 0xFFFFFFFF) {
             // 32-bit message length
-            if (length < *((uint32_t*) msg))
+            if (length < *(reinterpret_cast<uint32_t*>(msg)))
                 throw NetworkException("read buffer too small");
-
-            length = *((uint32_t*) msg);
+\
+            length = *(reinterpret_cast<uint32_t*>(msg));
             recvd = 0;
         } else {
             // 64-bit message length
@@ -347,7 +349,7 @@ namespace OpenLogReplicator {
                 if (ctx->softShutdown)
                     return 0;
 
-                int64_t bytes = read(socketFD, (char*)msg + recvd, sizeof(uint64_t) - recvd);
+                int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, sizeof(uint64_t) - recvd);
 
                 if (bytes > 0)
                     recvd += bytes;
@@ -367,15 +369,15 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (length < *((uint64_t*) msg))
+            if (length < *(reinterpret_cast<uint64_t*>(msg)))
                 throw NetworkException("read buffer too small");
 
-            length = *((uint64_t*) msg);
+            length = *(reinterpret_cast<uint64_t*>(msg));
             recvd = 0;
         }
 
         while (recvd < length) {
-            int64_t bytes = read(socketFD, (char*)msg + recvd, length - recvd);
+            int64_t bytes = read(socketFD, reinterpret_cast<char*>(msg) + recvd, length - recvd);
 
             if (bytes > 0)
                 recvd += bytes;
@@ -400,7 +402,7 @@ namespace OpenLogReplicator {
             return true;
 
         int64_t addrlen = sizeof(address);
-        socketFD = accept(serverFD, (struct sockaddr*) &address, (socklen_t*) &addrlen);
+        socketFD = accept(serverFD, reinterpret_cast<struct sockaddr*>(&address), reinterpret_cast<socklen_t*>(&addrlen));
         if (socketFD < 0) {
             if (errno == EWOULDBLOCK)
                 return false;

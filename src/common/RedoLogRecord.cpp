@@ -30,15 +30,15 @@ namespace OpenLogReplicator {
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
                 " cls: " << std::dec << redo.cls <<
                 " rbl: " << std::dec << redo.rbl <<
-                " seq: " << std::dec << (uint64_t)redo.seq <<
-                " typ: " << std::dec << (uint64_t)redo.typ <<
+                " seq: " << std::dec << static_cast<uint64_t>(redo.seq) <<
+                " typ: " << std::dec << static_cast<uint64_t>(redo.typ) <<
                 " conId: " << std::dec << redo.conId <<
                 " flgRecord: " << std::dec << redo.flgRecord <<
 //                " vectorNo: " << std::dec << vectorNo <<
                 " robj: " << std::dec << redo.recordObj <<
                 " rdataObj: " << std::dec << redo.recordDataObj <<
 //                " scn: " << PRINTSCN64(scn) <<
-                " nrow: " << std::dec << (uint64_t)redo.nrow <<
+                " nrow: " << std::dec << static_cast<uint64_t>(redo.nrow) <<
                 " afn: " << std::dec << redo.afn <<
                 " length: " << std::dec << redo.length <<
                 " dba: 0x" << std::hex << redo.dba <<
@@ -49,16 +49,16 @@ namespace OpenLogReplicator {
                 " undo: " << std::dec << redo.undo <<
                 " usn: " << std::dec << redo.usn <<
                 " uba: " << PRINTUBA(redo.uba) <<
-                " slt: " << std::dec << (uint64_t)redo.slt <<
-                " rci: " << std::dec << (uint64_t)redo.rci <<
-                " flg: " << std::dec << (uint64_t)redo.flg <<
+                " slt: " << std::dec << static_cast<uint64_t>(redo.slt) <<
+                " rci: " << std::dec << static_cast<uint64_t>(redo.rci) <<
+                " flg: " << std::dec << static_cast<uint64_t>(redo.flg) <<
                 " opc: 0x" << std::hex << redo.opc <<
-                " op: " << std::dec << (uint64_t)redo.op <<
-                " cc: " << std::dec << (uint64_t)redo.cc <<
-//                " itli: " << std::dec << (uint64_t)itli <<
+                " op: " << std::dec << static_cast<uint64_t>(redo.op) <<
+                " cc: " << std::dec << static_cast<uint64_t>(redo.cc) <<
+//                " itli: " << std::dec << static_cast<uint64_t>(itli) <<
                 " slot: " << std::dec << redo.slot <<
-                " flags: 0x" << std::hex << (uint64_t)redo.flags <<
-                " fb: 0x" << std::hex << (uint64_t)redo.fb <<
+                " flags: 0x" << std::hex << static_cast<uint64_t>(redo.flags) <<
+                " fb: 0x" << std::hex << static_cast<uint64_t>(redo.fb) <<
                 " nrid: 0x" << std::hex << redo.nridBdba << "." << std::dec << redo.nridSlot;
         os << ss.str();
         return os;
