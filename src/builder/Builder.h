@@ -110,7 +110,7 @@ namespace OpenLogReplicator {
         typeXid lastXid;
         uint64_t valuesSet[MAX_NO_COLUMNS / sizeof(uint64_t)];
         uint64_t valuesMerge[MAX_NO_COLUMNS / sizeof(uint64_t)];
-        uint64_t lengths[MAX_NO_COLUMNS][4];
+        int64_t lengths[MAX_NO_COLUMNS][4];
         uint8_t* values[MAX_NO_COLUMNS][4];
         uint64_t lengthsPart[3][MAX_NO_COLUMNS][4];
         uint8_t* valuesPart[3][MAX_NO_COLUMNS][4];
@@ -158,15 +158,15 @@ namespace OpenLogReplicator {
             compressedAfter = false;
         };
 
-        void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb) {
-            if ((ctx->trace2 & TRACE2_DML) != 0) {
+        void valueSet(uint64_t type, uint16_t column, uint8_t* data, uint16_t length, uint8_t fb, bool dump) {
+            if ((ctx->trace2 & TRACE2_DML) != 0 || dump) {
                 std::ostringstream ss;
                 ss << "DML: value: " << std::dec << type << "/" << column << "/" << std::dec << length << "/" << std::setfill('0') <<
                         std::setw(2) << std::hex << static_cast<uint64_t>(fb) << " to: ";
                 for (uint64_t i = 0; i < length && i < 10; ++i) {
                     ss << "0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[i]) << ", ";
                 }
-                TRACE(TRACE2_DML, ss.str())
+                INFO(ss.str())
             }
 
             uint64_t base = static_cast<uint64_t>(column) >> 6;
@@ -805,9 +805,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] uint64_t getMaxMessageMb() const;
         void setMaxMessageMb(uint64_t maxMessageMb);
         void processBegin(typeScn scn, typeTime time_, typeSeq sequence, typeXid xid);
-        void processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool schema);
-        void processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool schema);
-        void processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool schema);
+        void processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
+        void processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump);
+        void processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema, bool dump);
         void processDdlHeader(RedoLogRecord* redoLogRecord1);
         virtual void initialize();
         virtual void processCommit() = 0;

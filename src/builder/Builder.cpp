@@ -437,7 +437,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0B
-    void Builder::processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool schema) {
+    void Builder::processInsertMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -485,11 +485,11 @@ namespace OpenLogReplicator {
                 }
 
                 if (colLength > 0 || columnFormat >= COLUMN_FORMAT_FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(VALUE_AFTER, i, redoLogRecord2->data + fieldPos + pos, colLength, 0);
+                    valueSet(VALUE_AFTER, i, redoLogRecord2->data + fieldPos + pos, colLength, 0, dump);
                 pos += colLength;
             }
 
-            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord2->data + redoLogRecord2->slotsDelta + r * 2));
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
@@ -504,7 +504,7 @@ namespace OpenLogReplicator {
     }
 
     // 0x05010B0C
-    void Builder::processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool schema) {
+    void Builder::processDeleteMultiple(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, bool system, bool schema, bool dump) {
         uint64_t pos = 0;
         uint64_t fieldPos = 0;
         uint64_t fieldPosStart;
@@ -552,11 +552,11 @@ namespace OpenLogReplicator {
                 }
 
                 if (colLength > 0 || columnFormat >= COLUMN_FORMAT_FULL_INS_DEC || table == nullptr || table->columns[i]->numPk > 0)
-                    valueSet(VALUE_BEFORE, i, redoLogRecord1->data + fieldPos + pos, colLength, 0);
+                    valueSet(VALUE_BEFORE, i, redoLogRecord1->data + fieldPos + pos, colLength, 0, dump);
                 pos += colLength;
             }
 
-            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processDelete(table, redoLogRecord2->dataObj, redoLogRecord2->bdba,
                                                  ctx->read16(redoLogRecord1->data + redoLogRecord1->slotsDelta + r * 2));
 
@@ -571,7 +571,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Builder::processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool schema) {
+    void Builder::processDml(LobCtx* lobCtx, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2, uint64_t type, bool system, bool schema,
+                             bool dump) {
         uint8_t fb;
         typeObj obj;
         typeDataObj dataObj;
@@ -625,6 +626,7 @@ namespace OpenLogReplicator {
         uint8_t* nulls;
         uint8_t bits;
         uint8_t* colNums;
+        bool suppPrev = false;
 
         // Data in UNDO
         redoLogRecord1p = redoLogRecord1;
@@ -638,6 +640,10 @@ namespace OpenLogReplicator {
 
             // UNDO
             if (redoLogRecord1p->rowData > 0) {
+                if ((ctx->trace2 & TRACE2_DML) != 0 || dump) {
+                    INFO("UNDO")
+                }
+
                 nulls = redoLogRecord1p->data + redoLogRecord1p->nullsDelta;
                 bits = 1;
 
@@ -725,7 +731,7 @@ namespace OpenLogReplicator {
                         colLength = fieldLength;
                     }
 
-                    valueSet(VALUE_BEFORE, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
+                    valueSet(VALUE_BEFORE, colNum, redoLogRecord1p->data + fieldPos, colLength, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -737,6 +743,10 @@ namespace OpenLogReplicator {
 
             // Supplemental columns
             if (redoLogRecord1p->suppLogRowData > 0) {
+                if ((ctx->trace2 & TRACE2_DML) != 0 || dump) {
+                    INFO("UNDO SUP")
+                }
+
                 while (fieldNum < redoLogRecord1p->suppLogRowData - 1)
                     RedoLogRecord::nextField(ctx, redoLogRecord1p, fieldNum, fieldPos, fieldLength, 0x000005);
 
@@ -787,20 +797,24 @@ namespace OpenLogReplicator {
                         colLength = 0;
 
                     fb = 0;
-                    if (i == 0 && (redoLogRecord1p->suppLogFb & FB_P) != 0)
+                    if (i == 0 && (redoLogRecord1p->suppLogFb & FB_P) != 0 && suppPrev) {
                         fb |= FB_P;
-                    if (i == static_cast<uint64_t>(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & FB_N) != 0)
+                        suppPrev = false;
+                    }
+                    if (i == static_cast<uint64_t>(redoLogRecord1p->suppLogCC - 1) && (redoLogRecord1p->suppLogFb & FB_N) != 0) {
                         fb |= FB_N;
+                        suppPrev = true;
+                    }
 
                     // Insert, lock, update, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B02 || redoLogRecord2p->opCode == 0x0B04 || redoLogRecord2p->opCode == 0x0B05 ||
                             redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(VALUE_AFTER_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
+                        valueSet(VALUE_AFTER_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb, dump);
 
                     // Delete, update, overwrite, supplemental log data
                     if (redoLogRecord2p->opCode == 0x0B03 || redoLogRecord2p->opCode == 0x0B05 || redoLogRecord2p->opCode == 0x0B06 ||
                             redoLogRecord2p->opCode == 0x0B10)
-                        valueSet(VALUE_BEFORE_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb);
+                        valueSet(VALUE_BEFORE_SUPP, colNum, redoLogRecord1p->data + fieldPos, colLength, fb, dump);
 
                     colSizes += 2;
                 }
@@ -808,6 +822,10 @@ namespace OpenLogReplicator {
 
             // REDO
             if (redoLogRecord2p->rowData > 0) {
+                if ((ctx->trace2 & TRACE2_DML) != 0 || dump) {
+                    INFO("REDO")
+                }
+
                 fieldPos = 0;
                 fieldNum = 0;
                 fieldLength = 0;
@@ -899,7 +917,7 @@ namespace OpenLogReplicator {
                     else
                         colLength = fieldLength;
 
-                    valueSet(VALUE_AFTER, colNum, redoLogRecord2p->data + fieldPos, colLength, fb);
+                    valueSet(VALUE_AFTER, colNum, redoLogRecord2p->data + fieldPos, colLength, fb, dump);
 
                     bits <<= 1;
                     if (bits == 0) {
@@ -944,7 +962,7 @@ namespace OpenLogReplicator {
 
                         if (values[column][j] != nullptr)
                             throw RuntimeException("value for " + std::to_string(column) + "/" + std::to_string(j) +
-                                    " is already set when merging");
+                                    " is already set when merging, xid: " + lastXid.toString());
 
                         auto buffer = new uint8_t[length];
                         merges[mergesMax++] = buffer;
@@ -1013,9 +1031,9 @@ namespace OpenLogReplicator {
             }
         }
 
-        if ((ctx->trace2 & TRACE2_DML) != 0) {
+        if ((ctx->trace2 & TRACE2_DML) != 0 || dump) {
             if (table != nullptr) {
-                TRACE(TRACE2_DML, "DML: tab: " << table->owner << "." << table->name << " type: " << type << " columns: " << valuesMax)
+                INFO("DML: tab: " << table->owner << "." << table->name << " type: " << type << " columns: " << valuesMax)
 
                 baseMax = valuesMax >> 6;
                 for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -1026,19 +1044,16 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        TRACE(TRACE2_DML, "DML: " << std::dec << (column + 1) << ": " << " B(" << std::dec <<
-                                (values[column][VALUE_BEFORE] != nullptr ? static_cast<int64_t>(lengths[column][VALUE_BEFORE]) : -1) << ")" <<
-                                " A(" << std::dec <<
-                                (values[column][VALUE_AFTER] != nullptr ? static_cast<int64_t>(lengths[column][VALUE_AFTER]) : -1) << ")" <<
-                                " BS(" << std::dec <<
-                                (values[column][VALUE_BEFORE_SUPP] != nullptr ? static_cast<int64_t>(lengths[column][VALUE_BEFORE_SUPP]) : -1) <<
-                                ")" << " AS(" <<
-                                std::dec << (values[column][VALUE_AFTER_SUPP] != nullptr ? static_cast<int64_t>(lengths[column][VALUE_AFTER_SUPP]) : -1) <<
+                        INFO("DML: " << std::dec << (column + 1) << ": " << " B(" << std::dec <<
+                                (values[column][VALUE_BEFORE] != nullptr ? lengths[column][VALUE_BEFORE] : -1) << ")" << " A(" << std::dec <<
+                                (values[column][VALUE_AFTER] != nullptr ? lengths[column][VALUE_AFTER] : -1) << ")" << " BS(" << std::dec <<
+                                (values[column][VALUE_BEFORE_SUPP] != nullptr ? lengths[column][VALUE_BEFORE_SUPP] : -1) << ")" << " AS(" <<
+                                std::dec << (values[column][VALUE_AFTER_SUPP] != nullptr ? lengths[column][VALUE_AFTER_SUPP] : -1) <<
                                 ")" << " pk: " << std::dec << table->columns[column]->numPk)
                     }
                 }
             } else {
-                TRACE(TRACE2_DML, "DML: tab: [OBJ: " << redoLogRecord1->obj << ", DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type <<
+                INFO("DML: tab: [OBJ: " << redoLogRecord1->obj << ", DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type <<
                         " columns: " << valuesMax)
 
                 baseMax = valuesMax >> 6;
@@ -1050,7 +1065,7 @@ namespace OpenLogReplicator {
                         if ((valuesSet[base] & mask) == 0)
                             continue;
 
-                        TRACE(TRACE2_DML, "DML: " << std::dec << (column + 1) << ": " << " B(" << std::dec << lengths[column][VALUE_BEFORE] << ")" <<
+                        INFO("DML: " << std::dec << (column + 1) << ": " << " B(" << std::dec << lengths[column][VALUE_BEFORE] << ")" <<
                                 " A(" << std::dec << lengths[column][VALUE_AFTER] << ")" << " BS(" << std::dec << lengths[column][VALUE_BEFORE_SUPP] <<
                                 ")" << " AS(" << std::dec << lengths[column][VALUE_AFTER_SUPP] << ")")
                     }
@@ -1130,7 +1145,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processUpdate(table, dataObj, bdba, slot);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
@@ -1185,7 +1200,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processInsert(table, dataObj, bdba, slot);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||
@@ -1240,7 +1255,7 @@ namespace OpenLogReplicator {
                 }
             }
 
-            if (table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
+            if (system && table != nullptr && (table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 systemTransaction->processDelete(table, dataObj, bdba, slot);
 
             if ((!schema && table != nullptr && (table->options & (OPTIONS_SYSTEM_TABLE | OPTIONS_DEBUG_TABLE)) == 0) ||

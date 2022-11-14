@@ -38,7 +38,6 @@ namespace OpenLogReplicator {
     class Reader;
     class RedoLogRecord;
     class State;
-    class SystemTransaction;
     class Transaction;
     class TransactionBuffer;
 

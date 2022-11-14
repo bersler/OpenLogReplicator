@@ -437,20 +437,20 @@ namespace OpenLogReplicator {
                         }
 
                         if ((redoLogRecord1->suppLogFb & FB_L) != 0) {
-                            builder->processDml(&lobCtx, first1, first2, type, schema);
+                            builder->processDml(&lobCtx, first1, first2, type, system, schema, dump);
                             opFlush = true;
                         }
                         break;
 
                     // Insert multiple rows
                     case 0x05010B0B:
-                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, schema);
+                        builder->processInsertMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 
                     // Delete multiple rows
                     case 0x05010B0C:
-                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, schema);
+                        builder->processDeleteMultiple(&lobCtx, redoLogRecord1, redoLogRecord2, system, schema, dump);
                         opFlush = true;
                         break;
 

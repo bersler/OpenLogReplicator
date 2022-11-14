@@ -554,13 +554,13 @@ namespace OpenLogReplicator {
         if (transaction == nullptr)
             return;
 
-        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
-            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-            if (table == nullptr) {
+        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if (table != nullptr) {
+            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;
             }
-
+        } else {
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
             if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
@@ -639,13 +639,13 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
-            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-            if (table == nullptr) {
+        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if (table == nullptr) {
+            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;
             }
-
+        } else {
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
             if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
@@ -685,9 +685,9 @@ namespace OpenLogReplicator {
             return;
         }
 
-        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
-            OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-            if (table == nullptr) {
+        OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
+        if (table == nullptr) {
+            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls ", redoLogRecord1);
                 return;
             }
@@ -828,19 +828,22 @@ namespace OpenLogReplicator {
             case 0x0B10:
             // Logminer support - KDOCMP
             case 0x0B16:
-                if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+                {
                     OracleTable* table = metadata->schema->checkTableDict(obj);
                     if (table == nullptr) {
-                        transaction->log(ctx, "tbl1", redoLogRecord1);
-                        transaction->log(ctx, "tbl2", redoLogRecord2);
-                        return;
+                        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+                            transaction->log(ctx, "tbl1", redoLogRecord1);
+                            transaction->log(ctx, "tbl2", redoLogRecord2);
+                            return;
+                        }
+                    } else {
+                        if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                            transaction->system = true;
+                        if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                            transaction->schema = true;
+                        if ((table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
+                            transaction->shutdown = true;
                     }
-                    if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
-                        transaction->system = true;
-                    if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
-                        transaction->schema = true;
-                    if ((table->options & OPTIONS_DEBUG_TABLE) != 0 && redoLogRecord2->opCode == 0x0B02 && !ctx->softShutdown)
-                        transaction->shutdown = true;
                 }
                 break;
 
@@ -904,13 +907,14 @@ namespace OpenLogReplicator {
             throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                     std::to_string(redoLogRecord2->bdba) + ")");
 
-        if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
-            OracleTable* table = metadata->schema->checkTableDict(obj);
-            if (table == nullptr) {
+        OracleTable* table = metadata->schema->checkTableDict(obj);
+        if (table == nullptr) {
+            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "rls1", redoLogRecord1);
                 transaction->log(ctx, "rls2", redoLogRecord2);
                 return;
             }
+        } else {
             if ((table->options & OPTIONS_SYSTEM_TABLE) != 0)
                 transaction->system = true;
             if ((table->options & OPTIONS_SCHEMA_TABLE) != 0)
