@@ -548,8 +548,11 @@ namespace OpenLogReplicator {
                     }
                     LobData *lobData = lobsIt->second;
                     totalLobLength = pageCnt * lobData->pageSize + sizeRest;
+                    uint64_t jMax = pageCnt;
+                    if (sizeRest > 0)
+                        ++jMax;
 
-                    for (uint64_t j = 0; j < pageCnt + 1; ++j) {
+                    for (uint64_t j = 0; j < jMax; ++j) {
                         typeDba page = 0;
 
                         if (dataOffset < length) {

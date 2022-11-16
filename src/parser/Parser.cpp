@@ -984,7 +984,7 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
             throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                     std::to_string(redoLogRecord2->bdba) + ")");
-        OracleLob* lob = metadata->schema->checkLobIndexDict(obj);
+        OracleLob* lob = metadata->schema->checkLobIndexDict(dataObj);
         if (lob == nullptr) {
             transaction->log(ctx, "idx1", redoLogRecord1);
             transaction->log(ctx, "idx2", redoLogRecord2);
