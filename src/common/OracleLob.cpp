@@ -35,8 +35,8 @@ namespace OpenLogReplicator {
         lobIndexes.clear();
     }
 
-    void OracleLob::addIndex(typeObj obj) {
-        lobIndexes.push_back(obj);
+    void OracleLob::addIndex(typeDataObj newDataObj) {
+        lobIndexes.push_back(newDataObj);
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleLob& lob) {

@@ -77,13 +77,14 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysObjNameKey {
     public:
-        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj);
+        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj);
 
         bool operator<(const SysObjNameKey& other) const;
 
         typeUser owner;
         std::string name;
         typeObj obj;
+        typeDataObj dataObj;
     };
 
     class SysObj {

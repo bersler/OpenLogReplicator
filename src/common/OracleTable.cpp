@@ -118,12 +118,12 @@ namespace OpenLogReplicator {
         tablePartitions.push_back(objx);
     }
 
-    void OracleTable::addLobPartition(typeObj obj) {
-        lobPartitions.push_back(obj);
+    void OracleTable::addLobPartition(typeDataObj dataObj) {
+        lobPartitions.push_back(dataObj);
     }
 
-    void OracleTable::addLobIndex(typeObj obj) {
-        lobIndexes.push_back(obj);
+    void OracleTable::addLobIndex(typeDataObj dataObj) {
+        lobIndexes.push_back(dataObj);
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleTable& table) {

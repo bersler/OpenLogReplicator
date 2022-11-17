@@ -20,10 +20,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysObj.h"
 
 namespace OpenLogReplicator {
-    SysObjNameKey::SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj) :
+    SysObjNameKey::SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj) :
             owner(newOwner),
             name(newName),
-            obj(newObj) {
+            obj(newObj),
+            dataObj(newDataObj) {
     }
 
     bool SysObjNameKey::operator<(const SysObjNameKey& other) const {
@@ -38,6 +39,12 @@ namespace OpenLogReplicator {
             return false;
         if (other.obj > obj)
             return true;
+        if (other.obj < obj)
+            return false;
+        if (other.dataObj > dataObj)
+            return true;
+        if (other.dataObj < dataObj)
+            return false;
         return false;
     }
 

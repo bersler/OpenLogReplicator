@@ -45,7 +45,7 @@ namespace OpenLogReplicator {
         std::vector<OracleLob*> lobs;
         std::vector<typeObj2> tablePartitions;
         std::vector<typeDataObj> lobPartitions;
-        std::vector<typeObj> lobIndexes;
+        std::vector<typeDataObj> lobIndexes;
         std::vector<typeCol> pk;
         uint64_t systemTable;
         bool sys;
@@ -57,8 +57,8 @@ namespace OpenLogReplicator {
         void addColumn(OracleColumn* column);
         void addLob(OracleLob* lob);
         void addTablePartition(typeObj obj, typeDataObj dataObj);
-        void addLobPartition(typeObj obj);
-        void addLobIndex(typeObj obj);
+        void addLobPartition(typeDataObj dataObj);
+        void addLobIndex(typeDataObj dataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleTable& table);
     };

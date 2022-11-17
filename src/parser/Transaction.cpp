@@ -310,9 +310,9 @@ namespace OpenLogReplicator {
                     case 0x05010A12:
                     // Insert row piece
                     {
-                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord1->obj);
+                        OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord1->dataObj);
                         if (lob == nullptr) {
-                            WARNING("LOB is null for: " << std::dec << redoLogRecord1->obj << ", " << redoLogRecord2->obj <<
+                            WARNING("LOB is null for: " << std::dec << redoLogRecord1->dataObj << ", " << redoLogRecord2->dataObj <<
                                     ", offset: " << std::dec << redoLogRecord1->dataOffset << ", xid: " << xid)
                             break;
                         }

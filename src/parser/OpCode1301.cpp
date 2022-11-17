@@ -34,8 +34,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        redoLogRecord->obj = ctx->read32(redoLogRecord->data + fieldPos + 0);
-        redoLogRecord->recordDataObj = redoLogRecord->obj;
+        redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 0);
+        redoLogRecord->recordDataObj = redoLogRecord->dataObj;
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 4);
         redoLogRecord->lobPageNo = ctx->read32(redoLogRecord->data + fieldPos + 24);
         redoLogRecord->lobData = fieldPos + 36;
@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
 
             ctx->dumpStream << "Direct Loader block redo entry" << std::endl;
             ctx->dumpStream << "Long field block dump:" << std::endl;
-            ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->obj << " " << std::endl;
+            ctx->dumpStream << "Object Id    " << std::dec << redoLogRecord->dataObj << " " << std::endl;
             ctx->dumpStream << "LobId: " << redoLogRecord->lobId.narrow() <<
                     " PageNo " << std::setfill(' ') << std::setw(8) << std::dec << std::right << redoLogRecord->lobPageNo << " " << std::endl;
             ctx->dumpStream << "Version: 0x" << std::setfill('0') << std::setw(4) << std::hex << v1 <<

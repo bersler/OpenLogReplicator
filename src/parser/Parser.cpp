@@ -584,11 +584,11 @@ namespace OpenLogReplicator {
         if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
             return;
 
-        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         if (lob == nullptr)
             return;
 
-        uint32_t pageSize = metadata->schema->checkLobPageSize(redoLogRecord1->obj);
+        uint32_t pageSize = metadata->schema->checkLobPageSize(redoLogRecord1->dataObj);
 
         if (redoLogRecord1->xid.toUint() == 0) {
             auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
@@ -615,7 +615,7 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_LOB, "LOB" <<
                 " id: " << redoLogRecord1->lobId <<
                 " xid: " << transaction->xid <<
-                " obj: " << std::dec << redoLogRecord1->obj <<
+                " obj: " << std::dec << redoLogRecord1->dataObj <<
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode << "    " <<
                 " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
                 " page: " << std::dec << redoLogRecord1->lobPageNo <<
@@ -1084,7 +1084,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_LOB, "LOB" <<
                     " id: " << redoLogRecord2->lobId <<
                     " xid: " << redoLogRecord1->xid <<
-                    " obj: " << std::dec << redoLogRecord2->obj <<
+                    " obj: " << std::dec << redoLogRecord2->dataObj <<
                     " op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode <<
                         std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->opCode <<
                     " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->dba <<

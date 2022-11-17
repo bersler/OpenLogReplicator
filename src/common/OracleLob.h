@@ -35,12 +35,12 @@ namespace OpenLogReplicator {
         typeObj lObj;
         typeCol col;
         typeCol intCol;
-        std::vector<typeObj> lobIndexes;
+        std::vector<typeDataObj> lobIndexes;
 
         OracleLob(OracleTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
         virtual ~OracleLob();
 
-        void addIndex(typeObj obj);
+        void addIndex(typeDataObj newDataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleLob& column);
     };

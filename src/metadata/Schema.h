@@ -98,7 +98,7 @@ namespace OpenLogReplicator {
 
         std::unordered_map<typeObj, OracleLob*> lobMap;
         std::unordered_map<typeDataObj, OracleLob*> lobPartitionMap;
-        std::unordered_map<typeObj, OracleLob*> lobIndexMap;
+        std::unordered_map<typeDataObj, OracleLob*> lobIndexMap;
         std::unordered_map<typeObj, uint16_t> lobPageMap;
         std::unordered_map<typeObj, OracleTable*> tableMap;
         std::unordered_map<typeObj, OracleTable*> tablePartitionMap;
@@ -256,7 +256,7 @@ namespace OpenLogReplicator {
         void touchUser(typeUser user);
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
         [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
-        [[nodiscard]] OracleLob* checkLobIndexDict(typeObj obj);
+        [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
         [[nodiscard]] uint32_t checkLobPageSize(typeDataObj dataObj);
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);

@@ -887,7 +887,7 @@ namespace OpenLogReplicator {
             SysObj* sysObj = sysObjMapRowIdIt.second;
 
             if (FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
-                SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj);
+                SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj, sysObj->dataObj);
                 sysObjMapName[sysObjNameKey] = sysObj;
                 sysObjMapObj[sysObj->obj] = sysObj;
                 if (sysObj->touched) {
@@ -901,7 +901,7 @@ namespace OpenLogReplicator {
             if (sysUserMapUserIt != sysUserMapUser.end()) {
                 SysUser* sysUser = sysUserMapUserIt->second;
                 if (!sysUser->single || sysObj->single) {
-                    SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj);
+                    SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj, sysObj->dataObj);
                     sysObjMapName[sysObjNameKey] = sysObj;
                     sysObjMapObj[sysObj->obj] = sysObj;
                     if (sysObj->touched) {
@@ -1268,7 +1268,7 @@ namespace OpenLogReplicator {
         auto sysObj = new SysObj(rowId, owner, obj, dataObj, type, name, flags1, flags2,
                                  single, false);
         sysObjMapRowId[rowId] = sysObj;
-        SysObjNameKey sysObjNameKey(owner, name, obj);
+        SysObjNameKey sysObjNameKey(owner, name, obj, dataObj);
         sysObjMapName[sysObjNameKey] = sysObj;
         sysObjMapObj[obj] = sysObj;
 
@@ -1829,8 +1829,8 @@ namespace OpenLogReplicator {
         return nullptr;
     }
 
-    OracleLob* Schema::checkLobIndexDict(typeObj obj) {
-        auto lobIndexMapIt = lobIndexMap.find(obj);
+    OracleLob* Schema::checkLobIndexDict(typeDataObj dataObj) {
+        auto lobIndexMapIt = lobIndexMap.find(dataObj);
         if (lobIndexMapIt != lobIndexMap.end())
             return lobIndexMapIt->second;
 
@@ -1892,19 +1892,19 @@ namespace OpenLogReplicator {
 
         for (typeDataObj dataObj : table->lobPartitions) {
             if (lobPartitionMap.find(dataObj) == lobPartitionMap.end())
-                throw ConfigurationException("can't remove lob partition element (obj: " + std::to_string(dataObj) + ")");
+                throw ConfigurationException("can't remove lob partition element (data-obj: " + std::to_string(dataObj) + ")");
             lobPartitionMap.erase(dataObj);
         }
 
-        for (typeObj obj : table->lobIndexes) {
-            if (lobIndexMap.find(obj) == lobIndexMap.end())
-                throw ConfigurationException("can't remove lob index element (obj: " + std::to_string(obj) + ")");
-            lobIndexMap.erase(obj);
-            lobPageMap.erase(obj);
+        for (typeDataObj dataObj : table->lobIndexes) {
+            if (lobIndexMap.find(dataObj) == lobIndexMap.end())
+                throw ConfigurationException("can't remove lob index element (data-obj: " + std::to_string(dataObj) + ")");
+            lobIndexMap.erase(dataObj);
+            lobPageMap.erase(dataObj);
         }
 
         if (tableMap.find(table->obj) == tableMap.end())
-            throw ConfigurationException("can't remove table (obj: " + std::to_string(table->obj) + ", dataObj: " +
+            throw ConfigurationException("can't remove table (data-obj: " + std::to_string(table->obj) + ", dataObj: " +
                     std::to_string(table->dataObj) + ")");
         tableMap.erase(table->obj);
         delete table;
@@ -2230,14 +2230,17 @@ namespace OpenLogReplicator {
                         << std::setfill('0') << sysLob->intCol << "$$";
                     std::string lobIndexName = str.str();
 
-                    SysObjNameKey sysObjNameKeyFirst(sysObj->owner, lobIndexName.c_str(), 0);
+                    SysObjNameKey sysObjNameKeyFirst(sysObj->owner, lobIndexName.c_str(), 0, 0);
                     for (auto sysObjMapNameIt = sysObjMapName.upper_bound(sysObjNameKeyFirst);
                             sysObjMapNameIt != sysObjMapName.end() &&
                             sysObjMapNameIt->first.name == lobIndexName &&
                             sysObjMapNameIt->first.owner == sysObj->owner; ++sysObjMapNameIt) {
-                        schemaLob->addIndex(sysObjMapNameIt->first.obj);
-                        schemaTable->addLobIndex(sysObjMapNameIt->first.obj);
-                        lobIndexMap[sysObjMapNameIt->first.obj] = schemaLob;
+                        if (sysObjMapNameIt->first.dataObj == 0)
+                            continue;
+
+                        schemaLob->addIndex(sysObjMapNameIt->first.dataObj);
+                        schemaTable->addLobIndex(sysObjMapNameIt->first.dataObj);
+                        lobIndexMap[sysObjMapNameIt->first.dataObj] = schemaLob;
                         if ((ctx->trace2 & TRACE2_LOB) != 0)
                             lobIndexesList << " " << std::dec << sysObjMapNameIt->second->dataObj << "/" << sysObjMapNameIt->second->obj;
                         ++lobIndexes;

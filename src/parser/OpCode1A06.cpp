@@ -128,7 +128,6 @@ namespace OpenLogReplicator {
                                      ctx->read16(redoLogRecord->data + fieldPos + 18),
                                      ctx->read32(redoLogRecord->data + fieldPos + 20));
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 24);
-        redoLogRecord->obj = redoLogRecord->dataObj;
 
         if (ctx->dumpRedoLog >= 1) {
             uint8_t code = redoLogRecord->data[fieldPos + 0];
