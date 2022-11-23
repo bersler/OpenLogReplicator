@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
     }
 
     void typeRowId::toString(char* str) const {
-        typeAfn afn = dba >> 22;
+        typeAfn afn = static_cast<typeAfn>(dba >> 22);
         typeDba bdba = dba & 0x003FFFFF;
 
         str[0] = map64[(dataObj >> 30) & 0x3F];
@@ -130,7 +130,7 @@ namespace OpenLogReplicator {
 
     std::string typeRowId::toString() const {
         char str[19];
-        typeAfn afn = dba >> 22;
+        typeAfn afn = static_cast<typeAfn>(dba >> 22);
         typeDba bdba = dba & 0x003FFFFF;
 
         str[0] = map64[(dataObj >> 30) & 0x3F];

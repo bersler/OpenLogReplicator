@@ -198,7 +198,7 @@ namespace OpenLogReplicator {
             memset(reinterpret_cast<void*>(&redoLogRecord[vectorCur]), 0, sizeof(RedoLogRecord));
             redoLogRecord[vectorCur].vectorNo = (++vectors);
             redoLogRecord[vectorCur].cls = ctx->read16(data + offset + 2);
-            redoLogRecord[vectorCur].afn = ctx->read32(data + offset + 4) & 0xFFFF;
+            redoLogRecord[vectorCur].afn = static_cast<typeAfn>(ctx->read32(data + offset + 4) & 0xFFFF);
             redoLogRecord[vectorCur].dba = ctx->read32(data + offset + 8);
             redoLogRecord[vectorCur].scnRecord = ctx->readScn(data + offset + 12);
             redoLogRecord[vectorCur].rbl = 0; // TODO: verify field length/position

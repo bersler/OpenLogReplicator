@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(OpenLogReplicator VERSION 0.9.54)
+project(OpenLogReplicator VERSION 0.9.55)
 
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)

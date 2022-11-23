@@ -1779,20 +1779,22 @@ namespace OpenLogReplicator {
         if (!metadata->schema->touched)
             return;
 
-        metadata->schema->scn = scn;
-        metadata->schema->refreshIndexes(metadata->users);
-        std::set<std::string> msgs;
-        metadata->schema->rebuildMaps(msgs);
-        for (auto msg : msgs) {
+        std::set<std::string> msgsDropped;
+        std::set<std::string> msgsUpdated;
+        {
+            metadata->schema->scn = scn;
+            metadata->schema->refreshIndexes(metadata->users);
+            metadata->schema->rebuildMaps(msgsDropped);
+
+            for (SchemaElement *element: metadata->schemaElements)
+                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
+                                            msgsUpdated, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
+                                            metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
+        }
+        for (auto msg: msgsDropped) {
             INFO("dropped metadata: " << msg);
         }
-        msgs.clear();
-
-        for (SchemaElement* element : metadata->schemaElements)
-            metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options, msgs,
-                                        metadata->suppLogDbPrimary, metadata->suppLogDbAll,
-                                        metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
-        for (auto msg: msgs) {
+        for (auto msg: msgsUpdated) {
             INFO("updated metadata: " << msg)
         }
     }

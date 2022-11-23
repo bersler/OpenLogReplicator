@@ -858,14 +858,24 @@ namespace OpenLogReplicator {
             return;
 
         INFO("reading dictionaries for scn: " << std::dec << metadata->firstDataScn)
-        metadata->schema->purge();
-        metadata->schema->scn = metadata->firstDataScn;
-        metadata->firstSchemaScn = metadata->firstDataScn;
-        readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
 
-        for (SchemaElement* element : metadata->schemaElements)
-            createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys,
-                                 element->keysStr, element->options);
+        std::set <std::string> msgs;
+        {
+            std::unique_lock<std::mutex> lck(metadata->mtx);
+            metadata->schema->purge();
+            metadata->schema->scn = metadata->firstDataScn;
+            metadata->firstSchemaScn = metadata->firstDataScn;
+            readSystemDictionariesMetadata(metadata->schema, metadata->firstDataScn);
+
+            for (SchemaElement* element : metadata->schemaElements)
+                createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys,
+                                     element->keysStr, element->options, msgs);
+            metadata->allowedCheckpoints = true;
+        }
+
+        for (auto msg: msgs) {
+            INFO("- found: " << msg);
+        }
     }
 
     void ReplicatorOnline::readSystemDictionariesMetadata(Schema* schema, typeScn targetScn) {
@@ -1445,20 +1455,15 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
-                                                const std::string& keysStr, typeOptions options) {
+                                                const std::string& keysStr, typeOptions options, std::set <std::string> &msgs) {
         DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << static_cast<uint64_t>(options))
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);
 
-        std::set <std::string> msgs;
         metadata->schema->buildMaps(owner, table, keys, keysStr, options, msgs, metadata->suppLogDbPrimary,
                                     metadata->suppLogDbAll, metadata->defaultCharacterMapId,
                                     metadata->defaultCharacterNcharMapId);
-        for (auto msg: msgs) {
-            INFO("- found: " << msg);
-        }
 
-        // Msgs
         if ((options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(owner) == metadata->users.end())
             metadata->users.insert(owner);
     }

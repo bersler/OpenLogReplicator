@@ -1,3 +1,7 @@
+0.9.55
+- experimental lob 12.1+ fixes
+- fixed bugs related to schema & checkpoints
+
 0.9.54
 - bug fixes
 

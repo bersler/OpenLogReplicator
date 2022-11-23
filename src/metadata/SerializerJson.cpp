@@ -425,146 +425,154 @@ namespace OpenLogReplicator {
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::set<std::string>& msgs, bool loadMetadata, bool loadSchema) {
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::set<std::string>& msgs, bool loadMetadata,
+                                     bool loadSchema) {
         try {
             rapidjson::Document document;
             if (ss.length() == 0 || document.Parse(ss.c_str()).HasParseError())
                 throw DataException("parsing " + name + " at offset: " + std::to_string(document.GetErrorOffset()) + ", message: " +
                         GetParseError_En(document.GetParseError()));
 
-            if (loadMetadata) {
-                metadata->checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
+            {
+                std::unique_lock<std::mutex> lck(metadata->mtx);
 
-                if (document.HasMember("min-tran")) {
-                    const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(name, document, "min-tran");
-                    metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");
-                    metadata->offset = Ctx::getJsonFieldU64(name, minTranJson, "offset");
-                } else {
-                    metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
-                    metadata->offset = Ctx::getJsonFieldU64(name, document, "offset");
-                }
+                if (loadMetadata) {
+                    metadata->checkpointScn = Ctx::getJsonFieldU64(name, document, "scn");
 
-                if ((metadata->offset & 511) != 0)
-                    throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
-                            " is not a multiplication of 512 - skipping file");
+                    if (document.HasMember("min-tran")) {
+                        const rapidjson::Value& minTranJson = Ctx::getJsonFieldO(name, document, "min-tran");
+                        metadata->sequence = Ctx::getJsonFieldU32(name, minTranJson, "seq");
+                        metadata->offset = Ctx::getJsonFieldU64(name, minTranJson, "offset");
+                    } else {
+                        metadata->sequence = Ctx::getJsonFieldU32(name, document, "seq");
+                        metadata->offset = Ctx::getJsonFieldU64(name, document, "offset");
+                    }
 
-                metadata->minSequence = ZERO_SEQ;
-                metadata->minOffset = 0;
-                metadata->minXid = 0;
-                metadata->lastCheckpointScn = ZERO_SCN;
-                metadata->lastSequence = ZERO_SEQ;
-                metadata->lastCheckpointOffset = 0;
-                metadata->lastCheckpointTime = 0;
-                metadata->lastCheckpointBytes = 0;
+                    if ((metadata->offset & 511) != 0)
+                        throw DataException("invalid offset for: " + name + " - " + std::to_string(metadata->offset) +
+                                " is not a multiplication of 512 - skipping file");
 
-                if (!metadata->onlineData) {
-                    // Database metadata
-                    metadata->database = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
-                    metadata->resetlogs = Ctx::getJsonFieldU32(name, document, "resetlogs");
-                    metadata->activation = Ctx::getJsonFieldU32(name, document, "activation");
-                    int64_t bigEndian = Ctx::getJsonFieldU64(name, document, "big-endian");
-                    if (bigEndian == 1)
-                        metadata->ctx->setBigEndian();
-                    metadata->context = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "context");
-                    metadata->conId = Ctx::getJsonFieldI16(name, document, "con-id");
-                    metadata->conName = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "con-name");
-                    metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
-                    metadata->dbBlockChecksum = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-block-checksum");
-                    if (!metadata->logArchiveFormatCustom)
-                        metadata->logArchiveFormat = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-format");
-                    metadata->logArchiveDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-dest");
-                    metadata->nlsCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document, "nls-character-set");
-                    metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document, "nls-nchar-character-set");
-                    metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
-                    metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(name, document, "supp-log-db-primary");
-                    metadata->suppLogDbAll = Ctx::getJsonFieldU64(name, document, "supp-log-db-all");
+                    metadata->minSequence = ZERO_SEQ;
+                    metadata->minOffset = 0;
+                    metadata->minXid = 0;
+                    metadata->lastCheckpointScn = ZERO_SCN;
+                    metadata->lastSequence = ZERO_SEQ;
+                    metadata->lastCheckpointOffset = 0;
+                    metadata->lastCheckpointTime = 0;
+                    metadata->lastCheckpointBytes = 0;
 
-                    const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(name, document, "online-redo");
-                    for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
-                        int64_t group = Ctx::getJsonFieldI64(name, onlineRedoJson[i], "group");
-                        const rapidjson::Value& path = Ctx::getJsonFieldA(name, onlineRedoJson[i], "path");
+                    if (!metadata->onlineData) {
+                        // Database metadata
+                        metadata->database = Ctx::getJsonFieldS(name, JSON_PARAMETER_LENGTH, document, "database");
+                        metadata->resetlogs = Ctx::getJsonFieldU32(name, document, "resetlogs");
+                        metadata->activation = Ctx::getJsonFieldU32(name, document, "activation");
+                        int64_t bigEndian = Ctx::getJsonFieldU64(name, document, "big-endian");
+                        if (bigEndian == 1)
+                            metadata->ctx->setBigEndian();
+                        metadata->context = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "context");
+                        metadata->conId = Ctx::getJsonFieldI16(name, document, "con-id");
+                        metadata->conName = Ctx::getJsonFieldS(name, VCONTEXT_LENGTH, document, "con-name");
+                        metadata->dbRecoveryFileDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-recovery-file-dest");
+                        metadata->dbBlockChecksum = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "db-block-checksum");
+                        if (!metadata->logArchiveFormatCustom)
+                            metadata->logArchiveFormat = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-format");
+                        metadata->logArchiveDest = Ctx::getJsonFieldS(name, VPARAMETER_LENGTH, document, "log-archive-dest");
+                        metadata->nlsCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document, "nls-character-set");
+                        metadata->nlsNcharCharacterSet = Ctx::getJsonFieldS(name, VPROPERTY_LENGTH, document,
+                                                                            "nls-nchar-character-set");
+                        metadata->setNlsCharset(metadata->nlsCharacterSet, metadata->nlsNcharCharacterSet);
+                        metadata->suppLogDbPrimary = Ctx::getJsonFieldU64(name, document, "supp-log-db-primary");
+                        metadata->suppLogDbAll = Ctx::getJsonFieldU64(name, document, "supp-log-db-all");
 
-                        for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
-                            const rapidjson::Value& pathVal = path[j];
-                            auto redoLog = new RedoLog(group, pathVal.GetString());
-                            metadata->redoLogs.insert(redoLog);
+                        const rapidjson::Value& onlineRedoJson = Ctx::getJsonFieldA(name, document, "online-redo");
+                        for (rapidjson::SizeType i = 0; i < onlineRedoJson.Size(); ++i) {
+                            int64_t group = Ctx::getJsonFieldI64(name, onlineRedoJson[i], "group");
+                            const rapidjson::Value& path = Ctx::getJsonFieldA(name, onlineRedoJson[i], "path");
+
+                            for (rapidjson::SizeType j = 0; j < path.Size(); ++j) {
+                                const rapidjson::Value& pathVal = path[j];
+                                auto redoLog = new RedoLog(group, pathVal.GetString());
+                                metadata->redoLogs.insert(redoLog);
+                            }
+                        }
+
+                        const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(name, document, "incarnations");
+                        for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
+                            uint32_t incarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "incarnation");
+                            typeScn resetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "resetlogs-scn");
+                            typeScn priorResetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "prior-resetlogs-scn");
+                            const char* status = Ctx::getJsonFieldS(name, 128, incarnationsJson[i], "status");
+                            typeResetlogs resetlogs = Ctx::getJsonFieldU32(name, incarnationsJson[i], "resetlogs");
+                            uint32_t priorIncarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "prior-incarnation");
+
+                            auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
+                                                            status, resetlogs, priorIncarnation);
+                            metadata->oracleIncarnations.insert(oi);
+
+                            if (oi->current)
+                                metadata->oracleIncarnationCurrent = oi;
+                            else
+                                metadata->oracleIncarnationCurrent = nullptr;
                         }
                     }
 
-                    const rapidjson::Value& incarnationsJson = Ctx::getJsonFieldA(name, document, "incarnations");
-                    for (rapidjson::SizeType i = 0; i < incarnationsJson.Size(); ++i) {
-                        uint32_t incarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "incarnation");
-                        typeScn resetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "resetlogs-scn");
-                        typeScn priorResetlogsScn = Ctx::getJsonFieldU64(name, incarnationsJson[i], "prior-resetlogs-scn");
-                        const char* status = Ctx::getJsonFieldS(name, 128, incarnationsJson[i], "status");
-                        typeResetlogs resetlogs = Ctx::getJsonFieldU32(name, incarnationsJson[i], "resetlogs");
-                        uint32_t priorIncarnation = Ctx::getJsonFieldU32(name, incarnationsJson[i], "prior-incarnation");
-
-                        auto oi = new OracleIncarnation(incarnation, resetlogsScn, priorResetlogsScn,
-                                                        status, resetlogs, priorIncarnation);
-                        metadata->oracleIncarnations.insert(oi);
-
-                        if (oi->current)
-                            metadata->oracleIncarnationCurrent = oi;
-                        else
-                            metadata->oracleIncarnationCurrent = nullptr;
+                    const rapidjson::Value& usersJson = Ctx::getJsonFieldA(name, document, "users");
+                    for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
+                        const rapidjson::Value& userJson = usersJson[i];;
+                        metadata->users.insert(userJson.GetString());
                     }
                 }
 
-                const rapidjson::Value& usersJson = Ctx::getJsonFieldA(name, document, "users");
-                for (rapidjson::SizeType i = 0; i < usersJson.Size(); ++i) {
-                    const rapidjson::Value& userJson = usersJson[i];;
-                    metadata->users.insert(userJson.GetString());
-                }
-            }
+                if (loadSchema) {
+                    // Schema referenced to other checkpoint file
+                    if (document.HasMember("schema-ref-scn")) {
+                        metadata->schema->scn = ZERO_SCN;
+                        metadata->schema->refScn = Ctx::getJsonFieldU64(name, document, "schema-ref-scn");
 
-            if (loadSchema) {
-                // Schema referenced to other checkpoint file
-                if (document.HasMember("schema-ref-scn")) {
-                    metadata->schema->scn = ZERO_SCN;
-                    metadata->schema->refScn = Ctx::getJsonFieldU64(name, document, "schema-ref-scn");
+                    } else {
+                        metadata->schema->scn = Ctx::getJsonFieldU64(name, document, "schema-scn");
+                        metadata->schema->refScn = ZERO_SCN;
 
-                } else {
-                    metadata->schema->scn = Ctx::getJsonFieldU64(name, document, "schema-scn");
-                    metadata->schema->refScn = ZERO_SCN;
-
-                    deserializeSysUser(metadata, name, Ctx::getJsonFieldA(name, document, "sys-user"));
-                    deserializeSysObj(metadata, name, Ctx::getJsonFieldA(name, document, "sys-obj"));
-                    deserializeSysCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-col"));
-                    deserializeSysCCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ccol"));
-                    deserializeSysCDef(metadata, name, Ctx::getJsonFieldA(name, document, "sys-cdef"));
-                    deserializeSysDeferredStg(metadata, name, Ctx::getJsonFieldA(name, document, "sys-deferredstg"));
-                    deserializeSysECol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ecol"));
-                    deserializeSysLob(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob"));
-                    deserializeSysLobCompPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-comp-part"));
-                    deserializeSysLobFrag(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-frag"));
-                    deserializeSysTab(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tab"));
-                    deserializeSysTabPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabpart"));
-                    deserializeSysTabComPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabcompart"));
-                    deserializeSysTabSubPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabsubpart"));
-                    deserializeSysTs(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ts"));
-                }
-
-                for (SchemaElement* element: metadata->schemaElements) {
-                    if (metadata->ctx->trace >= TRACE_DEBUG)
-                        msgs.insert(
-                                "- creating table schema for owner: " + element->owner + " table: " + element->table +
-                                " options: " + std::to_string(element->options));
-
-                    if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
-                        if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 &&
-                            metadata->users.find(element->owner) == metadata->users.end())
-                            throw DataException("owner '" + std::string(element->owner) + "' is missing in schema file: " + name +
-                                    " - recreate schema file (delete old file and force creation of new)");
+                        deserializeSysUser(metadata, name, Ctx::getJsonFieldA(name, document, "sys-user"));
+                        deserializeSysObj(metadata, name, Ctx::getJsonFieldA(name, document, "sys-obj"));
+                        deserializeSysCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-col"));
+                        deserializeSysCCol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ccol"));
+                        deserializeSysCDef(metadata, name, Ctx::getJsonFieldA(name, document, "sys-cdef"));
+                        deserializeSysDeferredStg(metadata, name, Ctx::getJsonFieldA(name, document, "sys-deferredstg"));
+                        deserializeSysECol(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ecol"));
+                        deserializeSysLob(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob"));
+                        deserializeSysLobCompPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-comp-part"));
+                        deserializeSysLobFrag(metadata, name, Ctx::getJsonFieldA(name, document, "sys-lob-frag"));
+                        deserializeSysTab(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tab"));
+                        deserializeSysTabPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabpart"));
+                        deserializeSysTabComPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabcompart"));
+                        deserializeSysTabSubPart(metadata, name, Ctx::getJsonFieldA(name, document, "sys-tabsubpart"));
+                        deserializeSysTs(metadata, name, Ctx::getJsonFieldA(name, document, "sys-ts"));
                     }
 
-                    metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
-                                                msgs, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
-                                                metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
-                }
+                    for (SchemaElement *element: metadata->schemaElements) {
+                        if (metadata->ctx->trace >= TRACE_DEBUG)
+                            msgs.insert(
+                                    "- creating table schema for owner: " + element->owner + " table: " + element->table +
+                                    " options: " + std::to_string(element->options));
 
-                metadata->schema->loaded = true;
-                return true;
+                        if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
+                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 &&
+                                metadata->users.find(element->owner) == metadata->users.end())
+                                throw DataException("owner '" + std::string(element->owner) + "' is missing in schema file: " + name +
+                                                    " - recreate schema file (delete old file and force creation of new)");
+                        }
+
+                        metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr,
+                                                    element->options, msgs, metadata->suppLogDbPrimary,
+                                                    metadata->suppLogDbAll, metadata->defaultCharacterMapId,
+                                                    metadata->defaultCharacterNcharMapId);
+                    }
+
+                    metadata->schema->loaded = true;
+                    metadata->allowedCheckpoints = true;
+                    return true;
+                }
             }
         } catch (DataException& ex) {
             ERROR(ex.msg)

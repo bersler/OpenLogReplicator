@@ -71,6 +71,7 @@ namespace OpenLogReplicator {
         bool suppLogDbPrimary;
         bool suppLogDbAll;
         bool logArchiveFormatCustom;
+        bool allowedCheckpoints;
         typeConId conId;
         std::string conName;
         std::string context;

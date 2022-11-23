@@ -133,8 +133,10 @@ namespace OpenLogReplicator {
     }
 
     void Replicator::createSchema() {
-        if (FLAG(REDO_FLAGS_SCHEMALESS))
+        if (FLAG(REDO_FLAGS_SCHEMALESS)) {
+            metadata->allowedCheckpoints = true;
             return;
+        }
 
         throw RuntimeException("schema file missing");
     }

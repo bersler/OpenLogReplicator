@@ -261,6 +261,8 @@ namespace OpenLogReplicator {
 
         {
             std::unique_lock<std::mutex> lck(mtx);
+            if (!allowedCheckpoints)
+                return;
 
             // Nothing processed so far
             if (checkpointScn == ZERO_SCN || lastCheckpointScn == checkpointScn)
@@ -366,7 +368,7 @@ namespace OpenLogReplicator {
         }
 
         for (auto msg : msgs) {
-            INFO(msg);
+            INFO("- found: " << msg);
         }
         msgs.clear();
 
@@ -385,14 +387,14 @@ namespace OpenLogReplicator {
                 return;
 
             if (!serializer->deserialize(this, ss, name2, msgs, false, true)) {
-                for (auto msg : msgs) {
+                for (auto msg: msgs) {
                     ERROR(msg);
                 }
                 return;
             }
 
-            for (auto msg : msgs) {
-                INFO(msg);
+            for (auto msg: msgs) {
+                INFO("- found: " << msg);
             }
         }
 
@@ -408,6 +410,8 @@ namespace OpenLogReplicator {
 
         {
             std::unique_lock<std::mutex> lck(mtx);
+            if (!allowedCheckpoints)
+                return;
 
             if (checkpoints < ctx->checkpointKeep)
                 return;
@@ -471,7 +475,7 @@ namespace OpenLogReplicator {
 
         firstSchemaScn = 0;
         for (auto msg: msgs) {
-            INFO(msg);
+            INFO("- found: " << msg);
         }
     }
 }

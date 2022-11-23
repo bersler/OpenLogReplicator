@@ -79,6 +79,7 @@ namespace OpenLogReplicator {
                      " OP: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode <<
                      " opc: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opc <<
                      " obj: " << std::dec << redoLogRecord1->obj <<
+                     " data-obj: " << std::dec << redoLogRecord1->dataObj <<
                      " bdba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba <<
                      " slot: " << std::dec << redoLogRecord1->slot <<
                      " fb: " << std::hex << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->fb) <<
