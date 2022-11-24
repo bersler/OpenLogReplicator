@@ -159,7 +159,7 @@ namespace OpenLogReplicator {
         case SYS_COL_TYPE_BLOB:
             if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
                 if (after) {
-                    parseLob(lobCtx, data, length, after, false);
+                    parseLob(lobCtx, data, length, after, table->dataObj, false);
                     columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
                 }
             } else {
@@ -170,7 +170,7 @@ namespace OpenLogReplicator {
         case SYS_COL_TYPE_CLOB:
             if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
                 if (after) {
-                    parseLob(lobCtx, data, length, column->charsetId, true);
+                    parseLob(lobCtx, data, length, column->charsetId, table->dataObj, true);
                     columnString(column->name);
                 }
             } else {

@@ -2242,7 +2242,7 @@ namespace OpenLogReplicator {
                         schemaTable->addLobIndex(sysObjMapNameIt->first.dataObj);
                         lobIndexMap[sysObjMapNameIt->first.dataObj] = schemaLob;
                         if ((ctx->trace2 & TRACE2_LOB) != 0)
-                            lobIndexesList << " " << std::dec << sysObjMapNameIt->second->dataObj << "/" << sysObjMapNameIt->second->obj;
+                            lobIndexesList << " " << std::dec << sysObjMapNameIt->first.dataObj << "/" << sysObjMapNameIt->second->obj;
                         ++lobIndexes;
                     }
 
