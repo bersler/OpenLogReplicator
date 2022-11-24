@@ -588,7 +588,7 @@ namespace OpenLogReplicator {
         if (lob == nullptr) {
             TRACE(TRACE2_LOB, "LOB" <<
                     " skip data-obj: " << std::dec << redoLogRecord1->dataObj <<
-                    " sub-xid: " << redoLogRecord1->xid)
+                    " xid: " << redoLogRecord1->xid)
             return;
         }
 
@@ -992,7 +992,7 @@ namespace OpenLogReplicator {
         if (lob == nullptr) {
             TRACE(TRACE2_LOB, "LOB" <<
                     " skip index data-obj: " << std::dec << dataObj << " (" << redoLogRecord1->dataObj << ", " << redoLogRecord2->dataObj << ")" <<
-                    " sub-xid: " << redoLogRecord1->xid)
+                    " xid: " << redoLogRecord1->xid)
 
             transaction->log(ctx, "idx1", redoLogRecord1);
             transaction->log(ctx, "idx2", redoLogRecord2);

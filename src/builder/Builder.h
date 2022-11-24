@@ -172,11 +172,10 @@ namespace OpenLogReplicator {
             uint64_t base = static_cast<uint64_t>(column) >> 6;
             uint64_t mask = static_cast<uint64_t>(1) << (column & 0x3F);
             // New value
-            if ((valuesSet[base] & mask) == 0) {
+            if ((valuesSet[base] & mask) == 0)
                 valuesSet[base] |= mask;
-                if (column >= valuesMax)
-                    valuesMax = column + 1;
-            }
+            if (column >= valuesMax)
+                valuesMax = column + 1;
 
             switch (fb & (FB_P | FB_N)) {
             case 0:
@@ -757,7 +756,7 @@ namespace OpenLogReplicator {
                 uint64_t unicodeCharacterLength;
 
                 if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                    unicodeCharacter = characterSet->decode(data, length);
+                    unicodeCharacter = characterSet->decode(lastXid, data, length);
                     unicodeCharacterLength = 8;
                 } else {
                     unicodeCharacter = *data++;

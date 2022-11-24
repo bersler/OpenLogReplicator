@@ -117,12 +117,16 @@ namespace OpenLogReplicator {
             columnRaw(columnName, data, length);
             return;
         }
-        if (table == nullptr || FLAG(REDO_FLAGS_RAW_COLUMN_DATA)) {
+        if (table == nullptr) {
             std::string columnName("COL_" + std::to_string(col));
             columnRaw(columnName, data, length);
             return;
         }
         OracleColumn* column = table->columns[col];
+        if (FLAG(REDO_FLAGS_RAW_COLUMN_DATA)) {
+            columnRaw(column->name, data, length);
+            return;
+        }
         if (column->constraint && !FLAG(REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS))
             return;
         if (column->nested && !FLAG(REDO_FLAGS_SHOW_NESTED_COLUMNS))

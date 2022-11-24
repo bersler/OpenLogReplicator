@@ -30,14 +30,14 @@ namespace OpenLogReplicator {
 
     CharacterSetJA16EUC::~CharacterSetJA16EUC() = default;
 
-    uint64_t CharacterSetJA16EUC::decode(const uint8_t*& str, uint64_t& length) const {
+    uint64_t CharacterSetJA16EUC::decode(typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
         if (byte1 <= 0x7F)
             return byte1;
 
         if (length == 0)
-            return badChar(byte1);
+            return badChar(xid, byte1);
 
         uint64_t byte2 = *str++;
         --length;
@@ -45,20 +45,20 @@ namespace OpenLogReplicator {
         // 3 bytes sequence
         if (byte1 == 0x8F) {
             if (length == 0)
-                return badChar(byte1, byte2);
+                return badChar(xid, byte1, byte2);
 
             uint64_t byte3 = *str++;
             --length;
 
             if (byte2 < JA16EUC_b2_min || byte2 > JA16EUC_b2_max || byte3 < JA16EUC_b3_min || byte3 > JA16EUC_b3_max)
-                return badChar(byte1, byte2, byte3);
+                return badChar(xid, byte1, byte2, byte3);
 
             return readMap3(byte2, byte3);
         }
 
         // 2 bytes sequence
         if (byte1 < JA16EUC_b1_min || byte1 > JA16EUC_b1_max || byte2 < JA16EUC_b2_min || byte2 > JA16EUC_b2_max || !validCode(byte1, byte2))
-            return badChar(byte1, byte2);
+            return badChar(xid, byte1, byte2);
 
         return readMap2(byte1, byte2);
     }

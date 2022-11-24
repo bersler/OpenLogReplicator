@@ -26,30 +26,30 @@ namespace OpenLogReplicator {
 
     CharacterSetAL16UTF16::~CharacterSetAL16UTF16() = default;
 
-    typeUnicode CharacterSetAL16UTF16::decode(const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetAL16UTF16::decode(typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
 
         if (length == 0)
-            return badChar(byte1);
+            return badChar(xid, byte1);
 
         uint64_t byte2 = *str++;
         --length;
 
         if ((byte1 & 0xFC) == 0xDC)
-            return badChar(byte1, byte2);
+            return badChar(xid, byte1, byte2);
 
         if ((byte1 & 0xFC) != 0xD8)
             return (byte1 << 8) | byte2;
 
         if (length == 0)
-            return badChar(byte1, byte2);
+            return badChar(xid, byte1, byte2);
 
         uint64_t byte3 = *str++;
         --length;
 
         if (length == 0)
-            return badChar(byte1, byte2, byte3);
+            return badChar(xid, byte1, byte2, byte3);
 
         uint64_t byte4 = *str++;
         --length;
@@ -61,6 +61,6 @@ namespace OpenLogReplicator {
         if ((byte3 & 0xFC) == 0xDC) {
             return 0x10000 + (((byte1 & 0x03) << 18) | (byte2 << 10) | ((byte3 & 0x03) << 8) | byte4);
         } else
-            return badChar(byte1, byte2, byte3, byte4);
+            return badChar(xid, byte1, byte2, byte3, byte4);
     }
 }

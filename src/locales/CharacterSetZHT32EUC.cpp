@@ -26,7 +26,7 @@ namespace OpenLogReplicator {
 
     CharacterSetZHT32EUC::~CharacterSetZHT32EUC() = default;
 
-    typeUnicode CharacterSetZHT32EUC::decode(const uint8_t*& str, uint64_t& length) const {
+    typeUnicode CharacterSetZHT32EUC::decode(typeXid xid, const uint8_t*& str, uint64_t& length) const {
         uint64_t byte1 = *str++;
         --length;
 
@@ -34,24 +34,24 @@ namespace OpenLogReplicator {
             return byte1;
 
         if (length == 0)
-            return badChar(byte1);
+            return badChar(xid, byte1);
 
         // 4 bytes sequence
         if (byte1 == ZHT32EUC_4_b1) {
             if (length == 0)
-                return badChar(byte1);
+                return badChar(xid, byte1);
 
             uint64_t byte2 = *str++;
             --length;
 
             if (byte2 < ZHT32EUC_4_b2_min || byte2 > ZHT32EUC_4_b2_max || length == 0)
-                return badChar(byte1, byte2);
+                return badChar(xid, byte1, byte2);
 
             uint64_t byte3 = *str++;
             --length;
 
             if (byte3 < ZHT32EUC_4_b3_min || byte3 > ZHT32EUC_4_b3_max || length == 0)
-                return badChar(byte1, byte2, byte3);
+                return badChar(xid, byte1, byte2, byte3);
 
             uint64_t byte4 = *str++;
             --length;
@@ -61,18 +61,18 @@ namespace OpenLogReplicator {
                                                (byte3 - ZHT32EUC_4_b3_min) * (ZHT32EUC_4_b4_max - ZHT32EUC_4_b4_min + 1) +
                                                (byte4 - ZHT32EUC_4_b4_min)];
 
-            return badChar(byte1, byte2, byte3, byte4);
+            return badChar(xid, byte1, byte2, byte3, byte4);
         }
 
         // 2 bytes sequence
         if (byte1 < ZHT32EUC_2_b1_min || byte1 > ZHT32EUC_2_b1_max || length == 0)
-            return badChar(byte1);
+            return badChar(xid, byte1);
 
         uint64_t byte2 = *str++;
         --length;
 
         if (byte2 < ZHT32EUC_2_b2_min || byte2 > ZHT32EUC_2_b2_max)
-            return badChar(byte1, byte2);
+            return badChar(xid, byte1, byte2);
 
         return unicode_map_ZHT32EUC_2b[(byte1 - ZHT32EUC_2_b1_min) * (ZHT32EUC_2_b2_max - ZHT32EUC_2_b2_min + 1) +
                                        (byte2 - ZHT32EUC_2_b2_min)];

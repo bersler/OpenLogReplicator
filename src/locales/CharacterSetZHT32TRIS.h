@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
         CharacterSetZHT32TRIS();
         ~CharacterSetZHT32TRIS() override;
 
-        typeUnicode decode(const uint8_t*& str, uint64_t& length) const override;
+        typeUnicode decode(typeXid xid, const uint8_t*& str, uint64_t& length) const override;
     };
 }
 
