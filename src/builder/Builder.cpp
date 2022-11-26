@@ -998,7 +998,7 @@ namespace OpenLogReplicator {
                     if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][VALUE_BEFORE] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
                         uint8_t* guardData = values[guardPos][VALUE_BEFORE];
-                        if (guardData != nullptr && static_cast<uint64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_BEFORE]) {
+                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_BEFORE]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_BEFORE][column2 / 8] & (1 << (column2 & 7))) != 0) {
                                 values[column][VALUE_BEFORE] = reinterpret_cast<uint8_t*>(1);
@@ -1018,7 +1018,7 @@ namespace OpenLogReplicator {
                     if (guardPos != -1 && table->columns[column]->guardSeg != -1 && values[guardPos][VALUE_AFTER] != nullptr) {
                         typeCol column2 = table->columns[column]->guardSeg;
                         uint8_t* guardData = values[guardPos][VALUE_AFTER];
-                        if (guardData != nullptr && static_cast<uint64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_AFTER]) {
+                        if (guardData != nullptr && static_cast<int64_t>(column2 / static_cast<typeCol>(8)) < lengths[guardPos][VALUE_AFTER]) {
                             guardPresent = true;
                             if ((values[guardPos][VALUE_AFTER][column2 / 8] & (1 << (column2 & 7))) != 0) {
                                 values[column][VALUE_AFTER] = reinterpret_cast<uint8_t*>(1);

@@ -21,7 +21,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <iostream>
 #include <string>
 
-#include "types.h"
+#include "Ctx.h"
 #include "typeIntX.h"
 
 namespace OpenLogReplicator {

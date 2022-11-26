@@ -27,8 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef TYPES_H_
 #define TYPES_H_
 
-#define ERROR(__x)                              {std::ostringstream __s; time_t __now = time(nullptr); tm __nowTm = *localtime(&__now); char __str[50]; strftime(__str, sizeof(__str), "%F %T", &__nowTm); __s << __str << " [ERROR] " << __x << std::endl; std::cerr << __s.str(); }
-
 typedef uint32_t typeResetlogs;
 typedef uint32_t typeActivation;
 typedef uint16_t typeSum;

@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
         redoLogRecord->dba = ctx->read32(redoLogRecord->data + fieldPos + 8);
 
         if (ctx->dumpRedoLog >= 1) {
-            char* opCode = "????";
+            const char* opCode = "????";
             switch (op) {
                 case OP266_OP_REDO:
                     opCode = "REDO";
@@ -82,7 +82,7 @@ namespace OpenLogReplicator {
 
             }
             uint8_t type = redoLogRecord->data[fieldPos + 1];
-            char* typeCode = "???";
+            const char* typeCode = "???";
             switch (type & OP266_TYPE_MASK) {
                 case OP266_TYPE_NEW:
                     typeCode = "new";
@@ -156,7 +156,7 @@ namespace OpenLogReplicator {
             uint8_t code = redoLogRecord->data[fieldPos + 0];
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
             uint8_t flg0 = redoLogRecord->data[fieldPos + 10];
-            char* flg0typ = "";
+            const char* flg0typ = "";
             switch (flg0 & OP266_TYPE_MASK) {
                 case OP266_TYPE_NEW:
                     flg0typ = "new";
@@ -177,29 +177,29 @@ namespace OpenLogReplicator {
                     flg0typ = "aux";
                     break;
             }
-            char* flg0lock = "n";
+            const char* flg0lock = "n";
             if (flg0 & OP266_TYPE_LOCK)
                 flg0lock = "y";
-            char* flg0var = "0";
+            const char* flg0var = "0";
             if (flg0 & OP266_TYPE_VER1)
                 flg0var = "1";
             uint8_t flg1 = redoLogRecord->data[fieldPos + 11];
             uint16_t rid1 = ctx->read16(redoLogRecord->data + fieldPos + 22);
             uint32_t rid2 = ctx->read32(redoLogRecord->data + fieldPos + 24);
             uint8_t flg2 = redoLogRecord->data[fieldPos + 28];
-            char* flg2pfill = "n";
+            const char* flg2pfill = "n";
             if (flg2 & OP266_FLG2_PFILL)
                 flg2pfill = "y";
-            char* flg2cmap = "n";
+            const char* flg2cmap = "n";
             if (flg2 & OP266_FLG2_CMAP)
                 flg2cmap = "y";
-            char* flg2hash = "n";
+            const char* flg2hash = "n";
             if (flg2 & OP266_FLG2_HASH)
                 flg2hash = "y";
-            char* flg2lid = "short-rowid";
+            const char* flg2lid = "short-rowid";
             if (flg2 & OP266_FLG2_LHB)
                 flg2lid = "lhb-dba";
-            char* flg2ver1 = "0";
+            const char* flg2ver1 = "0";
             if (flg2 & OP266_FLG2_VER1)
                 flg2ver1 = "1";
             uint8_t flg3 = redoLogRecord->data[fieldPos + 29];

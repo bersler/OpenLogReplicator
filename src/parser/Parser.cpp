@@ -792,15 +792,12 @@ namespace OpenLogReplicator {
             return;
 
         typeObj obj;
-        typeDataObj dataObj;
         if (redoLogRecord1->dataObj != 0) {
             obj = redoLogRecord1->obj;
-            dataObj = redoLogRecord1->dataObj;
             redoLogRecord2->obj = redoLogRecord1->obj;
             redoLogRecord2->dataObj = redoLogRecord1->dataObj;
         } else {
             obj = redoLogRecord2->obj;
-            dataObj = redoLogRecord2->dataObj;
             redoLogRecord1->obj = redoLogRecord2->obj;
             redoLogRecord1->dataObj = redoLogRecord2->dataObj;
         }
@@ -895,15 +892,12 @@ namespace OpenLogReplicator {
             return;
 
         typeObj obj;
-        typeDataObj dataObj;
         if (redoLogRecord1->dataObj != 0) {
             obj = redoLogRecord1->obj;
-            dataObj = redoLogRecord1->dataObj;
             redoLogRecord2->obj = redoLogRecord1->obj;
             redoLogRecord2->dataObj = redoLogRecord1->dataObj;
         } else {
             obj = redoLogRecord2->obj;
-            dataObj = redoLogRecord2->dataObj;
             redoLogRecord1->obj = redoLogRecord2->obj;
             redoLogRecord1->dataObj = redoLogRecord2->dataObj;
         }
@@ -972,15 +966,12 @@ namespace OpenLogReplicator {
         if (transaction == nullptr)
             return;
 
-        typeObj obj;
         typeDataObj dataObj;
         if (redoLogRecord1->dataObj != 0) {
-            obj = redoLogRecord1->obj;
             dataObj = redoLogRecord1->dataObj;
             redoLogRecord2->obj = redoLogRecord1->obj;
             redoLogRecord2->dataObj = redoLogRecord1->dataObj;
         } else {
-            obj = redoLogRecord2->obj;
             dataObj = redoLogRecord2->dataObj;
             redoLogRecord1->obj = redoLogRecord2->obj;
             redoLogRecord1->dataObj = redoLogRecord2->dataObj;

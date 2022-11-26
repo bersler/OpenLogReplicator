@@ -251,7 +251,7 @@ namespace OpenLogReplicator {
                 }
 
                 ctx->dumpStream << " Itl           Xid                  Uba         Flag  Lck        Scn/Fsc" << std::endl;
-                for (uint64_t i = 0; i < itc; ++i) {
+                for (uint64_t i = 0; i < static_cast<uint64_t>(itc); ++i) {
                     typeXid itcXid = typeXid(static_cast<typeUsn>(ctx->read16(redoLogRecord->data + fieldPos + 20 + i * 24)),
                                              ctx->read16(redoLogRecord->data + fieldPos + 20 + 2 + i * 24),
                                              ctx->read32(redoLogRecord->data + fieldPos + 20 + 4 + i * 24));
@@ -259,7 +259,7 @@ namespace OpenLogReplicator {
                     typeUba itcUba = ctx->read56(redoLogRecord->data + fieldPos + 20 + 8 + i * 24);
                     char flagsStr[5] = "----";
                     typeScn scnfsc;
-                    char* scnfscStr = "fsc";
+                    const char* scnfscStr = "fsc";
                     uint16_t lck = ctx->read16(redoLogRecord->data + fieldPos + 20 + 16 + i * 24);
                     if ((lck & 0x1000) != 0) flagsStr[3] = 'T';
                     if ((lck & 0x2000) != 0) flagsStr[2] = 'U';
@@ -270,7 +270,7 @@ namespace OpenLogReplicator {
                         lck = 0;
                         scnfsc = ctx->readScn(redoLogRecord->data + fieldPos + 20 + 18 + i * 24);
                     } else
-                        scnfsc = (static_cast<uint64_t>(ctx->read16(redoLogRecord->data + fieldPos + 20 + 18 + i * 24) << 32)) |
+                        scnfsc = (static_cast<uint64_t>(ctx->read16(redoLogRecord->data + fieldPos + 20 + 18 + i * 24)) << 32) |
                                 static_cast<uint64_t>(ctx->read32(redoLogRecord->data + fieldPos + 20 + 20 + i * 24));
                     lck &= 0x0FFF;
 
@@ -590,7 +590,7 @@ namespace OpenLogReplicator {
         redoLogRecord->slot = redoLogRecord->data[fieldPos + 27];
 
         if (ctx->dumpRedoLog >= 1) {
-            uint8_t flagStr[3] = "--";
+            char flagStr[3] = "--";
             uint8_t lock = redoLogRecord->data[fieldPos + 29];
             uint8_t flag = redoLogRecord->data[fieldPos + 28];
             if ((flag & 0x01) != 0) flagStr[0] = 'F';

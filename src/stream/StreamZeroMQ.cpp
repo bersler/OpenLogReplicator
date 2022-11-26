@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
     void StreamZeroMQ::sendMessage(const void* msg, uint64_t length) {
         while (!ctx->softShutdown) {
             int64_t ret = zmq_send(socket, msg, length, ZMQ_NOBLOCK);
-            if (ret == length)
+            if (ret == static_cast<int64_t>(length))
                 return;
 
             if (ret < 0 && errno == EAGAIN) {

@@ -527,7 +527,7 @@ namespace OpenLogReplicator {
             // in-row
             } else {
                 uint16_t bodyLength = ctx->read16Big(data + 20);
-                if (length != 20 + bodyLength) {
+                if (length != static_cast<uint64_t>(bodyLength + 20)) {
                     WARNING("incorrect LOB (in-value) xid: " << lastXid << " data-obj: " << std::dec << dataObj)
                     WARNING("dump LOB: " << lobId.upper() << " data: " << dumpLob(data, length))
                     return;
@@ -660,7 +660,7 @@ namespace OpenLogReplicator {
                         return;
                     }
 
-                    uint16_t sizeRest = ctx->read16Big(data + 24);
+                    //uint16_t sizeRest = ctx->read16Big(data + 24);
 
                     // data
                     if ((flg2 & 0x0800) == 0x0800) {

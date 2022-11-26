@@ -494,7 +494,8 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    void SystemTransaction::processInsertCCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertCCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysCColFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.CCOL$: (rowid: ") + rowId.toString() + ") for insert");
         sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
@@ -524,7 +525,8 @@ namespace OpenLogReplicator {
         sysCCol = nullptr;
     }
 
-    void SystemTransaction::processInsertCDef(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertCDef(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysCDefFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.CDEF$: (rowid: ") + rowId.toString() + ") for insert");
         sysCDef = new SysCDef(rowId, 0, 0, 0, true);
@@ -552,7 +554,8 @@ namespace OpenLogReplicator {
         sysCDef = nullptr;
     }
 
-    void SystemTransaction::processInsertCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysColFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.COL$: (rowid: ") + rowId.toString() + ") for insert");
         sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
@@ -601,7 +604,8 @@ namespace OpenLogReplicator {
         sysCol = nullptr;
     }
 
-    void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysDeferredStgFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.DEFERRED_STG$: (rowid: ") + rowId.toString() + ") for insert");
         sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
@@ -628,7 +632,8 @@ namespace OpenLogReplicator {
         sysDeferredStg = nullptr;
     }
 
-    void SystemTransaction::processInsertECol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertECol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysEColFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.ECOL$: (rowid: ") + rowId.toString() + ") for insert");
         sysECol = new SysECol(rowId, 0, 0, -1, true);
@@ -656,7 +661,8 @@ namespace OpenLogReplicator {
         sysECol = nullptr;
     }
 
-    void SystemTransaction::processInsertLob(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertLob(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysLobFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + rowId.toString() + ") for insert");
         sysLob = new SysLob(rowId, 0, 0, 0, 0, 0, true);
@@ -688,7 +694,8 @@ namespace OpenLogReplicator {
         sysLob = nullptr;
     }
 
-    void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysLobCompPartFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.LOBCOMPPART$: (rowid: ") + rowId.toString() + ") for insert");
         sysLobCompPart = new SysLobCompPart(rowId, 0, 0, true);
@@ -714,7 +721,8 @@ namespace OpenLogReplicator {
         sysLobCompPart = nullptr;
     }
 
-    void SystemTransaction::processInsertLobFrag(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertLobFrag(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysLobFragFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.LOBFRAG$: (rowid: ") + rowId.toString() + ") for insert");
         sysLobFrag = new SysLobFrag(rowId, 0, 0, 0, true);
@@ -742,7 +750,8 @@ namespace OpenLogReplicator {
         sysLobFrag = nullptr;
     }
 
-    void SystemTransaction::processInsertObj(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertObj(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysObjFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + rowId.toString() + ") for insert");
         sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false, true);
@@ -776,7 +785,8 @@ namespace OpenLogReplicator {
         sysObj = nullptr;
     }
 
-    void SystemTransaction::processInsertTab(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertTab(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTabFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TAB$: (rowid: ") + rowId.toString() + ") for insert");
         sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, true);
@@ -808,7 +818,8 @@ namespace OpenLogReplicator {
         sysTab = nullptr;
     }
 
-    void SystemTransaction::processInsertTabComPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertTabComPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTabComPartFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TABCOMPART$: (rowid: ") + rowId.toString() + ") for insert");
         sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
@@ -836,7 +847,8 @@ namespace OpenLogReplicator {
         sysTabComPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTabPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertTabPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTabPartFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TABPART$: (rowid: ") + rowId.toString() + ") for insert");
         sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
@@ -864,7 +876,8 @@ namespace OpenLogReplicator {
         sysTabPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTabSubPartFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TABSUBPART$: (rowid: ") + rowId.toString() + ") for insert");
         sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
@@ -892,7 +905,8 @@ namespace OpenLogReplicator {
         sysTabSubPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTs(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertTs(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                            typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTsFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TS$: (rowid: ") + rowId.toString() + ") for insert");
         sysTs = new SysTs(rowId, 0, 0, 0, true);
@@ -920,7 +934,8 @@ namespace OpenLogReplicator {
         sysTs = nullptr;
     }
 
-    void SystemTransaction::processInsertUser(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processInsertUser(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysUserFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.USER$: (rowid: ") + rowId.toString() + ") for insert");
         sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
@@ -1018,7 +1033,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateCCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateCCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysCCol* sysCCol2 = metadata->schema->dictSysCColFind(rowId);
         if (sysCCol2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CCOL$: (rowid: " << rowId << ")")
@@ -1059,7 +1075,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateCDef(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateCDef(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
         if (sysCDef2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CDEF$: (rowid: " << rowId << ")")
@@ -1095,7 +1112,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateCol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysCol* sysCol2 = metadata->schema->dictSysColFind(rowId);
         if (sysCol2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.COL$: (rowid: " << rowId << ")")
@@ -1181,7 +1199,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateDeferredStg(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateDeferredStg(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysDeferredStg* sysDeferredStg2 = metadata->schema->dictSysDeferredStgFind(rowId);
         if (sysDeferredStg2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.DEFERRED_STG$: (rowid: " << rowId << ")")
@@ -1212,7 +1231,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateECol(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateECol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysECol* sysECol2 = metadata->schema->dictSysEColFind(rowId);
         if (sysECol2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.ECOL$: (rowid: " << rowId << ")")
@@ -1248,7 +1268,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateLob(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateLob(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysLob* sysLob2 = metadata->schema->dictSysLobFind(rowId);
         if (sysLob2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOB$: (rowid: " << rowId << ")")
@@ -1298,7 +1319,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateLobCompPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateLobCompPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysLobCompPart* sysLobCompPart2 = metadata->schema->dictSysLobCompPartFind(rowId);
         if (sysLobCompPart2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBCOMPPART$: (rowid: " << rowId << ")")
@@ -1330,7 +1352,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateLobFrag(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateLobFrag(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysLobFrag* sysLobFrag2 = metadata->schema->dictSysLobFragFind(rowId);
         if (sysLobFrag2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBFRAG$: (rowid: " << rowId << ")")
@@ -1368,7 +1391,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateObj(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateObj(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
         if (sysObj2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.OBJ$: (rowid: " << rowId << ")")
@@ -1419,7 +1443,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateTab(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateTab(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysTab* sysTab2 = metadata->schema->dictSysTabFind(rowId);
         if (sysTab2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TAB$: (rowid: " << rowId << ")")
@@ -1469,7 +1494,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateTabComPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateTabComPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysTabComPart* sysTabComPart2 = metadata->schema->dictSysTabComPartFind(rowId);
         if (sysTabComPart2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABCOMPART$: (rowid: " << rowId << ")")
@@ -1505,7 +1531,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateTabPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateTabPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysTabPart* sysTabPart2 = metadata->schema->dictSysTabPartFind(rowId);
         if (sysTabPart2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABPART$: (rowid: " << rowId << ")")
@@ -1541,7 +1568,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateTabSubPart(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateTabSubPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysTabSubPart* sysTabSubPart2 = metadata->schema->dictSysTabSubPartFind(rowId);
         if (sysTabSubPart2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABSUBPART$: (rowid: " << rowId << ")")
@@ -1577,7 +1605,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateTs(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateTs(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                            typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysTs* sysTs2 = metadata->schema->dictSysTsFind(rowId);
         if (sysTs2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TS$: (rowid: " << rowId << ")")
@@ -1613,7 +1642,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void SystemTransaction::processUpdateUser(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeRowId& rowId) {
+    void SystemTransaction::processUpdateUser(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
+                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         SysUser* sysUser2 = metadata->schema->dictSysUserFind(rowId);
         if (sysUser2 == nullptr) {
             TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.USER$: (rowid: " << rowId << ")")

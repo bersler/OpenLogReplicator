@@ -75,7 +75,7 @@ namespace OpenLogReplicator {
 
         while (lastTc != nullptr && lastTc->size > 0 && opCodes > 0) {
             uint64_t lengthLast = *(reinterpret_cast<uint64_t*>(lastTc->buffer + lastTc->size - ROW_HEADER_TOTAL + ROW_HEADER_SIZE));
-            auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
+            //auto lastRedoLogRecord1 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO1);
             auto lastRedoLogRecord2 = reinterpret_cast<RedoLogRecord*>(lastTc->buffer + lastTc->size - lengthLast + ROW_HEADER_REDO2);
 
             bool ok = false;
@@ -88,45 +88,37 @@ namespace OpenLogReplicator {
                     continue;
 
                 case 0x0B05:
-                    if (redoLogRecord1->opCode == 0x0B05) {
+                    if (redoLogRecord1->opCode == 0x0B05)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B02:
-                    if (redoLogRecord1->opCode == 0x0B03) {
+                    if (redoLogRecord1->opCode == 0x0B03)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B03:
-                    if (redoLogRecord1->opCode == 0x0B02) {
+                    if (redoLogRecord1->opCode == 0x0B02)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B06:
-                    if (redoLogRecord1->opCode == 0x0B06) {
+                    if (redoLogRecord1->opCode == 0x0B06)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B08:
-                    if (redoLogRecord1->opCode == 0x0B08) {
+                    if (redoLogRecord1->opCode == 0x0B08)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B0B:
-                    if (redoLogRecord1->opCode == 0x0B0C) {
+                    if (redoLogRecord1->opCode == 0x0B0C)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B0C:
-                    if (redoLogRecord1->opCode == 0x0B0B) {
+                    if (redoLogRecord1->opCode == 0x0B0B)
                         ok = true;
-                        break;
-                    }
+                    break;
                 case 0x0B16:
-                    if (redoLogRecord1->opCode == 0x0B16) {
+                    if (redoLogRecord1->opCode == 0x0B16)
                         ok = true;
-                        break;
-                    }
+                    break;
             }
 
             if (lastRedoLogRecord2->obj != redoLogRecord1->obj)

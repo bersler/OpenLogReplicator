@@ -51,6 +51,7 @@ namespace OpenLogReplicator {
     LobKey& LobKey::operator=(const LobKey& other) {
         lobId = other.lobId;
         page = other.page;
+        return *this;
     }
 }
 

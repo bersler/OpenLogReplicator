@@ -75,12 +75,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    OpenLogReplicator::OpenLogReplicator(std::string fileName, Ctx* ctx) :
+    OpenLogReplicator::OpenLogReplicator(std::string newFileName, Ctx* newCtx) :
             replicator(nullptr),
             fid(-1),
             configFileBuffer(nullptr),
-            fileName(fileName),
-            ctx(ctx) {
+            fileName(newFileName),
+            ctx(newCtx) {
         typeIntX::initializeBASE10();
     }
 

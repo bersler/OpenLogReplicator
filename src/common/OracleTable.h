@@ -56,9 +56,9 @@ namespace OpenLogReplicator {
 
         void addColumn(OracleColumn* column);
         void addLob(OracleLob* lob);
-        void addTablePartition(typeObj obj, typeDataObj dataObj);
-        void addLobPartition(typeDataObj dataObj);
-        void addLobIndex(typeDataObj dataObj);
+        void addTablePartition(typeObj newObj, typeDataObj newDataObj);
+        void addLobPartition(typeDataObj newDataObj);
+        void addLobIndex(typeDataObj newDataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleTable& table);
     };

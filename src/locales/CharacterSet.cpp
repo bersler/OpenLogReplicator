@@ -18,6 +18,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
 #include "CharacterSet.h"
+#include "../common/Ctx.h"
 #include "../common/types.h"
 #include "../common/DataException.h"
 

@@ -19,6 +19,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <cstring>
 
+#include "Ctx.h"
 #include "typeRowId.h"
 
 namespace OpenLogReplicator {

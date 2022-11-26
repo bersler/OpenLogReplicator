@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
         request.Clear();
         request.set_code(OpenLogReplicator::pb::RequestCode::REDO);
         request.set_database_name(argv[3]);
-        INFO("REDO database: " << request.database_name())
+        INFO("REDO database: " << request.database_name() << " scn: " << std::dec << scn)
         send(request, stream);
         receive(response, stream);
         INFO("- code: " << static_cast<uint64_t>(response.code()))
