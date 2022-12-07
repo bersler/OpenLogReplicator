@@ -33,7 +33,6 @@ namespace OpenLogReplicator {
 
     class SerializerJson: public Serializer {
     protected:
-        std::string escape(const std::string& name);
         void deserializeSysCCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCColJson);
         void deserializeSysCDef(Metadata* metadata, const std::string& name, const rapidjson::Value& sysCDefJson);
         void deserializeSysCol(Metadata* metadata, const std::string& name, const rapidjson::Value& sysColJson);

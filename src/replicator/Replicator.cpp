@@ -573,10 +573,6 @@ namespace OpenLogReplicator {
         return p1->sequence > p2->sequence;
     }
 
-    bool parserCompareReverse::operator()(Parser* const& p1, Parser* const& p2) {
-        return p1->sequence < p2->sequence;
-    }
-
     void Replicator::updateResetlogs() {
         for (OracleIncarnation* oi : metadata->oracleIncarnations) {
             if (oi->resetlogs == metadata->resetlogs) {

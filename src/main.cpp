@@ -24,7 +24,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <sys/utsname.h>
 #include <thread>
 #include <unistd.h>
-#include <execinfo.h>
 
 #include "OpenLogReplicator.h"
 #include "common/Ctx.h"

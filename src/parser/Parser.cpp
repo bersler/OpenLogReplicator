@@ -314,7 +314,7 @@ namespace OpenLogReplicator {
 
                 // REDO: Insert leaf row
                 case 0x0A02:
-                    if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (ctx->experimentalLobs) {
                         if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                             redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                             redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -325,7 +325,7 @@ namespace OpenLogReplicator {
 
                 // REDO: Init header
                 case 0x0A08:
-                    if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (ctx->experimentalLobs) {
                         if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                             redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                             redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -336,7 +336,7 @@ namespace OpenLogReplicator {
 
                 // REDO: Update key data in row
                 case 0x0A12:
-                    if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (ctx->experimentalLobs) {
                         if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
                             redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
                             redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
@@ -437,14 +437,14 @@ namespace OpenLogReplicator {
 
                 // LOB
                 case 0x1301:
-                    if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (ctx->experimentalLobs) {
                         if (vectorPrev == -1)
                             OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
                     }
                     break;
 
                 case 0x1A06:
-                    if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+                    if (ctx->experimentalLobs) {
                         if (vectorPrev == -1)
                             OpCode1A06::process(ctx, &redoLogRecord[vectorCur]);
                     }
@@ -581,7 +581,7 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionLob(RedoLogRecord* redoLogRecord1) {
-        if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
+        if (!ctx->experimentalLobs)
             return;
 
         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
@@ -950,7 +950,7 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionIndex(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        if (!FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS))
+        if (!ctx->experimentalLobs)
             return;
 
         // Skip other PDB vectors

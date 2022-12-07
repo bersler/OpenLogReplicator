@@ -909,7 +909,7 @@ namespace OpenLogReplicator {
                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
         if (metadata->schema->dictSysTsFind(rowId))
             throw RuntimeException(std::string("DDL: duplicate SYS.TS$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTs = new SysTs(rowId, 0, 0, 0, true);
+        sysTs = new SysTs(rowId, 0, "", 0, true);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {

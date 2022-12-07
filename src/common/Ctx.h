@@ -189,8 +189,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_HIDE_CHECKPOINT              0x00001000
 #define REDO_FLAGS_CHECKPOINT_KEEP              0x00002000
 #define REDO_FLAGS_VERIFY_SCHEMA                0x00004000
-#define REDO_FLAGS_EXPERIMENTAL_LOBS            0x00008000
-#define REDO_FLAGS_RAW_COLUMN_DATA              0x00010000
+#define REDO_FLAGS_RAW_COLUMN_DATA              0x00008000
+
 #define FLAG(x)                                 ((ctx->flags&(x))!=0)
 
 #define DISABLE_CHECKS_GRANTS                   0x00000001
@@ -268,6 +268,7 @@ namespace OpenLogReplicator {
         std::atomic<uint64_t> trace2;
         std::atomic<uint64_t> flags;
         std::atomic<uint64_t> disableChecks;
+        std::atomic<bool> experimentalLobs;
         std::atomic<bool> hardShutdown;
         std::atomic<bool> softShutdown;
         std::atomic<bool> replicatorFinished;

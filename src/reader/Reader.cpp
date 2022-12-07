@@ -280,8 +280,8 @@ namespace OpenLogReplicator {
             || (compatVsn >= 0x0C100000 && compatVsn <= 0x0C100200)  // 12.1.0.0 - 12.1.0.2
             || (compatVsn >= 0x0C200000 && compatVsn <= 0x0C200100)  // 12.2.0.0 - 12.2.0.1
             || (compatVsn >= 0x12000000 && compatVsn <= 0x120E0000)  // 18.0.0.0 - 18.14.0.0
-            || (compatVsn >= 0x13000000 && compatVsn <= 0x13100000)  // 19.0.0.0 - 19.16.0.0
-            || (compatVsn >= 0x15000000 && compatVsn <= 0x15070000)) // 21.0.0.0 - 21.7.0.0
+            || (compatVsn >= 0x13000000 && compatVsn <= 0x13110000)  // 19.0.0.0 - 19.17.0.0
+            || (compatVsn >= 0x15000000 && compatVsn <= 0x15080000)) // 21.0.0.0 - 21.8.0.0
             version = compatVsn;
         else {
             ERROR("invalid database version (found: 0x" << std::setfill('0') << std::setw(8) << std::hex << compatVsn << "): " << fileName)

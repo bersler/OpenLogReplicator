@@ -45,10 +45,6 @@ namespace OpenLogReplicator {
         bool operator()(Parser* const& p1, Parser* const& p2);
     };
 
-    struct parserCompareReverse {
-        bool operator()(Parser* const& p1, Parser* const& p2);
-    };
-
     class Replicator : public Thread {
     protected:
         void (*archGetLog)(Replicator* replicator);

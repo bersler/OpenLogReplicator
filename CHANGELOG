@@ -1,3 +1,8 @@
+0.9.58
+- added support for Oracle 19.17 and 21.7
+- bug fixes
+- code cleanup
+
 0.9.57
 - fixed compilation warnings for Release
 

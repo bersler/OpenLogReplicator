@@ -161,7 +161,7 @@ namespace OpenLogReplicator {
             break;
 
         case SYS_COL_TYPE_BLOB:
-            if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+            if (ctx->experimentalLobs) {
                 if (after) {
                     parseLob(lobCtx, data, length, after, table->dataObj, false);
                     columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
@@ -172,7 +172,7 @@ namespace OpenLogReplicator {
             break;
 
         case SYS_COL_TYPE_CLOB:
-            if (FLAG(REDO_FLAGS_EXPERIMENTAL_LOBS)) {
+            if (ctx->experimentalLobs) {
                 if (after) {
                     parseLob(lobCtx, data, length, column->charsetId, table->dataObj, true);
                     columnString(column->name);
@@ -595,7 +595,7 @@ namespace OpenLogReplicator {
             }
 
             if (redoLogRecord2p == nullptr) {
-                WARNING("incomplete row for table (OBJID: " << std::dec << redoLogRecord1->obj<< "), probably IOT offset: " << std::dec <<
+                WARNING("incomplete row for table (OBJID: " << std::dec << redoLogRecord1->obj << "), probably IOT offset: " << std::dec <<
                         redoLogRecord1->dataOffset << " xid: " << lastXid)
                 obj = 0;
                 dataObj = 0;

@@ -702,7 +702,8 @@ namespace OpenLogReplicator {
                                 pageCnt = ctx->read16Big(data + dataOffset);
                                 dataOffset += 2;
                             } else {
-                                WARNING("incorrect LOB (new in-value) xid: " << lastXid << " data-obj: " << std::dec << dataObj)
+                                WARNING("incorrect LOB (new in-value) xid: " << lastXid << " data-obj: " << std::dec << dataObj << " page: 0x" <<
+                                        std::hex << page << " offset: " << std::dec << dataOffset)
                                 WARNING("dump LOB: " << lobId.upper() << " data: " << dumpLob(data, length))
                                 return;
                             }
