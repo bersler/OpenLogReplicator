@@ -1,5 +1,5 @@
 {
-  "version": "0.9.42",
+  "version": "1.0.0",
   "dump-redo-log": 0,
   "dump-raw-data": 0,
   "dump-path": "/opt/dump",
