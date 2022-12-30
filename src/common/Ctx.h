@@ -227,6 +227,10 @@ namespace OpenLogReplicator {
         pthread_t mainThread;
 
     public:
+        static const char map64[65];
+        static const char map16[17];
+        static const char map10[11];
+
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs
         std::string versionStr;

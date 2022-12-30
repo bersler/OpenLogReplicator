@@ -1,3 +1,6 @@
+1.0.1
+- fix: incorrect checkpoint file when non-ascii characters are used in schema files
+
 1.0.0
 - copy from 0.9.58
 

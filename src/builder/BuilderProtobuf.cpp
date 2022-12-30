@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
     void BuilderProtobuf::numToString(uint64_t value, char* buf, uint64_t length) {
         uint64_t j = (length - 1) * 4;
         for (uint64_t i = 0; i < length; ++i) {
-            buf[i] = map16[(value >> j) & 0xF];
+            buf[i] = ctx->map16[(value >> j) & 0xF];
             j -= 4;
         }
         buf[length] = 0;

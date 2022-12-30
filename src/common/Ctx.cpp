@@ -35,6 +35,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 uint64_t OLR_LOCALES = OLR_LOCALES_TIMESTAMP;
 
 namespace OpenLogReplicator {
+    const char Ctx::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const char Ctx::map16[17] = "0123456789abcdef";
+    const char Ctx::map10[11] = "0123456789";
+
     Ctx::Ctx() :
             bigEndian(false),
             memoryMinMb(0),
@@ -745,10 +749,20 @@ namespace OpenLogReplicator {
     std::ostringstream& Ctx::writeEscapeValue(std::ostringstream& ss, std::string& str) {
         const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
-            if (*c_str == '\t' || *c_str == '\r' || *c_str == '\n' || *c_str == '\b') {
-                // Skip
-            } else if (*c_str == '"' || *c_str == '\\' /* || *c_str == '/' */) {
+            if (*c_str == '\t') {
+                ss << '\\t';
+            } else if (*c_str == '\r') {
+                ss << '\\r';
+            } else if (*c_str == '\n') {
+                ss << '\\n';
+            } else if (*c_str == '\b') {
+                ss << '\\b';
+            } else if (*c_str == '\f') {
+                ss << '\\f';
+            } else if (*c_str == '"' || *c_str == '\\') {
                 ss << '\\' << *c_str;
+            } else if (*c_str < 32) {
+                ss << "\\u00" << map16[(*c_str >> 4) & 0x0F] << map16[*c_str & 0x0F];
             } else {
                 ss << *c_str;
             }

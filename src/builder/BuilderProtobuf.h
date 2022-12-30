@@ -135,7 +135,7 @@ namespace OpenLogReplicator {
             redoResponsePB = new pb::RedoResponse;
         }
 
-        static void numToString(uint64_t value, char* buf, uint64_t length);
+        void numToString(uint64_t value, char* buf, uint64_t length);
         void processInsert(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
         void processUpdate(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;
         void processDelete(LobCtx* lobCtx, OracleTable* table, typeObj obj, typeDataObj dataObj, typeDba bdba, typeSlot slot, typeXid xid) override;

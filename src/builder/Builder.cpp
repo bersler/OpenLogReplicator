@@ -27,9 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SystemTransaction.h"
 
 namespace OpenLogReplicator {
-    const char Builder::map64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    const char Builder::map16[17] = "0123456789abcdef";
-    const char Builder::map10[11] = "0123456789";
 
     Builder::Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
                      uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,
@@ -286,24 +283,24 @@ namespace OpenLogReplicator {
 
                     if (data[11] < 20) {
                         uint64_t val = 20 - data[11];
-                        tz2[1] = map10[val / 10];
-                        tz2[2] = map10[val % 10];
+                        tz2[1] = ctx->map10[val / 10];
+                        tz2[2] = ctx->map10[val % 10];
                     } else {
                         uint64_t val = data[11] - 20;
-                        tz2[1] = map10[val / 10];
-                        tz2[2] = map10[val % 10];
+                        tz2[1] = ctx->map10[val / 10];
+                        tz2[2] = ctx->map10[val % 10];
                     }
 
                     tz2[3] = ':';
 
                     if (data[12] < 60) {
                         uint64_t val = 60 - data[12];
-                        tz2[4] = map10[val / 10];
-                        tz2[5] = map10[val % 10];
+                        tz2[4] = ctx->map10[val / 10];
+                        tz2[5] = ctx->map10[val % 10];
                     } else {
                         uint64_t val = data[12] - 60;
-                        tz2[4] = map10[val / 10];
-                        tz2[5] = map10[val % 10];
+                        tz2[4] = ctx->map10[val / 10];
+                        tz2[5] = ctx->map10[val % 10];
                     }
                     tz2[6] = 0;
                     tz = tz2;

@@ -78,10 +78,6 @@ namespace OpenLogReplicator {
 
     class Builder {
     protected:
-        static const char map64[65];
-        static const char map16[17];
-        static const char map10[11];
-
         Ctx* ctx;
         Locales* locales;
         Metadata* metadata;
@@ -315,7 +311,7 @@ namespace OpenLogReplicator {
             uint64_t j = (length - 1) * 4;
             valueBufferCheck(length);
             for (uint64_t i = 0; i < length; ++i) {
-                valueBuffer[valueLength++] = map16[(value >> j) & 0xF];
+                valueBuffer[valueLength++] = ctx->map16[(value >> j) & 0xF];
                 j -= 4;
             }
         };

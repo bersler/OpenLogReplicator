@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         void appendHex(uint64_t value, uint64_t length) {
             uint64_t j = (length - 1) * 4;
             for (uint64_t i = 0; i < length; ++i) {
-                builderAppend(map16[(value >> j) & 0xF]);
+                builderAppend(ctx->map16[(value >> j) & 0xF]);
                 j -= 4;
             }
         }
@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
             char buffer[21];
 
             for (uint64_t i = 0; i < length; ++i) {
-                buffer[i] = map10[value % 10];
+                buffer[i] = ctx->map10[value % 10];
                 value /= 10;
             }
 
@@ -69,7 +69,7 @@ namespace OpenLogReplicator {
                 length = 1;
             } else {
                 while (value > 0) {
-                    buffer[length++] = map10[value % 10];
+                    buffer[length++] = ctx->map10[value % 10];
                     value /= 10;
                 }
             }
@@ -89,13 +89,13 @@ namespace OpenLogReplicator {
                 if (value < 0) {
                     value = -value;
                     while (value > 0) {
-                        buffer[length++] = map10[value % 10];
+                        buffer[length++] = ctx->map10[value % 10];
                         value /= 10;
                     }
                     buffer[length++] = '-';
                 } else {
                     while (value > 0) {
-                        buffer[length++] = map10[value % 10];
+                        buffer[length++] = ctx->map10[value % 10];
                         value /= 10;
                     }
                 }
