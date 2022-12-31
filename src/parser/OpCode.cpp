@@ -522,7 +522,7 @@ namespace OpenLogReplicator {
         redoLogRecord->cc = redoLogRecord->data[fieldPos + 23];
 
         if (fieldLength < 26 + (static_cast<uint64_t>(redoLogRecord->cc) + 7) / 8) {
-            WARNING("too short field KDO OpCode IRP for nulls: " << std::dec << fieldLength <<
+            WARNING("too short field KDO OpCode URP for nulls: " << std::dec << fieldLength <<
                     " (cc: " << std::dec << static_cast<uint64_t>(redoLogRecord->cc) << ") offset: " << redoLogRecord->dataOffset)
             return;
         }
