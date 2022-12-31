@@ -1,5 +1,5 @@
 /* Test client for Zero MQ
-   Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
+   Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
     ALL("OpenLogReplicator v." << std::dec << OpenLogReplicator_VERSION_MAJOR << "." << OpenLogReplicator_VERSION_MINOR <<  "." <<
             OpenLogReplicator_VERSION_PATCH <<
-            " StreamClient (C) 2018-2022 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information")
+            " StreamClient (C) 2018-2023 by Adam Leszczynski (aleszczynski@bersler.com), see LICENSE file for licensing information")
 
     if (argc < 4) {
         ERROR("use: ClientNetwork [network|zeromq] <uri> <database> {<scn>}")

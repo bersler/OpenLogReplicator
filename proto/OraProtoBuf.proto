@@ -1,4 +1,4 @@
-/* Copyright (C) 2018-2022 Adam Leszczynski (aleszczynski@bersler.com)
+/* Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
 
@@ -27,7 +27,7 @@ option java_outer_classname = "OpenLogReplicator";
 enum Op {
     BEGIN  = 0; //begin
     COMMIT = 1; //commit
-    INSERT = 2; //c 
+    INSERT = 2; //c
     UPDATE = 3; //u
     DELETE = 4; //d
     DDL = 5;    //ddl
