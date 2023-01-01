@@ -750,15 +750,15 @@ namespace OpenLogReplicator {
         const char* c_str = str.c_str();
         for (uint64_t i = 0; i < str.length(); ++i) {
             if (*c_str == '\t') {
-                ss << '\\t';
+                ss << "\\t";
             } else if (*c_str == '\r') {
-                ss << '\\r';
+                ss << "\\r";
             } else if (*c_str == '\n') {
-                ss << '\\n';
+                ss << "\\n";
             } else if (*c_str == '\b') {
-                ss << '\\b';
+                ss << "\\b";
             } else if (*c_str == '\f') {
-                ss << '\\f';
+                ss << "\\f";
             } else if (*c_str == '"' || *c_str == '\\') {
                 ss << '\\' << *c_str;
             } else if (*c_str < 32) {
