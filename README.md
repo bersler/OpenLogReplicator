@@ -4,14 +4,13 @@ Open Source Oracle database CDC written purely in C++. Reads transactions direct
 * flat file
 * network stream (plain TCP/IP or ZeroMQ)
 
-Updating Protobuf code:
-1. cd proto
-2. export PATH=/opt/protobuf/bin:$PATH
-3. protoc OraProtoBuf.proto --cpp_out=../src/main
+## Getting started
 
 Please refer to Docker scripts in https://github.com/bersler/OpenLogReplicator-docker for compilation and run scripts
 
-The documentation for the OpenLogReplicator program can be found on https://www.bersler.com/openlogreplicator/
+## Documentation
+
+Please refer to https://www.bersler.com/openlogreplicator/
 
 Please do not create issues claiming that the documentation is missing. It is still being created. This is not speed up the process, but will it will down it down. Instead of writing documenation and finishing the code the time is spent on answering questions.
 
@@ -26,3 +25,10 @@ The currently available chapters are:
 7. Contribution: https://www.bersler.com/openlogreplicator/contribution/
 
 I have also opened a gitter chat at https://gitter.im/bersler/OpenLogReplicator
+
+
+## Sponsoring the Project
+
+If you (or your company) are benefiting from the project and would like to support the contributor, kindly support the project.
+
+<a href="https://www.buymeacoffee.com/bersler" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 40px !important;width: 160px !important;" ></a>
