@@ -1,6 +1,7 @@
 1.0.1
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files
 - fix: incorrect message printed on error
+- fix: allow to use stop-* parameters without using schemales mode
 
 1.0.0
 - copy from 0.9.58

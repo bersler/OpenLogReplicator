@@ -314,7 +314,7 @@ namespace OpenLogReplicator {
             const char* debugOwner = nullptr;
             const char* debugTable = nullptr;
 
-            if (sourceJson.HasMember("debug") && !FLAG(REDO_FLAGS_SCHEMALESS)) {
+            if (sourceJson.HasMember("debug")) {
                 const rapidjson::Value& debugJson = Ctx::getJsonFieldO(fileName, sourceJson, "debug");
 
                 if (debugJson.HasMember("stop-log-switches")) {
@@ -332,7 +332,7 @@ namespace OpenLogReplicator {
                     INFO("will shutdown after " + std::to_string(ctx->stopTransactions) + " transactions")
                 }
 
-                if (debugJson.HasMember("owner") || debugJson.HasMember("table")) {
+                if (!FLAG(REDO_FLAGS_SCHEMALESS) && (debugJson.HasMember("owner") || debugJson.HasMember("table"))) {
                     debugOwner = Ctx::getJsonFieldS(fileName, SYS_USER_NAME_LENGTH, debugJson, "owner");
                     debugTable = Ctx::getJsonFieldS(fileName, SYS_OBJ_NAME_LENGTH, debugJson, "table");
                     INFO("will shutdown after committed DML in " << debugOwner << "." << debugTable)
