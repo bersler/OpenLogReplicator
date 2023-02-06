@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <list>
 #include <unistd.h>
 
-#include "../common/ConfigurationException.h"
 #include "../common/Ctx.h"
 #include "../common/DataException.h"
 #include "../common/OracleIncarnation.h"

@@ -83,7 +83,7 @@ namespace OpenLogReplicator {
 
         auto indexMapIt = lobData->indexMap.find(page);
         if (indexMapIt != lobData->indexMap.end())
-            throw RedoLogException("duplicate index LOBID: " + lobId.upper() + ", PAGE: " + std::to_string(page) + ", XID: " + xid.toString());
+            throw RedoLogException("duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) + ", xid: " + xid.toString());
 
         lobData->indexMap[pageNo] = page;
     }

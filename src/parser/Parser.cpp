@@ -104,7 +104,7 @@ namespace OpenLogReplicator {
         RedoLogRecord redoLogRecord[2];
         int64_t vectorCur = -1;
         int64_t vectorPrev = -1;
-        TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn)
+        TRACE(TRACE2_LWN, "LWN: analyze length: " << std::dec << lwnMember->length << " scn: " << lwnMember->scn << " subscn: " << lwnMember->subScn)
 
         uint32_t recordLength = ctx->read32(data);
         uint8_t vld = data[4];
@@ -587,7 +587,7 @@ namespace OpenLogReplicator {
         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         if (lob == nullptr) {
             TRACE(TRACE2_LOB, "LOB" <<
-                    " skip data-obj: " << std::dec << redoLogRecord1->dataObj <<
+                    " skip dataobj: " << std::dec << redoLogRecord1->dataObj <<
                     " xid: " << redoLogRecord1->xid)
             return;
         }
@@ -982,7 +982,7 @@ namespace OpenLogReplicator {
         OracleLob* lob = metadata->schema->checkLobIndexDict(dataObj);
         if (lob == nullptr) {
             TRACE(TRACE2_LOB, "LOB" <<
-                    " skip index data-obj: " << std::dec << dataObj << " (" << redoLogRecord1->dataObj << ", " << redoLogRecord2->dataObj << ")" <<
+                    " skip index dataobj: " << std::dec << dataObj << " (" << redoLogRecord1->dataObj << ", " << redoLogRecord2->dataObj << ")" <<
                     " xid: " << redoLogRecord1->xid)
 
             transaction->log(ctx, "idx1", redoLogRecord1);
@@ -1283,7 +1283,7 @@ namespace OpenLogReplicator {
                             lwnMember->block = currentBlock;
                             lwnMember->offset = blockOffset;
                             lwnMember->length = recordLength4;
-                            TRACE(TRACE2_LWN, "LWN: length: " << std::dec << recordLength4 << " scn: " << lwnMember->scn << " subScn: " << lwnMember->subScn)
+                            TRACE(TRACE2_LWN, "LWN: length: " << std::dec << recordLength4 << " scn: " << lwnMember->scn << " subscn: " << lwnMember->subScn)
 
                             uint64_t lwnPos = lwnRecords++;
                             if (lwnPos >= MAX_RECORDS_IN_LWN)

@@ -233,10 +233,10 @@ namespace OpenLogReplicator {
                         ":" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord2->fb) << " " <<
                         " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
                         " scn: " << std::dec << redoLogRecord1->scn <<
-                        " subScn: " << std::dec << redoLogRecord1->subScn <<
-                        " scnRecord: " << std::dec << redoLogRecord1->scnRecord <<
+                        " subscn: " << std::dec << redoLogRecord1->subScn <<
+                        " scnrecord: " << std::dec << redoLogRecord1->scnRecord <<
                         " obj: " << std::dec << redoLogRecord1->obj <<
-                        " dataObj: " << std::dec << redoLogRecord1->dataObj <<
+                        " dataobj: " << std::dec << redoLogRecord1->dataObj <<
                         " flg1: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->flg <<
                         " flg2: 0x" << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord2->flg <<
                         " uba1: " << PRINTUBA(redoLogRecord1->uba) <<
@@ -289,7 +289,7 @@ namespace OpenLogReplicator {
                                     " page: " << std::dec << redoLogRecord1->lobPageNo <<
                                     " col: " << lob->intCol <<
                                     " table: " << lob->table->owner << "." << lob->table->name <<
-                                    " lObj: " << lob->lObj)
+                                    " lobj: " << lob->lObj)
                         }
                     }
                     break;
@@ -337,7 +337,7 @@ namespace OpenLogReplicator {
                                 " page: " << std::dec << redoLogRecord2->lobPageNo <<
                                 " col: " << lob->intCol <<
                                 " table: " << lob->table->owner << "." << lob->table->name <<
-                                " lObj: " << lob->lObj <<
+                                " lobj: " << lob->lObj <<
                                 " - INDEX:" << pages.str() <<
                                 " PAGES: " << std::dec << redoLogRecord2->lobLengthPages <<
                                 " REST: " << redoLogRecord2->lobLengthRest)

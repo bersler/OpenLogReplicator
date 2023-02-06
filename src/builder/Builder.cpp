@@ -660,7 +660,7 @@ namespace OpenLogReplicator {
                     colNums = nullptr;
                 }
                 if (colShift >= MAX_NO_COLUMNS) {
-                    WARNING("table: [OBJ: " << redoLogRecord1p->obj << ", DATAOBJ: " << redoLogRecord1p->dataObj << "]: invalid column shift: (" << std::dec <<
+                    WARNING("table: [obj: " << redoLogRecord1p->obj << ", dataobj: " << redoLogRecord1p->dataObj << "]: invalid column shift: (" << std::dec <<
                             colShift << "), before: " << std::dec << redoLogRecord1p->suppLogBefore << " offset: " << redoLogRecord1p->dataOffset <<
                             " xid: " << lastXid)
                     break;
@@ -692,7 +692,7 @@ namespace OpenLogReplicator {
                                     redoLogRecord1p->rowData << "-" << redoLogRecord1p->fieldCnt << " offset: " << redoLogRecord1p->dataOffset <<
                                     " xid: " << lastXid)
                         } else {
-                            WARNING("table: [OBJ: " << redoLogRecord1p->obj << ", DATAOBJ: " << redoLogRecord1p->dataObj << "]: out of columns (Undo): " <<
+                            WARNING("table: [obj: " << redoLogRecord1p->obj << ", dataobj: " << redoLogRecord1p->dataObj << "]: out of columns (Undo): " <<
                                     std::dec << colNum << "/" << static_cast<uint64_t>(redoLogRecord1p->cc) << ", " << redoLogRecord1p->sizeDelt << ", " <<
                                     fieldNum << "-" << redoLogRecord1p->rowData << "-" << redoLogRecord1p->fieldCnt << " offset: " <<
                                     redoLogRecord1p->dataOffset << " xid: " << lastXid)
@@ -717,7 +717,7 @@ namespace OpenLogReplicator {
                         }
                     } else {
                         if (colNum >= MAX_NO_COLUMNS) {
-                            WARNING("table: [OBJ: " << redoLogRecord1p->obj << ", DATAOBJ: " << redoLogRecord1p->dataObj <<
+                            WARNING("table: [obj: " << redoLogRecord1p->obj << ", dataobj: " << redoLogRecord1p->dataObj <<
                                     "]: referring to invalid column id(" << std::dec << colNum << ") offset: " << redoLogRecord1p->dataOffset <<
                                     " xid: " << lastXid)
                             break;
@@ -764,7 +764,7 @@ namespace OpenLogReplicator {
                                     std::to_string(redoLogRecord1p->suppLogRowData) + "-" + std::to_string(redoLogRecord1p->fieldCnt) + " offset: " +
                                     std::to_string(redoLogRecord1p->dataOffset));
                         else
-                            throw RuntimeException("table: [OBJ: " + std::to_string(redoLogRecord1p->obj) + ", DATAOBJ: " +
+                            throw RuntimeException("table: [obj: " + std::to_string(redoLogRecord1p->obj) + ", dataobj: " +
                                     std::to_string(redoLogRecord1p->dataObj) + "]: out of columns (Supp): " + std::to_string(colNum) + "/" +
                                     std::to_string(static_cast<uint64_t>(redoLogRecord1p->cc)) + ", " + std::to_string(redoLogRecord1p->sizeDelt) + ", " +
                                     std::to_string(fieldNum) + "-" + std::to_string(redoLogRecord1p->suppLogRowData) + "-" +
@@ -784,7 +784,7 @@ namespace OpenLogReplicator {
                         }
                     } else {
                         if (colNum >= MAX_NO_COLUMNS) {
-                            WARNING("table: [OBJ: " << redoLogRecord1p->obj << ", DATAOBJ: " << redoLogRecord1p->dataObj <<
+                            WARNING("table: [obj: " << redoLogRecord1p->obj << ", dataobj: " << redoLogRecord1p->dataObj <<
                                     "]: referring to invalid column id(" << std::dec << colNum << ") offset: " << redoLogRecord1p->dataOffset <<
                                     " xid: " << lastXid )
                             break;
@@ -846,7 +846,7 @@ namespace OpenLogReplicator {
                 }
                 if (colShift >= MAX_NO_COLUMNS) {
                     uint16_t shift = ctx->read16(colNums);
-                    WARNING("table: [OBJ: " << redoLogRecord2p->obj << ", DATAOBJ: " << redoLogRecord2p->dataObj << "]: invalid column shift: (" << std::dec <<
+                    WARNING("table: [obj: " << redoLogRecord2p->obj << ", dataobj: " << redoLogRecord2p->dataObj << "]: invalid column shift: (" << std::dec <<
                             colShift << "), after: " << std::dec << redoLogRecord2p->suppLogAfter << " columns: " << std::dec << shift << " offset: " <<
                             redoLogRecord2p->dataOffset << " xid: " << lastXid)
                     break;
@@ -873,7 +873,7 @@ namespace OpenLogReplicator {
                                     fieldNum << "-" << redoLogRecord2p->rowData << "-" << redoLogRecord2p->fieldCnt << " offset: " <<
                                     redoLogRecord2p->dataOffset << " xid: " << lastXid)
                         } else {
-                            WARNING("table: [OBJ: " << redoLogRecord2p->obj << ", DATAOBJ: " << redoLogRecord2p->dataObj << "]: out of columns (Redo): " <<
+                            WARNING("table: [obj: " << redoLogRecord2p->obj << ", dataobj: " << redoLogRecord2p->dataObj << "]: out of columns (Redo): " <<
                                     std::dec << colNum << "/" << static_cast<uint64_t>(redoLogRecord2p->cc) << ", " << redoLogRecord2p->sizeDelt << ", " <<
                                     fieldNum << ", " << fieldNum << "-" << redoLogRecord2p->rowData << "-" << redoLogRecord2p->fieldCnt << " offset: " <<
                                     redoLogRecord2p->dataOffset << " xid: " << lastXid)
@@ -906,7 +906,7 @@ namespace OpenLogReplicator {
                         }
                     } else {
                         if (colNum >= MAX_NO_COLUMNS) {
-                            WARNING("table: [OBJ: " << redoLogRecord2p->obj << ", DATAOBJ: " << redoLogRecord2p->dataObj <<
+                            WARNING("table: [obj: " << redoLogRecord2p->obj << ", dataobj: " << redoLogRecord2p->dataObj <<
                                     "]: referring to invalid column id(" << std::dec << colNum << ") offset: " << redoLogRecord2p->dataOffset <<
                                     " xid: " << lastXid)
                             break;
@@ -1054,7 +1054,7 @@ namespace OpenLogReplicator {
                     }
                 }
             } else {
-                INFO("DML: tab: [OBJ: " << redoLogRecord1->obj << ", DATAOBJ: " << redoLogRecord1->dataObj << "] type: " << type <<
+                INFO("DML: tab: [obj: " << redoLogRecord1->obj << ", dataobj: " << redoLogRecord1->dataObj << "] type: " << type <<
                         " columns: " << valuesMax)
 
                 baseMax = valuesMax >> 6;

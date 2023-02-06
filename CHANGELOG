@@ -3,6 +3,7 @@
 - fix: incorrect message printed on error
 - fix: allow to use stop-* parameters without using schemales mode
 - enhancement: added consistency checks for experimental LOB support
+- fix: standardization of output messages
 
 1.0.0
 - copy from 0.9.58

@@ -20,7 +20,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <list>
 #include <regex>
 
-#include "../common/ConfigurationException.h"
 #include "../common/Ctx.h"
 #include "../common/DataException.h"
 #include "../common/OracleColumn.h"
@@ -1847,12 +1846,12 @@ namespace OpenLogReplicator {
 
     void Schema::addTableToDict(OracleTable* table) {
         if (tableMap.find(table->obj) != tableMap.end())
-            throw ConfigurationException("can't add table (obj: " + std::to_string(table->obj) + ", dataObj: " +
+            throw DataException("can't add table (obj: " + std::to_string(table->obj) + ", dataobj: " +
                     std::to_string(table->dataObj) + ")");
         tableMap[table->obj] = table;
 
         if (tablePartitionMap.find(table->obj) != tablePartitionMap.end())
-            throw ConfigurationException("can't add partition (obj: " + std::to_string(table->obj) + ", dataObj: " +
+            throw DataException("can't add partition (obj: " + std::to_string(table->obj) + ", dataobj: " +
                     std::to_string(table->dataObj) + ")");
         tablePartitionMap[table->obj] = table;
 
@@ -1861,7 +1860,7 @@ namespace OpenLogReplicator {
             typeDataObj dataObj = objx & 0xFFFFFFFF;
 
             if (tablePartitionMap.find(obj) != tablePartitionMap.end())
-                throw ConfigurationException("can't add partition element (obj: " + std::to_string(obj) + ", dataObj: " +
+                throw DataException("can't add partition element (obj: " + std::to_string(obj) + ", dataobj: " +
                         std::to_string(dataObj) + ")");
             tablePartitionMap[obj] = table;
         }
@@ -1869,7 +1868,7 @@ namespace OpenLogReplicator {
 
     void Schema::removeTableFromDict(OracleTable* table) {
         if (tablePartitionMap.find(table->obj) == tablePartitionMap.end())
-            throw ConfigurationException("can't remove partition (obj: " + std::to_string(table->obj) + ", dataObj: " +
+            throw DataException("can't remove partition (obj: " + std::to_string(table->obj) + ", dataobj: " +
                     std::to_string(table->dataObj) + ")");
         tablePartitionMap.erase(table->obj);
 
@@ -1878,33 +1877,33 @@ namespace OpenLogReplicator {
             typeDataObj dataObj = objx & 0xFFFFFFFF;
 
             if (tablePartitionMap.find(obj) == tablePartitionMap.end())
-                throw ConfigurationException("can't remove table partition element (obj: " + std::to_string(obj) + ", dataObj: " +
+                throw DataException("can't remove table partition element (obj: " + std::to_string(obj) + ", dataobj: " +
                         std::to_string(dataObj) + ")");
             tablePartitionMap.erase(obj);
         }
 
         for (OracleLob* lob : table->lobs) {
             if (lobMap.find(lob->lObj) == lobMap.end())
-                throw ConfigurationException("can't remove lob element (obj: " + std::to_string(lob->obj) + ", intCol: " +
-                        std::to_string(lob->intCol) + ", lObjL " + std::to_string(lob->lObj) + ")");
+                throw DataException("can't remove lob element (obj: " + std::to_string(lob->obj) + ", intcol: " +
+                        std::to_string(lob->intCol) + ", lobj: " + std::to_string(lob->lObj) + ")");
             lobMap.erase(lob->lObj);
         }
 
         for (typeDataObj dataObj : table->lobPartitions) {
             if (lobPartitionMap.find(dataObj) == lobPartitionMap.end())
-                throw ConfigurationException("can't remove lob partition element (data-obj: " + std::to_string(dataObj) + ")");
+                throw DataException("can't remove lob partition element (dataobj: " + std::to_string(dataObj) + ")");
             lobPartitionMap.erase(dataObj);
         }
 
         for (typeDataObj dataObj : table->lobIndexes) {
             if (lobIndexMap.find(dataObj) == lobIndexMap.end())
-                throw ConfigurationException("can't remove lob index element (data-obj: " + std::to_string(dataObj) + ")");
+                throw DataException("can't remove lob index element (dataobj: " + std::to_string(dataObj) + ")");
             lobIndexMap.erase(dataObj);
             lobPageMap.erase(dataObj);
         }
 
         if (tableMap.find(table->obj) == tableMap.end())
-            throw ConfigurationException("can't remove table (data-obj: " + std::to_string(table->obj) + ", dataObj: " +
+            throw DataException("can't remove table (obj: " + std::to_string(table->obj) + ", dataobj: " +
                     std::to_string(table->dataObj) + ")");
         tableMap.erase(table->obj);
         delete table;
@@ -1912,13 +1911,13 @@ namespace OpenLogReplicator {
 
     void Schema::addLobToDict(OracleLob* lob, uint16_t pageSize) {
         if (lobMap.find(lob->lObj) != lobMap.end())
-            throw ConfigurationException("can't add lob (obj: " + std::to_string(lob->obj) + ", intCol: " + std::to_string(lob->intCol) +
-                    ", lObj: " + std::to_string(lob->lObj) + ")");
+            throw DataException("can't add lob (obj: " + std::to_string(lob->obj) + ", intcol: " + std::to_string(lob->intCol) +
+                    ", lobj: " + std::to_string(lob->lObj) + ")");
         lobMap[lob->lObj] = lob;
 
         if (lobPartitionMap.find(lob->dataObj) != lobPartitionMap.end())
-            throw ConfigurationException("can't add lob partition (obj: " + std::to_string(lob->obj) + ", intCol: " +
-                    std::to_string(lob->intCol) + ", lObj: " + std::to_string(lob->lObj) + ")");
+            throw DataException("can't add lob partition (obj: " + std::to_string(lob->obj) + ", intcol: " +
+                    std::to_string(lob->intCol) + ", lobj: " + std::to_string(lob->lObj) + ")");
         schemaTable->addLobPartition(lob->dataObj);
         lobPartitionMap[lob->dataObj] = lob;
         lobPageMap[lob->lObj] = pageSize;
