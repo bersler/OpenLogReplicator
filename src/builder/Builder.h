@@ -522,6 +522,12 @@ namespace OpenLogReplicator {
                 }
             // in-row
             } else {
+                if (length < 23) {
+                    WARNING("incorrect LOB (in-value) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " << std::dec <<
+                            dataObj << " - too short")
+                    WARNING("dump LOB data: " << dumpLob(data, length))
+                    return;
+                }
                 uint16_t bodyLength = ctx->read16Big(data + 20);
                 if (length != static_cast<uint64_t>(bodyLength + 20)) {
                     WARNING("incorrect LOB (in-value) xid: " << lastXid << " data-obj: " << std::dec << dataObj)
@@ -536,6 +542,12 @@ namespace OpenLogReplicator {
 
                 // in-index
                 if ((flg2 & 0x0400) == 0x0400) {
+                    if (length < 36) {
+                        WARNING("incorrect LOB (in-index1) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " << std::dec <<
+                                dataObj << " - too short")
+                        WARNING("dump LOB data: " << dumpLob(data, length))
+                        return;
+                    }
                     uint32_t pageCnt = ctx->read32Big(data + 24);
                     uint16_t sizeRest = ctx->read16Big(data + 28);
                     dataOffset = 36;
@@ -554,8 +566,13 @@ namespace OpenLogReplicator {
 
                     for (uint64_t j = 0; j < jMax; ++j) {
                         typeDba page = 0;
-
                         if (dataOffset < length) {
+                            if (length < dataOffset + 4) {
+                                WARNING("incorrect LOB (in-index2) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " <<
+                                                                               std::dec << dataObj << " - too short")
+                                WARNING("dump LOB data: " << dumpLob(data, length))
+                                return;
+                            }
                             page = ctx->read32Big(data + dataOffset);
                         } else {
                             // rest of data in LOB index
@@ -606,6 +623,12 @@ namespace OpenLogReplicator {
                         return;
                     }
 
+                    if (length < 34) {
+                        WARNING("incorrect LOB (in-value) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " << std::dec <<
+                                dataObj << " - too short")
+                        WARNING("dump LOB data: " << dumpLob(data, length))
+                        return;
+                    }
                     uint32_t zero1 = ctx->read32Big(data + 24);
                     chunkLength = ctx->read16Big(data + 28);
                     uint32_t zero2 = ctx->read32Big(data + 30);
@@ -620,6 +643,13 @@ namespace OpenLogReplicator {
                     if (chunkLength == 0) {
                         //null value
                     } else {
+                        if (length < 36 + chunkLength) {
+                            WARNING("incorrect LOB (read value) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " <<
+                                    std::dec << dataObj << " - too short")
+                            WARNING("dump LOB data: " << dumpLob(data, length))
+                            return;
+                        }
+
                         if (isClob) {
                             parseString(data + 36, chunkLength, charsetId, false);
                         } else {
@@ -633,6 +663,13 @@ namespace OpenLogReplicator {
                         WARNING("incorrect LOB (new in-value) xid: " << lastXid << " bodyLength: " << std::dec << bodyLength << " data-obj: " <<
                                 std::dec << dataObj)
                         WARNING("dump LOB: " << lobId.upper() << " data: " << dumpLob(data, length))
+                        return;
+                    }
+
+                    if (length < 32) {
+                        WARNING("incorrect LOB (read value) data xid: " << lastXid << " length: " << std::to_string(length) << " data-obj: " <<
+                                std::dec << dataObj << " - too short")
+                        WARNING("dump LOB data: " << dumpLob(data, length))
                         return;
                     }
 
@@ -664,6 +701,13 @@ namespace OpenLogReplicator {
                         if (chunkLength == 0) {
                             //null value
                         } else {
+                            if (dataOffset + chunkLength < length) {
+                                WARNING("incorrect LOB (read value data) data xid: " << lastXid << " length: " << std::to_string(length) <<
+                                        " data-obj: " << std::dec << dataObj << " - too short")
+                                WARNING("dump LOB data: " << dumpLob(data, length))
+                                return;
+                            }
+
                             if (isClob) {
                                 parseString(data + dataOffset, chunkLength, charsetId, false);
                             } else {
@@ -675,6 +719,13 @@ namespace OpenLogReplicator {
                         }
                     // index
                     } else {
+                        if (dataOffset + 1 < length) {
+                            WARNING("incorrect LOB (read value index1) data xid: " << lastXid << " length: " << std::to_string(length) <<
+                                                                                 " data-obj: " << std::dec << dataObj << " - too short")
+                            WARNING("dump LOB data: " << dumpLob(data, length))
+                            return;
+                        }
+
                         uint8_t lobPages = data[dataOffset++] + 1;
 
                         auto lobsIt = lobCtx->lobs.find(lobId);
@@ -687,14 +738,33 @@ namespace OpenLogReplicator {
                         LobData* lobData = lobsIt->second;
 
                         for (uint64_t i = 0; i < lobPages; ++i) {
+                            if (dataOffset + 5 < length) {
+                                WARNING("incorrect LOB (read value index2) data xid: " << lastXid << " length: " << std::to_string(length) <<
+                                        " data-obj: " << std::dec << dataObj << " - too short")
+                                WARNING("dump LOB data: " << dumpLob(data, length))
+                                return;
+                            }
+
                             uint8_t flg4 = data[dataOffset++];
                             typeDba page = ctx->read32Big(data + dataOffset);
                             dataOffset += 4;
 
                             uint64_t pageCnt = 0;
                             if ((flg4 & 0xF0) == 0x00) {
+                                if (dataOffset + 1 < length) {
+                                    WARNING("incorrect LOB (read value index3) data xid: " << lastXid << " length: " << std::to_string(length) <<
+                                            " data-obj: " << std::dec << dataObj << " - too short")
+                                    WARNING("dump LOB data: " << dumpLob(data, length))
+                                    return;
+                                }
                                 pageCnt = data[dataOffset++];
                             } else if ((flg4 & 0xF0) == 0x20) {
+                                if (dataOffset + 2 < length) {
+                                    WARNING("incorrect LOB (read value index4) data xid: " << lastXid << " length: " << std::to_string(length) <<
+                                            " data-obj: " << std::dec << dataObj << " - too short")
+                                    WARNING("dump LOB data: " << dumpLob(data, length))
+                                    return;
+                                }
                                 pageCnt = ctx->read16Big(data + dataOffset);
                                 dataOffset += 2;
                             } else {
