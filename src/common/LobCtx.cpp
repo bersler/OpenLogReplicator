@@ -71,7 +71,7 @@ namespace OpenLogReplicator {
         lobData->sizeRest = sizeRest;
     }
 
-    void LobCtx::setPage(typeLobId lobId, typeDba page, uint32_t  pageNo, typeXid xid) {
+    void LobCtx::setPage(typeLobId lobId, typeDba page, uint32_t pageNo, typeXid xid) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {

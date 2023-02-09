@@ -25,7 +25,7 @@ namespace OpenLogReplicator {
         std::ostringstream ss;
         ss << "O scn: " << PRINTSCN64(redo.scnRecord) <<
                 " scn: " << std::dec << redo.scn <<
-                " subscn: " << std::dec << redo.subScn <<
+                " subScn: " << std::dec << redo.subScn <<
                 " xid: " << redo.xid <<
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redo.opCode <<
                 " cls: " << std::dec << redo.cls <<
@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
                 " flgRecord: " << std::dec << redo.flgRecord <<
 //                " vectorNo: " << std::dec << vectorNo <<
                 " robj: " << std::dec << redo.recordObj <<
-                " rdataobj: " << std::dec << redo.recordDataObj <<
+                " rdataObj: " << std::dec << redo.recordDataObj <<
 //                " scn: " << PRINTSCN64(scn) <<
                 " nrow: " << std::dec << static_cast<uint64_t>(redo.nrow) <<
                 " afn: " << std::dec << redo.afn <<

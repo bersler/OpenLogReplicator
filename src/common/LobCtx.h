@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         void checkOrphanedLobs(Ctx* ctx, typeLobId lobId);
         void addLob(typeLobId lobId, typeDba page, uint8_t* data);
         void setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest);
-        void setPage(typeLobId lobId, typeDba page, uint32_t  pageNo, typeXid xid);
+        void setPage(typeLobId lobId, typeDba page, uint32_t pageNo, typeXid xid);
         void purge();
     };
 }
