@@ -644,7 +644,7 @@ namespace OpenLogReplicator {
                     if (chunkLength == 0) {
                         //null value
                     } else {
-                        if (length < 36 + chunkLength) {
+                        if (length < static_cast<uint64_t>(chunkLength) + 36) {
                             WARNING("incorrect LOB (read value) data xid: " << lastXid << " length: " << std::to_string(length) << " dataobj: " <<
                                     std::dec << dataObj << " - too short")
                             WARNING("dump LOB data: " << dumpLob(data, length))
