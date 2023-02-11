@@ -106,7 +106,7 @@ namespace OpenLogReplicator {
             usleep(1000);
         }
 
-        while (readers.size() > 0) {
+        while (!readers.empty()) {
             Reader* reader = *(readers.begin());
             ctx->finishThread(reader);
             readers.erase(reader);

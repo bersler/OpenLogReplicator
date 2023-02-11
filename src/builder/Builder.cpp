@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
             lastTime(0),
             lastScn(0),
             lastSequence(0),
-            lastXid(static_cast<uint64_t>(0)),
+            lastXid(typeXid()),
             valuesMax(0),
             mergesMax(0),
             id(0),
@@ -65,8 +65,8 @@ namespace OpenLogReplicator {
             compressedAfter(false),
             systemTransaction(nullptr),
             buffersAllocated(0),
-            firstBuffer(nullptr),
-            lastBuffer(nullptr) {
+            firstBuilderQueue(nullptr),
+            lastBuilderQueue(nullptr) {
         memset(reinterpret_cast<void*>(valuesSet), 0, sizeof(valuesSet));
         memset(reinterpret_cast<void*>(valuesMerge), 0, sizeof(valuesMerge));
         memset(reinterpret_cast<void*>(values), 0, sizeof(values));
@@ -77,10 +77,10 @@ namespace OpenLogReplicator {
         valuesRelease();
         tables.clear();
 
-        while (firstBuffer != nullptr) {
-            BuilderQueue* nextBuffer = firstBuffer->next;
-            ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(firstBuffer), true);
-            firstBuffer = nextBuffer;
+        while (firstBuilderQueue != nullptr) {
+            BuilderQueue* nextBuffer = firstBuilderQueue->next;
+            ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(firstBuilderQueue), true);
+            firstBuilderQueue = nextBuffer;
             --buffersAllocated;
         }
 
@@ -97,12 +97,12 @@ namespace OpenLogReplicator {
 
     void Builder::initialize() {
         buffersAllocated = 1;
-        firstBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk("builder", true));
-        firstBuffer->id = 0;
-        firstBuffer->next = nullptr;
-        firstBuffer->data = reinterpret_cast<uint8_t*>(firstBuffer) + sizeof(struct BuilderQueue);
-        firstBuffer->length = 0;
-        lastBuffer = firstBuffer;
+        firstBuilderQueue = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk("builder", true));
+        firstBuilderQueue->id = 0;
+        firstBuilderQueue->next = nullptr;
+        firstBuilderQueue->data = reinterpret_cast<uint8_t*>(firstBuilderQueue) + sizeof(struct BuilderQueue);
+        firstBuilderQueue->length = 0;
+        lastBuilderQueue = firstBuilderQueue;
 
         valueBuffer = new char[VALUE_BUFFER_MIN];
         valueBufferLength = VALUE_BUFFER_MIN;
@@ -396,7 +396,7 @@ namespace OpenLogReplicator {
     void Builder::builderRotate(bool copy) {
         auto nextBuffer = reinterpret_cast<BuilderQueue*>(ctx->getMemoryChunk("builder", true));
         nextBuffer->next = nullptr;
-        nextBuffer->id = lastBuffer->id + 1;
+        nextBuffer->id = lastBuilderQueue->id + 1;
         nextBuffer->data = reinterpret_cast<uint8_t*>(nextBuffer) + sizeof(struct BuilderQueue);
 
         // Message could potentially fit in one buffer
@@ -405,15 +405,15 @@ namespace OpenLogReplicator {
             msg = reinterpret_cast<BuilderMsg*>(nextBuffer->data);
             msg->data = nextBuffer->data + sizeof(struct BuilderMsg);
             nextBuffer->length = sizeof(struct BuilderMsg) + messageLength;
-            lastBuffer->length -= sizeof(struct BuilderMsg) + messageLength;
+            lastBuilderQueue->length -= sizeof(struct BuilderMsg) + messageLength;
         } else
             nextBuffer->length = 0;
 
         {
             std::unique_lock<std::mutex> lck(mtx);
-            lastBuffer->next = nextBuffer;
+            lastBuilderQueue->next = nextBuffer;
             ++buffersAllocated;
-            lastBuffer = nextBuffer;
+            lastBuilderQueue = nextBuffer;
         }
     }
 
@@ -1326,21 +1326,21 @@ namespace OpenLogReplicator {
     }
 
     void Builder::releaseBuffers(uint64_t maxId) {
-        BuilderQueue* tmpFirstBuffer = nullptr;
+        BuilderQueue* builderQueue = nullptr;
         {
             std::unique_lock<std::mutex> lck(mtx);
-            tmpFirstBuffer = firstBuffer;
-            while (firstBuffer->id < maxId) {
-                firstBuffer = firstBuffer->next;
+            builderQueue = firstBuilderQueue;
+            while (firstBuilderQueue->id < maxId) {
+                firstBuilderQueue = firstBuilderQueue->next;
                 --buffersAllocated;
             }
         }
 
-        if (tmpFirstBuffer != nullptr) {
-            while (tmpFirstBuffer->id < maxId) {
-                BuilderQueue* nextBuffer = tmpFirstBuffer->next;
-                ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(tmpFirstBuffer), true);
-                tmpFirstBuffer = nextBuffer;
+        if (builderQueue != nullptr) {
+            while (builderQueue->id < maxId) {
+                BuilderQueue* nextBuffer = builderQueue->next;
+                ctx->freeMemoryChunk("builder", reinterpret_cast<uint8_t*>(builderQueue), true);
+                builderQueue = nextBuffer;
             }
         }
     }

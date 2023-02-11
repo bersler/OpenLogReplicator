@@ -203,23 +203,23 @@ namespace OpenLogReplicator {
         };
 
         void builderShift(uint64_t bytes, bool copy) {
-            lastBuffer->length += bytes;
+            lastBuilderQueue->length += bytes;
 
-            if (lastBuffer->length >= OUTPUT_BUFFER_DATA_SIZE)
+            if (lastBuilderQueue->length >= OUTPUT_BUFFER_DATA_SIZE)
                 builderRotate(copy);
         };
 
         void builderShiftFast(uint64_t bytes) const {
-            lastBuffer->length += bytes;
+            lastBuilderQueue->length += bytes;
         };
 
         void builderBegin(typeObj obj) {
             messageLength = 0;
 
-            if (lastBuffer->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
+            if (lastBuilderQueue->length + sizeof(struct BuilderMsg) >= OUTPUT_BUFFER_DATA_SIZE)
                 builderRotate(true);
 
-            msg = reinterpret_cast<BuilderMsg*>(lastBuffer->data + lastBuffer->length);
+            msg = reinterpret_cast<BuilderMsg*>(lastBuilderQueue->data + lastBuilderQueue->length);
             builderShift(sizeof(struct BuilderMsg), true);
             msg->scn = lastScn;
             msg->sequence = lastSequence;
@@ -228,7 +228,7 @@ namespace OpenLogReplicator {
             msg->obj = obj;
             msg->pos = 0;
             msg->flags = 0;
-            msg->data = lastBuffer->data + lastBuffer->length;
+            msg->data = lastBuilderQueue->data + lastBuilderQueue->length;
         };
 
         void builderCommit(bool force) {
@@ -236,7 +236,7 @@ namespace OpenLogReplicator {
                 WARNING("output buffer - commit of empty transaction")
             }
 
-            msg->queueId = lastBuffer->id;
+            msg->queueId = lastBuilderQueue->id;
             builderShift((8 - (messageLength & 7)) & 7, false);
             unconfirmedLength += messageLength;
             msg->length = messageLength;
@@ -252,16 +252,16 @@ namespace OpenLogReplicator {
         };
 
         void builderAppend(char character) {
-            lastBuffer->data[lastBuffer->length] = character;
+            lastBuilderQueue->data[lastBuilderQueue->length] = character;
             ++messageLength;
             builderShift(1, true);
         };
 
         void builderAppend(const char* str, uint64_t length) {
-            if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
-                memcpy(reinterpret_cast<void*>(lastBuffer->data + lastBuffer->length),
+            if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(reinterpret_cast<void*>(lastBuilderQueue->data + lastBuilderQueue->length),
                        reinterpret_cast<const void*>(str), length);
-                lastBuffer->length += length;
+                lastBuilderQueue->length += length;
                 messageLength += length;
             } else {
                 for (uint64_t i = 0; i < length; ++i)
@@ -279,10 +279,10 @@ namespace OpenLogReplicator {
 
         void builderAppend(const std::string& str) {
             uint64_t length = str.length();
-            if (lastBuffer->length + length < OUTPUT_BUFFER_DATA_SIZE) {
-                memcpy(lastBuffer->data + lastBuffer->length,
+            if (lastBuilderQueue->length + length < OUTPUT_BUFFER_DATA_SIZE) {
+                memcpy(lastBuilderQueue->data + lastBuilderQueue->length,
                        reinterpret_cast<const void*>(str.c_str()), length);
-                lastBuffer->length += length;
+                lastBuilderQueue->length += length;
                 messageLength += length;
             } else {
                 const char* charstr = str.c_str();
@@ -907,8 +907,8 @@ namespace OpenLogReplicator {
     public:
         SystemTransaction* systemTransaction;
         uint64_t buffersAllocated;
-        BuilderQueue* firstBuffer;
-        BuilderQueue* lastBuffer;
+        BuilderQueue* firstBuilderQueue;
+        BuilderQueue* lastBuilderQueue;
 
         Builder(Ctx* newCtx, Locales* newLocales, Metadata* newMetadata, uint64_t newMessageFormat, uint64_t newRidFormat, uint64_t newXidFormat,
                 uint64_t newTimestampFormat, uint64_t newCharFormat, uint64_t newScnFormat, uint64_t newUnknownFormat, uint64_t newSchemaFormat,

@@ -407,15 +407,15 @@ namespace OpenLogReplicator {
         typeBlk maxNumBlock = actualRead / blockSize;
         typeBlk bufferScanBlock = bufferScan / blockSize;
         uint64_t goodBlocks = 0;
-        uint64_t tmpRet = REDO_OK;
+        uint64_t currentRet = REDO_OK;
 
         // Check which blocks are good
         for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-            tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
+            currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferScanBlock + numBlock,
                                       ctx->redoVerifyDelayUs == 0 || group == 0);
-            TRACE(TRACE2_DISK, "DISK: block: " << std::dec << (bufferScanBlock + numBlock) << " check: " << tmpRet)
+            TRACE(TRACE2_DISK, "DISK: block: " << std::dec << (bufferScanBlock + numBlock) << " check: " << currentRet)
 
-            if (tmpRet != REDO_OK)
+            if (currentRet != REDO_OK)
                 break;
             ++goodBlocks;
         }
@@ -433,19 +433,19 @@ namespace OpenLogReplicator {
         }
 
         // Treat bad blocks as empty
-        if (tmpRet == REDO_ERROR_CRC && ctx->redoVerifyDelayUs > 0 && group != 0)
-            tmpRet = REDO_EMPTY;
+        if (currentRet == REDO_ERROR_CRC && ctx->redoVerifyDelayUs > 0 && group != 0)
+            currentRet = REDO_EMPTY;
 
-        if (goodBlocks == 0 && tmpRet != REDO_OK && (tmpRet != REDO_EMPTY || group == 0)) {
-            ret = tmpRet;
+        if (goodBlocks == 0 && currentRet != REDO_OK && (currentRet != REDO_EMPTY || group == 0)) {
+            ret = currentRet;
             return false;
         }
 
         // Check for log switch
-        if (goodBlocks == 0 && tmpRet == REDO_EMPTY) {
-            tmpRet = reloadHeader();
-            if (tmpRet != REDO_OK) {
-                ret = tmpRet;
+        if (goodBlocks == 0 && currentRet == REDO_EMPTY) {
+            currentRet = reloadHeader();
+            if (currentRet != REDO_OK) {
+                ret = currentRet;
                 return false;
             }
             reachedZero = true;
@@ -473,7 +473,7 @@ namespace OpenLogReplicator {
         }
 
         // Batch mode with partial online redo log file
-        if (tmpRet == REDO_ERROR_SEQUENCE && group == 0) {
+        if (currentRet == REDO_ERROR_SEQUENCE && group == 0) {
             if (nextScnHeader != ZERO_SCN) {
                 ret = REDO_FINISHED;
                 nextScn = nextScnHeader;
@@ -545,27 +545,27 @@ namespace OpenLogReplicator {
             }
 
             readBlocks = true;
-            uint64_t tmpRet = REDO_OK;
+            uint64_t currentRet = REDO_OK;
             maxNumBlock = actualRead / blockSize;
             typeBlk bufferEndBlock = bufferEnd / blockSize;
 
             // Check which blocks are good
             for (uint64_t numBlock = 0; numBlock < maxNumBlock; ++numBlock) {
-                tmpRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
-                                          true);
-                TRACE(TRACE2_DISK, "DISK: block: " << std::dec << (bufferEndBlock + numBlock) << " check: " << tmpRet)
+                currentRet = checkBlockHeader(redoBufferList[redoBufferNum] + redoBufferPos + numBlock * blockSize, bufferEndBlock + numBlock,
+                                              true);
+                TRACE(TRACE2_DISK, "DISK: block: " << std::dec << (bufferEndBlock + numBlock) << " check: " << currentRet)
 
-                if (tmpRet != REDO_OK)
+                if (currentRet != REDO_OK)
                     break;
                 ++goodBlocks;
             }
 
             // Verify header for online redo logs after every successful read
-            if (tmpRet == REDO_OK && group > 0)
-                tmpRet = reloadHeader();
+            if (currentRet == REDO_OK && group > 0)
+                currentRet = reloadHeader();
 
-            if (tmpRet != REDO_OK) {
-                ret = tmpRet;
+            if (currentRet != REDO_OK) {
+                ret = currentRet;
                 return false;
             }
 
@@ -599,10 +599,10 @@ namespace OpenLogReplicator {
             if (status == READER_STATUS_CHECK) {
                 TRACE(TRACE2_FILE, "FILE: trying to open: " << fileName)
                 redoClose();
-                uint64_t tmpRet = redoOpen();
+                uint64_t currentRet = redoOpen();
                 {
                     std::unique_lock<std::mutex> lck(mtx);
-                    ret = tmpRet;
+                    ret = currentRet;
                     status = READER_STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }
@@ -616,8 +616,8 @@ namespace OpenLogReplicator {
 
                 sumRead = 0;
                 sumTime = 0;
-                uint64_t tmpRet = reloadHeader();
-                if (tmpRet == REDO_OK) {
+                uint64_t currentRet = reloadHeader();
+                if (currentRet == REDO_OK) {
                     bufferStart = blockSize * 2;
                     bufferEnd = blockSize * 2;
                 }
@@ -627,7 +627,7 @@ namespace OpenLogReplicator {
 
                 {
                     std::unique_lock<std::mutex> lck(mtx);
-                    ret = tmpRet;
+                    ret = currentRet;
                     status = READER_STATUS_SLEEPING;
                     condParserSleeping.notify_all();
                 }

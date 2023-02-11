@@ -37,7 +37,7 @@ namespace OpenLogReplicator {
         typeScn confirmedScn;
         uint64_t confirmedMessages;
         uint64_t sentMessages;
-        uint64_t tmpQueueSize;
+        uint64_t currentQueueSize;
         uint64_t maxQueueSize;
         BuilderMsg** queue;
         bool streaming;

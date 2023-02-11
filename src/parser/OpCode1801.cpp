@@ -39,12 +39,12 @@ namespace OpenLogReplicator {
                                      ctx->read16(redoLogRecord->data + fieldPos + 6),
                                      ctx->read32(redoLogRecord->data + fieldPos + 8));
         // uint16_t type = ctx->read16(redoLogRecord->ctx + fieldPos + 12);
-        uint16_t tmp = ctx->read16(redoLogRecord->data + fieldPos + 16);
+        uint16_t ddlType = ctx->read16(redoLogRecord->data + fieldPos + 16);
         // uint16_t seq = ctx->read16(redoLogRecord->ctx + fieldPos + 18);
         // uint16_t cnt = ctx->read16(redoLogRecord->ctx + fieldPos + 20);
 
         // Temporary object
-        if (tmp != 4 && tmp != 5 && tmp != 6 && tmp != 8 && tmp != 9 && tmp != 10)
+        if (ddlType != 4 && ddlType != 5 && ddlType != 6 && ddlType != 8 && ddlType != 9 && ddlType != 10)
             validDdl = true;
 
         if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x180102))

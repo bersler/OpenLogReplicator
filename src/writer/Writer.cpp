@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
             confirmedScn(ZERO_SCN),
             confirmedMessages(0),
             sentMessages(0),
-            tmpQueueSize(0),
+            currentQueueSize(0),
             maxQueueSize(0),
             queue(nullptr),
             streaming(false) {
@@ -62,20 +62,20 @@ namespace OpenLogReplicator {
     void Writer::createMessage(BuilderMsg* msg) {
         ++sentMessages;
 
-        queue[tmpQueueSize++] = msg;
-        if (tmpQueueSize > maxQueueSize)
-            maxQueueSize = tmpQueueSize;
+        queue[currentQueueSize++] = msg;
+        if (currentQueueSize > maxQueueSize)
+            maxQueueSize = currentQueueSize;
     }
 
     void Writer::sortQueue() {
-        if (tmpQueueSize == 0)
+        if (currentQueueSize == 0)
             return;
 
         BuilderMsg** oldQueue = queue;
         queue = new BuilderMsg*[ctx->queueSize];
-        uint64_t oldQueueSize = tmpQueueSize;
+        uint64_t oldQueueSize = currentQueueSize;
 
-        for (uint64_t newId = 0 ; newId < tmpQueueSize; ++newId) {
+        for (uint64_t newId = 0 ; newId < currentQueueSize; ++newId) {
             queue[newId] = oldQueue[0];
             uint64_t i = 0;
             --oldQueueSize;
@@ -103,7 +103,7 @@ namespace OpenLogReplicator {
 
     void Writer::confirmMessage(BuilderMsg* msg) {
         if (msg == nullptr) {
-            if (tmpQueueSize == 0) {
+            if (currentQueueSize == 0) {
                 WARNING("trying to confirm empty message")
                 return;
             }
@@ -119,16 +119,16 @@ namespace OpenLogReplicator {
 
         uint64_t maxId = 0;
         {
-            while (tmpQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_CONFIRMED) != 0) {
+            while (currentQueueSize > 0 && (queue[0]->flags & OUTPUT_BUFFER_CONFIRMED) != 0) {
                 maxId = queue[0]->queueId;
                 confirmedScn = queue[0]->scn;
 
-                if (--tmpQueueSize == 0)
+                if (--currentQueueSize == 0)
                     break;
 
                 uint64_t i = 0;
-                while (i < tmpQueueSize) {
-                    if (i * 2 + 2 < tmpQueueSize && queue[i * 2 + 2]->id < queue[tmpQueueSize]->id) {
+                while (i < currentQueueSize) {
+                    if (i * 2 + 2 < currentQueueSize && queue[i * 2 + 2]->id < queue[currentQueueSize]->id) {
                         if (queue[i * 2 + 1]->id < queue[i * 2 + 2]->id) {
                             queue[i] = queue[i * 2 + 1];
                             i = i * 2 + 1;
@@ -136,13 +136,13 @@ namespace OpenLogReplicator {
                             queue[i] = queue[i * 2 + 2];
                             i = i * 2 + 2;
                         }
-                    } else if (i * 2 + 1 < tmpQueueSize && queue[i * 2 + 1]->id < queue[tmpQueueSize]->id) {
+                    } else if (i * 2 + 1 < currentQueueSize && queue[i * 2 + 1]->id < queue[currentQueueSize]->id) {
                         queue[i] = queue[i * 2 + 1];
                         i = i * 2 + 1;
                     } else
                         break;
                 }
-                queue[i] = queue[tmpQueueSize];
+                queue[i] = queue[currentQueueSize];
             }
         }
 
@@ -186,10 +186,10 @@ namespace OpenLogReplicator {
         readCheckpoint();
 
         BuilderMsg* msg;
-        BuilderQueue* curBuffer = builder->firstBuffer;
-        uint64_t curLength = 0;
-        uint64_t tmpLength = 0;
-        tmpQueueSize = 0;
+        BuilderQueue* builderQueue = builder->firstBuilderQueue;
+        uint64_t oldLength = 0;
+        uint64_t newLength = 0;
+        currentQueueSize = 0;
 
         // Start streaming
         while (!ctx->hardShutdown) {
@@ -201,38 +201,38 @@ namespace OpenLogReplicator {
                 writeCheckpoint(false);
 
                 // Next buffer
-                if (curBuffer->length == curLength && curBuffer->next != nullptr) {
-                    curBuffer = curBuffer->next;
-                    curLength = 0;
-                }
+                if (builderQueue->next != nullptr)
+                    if (builderQueue->length == oldLength) {
+                        builderQueue = builderQueue->next;
+                        oldLength = 0;
+                    }
 
                 // Found something
-                msg = (BuilderMsg*) (curBuffer->data + curLength);
-
-                if (curBuffer->length > curLength + sizeof(struct BuilderMsg) && msg->length > 0) {
-                    tmpLength = curBuffer->length;
+                msg = (BuilderMsg*) (builderQueue->data + oldLength);
+                if (builderQueue->length > oldLength + sizeof(struct BuilderMsg) && msg->length > 0) {
+                    newLength = builderQueue->length;
                     break;
                 }
 
                 ctx->wakeAllOutOfMemory();
                 if (ctx->softShutdown && ctx->replicatorFinished)
                     break;
-                builder->sleepForWriterWork(tmpQueueSize, ctx->pollIntervalUs);
+                builder->sleepForWriterWork(currentQueueSize, ctx->pollIntervalUs);
             }
 
             if (ctx->hardShutdown)
                 break;
 
             // Send message
-            while (curLength + sizeof(struct BuilderMsg) < tmpLength && !ctx->hardShutdown) {
-                msg = (BuilderMsg*) (curBuffer->data + curLength);
+            while (oldLength + sizeof(struct BuilderMsg) < newLength && !ctx->hardShutdown) {
+                msg = (BuilderMsg*) (builderQueue->data + oldLength);
                 if (msg->length == 0)
                     break;
 
                 // Queue is full
                 pollQueue();
-                while (tmpQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
-                    DEBUG("output queue is full (" << std::dec << tmpQueueSize << " schemaElements), sleeping " << std::dec << ctx->pollIntervalUs << "us")
+                while (currentQueueSize >= ctx->queueSize && !ctx->hardShutdown) {
+                    DEBUG("output queue is full (" << std::dec << currentQueueSize << " schemaElements), sleeping " << std::dec << ctx->pollIntervalUs << "us")
                     usleep(ctx->pollIntervalUs);
                     pollQueue();
                 }
@@ -243,15 +243,15 @@ namespace OpenLogReplicator {
 
                 // builder->firstBufferPos += OUTPUT_BUFFER_RECORD_HEADER_SIZE;
                 uint64_t length8 = (msg->length + 7) & 0xFFFFFFFFFFFFFFF8;
-                curLength += sizeof(struct BuilderMsg);
+                oldLength += sizeof(struct BuilderMsg);
 
                 // Message in one part - send directly from buffer
-                if (curLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
+                if (oldLength + length8 <= OUTPUT_BUFFER_DATA_SIZE) {
                     createMessage(msg);
                     sendMessage(msg);
-                    curLength += length8;
+                    oldLength += length8;
 
-                    // Message in many parts - merge & copy
+                // Message in many parts - merge & copy
                 } else {
                     msg->data = new uint8_t[msg->length];
                     if (msg->data == nullptr)
@@ -262,17 +262,17 @@ namespace OpenLogReplicator {
                     uint64_t copied = 0;
                     while (msg->length - copied > 0) {
                         uint64_t toCopy = msg->length - copied;
-                        if (toCopy > tmpLength - curLength) {
-                            toCopy = tmpLength - curLength;
+                        if (toCopy > newLength - oldLength) {
+                            toCopy = newLength - oldLength;
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(curBuffer->data + curLength), toCopy);
-                            curBuffer = curBuffer->next;
-                            tmpLength = OUTPUT_BUFFER_DATA_SIZE;
-                            curLength = 0;
+                                   reinterpret_cast<const void*>(builderQueue->data + oldLength), toCopy);
+                            builderQueue = builderQueue->next;
+                            newLength = OUTPUT_BUFFER_DATA_SIZE;
+                            oldLength = 0;
                         } else {
                             memcpy(reinterpret_cast<void*>(msg->data + copied),
-                                   reinterpret_cast<const void*>(curBuffer->data + curLength), toCopy);
-                            curLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
+                                   reinterpret_cast<const void*>(builderQueue->data + oldLength), toCopy);
+                            oldLength += (toCopy + 7) & 0xFFFFFFFFFFFFFFF8;
                         }
                         copied += toCopy;
                     }
@@ -288,7 +288,7 @@ namespace OpenLogReplicator {
             // All work done?
             if (ctx->softShutdown && ctx->replicatorFinished) {
                 // Some data to send?
-                if (curBuffer->length != curLength || curBuffer->next != nullptr)
+                if (builderQueue->length != oldLength || builderQueue->next != nullptr)
                     continue;
                 break;
             }

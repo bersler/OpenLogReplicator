@@ -653,7 +653,7 @@ namespace OpenLogReplicator {
             wakeAllOutOfMemory();
         }
 
-        while (threads.size() > 0) {
+        while (!threads.empty()) {
             Thread* thread;
             {
                 std::unique_lock<std::mutex> lck(mtx);

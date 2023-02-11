@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
     }
 
     TransactionBuffer::~TransactionBuffer() {
-        if (partiallyFullChunks.size() > 0) {
+        if (!partiallyFullChunks.empty()) {
             WARNING("non free blocks in transaction buffer: " + std::to_string(partiallyFullChunks.size()))
         }
 
@@ -95,9 +95,10 @@ namespace OpenLogReplicator {
         TransactionChunk* tc;
         uint64_t pos;
         uint64_t freeMap;
-        if (partiallyFullChunks.size() > 0) {
-            chunk = partiallyFullChunks.begin()->first;
-            freeMap = partiallyFullChunks.begin()->second;
+        if (!partiallyFullChunks.empty()) {
+            auto partiallyFullChunksIt = partiallyFullChunks.cbegin();
+            chunk = partiallyFullChunksIt->first;
+            freeMap = partiallyFullChunksIt->second;
             pos = ffs(freeMap) - 1;
             freeMap &= ~(1 << pos);
             if (freeMap == 0)
