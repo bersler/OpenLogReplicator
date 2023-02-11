@@ -20,12 +20,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysTs.h"
 
 namespace OpenLogReplicator {
-    SysTs::SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize, bool newTouched) :
+    SysTs::SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
             rowId(newRowId),
             ts(newTs),
             name(newName),
-            blockSize(newBlockSize),
-            touched(newTouched) {
+            blockSize(newBlockSize) {
     }
 
     bool SysTs::operator!=(const SysTs& other) const {

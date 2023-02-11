@@ -33,10 +33,25 @@ namespace OpenLogReplicator {
 
     OracleLob::~OracleLob() {
         lobIndexes.clear();
+        lobPartitions.clear();
+        lobPageMap.clear();
     }
 
     void OracleLob::addIndex(typeDataObj newDataObj) {
         lobIndexes.push_back(newDataObj);
+    }
+
+    void OracleLob::addPartition(typeDataObj newDataObj, uint16_t pageSize) {
+        lobPartitions.push_back(newDataObj);
+        lobPageMap[newDataObj] = pageSize;
+    }
+
+    uint32_t OracleLob::checkLobPageSize(typeDataObj newDataObj) {
+        auto lobPageMapIt = lobPageMap.find(newDataObj);
+        if (lobPageMapIt != lobPageMap.end())
+            return lobPageMapIt->second;
+
+        return 8132; // default value?
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleLob& lob) {

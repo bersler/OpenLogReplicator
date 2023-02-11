@@ -33,12 +33,11 @@ namespace OpenLogReplicator {
         return (other.tabObj != tabObj) || (other.colNum != colNum);
     }
 
-    SysECol::SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId, bool newTouched) :
+    SysECol::SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
             rowId(newRowId),
             tabObj(newTabObj),
             colNum(newColNum),
-            guardId(newGuardId),
-            touched(newTouched) {
+            guardId(newGuardId) {
     }
 
     bool SysECol::operator!=(const SysECol& other) const {

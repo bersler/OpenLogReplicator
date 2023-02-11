@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <unordered_map>
 #include <vector>
 
 #include "types.h"
@@ -36,11 +37,15 @@ namespace OpenLogReplicator {
         typeCol col;
         typeCol intCol;
         std::vector<typeDataObj> lobIndexes;
+        std::vector<typeDataObj> lobPartitions;
+        std::unordered_map<typeObj, uint16_t> lobPageMap;
 
         OracleLob(OracleTable* table, typeObj newObj, typeObj newDataObj, typeObj newLObj, typeCol newCol, typeCol newIntCol);
         virtual ~OracleLob();
 
         void addIndex(typeDataObj newDataObj);
+        void addPartition(typeDataObj newDataObj, uint16_t pageSize);
+        [[nodiscard]] uint32_t checkLobPageSize(typeDataObj newDataObj);
 
         friend std::ostream& operator<<(std::ostream& os, const OracleLob& column);
     };

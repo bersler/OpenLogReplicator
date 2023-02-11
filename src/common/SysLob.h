@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysLob {
     public:
-        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs, bool newTouched);
+        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs);
 
         bool operator!=(const SysLob& other) const;
 
@@ -46,7 +46,6 @@ namespace OpenLogReplicator {
         typeCol intCol;
         typeObj lObj;
         typeTs ts;
-        bool touched;
     };
 }
 

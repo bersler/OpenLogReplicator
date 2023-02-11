@@ -41,7 +41,7 @@ namespace OpenLogReplicator {
     class SysTab {
     public:
         SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2, uint64_t newProperty1,
-               uint64_t newProperty2, bool newTouched);
+               uint64_t newProperty2);
 
         bool operator!=(const SysTab& other) const;
         [[nodiscard]] bool isBinary();
@@ -59,7 +59,6 @@ namespace OpenLogReplicator {
         typeCol cluCols;            // NULL
         typeIntX flags;
         typeIntX property;
-        bool touched;
     };
 }
 

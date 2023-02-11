@@ -77,10 +77,11 @@ namespace OpenLogReplicator {
     public:
         SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
-               uint64_t newProperty1, uint64_t newProperty2, bool newTouched);
+               uint64_t newProperty1, uint64_t newProperty2);
 
         bool operator!=(const SysCol& other) const;
         [[nodiscard]] bool isInvisible();
+        [[nodiscard]] bool isNullable();
         [[nodiscard]] bool isStoredAsLob();
         [[nodiscard]] bool isConstraint();
         [[nodiscard]] bool isNested();
@@ -103,7 +104,6 @@ namespace OpenLogReplicator {
         uint64_t charsetId;         // NULL
         int64_t null_;
         typeIntX property;
-        bool touched;
     };
 }
 

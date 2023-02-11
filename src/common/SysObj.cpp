@@ -49,7 +49,7 @@ namespace OpenLogReplicator {
     }
 
     SysObj::SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
-                   uint64_t newFlags2, bool newSingle, bool newTouched) :
+                   uint64_t newFlags2, bool newSingle) :
             rowId(newRowId),
             owner(newOwner),
             obj(newObj),
@@ -57,8 +57,7 @@ namespace OpenLogReplicator {
             type(newType),
             name(newName),
             flags(newFlags1, newFlags2),
-            single(newSingle),
-            touched(newTouched) {
+            single(newSingle) {
     }
 
     bool SysObj::operator!=(const SysObj& other) const {

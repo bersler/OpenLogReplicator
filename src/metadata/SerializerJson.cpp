@@ -794,7 +794,7 @@ namespace OpenLogReplicator {
             uint64_t spare12 = Ctx::getJsonFieldU64(name, spare1Json, "spare1", 1);
             uint64_t single = Ctx::getJsonFieldU64(name, sysUserJson[i], "single");
 
-            metadata->schema->dictSysUserAdd(rowId, user, name_, spare11, spare12, single != 0u);
+            metadata->schema->dictSysUserAdd(rowId, user, name_, spare11, spare12, single != 0u, true);
         }
     }
 }

@@ -146,7 +146,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    bool SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumber16(int16_t& val, int16_t defVal, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
@@ -156,24 +156,15 @@ namespace OpenLogReplicator {
             builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
             builder->valueBuffer[builder->valueLength] = 0;
             auto newVal = (int16_t)strtol(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val = defVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val = defVal;
         }
-        return false;
     }
 
-    bool SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumber16u(uint16_t& val, uint16_t defVal, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
@@ -187,24 +178,15 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " value found " + builder->valueBuffer);
 
             uint16_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val = defVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val = defVal;
         }
-        return false;
     }
 
-    bool SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumber32u(uint32_t& val, uint32_t defVal, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
@@ -218,160 +200,15 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " value found " + builder->valueBuffer);
 
             uint32_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val = defVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val = defVal;
         }
-        return false;
     }
 
-    bool SystemTransaction::updateObj(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (table->columns[column]->type != 2)
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type));
-
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " value found " + builder->valueBuffer);
-
-            typeObj newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                metadata->schema->touchTable(val);
-                metadata->schema->touchTable(newVal);
-                val = newVal;
-                return true;
-            }
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                metadata->schema->touchTable(val);
-                val = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool SystemTransaction::updatePartition(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (table->columns[column]->type != 2)
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type));
-
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " value found " + builder->valueBuffer);
-
-            typeObj newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                metadata->schema->touchTablePartition(val);
-                metadata->schema->touchTablePartition(newVal);
-                val = newVal;
-                return true;
-            }
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                metadata->schema->touchTablePartition(val);
-                val = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool SystemTransaction::updateLob(typeObj& val, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (table->columns[column]->type != 2)
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type));
-
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " value found " + builder->valueBuffer);
-
-            typeObj newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                metadata->schema->touchLobPartition(val);
-                metadata->schema->touchLobPartition(newVal);
-                val = newVal;
-                return true;
-            }
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                metadata->schema->touchLobPartition(val);
-                val = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool SystemTransaction::updateUser(typeUser& val, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
-        if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
-            char* retPtr;
-            if (table->columns[column]->type != 2)
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type));
-
-            builder->parseNumber(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER]);
-            builder->valueBuffer[builder->valueLength] = 0;
-            if (builder->valueLength == 0 || (builder->valueLength > 0 && builder->valueBuffer[0] == '-'))
-                throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
-                        table->columns[column]->name + " value found " + builder->valueBuffer);
-
-            typeUser newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                metadata->schema->touchUser(val);
-                metadata->schema->touchUser(newVal);
-                val = newVal;
-                return true;
-            }
-        } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                metadata->schema->touchUser(val);
-                val = 0;
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumber64(int64_t& val, int64_t defVal, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
@@ -385,24 +222,15 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " value found " + builder->valueBuffer);
 
             int64_t newVal = strtol(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val = defVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val = defVal;
         }
-        return false;
     }
 
-    bool SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumber64u(uint64_t& val, uint64_t defVal, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             char* retPtr;
             if (table->columns[column]->type != 2)
@@ -416,24 +244,15 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " value found " + builder->valueBuffer);
 
             uint64_t newVal = strtoul(builder->valueBuffer, &retPtr, 10);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val != defVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val = defVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val = defVal;
         }
-        return false;
     }
 
-    bool SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateNumberXu(typeIntX& val, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             if (table->columns[column]->type != 2)
                 throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -447,24 +266,15 @@ namespace OpenLogReplicator {
 
             typeIntX newVal(0);
             newVal.setStr(builder->valueBuffer, builder->valueLength);
-            if (newVal != val) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (!val.isZero()) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
-                metadata->schema->touched = true;
-                val.set(0, 0);
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> NULL)")
+            val.set(0, 0);
         }
-        return false;
     }
 
-    bool SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table, typeRowId& rowId __attribute__((unused))) {
+    void SystemTransaction::updateString(std::string& val, uint64_t maxLength, typeCol column, OracleTable* table) {
         if (builder->values[column][VALUE_AFTER] != nullptr && builder->lengths[column][VALUE_AFTER] > 0) {
             if (table->columns[column]->type != SYS_COL_TYPE_VARCHAR && table->columns[column]->type != SYS_COL_TYPE_CHAR)
                 throw RuntimeException("ddl: column type mismatch for " + table->owner + "." + table->name + ": column " +
@@ -477,28 +287,22 @@ namespace OpenLogReplicator {
                 throw RuntimeException("ddl: value too long for " + table->owner + "." + table->name + ": column " +
                         table->columns[column]->name + ", length " + std::to_string(builder->valueLength));
 
-            if (val != newVal) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": '" << val << "' -> '" << newVal << "')")
-                metadata->schema->touched = true;
-                val = newVal;
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": '" << val << "' -> '" << newVal << "')")
+            val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
-            if (val.length() > 0) {
-                TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": '" << val << "' -> NULL)")
-                metadata->schema->touched = true;
-                val.assign("");
-                return true;
-            }
+            TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": '" << val << "' -> NULL)")
+            val.assign("");
         }
-        return false;
     }
 
-    void SystemTransaction::processInsertCCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysCColFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.CCOL$: (rowid: ") + rowId.toString() + ") for insert");
-        sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0, true);
+    void SystemTransaction::processInsertCCol(OracleTable* table, typeRowId& rowId) {
+        sysCCol = metadata->schema->dictSysCColFind(rowId);
+        if (sysCCol != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.CCOL$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysCColDrop(sysCCol);
+        }
+        sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -510,26 +314,28 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#")
-                    updateNumber32u(sysCCol->con, 0, column, table, rowId);
+                    updateNumber32u(sysCCol->con, 0, column, table);
                 else if (table->columns[column]->name == "INTCOL#")
-                    updateNumber16(sysCCol->intCol, 0, column, table, rowId);
+                    updateNumber16(sysCCol->intCol, 0, column, table);
                 else if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysCCol->obj, column, table, rowId);
+                    updateNumber32u(sysCCol->obj, 0, column, table);
                 else if (table->columns[column]->name == "SPARE1")
-                    updateNumberXu(sysCCol->spare1, column, table, rowId);
+                    updateNumberXu(sysCCol->spare1, column, table);
             }
         }
 
-        metadata->schema->sysCColMapRowId[rowId] = sysCCol;
-        metadata->schema->sysCColTouched = true;
+        metadata->schema->dictSysCColAdd(sysCCol);
         sysCCol = nullptr;
     }
 
-    void SystemTransaction::processInsertCDef(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysCDefFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.CDEF$: (rowid: ") + rowId.toString() + ") for insert");
-        sysCDef = new SysCDef(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertCDef(OracleTable* table, typeRowId& rowId) {
+        sysCDef = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDef != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.DEF$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysCDefDrop(sysCDef);
+        }
+        sysCDef = new SysCDef(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -541,25 +347,27 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "CON#")
-                    updateNumber32u(sysCDef->con, 0, column, table, rowId);
+                    updateNumber32u(sysCDef->con, 0, column, table);
                 else if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysCDef->obj, column, table, rowId);
+                    updateNumber32u(sysCDef->obj, 0, column, table);
                 else if (table->columns[column]->name == "TYPE#")
-                    updateNumber16u(sysCDef->type, 0, column, table, rowId);
+                    updateNumber16u(sysCDef->type, 0, column, table);
             }
         }
 
-        metadata->schema->sysCDefMapRowId[rowId] = sysCDef;
-        metadata->schema->sysCDefTouched = true;
+        metadata->schema->dictSysCDefAdd(sysCDef);
         sysCDef = nullptr;
     }
 
-    void SystemTransaction::processInsertCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysColFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.COL$: (rowid: ") + rowId.toString() + ") for insert");
+    void SystemTransaction::processInsertCol(OracleTable* table, typeRowId& rowId) {
+        sysCol = metadata->schema->dictSysColFind(rowId);
+        if (sysCol != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.COL$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysColDrop(sysCol);
+        }
         sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
-                            0, 0, 0, 0, 0, true);
+                            0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -571,44 +379,46 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysCol->obj, column, table, rowId);
+                    updateNumber32u(sysCol->obj, 0, column, table);
                 else if (table->columns[column]->name == "COL#")
-                    updateNumber16(sysCol->col, 0, column, table, rowId);
+                    updateNumber16(sysCol->col, 0, column, table);
                 else if (table->columns[column]->name == "SEGCOL#")
-                    updateNumber16(sysCol->segCol, 0, column, table, rowId);
+                    updateNumber16(sysCol->segCol, 0, column, table);
                 else if (table->columns[column]->name == "INTCOL#")
-                    updateNumber16(sysCol->intCol, 0, column, table, rowId);
+                    updateNumber16(sysCol->intCol, 0, column, table);
                 else if (table->columns[column]->name == "NAME")
-                    updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, table, rowId);
+                    updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, table);
                 else if (table->columns[column]->name == "TYPE#")
-                    updateNumber16u(sysCol->type, 0, column, table, rowId);
+                    updateNumber16u(sysCol->type, 0, column, table);
                 else if (table->columns[column]->name == "LENGTH")
-                    updateNumber64u(sysCol->length, 0, column, table, rowId);
+                    updateNumber64u(sysCol->length, 0, column, table);
                 else if (table->columns[column]->name == "PRECISION#")
-                    updateNumber64(sysCol->precision, -1, column, table, rowId);
+                    updateNumber64(sysCol->precision, -1, column, table);
                 else if (table->columns[column]->name == "SCALE")
-                    updateNumber64(sysCol->scale, -1, column, table, rowId);
+                    updateNumber64(sysCol->scale, -1, column, table);
                 else if (table->columns[column]->name == "CHARSETFORM")
-                    updateNumber64u(sysCol->charsetForm, 0, column, table, rowId);
+                    updateNumber64u(sysCol->charsetForm, 0, column, table);
                 else if (table->columns[column]->name == "CHARSETID")
-                    updateNumber64u(sysCol->charsetId, 0, column, table, rowId);
+                    updateNumber64u(sysCol->charsetId, 0, column, table);
                 else if (table->columns[column]->name == "NULL$")
-                    updateNumber64(sysCol->null_, 0, column, table, rowId);
+                    updateNumber64(sysCol->null_, 0, column, table);
                 else if (table->columns[column]->name == "PROPERTY")
-                    updateNumberXu(sysCol->property, column, table, rowId);
+                    updateNumberXu(sysCol->property, column, table);
             }
         }
 
-        metadata->schema->sysColMapRowId[rowId] = sysCol;
-        metadata->schema->sysColTouched = true;
+        metadata->schema->dictSysColAdd(sysCol);
         sysCol = nullptr;
     }
 
-    void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysDeferredStgFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.DEFERRED_STG$: (rowid: ") + rowId.toString() + ") for insert");
-        sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeRowId& rowId) {
+        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStg != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.DEFERRED_STG$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+        }
+        sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -620,23 +430,24 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysDeferredStg->obj, column, table, rowId);
+                    updateNumber32u(sysDeferredStg->obj, 0, column, table);
                 else if (table->columns[column]->name == "FLAGS_STG")
-                    updateNumberXu(sysDeferredStg->flagsStg, column, table, rowId);
+                    updateNumberXu(sysDeferredStg->flagsStg, column, table);
             }
         }
 
-        metadata->schema->sysDeferredStgMapRowId[rowId] = sysDeferredStg;
-        metadata->schema->sysDeferredStgTouched = true;
-        metadata->schema->touchTable(sysDeferredStg->obj);
+        metadata->schema->dictSysDeferredStgAdd(sysDeferredStg);
         sysDeferredStg = nullptr;
     }
 
-    void SystemTransaction::processInsertECol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysEColFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.ECOL$: (rowid: ") + rowId.toString() + ") for insert");
-        sysECol = new SysECol(rowId, 0, 0, -1, true);
+    void SystemTransaction::processInsertECol(OracleTable* table, typeRowId& rowId) {
+        sysECol = metadata->schema->dictSysEColFind(rowId);
+        if (sysECol != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.ECOL$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysEColDrop(sysECol);
+        }
+        sysECol = new SysECol(rowId, 0, 0, -1);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -648,24 +459,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TABOBJ#")
-                    updateObj(sysECol->tabObj, column, table, rowId);
+                    updateNumber32u(sysECol->tabObj, 0, column, table);
                 else if (table->columns[column]->name == "COLNUM")
-                    updateNumber16(sysECol->colNum, 0, column, table, rowId);
+                    updateNumber16(sysECol->colNum, 0, column, table);
                 else if (table->columns[column]->name == "GUARD_ID")
-                    updateNumber16(sysECol->guardId, -1, column, table, rowId);
+                    updateNumber16(sysECol->guardId, -1, column, table);
             }
         }
 
-        metadata->schema->sysEColMapRowId[rowId] = sysECol;
-        metadata->schema->sysEColTouched = true;
+        metadata->schema->dictSysEColAdd(sysECol);
         sysECol = nullptr;
     }
 
-    void SystemTransaction::processInsertLob(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysLobFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + rowId.toString() + ") for insert");
-        sysLob = new SysLob(rowId, 0, 0, 0, 0, 0, true);
+    void SystemTransaction::processInsertLob(OracleTable* table, typeRowId& rowId) {
+        sysLob = metadata->schema->dictSysLobFind(rowId);
+        if (sysLob != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysLobDrop(sysLob);
+        }
+        sysLob = new SysLob(rowId, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -677,28 +490,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysLob->obj, column, table, rowId);
+                    updateNumber32u(sysLob->obj, 0, column, table);
                 else if (table->columns[column]->name == "COL#")
-                    updateNumber16(sysLob->col, 0, column, table, rowId);
+                    updateNumber16(sysLob->col, 0, column, table);
                 else if (table->columns[column]->name == "INTCOL#")
-                    updateNumber16(sysLob->intCol, 0, column, table, rowId);
+                    updateNumber16(sysLob->intCol, 0, column, table);
                 else if (table->columns[column]->name == "LOBJ#")
-                    updateLob(sysLob->lObj, column, table, rowId);
+                    updateNumber32u(sysLob->lObj, 0, column, table);
                 else if (table->columns[column]->name == "TS#")
-                    updateNumber32u(sysLob->ts, 0, column, table, rowId);
+                    updateNumber32u(sysLob->ts, 0, column, table);
             }
         }
 
-        metadata->schema->sysLobMapRowId[rowId] = sysLob;
-        metadata->schema->sysLobTouched = true;
+        metadata->schema->dictSysLobAdd(sysLob);
         sysLob = nullptr;
     }
 
-    void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysLobCompPartFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.LOBCOMPPART$: (rowid: ") + rowId.toString() + ") for insert");
-        sysLobCompPart = new SysLobCompPart(rowId, 0, 0, true);
+    void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeRowId& rowId) {
+        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPart != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.LOBCOMPPART$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+        }
+        sysLobCompPart = new SysLobCompPart(rowId, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -710,22 +525,24 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PARTOBJ#")
-                    updateLob(sysLobCompPart->partObj, column, table, rowId);
+                    updateNumber32u(sysLobCompPart->partObj, 0, column, table);
                 else if (table->columns[column]->name == "LOBJ#")
-                    updateLob(sysLobCompPart->lObj, column, table, rowId);
+                    updateNumber32u(sysLobCompPart->lObj, 0, column, table);
             }
         }
 
-        metadata->schema->sysLobCompPartMapRowId[rowId] = sysLobCompPart;
-        metadata->schema->sysLobCompPartTouched = true;
+        metadata->schema->dictSysLobCompPartAdd(sysLobCompPart);
         sysLobCompPart = nullptr;
     }
 
-    void SystemTransaction::processInsertLobFrag(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysLobFragFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.LOBFRAG$: (rowid: ") + rowId.toString() + ") for insert");
-        sysLobFrag = new SysLobFrag(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertLobFrag(OracleTable* table, typeRowId& rowId) {
+        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFrag != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.LOBFRAG$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysLobFragDrop(sysLobFrag);
+        }
+        sysLobFrag = new SysLobFrag(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -737,24 +554,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "FRAGOBJ#")
-                    updateLob(sysLobFrag->fragObj, column, table, rowId);
+                    updateNumber32u(sysLobFrag->fragObj, 0, column, table);
                 else if (table->columns[column]->name == "PARENTOBJ#")
-                    updateLob(sysLobFrag->parentObj, column, table, rowId);
+                    updateNumber32u(sysLobFrag->parentObj, 0, column, table);
                 else if (table->columns[column]->name == "TS#")
-                    updateNumber32u(sysLobFrag->ts, 0, column, table, rowId);
+                    updateNumber32u(sysLobFrag->ts, 0, column, table);
             }
         }
 
-        metadata->schema->sysLobFragMapRowId[rowId] = sysLobFrag;
-        metadata->schema->sysLobFragTouched = true;
+        metadata->schema->dictSysLobFragAdd(sysLobFrag);
         sysLobFrag = nullptr;
     }
 
-    void SystemTransaction::processInsertObj(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysObjFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + rowId.toString() + ") for insert");
-        sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false, true);
+    void SystemTransaction::processInsertObj(OracleTable* table, typeRowId& rowId) {
+        sysObj = metadata->schema->dictSysObjFind(rowId);
+        if (sysObj != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysObjDrop(sysObj);
+        }
+        sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -766,30 +585,32 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OWNER#")
-                    updateNumber32u(sysObj->owner, 0, column, table, rowId);
+                    updateNumber32u(sysObj->owner, 0, column, table);
                 else if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysObj->obj, column, table, rowId);
+                    updateNumber32u(sysObj->obj, 0, column, table);
                 else if (table->columns[column]->name == "DATAOBJ#")
-                    updateNumber32u(sysObj->dataObj, 0, column, table, rowId);
+                    updateNumber32u(sysObj->dataObj, 0, column, table);
                 else if (table->columns[column]->name == "NAME")
-                    updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, table, rowId);
+                    updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, table);
                 else if (table->columns[column]->name == "TYPE#")
-                    updateNumber16u(sysObj->type, 0, column, table, rowId);
+                    updateNumber16u(sysObj->type, 0, column, table);
                 else if (table->columns[column]->name == "FLAGS")
-                    updateNumberXu(sysObj->flags, column, table, rowId);
+                    updateNumberXu(sysObj->flags, column, table);
             }
         }
 
-        metadata->schema->sysObjMapRowId[rowId] = sysObj;
-        metadata->schema->sysObjTouched = true;
+        metadata->schema->dictSysObjAdd(sysObj);
         sysObj = nullptr;
     }
 
-    void SystemTransaction::processInsertTab(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysTabFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.TAB$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0, true);
+    void SystemTransaction::processInsertTab(OracleTable* table, typeRowId& rowId) {
+        sysTab = metadata->schema->dictSysTabFind(rowId);
+        if (sysTab != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TAB$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysTabDrop(sysTab);
+        }
+        sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -801,28 +622,30 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysTab->obj, column, table, rowId);
+                    updateNumber32u(sysTab->obj, 0, column, table);
                 else if (table->columns[column]->name == "DATAOBJ#")
-                    updateNumber32u(sysTab->dataObj, 0, column, table, rowId);
+                    updateNumber32u(sysTab->dataObj, 0, column, table);
                 else if (table->columns[column]->name == "CLUCOLS")
-                    updateNumber16(sysTab->cluCols, 0, column, table, rowId);
+                    updateNumber16(sysTab->cluCols, 0, column, table);
                 else if (table->columns[column]->name == "FLAGS")
-                    updateNumberXu(sysTab->flags, column, table, rowId);
+                    updateNumberXu(sysTab->flags, column, table);
                 else if (table->columns[column]->name == "PROPERTY")
-                    updateNumberXu(sysTab->property, column, table, rowId);
+                    updateNumberXu(sysTab->property, column, table);
             }
         }
 
-        metadata->schema->sysTabMapRowId[rowId] = sysTab;
-        metadata->schema->sysTabTouched = true;
+        metadata->schema->dictSysTabAdd(sysTab);
         sysTab = nullptr;
     }
 
-    void SystemTransaction::processInsertTabComPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysTabComPartFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.TABCOMPART$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTabComPart = new SysTabComPart(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertTabComPart(OracleTable* table, typeRowId& rowId) {
+        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPart != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABCOMPART$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+        }
+        sysTabComPart = new SysTabComPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -834,24 +657,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateObj(sysTabComPart->obj, column, table, rowId);
+                    updateNumber32u(sysTabComPart->obj, 0, column, table);
                 else if (table->columns[column]->name == "DATAOBJ#")
-                    updateNumber32u(sysTabComPart->dataObj, 0, column, table, rowId);
+                    updateNumber32u(sysTabComPart->dataObj, 0, column, table);
                 else if (table->columns[column]->name == "BO#")
-                    updateNumber32u(sysTabComPart->bo, 0, column, table, rowId);
+                    updateNumber32u(sysTabComPart->bo, 0, column, table);
             }
         }
 
-        metadata->schema->sysTabComPartMapRowId[rowId] = sysTabComPart;
-        metadata->schema->sysTabComPartTouched = true;
+        metadata->schema->dictSysTabComPartAdd(sysTabComPart);
         sysTabComPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTabPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysTabPartFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.TABPART$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTabPart = new SysTabPart(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertTabPart(OracleTable* table, typeRowId& rowId) {
+        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPart != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABPART$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysTabPartDrop(sysTabPart);
+        }
+        sysTabPart = new SysTabPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -863,24 +688,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateNumber32u(sysTabPart->obj, 0, column, table, rowId);
+                    updateNumber32u(sysTabPart->obj, 0, column, table);
                 else if (table->columns[column]->name == "DATAOBJ#")
-                    updateNumber32u(sysTabPart->dataObj, 0, column, table, rowId);
+                    updateNumber32u(sysTabPart->dataObj, 0, column, table);
                 else if (table->columns[column]->name == "BO#")
-                    updateObj(sysTabPart->bo, column, table, rowId);
+                    updateNumber32u(sysTabPart->bo, 0, column, table);
             }
         }
 
-        metadata->schema->sysTabPartMapRowId[rowId] = sysTabPart;
-        metadata->schema->sysTabPartTouched = true;
+        metadata->schema->dictSysTabPartAdd(sysTabPart);
         sysTabPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysTabSubPartFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.TABSUBPART$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0, true);
+    void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeRowId& rowId) {
+        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPart != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TABSUBPART$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+        }
+        sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -892,24 +719,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#")
-                    updateNumber32u(sysTabSubPart->obj, 0, column, table, rowId);
+                    updateNumber32u(sysTabSubPart->obj, 0, column, table);
                 else if (table->columns[column]->name == "DATAOBJ#")
-                    updateNumber32u(sysTabSubPart->dataObj, 0, column, table, rowId);
+                    updateNumber32u(sysTabSubPart->dataObj, 0, column, table);
                 else if (table->columns[column]->name == "POBJ#")
-                    updatePartition(sysTabSubPart->pObj, column, table, rowId);
+                    updateNumber32u(sysTabSubPart->pObj, 0, column, table);
             }
         }
 
-        metadata->schema->sysTabSubPartMapRowId[rowId] = sysTabSubPart;
-        metadata->schema->sysTabSubPartTouched = true;
+        metadata->schema->dictSysTabSubPartAdd(sysTabSubPart);
         sysTabSubPart = nullptr;
     }
 
-    void SystemTransaction::processInsertTs(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                            typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysTsFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.TS$: (rowid: ") + rowId.toString() + ") for insert");
-        sysTs = new SysTs(rowId, 0, "", 0, true);
+    void SystemTransaction::processInsertTs(OracleTable* table, typeRowId& rowId) {
+        sysTs = metadata->schema->dictSysTsFind(rowId);
+        if (sysTs != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.TS$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysTsDrop(sysTs);
+        }
+        sysTs = new SysTs(rowId, 0, "", 0);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -921,24 +750,26 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TS#")
-                    updateNumber32u(sysTs->ts, 0, column, table, rowId);
+                    updateNumber32u(sysTs->ts, 0, column, table);
                 else if (table->columns[column]->name == "NAME")
-                    updateString(sysTs->name, SYS_TS_NAME_LENGTH, column, table, rowId);
+                    updateString(sysTs->name, SYS_TS_NAME_LENGTH, column, table);
                 else if (table->columns[column]->name == "BLOCKSIZE")
-                    updateNumber32u(sysTs->blockSize, 0, column, table, rowId);
+                    updateNumber32u(sysTs->blockSize, 0, column, table);
             }
         }
 
-        metadata->schema->sysTsMapRowId[rowId] = sysTs;
-        metadata->schema->sysTsTouched = true;
+        metadata->schema->dictSysTsAdd(sysTs);
         sysTs = nullptr;
     }
 
-    void SystemTransaction::processInsertUser(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        if (metadata->schema->dictSysUserFind(rowId))
-            throw RuntimeException(std::string("DDL: duplicate SYS.USER$: (rowid: ") + rowId.toString() + ") for insert");
-        sysUser = new SysUser(rowId, 0, "", 0, 0, false, true);
+    void SystemTransaction::processInsertUser(OracleTable* table, typeRowId& rowId) {
+        sysUser = metadata->schema->dictSysUserFind(rowId);
+        if (sysUser != nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
+                throw RuntimeException(std::string("DDL: duplicate SYS.USER$: (rowid: ") + rowId.toString() + ") for insert");
+            metadata->schema->dictSysUserDrop(sysUser);
+        }
+        sysUser = new SysUser(rowId, 0, "", 0, 0, false);
 
         uint64_t baseMax = builder->valuesMax >> 6;
         for (uint64_t base = 0; base <= baseMax; ++base) {
@@ -950,17 +781,15 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "USER#")
-                    updateUser(sysUser->user, column, table, rowId);
+                    updateNumber32u(sysUser->user, 0, column, table);
                 else if (table->columns[column]->name == "NAME")
-                    updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, table, rowId);
+                    updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, table);
                 else if (table->columns[column]->name == "SPARE1")
-                    updateNumberXu(sysUser->spare1, column, table, rowId);
+                    updateNumberXu(sysUser->spare1, column, table);
             }
         }
 
-        metadata->schema->sysUserMapRowId[rowId] = sysUser;
-        metadata->schema->sysUserTouched = true;
-        metadata->schema->touchUser(sysUser->user);
+        metadata->schema->dictSysUserAdd(sysUser);
         sysUser = nullptr;
     }
 
@@ -968,77 +797,81 @@ namespace OpenLogReplicator {
         typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
-        TRACE(TRACE2_SYSTEM, "SYSTEM: update table (name: " << table->owner << "." << table->name << ", rowid: " << rowId << ")")
+        TRACE(TRACE2_SYSTEM, "SYSTEM: insert table (name: " << table->owner << "." << table->name << ", rowid: " << rowId << ")")
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                processInsertCCol(table, dataObj, bdba, slot, rowId);
+                processInsertCCol(table, rowId);
                 break;
 
             case TABLE_SYS_CDEF:
-                processInsertCDef(table, dataObj, bdba, slot, rowId);
+                processInsertCDef(table, rowId);
                 break;
 
             case TABLE_SYS_COL:
-                processInsertCol(table, dataObj, bdba, slot, rowId);
+                processInsertCol(table, rowId);
                 break;
 
             case TABLE_SYS_DEFERRED_STG:
-                processInsertDeferredStg(table, dataObj, bdba, slot, rowId);
+                processInsertDeferredStg(table, rowId);
                 break;
 
             case TABLE_SYS_ECOL:
-                processInsertECol(table, dataObj, bdba, slot, rowId);
+                processInsertECol(table, rowId);
                 break;
 
             case TABLE_SYS_LOB:
-                processInsertLob(table, dataObj, bdba, slot, rowId);
+                processInsertLob(table, rowId);
                 break;
 
             case TABLE_SYS_LOB_COMP_PART:
-                processInsertLobCompPart(table, dataObj, bdba, slot, rowId);
+                processInsertLobCompPart(table, rowId);
                 break;
 
             case TABLE_SYS_LOB_FRAG:
-                processInsertLobFrag(table, dataObj, bdba, slot, rowId);
+                processInsertLobFrag(table, rowId);
                 break;
 
             case TABLE_SYS_OBJ:
-                processInsertObj(table, dataObj, bdba, slot, rowId);
+                processInsertObj(table, rowId);
                 break;
 
             case TABLE_SYS_TAB:
-                processInsertTab(table, dataObj, bdba, slot, rowId);
+                processInsertTab(table, rowId);
                 break;
 
             case TABLE_SYS_TABCOMPART:
-                processInsertTabComPart(table, dataObj, bdba, slot, rowId);
+                processInsertTabComPart(table, rowId);
                 break;
 
             case TABLE_SYS_TABPART:
-                processInsertTabPart(table, dataObj, bdba, slot, rowId);
+                processInsertTabPart(table, rowId);
                 break;
 
             case TABLE_SYS_TABSUBPART:
-                processInsertTabSubPart(table, dataObj, bdba, slot, rowId);
+                processInsertTabSubPart(table, rowId);
                 break;
 
             case TABLE_SYS_TS:
-                processInsertTs(table, dataObj, bdba, slot, rowId);
+                processInsertTs(table, rowId);
                 break;
 
             case TABLE_SYS_USER:
-                processInsertUser(table, dataObj, bdba, slot, rowId);
+                processInsertUser(table, rowId);
                 break;
         }
     }
 
-    void SystemTransaction::processUpdateCCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysCCol* sysCCol2 = metadata->schema->dictSysCColFind(rowId);
-        if (sysCCol2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CCOL$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateCCol(OracleTable* table, typeRowId& rowId) {
+        sysCCol = metadata->schema->dictSysCColFind(rowId);
+        if (sysCCol != nullptr) {
+            metadata->schema->dictSysCColDrop(sysCCol);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1050,37 +883,31 @@ namespace OpenLogReplicator {
                 if ((builder->valuesSet[base] & mask) == 0)
                     continue;
 
-                if (table->columns[column]->name == "CON#") {
-                    if (updateNumber32u(sysCCol2->con, 0, column, table, rowId)) {
-                        sysCCol2->touched = true;
-                        metadata->schema->sysCColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "INTCOL#") {
-                    if (updateNumber16(sysCCol2->intCol, 0, column, table, rowId)) {
-                        sysCCol2->touched = true;
-                        metadata->schema->sysCColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysCCol2->obj, column, table, rowId)) {
-                        sysCCol2->touched = true;
-                        metadata->schema->sysCColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "SPARE1") {
-                    if (updateNumberXu(sysCCol2->spare1, column, table, rowId)) {
-                        sysCCol2->touched = true;
-                        metadata->schema->sysCColTouched = true;
-                    }
-                }
+                if (table->columns[column]->name == "CON#")
+                    updateNumber32u(sysCCol->con, 0, column, table);
+                else if (table->columns[column]->name == "INTCOL#")
+                    updateNumber16(sysCCol->intCol, 0, column, table);
+                else if (table->columns[column]->name == "OBJ#")
+                    updateNumber32u(sysCCol->obj, 0, column, table);
+                else if (table->columns[column]->name == "SPARE1")
+                    updateNumberXu(sysCCol->spare1, column, table);
             }
         }
+
+        metadata->schema->dictSysCColAdd(sysCCol);
+        sysCCol = nullptr;
     }
 
-    void SystemTransaction::processUpdateCDef(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
-        if (sysCDef2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CDEF$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateCDef(OracleTable* table, typeRowId& rowId) {
+        sysCDef = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDef != nullptr) {
+            metadata->schema->dictSysCDefDrop(sysCDef);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysCDef = new SysCDef(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1092,32 +919,84 @@ namespace OpenLogReplicator {
                 if ((builder->valuesSet[base] & mask) == 0)
                     continue;
 
-                if (table->columns[column]->name == "CON#") {
-                    if (updateNumber32u(sysCDef2->con, 0, column, table, rowId)) {
-                        sysCDef2->touched = true;
-                        metadata->schema->sysCDefTouched = true;
-                    }
-                } else if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysCDef2->obj, column, table, rowId)) {
-                        sysCDef2->touched = true;
-                        metadata->schema->sysCDefTouched = true;
-                    }
-                } else if (table->columns[column]->name == "TYPE#") {
-                    if (updateNumber16u(sysCDef2->type, 0, column, table, rowId)) {
-                        sysCDef2->touched = true;
-                        metadata->schema->sysCDefTouched = true;
-                    }
-                }
+                if (table->columns[column]->name == "CON#")
+                    updateNumber32u(sysCDef->con, 0, column, table);
+                else if (table->columns[column]->name == "OBJ#")
+                    updateNumber32u(sysCDef->obj, 0, column, table);
+                else if (table->columns[column]->name == "TYPE#")
+                    updateNumber16u(sysCDef->type, 0, column, table);
             }
         }
+
+        metadata->schema->dictSysCDefAdd(sysCDef);
+        sysCDef = nullptr;
     }
 
-    void SystemTransaction::processUpdateCol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysCol* sysCol2 = metadata->schema->dictSysColFind(rowId);
-        if (sysCol2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.COL$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateCol(OracleTable* table, typeRowId& rowId) {
+        sysCol = metadata->schema->dictSysColFind(rowId);
+        if (sysCol != nullptr) {
+            metadata->schema->dictSysColDrop(sysCol);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.COL$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
+                                0, 0, 0, 0, 0);
+        }
+
+        uint64_t baseMax = builder->valuesMax >> 6;
+        for (uint64_t base = 0; base <= baseMax; ++base) {
+            auto column = static_cast<typeCol>(base << 6);
+            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
+                if (builder->valuesSet[base] < mask)
+                    break;
+                if ((builder->valuesSet[base] & mask) == 0)
+                    continue;
+
+                if (table->columns[column]->name == "OBJ#")
+                    updateNumber32u(sysCol->obj, 0, column, table);
+                else if (table->columns[column]->name == "COL#")
+                    updateNumber16(sysCol->col, 0, column, table);
+                else if (table->columns[column]->name == "SEGCOL#")
+                    updateNumber16(sysCol->segCol, 0, column, table);
+                else if (table->columns[column]->name == "INTCOL#")
+                    updateNumber16(sysCol->intCol, 0, column, table);
+                else if (table->columns[column]->name == "NAME")
+                    updateString(sysCol->name, SYS_COL_NAME_LENGTH, column, table);
+                else if (table->columns[column]->name == "TYPE#")
+                    updateNumber16u(sysCol->type, 0, column, table);
+                else if (table->columns[column]->name == "LENGTH")
+                    updateNumber64u(sysCol->length, 0, column, table);
+                else if (table->columns[column]->name == "PRECISION#")
+                    updateNumber64(sysCol->precision, -1, column, table);
+                else if (table->columns[column]->name == "SCALE")
+                    updateNumber64(sysCol->scale, -1, column, table);
+                else if (table->columns[column]->name == "CHARSETFORM")
+                    updateNumber64u(sysCol->charsetForm, 0, column, table);
+                else if (table->columns[column]->name == "CHARSETID")
+                    updateNumber64u(sysCol->charsetId, 0, column, table);
+                else if (table->columns[column]->name == "NULL$")
+                    updateNumber64(sysCol->null_, 0, column, table);
+                else if (table->columns[column]->name == "PROPERTY")
+                    updateNumberXu(sysCol->property, column, table);
+            }
+        }
+
+        metadata->schema->dictSysColAdd(sysCol);
+        sysCol = nullptr;
+    }
+
+    void SystemTransaction::processUpdateDeferredStg(OracleTable* table, typeRowId& rowId) {
+        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStg != nullptr) {
+            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1130,113 +1009,27 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysCol2->obj, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "COL#") {
-                    if (updateNumber16(sysCol2->col, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "SEGCOL#") {
-                    if (updateNumber16(sysCol2->segCol, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "INTCOL#") {
-                    if (updateNumber16(sysCol2->intCol, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "NAME") {
-                    if (updateString(sysCol2->name, SYS_COL_NAME_LENGTH, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "TYPE#") {
-                    if (updateNumber16u(sysCol2->type, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "LENGTH") {
-                    if (updateNumber64u(sysCol2->length, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "PRECISION#") {
-                    if (updateNumber64(sysCol2->precision, -1, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "SCALE") {
-                    if (updateNumber64(sysCol2->scale, -1, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "CHARSETFORM") {
-                    if (updateNumber64u(sysCol2->charsetForm, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "CHARSETID") {
-                    if (updateNumber64u(sysCol2->charsetId, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "NULL$") {
-                    if (updateNumber64(sysCol2->null_, 0, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                } else if (table->columns[column]->name == "PROPERTY") {
-                    if (updateNumberXu(sysCol2->property, column, table, rowId)) {
-                        sysCol2->touched = true;
-                        metadata->schema->sysColTouched = true;
-                    }
-                }
-            }
-        }
-    }
-
-    void SystemTransaction::processUpdateDeferredStg(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysDeferredStg* sysDeferredStg2 = metadata->schema->dictSysDeferredStgFind(rowId);
-        if (sysDeferredStg2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.DEFERRED_STG$: (rowid: " << rowId << ")")
-            return;
-        }
-
-        uint64_t baseMax = builder->valuesMax >> 6;
-        for (uint64_t base = 0; base <= baseMax; ++base) {
-            auto column = static_cast<typeCol>(base << 6);
-            for (uint64_t mask = 1; mask != 0; mask <<= 1, ++column) {
-                if (builder->valuesSet[base] < mask)
-                    break;
-                if ((builder->valuesSet[base] & mask) == 0)
-                    continue;
-
-                if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysDeferredStg2->obj, column, table, rowId)) {
-                        sysDeferredStg2->touched = true;
-                        metadata->schema->sysDeferredStgTouched = true;
-                    }
+                    updateNumber32u(sysDeferredStg->obj, 0, column, table);
                 } else if (table->columns[column]->name == "FLAGS_STG") {
-                    if (updateNumberXu(sysDeferredStg2->flagsStg, column, table, rowId)) {
-                        sysDeferredStg2->touched = true;
-                        metadata->schema->sysDeferredStgTouched = true;
-                    }
+                    updateNumberXu(sysDeferredStg->flagsStg, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysDeferredStgAdd(sysDeferredStg);
+        sysDeferredStg = nullptr;
     }
 
-    void SystemTransaction::processUpdateECol(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysECol* sysECol2 = metadata->schema->dictSysEColFind(rowId);
-        if (sysECol2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.ECOL$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateECol(OracleTable* table, typeRowId& rowId) {
+        sysECol = metadata->schema->dictSysEColFind(rowId);
+        if (sysECol != nullptr) {
+            metadata->schema->dictSysEColDrop(sysECol);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysECol = new SysECol(rowId, 0, 0, -1);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1249,31 +1042,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TABOBJ#") {
-                    if (updateObj(sysECol2->tabObj, column, table, rowId)) {
-                        sysECol2->touched = true;
-                        metadata->schema->sysEColTouched = true;
-                    }
+                    updateNumber32u(sysECol->tabObj, 0, column, table);
                 } else if (table->columns[column]->name == "COLNUM") {
-                    if (updateNumber16(sysECol2->colNum, 0, column, table, rowId)) {
-                        sysECol2->touched = true;
-                        metadata->schema->sysEColTouched = true;
-                    }
+                    updateNumber16(sysECol->colNum, 0, column, table);
                 } else if (table->columns[column]->name == "GUARD_ID") {
-                    if (updateNumber16(sysECol2->guardId, -1, column, table, rowId)) {
-                        sysECol2->touched = true;
-                        metadata->schema->sysEColTouched = true;
-                    }
+                    updateNumber16(sysECol->guardId, -1, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysEColAdd(sysECol);
+        sysECol = nullptr;
     }
 
-    void SystemTransaction::processUpdateLob(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysLob* sysLob2 = metadata->schema->dictSysLobFind(rowId);
-        if (sysLob2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOB$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateLob(OracleTable* table, typeRowId& rowId) {
+        sysLob = metadata->schema->dictSysLobFind(rowId);
+        if (sysLob != nullptr) {
+            metadata->schema->dictSysLobDrop(sysLob);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOB$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysLob = new SysLob(rowId, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1286,45 +1077,33 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysLob2->obj, column, table, rowId)) {
-                        sysLob2->touched = true;
-                        metadata->schema->sysLobTouched = true;
-                    }
+                    updateNumber32u(sysLob->obj, 0, column, table);
                 } else if (table->columns[column]->name == "COL#") {
-                    if (updateNumber16(sysLob2->col, 0, column, table, rowId)) {
-                        sysLob2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                        metadata->schema->touchTable(sysLob2->obj);
-                    }
+                    updateNumber16(sysLob->col, 0, column, table);
                 } else if (table->columns[column]->name == "INTCOL#") {
-                    if (updateNumber16(sysLob2->intCol, 0, column, table, rowId)) {
-                        sysLob2->touched = true;
-                        metadata->schema->sysLobTouched = true;
-                        metadata->schema->touchTable(sysLob2->obj);
-                    }
+                    updateNumber16(sysLob->intCol, 0, column, table);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    if (updateObj(sysLob2->lObj, column, table, rowId)) {
-                        sysLob2->touched = true;
-                        metadata->schema->sysLobTouched = true;
-                        metadata->schema->touchTable(sysLob2->obj);
-                    }
+                    updateNumber32u(sysLob->lObj, 0, column, table);
                 } else if (table->columns[column]->name == "TS#") {
-                    if (updateNumber32u(sysLob2->ts, 0, column, table, rowId)) {
-                        sysLob2->touched = true;
-                        metadata->schema->sysLobTouched = true;
-                        metadata->schema->touchTable(sysLob2->obj);
-                    }
+                    updateNumber32u(sysLob->ts,0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysLobAdd(sysLob);
+        sysLob = nullptr;
     }
 
-    void SystemTransaction::processUpdateLobCompPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                     typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysLobCompPart* sysLobCompPart2 = metadata->schema->dictSysLobCompPartFind(rowId);
-        if (sysLobCompPart2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBCOMPPART$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateLobCompPart(OracleTable* table, typeRowId& rowId) {
+        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPart != nullptr) {
+            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysLobCompPart = new SysLobCompPart(rowId, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1337,27 +1116,27 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "PARTOBJ#") {
-                    if (updateObj(sysLobCompPart2->partObj, column, table, rowId)) {
-                        sysLobCompPart2->touched = true;
-                        metadata->schema->sysLobCompPartTouched = true;
-                    }
+                    updateNumber32u(sysLobCompPart->partObj, 0, column, table);
                 } else if (table->columns[column]->name == "LOBJ#") {
-                    if (updateObj(sysLobCompPart2->lObj, column, table, rowId)) {
-                        sysLobCompPart2->touched = true;
-                        metadata->schema->sysLobCompPartTouched = true;
-                        metadata->schema->touchTable(sysLobCompPart2->partObj);
-                    }
+                    updateNumber32u(sysLobCompPart->lObj, 0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysLobCompPartAdd(sysLobCompPart);
+        sysLobCompPart = nullptr;
     }
 
-    void SystemTransaction::processUpdateLobFrag(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysLobFrag* sysLobFrag2 = metadata->schema->dictSysLobFragFind(rowId);
-        if (sysLobFrag2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBFRAG$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateLobFrag(OracleTable* table, typeRowId& rowId) {
+        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFrag != nullptr) {
+            metadata->schema->dictSysLobFragDrop(sysLobFrag);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+             sysLobFrag = new SysLobFrag(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1370,33 +1149,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "FRAGOBJ#") {
-                    if (updateObj(sysLobFrag2->fragObj, column, table, rowId)) {
-                        sysLobFrag2->touched = true;
-                        metadata->schema->sysLobFragTouched = true;
-                    }
+                    updateNumber32u(sysLobFrag->fragObj, 0, column, table);
                 } else if (table->columns[column]->name == "PARENTOBJ#") {
-                    if (updateObj(sysLobFrag2->parentObj, column, table, rowId)) {
-                        sysLobFrag2->touched = true;
-                        metadata->schema->sysLobFragTouched = true;
-                        metadata->schema->touchTable(sysLobFrag2->parentObj);
-                    }
+                    updateNumber32u(sysLobFrag->parentObj, 0, column, table);
                 } else if (table->columns[column]->name == "TS#") {
-                    if (updateNumber32u(sysLobFrag2->ts, 0, column, table, rowId)) {
-                        sysLobFrag2->touched = true;
-                        metadata->schema->sysLobFragTouched = true;
-                        metadata->schema->touchTable(sysLobFrag2->parentObj);
-                    }
+                    updateNumber32u(sysLobFrag->ts, 0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysLobFragAdd(sysLobFrag);
+        sysLobFrag = nullptr;
     }
 
-    void SystemTransaction::processUpdateObj(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
-        if (sysObj2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.OBJ$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateObj(OracleTable* table, typeRowId& rowId) {
+        sysObj = metadata->schema->dictSysObjFind(rowId);
+        if (sysObj != nullptr) {
+            metadata->schema->dictSysObjDrop(sysObj);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1409,46 +1184,35 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OWNER#") {
-                    if (updateNumber32u(sysObj2->owner, 0, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateNumber32u(sysObj->owner, 0, column, table);
                 } else if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysObj2->obj, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateNumber32u(sysObj->obj, 0, column, table);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    if (updateNumber32u(sysObj2->dataObj, 0, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateNumber32u(sysObj->dataObj, 0, column, table);
                 } else if (table->columns[column]->name == "NAME") {
-                    if (updateString(sysObj2->name, SYS_OBJ_NAME_LENGTH, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateString(sysObj->name, SYS_OBJ_NAME_LENGTH, column, table);
                 } else if (table->columns[column]->name == "TYPE#") {
-                    if (updateNumber16u(sysObj2->type, 0, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateNumber16u(sysObj->type, 0, column, table);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    if (updateNumberXu(sysObj2->flags, column, table, rowId)) {
-                        sysObj2->touched = true;
-                        metadata->schema->sysObjTouched = true;
-                    }
+                    updateNumberXu(sysObj->flags, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysObjAdd(sysObj);
+        sysObj = nullptr;
     }
 
-    void SystemTransaction::processUpdateTab(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                             typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysTab* sysTab2 = metadata->schema->dictSysTabFind(rowId);
-        if (sysTab2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TAB$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateTab(OracleTable* table, typeRowId& rowId) {
+        sysTab = metadata->schema->dictSysTabFind(rowId);
+        if (sysTab != nullptr) {
+            metadata->schema->dictSysTabDrop(sysTab);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TAB$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1461,45 +1225,33 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateObj(sysTab2->obj, column, table, rowId)) {
-                        sysTab2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                    }
+                    updateNumber32u(sysTab->obj, 0, column, table);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    if (updateNumber32u(sysTab2->dataObj, 0, column, table, rowId)) {
-                        sysTab2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                        metadata->schema->touchTable(sysTab2->obj);
-                    }
+                    updateNumber32u(sysTab->dataObj, 0, column, table);
                 } else if (table->columns[column]->name == "CLUCOLS") {
-                    if (updateNumber16(sysTab2->cluCols, 0, column, table, rowId)) {
-                        sysTab2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                        metadata->schema->touchTable(sysTab2->obj);
-                    }
+                    updateNumber16(sysTab->cluCols, 0, column, table);
                 } else if (table->columns[column]->name == "FLAGS") {
-                    if (updateNumberXu(sysTab2->flags, column, table, rowId)) {
-                        sysTab2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                        metadata->schema->touchTable(sysTab2->obj);
-                    }
+                    updateNumberXu(sysTab->flags, column, table);
                 } else if (table->columns[column]->name == "PROPERTY") {
-                    if (updateNumberXu(sysTab2->property, column, table, rowId)) {
-                        sysTab2->touched = true;
-                        metadata->schema->sysTabTouched = true;
-                        metadata->schema->touchTable(sysTab2->obj);
-                    }
+                    updateNumberXu(sysTab->property, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysTabAdd(sysTab);
+        sysTab = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabComPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysTabComPart* sysTabComPart2 = metadata->schema->dictSysTabComPartFind(rowId);
-        if (sysTabComPart2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABCOMPART$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateTabComPart(OracleTable* table, typeRowId& rowId) {
+        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPart != nullptr) {
+            metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysTabComPart = new SysTabComPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1512,31 +1264,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateNumber32u(sysTabComPart2->obj, 0, column, table, rowId)) {
-                        sysTabComPart2->touched = true;
-                        metadata->schema->sysTabComPartTouched = true;
-                    }
+                    updateNumber32u(sysTabComPart->obj, 0, column, table);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    if (updateNumber32u(sysTabComPart2->dataObj, 0, column, table, rowId)) {
-                        sysTabComPart2->touched = true;
-                        metadata->schema->sysTabComPartTouched = true;
-                    }
+                    updateNumber32u(sysTabComPart->dataObj, 0, column, table);
                 } else if (table->columns[column]->name == "BO#") {
-                    if (updateObj(sysTabComPart2->bo, column, table, rowId)) {
-                        sysTabComPart2->touched = true;
-                        metadata->schema->sysTabComPartTouched = true;
-                    }
+                    updateNumber32u(sysTabComPart->bo, 0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysTabComPartAdd(sysTabComPart);
+        sysTabComPart = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                 typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysTabPart* sysTabPart2 = metadata->schema->dictSysTabPartFind(rowId);
-        if (sysTabPart2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABPART$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateTabPart(OracleTable* table, typeRowId& rowId) {
+        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPart != nullptr) {
+            metadata->schema->dictSysTabPartDrop(sysTabPart);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysTabPart = new SysTabPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1549,31 +1299,28 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateNumber32u(sysTabPart2->obj, 0, column, table, rowId)) {
-                        sysTabPart2->touched = true;
-                        metadata->schema->sysTabPartTouched = true;
-                    }
+                    updateNumber32u(sysTabPart->obj, 0, column, table);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    if (updateNumber32u(sysTabPart2->dataObj, 0, column, table, rowId)) {
-                        sysTabPart2->touched = true;
-                        metadata->schema->sysTabPartTouched = true;
-                    }
+                    updateNumber32u(sysTabPart->dataObj, 0, column, table);
                 } else if (table->columns[column]->name == "BO#") {
-                    if (updateObj(sysTabPart2->bo, column, table, rowId)) {
-                        sysTabPart2->touched = true;
-                        metadata->schema->sysTabPartTouched = true;
-                    }
+                    updateNumber32u(sysTabPart->bo, 0, column, table);
                 }
             }
         }
+        metadata->schema->dictSysTabPartAdd(sysTabPart);
+        sysTabPart = nullptr;
     }
 
-    void SystemTransaction::processUpdateTabSubPart(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                                    typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysTabSubPart* sysTabSubPart2 = metadata->schema->dictSysTabSubPartFind(rowId);
-        if (sysTabSubPart2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABSUBPART$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateTabSubPart(OracleTable* table, typeRowId& rowId) {
+        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPart != nullptr) {
+            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1586,31 +1333,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "OBJ#") {
-                    if (updateNumber32u(sysTabSubPart2->obj, 0, column, table, rowId)) {
-                        sysTabSubPart2->touched = true;
-                        metadata->schema->sysTabSubPartTouched = true;
-                    }
+                    updateNumber32u(sysTabSubPart->obj, 0, column, table);
                 } else if (table->columns[column]->name == "DATAOBJ#") {
-                    if (updateNumber32u(sysTabSubPart2->dataObj, 0, column, table, rowId)) {
-                        sysTabSubPart2->touched = true;
-                        metadata->schema->sysTabSubPartTouched = true;
-                    }
+                    updateNumber32u(sysTabSubPart->dataObj, 0, column, table);
                 } else if (table->columns[column]->name == "POBJ#") {
-                    if (updatePartition(sysTabSubPart2->pObj, column, table, rowId)) {
-                        sysTabSubPart2->touched = true;
-                        metadata->schema->sysTabSubPartTouched = true;
-                    }
+                    updateNumber32u(sysTabSubPart->pObj, 0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysTabSubPartAdd(sysTabSubPart);
+        sysTabSubPart = nullptr;
     }
 
-    void SystemTransaction::processUpdateTs(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                            typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysTs* sysTs2 = metadata->schema->dictSysTsFind(rowId);
-        if (sysTs2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TS$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateTs(OracleTable* table, typeRowId& rowId) {
+        sysTs = metadata->schema->dictSysTsFind(rowId);
+        if (sysTs != nullptr) {
+            metadata->schema->dictSysTsDrop(sysTs);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TS$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysTs = new SysTs(rowId, 0, "", 0);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1623,31 +1368,29 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "TS#") {
-                    if (updateNumber32u(sysTs2->ts, 0, column, table, rowId)) {
-                        sysTs2->touched = true;
-                        metadata->schema->sysTsTouched = true;
-                    }
+                    updateNumber32u(sysTs->ts, 0, column, table);
                 } else if (table->columns[column]->name == "NAME") {
-                    if (updateString(sysTs2->name, SYS_TS_NAME_LENGTH, column, table, rowId)) {
-                        sysTs2->touched = true;
-                        metadata->schema->sysTsTouched = true;
-                    }
+                    updateString(sysTs->name, SYS_TS_NAME_LENGTH, column, table);
                 } else if (table->columns[column]->name == "BLOCKSIZE") {
-                    if (updateNumber32u(sysTs2->blockSize, 0, column, table, rowId)) {
-                        sysTs2->touched = true;
-                        metadata->schema->sysTsTouched = true;
-                    }
+                    updateNumber32u(sysTs->blockSize, 0, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysTsAdd(sysTs);
+        sysTs = nullptr;
     }
 
-    void SystemTransaction::processUpdateUser(OracleTable* table, typeDataObj dataObj __attribute__((unused)), typeDba bdba __attribute__((unused)),
-                                              typeSlot slot __attribute__((unused)), typeRowId& rowId) {
-        SysUser* sysUser2 = metadata->schema->dictSysUserFind(rowId);
-        if (sysUser2 == nullptr) {
-            TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.USER$: (rowid: " << rowId << ")")
-            return;
+    void SystemTransaction::processUpdateUser(OracleTable* table, typeRowId& rowId) {
+        sysUser = metadata->schema->dictSysUserFind(rowId);
+        if (sysUser != nullptr) {
+            metadata->schema->dictSysUserDrop(sysUser);
+        } else {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.USER$: (rowid: " + rowId.toString() + ") for update");
+                return;
+            }
+            sysUser = new SysUser(rowId, 0, "", 0, 0, false);
         }
 
         uint64_t baseMax = builder->valuesMax >> 6;
@@ -1660,23 +1403,17 @@ namespace OpenLogReplicator {
                     continue;
 
                 if (table->columns[column]->name == "USER#") {
-                    if (updateUser(sysUser2->user, column, table, rowId)) {
-                        sysUser2->touched = true;
-                        metadata->schema->sysUserTouched = true;
-                    }
+                    updateNumber32u(sysUser->user, 0, column, table);
                 } else if (table->columns[column]->name == "NAME") {
-                    if (updateString(sysUser2->name, SYS_USER_NAME_LENGTH, column, table, rowId)) {
-                        sysUser2->touched = true;
-                        metadata->schema->sysUserTouched = true;
-                    }
+                    updateString(sysUser->name, SYS_USER_NAME_LENGTH, column, table);
                 } else if (table->columns[column]->name == "SPARE1") {
-                    if (updateNumberXu(sysUser2->spare1, column, table, rowId)) {
-                        sysUser2->touched = true;
-                        metadata->schema->sysUserTouched = true;
-                    }
+                    updateNumberXu(sysUser->spare1, column, table);
                 }
             }
         }
+
+        metadata->schema->dictSysUserAdd(sysUser);
+        sysUser = nullptr;
     }
 
     void SystemTransaction::processUpdate(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot) {
@@ -1687,118 +1424,328 @@ namespace OpenLogReplicator {
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                processUpdateCCol(table, dataObj, bdba, slot, rowId);
+                processUpdateCCol(table, rowId);
                 break;
 
             case TABLE_SYS_CDEF:
-                processUpdateCDef(table, dataObj, bdba, slot, rowId);
+                processUpdateCDef(table, rowId);
                 break;
 
             case TABLE_SYS_COL:
-                processUpdateCol(table, dataObj, bdba, slot, rowId);
+                processUpdateCol(table, rowId);
                 break;
 
             case TABLE_SYS_DEFERRED_STG:
-                processUpdateDeferredStg(table, dataObj, bdba, slot, rowId);
+                processUpdateDeferredStg(table, rowId);
                 break;
 
             case TABLE_SYS_ECOL:
-                processUpdateECol(table, dataObj, bdba, slot, rowId);
+                processUpdateECol(table, rowId);
                 break;
 
             case TABLE_SYS_LOB:
-                processUpdateLob(table, dataObj, bdba, slot, rowId);
+                processUpdateLob(table, rowId);
                 break;
 
             case TABLE_SYS_LOB_COMP_PART:
-                processUpdateLobCompPart(table, dataObj, bdba, slot, rowId);
+                processUpdateLobCompPart(table, rowId);
                 break;
 
             case TABLE_SYS_LOB_FRAG:
-                processUpdateLobFrag(table, dataObj, bdba, slot, rowId);
+                processUpdateLobFrag(table, rowId);
                 break;
 
             case TABLE_SYS_OBJ:
-                processUpdateObj(table, dataObj, bdba, slot, rowId);
+                processUpdateObj(table, rowId);
                 break;
 
             case TABLE_SYS_TAB:
-                processUpdateTab(table, dataObj, bdba, slot, rowId);
+                processUpdateTab(table, rowId);
                 break;
 
             case TABLE_SYS_TABCOMPART:
-                processUpdateTabComPart(table, dataObj, bdba, slot, rowId);
+                processUpdateTabComPart(table, rowId);
                 break;
 
             case TABLE_SYS_TABPART:
-                processUpdateTabPart(table, dataObj, bdba, slot, rowId);
+                processUpdateTabPart(table, rowId);
                 break;
 
             case TABLE_SYS_TABSUBPART:
-                processUpdateTabSubPart(table, dataObj, bdba, slot, rowId);
+                processUpdateTabSubPart(table, rowId);
                 break;
 
             case TABLE_SYS_TS:
-                processUpdateTs(table, dataObj, bdba, slot, rowId);
+                processUpdateTs(table, rowId);
                 break;
 
             case TABLE_SYS_USER:
-                processUpdateUser(table, dataObj, bdba, slot, rowId);
+                processUpdateUser(table, rowId);
                 break;
         }
     }
 
+    void SystemTransaction::processDeleteCCol(typeRowId& rowId) {
+        sysCCol = metadata->schema->dictSysCColFind(rowId);
+        if (sysCCol == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CCOL$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysCColDrop(sysCCol);
+        delete sysCCol;
+        sysCCol = nullptr;
+    }
+
+    void SystemTransaction::processDeleteCDef(typeRowId& rowId) {
+        sysCDef = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDef == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.CDEF$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysCDefDrop(sysCDef);
+        delete sysCDef;
+        sysCDef = nullptr;
+    }
+
+    void SystemTransaction::processDeleteCol(typeRowId& rowId) {
+        sysCol = metadata->schema->dictSysColFind(rowId);
+        if (sysCol == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.COL$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysColDrop(sysCol);
+        delete sysCol;
+        sysCol = nullptr;
+    }
+
+    void SystemTransaction::processDeleteDeferredStg(typeRowId& rowId) {
+        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStg == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.DEFERRED_STG$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+        delete sysDeferredStg;
+        sysDeferredStg = nullptr;
+    }
+
+    void SystemTransaction::processDeleteECol(typeRowId& rowId) {
+        sysECol = metadata->schema->dictSysEColFind(rowId);
+        if (sysECol == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.ECOL$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysEColDrop(sysECol);
+        delete sysECol;
+        sysECol = nullptr;
+    }
+
+    void SystemTransaction::processDeleteLob(typeRowId& rowId) {
+        sysLob = metadata->schema->dictSysLobFind(rowId);
+        if (sysLob == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOB$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysLobDrop(sysLob);
+        delete sysLob;
+        sysLob = nullptr;
+    }
+
+    void SystemTransaction::processDeleteLobCompPart(typeRowId& rowId) {
+        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPart == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBCOMPPART$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+        delete sysLobCompPart;
+        sysLobCompPart = nullptr;
+    }
+
+    void SystemTransaction::processDeleteLobFrag(typeRowId& rowId) {
+        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFrag == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.LOBFRAG$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysLobFragDrop(sysLobFrag);
+        delete sysLobFrag;
+        sysLobFrag = nullptr;
+    }
+
+    void SystemTransaction::processDeleteObj(typeRowId& rowId) {
+        sysObj = metadata->schema->dictSysObjFind(rowId);
+        if (sysObj == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.OBJ$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysObjDrop(sysObj);
+        delete sysObj;
+        sysObj = nullptr;
+    }
+
+    void SystemTransaction::processDeleteTab(typeRowId& rowId) {
+        sysTab = metadata->schema->dictSysTabFind(rowId);
+        if (sysTab == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TAB$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysTabDrop(sysTab);
+        delete sysTab;
+        sysTab = nullptr;
+    }
+
+    void SystemTransaction::processDeleteTabComPart(typeRowId& rowId) {
+        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPart == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABCOMPART$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+        delete sysTabComPart;
+        sysTabComPart = nullptr;
+    }
+
+    void SystemTransaction::processDeleteTabPart(typeRowId& rowId) {
+        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPart == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABPART$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysTabPartDrop(sysTabPart);
+        delete sysTabPart;
+        sysTabPart = nullptr;
+    }
+
+    void SystemTransaction::processDeleteTabSubPart(typeRowId& rowId) {
+        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPart == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TABSUBPART$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+        delete sysTabSubPart;
+        sysTabSubPart = nullptr;
+    }
+
+    void SystemTransaction::processDeleteTs(typeRowId& rowId) {
+        sysTs = metadata->schema->dictSysTsFind(rowId);
+        if (sysTs == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.TS$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysTsDrop(sysTs);
+        delete sysTs;
+        sysTs = nullptr;
+    }
+
+    void SystemTransaction::processDeleteUser(typeRowId& rowId) {
+        sysUser = metadata->schema->dictSysUserFind(rowId);
+        if (sysUser == nullptr) {
+            if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA)) {
+                TRACE(TRACE2_SYSTEM, "SYSTEM: missing SYS.USER$: (rowid: " + rowId.toString() + ") for delete");
+                return;
+            }
+        }
+
+        metadata->schema->dictSysUserDrop(sysUser);
+        delete sysUser;
+        sysUser = nullptr;
+    }
+
     void SystemTransaction::processDelete(OracleTable* table, typeDataObj dataObj, typeDba bdba, typeSlot slot) {
-        typeRowId rowId(dataObj, bdba, slot);
+            typeRowId rowId(dataObj, bdba, slot);
         char str[19];
         rowId.toString(str);
         TRACE(TRACE2_SYSTEM, "SYSTEM: delete table (name: " << table->owner << "." << table->name << ", rowid: " << rowId << ")")
 
         switch (table->systemTable) {
             case TABLE_SYS_CCOL:
-                metadata->schema->dictSysCColDrop(rowId);
+                processDeleteCCol(rowId);
                 break;
             case TABLE_SYS_CDEF:
-                metadata->schema->dictSysCDefDrop(rowId);
+                processDeleteCDef(rowId);
                 break;
             case TABLE_SYS_COL:
-                metadata->schema->dictSysColDrop(rowId);
+                processDeleteCol(rowId);
                 break;
             case TABLE_SYS_DEFERRED_STG:
-                metadata->schema->dictSysDeferredStgDrop(rowId);
+                processDeleteDeferredStg(rowId);
                 break;
             case TABLE_SYS_ECOL:
-                metadata->schema->dictSysEColDrop(rowId);
+                processDeleteECol(rowId);
                 break;
             case TABLE_SYS_LOB:
-                metadata->schema->dictSysLobDrop(rowId);
+                processDeleteLob(rowId);
                 break;
             case TABLE_SYS_LOB_COMP_PART:
-                metadata->schema->dictSysLobCompPartDrop(rowId);
+                processDeleteLobCompPart(rowId);
                 break;
             case TABLE_SYS_LOB_FRAG:
-                metadata->schema->dictSysLobFragDrop(rowId);
+                processDeleteLobFrag(rowId);
                 break;
             case TABLE_SYS_OBJ:
-                metadata->schema->dictSysObjDrop(rowId);
+                processDeleteObj(rowId);
                 break;
             case TABLE_SYS_TAB:
-                metadata->schema->dictSysTabDrop(rowId);
+                processDeleteTab(rowId);
                 break;
             case TABLE_SYS_TABCOMPART:
-                metadata->schema->dictSysTabComPartDrop(rowId);
+                processDeleteTabComPart(rowId);
                 break;
             case TABLE_SYS_TABPART:
-                metadata->schema->dictSysTabPartDrop(rowId);
+                processDeleteTabPart(rowId);
                 break;
             case TABLE_SYS_TABSUBPART:
-                metadata->schema->dictSysTabSubPartDrop(rowId);
+                processDeleteTabSubPart(rowId);
                 break;
             case TABLE_SYS_TS:
-                metadata->schema->dictSysTabSubPartDrop(rowId);
+                processDeleteTs(rowId);
                 break;
             case TABLE_SYS_USER:
-                metadata->schema->dictSysUserDrop(rowId);
+                processDeleteUser(rowId);
                 break;
         }
     }
@@ -1811,16 +1758,14 @@ namespace OpenLogReplicator {
 
         std::set<std::string> msgsDropped;
         std::set<std::string> msgsUpdated;
-        {
-            metadata->schema->scn = scn;
-            metadata->schema->refreshIndexes(metadata->users);
-            metadata->schema->rebuildMaps(msgsDropped);
+        metadata->schema->scn = scn;
+        metadata->schema->dropTouched(metadata->users, msgsDropped);
 
-            for (SchemaElement *element: metadata->schemaElements)
-                metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
-                                            msgsUpdated, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
-                                            metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
-        }
+        for (SchemaElement *element: metadata->schemaElements)
+            metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
+                                        msgsUpdated, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
+                                        metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
+
         for (auto msg: msgsDropped) {
             INFO("dropped metadata: " << msg);
         }

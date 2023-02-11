@@ -592,7 +592,7 @@ namespace OpenLogReplicator {
             return;
         }
 
-        uint32_t pageSize = metadata->schema->checkLobPageSize(redoLogRecord1->dataObj);
+        uint32_t pageSize = lob->checkLobPageSize(redoLogRecord1->dataObj);
 
         if (redoLogRecord1->xid.toUint() == 0) {
             auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);

@@ -862,6 +862,7 @@ namespace OpenLogReplicator {
 
         Schema otherSchema(ctx, metadata->locales);
         try {
+            readSystemDictionariesMetadata(&otherSchema, currentScn);
             for (SchemaElement* element : metadata->schemaElements)
                 readSystemDictionaries(&otherSchema, currentScn, element->owner, element->table, element->options);
             std::string errMsg;
@@ -1237,7 +1238,7 @@ namespace OpenLogReplicator {
             stmtLobFrag.bindUInt64(6, targetScn);
             stmtLobFrag.bindUInt64(7, targetScn);
             stmtLobFrag.bindUInt64(8, targetScn);
-            stmtLobFrag.bindUInt32(9, obj);
+            stmtLobFrag.bindUInt32(9, user);
         }
 
         char lobFragRowid[19]; stmtLobFrag.defineString(1, lobFragRowid, sizeof(lobFragRowid));
@@ -1247,7 +1248,7 @@ namespace OpenLogReplicator {
 
         int64_t lobFragRet = stmtLobFrag.executeQuery();
         while (lobFragRet) {
-            schema->dictSysLobFragAdd(lobRowid, lobFragFragObj, lobFragParentObj, lobFragTs);
+            schema->dictSysLobFragAdd(lobFragRowid, lobFragFragObj, lobFragParentObj, lobFragTs);
             lobFragRet = stmtLobFrag.next();
         }
 
@@ -1393,24 +1394,6 @@ namespace OpenLogReplicator {
         DEBUG("read dictionaries for owner: " << owner << ", table: " << table << ", options: " << std::dec << static_cast<uint64_t>(options))
 
         try {
-            DatabaseStatement stmtTs(conn);
-
-            // Reading SYS.TS$
-            TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_TS)
-            TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
-            stmtTs.createStatement(SQL_GET_SYS_TS);
-            stmtTs.bindUInt64(1, targetScn);
-            char tsRowid[19]; stmtTs.defineString(1, tsRowid, sizeof(tsRowid));
-            typeTs tsTs; stmtTs.defineUInt32(2, tsTs);
-            char tsName[129]; stmtTs.defineString(3, tsName, sizeof(tsName));
-            uint32_t tsBlockSize; stmtTs.defineUInt32(4, tsBlockSize);
-
-            int64_t retTs = stmtTs.executeQuery();
-            while (retTs) {
-                schema->dictSysTsAdd(tsRowid, tsTs, tsName, tsBlockSize);
-                retTs = stmtTs.next();
-            }
-
             DatabaseStatement stmtUser(conn);
 
             // Reading SYS.USER$
@@ -1429,7 +1412,7 @@ namespace OpenLogReplicator {
             int64_t retUser = stmtUser.executeQuery();
             while (retUser) {
                 if (!schema->dictSysUserAdd(userRowid, userUser, userName, userSpare11, userSpare12,
-                        (options & OPTIONS_SYSTEM_TABLE) != 0)) {
+                        (options & OPTIONS_SYSTEM_TABLE) != 0, true)) {
                     userSpare11 = 0;
                     userSpare12 = 0;
                     retUser = stmtUser.next();

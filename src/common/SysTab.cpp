@@ -21,14 +21,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     SysTab::SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2,
-                   uint64_t newProperty1, uint64_t newProperty2, bool newTouched) :
+                   uint64_t newProperty1, uint64_t newProperty2) :
             rowId(newRowId),
             obj(newObj),
             dataObj(newDataObj),
             cluCols(newCluCols),
             flags(newFlags1, newFlags2),
-            property(newProperty1, newProperty2),
-            touched(newTouched) {
+            property(newProperty1, newProperty2) {
     }
 
     bool SysTab::operator!=(const SysTab& other) const {

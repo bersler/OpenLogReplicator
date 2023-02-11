@@ -80,8 +80,6 @@ namespace OpenLogReplicator {
         pk.clear();
         columns.clear();
         tablePartitions.clear();
-        lobPartitions.clear();
-        lobIndexes.clear();
 
         for (OracleLob* lob: lobs)
             delete lob;
@@ -90,7 +88,7 @@ namespace OpenLogReplicator {
 
     void OracleTable::addColumn(OracleColumn* column) {
         if (column->segCol != static_cast<typeCol>(columns.size() + 1))
-            throw DataException("trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) + ", dataobj:: " +
+            throw DataException("trying to insert table: " + owner + "." + name + " (obj: " + std::to_string(obj) + ", dataobj: " +
                     std::to_string(dataObj) + ") column: " + column->name + " (col#: " + std::to_string(column->col) + ", segcol#: " +
                     std::to_string(column->segCol) + ") on position " + std::to_string(columns.size() + 1));
 
@@ -115,14 +113,6 @@ namespace OpenLogReplicator {
     void OracleTable::addTablePartition(typeObj newObj, typeDataObj newDataObj) {
         typeObj2 objx = (static_cast<typeObj2>(newObj) << 32) | static_cast<typeObj2>(newDataObj);
         tablePartitions.push_back(objx);
-    }
-
-    void OracleTable::addLobPartition(typeDataObj newDataObj) {
-        lobPartitions.push_back(newDataObj);
-    }
-
-    void OracleTable::addLobIndex(typeDataObj newDataObj) {
-        lobIndexes.push_back(newDataObj);
     }
 
     std::ostream& operator<<(std::ostream& os, const OracleTable& table) {

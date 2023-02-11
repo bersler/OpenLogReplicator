@@ -35,12 +35,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysLobFrag::SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs, bool newTouched) :
+    SysLobFrag::SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs) :
             rowId(newRowId),
             fragObj(newFragObj),
             parentObj(newParentObj),
-            ts(newTs),
-            touched(newTouched) {
+            ts(newTs) {
     }
 
     bool SysLobFrag::operator!=(const SysLobFrag& other) const {

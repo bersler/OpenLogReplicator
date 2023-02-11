@@ -35,14 +35,13 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysLob::SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs, bool newTouched) :
+    SysLob::SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
             rowId(newRowId),
             obj(newObj),
             col(newCol),
             intCol(newIntCol),
             lObj(newLObj),
-            ts(newTs),
-            touched(newTouched) {
+            ts(newTs) {
     }
 
     bool SysLob::operator!=(const SysLob& other) const {

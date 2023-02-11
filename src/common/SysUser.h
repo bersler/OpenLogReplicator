@@ -31,7 +31,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysUser {
     public:
-        SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle, bool newTouched);
+        SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle);
 
         bool operator!=(const SysUser& other) const;
         [[nodiscard]] bool isSuppLogPrimary();
@@ -42,7 +42,6 @@ namespace OpenLogReplicator {
         std::string name;
         typeIntX spare1;            // NULL
         bool single;
-        bool touched;
     };
 }
 

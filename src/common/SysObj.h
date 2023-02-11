@@ -90,7 +90,7 @@ namespace OpenLogReplicator {
     class SysObj {
     public:
         SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
-               uint64_t newFlags2, bool newSingle, bool newTouched);
+               uint64_t newFlags2, bool newSingle);
 
         bool operator!=(const SysObj& other) const;
         [[nodiscard]] bool isLob() const;
@@ -106,7 +106,6 @@ namespace OpenLogReplicator {
         std::string name;
         typeIntX flags;             // NULL
         bool single;
-        bool touched;
     };
 }
 

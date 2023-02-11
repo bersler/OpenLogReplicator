@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysTabPart {
     public:
-        SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo, bool newTouched);
+        SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo);
 
         bool operator!=(const SysTabPart& other) const;
 
@@ -44,7 +44,6 @@ namespace OpenLogReplicator {
         typeObj obj;
         typeDataObj dataObj;        // NULL
         typeObj bo;
-        bool touched;
     };
 }
 

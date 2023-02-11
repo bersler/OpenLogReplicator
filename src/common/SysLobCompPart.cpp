@@ -35,11 +35,10 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysLobCompPart::SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj, bool newTouched) :
+    SysLobCompPart::SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
             rowId(newRowId),
             partObj(newPartObj),
-            lObj(newLObj),
-            touched(newTouched) {
+            lObj(newLObj) {
     }
 
     bool SysLobCompPart::operator!=(const SysLobCompPart& other) const {

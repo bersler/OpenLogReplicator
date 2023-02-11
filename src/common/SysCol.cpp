@@ -52,7 +52,7 @@ namespace OpenLogReplicator {
 
     SysCol::SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                    uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
-                   uint64_t newProperty1, uint64_t newProperty2, bool newTouched) :
+                   uint64_t newProperty1, uint64_t newProperty2) :
             rowId(newRowId),
             obj(newObj),
             col(newCol),
@@ -66,8 +66,7 @@ namespace OpenLogReplicator {
             charsetForm(newCharsetForm),
             charsetId(newCharsetId),
             null_(newNull),
-            property(newProperty1, newProperty2),
-            touched(newTouched) {
+            property(newProperty1, newProperty2) {
     }
 
     bool SysCol::operator!=(const SysCol& other) const {
@@ -78,6 +77,10 @@ namespace OpenLogReplicator {
 
     bool SysCol::isInvisible() {
         return property.isSet64(SYS_COL_PROPERTY_INVISIBLE);
+    }
+
+    bool SysCol::isNullable() {
+        return (null_ == 0);
     }
 
     bool SysCol::isStoredAsLob() {

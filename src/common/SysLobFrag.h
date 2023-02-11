@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
 
     class SysLobFrag {
     public:
-        SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs, bool newTouched);
+        SysLobFrag(typeRowId& newRowId, typeObj newFragObj, typeObj newParentObj, typeTs newTs);
 
         bool operator!=(const SysLobFrag& other) const;
 
@@ -44,7 +44,6 @@ namespace OpenLogReplicator {
         typeObj fragObj;
         typeObj parentObj;
         typeTs ts;
-        bool touched;
     };
 }
 

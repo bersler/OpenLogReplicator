@@ -28,7 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTs {
     public:
-        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize, bool newTouched);
+        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize);
 
         bool operator!=(const SysTs& other) const;
 
@@ -36,7 +36,6 @@ namespace OpenLogReplicator {
         typeTs ts;
         std::string name;
         uint32_t blockSize;
-        bool touched;
     };
 }
 

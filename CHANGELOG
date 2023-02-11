@@ -6,6 +6,7 @@
 - fix: standardization of output messages
 - fix: race condition might result in transaction data loss
 - fix: experimental LOB support schema script error
+- enhancement: optimized DDL processing speed
 
 1.0.0
 - copy from 0.9.58

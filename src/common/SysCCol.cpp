@@ -44,12 +44,11 @@ namespace OpenLogReplicator {
         return (other.rowId != rowId) || (other.con != con) || (other.intCol != intCol) || (other.obj != obj) || (other.spare1 != spare1);
     }
 
-    SysCCol::SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12, bool newTouched) :
+    SysCCol::SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
                 rowId(newRowId),
                 con(newCon),
                 intCol(newIntCol),
                 obj(newObj),
-                spare1(newSpare11, newSpare12),
-                touched(newTouched) {
+                spare1(newSpare11, newSpare12) {
     }
 }

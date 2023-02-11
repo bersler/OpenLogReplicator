@@ -36,14 +36,13 @@ namespace OpenLogReplicator {
 
     class SysLobCompPart {
     public:
-        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj, bool newTouched);
+        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj);
 
         bool operator!=(const SysLobCompPart& other) const;
 
         typeRowId rowId;
         typeObj partObj;
         typeObj lObj;
-        bool touched;
     };
 }
 

@@ -20,13 +20,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "SysUser.h"
 
 namespace OpenLogReplicator {
-    SysUser::SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle, bool newTouched) :
+    SysUser::SysUser(typeRowId& newRowId, typeUser newUser, const char* newName, uint64_t newSpare11, uint64_t newSpare12, bool newSingle) :
             rowId(newRowId),
             user(newUser),
             name(newName),
             spare1(newSpare11, newSpare12),
-            single(newSingle),
-            touched(newTouched) {
+            single(newSingle) {
     }
 
     bool SysUser::operator!=(const SysUser& other) const {

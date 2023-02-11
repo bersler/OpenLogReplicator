@@ -35,12 +35,11 @@ namespace OpenLogReplicator {
         return false;
     }
 
-    SysTabPart::SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo, bool newTouched) :
+    SysTabPart::SysTabPart(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeObj newBo) :
             rowId(newRowId),
             obj(newObj),
             dataObj(newDataObj),
-            bo(newBo),
-            touched(newTouched) {
+            bo(newBo) {
     }
 
     bool SysTabPart::operator!=(const SysTabPart& other) const {
