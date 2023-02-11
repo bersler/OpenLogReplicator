@@ -353,7 +353,20 @@ namespace OpenLogReplicator {
             "   SYS.LOBFRAG$ AS OF SCN :l LF ON"
             "     LCP.PARTOBJ# = LF.PARENTOBJ#"
             " WHERE"
-            "   O.OWNER# = :m");
+            "   O.OWNER# = :m"
+            " UNION ALL"
+            " SELECT"
+            "   LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#"
+            " FROM"
+            "   SYS.OBJ$ AS OF SCN :n O"
+            " JOIN"
+            "   SYS.LOB$ AS OF SCN :o L ON"
+            "     O.OBJ# = L.OBJ#"
+            " JOIN"
+            "   SYS.LOBFRAG$ AS OF SCN :p LF ON"
+            "     L.LOBJ# = LF.PARENTOBJ#"
+            " WHERE"
+            "   O.OWNER# = :q");
 
     const char* ReplicatorOnline::SQL_GET_SYS_LOB_FRAG_OBJ(
             "SELECT"
@@ -367,7 +380,17 @@ namespace OpenLogReplicator {
             "   SYS.LOBFRAG$ AS OF SCN :k LF ON"
             "     LCP.PARTOBJ# = LF.PARENTOBJ#"
             " WHERE"
-            "   L.OBJ# = :l");
+            "   L.OBJ# = :l"
+            " UNION ALL"
+            " SELECT"
+            "   LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#"
+            " FROM"
+            "   SYS.LOB$ AS OF SCN :m L"
+            " JOIN"
+            "   SYS.LOBFRAG$ AS OF SCN :n LF ON"
+            "     L.LOBJ# = LF.PARENTOBJ#"
+            " WHERE"
+            "   L.OBJ# = :o");
 
     const char* ReplicatorOnline::SQL_GET_SYS_OBJ_USER(
             "SELECT"
@@ -837,12 +860,12 @@ namespace OpenLogReplicator {
 
         INFO("verifying schema for SCN: " << std::dec << currentScn)
 
-        Schema tmpSchema(ctx, metadata->locales);
+        Schema otherSchema(ctx, metadata->locales);
         try {
             for (SchemaElement* element : metadata->schemaElements)
-                readSystemDictionaries(&tmpSchema, currentScn, element->owner, element->table, element->options);
+                readSystemDictionaries(&otherSchema, currentScn, element->owner, element->table, element->options);
             std::string errMsg;
-            bool result = metadata->schema->compare(&tmpSchema, errMsg);
+            bool result = metadata->schema->compare(&otherSchema, errMsg);
             if (result) {
                 WARNING("Schema incorrect: " << errMsg)
             }
@@ -1183,11 +1206,17 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "PARAM2: " << std::dec << targetScn)
             TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
             TRACE(TRACE2_SQL, "PARAM4: " << std::dec << obj)
+            TRACE(TRACE2_SQL, "PARAM5: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM6: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM7: " << std::dec << obj)
             stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_OBJ);
             stmtLobFrag.bindUInt64(1, targetScn);
             stmtLobFrag.bindUInt64(2, targetScn);
             stmtLobFrag.bindUInt64(3, targetScn);
             stmtLobFrag.bindUInt32(4, obj);
+            stmtLobFrag.bindUInt64(5, targetScn);
+            stmtLobFrag.bindUInt64(6, targetScn);
+            stmtLobFrag.bindUInt32(7, obj);
         } else {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SYS_LOB_FRAG_USER)
             TRACE(TRACE2_SQL, "PARAM1: " << std::dec << targetScn)
@@ -1195,12 +1224,20 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "PARAM3: " << std::dec << targetScn)
             TRACE(TRACE2_SQL, "PARAM4: " << std::dec << targetScn)
             TRACE(TRACE2_SQL, "PARAM5: " << std::dec << user)
+            TRACE(TRACE2_SQL, "PARAM6: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM7: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM8: " << std::dec << targetScn)
+            TRACE(TRACE2_SQL, "PARAM9: " << std::dec << user)
             stmtLobFrag.createStatement(SQL_GET_SYS_LOB_FRAG_USER);
             stmtLobFrag.bindUInt64(1, targetScn);
             stmtLobFrag.bindUInt64(2, targetScn);
             stmtLobFrag.bindUInt64(3, targetScn);
             stmtLobFrag.bindUInt64(4, targetScn);
             stmtLobFrag.bindUInt32(5, user);
+            stmtLobFrag.bindUInt64(6, targetScn);
+            stmtLobFrag.bindUInt64(7, targetScn);
+            stmtLobFrag.bindUInt64(8, targetScn);
+            stmtLobFrag.bindUInt32(9, obj);
         }
 
         char lobFragRowid[19]; stmtLobFrag.defineString(1, lobFragRowid, sizeof(lobFragRowid));

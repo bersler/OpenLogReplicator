@@ -494,7 +494,13 @@ BEGIN
             WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LCP.LOBJ# AND LCP.PARTOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I) AND
                 (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
                 OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
-            ORDER BY LF.ROWID
+            UNION ALL
+            SELECT LF.ROWID, LF.FRAGOBJ#, LF.PARENTOBJ#, LF.TS#
+            FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.LOB$ AS OF SCN v_SCN L, SYS.LOBFRAG$ AS OF SCN v_SCN LF
+            WHERE O.OBJ# = L.OBJ# AND L.LOBJ# = LF.PARENTOBJ# AND O.OWNER# = v_USER_LIST(I) AND
+                (v_USERNAME_LIST(I) <> 'SYS' OR v_SYS_SINGLE = 0
+                OR O.NAME IN ('CCOL$', 'CDEF$', 'COL$', 'DEFERRED_STG$', 'ECOL$', 'LOB$', 'LOBFRAG$', 'LOBCOMPPART$', 'OBJ$', 'TAB$', 'TABCOMPART$', 'TABPART$', 'TABSUBPART$', 'TS$', 'USER$'))
+            ORDER BY 4
         ) LOOP
             IF v_PREV = TRUE THEN
                 DBMS_OUTPUT.PUT(',');
