@@ -296,11 +296,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertCCol(OracleTable* table, typeRowId& rowId) {
-        sysCCol = metadata->schema->dictSysCColFind(rowId);
-        if (sysCCol != nullptr) {
+        SysCCol* sysCCol2 = metadata->schema->dictSysCColFind(rowId);
+        if (sysCCol2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.CCOL$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysCColDrop(sysCCol);
+            metadata->schema->dictSysCColDrop(sysCCol2);
+            delete sysCCol2;
         }
         sysCCol = new SysCCol(rowId, 0, 0, 0, 0, 0);
 
@@ -329,11 +330,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertCDef(OracleTable* table, typeRowId& rowId) {
-        sysCDef = metadata->schema->dictSysCDefFind(rowId);
-        if (sysCDef != nullptr) {
+        SysCDef* sysCDef2 = metadata->schema->dictSysCDefFind(rowId);
+        if (sysCDef2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.DEF$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysCDefDrop(sysCDef);
+            metadata->schema->dictSysCDefDrop(sysCDef2);
+            delete sysCDef2;
         }
         sysCDef = new SysCDef(rowId, 0, 0, 0);
 
@@ -360,11 +362,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertCol(OracleTable* table, typeRowId& rowId) {
-        sysCol = metadata->schema->dictSysColFind(rowId);
-        if (sysCol != nullptr) {
+        SysCol* sysCol2 = metadata->schema->dictSysColFind(rowId);
+        if (sysCol2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.COL$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysColDrop(sysCol);
+            metadata->schema->dictSysColDrop(sysCol2);
+            delete sysCol2;
         }
         sysCol = new SysCol(rowId, 0, 0, 0, 0, "", 0, 0, -1, -1,
                             0, 0, 0, 0, 0);
@@ -412,11 +415,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertDeferredStg(OracleTable* table, typeRowId& rowId) {
-        sysDeferredStg = metadata->schema->dictSysDeferredStgFind(rowId);
-        if (sysDeferredStg != nullptr) {
+        SysDeferredStg* sysDeferredStg2 = metadata->schema->dictSysDeferredStgFind(rowId);
+        if (sysDeferredStg2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.DEFERRED_STG$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+            metadata->schema->dictSysDeferredStgDrop(sysDeferredStg2);
+            delete sysDeferredStg2;
         }
         sysDeferredStg = new SysDeferredStg(rowId, 0, 0, 0);
 
@@ -441,11 +445,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertECol(OracleTable* table, typeRowId& rowId) {
-        sysECol = metadata->schema->dictSysEColFind(rowId);
-        if (sysECol != nullptr) {
+        SysECol* sysECol2 = metadata->schema->dictSysEColFind(rowId);
+        if (sysECol2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.ECOL$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysEColDrop(sysECol);
+            metadata->schema->dictSysEColDrop(sysECol2);
+            delete sysECol2;
         }
         sysECol = new SysECol(rowId, 0, 0, -1);
 
@@ -472,11 +477,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertLob(OracleTable* table, typeRowId& rowId) {
-        sysLob = metadata->schema->dictSysLobFind(rowId);
-        if (sysLob != nullptr) {
+        SysLob* sysLob2 = metadata->schema->dictSysLobFind(rowId);
+        if (sysLob2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.LOB$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysLobDrop(sysLob);
+            metadata->schema->dictSysLobDrop(sysLob2);
+            delete sysLob2;
         }
         sysLob = new SysLob(rowId, 0, 0, 0, 0, 0);
 
@@ -507,11 +513,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertLobCompPart(OracleTable* table, typeRowId& rowId) {
-        sysLobCompPart = metadata->schema->dictSysLobCompPartFind(rowId);
-        if (sysLobCompPart != nullptr) {
+        SysLobCompPart* sysLobCompPart2 = metadata->schema->dictSysLobCompPartFind(rowId);
+        if (sysLobCompPart2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.LOBCOMPPART$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+            metadata->schema->dictSysLobCompPartDrop(sysLobCompPart2);
+            delete sysLobCompPart2;
         }
         sysLobCompPart = new SysLobCompPart(rowId, 0, 0);
 
@@ -536,11 +543,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertLobFrag(OracleTable* table, typeRowId& rowId) {
-        sysLobFrag = metadata->schema->dictSysLobFragFind(rowId);
-        if (sysLobFrag != nullptr) {
+        SysLobFrag* sysLobFrag2 = metadata->schema->dictSysLobFragFind(rowId);
+        if (sysLobFrag2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.LOBFRAG$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysLobFragDrop(sysLobFrag);
+            metadata->schema->dictSysLobFragDrop(sysLobFrag2);
+            delete sysLobFrag2;
         }
         sysLobFrag = new SysLobFrag(rowId, 0, 0, 0);
 
@@ -567,11 +575,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertObj(OracleTable* table, typeRowId& rowId) {
-        sysObj = metadata->schema->dictSysObjFind(rowId);
-        if (sysObj != nullptr) {
+        SysObj* sysObj2 = metadata->schema->dictSysObjFind(rowId);
+        if (sysObj2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.OBJ$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysObjDrop(sysObj);
+            metadata->schema->dictSysObjDrop(sysObj2);
+            delete sysObj2;
         }
         sysObj = new SysObj(rowId, 0, 0, 0, 0, "", 0, 0, false);
 
@@ -604,11 +613,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertTab(OracleTable* table, typeRowId& rowId) {
-        sysTab = metadata->schema->dictSysTabFind(rowId);
-        if (sysTab != nullptr) {
+        SysTab* sysTab2 = metadata->schema->dictSysTabFind(rowId);
+        if (sysTab2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.TAB$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysTabDrop(sysTab);
+            metadata->schema->dictSysTabDrop(sysTab2);
+            delete sysTab2;
         }
         sysTab = new SysTab(rowId, 0, 0, 0, 0, 0, 0, 0);
 
@@ -639,11 +649,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertTabComPart(OracleTable* table, typeRowId& rowId) {
-        sysTabComPart = metadata->schema->dictSysTabComPartFind(rowId);
-        if (sysTabComPart != nullptr) {
+        SysTabComPart* sysTabComPart2 = metadata->schema->dictSysTabComPartFind(rowId);
+        if (sysTabComPart2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.TABCOMPART$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+            metadata->schema->dictSysTabComPartDrop(sysTabComPart2);
+            delete sysTabComPart2;
         }
         sysTabComPart = new SysTabComPart(rowId, 0, 0, 0);
 
@@ -670,11 +681,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertTabPart(OracleTable* table, typeRowId& rowId) {
-        sysTabPart = metadata->schema->dictSysTabPartFind(rowId);
-        if (sysTabPart != nullptr) {
+        SysTabPart* sysTabPart2 = metadata->schema->dictSysTabPartFind(rowId);
+        if (sysTabPart2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.TABPART$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysTabPartDrop(sysTabPart);
+            metadata->schema->dictSysTabPartDrop(sysTabPart2);
+            delete sysTabPart2;
         }
         sysTabPart = new SysTabPart(rowId, 0, 0, 0);
 
@@ -701,11 +713,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertTabSubPart(OracleTable* table, typeRowId& rowId) {
-        sysTabSubPart = metadata->schema->dictSysTabSubPartFind(rowId);
-        if (sysTabSubPart != nullptr) {
+        SysTabSubPart* sysTabSubPart2 = metadata->schema->dictSysTabSubPartFind(rowId);
+        if (sysTabSubPart2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.TABSUBPART$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+            metadata->schema->dictSysTabSubPartDrop(sysTabSubPart2);
+            delete sysTabSubPart2;
         }
         sysTabSubPart = new SysTabSubPart(rowId, 0, 0, 0);
 
@@ -732,11 +745,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertTs(OracleTable* table, typeRowId& rowId) {
-        sysTs = metadata->schema->dictSysTsFind(rowId);
-        if (sysTs != nullptr) {
+        SysTs* sysTs2 = metadata->schema->dictSysTsFind(rowId);
+        if (sysTs2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.TS$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysTsDrop(sysTs);
+            metadata->schema->dictSysTsDrop(sysTs2);
+            delete sysTs2;
         }
         sysTs = new SysTs(rowId, 0, "", 0);
 
@@ -763,11 +777,12 @@ namespace OpenLogReplicator {
     }
 
     void SystemTransaction::processInsertUser(OracleTable* table, typeRowId& rowId) {
-        sysUser = metadata->schema->dictSysUserFind(rowId);
-        if (sysUser != nullptr) {
+        SysUser* sysUser2 = metadata->schema->dictSysUserFind(rowId);
+        if (sysUser2 != nullptr) {
             if (!FLAG(REDO_FLAGS_ADAPTIVE_SCHEMA))
                 throw RuntimeException(std::string("DDL: duplicate SYS.USER$: (rowid: ") + rowId.toString() + ") for insert");
-            metadata->schema->dictSysUserDrop(sysUser);
+            metadata->schema->dictSysUserDrop(sysUser2);
+            delete sysUser2;
         }
         sysUser = new SysUser(rowId, 0, "", 0, 0, false);
 
