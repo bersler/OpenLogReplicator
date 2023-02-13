@@ -7,6 +7,7 @@
 - fix: race condition might result in transaction data loss
 - fix: experimental LOB support schema script error
 - enhancement: optimized DDL processing speed
+- enhancement: added debug info for release builds
 
 1.0.0
 - copy from 0.9.58
