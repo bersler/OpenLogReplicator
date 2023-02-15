@@ -22,7 +22,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "Thread.h"
 
 namespace OpenLogReplicator {
-    Thread::Thread(Ctx* newCtx, std::string newAlias) :
+    Thread::Thread(Ctx* newCtx, const std::string& newAlias) :
             ctx(newCtx),
             pthread(0),
             alias(newAlias),

@@ -77,7 +77,6 @@ namespace OpenLogReplicator {
         bool compareSysUser(Schema* otherSchema, std::string& msgs);
         void addTableToDict(OracleTable* table);
         void removeTableFromDict(OracleTable* table);
-        void cleanTouched();
         uint16_t getLobBlockSize(typeTs ts);
 
     public:
@@ -93,6 +92,7 @@ namespace OpenLogReplicator {
         OracleLob* schemaLob;
         OracleTable* schemaTable;
         std::set<OracleTable*> tablesTouched;
+        std::set<typeObj>identifiersTouched;
         bool touched;
 
         // SYS.CCOL$
@@ -250,10 +250,11 @@ namespace OpenLogReplicator {
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
         [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
         [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
-        void dropTouched(std::set<std::string>& users, std::set<std::string>& msgs);
+        void dropUnusedMetadata(const std::set<std::string>& users, std::set<std::string>& msgs);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
                        typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
                        uint64_t defaultCharacterNcharMapId);
+        void resetTouched();
     };
 }
 

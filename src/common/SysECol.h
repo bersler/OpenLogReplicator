@@ -1,4 +1,4 @@
-/* Header for SysECol class
+/* Definition of schema SYS.ECOL$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -26,10 +26,18 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysEColKey {
     public:
-        SysEColKey(typeObj newTabObj, typeCol newColNum);
+        SysEColKey(typeObj newTabObj, typeCol newColNum) :
+                tabObj(newTabObj),
+                colNum(newColNum) {
+        }
 
-        bool operator!=(const SysEColKey& other) const;
-        bool operator==(const SysEColKey& other) const;
+        bool operator!=(const SysEColKey& other) const {
+            return (other.tabObj != tabObj) || (other.colNum != colNum);
+        }
+
+        bool operator==(const SysEColKey& other) const {
+            return (other.tabObj == tabObj) && (other.colNum == colNum);
+        }
 
         typeObj tabObj;
         typeCol colNum;
@@ -37,9 +45,16 @@ namespace OpenLogReplicator {
 
     class SysECol {
     public:
-        SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId);
+        SysECol(typeRowId& newRowId, typeObj newTabObj, typeCol newColNum, typeCol newGuardId) :
+                rowId(newRowId),
+                tabObj(newTabObj),
+                colNum(newColNum),
+                guardId(newGuardId) {
+        }
 
-        bool operator!=(const SysECol& other) const;
+        bool operator!=(const SysECol& other) const {
+            return (other.rowId != rowId) || (other.tabObj != tabObj) || (other.colNum != colNum) || (other.guardId != guardId);
+        }
 
         typeRowId rowId;
         typeObj tabObj;
@@ -51,7 +66,9 @@ namespace OpenLogReplicator {
 namespace std {
     template <>
     struct hash<OpenLogReplicator::SysEColKey> {
-        size_t operator()(const OpenLogReplicator::SysEColKey& sysEColKey) const;
+        size_t operator()(const OpenLogReplicator::SysEColKey& sysEColKey) const {
+            return hash<typeObj>()(sysEColKey.tabObj) ^ hash<typeCol>()(sysEColKey.colNum);
+        }
     };
 }
 

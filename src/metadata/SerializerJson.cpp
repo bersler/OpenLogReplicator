@@ -557,8 +557,7 @@ namespace OpenLogReplicator {
                                     " options: " + std::to_string(element->options));
 
                         if ((metadata->ctx->flags & REDO_FLAGS_ADAPTIVE_SCHEMA) == 0) {
-                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 &&
-                                metadata->users.find(element->owner) == metadata->users.end())
+                            if ((element->options & OPTIONS_SYSTEM_TABLE) == 0 && metadata->users.find(element->owner) == metadata->users.end())
                                 throw DataException("owner '" + std::string(element->owner) + "' is missing in schema file: " + name +
                                                     " - recreate schema file (delete old file and force creation of new)");
                         }
@@ -569,6 +568,7 @@ namespace OpenLogReplicator {
                                                     metadata->defaultCharacterNcharMapId);
                     }
 
+                    metadata->schema->resetTouched();
                     metadata->schema->loaded = true;
                     metadata->allowedCheckpoints = true;
                     return true;

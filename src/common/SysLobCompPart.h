@@ -1,4 +1,4 @@
-/* Header for SysLobCompPart class
+/* Definition of schema SYS.LOBCOMPPART$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -26,9 +26,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysLobCompPartKey {
     public:
-        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj);
+        SysLobCompPartKey(typeObj newLObj, typeObj newPartObj) :
+                lObj(newLObj),
+                partObj(newPartObj) {
+        }
 
-        bool operator<(const SysLobCompPartKey& other) const;
+        bool operator<(const SysLobCompPartKey& other) const {
+            if (other.lObj > lObj)
+                return true;
+            if (other.lObj < lObj)
+                return false;
+            if (other.partObj > partObj)
+                return true;
+            return false;
+        }
 
         typeObj lObj;
         typeObj partObj;
@@ -36,9 +47,15 @@ namespace OpenLogReplicator {
 
     class SysLobCompPart {
     public:
-        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj);
+        SysLobCompPart(typeRowId& newRowId, typeObj newPartObj, typeObj newLObj) :
+                rowId(newRowId),
+                partObj(newPartObj),
+                lObj(newLObj) {
+        }
 
-        bool operator!=(const SysLobCompPart& other) const;
+        bool operator!=(const SysLobCompPart& other) const {
+            return (other.rowId != rowId) || (other.partObj != partObj) || (other.lObj != lObj);
+        }
 
         typeRowId rowId;
         typeObj partObj;

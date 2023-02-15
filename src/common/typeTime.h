@@ -1,4 +1,4 @@
-/* Header for type typeTime
+/* Definition of type typeTime
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.

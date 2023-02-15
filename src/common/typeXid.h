@@ -1,4 +1,4 @@
-/* Header for type typeXid
+/* Definition of type typeXid
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -28,6 +28,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define TYPE_XID_H_
 
 namespace OpenLogReplicator {
+
     class typeXid {
         uint64_t data;
     public:

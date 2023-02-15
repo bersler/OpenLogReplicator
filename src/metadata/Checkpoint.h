@@ -43,7 +43,7 @@ namespace OpenLogReplicator {
         std::condition_variable condLoop;
 
     public:
-        Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias);
+        Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias);
         virtual ~Checkpoint();
 
         void wakeUp() override;

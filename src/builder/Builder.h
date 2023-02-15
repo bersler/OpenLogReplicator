@@ -311,7 +311,7 @@ namespace OpenLogReplicator {
             uint64_t j = (length - 1) * 4;
             valueBufferCheck(length);
             for (uint64_t i = 0; i < length; ++i) {
-                valueBuffer[valueLength++] = ctx->map16[(value >> j) & 0xF];
+                valueBuffer[valueLength++] = Ctx::map16[(value >> j) & 0xF];
                 j -= 4;
             }
         };

@@ -40,7 +40,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Replicator::Replicator(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                           TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase) :
+                           TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase) :
             Thread(newCtx, newAlias),
             archGetLog(newArchGetLog),
             builder(newBuilder),

@@ -1,4 +1,4 @@
-/* Header for SysObj class
+/* Definition of schema SYS.OBJ$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -77,9 +77,33 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysObjNameKey {
     public:
-        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj);
+        SysObjNameKey(typeUser newOwner, const char* newName, typeObj newObj, typeDataObj newDataObj) :
+                owner(newOwner),
+                name(newName),
+                obj(newObj),
+                dataObj(newDataObj) {
+        }
 
-        bool operator<(const SysObjNameKey& other) const;
+        bool operator<(const SysObjNameKey& other) const {
+            if (other.owner > owner)
+                return true;
+            if (other.owner < owner)
+                return false;
+            int cmp = other.name.compare(name);
+            if (cmp > 0)
+                return true;
+            if (cmp < 0)
+                return false;
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.dataObj > dataObj)
+                return true;
+            if (other.dataObj < dataObj)
+                return false;
+            return false;
+        }
 
         typeUser owner;
         std::string name;
@@ -90,13 +114,39 @@ namespace OpenLogReplicator {
     class SysObj {
     public:
         SysObj(typeRowId& newRowId, typeUser newOwner, typeObj newObj, typeDataObj newDataObj, typeType newType, const char* newName, uint64_t newFlags1,
-               uint64_t newFlags2, bool newSingle);
+               uint64_t newFlags2, bool newSingle) :
+                rowId(newRowId),
+                owner(newOwner),
+                obj(newObj),
+                dataObj(newDataObj),
+                type(newType),
+                name(newName),
+                flags(newFlags1, newFlags2),
+                single(newSingle) {
+        }
 
-        bool operator!=(const SysObj& other) const;
-        [[nodiscard]] bool isLob() const;
-        [[nodiscard]] bool isTable() const;
-        [[nodiscard]] bool isTemporary() const;
-        [[nodiscard]] bool isDropped() const;
+        bool operator!=(const SysObj& other) const {
+            return (other.rowId != rowId) || (other.owner != owner) || (other.obj != obj) || (other.dataObj != dataObj) || (other.type != type) ||
+                   (other.name != name) || (other.flags != flags);
+        }
+
+        [[nodiscard]] bool isLob() const {
+            return (type == SYS_OBJ_TYPE_LOB);
+        }
+
+        [[nodiscard]] bool isTable() const {
+            return (type == SYS_OBJ_TYPE_TABLE);
+        }
+
+        [[nodiscard]] bool isTemporary() const {
+            return flags.isSet64(SYS_OBJ_FLAGS_TEMPORARY) ||
+                   flags.isSet64(SYS_OBJ_FLAGS_SECONDARY) ||
+                   flags.isSet64(SYS_OBJ_FLAGS_IN_MEMORY_TEMP);
+        }
+
+        [[nodiscard]] bool isDropped() const {
+            return flags.isSet64(SYS_OBJ_FLAGS_DROPPED);
+        }
 
         typeRowId rowId;
         typeUser owner;

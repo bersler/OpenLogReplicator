@@ -98,8 +98,8 @@ namespace OpenLogReplicator {
         bool keepConnection;
 
         ReplicatorOnline(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                         TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase, const char* newUser, const char* newPassword,
-                         const char* newConnectString, bool newKeepConnection);
+                         TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase, const char* newUser,
+                         const char* newPassword, const char* newConnectString, bool newKeepConnection);
         ~ReplicatorOnline() override;
 
         void goStandby() override;

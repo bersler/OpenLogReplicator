@@ -1,4 +1,4 @@
-/* Header for SysCol class
+/* Definition of schema SYS.COL$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -55,9 +55,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysColSeg {
     public:
-        SysColSeg(typeObj newObj, typeCol newSegCol);
+        SysColSeg(typeObj newObj, typeCol newSegCol) :
+                obj(newObj),
+                segCol(newSegCol) {
+        }
 
-        bool operator<(const SysColSeg& other) const;
+        bool operator<(const SysColSeg& other) const {
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.segCol > segCol)
+                return true;
+            return false;
+        }
 
         typeObj obj;
         typeCol segCol;
@@ -65,9 +76,20 @@ namespace OpenLogReplicator {
 
     class SysColKey {
     public:
-        SysColKey(typeObj newObj, typeCol newIntCol);
+        SysColKey(typeObj newObj, typeCol newIntCol) :
+                obj(newObj),
+                intCol(newIntCol) {
+        }
 
-        bool operator<(const SysColKey& other) const;
+        bool operator<(const SysColKey& other) const {
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.intCol > intCol)
+                return true;
+            return false;
+        }
 
         typeObj obj;
         typeCol intCol;
@@ -77,18 +99,65 @@ namespace OpenLogReplicator {
     public:
         SysCol(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newSegCol, typeCol newIntCol, const char* newName, typeType newType,
                uint64_t newLength, int64_t newPrecision, int64_t newScale, uint64_t newCharsetForm, uint64_t newCharsetId, int64_t newNull,
-               uint64_t newProperty1, uint64_t newProperty2);
+               uint64_t newProperty1, uint64_t newProperty2) :
+                rowId(newRowId),
+                obj(newObj),
+                col(newCol),
+                segCol(newSegCol),
+                intCol(newIntCol),
+                name(newName),
+                type(newType),
+                length(newLength),
+                precision(newPrecision),
+                scale(newScale),
+                charsetForm(newCharsetForm),
+                charsetId(newCharsetId),
+                null_(newNull),
+                property(newProperty1, newProperty2) {
+        }
 
-        bool operator!=(const SysCol& other) const;
-        [[nodiscard]] bool isInvisible();
-        [[nodiscard]] bool isNullable();
-        [[nodiscard]] bool isStoredAsLob();
-        [[nodiscard]] bool isConstraint();
-        [[nodiscard]] bool isNested();
-        [[nodiscard]] bool isUnused();
-        [[nodiscard]] bool isAdded();
-        [[nodiscard]] bool isGuard();
-        [[nodiscard]] bool lengthInChars();
+        bool operator!=(const SysCol& other) const {
+            return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.segCol != segCol) || (other.intCol != intCol) ||
+                   (other.name != name) || (other.type != type) || (other.length != length) || (other.precision != precision) || (other.scale != scale) ||
+                   (other.charsetForm != charsetForm) || (other.charsetId != charsetId) || (other.null_ != null_) || (other.property != property);
+        }
+
+        [[nodiscard]] bool isInvisible() {
+            return property.isSet64(SYS_COL_PROPERTY_INVISIBLE);
+        }
+
+        [[nodiscard]] bool isNullable() {
+            return (null_ == 0);
+        }
+
+        [[nodiscard]] bool isStoredAsLob() {
+            return property.isSet64(SYS_COL_PROPERTY_STORED_AS_LOB);
+        }
+
+        [[nodiscard]] bool isConstraint() {
+            return property.isSet64(SYS_COL_PROPERTY_CONSTRAINT);
+        }
+
+        [[nodiscard]] bool isNested() {
+            return property.isSet64(SYS_COL_PROPERTY_NESTED);
+        }
+
+        [[nodiscard]] bool isUnused() {
+            return property.isSet64(SYS_COL_PROPERTY_UNUSED);
+        }
+
+        [[nodiscard]] bool isAdded() {
+            return property.isSet64(SYS_COL_PROPERTY_ADDED);
+        }
+
+        [[nodiscard]] bool isGuard() {
+            return property.isSet64(SYS_COL_PROPERTY_GUARD);
+        }
+
+        [[nodiscard]] bool lengthInChars() {
+            return ((type == SYS_COL_TYPE_VARCHAR || type == SYS_COL_TYPE_CHAR) && property.isSet64(SYS_COL_PROPERTY_LENGTH_IN_CHARS));
+            // Else in bytes
+        }
 
         typeRowId rowId;
         typeObj obj;

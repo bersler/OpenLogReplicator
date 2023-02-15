@@ -32,7 +32,7 @@ namespace OpenLogReplicator {
 
     public:
         ReplicatorBatch(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                        TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase);
+                        TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase);
         ~ReplicatorBatch() override;
     };
 }

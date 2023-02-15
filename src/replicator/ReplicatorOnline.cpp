@@ -509,7 +509,7 @@ namespace OpenLogReplicator {
             "SELECT 1 FROM DUAL");
 
     ReplicatorOnline::ReplicatorOnline(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                                       TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase, const char* newUser,
+                                       TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase, const char* newUser,
                                        const char* newPassword, const char* newConnectString, bool newKeepConnection) :
             Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase),
             standby(false),
@@ -894,6 +894,7 @@ namespace OpenLogReplicator {
             for (SchemaElement* element : metadata->schemaElements)
                 createSchemaForTable(metadata->firstDataScn, element->owner, element->table, element->keys,
                                      element->keysStr, element->options, msgs);
+            metadata->schema->resetTouched();
             metadata->allowedCheckpoints = true;
         }
 

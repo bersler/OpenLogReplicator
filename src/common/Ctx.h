@@ -27,7 +27,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include <thread>
 #include <unordered_map>
 
-#include "types.h"
 #include "typeLobId.h"
 #include "typeXid.h"
 
@@ -227,9 +226,10 @@ namespace OpenLogReplicator {
         pthread_t mainThread;
 
     public:
-        static const char map64[65];
-        static const char map16[17];
         static const char map10[11];
+        static const char map16[17];
+        static const char map64[65];
+        static const char map64R[256];
 
         bool version12;
         std::atomic<uint64_t> version;                   // Compatibility level of redo logs
@@ -355,7 +355,7 @@ namespace OpenLogReplicator {
         bool wakeThreads();
         void spawnThread(Thread* thread);
         void finishThread(Thread* thread);
-        static std::ostringstream& writeEscapeValue(std::ostringstream& ss, std::string& str);
+        static std::ostringstream& writeEscapeValue(std::ostringstream& ss, const std::string& str);
         static bool checkNameCase(const char* name);
         void releaseBuffer();
         void allocateBuffer();

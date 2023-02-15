@@ -24,7 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     ReplicatorBatch::ReplicatorBatch(Ctx* newCtx, void (*newArchGetLog)(Replicator* replicator), Builder* newBuilder, Metadata* newMetadata,
-                                     TransactionBuffer* newTransactionBuffer, std::string newAlias, const char* newDatabase) :
+                                     TransactionBuffer* newTransactionBuffer, const std::string& newAlias, const char* newDatabase) :
             Replicator(newCtx, newArchGetLog, newBuilder, newMetadata, newTransactionBuffer, newAlias, newDatabase) {
     }
 

@@ -1,4 +1,4 @@
-/* Header for SysTab class
+/* Definition of schema SYS.TAB$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -41,17 +41,51 @@ namespace OpenLogReplicator {
     class SysTab {
     public:
         SysTab(typeRowId& newRowId, typeObj newObj, typeDataObj newDataObj, typeCol newCluCols, uint64_t newFlags1, uint64_t newFlags2, uint64_t newProperty1,
-               uint64_t newProperty2);
+               uint64_t newProperty2) :
+                rowId(newRowId),
+                obj(newObj),
+                dataObj(newDataObj),
+                cluCols(newCluCols),
+                flags(newFlags1, newFlags2),
+                property(newProperty1, newProperty2) {
+        }
 
-        bool operator!=(const SysTab& other) const;
-        [[nodiscard]] bool isBinary();
-        [[nodiscard]] bool isClustered();
-        [[nodiscard]] bool isIot();
-        [[nodiscard]] bool isPartitioned();
-        [[nodiscard]] bool isNested();
-        [[nodiscard]] bool isRowMovement();
-        [[nodiscard]] bool isDependencies();
-        [[nodiscard]] bool isInitial();
+        bool operator!=(const SysTab& other) const {
+            return (other.rowId != rowId) || (other.obj != obj) || (other.dataObj != dataObj) || (other.cluCols != cluCols) || (other.flags != flags) ||
+                   (other.property != property);
+        }
+
+        [[nodiscard]] bool isBinary() {
+            return property.isSet64(SYS_TAB_PROPERTY_BINARY);
+        }
+
+        [[nodiscard]] bool isClustered() {
+            return property.isSet64(SYS_TAB_PROPERTY_CLUSTERED_TABLE);
+        }
+
+        [[nodiscard]] bool isIot() {
+            return property.isSet64(SYS_TAB_PROPERTY_IOT_OVERFLOW_SEGMENT) || flags.isSet64(SYS_TAB_PROPERTY_IOT2);
+        }
+
+        [[nodiscard]] bool isPartitioned() {
+            return property.isSet64(SYS_TAB_PROPERTY_PARTITIONED_TABLE);
+        }
+
+        [[nodiscard]] bool isNested() {
+            return property.isSet64(SYS_TAB_PROPERTY_NESTED_TABLE);
+        }
+
+        [[nodiscard]] bool isRowMovement() {
+            return flags.isSet64(SYS_TAB_PROPERTY_ROW_MOVEMENT);
+        }
+
+        [[nodiscard]] bool isDependencies() {
+            return flags.isSet64(SYS_TAB_PROPERTY_DEPENDENCIES);
+        }
+
+        [[nodiscard]] bool isInitial() {
+            return flags.isSet64(SYS_TAB_PROPERTY_INITIAL);
+        }
 
         typeRowId rowId;
         typeObj obj;

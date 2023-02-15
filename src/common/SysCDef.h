@@ -1,4 +1,4 @@
-/* Header for SysCDef class
+/* Definition of schema SYS.CDEF$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -31,9 +31,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCDefKey {
     public:
-        SysCDefKey(typeObj newObj, typeCon newCon);
+        SysCDefKey(typeObj newObj, typeCon newCon) :
+                obj(newObj),
+                con(newCon) {
+        }
 
-        bool operator<(const SysCDefKey& other) const;
+        bool operator<(const SysCDefKey& other) const {
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.con > con)
+                return true;
+            return false;
+        }
 
         typeObj obj;
         typeCon con;
@@ -41,13 +52,32 @@ namespace OpenLogReplicator {
 
     class SysCDef {
     public:
-        SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType);
+        SysCDef(typeRowId& newRowId, typeCon newCon, typeObj newObj, typeType newType) :
+                rowId(newRowId),
+                con(newCon),
+                obj(newObj),
+                type(newType) {
+        }
 
-        [[nodiscard]] bool operator!=(const SysCDef& other) const;
-        [[nodiscard]] bool isPK() const;
-        [[nodiscard]] bool isSupplementalLog() const;
-        [[nodiscard]] bool isSupplementalLogPK() const;
-        [[nodiscard]] bool isSupplementalLogAll() const;
+        [[nodiscard]] bool operator!=(const SysCDef& other) const {
+            return (other.rowId != rowId) || (other.con != con) || (other.obj != obj) || (other.type != type);
+        }
+
+        [[nodiscard]] bool isPK() const {
+            return (type == SYS_CDEF_TYPE_PK);
+        }
+
+        [[nodiscard]] bool isSupplementalLog() const {
+            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG);
+        }
+
+        [[nodiscard]] bool isSupplementalLogPK() const {
+            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_PK);
+        }
+
+        [[nodiscard]] bool isSupplementalLogAll() const {
+            return (type == SYS_CDEF_TYPE_SUPPLEMENTAL_LOG_ALL);
+        }
 
         typeRowId rowId;
         typeCon con;

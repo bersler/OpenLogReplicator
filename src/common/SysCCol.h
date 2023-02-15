@@ -1,4 +1,4 @@
-/* Header for SysCCol class
+/* Definition of schema SYS.CCOL$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -27,9 +27,25 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysCColKey {
     public:
-        SysCColKey(typeObj newObj, typeCol newIntCol, typeCon newCon);
+        SysCColKey(typeObj newObj, typeCol newIntCol, typeCon newCon) :
+                obj(newObj),
+                intCol(newIntCol),
+                con(newCon) {
+        }
 
-        bool operator<(const SysCColKey& other) const;
+        bool operator<(const SysCColKey& other) const {
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.intCol > intCol)
+                return true;
+            if (other.intCol < intCol)
+                return false;
+            if (other.con > con)
+                return true;
+            return false;
+        }
 
         typeObj obj;
         typeCol intCol;
@@ -38,9 +54,17 @@ namespace OpenLogReplicator {
 
     class SysCCol {
     public:
-        SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12);
+        SysCCol(typeRowId& newRowId, typeCon newCon, typeCol newIntCol, typeObj newObj, uint64_t newSpare11, uint64_t newSpare12) :
+                rowId(newRowId),
+                con(newCon),
+                intCol(newIntCol),
+                obj(newObj),
+                spare1(newSpare11, newSpare12) {
+        }
 
-        bool operator!=(const SysCCol& other) const;
+        bool operator!=(const SysCCol& other) const {
+            return (other.rowId != rowId) || (other.con != con) || (other.intCol != intCol) || (other.obj != obj) || (other.spare1 != spare1);
+        }
 
         typeRowId rowId;
         typeCon con;

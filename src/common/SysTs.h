@@ -1,4 +1,4 @@
-/* Header for SysTs class
+/* Definition of schema SYS.TS$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -28,9 +28,16 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysTs {
     public:
-        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize);
+        SysTs(typeRowId& newRowId, typeTs newTs, const char* newName, uint32_t newBlockSize) :
+                rowId(newRowId),
+                ts(newTs),
+                name(newName),
+                blockSize(newBlockSize) {
+        }
 
-        bool operator!=(const SysTs& other) const;
+        bool operator!=(const SysTs& other) const {
+            return (other.rowId != rowId) || (other.ts != ts) || (other.name != name) || (other.blockSize != blockSize);
+        }
 
         typeRowId rowId;
         typeTs ts;

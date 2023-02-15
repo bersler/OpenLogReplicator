@@ -27,7 +27,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
 
-    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, std::string newAlias) :
+    Checkpoint::Checkpoint(Ctx* newCtx, Metadata* newMetadata, const std::string& newAlias) :
             Thread(newCtx, newAlias),
             metadata(newMetadata) {
     }

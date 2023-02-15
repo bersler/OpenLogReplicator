@@ -265,7 +265,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.USER$ map user# not empty on shutdown")
         }
 
-        cleanTouched();
+        resetTouched();
     }
 
     bool Schema::compareSysCCol(Schema* otherSchema, std::string& msgs) {
@@ -1225,7 +1225,6 @@ namespace OpenLogReplicator {
                     ", CON#: " + std::to_string(sysCCol->con) + ")")
         }
 
-        sysCColSetTouched.erase(sysCCol);
         touched = true;
     }
 
@@ -1252,7 +1251,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.CDEF$ missing index for (CON#: " + std::to_string(sysCDef->con) + ")")
         }
 
-        sysCDefSetTouched.erase(sysCDef);
         touched = true;
     }
 
@@ -1284,7 +1282,6 @@ namespace OpenLogReplicator {
             }
         }
 
-        sysColSetTouched.erase(sysCol);
         touched = true;
     }
 
@@ -1302,7 +1299,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.DEFERRED_STG$ missing index for (OBJ#: " + std::to_string(sysDeferredStg->obj) + ")")
         }
 
-        sysDeferredStgSetTouched.erase(sysDeferredStg);
         touched = true;
     }
 
@@ -1322,7 +1318,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.ECOL$ missing index for (TABOBJ#: " + std::to_string(sysECol->tabObj) + ", COLNUM#: " + std::to_string(sysECol->colNum) + ")")
         }
 
-        sysEColSetTouched.erase(sysECol);
         touched = true;
     }
 
@@ -1351,7 +1346,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.LOB$ missing index for (LOBJ#: " + std::to_string(sysLob->lObj) + ")")
         }
 
-        sysLobSetTouched.erase(sysLob);
         touched = true;
     }
 
@@ -1380,7 +1374,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.LOBCOMPPART$ missing index for (PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) + ")")
         }
 
-        sysLobCompPartSetTouched.erase(sysLobCompPart);
         touched = true;
     }
 
@@ -1409,7 +1402,6 @@ namespace OpenLogReplicator {
                     std::to_string(sysLobFrag->fragObj) + ")")
         }
 
-        sysLobFragSetTouched.erase(sysLobFrag);
         touched = true;
     }
 
@@ -1440,7 +1432,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.OBJ$ missing index for (OBJ#: " + std::to_string(sysObj->obj) + ")")
         }
 
-        sysObjSetTouched.erase(sysObj);
         touched = true;
     }
 
@@ -1461,7 +1452,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.TAB$ missing index for (OBJ#: " + std::to_string(sysTab->obj) + ")")
         }
 
-        sysTabSetTouched.erase(sysTab);
         touched = true;
     }
 
@@ -1489,7 +1479,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.TABCOMPART$ missing index for (OBJ#: " + std::to_string(sysTabComPart->obj) + ")")
         }
 
-        sysTabComPartSetTouched.erase(sysTabComPart);
         touched = true;
     }
 
@@ -1509,7 +1498,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.TABPART$ missing index for (BO#: " + std::to_string(sysTabPart->bo) + ", OBJ#: " + std::to_string(sysTabPart->obj) + ")")
         }
 
-        sysTabPartSetTouched.erase(sysTabPart);
         touched = true;
     }
 
@@ -1533,7 +1521,6 @@ namespace OpenLogReplicator {
                     std::to_string(sysTabSubPart->obj) + ")")
         }
 
-        sysTabSubPartSetTouched.erase(sysTabSubPart);
         touched = true;
     }
 
@@ -1568,7 +1555,6 @@ namespace OpenLogReplicator {
             ERROR("SYS.USER$ missing index for (USER#: " + std::to_string(sysUser->user) + ")")
         }
 
-        sysUserSetTouched.erase(sysUser);
         touched = true;
     }
 
@@ -1696,6 +1682,7 @@ namespace OpenLogReplicator {
         if (obj == 0)
             return;
 
+        identifiersTouched.insert(obj);
         auto tableMapIt = tableMap.find(obj);
         if (tableMapIt == tableMap.end())
             return;
@@ -1820,7 +1807,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Schema::dropTouched(std::set<std::string>& users, std::set<std::string>& msgs) {
+    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::set<std::string>& msgs) {
         for (OracleTable* table : tablesTouched) {
             msgs.insert(table->owner + "." + table->name + " (dataobj: " + std::to_string(table->dataObj) + ", obj: " +
                         std::to_string(table->obj) + ") ");
@@ -1831,8 +1818,7 @@ namespace OpenLogReplicator {
 
         //SYS.USER$
         for (auto sysUser : sysUserSetTouched) {
-            auto usersIt = users.find(sysUser->name);
-            if (usersIt != users.end())
+            if (users.find(sysUser->name) != users.end())
                 continue;
 
             dictSysUserDrop(sysUser);
@@ -1963,8 +1949,9 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Schema::cleanTouched() {
+    void Schema::resetTouched() {
         tablesTouched.clear();
+        identifiersTouched.clear();
         sysCColSetTouched.clear();
         sysCDefSetTouched.clear();
         sysColSetTouched.clear();
@@ -1985,13 +1972,16 @@ namespace OpenLogReplicator {
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
                            typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
-        cleanTouched();
         uint64_t tabCnt = 0;
         std::regex regexOwner(owner);
         std::regex regexTable(table);
 
-        for (auto sysObjMapRowIdIt : sysObjMapRowId) {
-            SysObj* sysObj = sysObjMapRowIdIt.second;
+        for (auto obj: identifiersTouched) {
+            auto sysObjMapObjTouchedIt = sysObjMapObj.find(obj);
+            if (sysObjMapObjTouchedIt == sysObjMapObj.end())
+                continue;
+            SysObj* sysObj = sysObjMapObjTouchedIt->second;
+
             if (sysObj->isDropped() || !sysObj->isTable() || !regex_match(sysObj->name, regexTable))
                 continue;
 

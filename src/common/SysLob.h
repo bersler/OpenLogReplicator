@@ -1,4 +1,4 @@
-/* Header for SysLob class
+/* Definition of schema SYS.LOB$
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -26,9 +26,20 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class SysLobKey {
     public:
-        SysLobKey(typeObj newObj, typeCol newIntCol);
+        SysLobKey(typeObj newObj, typeCol newIntCol) :
+                obj(newObj),
+                intCol(newIntCol) {
+        }
 
-        bool operator<(const SysLobKey& other) const;
+        bool operator<(const SysLobKey& other) const {
+            if (other.obj > obj)
+                return true;
+            if (other.obj < obj)
+                return false;
+            if (other.intCol > intCol)
+                return true;
+            return false;
+        }
 
         typeObj obj;
         typeCol intCol;
@@ -36,9 +47,18 @@ namespace OpenLogReplicator {
 
     class SysLob {
     public:
-        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs);
+        SysLob(typeRowId& newRowId, typeObj newObj, typeCol newCol, typeCol newIntCol, typeObj newLObj, typeTs newTs) :
+                rowId(newRowId),
+                obj(newObj),
+                col(newCol),
+                intCol(newIntCol),
+                lObj(newLObj),
+                ts(newTs) {
+        }
 
-        bool operator!=(const SysLob& other) const;
+        bool operator!=(const SysLob& other) const {
+            return (other.rowId != rowId) || (other.obj != obj) || (other.col != col) || (other.intCol != intCol) || (other.lObj != lObj) || (other.ts != ts);
+        }
 
         typeRowId rowId;
         typeObj obj;

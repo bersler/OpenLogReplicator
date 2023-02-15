@@ -25,30 +25,12 @@ list(APPEND ListCommon
         common/OracleIncarnation.cpp
         common/OracleLob.cpp
         common/OracleTable.cpp
-        common/typeIntX.cpp
-        common/typeLobId.cpp
-        common/typeRowId.cpp
         common/LobCtx.cpp
         common/LobData.cpp
         common/LobKey.cpp
         common/RedoLogException.cpp
         common/RedoLogRecord.cpp
         common/RuntimeException.cpp
-        common/SysCCol.cpp
-        common/SysCDef.cpp
-        common/SysCol.cpp
-        common/SysDeferredStg.cpp
-        common/SysECol.cpp
-        common/SysLob.cpp
-        common/SysLobCompPart.cpp
-        common/SysLobFrag.cpp
-        common/SysObj.cpp
-        common/SysTab.cpp
-        common/SysTabComPart.cpp
-        common/SysTabPart.cpp
-        common/SysTabSubPart.cpp
-        common/SysTs.cpp
-        common/SysUser.cpp
         common/Thread.cpp
         common/Timer.cpp)
 

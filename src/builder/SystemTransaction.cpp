@@ -265,7 +265,11 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " value found " + builder->valueBuffer);
 
             typeIntX newVal(0);
-            newVal.setStr(builder->valueBuffer, builder->valueLength);
+            std::string err;
+            newVal.setStr(builder->valueBuffer, builder->valueLength, err);
+            if (err != "") {
+                ERROR(err)
+            }
             TRACE(TRACE2_SYSTEM, "SYSTEM: set (" << table->columns[column]->name << ": " << std::dec << val << " -> " << newVal << ")")
             val = newVal;
         } else if (builder->values[column][VALUE_AFTER] != nullptr || builder->values[column][VALUE_BEFORE] != nullptr) {
@@ -1774,12 +1778,13 @@ namespace OpenLogReplicator {
         std::set<std::string> msgsDropped;
         std::set<std::string> msgsUpdated;
         metadata->schema->scn = scn;
-        metadata->schema->dropTouched(metadata->users, msgsDropped);
+        metadata->schema->dropUnusedMetadata(metadata->users, msgsDropped);
 
         for (SchemaElement *element: metadata->schemaElements)
             metadata->schema->buildMaps(element->owner, element->table, element->keys, element->keysStr, element->options,
                                         msgsUpdated, metadata->suppLogDbPrimary, metadata->suppLogDbAll,
                                         metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
+        metadata->schema->resetTouched();
 
         for (auto msg: msgsDropped) {
             INFO("dropped metadata: " << msg);
