@@ -1213,8 +1213,10 @@ namespace OpenLogReplicator {
                 ", INTCOL#: " << sysCCol->intCol <<
                 ", OBJ#: " << sysCCol->obj <<
                 ", SPARE1: " << sysCCol->spare1 << ")")
-        touchTable(sysCCol->obj);
-        sysCColMapRowId.erase(sysCCol->rowId);
+        auto sysCColMapRowIdIt = sysCColMapRowId.find(sysCCol->rowId);
+        if (sysCColMapRowIdIt == sysCColMapRowId.end())
+            return;
+        sysCColMapRowId.erase(sysCColMapRowIdIt);
 
         SysCColKey sysCColKey(sysCCol->obj, sysCCol->intCol, sysCCol->con);
         auto sysCColMapKeyIt = sysCColMapKey.find(sysCColKey);
@@ -1225,6 +1227,7 @@ namespace OpenLogReplicator {
                     ", CON#: " + std::to_string(sysCCol->con) + ")")
         }
 
+        touchTable(sysCCol->obj);
         touched = true;
     }
 
@@ -1233,8 +1236,10 @@ namespace OpenLogReplicator {
                 ", CON#: " << std::dec << sysCDef->con <<
                 ", OBJ#: " << sysCDef->obj <<
                 ", TYPE: " << sysCDef->type << ")")
-        touchTable(sysCDef->obj);
-        sysCDefMapRowId.erase(sysCDef->rowId);
+        auto sysCDefMapRowIdIt = sysCDefMapRowId.find(sysCDef->rowId);
+        if (sysCDefMapRowIdIt == sysCDefMapRowId.end())
+            return;
+        sysCDefMapRowId.erase(sysCDefMapRowIdIt);
 
         SysCDefKey sysCDefKey(sysCDef->obj, sysCDef->con);
         auto sysCDefMapKeyIt = sysCDefMapKey.find(sysCDefKey);
@@ -1251,6 +1256,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.CDEF$ missing index for (CON#: " + std::to_string(sysCDef->con) + ")")
         }
 
+        touchTable(sysCDef->obj);
         touched = true;
     }
 
@@ -1269,8 +1275,10 @@ namespace OpenLogReplicator {
                 ", CHARSETID: " << sysCol->charsetId <<
                 ", NULL$: " << sysCol->null_ <<
                 ", PROPERTY: " << sysCol->property << ")")
-        touchTable(sysCol->obj);
-        sysColMapRowId.erase(sysCol->rowId);
+        auto sysColMapRowIdIt = sysColMapRowId.find(sysCol->rowId);
+        if (sysColMapRowIdIt == sysColMapRowId.end())
+            return;
+        sysColMapRowId.erase(sysColMapRowIdIt);
 
         if (sysCol->segCol > 0) {
             SysColSeg sysColSeg(sysCol->obj, sysCol->segCol);
@@ -1282,6 +1290,7 @@ namespace OpenLogReplicator {
             }
         }
 
+        touchTable(sysCol->obj);
         touched = true;
     }
 
@@ -1289,8 +1298,10 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SYSTEM, "SYSTEM: delete SYS.DEFERRED_STG$ (ROWID: " << sysDeferredStg->rowId <<
                 ", OBJ#: " << std::dec << sysDeferredStg->obj <<
                 ", FLAGS_STG: " << sysDeferredStg->flagsStg << ")")
-        touchTable(sysDeferredStg->obj);
-        sysDeferredStgMapRowId.erase(sysDeferredStg->rowId);
+        auto sysDeferredStgMapRowIdIt = sysDeferredStgMapRowId.find(sysDeferredStg->rowId);
+        if (sysDeferredStgMapRowIdIt == sysDeferredStgMapRowId.end())
+            return;
+        sysDeferredStgMapRowId.erase(sysDeferredStgMapRowIdIt);
 
         auto sysDeferredStgMapObjIt = sysDeferredStgMapObj.find(sysDeferredStg->obj);
         if (sysDeferredStgMapObjIt != sysDeferredStgMapObj.end())
@@ -1299,6 +1310,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.DEFERRED_STG$ missing index for (OBJ#: " + std::to_string(sysDeferredStg->obj) + ")")
         }
 
+        touchTable(sysDeferredStg->obj);
         touched = true;
     }
 
@@ -1307,8 +1319,10 @@ namespace OpenLogReplicator {
                 ", TABOBJ#: " << std::dec << sysECol->tabObj <<
                 ", COLNUM: " << sysECol->colNum <<
                 ", GUARD_ID: " << sysECol->guardId << ")")
-        touchTable(sysECol->tabObj);
-        sysEColMapRowId.erase(sysECol->rowId);
+        auto sysEColMapRowIdIt = sysEColMapRowId.find(sysECol->rowId);
+        if (sysEColMapRowIdIt == sysEColMapRowId.end())
+            return;
+        sysEColMapRowId.erase(sysEColMapRowIdIt);
 
         SysEColKey sysEColKey(sysECol->tabObj, sysECol->colNum);
         auto sysEColMapKeyIt = sysEColMapKey.find(sysEColKey);
@@ -1318,6 +1332,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.ECOL$ missing index for (TABOBJ#: " + std::to_string(sysECol->tabObj) + ", COLNUM#: " + std::to_string(sysECol->colNum) + ")")
         }
 
+        touchTable(sysECol->tabObj);
         touched = true;
     }
 
@@ -1328,8 +1343,10 @@ namespace OpenLogReplicator {
                 ", INTCOL#: " << sysLob->intCol <<
                 ", LOBJ#: " << sysLob->lObj <<
                 ", TS#: " << sysLob->ts << ")")
-        touchTable(sysLob->obj);
-        sysLobMapRowId.erase(sysLob->rowId);
+        auto sysLobMapRowIdIt = sysLobMapRowId.find(sysLob->rowId);
+        if (sysLobMapRowIdIt == sysLobMapRowId.end())
+            return;
+        sysLobMapRowId.erase(sysLobMapRowIdIt);
 
         SysLobKey sysLobKey(sysLob->obj, sysLob->intCol);
         auto sysLobMapKeyIt = sysLobMapKey.find(sysLobKey);
@@ -1346,6 +1363,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.LOB$ missing index for (LOBJ#: " + std::to_string(sysLob->lObj) + ")")
         }
 
+        touchTable(sysLob->obj);
         touched = true;
     }
 
@@ -1353,10 +1371,10 @@ namespace OpenLogReplicator {
         TRACE(TRACE2_SYSTEM, "SYSTEM: delete SYS.LOBCOMPPART$ (ROWID: " << sysLobCompPart->rowId <<
                 ", PARTOBJ#: " << std::dec << sysLobCompPart->partObj <<
                 ", LOBJ#: " << sysLobCompPart->lObj << ")")
-        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPart->lObj);
-        if (sysLobMapLObjIt != sysLobMapLObj.end())
-            touchTable(sysLobMapLObjIt->second->obj);
-        sysLobCompPartMapRowId.erase(sysLobCompPart->rowId);
+        auto sysLobCompPartMapRowIdIt = sysLobCompPartMapRowId.find(sysLobCompPart->rowId);
+        if (sysLobCompPartMapRowIdIt == sysLobCompPartMapRowId.end())
+            return;
+        sysLobCompPartMapRowId.erase(sysLobCompPartMapRowIdIt);
 
         SysLobCompPartKey sysLobCompPartKey(sysLobCompPart->lObj, sysLobCompPart->partObj);
         auto sysLobCompPartMapKeyIt = sysLobCompPartMapKey.find(sysLobCompPartKey);
@@ -1374,6 +1392,9 @@ namespace OpenLogReplicator {
             ERROR("SYS.LOBCOMPPART$ missing index for (PARTOBJ#: " + std::to_string(sysLobCompPart->partObj) + ")")
         }
 
+        auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPart->lObj);
+        if (sysLobMapLObjIt != sysLobMapLObj.end())
+            touchTable(sysLobMapLObjIt->second->obj);
         touched = true;
     }
 
@@ -1382,16 +1403,14 @@ namespace OpenLogReplicator {
                 ", FRAGOBJ#: " << std::dec << sysLobFrag->fragObj <<
                 ", PARENTOBJ#: " << sysLobFrag->parentObj <<
                 ", TS#: " << sysLobFrag->ts << ")")
-        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobFrag->parentObj);
-        if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()) {
-            auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
-            if (sysLobMapLObjIt != sysLobMapLObj.end())
-                touchTable(sysLobMapLObjIt->second->obj);
-        }
+        auto sysLobFragMapRowIdIt = sysLobFragMapRowId.find(sysLobFrag->rowId);
+        if (sysLobFragMapRowIdIt == sysLobFragMapRowId.end())
+            return;
+        sysLobFragMapRowId.erase(sysLobFragMapRowIdIt);
+
         auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobFrag->parentObj);
         if (sysLobMapLObjIt != sysLobMapLObj.end())
             touchTable(sysLobMapLObjIt->second->obj);
-        sysLobFragMapRowId.erase(sysLobFrag->rowId);
 
         SysLobFragKey sysLobFragKey(sysLobFrag->parentObj, sysLobFrag->fragObj);
         auto sysLobFragMapKeyIt = sysLobFragMapKey.find(sysLobFragKey);
@@ -1402,6 +1421,12 @@ namespace OpenLogReplicator {
                     std::to_string(sysLobFrag->fragObj) + ")")
         }
 
+        auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobFrag->parentObj);
+        if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()) {
+            auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
+            if (sysLobMapLObjIt != sysLobMapLObj.end())
+                touchTable(sysLobMapLObjIt->second->obj);
+        }
         touched = true;
     }
 
@@ -1413,8 +1438,10 @@ namespace OpenLogReplicator {
                 ", TYPE#: " << sysObj->type <<
                 ", NAME: '" << sysObj->name <<
                 "', FLAGS: " << sysObj->flags << ")")
-        touchTable(sysObj->obj);
-        sysObjMapRowId.erase(sysObj->rowId);
+        auto sysObjMapRowIdIt = sysObjMapRowId.find(sysObj->rowId);
+        if (sysObjMapRowIdIt == sysObjMapRowId.end())
+            return;
+        sysObjMapRowId.erase(sysObjMapRowIdIt);
 
         SysObjNameKey sysObjNameKey(sysObj->owner, sysObj->name.c_str(), sysObj->obj, sysObj->dataObj);
         auto sysObjMapNameIt = sysObjMapName.find(sysObjNameKey);
@@ -1432,6 +1459,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.OBJ$ missing index for (OBJ#: " + std::to_string(sysObj->obj) + ")")
         }
 
+        touchTable(sysObj->obj);
         touched = true;
     }
 
@@ -1442,8 +1470,10 @@ namespace OpenLogReplicator {
                 ", CLUCOLS: " << sysTab->cluCols <<
                 ", FLAGS: " << sysTab->flags <<
                 ", PROPERTY: " << sysTab->property << ")")
-        touchTable(sysTab->obj);
-        sysTabMapRowId.erase(sysTab->rowId);
+        auto sysTabMapRowIdIt = sysTabMapRowId.find(sysTab->rowId);
+        if (sysTabMapRowIdIt == sysTabMapRowId.end())
+            return;
+        sysTabMapRowId.erase(sysTabMapRowIdIt);
 
         auto sysTabMapObjIt = sysTabMapObj.find(sysTab->obj);
         if (sysTabMapObjIt != sysTabMapObj.end())
@@ -1452,6 +1482,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.TAB$ missing index for (OBJ#: " + std::to_string(sysTab->obj) + ")")
         }
 
+        touchTable(sysTab->obj);
         touched = true;
     }
 
@@ -1460,8 +1491,10 @@ namespace OpenLogReplicator {
                 ", OBJ#: " << std::dec << sysTabComPart->obj <<
                 ", DATAOBJ#: " << sysTabComPart->dataObj <<
                 ", BO#: " << sysTabComPart->bo << ")")
-        touchTable(sysTabComPart->bo);
-        sysTabComPartMapRowId.erase(sysTabComPart->rowId);
+        auto sysTabComPartMapRowIdIt = sysTabComPartMapRowId.find(sysTabComPart->rowId);
+        if (sysTabComPartMapRowIdIt == sysTabComPartMapRowId.end())
+            return;
+        sysTabComPartMapRowId.erase(sysTabComPartMapRowIdIt);
 
         SysTabComPartKey sysTabComPartKey(sysTabComPart->bo, sysTabComPart->obj);
         auto sysTabComPartMapKeyIt = sysTabComPartMapKey.find(sysTabComPartKey);
@@ -1479,6 +1512,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.TABCOMPART$ missing index for (OBJ#: " + std::to_string(sysTabComPart->obj) + ")")
         }
 
+        touchTable(sysTabComPart->bo);
         touched = true;
     }
 
@@ -1487,8 +1521,10 @@ namespace OpenLogReplicator {
                 ", OBJ#: " << std::dec << sysTabPart->obj <<
                 ", DATAOBJ#: " << sysTabPart->dataObj <<
                 ", BO#: " << sysTabPart->bo << ")")
-        touchTable(sysTabPart->bo);
-        sysTabPartMapRowId.erase(sysTabPart->rowId);
+        auto sysTabPartMapRowIdIt = sysTabPartMapRowId.find(sysTabPart->rowId);
+        if (sysTabPartMapRowIdIt == sysTabPartMapRowId.end())
+            return;
+        sysTabPartMapRowId.erase(sysTabPartMapRowIdIt);
 
         SysTabPartKey sysTabPartKey(sysTabPart->bo, sysTabPart->obj);
         auto sysTabPartMapKeyIt = sysTabPartMapKey.find(sysTabPartKey);
@@ -1498,6 +1534,7 @@ namespace OpenLogReplicator {
             ERROR("SYS.TABPART$ missing index for (BO#: " + std::to_string(sysTabPart->bo) + ", OBJ#: " + std::to_string(sysTabPart->obj) + ")")
         }
 
+        touchTable(sysTabPart->bo);
         touched = true;
     }
 
@@ -1506,11 +1543,10 @@ namespace OpenLogReplicator {
                 ", OBJ#: " << std::dec << sysTabSubPart->obj <<
                 ", DATAOBJ#: " << sysTabSubPart->dataObj <<
                 ", POBJ#: " << sysTabSubPart->pObj << ")")
-        auto sysObjMapObjIt = sysObjMapObj.find(sysTabSubPart->obj);
-        if (sysObjMapObjIt != sysObjMapObj.end())
-            touchTable(sysObjMapObjIt->second->obj);
-
-        sysTabSubPartMapRowId.erase(sysTabSubPart->rowId);
+        auto sysTabSubPartMapRowIdIt = sysTabSubPartMapRowId.find(sysTabSubPart->rowId);
+        if (sysTabSubPartMapRowIdIt == sysTabSubPartMapRowId.end())
+            return;
+        sysTabSubPartMapRowId.erase(sysTabSubPartMapRowIdIt);
 
         SysTabSubPartKey sysTabSubPartKey(sysTabSubPart->pObj, sysTabSubPart->obj);
         auto sysTabSubPartMapKeyIt = sysTabSubPartMapKey.find(sysTabSubPartKey);
@@ -1521,6 +1557,9 @@ namespace OpenLogReplicator {
                     std::to_string(sysTabSubPart->obj) + ")")
         }
 
+        auto sysObjMapObjIt = sysObjMapObj.find(sysTabSubPart->obj);
+        if (sysObjMapObjIt != sysObjMapObj.end())
+            touchTable(sysObjMapObjIt->second->obj);
         touched = true;
     }
 
@@ -1529,7 +1568,10 @@ namespace OpenLogReplicator {
                 ", TS#: " << std::dec << sysTs->ts <<
                 ", NAME: '" << sysTs->name <<
                 "', BLOCKSIZE: " << sysTs->blockSize << ")")
-        sysTsMapRowId.erase(sysTs->rowId);
+        auto sysTsMapRowIdIt = sysTsMapRowId.find(sysTs->rowId);
+        if (sysTsMapRowIdIt == sysTsMapRowId.end())
+            return;
+        sysTsMapRowId.erase(sysTsMapRowIdIt);
 
         auto sysTsMapTsIt = sysTsMapTs.find(sysTs->ts);
         if (sysTsMapTsIt != sysTsMapTs.end())
@@ -1546,7 +1588,10 @@ namespace OpenLogReplicator {
                 ", USER#: " << std::dec << sysUser->user <<
                 ", NAME: " << sysUser->name <<
                 ", SPARE1: " << sysUser->spare1 << ")")
-        sysUserMapRowId.erase(sysUser->rowId);
+        auto sysUserMapRowIdIt = sysUserMapRowId.find(sysUser->rowId);
+        if (sysUserMapRowIdIt == sysUserMapRowId.end())
+            return;
+        sysUserMapRowId.erase(sysUserMapRowIdIt);
 
         auto sysUserMapUserIt = sysUserMapUser.find(sysUser->user);
         if (sysUserMapUserIt != sysUserMapUser.end())
@@ -1762,8 +1807,9 @@ namespace OpenLogReplicator {
     }
 
     void Schema::removeTableFromDict(OracleTable* table) {
-        if (tablePartitionMap.find(table->obj) != tablePartitionMap.end())
-            tablePartitionMap.erase(table->obj);
+        auto tablePartitionMapIt = tablePartitionMap.find(table->obj);
+        if (tablePartitionMapIt != tablePartitionMap.end())
+            tablePartitionMap.erase(tablePartitionMapIt);
         else {
             ERROR("can't remove partition (obj: " + std::to_string(table->obj) + ", dataobj: " + std::to_string(table->dataObj) + ")")
         }
@@ -1772,8 +1818,9 @@ namespace OpenLogReplicator {
             typeObj obj = objx >> 32;
             typeDataObj dataObj = objx & 0xFFFFFFFF;
 
-            if (tablePartitionMap.find(obj) != tablePartitionMap.end())
-                tablePartitionMap.erase(obj);
+            tablePartitionMapIt = tablePartitionMap.find(obj);
+            if (tablePartitionMapIt != tablePartitionMap.end())
+                tablePartitionMap.erase(tablePartitionMapIt);
             else {
                 ERROR("can't remove table partition element (obj: " + std::to_string(obj) + ", dataobj: " + std::to_string(dataObj) + ")")
             }
