@@ -1514,6 +1514,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysCColDrop(sysCCol);
+        metadata->schema->sysCColSetTouched.erase(sysCCol);
         delete sysCCol;
         sysCCol = nullptr;
     }
@@ -1528,6 +1529,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysCDefDrop(sysCDef);
+        metadata->schema->sysCDefSetTouched.erase(sysCDef);
         delete sysCDef;
         sysCDef = nullptr;
     }
@@ -1542,6 +1544,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysColDrop(sysCol);
+        metadata->schema->sysColSetTouched.erase(sysCol);
         delete sysCol;
         sysCol = nullptr;
     }
@@ -1556,6 +1559,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysDeferredStgDrop(sysDeferredStg);
+        metadata->schema->sysDeferredStgSetTouched.erase(sysDeferredStg);
         delete sysDeferredStg;
         sysDeferredStg = nullptr;
     }
@@ -1570,6 +1574,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysEColDrop(sysECol);
+        metadata->schema->sysEColSetTouched.erase(sysECol);
         delete sysECol;
         sysECol = nullptr;
     }
@@ -1584,6 +1589,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysLobDrop(sysLob);
+        metadata->schema->sysLobSetTouched.erase(sysLob);
         delete sysLob;
         sysLob = nullptr;
     }
@@ -1598,6 +1604,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysLobCompPartDrop(sysLobCompPart);
+        metadata->schema->sysLobCompPartSetTouched.erase(sysLobCompPart);
         delete sysLobCompPart;
         sysLobCompPart = nullptr;
     }
@@ -1612,6 +1619,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysLobFragDrop(sysLobFrag);
+        metadata->schema->sysLobFragSetTouched.erase(sysLobFrag);
         delete sysLobFrag;
         sysLobFrag = nullptr;
     }
@@ -1626,6 +1634,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysObjDrop(sysObj);
+        metadata->schema->sysObjSetTouched.erase(sysObj);
         delete sysObj;
         sysObj = nullptr;
     }
@@ -1640,6 +1649,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysTabDrop(sysTab);
+        metadata->schema->sysTabSetTouched.erase(sysTab);
         delete sysTab;
         sysTab = nullptr;
     }
@@ -1654,6 +1664,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysTabComPartDrop(sysTabComPart);
+        metadata->schema->sysTabComPartSetTouched.erase(sysTabComPart);
         delete sysTabComPart;
         sysTabComPart = nullptr;
     }
@@ -1668,6 +1679,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysTabPartDrop(sysTabPart);
+        metadata->schema->sysTabPartSetTouched.erase(sysTabPart);
         delete sysTabPart;
         sysTabPart = nullptr;
     }
@@ -1682,6 +1694,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysTabSubPartDrop(sysTabSubPart);
+        metadata->schema->sysTabSubPartSetTouched.erase(sysTabSubPart);
         delete sysTabSubPart;
         sysTabSubPart = nullptr;
     }
@@ -1710,6 +1723,7 @@ namespace OpenLogReplicator {
         }
 
         metadata->schema->dictSysUserDrop(sysUser);
+        metadata->schema->sysUserSetTouched.erase(sysUser);
         delete sysUser;
         sysUser = nullptr;
     }
