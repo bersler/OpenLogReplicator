@@ -152,6 +152,7 @@ namespace OpenLogReplicator {
         }
 
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 12);
+        redoLogRecord->lobPageNo = INVALID_LOB_PAGE_NO;
         if (ctx->dumpRedoLog >= 1) {
             uint8_t code = redoLogRecord->data[fieldPos + 0];
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);

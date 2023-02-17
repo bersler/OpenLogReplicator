@@ -461,6 +461,16 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
+        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, bool append, bool isClob) {
+            if (isClob) {
+                parseString(data, length, charsetId, append);
+            } else {
+                memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
+                       reinterpret_cast<const void*>(data), length);
+                valueLength += length;
+            };
+        }
+
         void parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeDataObj dataObj, bool isClob) {
             bool append = false;
             valueLength = 0;
@@ -473,9 +483,8 @@ namespace OpenLogReplicator {
             }
 
             uint32_t flags = data[5];
-            typeLobId lobId;
-            lobId.set(data + 10);
-            lobCtx->checkOrphanedLobs(ctx, lobId);
+            typeLobId lobId(data + 10);
+            lobCtx->checkOrphanedLobs(ctx, lobId, lastXid);
 
             // in-index
             if ((flags & 0x04) == 0) {
@@ -509,15 +518,10 @@ namespace OpenLogReplicator {
                         chunkLength = lobData->sizeRest;
 
                     valueBufferCheck(chunkLength * 4);
-                    RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t));
-                    redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord));
-                    if (isClob) {
-                        parseString(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append);
-                    } else {
-                        memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
-                               reinterpret_cast<const void*>(redoLogRecordLob->data + redoLogRecordLob->lobData), chunkLength);
-                        valueLength += chunkLength;
-                    };
+                    RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                    redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
+
+                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
                     append = true;
                     ++pageNo;
                 }
@@ -596,21 +600,15 @@ namespace OpenLogReplicator {
 
                         valueBufferCheck(lobData->pageSize * 4);
                         //uint64_t redoLogRecordLength = *(reinterpret_cast<uint64_t*>(dataMapIt->second));
-                        RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t));
-                        redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord));
+                        RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
+                        redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                         if (j < pageCnt)
                             chunkLength = redoLogRecordLob->lobDataLength;
                         else
                             chunkLength = sizeRest;
 
-                        if (isClob) {
-                            parseString(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append);
-                            append = true;
-                        } else {
-                            memcpy(reinterpret_cast<void *>(valueBuffer + valueLength),
-                                   reinterpret_cast<const void *>(redoLogRecordLob->data + redoLogRecordLob->lobData), chunkLength);
-                            valueLength += chunkLength;
-                        }
+                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                        append = true;
                         ++page;
                         totalLobLength -= chunkLength;
                         dataOffset += 4;
@@ -651,13 +649,7 @@ namespace OpenLogReplicator {
                             return;
                         }
 
-                        if (isClob) {
-                            parseString(data + 36, chunkLength, charsetId, false);
-                        } else {
-                            memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
-                                   reinterpret_cast<const void*>(data + 36), chunkLength);
-                            valueLength += chunkLength;
-                        }
+                        addLobToOutput(data + 36, chunkLength, charsetId, false, isClob);
                     }
                 } else {
                     if (bodyLength < 10) {
@@ -709,13 +701,7 @@ namespace OpenLogReplicator {
                                 return;
                             }
 
-                            if (isClob) {
-                                parseString(data + dataOffset, chunkLength, charsetId, false);
-                            } else {
-                                memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
-                                       reinterpret_cast<const void*>(data + dataOffset), chunkLength);
-                                valueLength += chunkLength;
-                            }
+                            addLobToOutput(data + dataOffset, chunkLength, charsetId, false, isClob);
                             totalLobLength -= chunkLength;
                         }
                     // index
@@ -785,19 +771,12 @@ namespace OpenLogReplicator {
                                 }
 
                                 valueBufferCheck(lobData->pageSize * 4);
-                                RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t));
-                                redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(uint32_t) +
-                                        sizeof(RedoLogRecord));
+                                RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
+                                redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkLength = redoLogRecordLob->lobDataLength;
 
-                                if (isClob) {
-                                    parseString(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append);
-                                    append = true;
-                                } else {
-                                    memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
-                                           reinterpret_cast<const void*>(redoLogRecordLob->data + redoLogRecordLob->lobData), chunkLength);
-                                    valueLength += chunkLength;
-                                }
+                                addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                                append = true;
                                 ++page;
                                 totalLobLength -= chunkLength;
                             }

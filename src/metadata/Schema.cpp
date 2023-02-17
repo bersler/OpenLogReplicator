@@ -1423,7 +1423,7 @@ namespace OpenLogReplicator {
 
         auto sysLobCompPartMapPartObjIt = sysLobCompPartMapPartObj.find(sysLobFrag->parentObj);
         if (sysLobCompPartMapPartObjIt != sysLobCompPartMapPartObj.end()) {
-            auto sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
+            sysLobMapLObjIt = sysLobMapLObj.find(sysLobCompPartMapPartObjIt->second->lObj);
             if (sysLobMapLObjIt != sysLobMapLObj.end())
                 touchTable(sysLobMapLObjIt->second->obj);
         }

@@ -357,7 +357,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize) {
+    void TransactionBuffer::addOrphanedLob(RedoLogRecord* redoLogRecord1) {
         TRACE(TRACE2_LOB, "LOB" <<
                 " id: " << redoLogRecord1->lobId.upper() <<
                 " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
@@ -371,20 +371,19 @@ namespace OpenLogReplicator {
             return;
         }
 
-        orphanedLobs[lobKey] = allocateLob(redoLogRecord1, pageSize);
+        orphanedLobs[lobKey] = allocateLob(redoLogRecord1);
     }
 
-    uint8_t* TransactionBuffer::allocateLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize) {
-        uint64_t length = redoLogRecord1->length + sizeof(RedoLogRecord) + sizeof(uint64_t) + sizeof(uint32_t);
+    uint8_t* TransactionBuffer::allocateLob(RedoLogRecord* redoLogRecord1) {
+        uint64_t length = redoLogRecord1->length + sizeof(RedoLogRecord) + sizeof(uint64_t);
         uint8_t* data = new uint8_t[length];
         *(reinterpret_cast<uint64_t*>(data)) = length;
-        *(reinterpret_cast<uint32_t*>(data + sizeof(uint64_t))) = pageSize;
-        memcpy(reinterpret_cast<void*>(data + sizeof(uint64_t) + sizeof(uint32_t)),
+        memcpy(reinterpret_cast<void*>(data + sizeof(uint64_t)),
                reinterpret_cast<const void*>(redoLogRecord1), sizeof(RedoLogRecord));
-        memcpy(reinterpret_cast<void*>(data + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord)),
+        memcpy(reinterpret_cast<void*>(data + sizeof(uint64_t) + sizeof(RedoLogRecord)),
                reinterpret_cast<const void*>(redoLogRecord1->data), redoLogRecord1->length);
-        redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t) + sizeof(uint32_t));
-        redoLogRecord1->data = data + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(RedoLogRecord);
+        redoLogRecord1 = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
+        redoLogRecord1->data = data + sizeof(uint64_t) + sizeof(RedoLogRecord);
 
         return data;
     }

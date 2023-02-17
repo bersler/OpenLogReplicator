@@ -20,7 +20,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "LobData.h"
 
 namespace OpenLogReplicator {
-    LobData::LobData()  {
+    LobData::LobData() :
+            pageSize(0),
+            sizePages(0),
+            sizeRest(0) {
     }
 
     LobData::~LobData()  {

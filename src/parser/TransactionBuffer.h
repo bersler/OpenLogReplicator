@@ -86,8 +86,8 @@ namespace OpenLogReplicator {
         void deleteTransactionChunks(TransactionChunk* tc);
         void mergeBlocks(uint8_t* mergeBuffer, RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2);
         void checkpoint(typeSeq& minSequence, uint64_t& minOffset, typeXid& minXid);
-        void addOrphanedLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize);
-        uint8_t* allocateLob(RedoLogRecord* redoLogRecord1, uint32_t pageSize);
+        void addOrphanedLob(RedoLogRecord* redoLogRecord1);
+        uint8_t* allocateLob(RedoLogRecord* redoLogRecord1);
     };
 }
 

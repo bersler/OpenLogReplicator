@@ -26,6 +26,8 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #ifndef REDO_LOG_RECORD_H_
 #define REDO_LOG_RECORD_H_
 
+#define INVALID_LOB_PAGE_NO 0xFFFFFFFF
+
 namespace OpenLogReplicator {
     class RedoLogRecord {
     public:
@@ -45,7 +47,8 @@ namespace OpenLogReplicator {
         uint64_t lobData;
         uint64_t indKey;
         uint64_t indKeyData;
-        typeDba lobPageNo;
+        uint32_t lobPageNo;
+        uint32_t lobPageSize;
         typeLobId lobId;
         uint32_t lobLengthPages;
         uint16_t lobLengthRest;

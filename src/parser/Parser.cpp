@@ -592,12 +592,12 @@ namespace OpenLogReplicator {
             return;
         }
 
-        uint32_t pageSize = lob->checkLobPageSize(redoLogRecord1->dataObj);
+        redoLogRecord1->lobPageSize = lob->checkLobPageSize(redoLogRecord1->dataObj);
 
-        if (redoLogRecord1->xid.toUint() == 0) {
+        if (redoLogRecord1->xid.isEmpty()) {
             auto lobIdToXidMapIt = ctx->lobIdToXidMap.find(redoLogRecord1->lobId);
             if (lobIdToXidMapIt == ctx->lobIdToXidMap.end()) {
-                transactionBuffer->addOrphanedLob(redoLogRecord1, pageSize);
+                transactionBuffer->addOrphanedLob(redoLogRecord1);
                 return;
             } else
                 redoLogRecord1->xid = lobIdToXidMapIt->second;
@@ -623,9 +623,10 @@ namespace OpenLogReplicator {
                 " op: " << std::setfill('0') << std::setw(4) << std::hex << redoLogRecord1->opCode << "    " <<
                 " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
                 " page: " << std::dec << redoLogRecord1->lobPageNo <<
-                " pg: " << std::dec << pageSize)
+                " pg: " << std::dec << redoLogRecord1->lobPageSize)
 
-        transaction->lobCtx.addLob(redoLogRecord1->lobId, redoLogRecord1->dba, transactionBuffer->allocateLob(redoLogRecord1, pageSize));
+        transaction->lobCtx.addLob(ctx, redoLogRecord1->lobId, redoLogRecord1->dba, transactionBuffer->allocateLob(redoLogRecord1),
+                                   transaction->xid);
     }
 
     void Parser::appendToTransaction(RedoLogRecord* redoLogRecord1) {
@@ -1098,7 +1099,7 @@ namespace OpenLogReplicator {
                     " xid: " << redoLogRecord1->xid <<
                     " MAP")
             ctx->lobIdToXidMap[redoLogRecord2->lobId] = redoLogRecord1->xid;
-            transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId);
+            transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId, redoLogRecord1->xid);
         }
 
         if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)

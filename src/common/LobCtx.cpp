@@ -24,12 +24,12 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../metadata/Schema.h"
 
 namespace OpenLogReplicator {
-    void LobCtx::checkOrphanedLobs(Ctx* ctx, typeLobId lobId) {
+    void LobCtx::checkOrphanedLobs(Ctx* ctx, typeLobId lobId, typeXid xid) {
         LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId; ) {
 
-            addLob(lobId, orphanedLobsIt->first.page, orphanedLobsIt->second);
+            addLob(ctx, lobId, orphanedLobsIt->first.page, orphanedLobsIt->second, xid);
 
             TRACE(TRACE2_LOB, "LOB" <<
                     " id: " << lobId <<
@@ -39,7 +39,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::addLob(typeLobId lobId, typeDba page, uint8_t* data) {
+    void LobCtx::addLob(Ctx* ctx, typeLobId lobId, typeDba page, uint8_t* data, typeXid xid) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -50,11 +50,34 @@ namespace OpenLogReplicator {
         }
 
         auto dataMapIt = lobData->dataMap.find(page);
-        if (dataMapIt != lobData->dataMap.end())
+        if (dataMapIt != lobData->dataMap.end()) {
+            TRACE(TRACE2_LOB, "LOB" <<
+                          " id: " << lobId <<
+                          " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << page << " OVERWRITE")
             delete[] lobData->dataMap[page];
+        }
 
-        lobData->pageSize = *(reinterpret_cast<uint32_t*>(data + sizeof(uint64_t)));
         lobData->dataMap[page] = data;
+
+        RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(data + sizeof(uint64_t));
+        if (lobData->pageSize == 0) {
+            lobData->pageSize = redoLogRecordLob->lobPageSize;
+        } else if (lobData->pageSize != redoLogRecordLob->lobPageSize) {
+            throw RedoLogException("inconsistent page size lobid: " + lobId.upper() + ", new: " + std::to_string(redoLogRecordLob->lobPageSize) +
+                                   ", already set to: " + std::to_string(lobData->pageSize) + ", xid: " + xid.toString());
+        }
+
+        uint32_t pageNo = redoLogRecordLob->lobPageNo;
+        if (pageNo != INVALID_LOB_PAGE_NO) {
+            auto indexMapIt = lobData->indexMap.find(page);
+            if (indexMapIt != lobData->indexMap.end()) {
+                if (indexMapIt->second != page)
+                    throw RedoLogException("duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
+                                       ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString());
+            } else {
+                lobData->indexMap[pageNo] = page;
+            }
+        }
     }
 
     void LobCtx::setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest) {
@@ -82,8 +105,12 @@ namespace OpenLogReplicator {
         }
 
         auto indexMapIt = lobData->indexMap.find(page);
-        if (indexMapIt != lobData->indexMap.end())
-            throw RedoLogException("duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) + ", xid: " + xid.toString());
+        if (indexMapIt != lobData->indexMap.end()) {
+            if (indexMapIt->second != page)
+                throw RedoLogException("duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
+                                       ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString());
+            return;
+        }
 
         lobData->indexMap[pageNo] = page;
     }

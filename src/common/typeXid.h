@@ -108,6 +108,10 @@ namespace OpenLogReplicator {
             return data;
         }
 
+        bool isEmpty() {
+            return (data == 0);
+        }
+
         typeUsn usn() const {
             return static_cast<typeUsn>(data >> 48);
         }
