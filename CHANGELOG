@@ -8,8 +8,9 @@
 - fix: experimental LOB support schema script error
 - enhancement: optimized DDL processing speed
 - enhancement: added debug info for release builds
+- enhancement: added support for Oracle 19.18 and 21.8
 
-1.0.0
+1.0.0 - released on 2022.12.10
 - copy from 0.9.58
 
 0.9.58
