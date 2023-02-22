@@ -1,3 +1,6 @@
+1.0.2
+- debug: trace formatting changes
+
 1.0.1 - released on 2023.02.20
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files
 - fix: incorrect message printed on error

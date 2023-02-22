@@ -137,15 +137,14 @@ namespace OpenLogReplicator {
             }
 
             if (ctx->dumpRawData > 0) {
-                ctx->dumpStream << "##: " << std::dec << headerLength;
-                for (uint64_t j = 0; j < headerLength; ++j) {
-                    if ((j & 0x0F) == 0)
-                        ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j
-                                        << ": ";
-                    if ((j & 0x07) == 0)
-                        ctx->dumpStream << " ";
+                std::string header = "## H: [" + std::to_string(lwnMember->block * reader->getBlockSize() + lwnMember->offset) + "] " +
+                        std::to_string(headerLength);
+                ctx->dumpStream << header;
+                if (header.length() < 36)
+                    ctx->dumpStream << std::string(36 - header.length(), ' ');
+
+                for (uint64_t j = 0; j < headerLength; ++j)
                     ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(data[j]) << " ";
-                }
                 ctx->dumpStream << std::endl;
             }
 

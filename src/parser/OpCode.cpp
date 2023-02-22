@@ -1324,27 +1324,25 @@ namespace OpenLogReplicator {
     }
 
     void OpCode::dumpHex(Ctx* ctx, RedoLogRecord* redoLogRecord) {
-        ctx->dumpStream << "## 0: [" << std::dec << redoLogRecord->dataOffset << "] " << redoLogRecord->fieldLengthsDelta;
-        for (uint64_t j = 0; j < redoLogRecord->fieldLengthsDelta; ++j) {
-            if ((j & 0xF) == 0)
-                ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
-            if ((j & 0x07) == 0)
-                ctx->dumpStream << " ";
+        std::string header = "## 0: [" + std::to_string(redoLogRecord->dataOffset) + "] " + std::to_string(redoLogRecord->fieldLengthsDelta);
+        ctx->dumpStream << header;
+        if (header.length() < 36)
+            ctx->dumpStream << std::string(36 - header.length(), ' ');
+
+        for (uint64_t j = 0; j < redoLogRecord->fieldLengthsDelta; ++j)
             ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[j]) << " ";
-        }
         ctx->dumpStream << std::endl;
 
         uint64_t fieldPosLocal = redoLogRecord->fieldPos;
         for (uint64_t i = 1; i <= redoLogRecord->fieldCnt; ++i) {
             uint16_t fieldLength = ctx->read16(redoLogRecord->data + redoLogRecord->fieldLengthsDelta + i * 2);
-            ctx->dumpStream << "## " << std::dec << i << ": [" << (redoLogRecord->dataOffset + fieldPosLocal) << "] " << fieldLength;
-            for (uint64_t j = 0; j < fieldLength; ++j) {
-                if ((j & 0xF) == 0)
-                    ctx->dumpStream << std::endl << "##  " << std::setfill(' ') << std::setw(2) << std::hex << j << ": ";
-                if ((j & 0x07) == 0)
-                    ctx->dumpStream << " ";
+            header = "## " + std::to_string(i) + ": [" + std::to_string(redoLogRecord->dataOffset + fieldPosLocal) + "] " + std::to_string(fieldLength) +  "   ";
+            ctx->dumpStream << header;
+            if (header.length() < 36)
+                ctx->dumpStream << std::string(36 - header.length(), ' ');
+
+            for (uint64_t j = 0; j < fieldLength; ++j)
                 ctx->dumpStream << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord->data[fieldPosLocal + j]) << " ";
-            }
             ctx->dumpStream << std::endl;
 
             fieldPosLocal += (fieldLength + 3) & 0xFFFC;
