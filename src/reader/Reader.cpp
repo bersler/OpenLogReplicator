@@ -826,12 +826,15 @@ namespace OpenLogReplicator {
         typeSum chSum2 = calcChSum(headerBuffer + blockSize, blockSize);
 
         if (ctx->version < REDO_VERSION_12_2) {
-            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN48(resetlogsScn) << " (" << std::dec << resetlogsScn << ")" << std::endl <<
-                    " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) << " (" << std::dec << prevResetlogsScn << ")" << std::endl <<
+            ss << " resetlogs count: 0x" << std::hex << resetlogs << " scn: " << PRINTSCN48(resetlogsScn) <<
+                    " (" << std::dec << resetlogsScn << ")" << std::endl <<
+                    " prev resetlogs count: 0x" << std::hex << prevResetlogsCnt << " scn: " << PRINTSCN48(prevResetlogsScn) <<
+                    " (" << std::dec << prevResetlogsScn << ")" << std::endl <<
                     " Low  scn: " << PRINTSCN48(firstScnHeader) << " (" << std::dec << firstScnHeader << ")" << " " << firstTimeHeader << std::endl <<
                     " Next scn: " << PRINTSCN48(nextScnHeader) << " (" << std::dec << nextScn << ")" << " " << nextTime << std::endl <<
                     " Enabled scn: " << PRINTSCN48(enabledScn) << " (" << std::dec << enabledScn << ")" << " " << enabledTime << std::endl <<
-                    " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << std::dec << threadClosedScn << ")" << " " << threadClosedTime << std::endl <<
+                    " Thread closed scn: " << PRINTSCN48(threadClosedScn) << " (" << std::dec << threadClosedScn << ")" <<
+                    " " << threadClosedTime << std::endl <<
                     " Disk cksum: 0x" << std::hex << chSum << " Calc cksum: 0x" << std::hex << chSum2 << std::endl <<
                     " Terminal recovery stop scn: " << PRINTSCN48(termialRecScn) << std::endl <<
                     " Terminal recovery  " << termialRecTime << std::endl <<

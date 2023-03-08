@@ -460,7 +460,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliLoadCommon(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliLoadCommon(Ctx *ctx, RedoLogRecord *redoLogRecord __attribute__((unused)), uint64_t &fieldPos __attribute__((unused)),
+                                uint16_t &fieldLength, uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI load common [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
@@ -476,7 +477,6 @@ namespace OpenLogReplicator {
         redoLogRecord->lobId.set(redoLogRecord->data + fieldPos + 12);
         redoLogRecord->lobPageNo = INVALID_LOB_PAGE_NO;
         if (ctx->dumpRedoLog >= 1) {
-            uint8_t code = redoLogRecord->data[fieldPos + 0];
             typeScn scn = ctx->readScnR(redoLogRecord->data + fieldPos + 2);
             uint8_t flg0 = redoLogRecord->data[fieldPos + 10];
             const char *flg0typ = "";
@@ -580,7 +580,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliFill(Ctx *ctx, RedoLogRecord *redoLogRecord, uint64_t &fieldPos, uint16_t &fieldLength, uint8_t code) {
+    void OpCode::kdliFill(Ctx *ctx, RedoLogRecord *redoLogRecord __attribute__((unused)), uint64_t &fieldPos __attribute__((unused)), uint16_t &fieldLength,
+                          uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI fill [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
@@ -597,7 +598,6 @@ namespace OpenLogReplicator {
         redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
-            uint8_t code = redoLogRecord->data[fieldPos + 0];
             uint32_t asiz = ctx->read32(redoLogRecord->data + fieldPos + 4);
 
             if (fieldLength < 8 + static_cast<uint64_t>(asiz) * 8) {
@@ -633,7 +633,6 @@ namespace OpenLogReplicator {
         redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
-            uint8_t code = redoLogRecord->data[fieldPos + 0];
             uint32_t asiz = ctx->read32(redoLogRecord->data + fieldPos + 4);
 
             if (fieldLength < 8 + static_cast<uint64_t>(asiz) * 16) {
@@ -687,7 +686,8 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliGmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliGmap(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)),
+                          uint16_t& fieldLength __attribute__((unused)), uint8_t code __attribute__((unused))) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI GMAP Generic/Auxiliary Mapping Change:" << std::endl;
             // TODO: finish
@@ -706,7 +706,6 @@ namespace OpenLogReplicator {
         redoLogRecord->dataObj = ctx->read32(redoLogRecord->data + fieldPos + 24);
 
         if (ctx->dumpRedoLog >= 1) {
-            uint8_t code = redoLogRecord->data[fieldPos + 0];
             uint32_t bsz = ctx->read32(redoLogRecord->data + fieldPos + 4);
             typeScn scn = ctx->readScn(redoLogRecord->data + fieldPos + 8);
 
@@ -906,35 +905,40 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliAlmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliAlmap(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
+                           uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI almap [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
         }
     }
 
-    void OpCode::kdliAlmapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliAlmapx(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
+                            uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI almapx [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
         }
     }
 
-    void OpCode::kdliLoadItree(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliLoadItree(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)),
+                               uint16_t& fieldLength, uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI load itree [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
         }
     }
 
-    void OpCode::kdliImap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliImap(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
+                          uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI imap [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish
         }
     }
 
-    void OpCode::kdliImapx(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+    void OpCode::kdliImapx(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
+                           uint8_t code) {
         if (ctx->dumpRedoLog >= 1) {
             ctx->dumpStream << "KDLI imap [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
             // TODO: finish

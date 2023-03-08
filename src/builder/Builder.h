@@ -788,19 +788,19 @@ namespace OpenLogReplicator {
                                 WARNING("dump LOB data: " << dumpLob(data, length))
                             }
 
-                            uint8_t* data = listMapIt->second;
-                            uint8_t asiz = data[4];
+                            uint8_t* dataLob = listMapIt->second;
+                            uint8_t asiz = dataLob[4];
 
                             for (uint64_t i = 0; i < asiz; ++i) {
-                                uint16_t pageCnt = ctx->read16(data + i * 8 + 8 + 2);
-                                typeDba page = ctx->read32(data + i * 8 + 8 + 4);
+                                uint16_t pageCnt = ctx->read16(dataLob + i * 8 + 8 + 2);
+                                typeDba page = ctx->read32(dataLob + i * 8 + 8 + 4);
 
                                 for (uint64_t j = 0; j < pageCnt; ++j) {
                                     auto dataMapIt = lobData->dataMap.find(page);
                                     if (dataMapIt == lobData->dataMap.end()) {
                                         WARNING("missing LOB data (new in-value 12+) for xid: " << lastXid << " LOB: " << lobId.upper() << " page: " <<
                                                                                             std::to_string(page) << " obj: " << std::dec << obj)
-                                        WARNING("dump LOB: " << lobId.upper() << " data: " << dumpLob(data, length))
+                                        WARNING("dump LOB: " << lobId.upper() << " data: " << dumpLob(dataLob, length))
                                         return false;
                                     }
 

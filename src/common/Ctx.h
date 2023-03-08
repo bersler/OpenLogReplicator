@@ -336,7 +336,8 @@ namespace OpenLogReplicator {
         [[nodiscard]] static uint64_t getJsonFieldU64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
         [[nodiscard]] static int64_t getJsonFieldI64(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
         [[nodiscard]] static const rapidjson::Value& getJsonFieldO(const std::string& fileName, const rapidjson::Value& value, const char* field, uint64_t num);
-        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field, uint64_t num);
+        [[nodiscard]] static const char* getJsonFieldS(const std::string& fileName, uint64_t maxLength, const rapidjson::Value& value, const char* field,
+                                                       uint64_t num);
 
         void initialize(uint64_t newMemoryMinMb, uint64_t newMemoryMaxMb, uint64_t newReadBufferMax);
         void wakeAllOutOfMemory();
