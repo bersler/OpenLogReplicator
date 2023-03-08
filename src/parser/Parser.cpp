@@ -48,6 +48,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "OpCode0B16.h"
 #include "OpCode1301.h"
 #include "OpCode1801.h"
+#include "OpCode1A02.h"
 #include "OpCode1A06.h"
 #include "Parser.h"
 #include "Transaction.h"
@@ -253,7 +254,6 @@ namespace OpenLogReplicator {
             // uint64_t fieldPos = redoLogRecord[vectorCur].fieldPos;
             for (uint64_t i = 1; i <= redoLogRecord[vectorCur].fieldCnt; ++i) {
                 redoLogRecord[vectorCur].length += (ctx->read16(fieldList + i * 2) + 3) & 0xFFFC;
-                // fieldPos += (ctx->read16(redoLogRecord[vectorCur].data + redoLogRecord[vectorCur].fieldLengthsDelta + i * 2) + 3) & 0xFFFC;
 
                 if (offset + redoLogRecord[vectorCur].length > recordLength) {
                     dumpRedoVector(data, recordLength);
@@ -313,35 +313,29 @@ namespace OpenLogReplicator {
 
                 // REDO: Insert leaf row
                 case 0x0A02:
-                    if (ctx->experimentalLobs) {
-                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                        }
-                        OpCode0A02::process(ctx, &redoLogRecord[vectorCur]);
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
+                    OpCode0A02::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 // REDO: Init header
                 case 0x0A08:
-                    if (ctx->experimentalLobs) {
-                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                        }
-                        OpCode0A08::process(ctx, &redoLogRecord[vectorCur]);
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
+                    OpCode0A08::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 // REDO: Update key data in row
                 case 0x0A12:
-                    if (ctx->experimentalLobs) {
-                        if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
-                            redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
-                            redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
-                        }
-                        OpCode0A12::process(ctx, &redoLogRecord[vectorCur]);
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
+                    OpCode0A12::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 // REDO: Insert row piece
@@ -436,17 +430,20 @@ namespace OpenLogReplicator {
 
                 // LOB
                 case 0x1301:
-                    if (ctx->experimentalLobs) {
-                        if (vectorPrev == -1)
-                            OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
+                    OpCode1301::process(ctx, &redoLogRecord[vectorCur]);
+                    break;
+
+                // LOB index 12+
+                case 0x1A02:
+                    if (vectorPrev != -1 && redoLogRecord[vectorPrev].opCode == 0x0501) {
+                        redoLogRecord[vectorCur].recordDataObj = redoLogRecord[vectorPrev].dataObj;
+                        redoLogRecord[vectorCur].recordObj = redoLogRecord[vectorPrev].obj;
                     }
+                    OpCode1A02::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 case 0x1A06:
-                    if (ctx->experimentalLobs) {
-                        if (vectorPrev == -1)
-                            OpCode1A06::process(ctx, &redoLogRecord[vectorCur]);
-                    }
+                    OpCode1A06::process(ctx, &redoLogRecord[vectorCur]);
                     break;
 
                 // DDL
@@ -462,7 +459,7 @@ namespace OpenLogReplicator {
             if (vectorPrev != -1) {
                 if (redoLogRecord[vectorPrev].opCode == 0x0501) {
                     // UNDO - index
-                    if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00)
+                    if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0A00 || redoLogRecord[vectorCur].opCode == 0x1A02)
                         appendToTransactionIndex(&redoLogRecord[vectorPrev], &redoLogRecord[vectorCur]);
                     // UNDO - data
                     else if ((redoLogRecord[vectorCur].opCode & 0xFF00) == 0x0B00 || redoLogRecord[vectorCur].opCode == 0x0513 ||
@@ -979,8 +976,9 @@ namespace OpenLogReplicator {
         if (redoLogRecord1->bdba != redoLogRecord2->bdba && redoLogRecord1->bdba != 0 && redoLogRecord2->bdba != 0)
             throw RedoLogException("BDBA does not match (" + std::to_string(redoLogRecord1->bdba) + ", " +
                     std::to_string(redoLogRecord2->bdba) + ")");
+
         OracleLob* lob = metadata->schema->checkLobIndexDict(dataObj);
-        if (lob == nullptr) {
+        if (lob == nullptr && redoLogRecord2->opCode != 0x1A02) {
             TRACE(TRACE2_LOB, "LOB" <<
                     " skip index dataobj: " << std::dec << dataObj << " (" << redoLogRecord1->dataObj << ", " << redoLogRecord2->dataObj << ")" <<
                     " xid: " << redoLogRecord1->xid)
@@ -1057,6 +1055,8 @@ namespace OpenLogReplicator {
             case 0x0A08:
             // Update key data in row
             case 0x0A12:
+            // LOB index 12+
+            case 0x1A02:
                 break;
 
             default:
@@ -1101,10 +1101,12 @@ namespace OpenLogReplicator {
             transaction->lobCtx.checkOrphanedLobs(ctx, redoLogRecord2->lobId, redoLogRecord1->xid);
         }
 
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
-            transaction->system = true;
-        if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
-            transaction->schema = true;
+        if (lob != nullptr) {
+            if (lob->table != nullptr && (lob->table->options & OPTIONS_SYSTEM_TABLE) != 0)
+                transaction->system = true;
+            if (lob->table != nullptr && (lob->table->options & OPTIONS_SCHEMA_TABLE) != 0)
+                transaction->schema = true;
+        }
 
         // Transaction size limit
         if (ctx->transactionSizeMax > 0 &&

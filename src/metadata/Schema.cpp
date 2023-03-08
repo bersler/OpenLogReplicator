@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <cstring>
 #include <list>
 #include <regex>
 
@@ -755,7 +756,7 @@ namespace OpenLogReplicator {
         return true;
     }
 
-    void Schema::dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2,
+    void Schema::dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeTs ts, typeCol cluCols, uint64_t flags1, uint64_t flags2,
                                uint64_t property1, uint64_t property2) {
         typeRowId rowId(rowIdStr);
         if (sysTabMapRowId.find(rowId) != sysTabMapRowId.end()) {
@@ -763,8 +764,8 @@ namespace OpenLogReplicator {
             return;
         }
 
-        auto sysTab = new SysTab(rowId, obj, dataObj, cluCols, flags1, flags2, property1,
-                                 property2);
+        auto sysTab = new SysTab(rowId, obj, dataObj, ts, cluCols, flags1, flags2,
+                                 property1, property2);
         dictSysTabAdd(sysTab);
     }
 
@@ -1782,9 +1783,6 @@ namespace OpenLogReplicator {
             for (auto dataObj : lob->lobPartitions) {
                 if (lobPartitionMap.find(dataObj) == lobPartitionMap.end())
                     lobPartitionMap[dataObj] = lob;
-                else {
-                    ERROR("can't remove lob partition element (dataobj: " + std::to_string(dataObj) + ")")
-                }
             }
         }
 
@@ -1840,9 +1838,6 @@ namespace OpenLogReplicator {
                 auto lobPartitionMapIt = lobPartitionMap.find(dataObj);
                 if (lobPartitionMapIt != lobPartitionMap.end())
                     lobPartitionMap.erase(lobPartitionMapIt);
-                else {
-                    ERROR("can't remove lob partition element (dataobj: " + std::to_string(dataObj) + ")")
-                }
             }
         }
 
@@ -1854,10 +1849,10 @@ namespace OpenLogReplicator {
         }
     }
 
-    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::set<std::string>& msgs) {
+    void Schema::dropUnusedMetadata(const std::set<std::string>& users, std::list<std::string>& msgs) {
         for (OracleTable* table : tablesTouched) {
-            msgs.insert(table->owner + "." + table->name + " (dataobj: " + std::to_string(table->dataObj) + ", obj: " +
-                        std::to_string(table->obj) + ") ");
+            msgs.push_back(table->owner + "." + table->name + " (dataobj: " + std::to_string(table->dataObj) + ", obj: " +
+                           std::to_string(table->obj) + ") ");
             removeTableFromDict(table);
             delete table;
         }
@@ -2017,11 +2012,12 @@ namespace OpenLogReplicator {
     }
 
     void Schema::buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
-                           typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
+                           typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll,
                            uint64_t defaultCharacterMapId, uint64_t defaultCharacterNcharMapId) {
         uint64_t tabCnt = 0;
         std::regex regexOwner(owner);
         std::regex regexTable(table);
+        char sysLobConstraintName[26] = "SYS_LOB0000000000C00000$$";
 
         for (auto obj: identifiersTouched) {
             auto sysObjMapObjTouchedIt = sysObjMapObj.find(obj);
@@ -2048,7 +2044,7 @@ namespace OpenLogReplicator {
             // Table already added with another rule
             if (tableMap.find(sysObj->obj) != tableMap.end()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - already added (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - already added (skipped)");
                 continue;
             }
 
@@ -2056,7 +2052,7 @@ namespace OpenLogReplicator {
             auto sysTabMapObjIt = sysTabMapObj.find(sysObj->obj);
             if (sysTabMapObjIt == sysTabMapObj.end()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - SYS.TAB$ entry missing (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - SYS.TAB$ entry missing (skipped)");
                 continue;
             }
             SysTab* sysTab = sysTabMapObjIt->second;
@@ -2064,28 +2060,28 @@ namespace OpenLogReplicator {
             // Skip binary objects
             if (sysTab->isBinary()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - binary (skipped");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - binary (skipped");
                 continue;
             }
 
             // Skip Index Organized Tables (IOT)
             if (sysTab->isIot()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - IOT (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - IOT (skipped)");
                 continue;
             }
 
             // Skip temporary tables
             if (sysObj->isTemporary()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - temporary table (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - temporary table (skipped)");
                 continue;
             }
 
             // Skip nested tables
             if (sysTab->isNested()) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - nested table (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - nested table (skipped)");
                 continue;
             }
 
@@ -2101,7 +2097,7 @@ namespace OpenLogReplicator {
             // Skip compressed tables
             if (compressed) {
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - compressed table (skipped)");
+                    msgs.push_back(sysUser->name + "." + sysObj->name + " (obj: " + std::to_string(sysObj->obj) + ") - compressed table (skipped)");
                 continue;
             }
 
@@ -2237,7 +2233,7 @@ namespace OpenLogReplicator {
                 }
 
                 if (ctx->trace >= TRACE_DEBUG)
-                    msgs.insert("- col: " + std::to_string(sysCol->segCol) + ": " + sysCol->name + " (pk: " + std::to_string(numPk) + ", S: " +
+                    msgs.push_back("- col: " + std::to_string(sysCol->segCol) + ": " + sysCol->name + " (pk: " + std::to_string(numPk) + ", S: " +
                                 std::to_string(numSup) + ", G: " + std::to_string(guardSeg) + ")");
 
                 schemaColumn = new OracleColumn(sysCol->col, guardSeg, sysCol->segCol, sysCol->name,
@@ -2263,8 +2259,8 @@ namespace OpenLogReplicator {
                     typeObj lobDataObj = sysObjMapObjIt->second->dataObj;
 
                     if (ctx->trace >= TRACE_DEBUG)
-                        msgs.insert("- lob: " + std::to_string(sysLob->col) + ":" + std::to_string(sysLob->intCol) + ":" +
-                                std::to_string(lobDataObj) + ":" + std::to_string(sysLob->lObj));
+                        msgs.push_back("- lob: " + std::to_string(sysLob->col) + ":" + std::to_string(sysLob->intCol) + ":" +
+                                       std::to_string(lobDataObj) + ":" + std::to_string(sysLob->lObj));
 
                     schemaLob = new OracleLob(schemaTable, sysLob->obj, lobDataObj, sysLob->lObj, sysLob->col,
                                               sysLob->intCol);
@@ -2346,6 +2342,49 @@ namespace OpenLogReplicator {
                         lobList << " " << std::dec <<  schemaLob->obj << "/" << schemaLob->dataObj << "/" << std::dec << schemaLob->lObj;
                     schemaLob = nullptr;
                 }
+
+                //0123456 7890123456 7 89012 34
+                //SYS_LOB xxxxxxxxxx C yyyyy $$
+                typeObj obj2 = sysObj->obj;
+                for (uint j = 0; j < 10; ++j) {
+                    sysLobConstraintName[16 - j] = (obj2 % 10) + '0';
+                    obj2 /= 10;
+                }
+
+                SysObjNameKey sysObjNameKeyName(sysObj->owner, sysLobConstraintName, 0, 0);
+                for (auto sysObjMapNameIt = sysObjMapName.upper_bound(sysObjNameKeyName); sysObjMapNameIt != sysObjMapName.end();
+                        ++sysObjMapNameIt) {
+                    SysObj* sysObjLob = sysObjMapNameIt->second;
+                    const char* colStr = sysObjLob->name.c_str();
+
+                    if (sysObjLob->name.length() != 25 || memcmp(colStr, sysLobConstraintName, 18) != 0 || colStr[23] != '$' || colStr[24] != '$')
+                        continue;
+
+                    // decode column id
+                    typeCol col = 0;
+                    for (uint j = 0; j < 5; ++j) {
+                        col += colStr[18 + j] - '0';
+                        col *= 10;
+                    }
+
+                    // FIXME: potentially slow for tables with large number of LOB columns
+                    OracleLob* oracleLob = nullptr;
+                    for (auto lobIt: schemaTable->lobs) {
+                        if (lobIt->intCol == col) {
+                            oracleLob = lobIt;
+                            break;
+                        }
+                    }
+
+                    if (oracleLob == nullptr) {
+                        schemaLob = new OracleLob(schemaTable, sysObj->obj, 0, 0, col, col);
+                        schemaTable->addLob(schemaLob);
+                        oracleLob = schemaLob;
+                        schemaLob = nullptr;
+                    }
+
+                    oracleLob->addPartition(sysObjLob->dataObj, getLobBlockSize(sysTab->ts));
+                }
             }
 
             // Check if table has all listed columns
@@ -2381,7 +2420,7 @@ namespace OpenLogReplicator {
                                 std::dec << sysObj->obj << " (" << keysStr << ") ALWAYS;";
                 }
             }
-            msgs.insert(ss.str());
+            msgs.push_back(ss.str());
 
             addTableToDict(schemaTable);
             schemaTable = nullptr;

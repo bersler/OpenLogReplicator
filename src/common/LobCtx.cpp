@@ -80,6 +80,19 @@ namespace OpenLogReplicator {
         }
     }
 
+    void LobCtx::setList(typeLobId lobId, typeDba page, uint8_t* data, uint16_t length) {
+        auto listMapIt = listMap.find(page);
+        if (listMapIt != listMap.end()) {
+            uint8_t* oldData = listMapIt->second;
+            delete[] oldData;
+        }
+
+        uint8_t* newData = new uint8_t[length];
+        memcpy(newData, data, length);
+
+        listMap[page] = newData;
+    }
+
     void LobCtx::setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
@@ -121,5 +134,11 @@ namespace OpenLogReplicator {
             delete lobData;
         }
         lobs.clear();
+
+        for (auto listMapIt: listMap) {
+            uint8_t* ptr = listMapIt.second;
+            delete[] ptr;
+        }
+        listMap.clear();
     }
 }

@@ -155,6 +155,7 @@ typedef uint64_t typeUnicode;
 #define SCN(__scn1,__scn2)                      (((static_cast<uint64_t>(__scn1))<<32)|(__scn2))
 #define PRINTSCN48(__scn)                       "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 #define PRINTSCN64(__scn)                       "0x"<<std::setfill('0')<<std::setw(16)<<std::hex<<(__scn)
+#define PRINTSCN64D(__scn)                      "0x"<<std::setfill('0')<<std::setw(4)<<std::hex<<(static_cast<uint32_t>((__scn)>>48)&0xFFFF)<<"."<<std::setw(4)<<(static_cast<uint32_t>((__scn)>>32)&0xFFFF)<<"."<<std::setw(8)<<((__scn)&0xFFFFFFFF)
 
 #define JSON_PARAMETER_LENGTH   256
 #define JSON_BROKERS_LENGTH     4096

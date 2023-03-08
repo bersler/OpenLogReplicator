@@ -412,7 +412,7 @@ namespace OpenLogReplicator {
 
     const char* ReplicatorOnline::SQL_GET_SYS_TAB_USER(
             "SELECT"
-            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.CLUCOLS,"
+            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.TS#, T.CLUCOLS,"
             "   MOD(T.FLAGS, 18446744073709551616) AS FLAGS1, MOD(TRUNC(T.FLAGS / 18446744073709551616), 18446744073709551616) AS FLAGS2,"
             "   MOD(T.PROPERTY, 18446744073709551616) AS PROPERTY1, MOD(TRUNC(T.PROPERTY / 18446744073709551616), 18446744073709551616) AS PROPERTY2"
             " FROM"
@@ -425,7 +425,7 @@ namespace OpenLogReplicator {
 
     const char* ReplicatorOnline::SQL_GET_SYS_TAB_OBJ(
             "SELECT"
-            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.CLUCOLS,"
+            "   T.ROWID, T.OBJ#, T.DATAOBJ#, T.TS#, T.CLUCOLS,"
             "   MOD(T.FLAGS, 18446744073709551616) AS FLAGS1, MOD(TRUNC(T.FLAGS / 18446744073709551616), 18446744073709551616) AS FLAGS2,"
             "   MOD(T.PROPERTY, 18446744073709551616) AS PROPERTY1, MOD(TRUNC(T.PROPERTY / 18446744073709551616), 18446744073709551616) AS PROPERTY2"
             " FROM"
@@ -883,7 +883,7 @@ namespace OpenLogReplicator {
 
         INFO("reading dictionaries for scn: " << std::dec << metadata->firstDataScn)
 
-        std::set <std::string> msgs;
+        std::list<std::string> msgs;
         {
             std::unique_lock<std::mutex> lck(metadata->mtx);
             metadata->schema->purge();
@@ -1276,15 +1276,16 @@ namespace OpenLogReplicator {
         char tabRowid[19]; stmtTab.defineString(1, tabRowid, sizeof(tabRowid));
         typeObj tabObj; stmtTab.defineUInt32(2, tabObj);
         typeDataObj tabDataObj = 0; stmtTab.defineUInt32(3, tabDataObj);
-        typeCol tabCluCols = 0; stmtTab.defineInt16(4, tabCluCols);
-        uint64_t tabFlags1; stmtTab.defineUInt64(5, tabFlags1);
-        uint64_t tabFlags2; stmtTab.defineUInt64(6, tabFlags2);
-        uint64_t tabProperty1; stmtTab.defineUInt64(7, tabProperty1);
-        uint64_t tabProperty2; stmtTab.defineUInt64(8, tabProperty2);
+        typeTs tabTs; stmtTab.defineUInt32(4, tabTs);
+        typeCol tabCluCols = 0; stmtTab.defineInt16(5, tabCluCols);
+        uint64_t tabFlags1; stmtTab.defineUInt64(6, tabFlags1);
+        uint64_t tabFlags2; stmtTab.defineUInt64(7, tabFlags2);
+        uint64_t tabProperty1; stmtTab.defineUInt64(8, tabProperty1);
+        uint64_t tabProperty2; stmtTab.defineUInt64(9, tabProperty2);
 
         int64_t tabRet = stmtTab.executeQuery();
         while (tabRet) {
-            schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabCluCols, tabFlags1, tabFlags2,
+            schema->dictSysTabAdd(tabRowid, tabObj, tabDataObj, tabTs, tabCluCols, tabFlags1, tabFlags2,
                                   tabProperty1, tabProperty2);
             tabDataObj = 0;
             tabCluCols = 0;
@@ -1476,7 +1477,7 @@ namespace OpenLogReplicator {
     }
 
     void ReplicatorOnline::createSchemaForTable(typeScn targetScn, const std::string& owner, const std::string& table, const std::vector<std::string>& keys,
-                                                const std::string& keysStr, typeOptions options, std::set <std::string> &msgs) {
+                                                const std::string& keysStr, typeOptions options, std::list<std::string> &msgs) {
         DEBUG("- creating table schema for owner: " << owner << " table: " << table << " options: " << static_cast<uint64_t>(options))
 
         readSystemDictionaries(metadata->schema, targetScn, owner, table, options);

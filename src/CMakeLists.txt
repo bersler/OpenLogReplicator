@@ -87,6 +87,7 @@ list(APPEND ListParser
         parser/OpCode0B16.cpp
         parser/OpCode1301.cpp
         parser/OpCode1801.cpp
+        parser/OpCode1A02.cpp
         parser/OpCode1A06.cpp
         parser/Parser.cpp
         parser/Transaction.cpp

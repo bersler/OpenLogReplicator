@@ -216,7 +216,7 @@ namespace OpenLogReplicator {
 
                 columnPB->set_name(table->columns[column]->name);
 
-                switch(table->columns[column]->type) {
+                switch (table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
                     columnPB->set_type(pb::VARCHAR2);
                     columnPB->set_length(static_cast<int32_t>(table->columns[column]->length));

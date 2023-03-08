@@ -1,4 +1,4 @@
-/* Header for OpCode1801 class
+/* Header for OpCode1A06 class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -21,31 +21,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #ifndef OP_CODE_1A_06_H_
 #define OP_CODE_1A_06_H_
-
-#define OP266_OP_REDO           0
-#define OP266_OP_UNDO           1
-#define OP266_OP_CR             2
-#define OP266_OP_FRMT           3
-#define OP266_OP_INVL           4
-#define OP266_OP_LOAD           5
-#define OP266_OP_BIMG           6
-#define OP266_OP_SINV           7
-
-#define OP266_TYPE_MASK         120
-#define OP266_TYPE_NEW          0
-#define OP266_TYPE_LOCK         8
-#define OP266_TYPE_LHB          16
-#define OP266_TYPE_DATA         32
-#define OP266_TYPE_BTREE        48
-#define OP266_TYPE_ITREE        64
-#define OP266_TYPE_AUX          96
-#define OP266_TYPE_VER1         128
-
-#define OP266_FLG2_PFILL        8
-#define OP266_FLG2_CMAP         16
-#define OP266_FLG2_HASH         32
-#define OP266_FLG2_LHB          64
-#define OP266_FLG2_VER1         128
 
 namespace OpenLogReplicator {
     class OpCode1A06: public OpCode {

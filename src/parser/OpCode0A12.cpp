@@ -36,7 +36,7 @@ namespace OpenLogReplicator {
         // Field: 1
         ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0202))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A1202))
             return;
         // Field: 2
 
@@ -54,7 +54,7 @@ namespace OpenLogReplicator {
                     ", row size " << std::dec << rowSize << std::endl;
         }
 
-        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0B0202))
+        if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x0A1203))
             return;
         // Field: 3
 

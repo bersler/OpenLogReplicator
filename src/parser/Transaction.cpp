@@ -83,6 +83,7 @@ namespace OpenLogReplicator {
                 case 0x0A02:
                 case 0x0A08:
                 case 0x0A12:
+                case 0x1A02:
                     transactionBuffer->rollbackTransactionChunk(this);
                     --opCodes;
                     continue;
@@ -154,6 +155,7 @@ namespace OpenLogReplicator {
                 case 0x0A02:
                 case 0x0A08:
                 case 0x0A12:
+                case 0x1A02:
                     transactionBuffer->rollbackTransactionChunk(this);
                     --opCodes;
                     continue;
@@ -274,6 +276,26 @@ namespace OpenLogReplicator {
                     case 0x05010514:
                         break;
 
+                    // LOB idx
+                    case 0x1A020000:
+                    {
+                        OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->obj);
+                        if (lob != nullptr) {
+                            TRACE(TRACE2_LOB, "LOB" <<
+                                    " id: " << redoLogRecord1->lobId <<
+                                    " xid: " << xid <<
+                                    " obj: " << std::dec << lob->obj <<
+                                    " op: " << std::setfill('0') << std::setw(8) << std::hex << op <<
+                                    " dba: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->dba <<
+                                    " page: " << std::dec << redoLogRecord1->lobPageNo <<
+                                    " col: " << lob->intCol <<
+                                    " table: " << lob->table->owner << "." << lob->table->name <<
+                                    " lobj: " << lob->lObj <<
+                                    " IDX")
+                        }
+                    }
+                    break;
+
                     // LOB data
                     case 0x13010000:
                     case 0x1A060000:
@@ -294,13 +316,20 @@ namespace OpenLogReplicator {
                     }
                     break;
 
+                    // LOB index 12+
+                    case 0x05011A02:
+                        if (redoLogRecord2->indKeyDataLength == 0)
+                            break;
+                        lobCtx.setList(redoLogRecord2->lobId, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
+                                       redoLogRecord2->indKeyDataLength);
+                        break;
+
                     // Insert leaf row
                     case 0x05010A02:
                     // Init header
                     case 0x05010A08:
                     // Update key data in row
                     case 0x05010A12:
-                    // Insert row piece
                     {
                         OracleLob* lob = metadata->schema->checkLobIndexDict(redoLogRecord1->dataObj);
                         if (lob == nullptr) {

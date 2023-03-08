@@ -329,6 +329,7 @@ namespace OpenLogReplicator {
             ss SERIALIZER_ENDL << R"({"row-id":")" << sysTab->rowId <<
                     R"(","obj":)" << std::dec << sysTab->obj <<
                     R"(,"data-obj":)" << std::dec << sysTab->dataObj <<
+                    R"(,"ts":)" << std::dec << sysTab->ts <<
                     R"(,"clu-cols":)" << std::dec << sysTab->cluCols <<
                     R"(,"flags":)" << std::dec << sysTab->flags <<
                     R"(,"property":)" << std::dec << sysTab->property << "}";
@@ -425,7 +426,7 @@ namespace OpenLogReplicator {
         ss << "]}";
     }
 
-    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::set<std::string>& msgs, bool loadMetadata,
+    bool SerializerJson::deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::list<std::string>& msgs, bool loadMetadata,
                                      bool loadSchema) {
         try {
             rapidjson::Document document;
@@ -552,7 +553,7 @@ namespace OpenLogReplicator {
 
                     for (SchemaElement *element: metadata->schemaElements) {
                         if (metadata->ctx->trace >= TRACE_DEBUG)
-                            msgs.insert(
+                            msgs.push_back(
                                     "- creating table schema for owner: " + element->owner + " table: " + element->table +
                                     " options: " + std::to_string(element->options));
 
@@ -719,6 +720,7 @@ namespace OpenLogReplicator {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabJson[i], "obj");
             typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabJson[i], "data-obj");
+            typeTs ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
             typeCol cluCols = Ctx::getJsonFieldI16(name, sysTabJson[i], "clu-cols");
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");
@@ -733,7 +735,7 @@ namespace OpenLogReplicator {
             uint64_t property1 = Ctx::getJsonFieldU64(name, propertyJson, "property", 0);
             uint64_t property2 = Ctx::getJsonFieldU64(name, propertyJson, "property", 1);
 
-            metadata->schema->dictSysTabAdd(rowId, obj, dataObj, cluCols, flags1, flags2, property1, property2);
+            metadata->schema->dictSysTabAdd(rowId, obj, dataObj, ts, cluCols, flags1, flags2, property1, property2);
         }
     }
 

@@ -19,7 +19,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
-#include <set>
 
 #include "Serializer.h"
 
@@ -53,8 +52,8 @@ namespace OpenLogReplicator {
         SerializerJson();
         ~SerializerJson() override;
 
-        [[nodiscard]] bool deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::set<std::string>& msgs, bool loadMetadata,
-                                       bool storeSchema) override;
+        [[nodiscard]] bool deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::list<std::string>& msgs,
+                                       bool loadMetadata, bool storeSchema) override;
         void serialize(Metadata* metadata, std::ostringstream& ss, bool noSchema) override;
     };
 }

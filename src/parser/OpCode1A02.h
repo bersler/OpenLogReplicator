@@ -1,4 +1,4 @@
-/* Header for Serializer class
+/* Header for OpCode1A02 class
    Copyright (C) 2018-2023 Adam Leszczynski (aleszczynski@bersler.com)
 
 This file is part of OpenLogReplicator.
@@ -17,26 +17,15 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
-#include <rapidjson/document.h>
-#include <rapidjson/error/en.h>
-#include <list>
+#include "OpCode.h"
 
-#include "../common/types.h"
-
-#ifndef SERIALIZER_H_
-#define SERIALIZER_H_
+#ifndef OP_CODE_1A_02_H_
+#define OP_CODE_1A_02_H_
 
 namespace OpenLogReplicator {
-    class Metadata;
-
-    class Serializer {
+    class OpCode1A02: public OpCode {
     public:
-        Serializer();
-        virtual ~Serializer();
-
-        [[nodiscard]] virtual bool deserialize(Metadata* metadata, const std::string& ss, const std::string& name, std::list<std::string>& msgs,
-                                               bool loadMetadata, bool storeSchema) = 0;
-        virtual void serialize(Metadata* metadata, std::ostringstream& ss, bool noSchema) = 0;
+        static void process(Ctx* ctx, RedoLogRecord* redoLogRecord);
     };
 }
 

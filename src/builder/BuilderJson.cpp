@@ -321,7 +321,7 @@ namespace OpenLogReplicator {
                 builderAppend(table->columns[column]->name);
 
                 builderAppend(R"(","type":)", sizeof(R"(","type":)") - 1);
-                switch(table->columns[column]->type) {
+                switch (table->columns[column]->type) {
                 case SYS_COL_TYPE_VARCHAR:
                     builderAppend(R"("varchar2","length":)", sizeof(R"("varchar2","length":)") - 1);
                     appendDec(table->columns[column]->length);

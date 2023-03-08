@@ -565,7 +565,7 @@ BEGIN
     DBMS_OUTPUT.PUT('"sys-tab":[');
     FOR I IN v_USER_LIST.FIRST .. v_USER_LIST.LAST LOOP
         FOR v_SYS_TAB IN (
-            SELECT T.ROWID, T.OBJ#, NVL(T.DATAOBJ#, 0) AS DATAOBJ#, NVL(T.CLUCOLS, 0) AS CLUCOLS,
+            SELECT T.ROWID, T.OBJ#, NVL(T.DATAOBJ#, 0) AS DATAOBJ#, T.TS#, NVL(T.CLUCOLS, 0) AS CLUCOLS,
                 MOD(T.FLAGS, 18446744073709551616) AS FLAGS1, MOD(TRUNC(T.FLAGS / 18446744073709551616), 18446744073709551616) AS FLAGS2,
                 MOD(T.PROPERTY, 18446744073709551616) AS PROPERTY1, MOD(TRUNC(T.PROPERTY / 18446744073709551616), 18446744073709551616) AS PROPERTY2
             FROM SYS.OBJ$ AS OF SCN v_SCN O, SYS.TAB$ AS OF SCN v_SCN T
@@ -590,6 +590,7 @@ BEGIN
             DBMS_OUTPUT.PUT('{"row-id":"' || v_SYS_TAB.ROWID || '"' ||
                 ',"obj":' || v_SYS_TAB.OBJ# ||
                 ',"data-obj":' || v_SYS_TAB.DATAOBJ# ||
+                ',"ts":' || v_SYS_TAB.TS# ||
                 ',"clu-cols":' || v_SYS_TAB.CLUCOLS ||
                 ',"flags":[' || v_SYS_TAB.FLAGS1 || ',' || v_SYS_TAB.FLAGS2 || ']' ||
                 ',"property":[' || v_SYS_TAB.PROPERTY1 || ',' || v_SYS_TAB.PROPERTY2 || ']}');

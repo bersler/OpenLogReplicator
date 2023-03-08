@@ -33,7 +33,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 2
         if (fieldLength < 8) {
-            WARNING("too short field ktub: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
+            WARNING("too short field 5.1: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset)
             return;
         }
 
@@ -324,7 +324,7 @@ namespace OpenLogReplicator {
             return;
         // Field: 3
 
-        switch(redoLogRecord->opc) {
+        switch (redoLogRecord->opc) {
             case 0x0A16:
                 ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
 
@@ -343,6 +343,22 @@ namespace OpenLogReplicator {
                 // Field: 4
 
                 opc0B01(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength);
+                break;
+
+            case 0x1A01:
+                if (ctx->dumpRedoLog >= 1) {
+                    ctx->dumpStream << "KDLI undo record:" << std::endl;
+                }
+                ktbRedo(ctx, redoLogRecord, fieldPos, fieldLength);
+
+                if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05011B))
+                    return;
+                // Field: 4
+                kdliCommon(ctx, redoLogRecord, fieldPos, fieldLength);
+
+                if (!RedoLogRecord::nextFieldOpt(ctx, redoLogRecord, fieldNum, fieldPos, fieldLength, 0x05011C))
+                    return;
+                kdli(ctx, redoLogRecord, fieldPos, fieldLength);
                 break;
 
             case 0x0E08:

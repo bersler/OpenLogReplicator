@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with OpenLogReplicator; see the file LICENSE;  If not see
 <http://www.gnu.org/licenses/>.  */
 
+#include <list>
 #include <map>
 #include <rapidjson/document.h>
 #include <rapidjson/error/en.h>
@@ -190,8 +191,8 @@ namespace OpenLogReplicator {
         void dictSysLobFragAdd(const char* rowIdStr, typeObj fragObj, typeObj parentObj, typeTs ts);
         bool dictSysObjAdd(const char* rowIdStr, typeUser owner, typeObj obj, typeDataObj dataObj, typeType type, const char* name, uint64_t flags1,
                            uint64_t flags2, bool single);
-        void dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeCol cluCols, uint64_t flags1, uint64_t flags2, uint64_t property1,
-                           uint64_t property2);
+        void dictSysTabAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeTs ts, typeCol cluCols, uint64_t flags1, uint64_t flags2,
+                           uint64_t property1, uint64_t property2);
         void dictSysTabComPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
         void dictSysTabPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj bo);
         void dictSysTabSubPartAdd(const char* rowIdStr, typeObj obj, typeDataObj dataObj, typeObj pObj);
@@ -250,9 +251,9 @@ namespace OpenLogReplicator {
         [[nodiscard]] OracleTable* checkTableDict(typeObj obj);
         [[nodiscard]] OracleLob* checkLobDict(typeDataObj dataObj);
         [[nodiscard]] OracleLob* checkLobIndexDict(typeDataObj dataObj);
-        void dropUnusedMetadata(const std::set<std::string>& users, std::set<std::string>& msgs);
+        void dropUnusedMetadata(const std::set<std::string>& users, std::list<std::string>& msgs);
         void buildMaps(const std::string& owner, const std::string& table, const std::vector<std::string>& keys, const std::string& keysStr,
-                       typeOptions options, std::set<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
+                       typeOptions options, std::list<std::string>& msgs, bool suppLogDbPrimary, bool suppLogDbAll, uint64_t defaultCharacterMapId,
                        uint64_t defaultCharacterNcharMapId);
         void resetTouched();
     };

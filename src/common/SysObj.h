@@ -45,12 +45,13 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define SYS_OBJ_TYPE_TRIGGER                 12
 #define SYS_OBJ_TYPE_TYPE                    13
 #define SYS_OBJ_TYPE_TYPE_BODY               14
-#define SYS_OBJ_TYPE_LOB                     21
+#define SYS_OBJ_TYPE_VARCHAR_STORED_LOB      21
 #define SYS_OBJ_TYPE_LIBRARY                 22
 #define SYS_OBJ_TYPE_JAVA_SOURCE             28
 #define SYS_OBJ_TYPE_JAVA_CLASS              29
 #define SYS_OBJ_TYPE_INDEXTYPE               32
 #define SYS_OBJ_TYPE_OPERATOR                33
+#define SYS_OBJ_TYPE_LOB                     40
 #define SYS_OBJ_TYPE_MATERIALIZED_VIEW       42
 #define SYS_OBJ_TYPE_DIMENSION               43
 #define SYS_OBJ_TYPE_RULE_SET                46
@@ -131,7 +132,7 @@ namespace OpenLogReplicator {
         }
 
         [[nodiscard]] bool isLob() const {
-            return (type == SYS_OBJ_TYPE_LOB);
+            return (type == SYS_OBJ_TYPE_LOB || type == SYS_OBJ_TYPE_VARCHAR_STORED_LOB);
         }
 
         [[nodiscard]] bool isTable() const {
