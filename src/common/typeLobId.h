@@ -78,7 +78,8 @@ namespace OpenLogReplicator {
 
         std::string lower() {
             std::ostringstream ss;
-            ss << std::setfill('0') << std::hex << std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
+            ss << std::setfill('0') << std::hex <<
+               std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
                std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
                std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
                std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
@@ -88,7 +89,8 @@ namespace OpenLogReplicator {
 
         std::string upper() {
             std::ostringstream ss;
-            ss << std::uppercase << std::setfill('0') << std::hex << std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
+            ss << std::uppercase << std::setfill('0') << std::hex <<
+               std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
                std::setw(2) << static_cast<uint64_t>(data[2]) << std::setw(2) << static_cast<uint64_t>(data[3]) <<
                std::setw(2) << static_cast<uint64_t>(data[4]) << std::setw(2) << static_cast<uint64_t>(data[5]) <<
                std::setw(2) << static_cast<uint64_t>(data[6]) << std::setw(2) << static_cast<uint64_t>(data[7]) <<
