@@ -318,10 +318,25 @@ namespace OpenLogReplicator {
 
                     // LOB index 12+
                     case 0x05011A02:
-                        if (redoLogRecord2->indKeyDataLength == 0)
-                            break;
-                        lobCtx.setList(redoLogRecord2->lobId, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
-                                       redoLogRecord2->indKeyDataLength);
+                        if (ctx->trace2 & TRACE2_LOB_DATA) {
+                            std::ostringstream ss;
+                            for (uint64_t j = 0; j < redoLogRecord2->indKeyDataLength; ++j) {
+                                ss << " " << std::setfill('0') << std::setw(2) << std::hex <<
+                                   static_cast<uint64_t>(redoLogRecord2->data[redoLogRecord2->indKeyData + j]);
+                            }
+
+                            TRACE(TRACE2_LOB_DATA, "LOB index: " << ss.str() << " code: " << std::dec << (uint64_t)redoLogRecord2->indKeyDataCode)
+                        }
+
+                        switch (redoLogRecord2->indKeyDataCode) {
+                            case KDLI_CODE_LMAP:
+                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData, redoLogRecord2->indKeyDataLength);
+                                break;
+
+                            case KDLI_CODE_ALMAP:
+                                lobCtx.appendList(ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
+                                break;
+                        }
                         break;
 
                     // Insert leaf row

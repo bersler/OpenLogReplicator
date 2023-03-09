@@ -594,13 +594,14 @@ namespace OpenLogReplicator {
             return;
         }
 
+        redoLogRecord->indKeyDataCode = code;
         redoLogRecord->indKeyData = fieldPos;
         redoLogRecord->indKeyDataLength = fieldLength;
 
         if (ctx->dumpRedoLog >= 1) {
             uint32_t asiz = ctx->read32(redoLogRecord->data + fieldPos + 4);
 
-            if (fieldLength < 8 + static_cast<uint64_t>(asiz) * 8) {
+            if (fieldLength < 8 + asiz * 8) {
                 WARNING("too short field KDLI lmap asiz: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
                 return;
             }
@@ -629,6 +630,7 @@ namespace OpenLogReplicator {
             return;
         }
 
+        redoLogRecord->indKeyDataCode = code;
         redoLogRecord->indKeyData = fieldPos;
         redoLogRecord->indKeyDataLength = fieldLength;
 
@@ -905,11 +907,41 @@ namespace OpenLogReplicator {
         }
     }
 
-    void OpCode::kdliAlmap(Ctx* ctx, RedoLogRecord* redoLogRecord __attribute__((unused)), uint64_t& fieldPos __attribute__((unused)), uint16_t& fieldLength,
-                           uint8_t code) {
+    void OpCode::kdliAlmap(Ctx* ctx, RedoLogRecord* redoLogRecord, uint64_t& fieldPos, uint16_t& fieldLength, uint8_t code) {
+        if (fieldLength < 12) {
+            WARNING("too short field KDLI lmap: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+            return;
+        }
+
+        redoLogRecord->indKeyDataCode = code;
+        redoLogRecord->indKeyData = fieldPos;
+        redoLogRecord->indKeyDataLength = fieldLength;
+
         if (ctx->dumpRedoLog >= 1) {
+            uint32_t nent = ctx->read32(redoLogRecord->data + fieldPos + 4);
+            uint32_t sidx = ctx->read32(redoLogRecord->data + fieldPos + 8);
+
+            if (fieldLength < 12 + nent * 8) {
+                WARNING("too short field KDLI almap nent: " << std::dec << fieldLength << " offset: " << redoLogRecord->dataOffset);
+                return;
+            }
+
             ctx->dumpStream << "KDLI almap [" << std::dec << static_cast<uint64_t>(code) << "." << fieldLength << "]" << std::endl;
-            // TODO: finish
+            ctx->dumpStream << "  nent  " << std::dec << nent << std::endl;
+            ctx->dumpStream << "  sidx  " << std::dec << sidx << std::endl;
+
+            for (uint64_t i = 0; i < nent; ++i) {
+                uint8_t num1 = redoLogRecord->data[fieldPos + i * 8 + 12 + 0];
+                uint8_t num2 = redoLogRecord->data[fieldPos + i * 8 + 12 + 1];
+                uint16_t num3 = ctx->read16(redoLogRecord->data + fieldPos + i * 8 + 12 + 2);
+                typeDba dba = ctx->read32(redoLogRecord->data + fieldPos + i * 8 + 12 + 4);
+
+                ctx->dumpStream << "    [" << std::dec << i << "] " <<
+                                "0x" << std::hex << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(num1) << " " <<
+                                "0x" << std::hex << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(num2) << " " <<
+                                std::dec << num3 << " " <<
+                                "0x" << std::hex << std::setfill('0') << std::setw(8) << std::hex << dba << std::endl;
+            }
         }
     }
 

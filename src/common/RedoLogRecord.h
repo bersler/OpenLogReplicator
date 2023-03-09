@@ -55,6 +55,7 @@ namespace OpenLogReplicator {
         uint16_t lobDataLength;
         uint16_t indKeyLength;
         uint16_t indKeyDataLength;
+        uint8_t indKeyDataCode;
 
         typeSeq sequence;
         typeScn scn;              // scn

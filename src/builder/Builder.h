@@ -474,6 +474,7 @@ namespace OpenLogReplicator {
         bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, bool isClob) {
             bool append = false;
             valueLength = 0;
+            TRACE(TRACE2_LOB_DATA, "LOB data:  " << dumpLob(data, length))
 
             if (length < 20) {
                 WARNING("incorrect LOB data xid: " << lastXid << " length: " << std::to_string(length) << " obj: " << std::dec << obj <<
@@ -775,7 +776,6 @@ namespace OpenLogReplicator {
                                     ++page;
                                 }
                             }
-                            return true;
 
                         // style 2
                         } else if ((flg3 & 0xF0) == 0x40) {
@@ -789,11 +789,11 @@ namespace OpenLogReplicator {
                             }
 
                             uint8_t* dataLob = listMapIt->second;
-                            uint8_t asiz = dataLob[4];
+                            uint32_t asiz = ctx->read32(dataLob);
 
                             for (uint64_t i = 0; i < asiz; ++i) {
-                                uint16_t pageCnt = ctx->read16(dataLob + i * 8 + 8 + 2);
-                                typeDba page = ctx->read32(dataLob + i * 8 + 8 + 4);
+                                uint16_t pageCnt = ctx->read16(dataLob + i * 8 + 4 + 2);
+                                typeDba page = ctx->read32(dataLob + i * 8 + 4 + 4);
 
                                 for (uint64_t j = 0; j < pageCnt; ++j) {
                                     auto dataMapIt = lobData->dataMap.find(page);
@@ -815,8 +815,6 @@ namespace OpenLogReplicator {
                                     ++page;
                                 }
                             }
-
-                            return true;
                         } else {
                             WARNING("incorrect LOB (read value data 12+) data xid: " << lastXid << " length: " << std::to_string(length) <<
                                     " obj: " << std::dec << obj << " - too short, data: " <<
