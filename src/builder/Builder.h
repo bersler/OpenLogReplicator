@@ -875,12 +875,12 @@ namespace OpenLogReplicator {
                                 return false;
                             }
 
-                            uint8_t flg4 = data[dataOffset++];
+                            uint8_t flg5 = data[dataOffset++];
                             typeDba page = ctx->read32Big(data + dataOffset);
                             dataOffset += 4;
 
                             uint64_t pageCnt = 0;
-                            if ((flg4 & 0xF0) == 0x00) {
+                            if ((flg5 & 0xF0) == 0x00) {
                                 if (dataOffset >= length) {
                                     WARNING("incorrect LOB (read value index3) data xid: " << lastXid << " length: " << std::to_string(length) <<
                                             " obj: " << std::dec << obj << " - too short, dataOffset: " << std::dec << dataOffset)
@@ -888,7 +888,7 @@ namespace OpenLogReplicator {
                                     return false;
                                 }
                                 pageCnt = data[dataOffset++];
-                            } else if ((flg4 & 0xF0) == 0x20) {
+                            } else if ((flg5 & 0xF0) == 0x20) {
                                 if (dataOffset + 1 >= length) {
                                     WARNING("incorrect LOB (read value index4) data xid: " << lastXid << " length: " << std::to_string(length) <<
                                             " obj: " << std::dec << obj << " - too short")
