@@ -26,8 +26,9 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class LobKey {
     public:
-        LobKey(typeLobId newLobId, typeDba newPage);
+        LobKey(const typeLobId& newLobId, typeDba newPage);
         LobKey(const LobKey& other);
+        virtual ~LobKey();
 
         bool operator<(const LobKey& other) const;
         bool operator!=(const LobKey& other) const;

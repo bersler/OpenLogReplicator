@@ -1822,10 +1822,10 @@ namespace OpenLogReplicator {
                                         metadata->defaultCharacterMapId, metadata->defaultCharacterNcharMapId);
         metadata->schema->resetTouched();
 
-        for (auto msg: msgsDropped) {
+        for (const auto& msg: msgsDropped) {
             INFO("dropped metadata: " << msg);
         }
-        for (auto msg: msgsUpdated) {
+        for (const auto& msg: msgsUpdated) {
             INFO("updated metadata: " << msg)
         }
     }

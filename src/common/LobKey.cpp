@@ -20,7 +20,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "LobKey.h"
 
 namespace OpenLogReplicator {
-    LobKey::LobKey(typeLobId newLobId, typeDba newPage) :
+    LobKey::LobKey(const typeLobId& newLobId, typeDba newPage) :
             lobId(newLobId),
             page(newPage) {
     }
@@ -28,6 +28,9 @@ namespace OpenLogReplicator {
     LobKey::LobKey(const LobKey& other) :
             lobId(other.lobId),
             page(other.page) {
+    }
+
+    LobKey::~LobKey() {
     }
 
     bool LobKey::operator==(const LobKey& other) const {

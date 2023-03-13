@@ -2218,7 +2218,7 @@ namespace OpenLogReplicator {
                     if (numPk > 0 && (suppLogTablePrimary || sysUser->isSuppLogPrimary() || suppLogDbPrimary))
                         numSup = 1;
                     numPk = 0;
-                    for (auto key : keys) {
+                    for (const auto& key : keys) {
                         if (strcmp(sysCol->name.c_str(), key.c_str()) == 0) {
                             numPk = 1;
                             ++keysCnt;

@@ -313,7 +313,7 @@ namespace OpenLogReplicator {
         std::set<std::string> namesList;
         state->list(namesList);
 
-        for (std::string name : namesList) {
+        for (const std::string& name : namesList) {
             std::string prefix(database + "-chkpt-");
             if (name.length() < prefix.length() || name.substr(0, prefix.length()).compare(prefix) != 0)
                 continue;
@@ -360,13 +360,13 @@ namespace OpenLogReplicator {
             return;
         }
         if (!serializer->deserialize(this, ss, name1, msgs, true, true)) {
-            for (auto msg : msgs) {
+            for (const auto& msg : msgs) {
                 ERROR(msg);
             }
             return;
         }
 
-        for (auto msg : msgs) {
+        for (const auto& msg : msgs) {
             INFO("- found: " << msg);
         }
         msgs.clear();
@@ -386,13 +386,13 @@ namespace OpenLogReplicator {
                 return;
 
             if (!serializer->deserialize(this, ss, name2, msgs, false, true)) {
-                for (auto msg: msgs) {
+                for (const auto& msg: msgs) {
                     ERROR(msg);
                 }
                 return;
             }
 
-            for (auto msg: msgs) {
+            for (const auto& msg: msgs) {
                 INFO("- found: " << msg);
             }
         }
@@ -466,14 +466,14 @@ namespace OpenLogReplicator {
         }
 
         if (!serializer->deserialize(this, ss, name, msgs, false, true)) {
-            for (auto msg: msgs) {
+            for (const auto& msg: msgs) {
                 ERROR(msg);
             }
             return;
         }
 
         firstSchemaScn = 0;
-        for (auto msg: msgs) {
+        for (const auto& msg: msgs) {
             INFO("- found: " << msg);
         }
     }

@@ -177,8 +177,6 @@ namespace OpenLogReplicator {
                             std::to_string(fieldLength) + ", max: " + std::to_string(redoLogRecord->length));
             }
         }
-
-        friend std::ostream& operator<<(std::ostream& os, const RedoLogRecord& redo);
     };
 }
 

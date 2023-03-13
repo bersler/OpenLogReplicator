@@ -40,7 +40,7 @@ namespace OpenLogReplicator {
         dumpXidList.clear();
         brokenXidMapList.clear();
 
-        for (auto orphanedLobsIt: orphanedLobs) {
+        for (const auto& orphanedLobsIt: orphanedLobs) {
             uint8_t* data = orphanedLobsIt.second;
             delete[] data;
         }

@@ -898,7 +898,7 @@ namespace OpenLogReplicator {
             metadata->allowedCheckpoints = true;
         }
 
-        for (auto msg: msgs) {
+        for (const auto& msg: msgs) {
             INFO("- found: " << msg);
         }
     }

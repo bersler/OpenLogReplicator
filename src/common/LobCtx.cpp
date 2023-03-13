@@ -24,7 +24,10 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "../metadata/Schema.h"
 
 namespace OpenLogReplicator {
-    void LobCtx::checkOrphanedLobs(Ctx* ctx, typeLobId lobId, typeXid xid) {
+    LobCtx::~LobCtx() {
+    }
+
+    void LobCtx::checkOrphanedLobs(Ctx* ctx, const typeLobId& lobId, typeXid xid) {
         LobKey lobKey(lobId, 0);
         for (auto orphanedLobsIt = orphanedLobs->upper_bound(lobKey);
              orphanedLobsIt != orphanedLobs->end() && orphanedLobsIt->first.lobId == lobId; ) {
@@ -39,7 +42,7 @@ namespace OpenLogReplicator {
         }
     }
 
-    void LobCtx::addLob(Ctx* ctx, typeLobId lobId, typeDba page, uint8_t* data, typeXid xid) {
+    void LobCtx::addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint8_t* data, typeXid xid) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -123,7 +126,7 @@ namespace OpenLogReplicator {
         listMap[page] = newData;
     }
 
-    void LobCtx::setLength(typeLobId lobId, uint32_t sizePages, uint16_t sizeRest) {
+    void LobCtx::setLength(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -137,7 +140,7 @@ namespace OpenLogReplicator {
         lobData->sizeRest = sizeRest;
     }
 
-    void LobCtx::setPage(typeLobId lobId, typeDba page, uint32_t pageNo, typeXid xid) {
+    void LobCtx::setPage(const typeLobId& lobId, typeDba page, uint32_t pageNo, typeXid xid) {
         LobData* lobData;
         auto lobsIt = lobs.find(lobId);
         if (lobsIt != lobs.end()) {
@@ -159,7 +162,7 @@ namespace OpenLogReplicator {
     }
 
     void LobCtx::purge() {
-        for (auto lobsIt: lobs) {
+        for (const auto& lobsIt: lobs) {
             LobData* lobData = lobsIt.second;
             delete lobData;
         }

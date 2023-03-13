@@ -49,6 +49,9 @@ namespace OpenLogReplicator {
                    reinterpret_cast<const void*>(newData), TYPE_LOBID_LENGTH);
         }
 
+        virtual ~typeLobId() {
+        }
+
         bool operator!=(const typeLobId& other) const {
             int ret = memcmp(reinterpret_cast<const void*>(data), reinterpret_cast<const void*>(other.data), TYPE_LOBID_LENGTH);
             return ret != 0;
@@ -87,7 +90,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        std::string upper() {
+        std::string upper() const {
             std::ostringstream ss;
             ss << std::uppercase << std::setfill('0') << std::hex <<
                std::setw(2) << static_cast<uint64_t>(data[0]) << std::setw(2) << static_cast<uint64_t>(data[1]) <<
@@ -98,7 +101,7 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        std::string narrow() {
+        std::string narrow() const {
             std::ostringstream ss;
             ss << std::uppercase << std::setfill('0') << std::hex << static_cast<uint64_t>(data[0]) << static_cast<uint64_t>(data[1]) <<
                static_cast<uint64_t>(data[2]) << static_cast<uint64_t>(data[3]) <<
