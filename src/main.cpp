@@ -106,14 +106,18 @@ namespace OpenLogReplicator {
                 fileName = argv[2];
             } else if (argc > 1)
                 throw ConfigurationException(std::string("invalid arguments, run: ") + argv[0] +
-                        " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                                             " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+        } catch (ConfigurationException& ex) {
+            ERROR(ex.msg)
+            return 1;
+        }
 
-            OpenLogReplicator openLogReplicator(fileName, mainCtx);
+        OpenLogReplicator openLogReplicator(fileName, mainCtx);
+        try {
             ret = openLogReplicator.run();
         } catch (ConfigurationException& ex) {
             ERROR(ex.msg)
-        } catch (RuntimeException& ex) {
-            ERROR(ex.msg)
+            mainCtx->stopHard();
         } catch (std::bad_alloc& ex) {
             ERROR("memory allocation failed: " << ex.what())
         }

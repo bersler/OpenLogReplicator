@@ -30,7 +30,6 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #include "common/Ctx.h"
 #include "common/types.h"
 #include "common/ConfigurationException.h"
-#include "common/RuntimeException.h"
 #include "common/SysObj.h"
 #include "common/SysUser.h"
 #include "common/Thread.h"
@@ -382,7 +381,7 @@ namespace OpenLogReplicator {
             if (stateType == STATE_TYPE_DISK) {
                 metadata->initializeDisk(statePath);
             } else
-                throw RuntimeException("incorrect state chosen: " + std::to_string(stateType));
+                throw ConfigurationException("incorrect state chosen: " + std::to_string(stateType));
 
             // CHECKPOINT
             auto checkpoint = new Checkpoint(ctx, metadata, std::string(alias) + "-checkpoint");
@@ -501,7 +500,7 @@ namespace OpenLogReplicator {
                                               unknownFormat, schemaFormat, columnFormat,
                                               unknownType, flushBuffer);
 #else
-                throw RuntimeException("format 'protobuf' is not compiled, exiting");
+                throw ConfigurationException("format 'protobuf' is not compiled, exiting");
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else
                 throw ConfigurationException(std::string("bad JSON, invalid 'type' value: ") + formatType);
@@ -560,14 +559,14 @@ namespace OpenLogReplicator {
                 replicator->initialize();
                 mainProcessMapping(readerJson);
 #else
-                throw RuntimeException("reader type 'online' is not compiled, exiting");
+                throw ConfigurationException("reader type 'online' is not compiled, exiting");
 #endif /*LINK_LIBRARY_OCI*/
 
             } else if (strcmp(readerType, "offline") == 0) {
                 if (strcmp(startTime, "") != 0)
-                    throw RuntimeException("starting by time is not supported for offline mode");
+                    throw ConfigurationException("starting by time is not supported for offline mode");
                 if (startTimeRel != 0)
-                    throw RuntimeException("starting by relative time is not supported for offline mode");
+                    throw ConfigurationException("starting by relative time is not supported for offline mode");
 
                 replicator = new Replicator(ctx, archGetLog, builder, metadata, transactionBuffer,
                                             alias, name);
@@ -578,7 +577,7 @@ namespace OpenLogReplicator {
                 if (strcmp(startTime, "") != 0)
                     throw ConfigurationException("starting by time is not supported for batch mode");
                 if (startTimeRel != 0)
-                    throw RuntimeException("starting by relative time is not supported for batch mode");
+                    throw ConfigurationException("starting by relative time is not supported for batch mode");
 
                 archGetLog = Replicator::archGetLogList;
                 replicator = new ReplicatorBatch(ctx, archGetLog, builder, metadata,
@@ -762,7 +761,7 @@ namespace OpenLogReplicator {
                                         replicator2->metadata, brokers, topic, maxMessages,
                                         enableIdempotence);
 #else
-                throw RuntimeException("writer Kafka is not compiled, exiting");
+                throw ConfigurationException("writer Kafka is not compiled, exiting");
 #endif /* LINK_LIBRARY_RDKAFKA */
             } else if (strcmp(writerType, "zeromq") == 0) {
 #if defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ)
@@ -772,7 +771,7 @@ namespace OpenLogReplicator {
                 writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
                                           replicator2->metadata, stream);
 #else
-                throw RuntimeException("writer ZeroMQ is not compiled, exiting");
+                throw ConfigurationException("writer ZeroMQ is not compiled, exiting");
 #endif /* defined(LINK_LIBRARY_PROTOBUF) && defined(LINK_LIBRARY_ZEROMQ) */
             } else if (strcmp(writerType, "network") == 0) {
 #ifdef LINK_LIBRARY_PROTOBUF
@@ -783,7 +782,7 @@ namespace OpenLogReplicator {
                 writer = new WriterStream(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
                                           replicator2->metadata, stream);
 #else
-                throw RuntimeException("writer Network is not compiled, exiting");
+                throw ConfigurationException("writer Network is not compiled, exiting");
 #endif /* LINK_LIBRARY_PROTOBUF */
             } else
                 throw ConfigurationException(std::string("bad JSON: invalid 'type' value: ") + writerType);
