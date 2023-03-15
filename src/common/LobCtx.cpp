@@ -55,8 +55,8 @@ namespace OpenLogReplicator {
         auto dataMapIt = lobData->dataMap.find(page);
         if (dataMapIt != lobData->dataMap.end()) {
             TRACE(TRACE2_LOB, "LOB" <<
-                          " id: " << lobId <<
-                          " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << page << " OVERWRITE")
+                    " id: " << lobId <<
+                    " page: 0x" << std::setfill('0') << std::setw(8) << std::hex << page << " OVERWRITE")
             delete[] lobData->dataMap[page];
         }
 
@@ -76,22 +76,43 @@ namespace OpenLogReplicator {
             if (indexMapIt != lobData->indexMap.end()) {
                 if (indexMapIt->second != page)
                     throw RedoLogException("duplicate index lobid: " + lobId.upper() + ", page: " + std::to_string(page) +
-                                       ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString());
+                                           ", already set to: " + std::to_string(indexMapIt->second) + ", xid: " + xid.toString());
             } else {
                 lobData->indexMap[pageNo] = page;
             }
         }
     }
 
-    void LobCtx::setList(typeDba page, uint8_t* data, uint16_t length) {
+    void LobCtx::orderList(typeDba page, typeDba next) {
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             uint8_t* oldData = listMapIt->second;
+            typeDba* dba = reinterpret_cast<typeDba*>(oldData);
+            *dba = next;
+        } else {
+            uint8_t* newData = new uint8_t[8];
+            typeDba* dba = reinterpret_cast<typeDba*>(newData);
+            *(dba++) = next;
+            *dba = 0;
+
+            listMap[page] = newData;
+        }
+    }
+
+    void LobCtx::setList(typeDba page, uint8_t* data, uint16_t length) {
+        typeDba nextPage = 0;
+        auto listMapIt = listMap.find(page);
+        if (listMapIt != listMap.end()) {
+            uint8_t* oldData = listMapIt->second;
+            typeDba* oldPage = reinterpret_cast<typeDba*>(oldData);
+            nextPage = *oldPage;
             delete[] oldData;
         }
 
-        uint8_t* newData = new uint8_t[length - 4];
-        memcpy(newData, data + 4, length - 4);
+        uint8_t* newData = new uint8_t[length];
+        typeDba* newPage = reinterpret_cast<typeDba*>(newData);
+        *newPage = nextPage;
+        memcpy(newData + 4, data + 4, length - 4);
 
         listMap[page] = newData;
     }
@@ -100,27 +121,28 @@ namespace OpenLogReplicator {
         uint32_t asiz;
         uint32_t nent = ctx->read32(data + 4);
         uint32_t sidx = ctx->read32(data + 8);
-        uint8_t* newData = new uint8_t[4 + (sidx + nent) * 8];
+        uint8_t* newData = new uint8_t[8 + (sidx + nent) * 8];
 
         auto listMapIt = listMap.find(page);
         if (listMapIt != listMap.end()) {
             // found
             uint8_t* oldData = listMapIt->second;
-            asiz = ctx->read32(oldData);
+            asiz = ctx->read32(oldData + 4);
 
-            memcpy(newData + 4, oldData + 4, asiz * 8);
-            memcpy(newData + 4 + sidx * 8, data + 12, nent * 8);
+            memcpy(newData, oldData, 4);
+            memcpy(newData + 8, oldData + 8, asiz * 8);
+            memcpy(newData + 8 + sidx * 8, data + 12, nent * 8);
 
             asiz = sidx + nent;
-            ctx->write32(newData, asiz);
+            ctx->write32(newData + 4, asiz);
             delete[] oldData;
         } else {
             // not found
-            memset(newData + 4, 0, (sidx - 1) * 8);
-            memcpy(newData + 4 + sidx * 8, data + 12, nent * 8);
+            memset(newData, 0, sidx * 8 + 8);
+            memcpy(newData + sidx * 8 + 8, data + 12, nent * 8);
 
             asiz = sidx + nent;
-            ctx->write32(newData, asiz);
+            ctx->write32(newData + 4, asiz);
         }
 
         listMap[page] = newData;

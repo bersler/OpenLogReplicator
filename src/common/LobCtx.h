@@ -42,6 +42,7 @@ namespace OpenLogReplicator {
 
         void checkOrphanedLobs(Ctx* ctx, const typeLobId& lobId, typeXid xid);
         void addLob(Ctx* ctx, const typeLobId& lobId, typeDba page, uint8_t* data, typeXid xid);
+        void orderList(typeDba page, typeDba next);
         void setList(typeDba page, uint8_t* data, uint16_t length);
         void appendList(Ctx* ctx, typeDba page, uint8_t* data);
         void setLength(const typeLobId& lobId, uint32_t sizePages, uint16_t sizeRest);

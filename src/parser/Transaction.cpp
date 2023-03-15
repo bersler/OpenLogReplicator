@@ -245,12 +245,8 @@ namespace OpenLogReplicator {
                         " uba2: " << PRINTUBA(redoLogRecord2->uba) <<
                         " bdba1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->bdba << "." << std::hex <<
                                 static_cast<uint64_t>(redoLogRecord1->slot) <<
-                        " nrid1: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord1->nridBdba << "." << std::hex <<
-                                redoLogRecord1->nridSlot <<
                         " bdba2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->bdba << "." << std::hex <<
                                 static_cast<uint64_t>(redoLogRecord2->slot) <<
-                        " nrid2: 0x" << std::setfill('0') << std::setw(8) << std::hex << redoLogRecord2->nridBdba << "." << std::hex <<
-                                redoLogRecord2->nridSlot <<
                         " supp: (0x" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint64_t>(redoLogRecord1->suppLogFb) <<
                         ", " << std::setfill(' ') << std::setw(3) << std::dec << static_cast<uint64_t>(redoLogRecord1->suppLogType) <<
                         ", " << std::setfill(' ') << std::setw(3) << std::dec << redoLogRecord1->suppLogCC <<
@@ -328,14 +324,33 @@ namespace OpenLogReplicator {
                             TRACE(TRACE2_LOB_DATA, "LOB index: " << ss.str() << " code: " << std::dec << (uint64_t)redoLogRecord2->indKeyDataCode)
                         }
 
+                        if (redoLogRecord2->dba0 != 0) {
+                            lobCtx.orderList(redoLogRecord2->dba, redoLogRecord2->dba0);
+
+                            if (redoLogRecord2->dba1 != 0) {
+                                lobCtx.orderList(redoLogRecord2->dba0, redoLogRecord2->dba1);
+
+                                if (redoLogRecord2->dba2 != 0) {
+                                    lobCtx.orderList(redoLogRecord2->dba1, redoLogRecord2->dba2);
+
+                                    if (redoLogRecord2->dba3 != 0)
+                                        lobCtx.orderList(redoLogRecord2->dba2, redoLogRecord2->dba3);
+                                }
+                            }
+                        }
                         switch (redoLogRecord2->indKeyDataCode) {
                             case KDLI_CODE_LMAP:
-                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData, redoLogRecord2->indKeyDataLength);
+                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
+                                               redoLogRecord2->indKeyDataLength);
                                 break;
 
                             case KDLI_CODE_ALMAP:
                                 lobCtx.appendList(ctx, redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData);
                                 break;
+
+                            case KDLI_CODE_LOAD_ITREE:
+                                lobCtx.setList(redoLogRecord2->dba, redoLogRecord2->data + redoLogRecord2->indKeyData,
+                                               redoLogRecord2->indKeyDataLength);
                         }
                         break;
 

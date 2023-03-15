@@ -56,11 +56,15 @@ namespace OpenLogReplicator {
         uint16_t indKeyLength;
         uint16_t indKeyDataLength;
         uint8_t indKeyDataCode;
+        typeDba dba0;
+        typeDba dba1;
+        typeDba dba2;
+        typeDba dba3;
 
         typeSeq sequence;
-        typeScn scn;              // scn
-        typeSubScn subScn;        // subscn
-        uint8_t* data;            // ctx
+        typeScn scn;
+        typeSubScn subScn;
+        uint8_t* data;
         uint64_t dataOffset;
         typeField fieldCnt;
         uint64_t fieldPos;
@@ -99,11 +103,7 @@ namespace OpenLogReplicator {
         typeSlot slot;
         uint8_t flags;            // flags like xtype, kdoOpCode
         uint8_t fb;               // row flags like F,L
-        uint8_t tabn;             // table number for clustered tables, for nonclustered: 0
         uint16_t sizeDelt;
-
-        typeDba nridBdba;         // next row id bdba
-        typeSlot nridSlot;        // next row id slot
 
         uint8_t suppLogType;
         uint8_t suppLogFb;

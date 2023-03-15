@@ -162,8 +162,6 @@ namespace OpenLogReplicator {
                 if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, 0, table->obj, false))
                         columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
-                    else
-                        columnUnknown(column->name, data, length);
                 }
             } else {
                 columnUnknown(column->name, data, length);
@@ -175,8 +173,6 @@ namespace OpenLogReplicator {
                 if (after && table != nullptr) {
                     if (parseLob(lobCtx, data, length, column->charsetId, table->obj, true))
                         columnString(column->name);
-                    else
-                        columnUnknown(column->name, data, length);
                 }
             } else {
                 columnUnknown(column->name, data, length);

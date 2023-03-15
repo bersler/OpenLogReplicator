@@ -34,10 +34,8 @@ namespace OpenLogReplicator {
                 " typ: " << std::dec << static_cast<uint64_t>(redo.typ) <<
                 " conId: " << std::dec << redo.conId <<
                 " flgRecord: " << std::dec << redo.flgRecord <<
-//                " vectorNo: " << std::dec << vectorNo <<
                 " robj: " << std::dec << redo.recordObj <<
                 " rdataObj: " << std::dec << redo.recordDataObj <<
-//                " scn: " << PRINTSCN64(scn) <<
                 " nrow: " << std::dec << static_cast<uint64_t>(redo.nrow) <<
                 " afn: " << std::dec << redo.afn <<
                 " length: " << std::dec << redo.length <<
@@ -55,11 +53,9 @@ namespace OpenLogReplicator {
                 " opc: 0x" << std::hex << redo.opc <<
                 " op: " << std::dec << static_cast<uint64_t>(redo.op) <<
                 " cc: " << std::dec << static_cast<uint64_t>(redo.cc) <<
-//                " itli: " << std::dec << static_cast<uint64_t>(itli) <<
                 " slot: " << std::dec << redo.slot <<
                 " flags: 0x" << std::hex << static_cast<uint64_t>(redo.flags) <<
-                " fb: 0x" << std::hex << static_cast<uint64_t>(redo.fb) <<
-                " nrid: 0x" << std::hex << redo.nridBdba << "." << std::dec << redo.nridSlot;
+                " fb: 0x" << std::hex << static_cast<uint64_t>(redo.fb);
         os << ss.str();
         return os;
     }
