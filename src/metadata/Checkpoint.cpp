@@ -56,8 +56,7 @@ namespace OpenLogReplicator {
 
                 {
                     std::unique_lock<std::mutex> lck(mtx);
-                    if (!ctx->softShutdown)
-                        condLoop.wait_for(lck, std::chrono::milliseconds (100));
+                    condLoop.wait_for(lck, std::chrono::milliseconds (100));
                 }
             }
 
