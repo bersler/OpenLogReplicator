@@ -24,6 +24,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define CHARACTER_SET_H_
 
 #define UNICODE_UNKNOWN_CHARACTER           0xFFFD
+#define MAX_CHARACTER_LENGTH                8
 
 namespace OpenLogReplicator {
     class CharacterSet {

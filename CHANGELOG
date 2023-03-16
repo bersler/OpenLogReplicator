@@ -4,6 +4,7 @@
 - fix: experimental LOB support
 - enhancement: code style corrections
 - fix: error handling of incorrect config file
+- fix: experimental LOB support Unicode character decoding
 
 1.0.1 - released on 2023.02.20
 - fix: incorrect checkpoint file when non-ascii characters are used in schema files

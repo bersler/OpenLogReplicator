@@ -119,6 +119,8 @@ namespace OpenLogReplicator {
         bool newTran;
         bool compressedBefore;
         bool compressedAfter;
+        uint8_t prevChars[MAX_CHARACTER_LENGTH * 2];
+        uint64_t prevCharsSize;
 
         std::mutex mtx;
         std::condition_variable condNoWriterWork;
@@ -461,9 +463,9 @@ namespace OpenLogReplicator {
             return ss.str();
         }
 
-        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, bool append, bool isClob) {
+        void addLobToOutput(const uint8_t* data, uint32_t length, uint64_t charsetId, bool append, bool isClob, bool hasPrev, bool hasNext) {
             if (isClob) {
-                parseString(data, length, charsetId, append);
+                parseString(data, length, charsetId, append, hasPrev, hasNext);
             } else {
                 memcpy(reinterpret_cast<void*>(valueBuffer + valueLength),
                        reinterpret_cast<const void*>(data), length);
@@ -472,7 +474,7 @@ namespace OpenLogReplicator {
         }
 
         bool parseLob(LobCtx* lobCtx, const uint8_t* data, uint64_t length, uint64_t charsetId, typeObj obj, bool isClob) {
-            bool append = false;
+            bool append = false, hasPrev = false, hasNext = true;
             valueLength = 0;
             TRACE(TRACE2_LOB_DATA, "LOB data:  " << dumpLob(data, length))
 
@@ -512,15 +514,19 @@ namespace OpenLogReplicator {
                         return false;
                     }
                     uint32_t chunkLength = lobData->pageSize;
-                    if (pageNo == lobData->sizePages)
+                    // last
+                    if (pageNo == lobData->sizePages) {
                         chunkLength = lobData->sizeRest;
+                        hasNext = false;
+                    }
 
                     valueBufferCheck(chunkLength * 4);
                     RedoLogRecord* redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                     redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
 
-                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob, hasPrev, hasNext);
                     append = true;
+                    hasPrev = true;
                     ++pageNo;
                 }
             // in-row
@@ -597,11 +603,14 @@ namespace OpenLogReplicator {
                         redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                         if (j < pageCnt)
                             chunkLength = redoLogRecordLob->lobDataLength;
-                        else
+                        else {
                             chunkLength = sizeRest;
+                            hasNext = false;
+                        }
 
-                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob, hasPrev, hasNext);
                         append = true;
+                        hasPrev = true;
                         ++page;
                         totalLobLength -= chunkLength;
                         dataOffset += 4;
@@ -634,7 +643,7 @@ namespace OpenLogReplicator {
                             return false;
                         }
 
-                        addLobToOutput(data + 36, chunkLength, charsetId, false, isClob);
+                        addLobToOutput(data + 36, chunkLength, charsetId, false, isClob, false, false);
                     }
                 } else {
                     if (bodyLength < 10) {
@@ -703,7 +712,7 @@ namespace OpenLogReplicator {
                                 return false;
                             }
 
-                            addLobToOutput(data + dataOffset, chunkLength, charsetId, false, isClob);
+                            addLobToOutput(data + dataOffset, chunkLength, charsetId, false, isClob, false, false);
                             totalLobLength -= chunkLength;
                         }
 
@@ -751,9 +760,13 @@ namespace OpenLogReplicator {
                                     RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
                                     redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                     chunkLength = redoLogRecordLob->lobDataLength;
+                                    if (i == lobPages - 1 && j == pageCnt - 1)
+                                        hasNext = false;
 
-                                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                                    addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
+                                                   hasPrev, hasNext);
                                     append = true;
+                                    hasPrev = true;
                                     totalLobLength -= chunkLength;
                                     ++page;
                                 }
@@ -795,9 +808,13 @@ namespace OpenLogReplicator {
                                         RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
                                         redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
+                                        if (listPage == 0 && i == asiz - 1 && j == pageCnt - 1)
+                                            hasNext = false;
 
-                                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                                        addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
+                                                       hasPrev, hasNext);
                                         append = true;
+                                        hasPrev = true;
                                         totalLobLength -= chunkLength;
                                         ++page;
                                     }
@@ -867,9 +884,13 @@ namespace OpenLogReplicator {
                                 RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                 redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkLength = redoLogRecordLob->lobDataLength;
+                                if (i == lobPages - 1 && j == pageCnt - 1)
+                                    hasNext = false;
 
-                                addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob);
+                                addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
+                                               hasPrev, hasNext);
                                 append = true;
+                                hasPrev = true;
                                 ++page;
                                 totalLobLength -= chunkLength;
                             }
@@ -887,23 +908,55 @@ namespace OpenLogReplicator {
             return true;
         }
 
-        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, bool append) {
+        void parseString(const uint8_t* data, uint64_t length, uint64_t charsetId, bool append, bool hasPrev, bool hasNext) {
             CharacterSet* characterSet = locales->characterMap[charsetId];
             if (characterSet == nullptr && (charFormat & CHAR_FORMAT_NOMAPPING) == 0)
                 throw RuntimeException("can't find character set map for id = " + std::to_string(charsetId));
             if (!append)
                 valueBufferPurge();
+            if (length == 0)
+                return;
 
-            while (length > 0) {
+            const uint8_t* parseData = data;
+            uint64_t parseLength = length;
+            uint64_t overlap = 0;
+            uint64_t prevCharsProcessed = 0;
+
+            // something left to parse from previous run
+            if (hasPrev && prevCharsSize > 0) {
+                overlap = 2 * MAX_CHARACTER_LENGTH - prevCharsSize;
+                if (overlap > length)
+                    overlap = length;
+                memcpy(prevChars + prevCharsSize, data, overlap);
+                parseData = prevChars;
+                parseLength = prevCharsSize + overlap;
+            }
+
+            while (parseLength > 0) {
+                // leave for next time
+                if (hasNext && parseLength < MAX_CHARACTER_LENGTH && overlap == 0) {
+                    memcpy(prevChars, parseData, parseLength);
+                    prevCharsSize = parseLength;
+                    break;
+                }
+
+                // switch to data buffer
+                if (parseLength <= overlap && length > overlap && overlap > 0) {
+                    uint64_t processed = overlap - parseLength;
+                    parseData = data + processed;
+                    parseLength = length - processed;
+                    overlap = 0;
+                }
+
                 typeUnicode unicodeCharacter;
                 uint64_t unicodeCharacterLength;
 
                 if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                    unicodeCharacter = characterSet->decode(lastXid, data, length);
+                    unicodeCharacter = characterSet->decode(lastXid, parseData, parseLength);
                     unicodeCharacterLength = 8;
                 } else {
-                    unicodeCharacter = *data++;
-                    --length;
+                    unicodeCharacter = *parseData++;
+                    --parseLength;
                     unicodeCharacterLength = 2;
                 }
 

@@ -63,6 +63,7 @@ namespace OpenLogReplicator {
             newTran(false),
             compressedBefore(false),
             compressedAfter(false),
+            prevCharsSize(0),
             systemTransaction(nullptr),
             buffersAllocated(0),
             firstBuilderQueue(nullptr),
@@ -148,7 +149,7 @@ namespace OpenLogReplicator {
         switch (column->type) {
         case SYS_COL_TYPE_VARCHAR:
         case SYS_COL_TYPE_CHAR:
-            parseString(data, length, column->charsetId, false);
+            parseString(data, length, column->charsetId, false, false, false);
             columnString(column->name);
             break;
 
