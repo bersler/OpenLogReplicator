@@ -760,7 +760,7 @@ namespace OpenLogReplicator {
                                     RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
                                     redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                     chunkLength = redoLogRecordLob->lobDataLength;
-                                    if (i == lobPages - 1 && j == pageCnt - 1)
+                                    if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                         hasNext = false;
 
                                     addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
@@ -808,7 +808,7 @@ namespace OpenLogReplicator {
                                         RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord *>(dataMapIt->second + sizeof(uint64_t));
                                         redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                         chunkLength = redoLogRecordLob->lobDataLength;
-                                        if (listPage == 0 && i == asiz - 1 && j == pageCnt - 1)
+                                        if (listPage == 0 && i == static_cast<uint64_t>(asiz - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                             hasNext = false;
 
                                         addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
@@ -884,7 +884,7 @@ namespace OpenLogReplicator {
                                 RedoLogRecord *redoLogRecordLob = reinterpret_cast<RedoLogRecord*>(dataMapIt->second + sizeof(uint64_t));
                                 redoLogRecordLob->data = reinterpret_cast<uint8_t*>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                                 chunkLength = redoLogRecordLob->lobDataLength;
-                                if (i == lobPages - 1 && j == pageCnt - 1)
+                                if (i == static_cast<uint64_t>(lobPages - 1) && j == static_cast<uint64_t>(pageCnt - 1))
                                     hasNext = false;
 
                                 addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob,
@@ -920,7 +920,6 @@ namespace OpenLogReplicator {
             const uint8_t* parseData = data;
             uint64_t parseLength = length;
             uint64_t overlap = 0;
-            uint64_t prevCharsProcessed = 0;
 
             // something left to parse from previous run
             if (hasPrev && prevCharsSize > 0) {
