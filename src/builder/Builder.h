@@ -529,6 +529,9 @@ namespace OpenLogReplicator {
                     hasPrev = true;
                     ++pageNo;
                 }
+
+                if (hasNext)
+                    addLobToOutput(nullptr, 0, charsetId, append, isClob, true, false);
             // in-row
             } else {
                 if (length < 23) {
@@ -603,10 +606,10 @@ namespace OpenLogReplicator {
                         redoLogRecordLob->data = reinterpret_cast<uint8_t *>(dataMapIt->second + sizeof(uint64_t) + sizeof(RedoLogRecord));
                         if (j < pageCnt)
                             chunkLength = redoLogRecordLob->lobDataLength;
-                        else {
+                        else
                             chunkLength = sizeRest;
+                        if (j == jMax - 1)
                             hasNext = false;
-                        }
 
                         addLobToOutput(redoLogRecordLob->data + redoLogRecordLob->lobData, chunkLength, charsetId, append, isClob, hasPrev, hasNext);
                         append = true;
@@ -914,7 +917,7 @@ namespace OpenLogReplicator {
                 throw RuntimeException("can't find character set map for id = " + std::to_string(charsetId));
             if (!append)
                 valueBufferPurge();
-            if (length == 0)
+            if (length == 0 && !(hasPrev && prevCharsSize > 0))
                 return;
 
             const uint8_t* parseData = data;
