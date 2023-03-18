@@ -102,7 +102,6 @@ namespace OpenLogReplicator {
             trace2(0),
             flags(0),
             disableChecks(0),
-            experimentalLobs(false),
             hardShutdown(false),
             softShutdown(false),
             replicatorFinished(false),

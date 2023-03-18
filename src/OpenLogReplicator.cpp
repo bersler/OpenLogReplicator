@@ -243,12 +243,6 @@ namespace OpenLogReplicator {
                     ctx->redoVerifyDelayUs = 500000;
             }
 
-            if (sourceJson.HasMember("experimental-lobs")) {
-                uint64_t experimentalLobs = Ctx::getJsonFieldU64(fileName, sourceJson, "experimental-lobs");
-                if (experimentalLobs > 0)
-                    ctx->experimentalLobs = true;
-            }
-
             if (readerJson.HasMember("disable-checks")) {
                 ctx->disableChecks = Ctx::getJsonFieldU64(fileName, readerJson, "disable-checks");
                 if (ctx->disableChecks > 7)

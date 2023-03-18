@@ -273,7 +273,6 @@ namespace OpenLogReplicator {
         std::atomic<uint64_t> trace2;
         std::atomic<uint64_t> flags;
         std::atomic<uint64_t> disableChecks;
-        std::atomic<bool> experimentalLobs;
         std::atomic<bool> hardShutdown;
         std::atomic<bool> softShutdown;
         std::atomic<bool> replicatorFinished;

@@ -577,9 +577,6 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionLob(RedoLogRecord* redoLogRecord1) {
-        if (!ctx->experimentalLobs)
-            return;
-
         OracleLob* lob = metadata->schema->checkLobDict(redoLogRecord1->dataObj);
         if (lob == nullptr) {
             TRACE(TRACE2_LOB, "LOB" <<
@@ -947,9 +944,6 @@ namespace OpenLogReplicator {
     }
 
     void Parser::appendToTransactionIndex(RedoLogRecord* redoLogRecord1, RedoLogRecord* redoLogRecord2) {
-        if (!ctx->experimentalLobs)
-            return;
-
         // Skip other PDB vectors
         if (metadata->conId > 0 && redoLogRecord2->conId != metadata->conId)
             return;

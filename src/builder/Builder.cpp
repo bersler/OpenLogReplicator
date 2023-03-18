@@ -159,24 +159,16 @@ namespace OpenLogReplicator {
             break;
 
         case SYS_COL_TYPE_BLOB:
-            if (ctx->experimentalLobs) {
-                if (after && table != nullptr) {
-                    if (parseLob(lobCtx, data, length, 0, table->obj, false))
-                        columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
-                }
-            } else {
-                columnUnknown(column->name, data, length);
+            if (after && table != nullptr) {
+                if (parseLob(lobCtx, data, length, 0, table->obj, false))
+                    columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
             }
             break;
 
         case SYS_COL_TYPE_CLOB:
-            if (ctx->experimentalLobs) {
-                if (after && table != nullptr) {
-                    if (parseLob(lobCtx, data, length, column->charsetId, table->obj, true))
-                        columnString(column->name);
-                }
-            } else {
-                columnUnknown(column->name, data, length);
+            if (after && table != nullptr) {
+                if (parseLob(lobCtx, data, length, column->charsetId, table->obj, true))
+                    columnString(column->name);
             }
             break;
 
