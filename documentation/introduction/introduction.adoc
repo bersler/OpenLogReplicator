@@ -59,12 +59,6 @@ According to {url-db-engines}[DB Engines] this is the most popular database in t
 
 *OpenLogReplicator* is a GPL-licensed project created by {author} hosted on {url-github}[GitHub]. It is the only available *Open Source* *change capture* component available for *Oracle database* which uses binary reading of redo log files.
 
-Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. It does not utilize the LogMiner utility. The main target of the output is Kafka stream, but it can be easily extended to other systems.
-
-The project is written in C++. It is compatible with all versions of the Oracle database from 11.2 to 21c. It is compatible with all operating systems supported by Oracle database.
+Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. There is almost zero impact on the source system, it is even possible to work with no physical connection to the source database. LogMiner utility is not used. The main target of the output is Kafka, but it can be easily extended to other systems.
 
 image:architecture.png[CDC Architecture,,,]
-
-== Support
-
-OpenLogReplicator is a mature product which is used in production environments worldwide. For enterprise users full support and professional services are available. Please contact {email-support}[{author}] for more details.
