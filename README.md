@@ -17,15 +17,15 @@ Please do not create issues claiming that the documentation is missing. It is st
 The currently available chapters are:
 
 1. [Introduction](documentation/introduction/introduction.adoc)
-2. Getting started: https://www.bersler.com/openlogreplicator/getting-started/
-2. Installation: https://www.bersler.com/openlogreplicator/installation/
-3. Configuration: https://www.bersler.com/openlogreplicator/configuration/
-4. Tutorials: https://www.bersler.com/openlogreplicator/tutorials/
-5. FAQ: https://www.bersler.com/openlogreplicator/faq/
-6. Support: https://www.bersler.com/openlogreplicator/support/
-7. Contribution: https://www.bersler.com/openlogreplicator/contribution/
+2. [Getting started](https://www.bersler.com/openlogreplicator/getting-started/)
+2. [Installation](https://www.bersler.com/openlogreplicator/installation/)
+3. [Configuration](https://www.bersler.com/openlogreplicator/configuration/)
+4. [Tutorials](https://www.bersler.com/openlogreplicator/tutorials/)
+5. [FAQ](https://www.bersler.com/openlogreplicator/faq/)
+6. [Support](https://www.bersler.com/openlogreplicator/support/)
+7. [Contribution](https://www.bersler.com/openlogreplicator/contribution/)
 
-I have also opened a gitter chat at https://gitter.im/bersler/OpenLogReplicator
+Please use also [Gitter chat](https://gitter.im/bersler/OpenLogReplicator).
 
 
 ## Sponsoring the Project
