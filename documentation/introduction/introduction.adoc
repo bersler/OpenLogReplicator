@@ -1,0 +1,70 @@
+= Introduction to OpenLogReplicator
+:author: Adam Leszczyński
+:version: 1.1.0
+:last-update: 2022-03-24
+:url-github: https://github.com/bersler/OpenLogReplicator
+:url-db-engines: https://db-engines.com/en/ranking_trend
+:email-support: mailto:aleszczynski@bersler.com
+:imagesdir: images
+
+Author: {author}
+
+Version: {version}, last update: {last-update}
+
+== About
+
+This document describes what is OpenLogReplicator and how it works.
+
+There is no assumption about the reader's knowledge of the subject.
+
+== Big picture
+
+Imagine if you have a big box of Lego blocks, and you want to keep track of all the changes you make to it. You add some new pieces, or take some away, or rearrange them in different ways. It would be hard to remember all of those changes without writing them down somewhere.
+
+Imagine that your project consists of millions of pieces and changes are done by hundreds of users simultaneously.
+
+== Change Data Capture
+
+The same thing can happen in a computer database - users are adding, modifying, and removing data all the time. It's important to keep track of those changes so that you can make sure everything is accurate and up-to-date.
+
+This is the place where *CDC (Change Data Capture)* comes to action. It's a tool that helps you keep track of all those changes automatically, so you don't have to do it manually.
+
+In the IT stack this allows to ensure that data is accurate and consistent across different parts of the system.
+
+== CDC Elements
+
+A CDC application typically consists of several elements that work together. The most important elements are:
+
+1. Change capture component: All changes in the source system are captured and stored in a format that can be easily processed by the application.
+
+2. Data storage & transformation component: The data can be transformed in many ways, including filtering, mapping, and converting data types or formats. For performance, security and reliability, the data is stored in a persistent data store. It is accessible for future processing.
+
+3. Change delivery component: The data is delivered to the downstream systems or applications that need it.
+
+4. Monitoring and management component: The whole process is monitored and managed by a CDC application.
+
+These elements work together to capture and process changes made to data in a database, and make it available to downstream systems or applications. By using a CDC application, organizations can ensure that their data is accurate and up-to-date, and that it is available to the systems and applications that need it in a timely and efficient manner.
+
+image:cdc-architecture.png[CDC Architecture,,,]
+
+== Oracle Database
+
+An Oracle database is a type of computer database made by a company called Oracle. It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent. It could contain customer information or financial records, and is often used by businesses and organizations.
+
+image:db-engines.png[DB Engines rank,,,link={url-db-engines}]
+
+According to {url-db-engines}[DB Engines] this is the most popular database in the world (as of March 2023).
+
+== OpenLogReplicator
+
+*OpenLogReplicator* is a GPL-licensed project created by {author} hosted on {url-github}[GitHub]. It is the only available *Open Source* *change capture* component available for *Oracle database* which uses binary reading of redo log files.
+
+Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. It does not utilize the LogMiner utility. The main target of the output is Kafka stream, but it can be easily extended to other systems.
+
+The project is written in C++. It is compatible with all versions of the Oracle database from 11.2 to 21c. It is compatible with all operating systems supported by Oracle database.
+
+image:architecture.png[CDC Architecture,,,]
+
+== Support
+
+OpenLogReplicator is a mature product which is used in production environments worldwide. For enterprise users full support and professional services are available. Please contact {email-support}[{author}] for more details.

@@ -16,7 +16,8 @@ Please do not create issues claiming that the documentation is missing. It is st
 
 The currently available chapters are:
 
-1. Getting started: https://www.bersler.com/openlogreplicator/getting-started/
+1. [Introduction](documentation/introduction/introduction.adoc)
+2. Getting started: https://www.bersler.com/openlogreplicator/getting-started/
 2. Installation: https://www.bersler.com/openlogreplicator/installation/
 3. Configuration: https://www.bersler.com/openlogreplicator/configuration/
 4. Tutorials: https://www.bersler.com/openlogreplicator/tutorials/
