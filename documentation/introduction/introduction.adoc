@@ -62,3 +62,5 @@ According to {url-db-engines}[DB Engines] this is the most popular database in t
 Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. There is almost zero impact on the source system, it is even possible to work with no physical connection to the source database. LogMiner utility is not used. The main target of the output is Kafka, but it can be easily extended to other systems.
 
 image:architecture.png[CDC Architecture,,,]
+
+It is important to note here that OpenLogReplicator is not a full CDC solution. This just a part of the whole process. It is a change capture component. It is not responsible for data storage, transformation or delivery. The target of the captured transactions is always a message system, never a target database.
