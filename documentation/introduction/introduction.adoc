@@ -1,15 +1,12 @@
 = Introduction to OpenLogReplicator
 Adam Leszczyński <aleszczynski@bersler.com>
-Version: 1.1.0, 2022-03-24
+v1.1.0 2022-03-24
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
+:toc:
 
-== About
-
-This document describes what is OpenLogReplicator and how it works.
-
-There is no assumption about the reader's knowledge of the subject.
+This document describes what is OpenLogReplicator and how it works. There is no assumption about the reader's knowledge of the subject.
 
 == Big picture
 
@@ -39,15 +36,17 @@ A CDC application typically consists of several elements that work together. The
 
 These elements work together to capture and process changes made to data in a database, and make it available to downstream systems or applications. By using a CDC application, organizations can ensure that their data is accurate and up-to-date, and that it is available to the systems and applications that need it in a timely and efficient manner.
 
+.CDC Architecture
 image:cdc-architecture.png[CDC Architecture,,,]
 
 == Oracle Database
 
 An Oracle database is a type of computer database made by a company called Oracle. It's used to store large amounts of data, provides the data for  simultaneous change and keeps all consistent. It could contain customer information or financial records, and is often used by businesses and organizations.
 
-image:db-engines.png[DB Engines rank,,,link={url-db-engines}]
-
 According to {url-db-engines}[DB Engines] this is the most popular database in the world (as of March 2023).
+
+.Oracle Database rank
+image:db-engines.png[DB Engines rank,,,link={url-db-engines}]
 
 == OpenLogReplicator
 
@@ -55,6 +54,7 @@ According to {url-db-engines}[DB Engines] this is the most popular database in t
 
 Unlike other solutions OpenLogReplicator is not dependent on any specific configuration of the source database. There is almost zero impact on the source system, it is even possible to work with no physical connection to the source database. LogMiner utility is not used. The main target of the output is Kafka, but it can be easily extended to other systems.
 
+.Program architecture
 image:architecture.png[CDC Architecture,,,]
 
 TIP: OpenLogReplicator is not a full CDC solution. This just a part of the whole process. It is a change capture component. It is not responsible for data storage, transformation or delivery. The target of the captured transactions is always a message system, never a target database.
