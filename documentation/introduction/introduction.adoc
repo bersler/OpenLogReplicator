@@ -1,10 +1,16 @@
 = Introduction to OpenLogReplicator
-Adam Leszczyński <aleszczynski@bersler.com>
-v1.1.0 2022-03-24
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.1.0
+:revdate: 2022-03-26
 :imagesdir: ./images
 :url-github: https://github.com/bersler/OpenLogReplicator
 :url-db-engines: https://db-engines.com/en/ranking_trend
-:toc:
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
 
 This document describes what is OpenLogReplicator and how it works. There is no assumption about the reader's knowledge of the subject.
 
@@ -57,4 +63,4 @@ Unlike other solutions OpenLogReplicator is not dependent on any specific config
 .Program architecture
 image:architecture.png[CDC Architecture,,,]
 
-TIP: OpenLogReplicator is not a full CDC solution. This just a part of the whole process. It is a change capture component. It is not responsible for data storage, transformation or delivery. The target of the captured transactions is always a message system, never a target database.
+TIP: OpenLogReplicator is not a full CDC solution. This just a part of the whole process. It is a change capture component. It is not responsible for data storage, transformation or delivery. The target of the captured transactions is always a message system, never a database.
