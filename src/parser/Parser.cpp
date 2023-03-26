@@ -538,7 +538,7 @@ namespace OpenLogReplicator {
 
     void Parser::appendToTransactionDdl(RedoLogRecord* redoLogRecord1) {
         // Track DDL
-        if (!FLAG(REDO_FLAGS_TRACK_DDL))
+        if (!FLAG(REDO_FLAGS_SHOW_DDL))
             return;
 
         // Skip list
@@ -551,7 +551,7 @@ namespace OpenLogReplicator {
             return;
 
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
-        if (table != nullptr) {
+        if (table == nullptr) {
             if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;

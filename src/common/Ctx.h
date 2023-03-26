@@ -179,7 +179,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define REDO_FLAGS_ADAPTIVE_SCHEMA              0x00000004
 #define REDO_FLAGS_DIRECT_DISABLE               0x00000008
 #define REDO_FLAGS_IGNORE_DATA_ERRORS           0x00000010
-#define REDO_FLAGS_TRACK_DDL                    0x00000020
+#define REDO_FLAGS_SHOW_DDL                     0x00000020
 #define REDO_FLAGS_SHOW_INVISIBLE_COLUMNS       0x00000040
 #define REDO_FLAGS_SHOW_CONSTRAINT_COLUMNS      0x00000080
 #define REDO_FLAGS_SHOW_NESTED_COLUMNS          0x00000100
