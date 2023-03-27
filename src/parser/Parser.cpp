@@ -552,7 +552,7 @@ namespace OpenLogReplicator {
 
         OracleTable* table = metadata->schema->checkTableDict(redoLogRecord1->obj);
         if (table == nullptr) {
-            if (!FLAG(REDO_FLAGS_SCHEMALESS)) {
+            if (!FLAG(REDO_FLAGS_SCHEMALESS) && !FLAG(REDO_FLAGS_SHOW_DDL)) {
                 transaction->log(ctx, "tbl ", redoLogRecord1);
                 return;
             }
