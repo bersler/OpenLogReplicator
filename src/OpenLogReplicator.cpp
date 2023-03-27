@@ -164,16 +164,18 @@ namespace OpenLogReplicator {
             if (ctx->dumpRedoLog > 2)
                 throw ConfigurationException("bad JSON, invalid 'dump-redo-log' value: " + std::to_string(ctx->dumpRedoLog) +
                         ", expected one of: {0, 1, 2}");
-        }
 
-        if (document.HasMember("dump-path"))
-            ctx->dumpPath = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
+            if (ctx->dumpRedoLog > 0) {
+                if (document.HasMember("dump-path"))
+                    ctx->dumpPath = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, document, "dump-path");
 
-        if (document.HasMember("dump-raw-data")) {
-            ctx->dumpRawData = Ctx::getJsonFieldU64(fileName, document, "dump-raw-data");
-            if (ctx->dumpRawData > 1)
-                throw ConfigurationException("bad JSON, invalid 'dump-raw-data' value: " + std::to_string(ctx->dumpRawData) +
-                        ", expected one of: {0, 1}");
+                if (document.HasMember("dump-raw-data")) {
+                    ctx->dumpRawData = Ctx::getJsonFieldU64(fileName, document, "dump-raw-data");
+                    if (ctx->dumpRawData > 1)
+                        throw ConfigurationException("bad JSON, invalid 'dump-raw-data' value: " + std::to_string(ctx->dumpRawData) +
+                                                     ", expected one of: {0, 1}");
+                }
+            }
         }
 
         if (document.HasMember("trace")) {
@@ -192,8 +194,8 @@ namespace OpenLogReplicator {
 
         // Iterate through sources
         const rapidjson::Value& sourceArrayJson = Ctx::getJsonFieldA(fileName, document, "source");
-        if (sourceArrayJson.Size() > 1) {
-            throw ConfigurationException("bad JSON, only one 'source' element is allowed");
+        if (sourceArrayJson.Size() != 1) {
+            throw ConfigurationException("bad JSON, there should be just one 'source' element");
         }
 
         for (rapidjson::SizeType j = 0; j < sourceArrayJson.Size(); ++j) {
@@ -258,11 +260,11 @@ namespace OpenLogReplicator {
             if (readerJson.HasMember("start-seq"))
                 startSequence = Ctx::getJsonFieldU32(fileName, readerJson, "start-seq");
 
-            int64_t startTimeRel = 0;
+            uint64_t startTimeRel = 0;
             if (readerJson.HasMember("start-time-rel")) {
                 if (startScn != ZERO_SCN)
                     throw ConfigurationException("bad JSON, 'start-scn' used together with 'start-time-rel'");
-                startTimeRel = Ctx::getJsonFieldI64(fileName, readerJson, "start-time-rel");
+                startTimeRel = Ctx::getJsonFieldU64(fileName, readerJson, "start-time-rel");
             }
 
             const char* startTime = "";
@@ -559,7 +561,7 @@ namespace OpenLogReplicator {
             } else if (strcmp(readerType, "offline") == 0) {
                 if (strcmp(startTime, "") != 0)
                     throw ConfigurationException("starting by time is not supported for offline mode");
-                if (startTimeRel != 0)
+                if (startTimeRel > 0)
                     throw ConfigurationException("starting by relative time is not supported for offline mode");
 
                 replicator = new Replicator(ctx, archGetLog, builder, metadata, transactionBuffer,
@@ -570,7 +572,7 @@ namespace OpenLogReplicator {
             } else if (strcmp(readerType, "batch") == 0) {
                 if (strcmp(startTime, "") != 0)
                     throw ConfigurationException("starting by time is not supported for batch mode");
-                if (startTimeRel != 0)
+                if (startTimeRel > 0)
                     throw ConfigurationException("starting by relative time is not supported for batch mode");
 
                 archGetLog = Replicator::archGetLogList;
@@ -649,8 +651,8 @@ namespace OpenLogReplicator {
 
         // Iterate through targets
         const rapidjson::Value& targetArrayJson = Ctx::getJsonFieldA(fileName, document, "target");
-        if (targetArrayJson.Size() > 1) {
-            throw ConfigurationException("bad JSON, only one 'target' element is allowed");
+        if (targetArrayJson.Size() != 1) {
+            throw ConfigurationException("bad JSON, there should be just one 'target' element");
         }
 
         for (rapidjson::SizeType j = 0; j < targetArrayJson.Size(); ++j) {

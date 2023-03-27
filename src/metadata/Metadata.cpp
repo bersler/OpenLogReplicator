@@ -47,7 +47,7 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     Metadata::Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
-                       const char* newStartTime, int64_t newStartTimeRel) :
+                       const char* newStartTime, uint64_t newStartTimeRel) :
             schema(new Schema(newCtx, newLocales)),
             ctx(newCtx),
             locales(newLocales),

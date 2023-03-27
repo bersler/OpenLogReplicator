@@ -65,7 +65,7 @@ namespace OpenLogReplicator {
         typeScn startScn;
         typeSeq startSequence;
         std::string startTime;
-        int64_t startTimeRel;
+        uint64_t startTimeRel;
         // Database parameters
         bool onlineData;
         bool suppLogDbPrimary;
@@ -117,7 +117,7 @@ namespace OpenLogReplicator {
         std::unordered_map<typeScn, bool> checkpointSchemaMap;
 
         Metadata(Ctx* newCtx, Locales* newLocales, const char* newDatabase, typeConId newConId, typeScn newStartScn, typeSeq newStartSequence,
-                 const char* newStartTime, int64_t newStartTimeRel);
+                 const char* newStartTime, uint64_t newStartTimeRel);
         ~Metadata();
 
         void setNlsCharset(const std::string& nlsCharset, const std::string& nlsNcharCharset);

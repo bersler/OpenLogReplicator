@@ -679,7 +679,7 @@ namespace OpenLogReplicator {
             TRACE(TRACE2_SQL, "SQL: " << SQL_GET_SCN_FROM_TIME_RELATIVE)
             TRACE(TRACE2_SQL, "PARAM1: " << std::dec << metadata->startTimeRel)
             stmt.createStatement(SQL_GET_SCN_FROM_TIME_RELATIVE);
-            stmt.bindInt64(1, metadata->startTimeRel);
+            stmt.bindUInt64(1, metadata->startTimeRel);
             typeScn firstDataScn; stmt.defineUInt64(1, firstDataScn);
 
             if (!stmt.executeQuery())

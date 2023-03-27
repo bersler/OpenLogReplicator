@@ -308,7 +308,12 @@ namespace OpenLogReplicator {
         if (timeSinceCheckpoint < ctx->checkpointIntervalS && !force)
             return;
 
-        TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer checkpoint scn: " << std::dec << checkpointScn << " confirmed scn: " << confirmedScn)
+        if (checkpointScn == ZERO_SCN) {
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer confirmed scn: " << confirmedScn)
+        } else {
+            TRACE(TRACE2_CHECKPOINT, "CHECKPOINT: writer confirmed scn: " << confirmedScn << "checkpoint scn: " << std::dec << checkpointScn)
+
+        }
         std::string name(database + "-chkpt");
         std::ostringstream ss;
         ss << R"({"database":")" << database

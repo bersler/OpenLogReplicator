@@ -1,6 +1,7 @@
 nightly build
 - doc: Introduction to OpenLogReplicator
 - fix: minor bug related to sending ddl operations to output
+- fix: minor parameter validation bug
 
 1.1.0
 - debug: trace formatting changes
