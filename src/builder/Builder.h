@@ -309,13 +309,10 @@ namespace OpenLogReplicator {
             valueBuffer[valueLength++] = (char)value;
         };
 
-        void valueBufferAppendHex(typeUnicode value, uint64_t length) {
-            uint64_t j = (length - 1) * 4;
-            valueBufferCheck(length);
-            for (uint64_t i = 0; i < length; ++i) {
-                valueBuffer[valueLength++] = Ctx::map16[(value >> j) & 0xF];
-                j -= 4;
-            }
+        void valueBufferAppendHex(uint8_t value) {
+            valueBufferCheck(2);
+            valueBuffer[valueLength++] = Ctx::map16[(value >> 4) & 0x0F];
+            valueBuffer[valueLength++] = Ctx::map16[value & 0x0F];
         };
 
         void parseNumber(const uint8_t* data, uint64_t length) {
@@ -951,44 +948,70 @@ namespace OpenLogReplicator {
                 }
 
                 typeUnicode unicodeCharacter;
-                uint64_t unicodeCharacterLength;
 
                 if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
                     unicodeCharacter = characterSet->decode(lastXid, parseData, parseLength);
-                    unicodeCharacterLength = 8;
+
+                    if ((charFormat & CHAR_FORMAT_HEX) == 0 || isSystem) {
+                        // 0xxxxxxx
+                        if (unicodeCharacter <= 0x7F) {
+                            valueBufferAppend(unicodeCharacter);
+
+                        // 110xxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0x7FF) {
+                            valueBufferAppend(0xC0 | static_cast<uint8_t>(unicodeCharacter >> 6));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        // 1110xxxx 10xxxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0xFFFF) {
+                            valueBufferAppend(0xE0 | static_cast<uint8_t>(unicodeCharacter >> 12));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0x10FFFF) {
+                            valueBufferAppend(0xF0 | static_cast<uint8_t>(unicodeCharacter >> 18));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 12) & 0x3F));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
+                            valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        } else
+                            throw RuntimeException("got character code: U+" + std::to_string(unicodeCharacter));
+                    } else {
+                        // 0xxxxxxx
+                        if (unicodeCharacter <= 0x7F) {
+                            valueBufferAppendHex(unicodeCharacter);
+
+                        // 110xxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0x7FF) {
+                            valueBufferAppendHex(0xC0 | static_cast<uint8_t>(unicodeCharacter >> 6));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        // 1110xxxx 10xxxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0xFFFF) {
+                            valueBufferAppendHex(0xE0 | static_cast<uint8_t>(unicodeCharacter >> 12));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+                        } else if (unicodeCharacter <= 0x10FFFF) {
+                            valueBufferAppendHex(0xF0 | static_cast<uint8_t>(unicodeCharacter >> 18));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 12) & 0x3F));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
+                            valueBufferAppendHex(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
+
+                        } else
+                            throw RuntimeException("got character code: U+" + std::to_string(unicodeCharacter));
+                    }
                 } else {
                     unicodeCharacter = *parseData++;
                     --parseLength;
-                    unicodeCharacterLength = 2;
-                }
 
-                if ((charFormat & CHAR_FORMAT_HEX) != 0 && !isSystem) {
-                    valueBufferAppendHex(unicodeCharacter, unicodeCharacterLength);
-                } else {
-                    // 0xxxxxxx
-                    if (unicodeCharacter <= 0x7F) {
+                    if ((charFormat & CHAR_FORMAT_HEX) == 0 || isSystem) {
                         valueBufferAppend(unicodeCharacter);
-
-                    // 110xxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0x7FF) {
-                        valueBufferAppend(0xC0 | static_cast<uint8_t>(unicodeCharacter >> 6));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
-
-                    // 1110xxxx 10xxxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0xFFFF) {
-                        valueBufferAppend(0xE0 | static_cast<uint8_t>(unicodeCharacter >> 12));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
-
-                    // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-                    } else if (unicodeCharacter <= 0x10FFFF) {
-                        valueBufferAppend(0xF0 | static_cast<uint8_t>(unicodeCharacter >> 18));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 12) & 0x3F));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>((unicodeCharacter >> 6) & 0x3F));
-                        valueBufferAppend(0x80 | static_cast<uint8_t>(unicodeCharacter & 0x3F));
-
-                    } else
-                        throw RuntimeException("got character code: U+" + std::to_string(unicodeCharacter));
+                    } else {
+                        valueBufferAppendHex(unicodeCharacter);
+                    }
                 }
             }
         };
