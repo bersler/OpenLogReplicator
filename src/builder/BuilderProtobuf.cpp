@@ -133,17 +133,18 @@ namespace OpenLogReplicator {
 
         if (ridFormat == RID_FORMAT_SKIP)
             return;
-
-        typeRowId rowId(dataObj, bdba, slot);
-        char str[19];
-        rowId.toString(str);
-        payloadPB->set_rid(str, 18);
+        else if (ridFormat == RID_FORMAT_TEXT) {
+            typeRowId rowId(dataObj, bdba, slot);
+            char str[19];
+            rowId.toString(str);
+            payloadPB->set_rid(str, 18);
+        }
     }
 
     void BuilderProtobuf::appendHeader(bool first, bool showXid) {
         redoResponsePB->set_code(pb::ResponseCode::PAYLOAD);
         if (first || (scnFormat & SCN_FORMAT_ALL_PAYLOADS) != 0) {
-            if ((scnFormat & SCN_FORMAT_HEX) != 0) {
+            if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
                 char buf[17];
                 numToString(lastScn, buf, 16);
                 redoResponsePB->set_scns(buf);
@@ -180,7 +181,7 @@ namespace OpenLogReplicator {
                 ss << '.';
                 ss << static_cast<uint64_t>(lastXid.sqn());
                 redoResponsePB->set_xid(ss.str());
-            } else {
+            } else if (xidFormat == XID_FORMAT_NUMERIC) {
                 redoResponsePB->set_xidn(lastXid.getData());
             }
         }

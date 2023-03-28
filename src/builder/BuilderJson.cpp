@@ -204,13 +204,14 @@ namespace OpenLogReplicator {
 
         if (ridFormat == RID_FORMAT_SKIP)
             return;
-
-        typeRowId rowId(dataObj, bdba, slot);
-        char str[19];
-        rowId.toString(str);
-        builderAppend(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
-        builderAppend(str, 18);
-        builderAppend('"');
+        else if (ridFormat == RID_FORMAT_TEXT) {
+            typeRowId rowId(dataObj, bdba, slot);
+            char str[19];
+            rowId.toString(str);
+            builderAppend(R"(,"rid":")", sizeof(R"(,"rid":")") - 1);
+            builderAppend(str, 18);
+            builderAppend('"');
+        }
     }
 
     void BuilderJson::appendHeader(bool first, bool showXid) {
@@ -220,7 +221,7 @@ namespace OpenLogReplicator {
             else
                 hasPreviousValue = true;
 
-            if ((scnFormat & SCN_FORMAT_HEX) != 0) {
+            if ((scnFormat & SCN_FORMAT_TEXT_HEX) != 0) {
                 builderAppend(R"("scns":"0x)", sizeof(R"("scns":"0x)") - 1);
                 appendHex(lastScn, 16);
                 builderAppend('"');
@@ -270,7 +271,7 @@ namespace OpenLogReplicator {
                 builderAppend('.');
                 appendDec(lastXid.sqn());
                 builderAppend('"');
-            } else {
+            } else if (xidFormat == XID_FORMAT_NUMERIC) {
                 builderAppend(R"("xidn":)", sizeof(R"("xidn":)") - 1);
                 appendDec(lastXid.getData());
             }

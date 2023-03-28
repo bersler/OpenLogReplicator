@@ -285,7 +285,7 @@ namespace OpenLogReplicator {
                         table->columns[column]->name + " type found " + std::to_string(table->columns[column]->type));
 
             builder->parseString(builder->values[column][VALUE_AFTER], builder->lengths[column][VALUE_AFTER],
-                                 table->columns[column]->charsetId, false, false, false);
+                                 table->columns[column]->charsetId, false, false, false, true);
             std::string newVal(builder->valueBuffer, builder->valueLength);
             if (builder->valueLength > maxLength)
                 throw RuntimeException("ddl: value too long for " + table->owner + "." + table->name + ": column " +

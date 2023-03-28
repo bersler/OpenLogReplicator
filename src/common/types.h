@@ -90,11 +90,11 @@ typedef uint64_t typeUnicode;
 #define CHAR_FORMAT_HEX                         2
 
 #define SCN_FORMAT_NUMERIC                      0
-#define SCN_FORMAT_HEX                          1
+#define SCN_FORMAT_TEXT_HEX                     1
 #define SCN_FORMAT_ALL_PAYLOADS                 2
 
 #define RID_FORMAT_SKIP                         0
-#define RID_FORMAT_DEFAULT                      1
+#define RID_FORMAT_TEXT                         1
 
 #define XID_FORMAT_TEXT_HEX                     0
 #define XID_FORMAT_TEXT_DEC                     1

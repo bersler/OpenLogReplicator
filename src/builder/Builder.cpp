@@ -149,7 +149,7 @@ namespace OpenLogReplicator {
         switch (column->type) {
         case SYS_COL_TYPE_VARCHAR:
         case SYS_COL_TYPE_CHAR:
-            parseString(data, length, column->charsetId, false, false, false);
+            parseString(data, length, column->charsetId, false, false, false, table->systemTable > 0);
             columnString(column->name);
             break;
 
@@ -160,14 +160,14 @@ namespace OpenLogReplicator {
 
         case SYS_COL_TYPE_BLOB:
             if (after && table != nullptr) {
-                if (parseLob(lobCtx, data, length, 0, table->obj, false))
+                if (parseLob(lobCtx, data, length, 0, table->obj, false, table->sys))
                     columnRaw(column->name, reinterpret_cast<uint8_t*>(valueBuffer), valueLength);
             }
             break;
 
         case SYS_COL_TYPE_CLOB:
             if (after && table != nullptr) {
-                if (parseLob(lobCtx, data, length, column->charsetId, table->obj, true))
+                if (parseLob(lobCtx, data, length, column->charsetId, table->obj, true, table->systemTable > 0))
                     columnString(column->name);
             }
             break;
