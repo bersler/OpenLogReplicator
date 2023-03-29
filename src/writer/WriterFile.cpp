@@ -32,17 +32,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 
 namespace OpenLogReplicator {
     WriterFile::WriterFile(Ctx* newCtx, const std::string& newAlias, const std::string& newDatabase, Builder* newBuilder, Metadata* newMetadata,
-                           const char* newOutput, const char* newFormat, uint64_t newMaxSize, uint64_t newNewLine, uint64_t newAppend) :
+                           const char* newOutput, const char* newTimestampFormat, uint64_t newMaxFileSize, uint64_t newNewLine, uint64_t newAppend) :
         Writer(newCtx, newAlias, newDatabase, newBuilder, newMetadata),
         prefixPos(0),
         suffixPos(0),
         mode(WRITER_FILE_MODE_STDOUT),
         fill(0),
         output(newOutput),
-        format(newFormat),
+        timestampFormat(newTimestampFormat),
         outputFileNum(0),
         outputSize(0),
-        maxSize(newMaxSize),
+        maxFileSize(newMaxFileSize),
         outputDes(-1),
         newLine(newNewLine),
         append(newAppend),
@@ -131,8 +131,8 @@ namespace OpenLogReplicator {
             mode = WRITER_FILE_MODE_NO_ROTATE;
         }
 
-        if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxSize == 0)
-            throw RuntimeException("output file is with no max size: " + this->output + " - 'max-size' must be defined for output with rotation");
+        if ((mode == WRITER_FILE_MODE_TIMESTAMP || mode == WRITER_FILE_MODE_NUM) && maxFileSize == 0)
+            throw RuntimeException("output file is with no max file size: " + this->output + " - 'max-file-size' must be defined for output with rotation");
 
         // Search for last used number
         if (mode == WRITER_FILE_MODE_NUM) {
@@ -200,13 +200,13 @@ namespace OpenLogReplicator {
         } else if (mode == WRITER_FILE_MODE_NO_ROTATE) {
             outputFile = outputPath + "/" + outputFileMask;
         } else if (mode == WRITER_FILE_MODE_NUM) {
-            if (outputSize + length > maxSize) {
+            if (outputSize + length > maxFileSize) {
                 closeFile();
                 ++outputFileNum;
                 outputSize = 0;
             }
-            if (length > maxSize) {
-                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxSize << ")")
+            if (length > maxFileSize) {
+                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxFileSize << ")")
             }
 
             if (outputDes == -1) {
@@ -219,22 +219,22 @@ namespace OpenLogReplicator {
             }
         } else if (mode == WRITER_FILE_MODE_TIMESTAMP) {
             bool shouldSwitch = false;
-            if (outputSize + length > maxSize)
+            if (outputSize + length > maxFileSize)
                 shouldSwitch = true;
 
-            if (length > maxSize) {
-                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxSize << ")")
+            if (length > maxFileSize) {
+                WARNING("message size (" << std::dec << length << ") will exceed 'max-file' size (" << maxFileSize << ")")
             }
 
             if (outputDes == -1 || shouldSwitch) {
                 time_t now = time(nullptr);
                 tm nowTm = *localtime(&now);
                 char str[50];
-                strftime(str, sizeof(str), format.c_str(), &nowTm);
+                strftime(str, sizeof(str), timestampFormat.c_str(), &nowTm);
                 std::string newOutputFile = outputPath + "/" + outputFileMask.substr(0, prefixPos) + str + outputFileMask.substr(suffixPos);
                 if (outputFile == newOutputFile) {
                     if (!warningDisplayed) {
-                        WARNING("rotation size is set too low (" << std::dec << maxSize << "), increase it, should rotate but too early (" << outputFile << ")")
+                        WARNING("rotation size is set too low (" << std::dec << maxFileSize << "), increase it, should rotate but too early (" << outputFile << ")")
                         warningDisplayed = true;
                     }
                     shouldSwitch = false;

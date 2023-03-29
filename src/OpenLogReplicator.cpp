@@ -688,19 +688,19 @@ namespace OpenLogReplicator {
             }
 
             if (strcmp(writerType, "file") == 0) {
-                uint64_t maxSize = 0;
-                if (writerJson.HasMember("max-size"))
-                    maxSize = Ctx::getJsonFieldU64(fileName, writerJson, "max-size");
+                uint64_t maxFileSize = 0;
+                if (writerJson.HasMember("max-file-size"))
+                    maxFileSize = Ctx::getJsonFieldU64(fileName, writerJson, "max-file-size");
 
-                const char* format = "%F_%T";
-                if (writerJson.HasMember("format"))
-                    format = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "format");
+                const char* timestampFormat = "%F_%T";
+                if (writerJson.HasMember("timestamp-format"))
+                    timestampFormat = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "timestamp-format");
 
                 const char* output = "";
                 if (writerJson.HasMember("output"))
                     output = Ctx::getJsonFieldS(fileName, JSON_PARAMETER_LENGTH, writerJson, "output");
-                else if (maxSize > 0)
-                    throw ConfigurationException("parameter 'max-size' should be 0 when 'output' is not set (for: file writer)");
+                else if (maxFileSize > 0)
+                    throw ConfigurationException("parameter 'max-file-size' should be 0 when 'output' is not set (for: file writer)");
 
                 uint64_t newLine = 1;
                 if (writerJson.HasMember("new-line")) {
@@ -717,9 +717,9 @@ namespace OpenLogReplicator {
                         throw ConfigurationException("bad JSON, invalid 'append' value: " + std::to_string(append) + ", expected one of: {0, 1}");
                 }
 
-                writer = new WriterFile(ctx, std::string(alias) + "-writer", replicator2->database, replicator2->builder,
-                                        replicator2->metadata, output, format, maxSize, newLine,
-                                        append);
+                writer = new WriterFile(ctx, std::string(alias) + "-writer", replicator2->database,
+                                        replicator2->builder,replicator2->metadata, output, timestampFormat,
+                                        maxFileSize,newLine,append);
             } else if (strcmp(writerType, "kafka") == 0) {
 #ifdef LINK_LIBRARY_RDKAFKA
                 uint64_t maxMessageMb = 100;
