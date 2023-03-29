@@ -3,6 +3,7 @@
 :revnumber: 1.1.0
 :revdate: 2022-03-29
 :imagesdir: ./images
+:icons: font
 :toc: preamble
 
 [frame="none",grid="none"]
@@ -36,7 +37,7 @@ image:json-config-file.png[JSON config file main elements,,,]
 
 The file is in JSON format. The file should contain a single object with the following parameters:
 
-[width="100%",cols="1a,2a,4a",options=header]
+[width="100%",cols="1a,2a,4a",options="header"]
 .Global parameters
 |===
 
