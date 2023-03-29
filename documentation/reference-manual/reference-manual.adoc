@@ -1,14 +1,14 @@
 = Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-29
+:revdate: 2022-03-30
 :imagesdir: ./images
 :icons: font
 :toc: preamble
 
 [frame="none",grid="none"]
 |====
-a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 |====
 
 This document describes configuration parameters and usage of OpenLogReplicator.
@@ -46,11 +46,11 @@ The file is in JSON format. The file should contain a single object with the fol
 |Notes
 
 |`source`
-|_list_ of <<source,sources>>, mandatory
+|_list_ of <<source,source>> elements, mandatory
 |The list should contain just one source element.
 
 |`target`
-|_list_ of <<target,targets>>, mandatory
+|_list_ of <<target,target>> elements, mandatory
 |The list should contain just one target element.
 
 |`version`
@@ -69,7 +69,7 @@ _NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to no
 |_number_, min: 0, max: 1, default: 0
 |Print hex dump of vector data for all dumped OP codes.
 
-Possible values:
+Possible values are:
 
 * `0` -– No hex dump is added to `DUMP-<nnn>.trace` file.
 
@@ -81,13 +81,13 @@ _NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to no
 |_number_, min: 0, max: 2, default: 0
 |Create output similar to `logdump` command which can be compared as text to verify if certain parameters have been correctly decoded.
 
-Possible values:
+Possible values are:
 
-* `0` –- No `logdump file is created.
+* `0` -- No `logdump file is created.
 
-* `1` –- For every processed redo log file, a file `<database>-<nnn>.logdump` is created (`<database>` -– database name, `<nnn>` –- redo log sequence).
+* `1` -- For every processed redo log file, a file `<database>-<nnn>.logdump` is created (`<database>` -– database name, `<nnn>` -- redo log sequence).
 
-* `2` –- like `1` but additional information is printed which is not originally printed in `logdump` output –- for example details about supplemental log groups.
+* `2` -- like `1` but additional information is printed which is not originally printed in `logdump` output -- for example details about supplemental log groups.
 
 _CAUTION:_ The result does not have to fully match the results of `logdump`.There can be some inconsistency. Not all redo OP codes are parsed and analyzed and there is no guarantee that the results should be exactly the same.
 
@@ -95,79 +95,64 @@ _CAUTION:_ The result does not have to fully match the results of `logdump`.Ther
 |_number_, min: 0, max: 4, default: 2
 |Messages verbose level.
 
-All messages are sent to _stderr_ output stream. Possible values:
+All messages are sent to _stderr_ output stream.
 
-* `0` –- _Silent_ -- don't print anything.
+Possible values are:
+
+* `0` -- _Silent_ -- don't print anything.
 
 * `1` -- _Error_ -- print only error messages.
 
-* `2` –- _Warning_ -- print error and warning messages (default setting).
+* `2` -- _Warning_ -- print error and warning messages (default setting).
 
-* `3` –- _Info_ -- print error, warning and info messages.
+* `3` -- _Info_ -- print error, warning and info messages.
 
-* `4` –- _Debug_ -- print all messages.
+* `4` -- _Debug_ -- print all messages.
 
 |`trace2`
 |_number_, min: 0, max: 131071, default: 0
 |Print debug information.
 
-The value is a logical map of various trace parameters, please refer to source code for details.
+The value is a sum of various trace parameters, please refer to source code for details.
 
 _CAUTION:_ The codes can change without prior notice.
 
 |===
 
 [[source]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Source element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`alias`
-a|_text_
-a|`1`
-a|`256`
-a|
-a|yes
-a|The name of the source -– referenced later in target element.
+|Parameter
+|Specification
+|Notes
 
-TIP: This is just a logical name used in the config file. It does not have to match the actual database _SID_.
+|`alias`
+|_text_, max length: 256, mandatory
+|The name of the source -– referenced later in target element.
 
-a|`format`
-a|_group_
-a|
-a|
-a|
-a|yes
-a|Configuration <<format,format>> of output data.
+_TIP:_ This is just a logical name used in the config file. It does not have to match the actual database _SID_.
 
-a|`name`
-a|_text_
-a|`1`
-a|`256`
-a|
-a|yes
-a|This name is used for identifying database connection. This name is mentioned in the output and in the checkpoint files.
+|`format`
+|_element_ of <<format,format>>, mandatory
+|Configuration of output data.
 
-WARNING: After starting replication the value should not change, otherwise the checkpoint files are would not be properly read.
+|`name`
+|_text_, max length: 256, mandatory
+|This name is used for identifying database connection. This name is mentioned in the output and in the checkpoint files.
 
-TIP: This is just a logical name used in the config file. It does not have to match the actual database _SID_.
+_WARNING:_ After starting replication the value should not change, otherwise the checkpoint files are would not be properly read.
 
-a|`reader`
-a|_group_
-a|
-a|
-a|
-a|yes
-a|Configuration of <<reader,redo log reader>>.
+_TIP:_ This is just a logical name used in the config file. It does not have to match the actual database _SID_.
 
-a|`arch`
-a|_text_
-a|`1`
-a|`256`
-a|`online` for _online_ type; `path` for _offline_ type; `list` for _batch_ type
-a|
-a|How list of archive redo log files is get.
+|`reader`
+|_element_ of <<reader,reader>>, mandatory
+|Configuration of redo log reader.
+
+|`arch`
+|_text_, max length: 256, default is `online` for _online_ type; `path` for _offline_ type; `list` for _batch_ type
+|Way of getting archive redo log file list.
 
 Possible values are:
 
@@ -177,939 +162,714 @@ Possible values are:
 
 * `path` -– Archived redo log file list is read from disk.
 
-* `list` –- Like `path` but the list of files is provided by user. This is the only mode used for `batch` type.
+* `list` -- Like `path` but the list of files is provided by user. This is the only mode used for `batch` type.
 
-TIP: This parameter is only valid for `online` reader type.
+_TIP:_ This parameter is only valid for `online` reader type.
 
-a|`arch-read-sleep-us`
-a|_number_
-a|`0`
-a|
-a|`10000000`
-a|
-a|Number in microseconds. Time to sleep between two attempts to read archived redo log list.
+|`arch-read-sleep-us`
+|_number_, default: 10000000
+|Time to sleep between two attempts to read archived redo log list.
 
-a|`arch-read-tries`
-a|_number_
-a|`1`
-a|`1000000000`
-a|`10`
-a|
-a|Number of retries to read archived redo log list before failing.
+Number in microseconds.
 
-a|`debug`
-a|_group_
-a|
-a|
-a|
-a|
-a|Group of options used for <<debug, debugging>>.
+|`arch-read-tries`
+|_number_, max: 1000000000, default: 10
+|Number of retries to read archived redo log list before failing.
 
-a|`filter`
-a|_group_
-a|
-a|
-a|
-a|
-a|Group of option used to <<filter,filter>> contents of the database and define which tables are replicated.
+|`debug`
+|_element_ of <<debug,debug>>
+|Group of options used for debugging.
 
-CAUTION: The filter is applied only to the data, not to the DDL operations.
+|`filter`
+|_element_ of <<filter,filter>>
+|Group of option used to filter contents of the database and define which tables are replicated.
 
-IMPORTANT: During first run the schema is read only for tables which are selected by the filter. If the filter is changed, the schema is not updated. Startup would fail -- because the set of users present in checkpoint files would not match the set of users defined in config file. The schema is updated only when the program is reset (i.e. the checkpoint files are removed and recreation is forced).
+_CAUTION:_ The filter is applied only to the data, not to the DDL operations.
 
-a|`flags`
-a|_number_
-a|`0`
-a|`65535`
-a|`0`
-a|
-a|A logical sum of various flags. Flags define various options for the program.
+_IMPORTANT:_ During first run the schema is read only for tables which are selected by the filter. If the filter is changed, the schema is not updated. Startup would fail -- because the set of users present in checkpoint files would not match the set of users defined in config file. The schema is updated only when the program is reset (i.e. the checkpoint files are removed and recreation is forced).
 
-Possible values:
+|`flags`
+|_number_, min: 0, max: 65535, default: 0
+|A sum of various flags. Flags define various options for the program.
 
-`0x0001` –- Read only archived redo logs. Online redo log files ane not read at all.
+Possible values are:
 
-CAUTION: This option would cause delay of data replication. When the redo log files are big or the operation of switching redo log groups is done infrequent delay can occur. Transactions would not be read until the redo log group is switched.
+* `0x0001` -- Read only archived redo logs. Online redo log files ane not read at all.
 
-`0x0002` –- _Schemaless_ mode. The program can operate without schema.
+_CAUTION:_ This option would cause delay of data replication. When the redo log files are big or the operation of switching redo log groups is done infrequent delay can occur. Transactions would not be read until the redo log group is switched.
 
-NOTE: Please refer to details in (TODO) about this mode.
+* `0x0002` -- _Schemaless_ mode. The program can operate without schema.
 
-`0x0004` -– Adaptive schema mode. This mode is only valid when schemaless mode has been chosen.
+_NOTE:_ Please refer to details in (TODO) about this mode.
 
-NOTE: Please refer to details in (TODO) about this mode.
+* `0x0004` -– Adaptive schema mode. This mode is only valid when schemaless mode has been chosen.
 
-`0x0008` –- Don’t use direct read (`O_DIRECT`) for reading redo log files.
+_NOTE:_ Please refer to details in (TODO) about this mode.
 
-TIP: Direct IO bypasses the disk caching mechanism. Using this option is not recommended and should be used only in special cases.
+* `0x0008` -- Don’t use direct read (`O_DIRECT`) for reading redo log files.
 
-`0x0010` -– Ignore basic errors and continue redo log processing.
+_TIP:_ Direct IO bypasses the disk caching mechanism. Using this option is not recommended and should be used only in special cases.
 
-CAUTION: This option is not recommended. It is useful only for debugging. For most cases when the program fails it is better to stop the program and fix the problem. The program is not designed to continue after error as this can lead to schema data inconsistency and nondeterministic data can be sent to output.
+* `0x0010` -– Ignore basic errors and continue redo log processing.
 
-`0x0020` –- Show text of DDL commands in output.
+_CAUTION:_ This option is not recommended. It is useful only for debugging. For most cases when the program fails it is better to stop the program and fix the problem. The program is not designed to continue after error as this can lead to schema data inconsistency and nondeterministic data can be sent to output.
 
-`0x0040` –- Show invisible columns in output.
+* `0x0020` -- Show text of DDL commands in output.
 
-`0x0080` -– Show hidden constraint columns in output.
+* `0x0040` -- Show invisible columns in output.
 
-`0x0100` –- Show nested columns in output.
+* `0x0080` -– Show hidden constraint columns in output.
 
-`0x0200` –- Show unused columns in output.
+* `0x0100` -- Show nested columns in output.
 
-`0x0400` -- Include incomplete transactions in output.
+* `0x0200` -- Show unused columns in output.
 
-`0x0800` -- Include system transactions in output.
+* `0x0400` -- Include incomplete transactions in output.
 
-`0x1000` -- Hide checkpoint information in output.
+* `0x0800` -- Include system transactions in output.
 
-TIP: The checkpoint records are useful to monitor the progress of replication. They are also used to detect the last processed transaction. If the checkpoint records are hidden and there is low activity of data changes it may be difficult to detect OpenLogReplicator failure.
+* `0x1000` -- Hide checkpoint information in output.
 
-`0x2000` –- Don’t delete old checkpoint files.
+_TIP:_ The checkpoint records are useful to monitor the progress of replication. They are also used to detect the last processed transaction. If the checkpoint records are hidden and there is low activity of data changes it may be difficult to detect OpenLogReplicator failure.
 
-TIP: The number of checkpoint files left is defined by parameter `keep-checkpoints`. This flag overrides this number and leaves checkpoint file.
+* `0x2000` -- Don’t delete old checkpoint files.
 
-`0x4000` –- Reserved for future use.
+_TIP:_ The number of checkpoint files left is defined by parameter `keep-checkpoints`. This flag overrides this number and leaves checkpoint file.
 
-`0x8000` –- Send column data to output in raw (hex) format.
+* `0x4000` -- Reserved for future use.
 
-a|`memory-max-mb`
-a|_number_
-a|`16`
-a|
-a|`1024`
-a|
-a|Maximum amount of memory the program can allocate. The value is in megabytes.
+* `0x8000` -- Send column data to output in raw (hex) format.
 
-IMPORTANT: This number does not include memory allocated for sending big JSON messages to Kafka – this memory is not included here and is allocated on demand separately. It does also not include memory used for LOB processing.
+|`memory-max-mb`
+|_number_, min: 16, default: 1024
+|Maximum amount of memory the program can allocate.
 
-a|`memory-min-mb`
-a|_number_
-a|`16`
-a|`memory-max-mb`
-a|`32`
-a|
-a|Amount of memory allocated at startup and desired amount of allocated memory during work. If memory is dynamically allocated in greater amount it will be release as soon as it is not required any more. See notes for `memory-max-mb` about memory for Kafka buffer. The value is in megabytes.
+Number in megabytes.
 
-a|`read-buffer-max-mb`
-a|_number_, min: `1`, max: `max memory`
-a|`0`
-a|
-a|`min(`memory-max-mb` / 4, 32)`
-a|
-a|Size of memory buffer used for disk read. The value is in megabytes.
+_IMPORTANT:_ This number does not include memory allocated for sending big JSON messages to Kafka – this memory is not included here and is allocated on demand separately. It does also not include memory used for LOB processing.
 
-IMPORTANT: Greater buffer size increases performance, but also increases memory usage. Disk buffer memory is part of the main memory (controlled by `memory-max-mb` and `memory-min-mb`).
+|`memory-min-mb`
+|_number_, min: 16, max: `memory-max-mb`, default: 32
+|Amount of memory allocated at startup and desired amount of allocated memory during work. If memory is dynamically allocated in greater amount it will be release as soon as it is not required any more. See notes for `memory-max-mb` about memory for Kafka buffer.
 
-a|`redo-read-sleep-us`
-a|_number_
-a|`0`
-a|
-a|`50000`
-a|
-a|Number in microseconds. Amount of time the program would sleep when all data from online redo log is and the program is waiting for more transactions.
+Number in megabytes.
 
-IMPORTANT: The default setting is 50.000 microseconds meaning which is equal to 1/20 s or 50 ms. This means that 20 times per second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears it is read sequentially to the end). With default setting, in worst case the read process would notice after 50 ms that new data is ready. This is actually very fast and a proper setting for most cases. If this delay is potentially too big - the value can be decreased, but this would increase CPU usage.
+|`read-buffer-max-mb`
+|_number_, min: 1, max: `memory-max-mb`, default: min(`memory-max-mb` / 4, 32)
+|Size of memory buffer used for disk read.
 
-a|`redo-verify-delay-us`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|Number in microseconds. When this parameter is set to non-zero value, the redo log file data is read second time for verification after defined delay. Double read mode applies only to online redo log files.
+Number in megabytes.
 
-IMPORTANT: Some filesystems (like _ext_4_ or _btrfs_) can share disk read cache between multiple processes. This can cause problems when the redo log files are read by multiple processes. This can cause read inconsistencies when the database process is writing to the same memory buffer as the OpenLogReplicator process is reading. The checksum for disk blocks is just 2 bytes, so it is impossible to detect if the data is corrupted or not. The only way to detect this is to read the data again and compare the data. This parameter defines time delay after which the redo log file data is read second time for verification.
+_IMPORTANT:_ Greater buffer size increases performance, but also increases memory usage. Disk buffer memory is part of the main memory (controlled by `memory-max-mb` and `memory-min-mb`).
 
-CAUTION: Instead of double read it is recommended to use Direct IO disk operations instead. This option disables disk read cache and guarantees that the data is read from disk. Use this option just as a workaround in case when Direct IO is not possible.
+|`redo-read-sleep-us`
+|_number_, min: 0, default: 50000
+|Amount of time the program would sleep when all data from online redo log is and the program is waiting for more transactions.
 
-a|`refresh-interval-us`
-a|_number_
-a|`0`
-a|
-a|`10000000`
-a|
-a|Number in microseconds. During online redo log reading new redo log group could be created and the program would need to refresh the list of redo log groups. In case there is a situation when old redo log file has been completely processed, but still no new group is created, the program would need to refresh the list of redo log groups.
+Number in microseconds.
+
+_IMPORTANT:_ The default setting is 50.000 microseconds meaning which is equal to 1/20 s or 50 ms. This means that 20 times per second OpenLogReplicator polls disk for new changes on disk (until there is no activity -- after new data appears it is read sequentially to the end). With default setting, in worst case the read process would notice after 50 ms that new data is ready. This is actually very fast and a proper setting for most cases. If this delay is potentially too big - the value can be decreased, but this would increase CPU usage.
+
+|`redo-verify-delay-us`
+|_number_, min: 0, default: 0
+|When this parameter is set to non-zero value, the redo log file data is read second time for verification after defined delay. Double read mode applies only to online redo log files.
+
+Number in microseconds.
+
+_IMPORTANT:_ Some filesystems (like _ext_4_ or _btrfs_) can share disk read cache between multiple processes. This can cause problems when the redo log files are read by multiple processes. This can cause read inconsistencies when the database process is writing to the same memory buffer as the OpenLogReplicator process is reading. The checksum for disk blocks is just 2 bytes, so it is impossible to detect if the data is corrupted or not. The only way to detect this is to read the data again and compare the data. This parameter defines time delay after which the redo log file data is read second time for verification.
+
+_CAUTION:_ Instead of double read it is recommended to use Direct IO disk operations instead. This option disables disk read cache and guarantees that the data is read from disk. Use this option just as a workaround in case when Direct IO is not possible.
+
+|`refresh-interval-us`
+|_number_, min: 0, default: 10000000
+|During online redo log reading new redo log group could be created and the program would need to refresh the list of redo log groups. In case there is a situation when old redo log file has been completely processed, but still no new group is created, the program would need to refresh the list of redo log groups.
+
+Number in microseconds.
 
 |===
 
 [[reader]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Reader element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`type`
-a|_text_
-a|
-a|
-a|
-a|yes
-a|`online` -– Primary mode to read online and archived redo logs and connect to database for reading metadata. When the connection to database is lost, the program will try to reconnect.
+|Parameter
+|Specification
+|Notes
+
+|`type`
+|_text_, max length: 256, default
+|Possible values are:
+
+* `online` -– Primary mode to read online and archived redo logs and connect to database for reading metadata. When the connection to database is lost, the program will try to reconnect.
 
 Example config file: `OpenLogReplicator.json.example`.
 
-`offline` -– Like `online`, but metadata is only read from previously created checkpoint file, no connection to the database is required.
+* `offline` -– Like `online`, but metadata is only read from previously created checkpoint file, no connection to the database is required.
 
 Example config file: `OpenLogReplicator.json.example-offline`.
 
-`batch` -– Process only redo log files provided as a list and then stop.
+* `batch` -– Process only redo log files provided as a list and then stop.
 
 Example config file: `OpenLogReplicator.json.example-batch`.
 
-a|`con-id`
-a|_number_
-a|`-32768`
-a|`32767`
-a|`-1`
-a|
-a|Define container ID for the database. This is used for multi-tenant databases.
+|`con-id`
+|signed _number_, min: -32768, max: 32767, default: -1
+|Define container ID for the database. This is used for multi-tenant databases.
 
-TIP: `-1' is the default value and means that the database is single-tenant.
+_TIP:_ `-1' is the default value and means that the database is single-tenant.
 
-a|`disable-checks`
-a|_number_
-a|`0`
-a|`7`
-a|`0`
-a|
-a|A logical sum of various flags:
+|`disable-checks`
+|_number_, min: 0, max: 7, default: 0
+|A sum of numbers:
 
-`0x0001` –- During startup do not check if the database user is has appropriate grants to system tables.
+* `0x0001` -- During startup do not check if the database user is has appropriate grants to system tables.
 
-`0x0002` –- During startup do not check if listed tables contain supplemental logging for primary keys.
+* `0x0002` -- During startup do not check if listed tables contain supplemental logging for primary keys.
 
-`0x0004` –- Disable CRC check for read blocks.
+* `0x0004` -- Disable CRC check for read blocks.
 
-NOTE: This field is valid only for `online` type.
+_NOTE:_ This field is valid only for `online` type.
 
-IMPORTANT: This might increase performance a bit, but it is not recommended to use this option.
+_IMPORTANT:_ This might increase performance a bit, but it is not recommended to use this option.
 
-a|`log-archive-format`
-a|_text_
-a|
-a|`4000`
-a|
-a|
-a|Format of expected archived redo log files. This parameter defines how to parse the redo log file name to read the sequence number.
+|`log-archive-format`
+|_text_, max length: 4000
+|Format of expected archived redo log files. This parameter defines how to parse the redo log file name to read the sequence number.
 
 When FRA is configured the format of files is expected to be `o1_mf_%t_%s_%h_.arc`. When FRA is not used the value use for this parameter is read from database configuration parameter `log_archive_format`.
 
-a|`password`
-a|_text_
-a|
-a|`128`
-a|
-a|
-a|Password for connecting to database instance.
+|`password`
+|_text_, max length: 128
+|Password for connecting to database instance.
 
-NOTE: This field is valid only for `online` type.
+_NOTE:_ This field is valid only for `online` type.
 
-CAUTION: The password is stored in clear text in the configuration file.
+_CAUTION:_ The password is stored in clear text in the configuration file.
 
-a|`path-mapping`
-a|_list_ of pairs of _text_
-a|
-a|
-a|
-a|
-a|List of pairs of files `[before1, after1, before2, after2, …]`. Every path (of online and archived redo log) is compared with the list. If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
+|`path-mapping`
+|_list_ of pairs of _text_, max length: 2048
+|List of pairs of files `[before1, after1, before2, after2, …]`. Every path (of online and archived redo log) is compared with the list. If a prefix of the path matches with `beforeX` it is replaced with `afterX`.
 
-NOTE: This field is valid only for `online` and `offline` types.
+_NOTE:_ This field is valid only for `online` and `offline` types.
 
-TIP: The parameter is useful when OpenLogReplicator operates on a different host than the database server is running and the paths differ. For example the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under different path so having `“path-mapping”: [“/db/fra”, “/opt/fast-recovery-area”],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
+_TIP:_ The parameter is useful when OpenLogReplicator operates on a different host than the database server is running and the paths differ. For example the path may be: `/opt/fra/o1_mf_1_1991_hkb9y64l_.arc`, but file is mounted using sshfs under different path so having `“path-mapping”: [“/db/fra”, “/opt/fast-recovery-area”],` the program would look for `/opt/fast-recovery-area/o1_mf_1_1991_hkb9y64l_.arc` instead.
 
-a|`redo-copy-path`
-a|_text_
-a|
-a|2048
-a|
-a|
-a|Debugging parameter which allow to copy all contents of processed redo log files to defined folder.
+|`redo-copy-path`
+|_text_, max length: 2048
+|Debugging parameter which allow to copy all contents of processed redo log files to defined folder.
 
-TIP: This parameter is useful for diagnosing disk-read related problems. When consistency errors are detected, the redo log file is copied to the defined folder. The file name is in format: `path/<database>_<seq>.arc`. Having a copy of read redo log file allows easier post-mortem analysis, since the file contains exactly the same data, as those which were processed.
+_TIP:_ This parameter is useful for diagnosing disk-read related problems. When consistency errors are detected, the redo log file is copied to the defined folder. The file name is in format: `path/<database>_<seq>.arc`. Having a copy of read redo log file allows easier post-mortem analysis, since the file contains exactly the same data, as those which were processed.
 
-a|`redo-log`
-a|_list_ of _text_
-a|
-a|
-a|
-a|
-a|List of redo logs files which should be processed in batch mode. Elements could be files but also folders. In the second case, all files in this folder would be processed.
+|`redo-log`
+|_list_ of _text_, max length: 2048
+|List of redo logs files which should be processed in batch mode. Elements could be files but also folders. In the second case, all files in this folder would be processed.
 
-NOTE: This field is valid only for `batch` type.
+_NOTE:_ This field is valid only for `batch` type.
 
 Example config file: `OpenLogReplicator.json.example-batch`.
 
-a|`server`
-a|_text_
-a|
-a|`4096`
-a|
-a|
-a|Connect string for connecting to the database instance. Format should be in form like: `//<host>:<port>/<service>`.
+|`server`
+|_text_, max length: 4096
+|Connect string for connecting to the database instance. Format should be in form like: `//<host>:<port>/<service>`.
 
-NOTE: This field is valid only for `online` type.
+_NOTE:_ This field is valid only for `online` type.
 
-a|`start-scn`
-a|_number_
-a|`0`
-a|
-a|
-a|
-a|First SCN number to be processed. If not specified, the program will start from the current SCN.
+|`start-scn`
+|_number_, min: 0
+|First SCN number to be processed. If not specified, the program will start from the current SCN.
 
-CAUTION: Setting very low value of starting SCN might cause problems during program startup if the schema has changed since this SCN and the schema is not available to read using database flashback. In such case the program will not be able to read the metadata and will stop.
+_CAUTION:_ Setting very low value of starting SCN might cause problems during program startup if the schema has changed since this SCN and the schema is not available to read using database flashback. In such case the program will not be able to read the metadata and will stop.
 
-IMPORTANT: Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
+_IMPORTANT:_ Setting this parameter to some value would mean that transactions started before this SCN would not be processed.
 
-a|`start-seq`
-a|_number_
-a|`0`
-a|
-a|
-a|
-a|First sequence number to be processed.
+|`start-seq`
+|_number_, min: 0
+|First sequence number to be processed.
 
-IMPORTANT: If not specified, the first sequence would be determined by reading SCN boundaries assigned to particular redo log files and matched to starting SCN.
+_IMPORTANT:_ If not specified, the first sequence would be determined by reading SCN boundaries assigned to particular redo log files and matched to starting SCN.
 
-a|`start-time-rel`
-a|_number_
-a|`0`
-a|
-a|
-a|
-a|Determine starting SCN by relative time. The value is in seconds and is relative to the current time using `TIMESTAMP_TO_SCN` sql function. For example, if the value is set to `3600`, the program will start from the SCN which was active 1 hour ago.
+|`start-time-rel`
+|_number_, min: 0
+|Determine starting SCN by relative time. The value and is relative to the current time using `TIMESTAMP_TO_SCN` sql function. For example, if the value is set to `3600`, the program will start from the SCN which was active 1 hour ago.
 
-NOTE: This field is valid only for `online` type.
+Number in seconds.
 
-CAUTION: It is invalid to use this parameter when `start-scn` is specified.
+_NOTE:_ This field is valid only for `online` type.
 
-a|`start-time`
-a|_text_
-a|0
-a|256
-a|
-a|
-a|Determine starting SCN by absolute time. The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function. For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN which was active at the beginning of 2018.
+_CAUTION:_ It is invalid to use this parameter when `start-scn` is specified.
 
-NOTE: This field is valid only for `online` type.
+|`start-time`
+|_text_, max length: 256
+|Determine starting SCN by absolute time. The value is in format `YYYY-MM-DD HH24:MI:SS` and is converted to SCN using `TIMESTAMP_TO_SCN` sql function. For example, if the value is set to `2018-01-01 00:00:00`, the program will start from the SCN which was active at the beginning of 2018.
 
-CAUTION: It is invalid to use this parameter when `start-scn` or `start-time-rel` is specified.
+_NOTE:_ This field is valid only for `online` type.
 
-a|`state`
-a|_group_
-a|
-a|
-a|
-a|
-a|Configuration of <<state,state>> settings to store checkpoint information.
+_CAUTION:_ It is invalid to use this parameter when `start-scn` or `start-time-rel` is specified.
 
-a|`user`
-a|_text_
-a|
-a|`128`
-a|
-a|
-a|Database user for connecting to database instance.
+|`state`
+|_element_ of <<state,state>>
+|Configuration of state settings to store checkpoint information.
 
-NOTE: This field is valid only for `online` type.
+|`user`
+|_text_, max length: 128
+|Database user for connecting to database instance.
 
-a|`transaction-max-mb`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|An upper limit for transaction size. If the transaction size is greater than this value, the transaction is split into multiple transactions. The value is in megabytes.
+_NOTE:_ This field is valid only for `online` type.
 
-CAUTION: The intention of this parameter is for debugging purposes only. It is not recommended to use it in production environment. The transaction splitting is intended to limit memory usage and assumes that the transaction is committed while splitting is performed. If the transaction is not committed, the first part of the transaction is sent to output anyway. If the transaction contains large number of partially rolled back DML operations, they might appear in output in spite to the rollback.
+|`transaction-max-mb`
+|_number_, min: 0, default: 0
+|An upper limit for transaction size. If the transaction size is greater than this value, the transaction is split into multiple transactions.
+
+Number in megabytes.
+
+_CAUTION:_ The intention of this parameter is for debugging purposes only. It is not recommended to use it in production environment. The transaction splitting is intended to limit memory usage and assumes that the transaction is committed while splitting is performed. If the transaction is not committed, the first part of the transaction is sent to output anyway. If the transaction contains large number of partially rolled back DML operations, they might appear in output in spite to the rollback.
 
 |===
 
 [[state]]
+[width="100%",cols="a,a,50%a",options="header"]
 .State element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`interval-mb`
-a|_number_
-a|`0`
-a|
-a|`500`
-a|
-a|Threshold of processed redo log data after which checkpoint file is created. The value is in megabytes.
+|Parameter
+|Specification
+|Notes
 
-a|`interval-s`
-a|_number_
-a|`0`
-a|
-a|`600`
-a|
-a|Threshold of processed redo log data time after which checkpoint file is created. The value is in seconds.
+|`interval-mb`
+|_number_, min: 0, default: 500
+|Threshold of processed redo log data after which checkpoint file is created.
 
-IMPORTANT: The time refers not to processing time by OpenLogReplicator but to time of the redo log data. For example default setting of 600 seconds means that if the last checkpoint was created after processing redo log data created at 10:40 when the processing reaches data created at 10:50 new checkpoint file is created.
+Number in megabytes.
 
-a|`keep-checkpoints`
-a|_number_
-a|`0`
-a|
-a|`100`
-a|
-a|Number of checkpoint files which should be kept. The oldest checkpoint files are deleted.
+|`interval-s`
+|_number_, min: 0, default: 600
+|Threshold of processed redo log data time after which checkpoint file is created.
 
-TIP: Value `0` disables checkpoint files deletion.
+Number in seconds.
 
-TIP: Keeping larger number of checkpoint files allows to adjust starting SCN more precisely. It provides more security in case of filesystem corruption and the last checkpoint file not being available.
+_IMPORTANT:_ The time refers not to processing time by OpenLogReplicator but to time of the redo log data. For example default setting of 600 seconds means that if the last checkpoint was created after processing redo log data created at 10:40 when the processing reaches data created at 10:50 new checkpoint file is created.
 
-CAUTION: The number of checkpoint files may be actually larger than this parameter (exactly up to `keep-checkpoints` + `schema-force-interval`). Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (which do not contain schema data).
+|`keep-checkpoints`
+|_number_, min: 0, default: 100
+|Number of checkpoint files which should be kept. The oldest checkpoint files are deleted.
 
-a|`path`
-a|_text_
-a|
-a|`2048`
-a|`checkpoint`
-a|
-a|The path to store checkpoint files.
+_TIP:_ Value `0` disables checkpoint files deletion.
 
-NOTE: This field is valid only for `disk` type.
+_TIP:_ Keeping larger number of checkpoint files allows to adjust starting SCN more precisely. It provides more security in case of filesystem corruption and the last checkpoint file not being available.
 
-IMPORTANT: The path should be accessible for writing by the user which runs the program.
+_CAUTION:_ The number of checkpoint files may be actually larger than this parameter (exactly up to `keep-checkpoints` + `schema-force-interval`). Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (which do not contain schema data).
 
-a|`schema-force-interval`
-a|_number_
-a|`0`
-a|
-a|`20`
-a|
-a|To increase operating speed not all checkpoint files would contain the full schema of the database. In case schema did not change it is not necessary to repeat the schema in every checkpoint file. The value determines the consecutive number of checkpoint files which may not contain the full schema.
+|`path`
+|_text_, max length: 2048, default: `checkpoint`
+|The path to store checkpoint files.
 
-TIP: The value of `0` means that the schema is always included in the checkpoint file.
+_NOTE:_ This field is valid only for `disk` type.
 
-a|`type`
-a|_text_
-a|
-a|`256`
-a|`disk`
-a|
-a|Only `disk` is supported.
+_IMPORTANT:_ The path should be accessible for writing by the user which runs the program.
+
+|`schema-force-interval`
+|_number_m min: 0, default: 20
+|To increase operating speed not all checkpoint files would contain the full schema of the database. In case schema did not change it is not necessary to repeat the schema in every checkpoint file. The value determines the consecutive number of checkpoint files which may not contain the full schema.
+
+_TIP:_ The value of `0` means that the schema is always included in the checkpoint file.
+
+|`type`
+|_text_, max length: 256, default: `disk`
+|Only `disk` is supported.
 
 |===
 
 [[debug]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Debug element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`stop-log-switches`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|For debug purposes only. Stop program after specified number of log switches.
+|Parameter
+|Specification
+|Notes
 
-a|`stop-checkpoints`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|For debug purposes only. Stop program after specified number of LWN checkpoints.
+|`stop-log-switches`
+|_number_, min: 0, default: 0
+|For debug purposes only. Stop program after specified number of log switches.
 
-a|`stop-transactions`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|For debug purposes only. Stop program after specified number of transactions.
+|`stop-checkpoints`
+|_number_, min: 0, default: 0
+|For debug purposes only. Stop program after specified number of LWN checkpoints.
 
-a|`owner`
-a|_text_
-a|`0`
-a|`128`
-a|
-a|
-a|Owner of the debug table.
+|`stop-transactions`
+|_number_, min: 0, default: 0
+|For debug purposes only. Stop program after specified number of transactions.
 
-a|`table`
-a|_text_
-a|`0`
-a|`128`
-a|
-a|
-a|This is technical parameter primary used only for running test cases and defines table name. If any DML transactions occurs for this table (like insert, update or delete), the program would stop. The transaction do not necessary need to be committed.
+|`owner`
+|_text_, max length: 128
+|Owner of the debug table.
+
+|`table`
+|_text_, max length: 128
+|This is technical parameter primary used only for running test cases and defines table name. If any DML transactions occurs for this table (like insert, update or delete), the program would stop. The transaction do not necessary need to be committed.
 
 |===
 
 [[format]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Format element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`type`
-a|_text_
-a|
-a|`256`
-a|
-a|yes
-a|`json` –- Transactions in JSON OpenLogReplicator format.
+|Parameter
+|Specification
+|Notes
 
-`protobuf` –- Transactions in Protocol Buffer format.
+|`type`
+|_text_, max length: 256, required
+|Possible values are:
+
+* `json` -- Transactions in JSON OpenLogReplicator format.
+
+* `protobuf` -- Transactions in Protocol Buffer format.
 
 See quick start chapter (TODO) for details.
 
-CAUTION: Protocol buffer support is in experimental state. It is not fully tested and might not work properly. Do not use it for production without testing.
+_CAUTION:_ Protocol buffer support is in experimental state. It is not fully tested and might not work properly. Do not use it for production without testing.
 
-a|`char`
-a|_number_
-a|`0`
-a|`3`
-a|`0`
-a|
-a|Format for _(n)char_, _(n)varchar(2)_ and _clob_ column types.
+|`char`
+|_number_, min: 0, max: 3, default: 0
+|Format for _(n)char_, _(n)varchar(2)_ and _clob_ column types.
 
 By default, the value is written in Unicode format, using UTF-8 to code characters.
 
-Field value is a logical sum of:
+Field value is a sum of:
 
-`0x0001` –- No character set transformation is applied, the characters are copied from source “as is”.
+* `0x0001` -- No character set transformation is applied, the characters are copied from source “as is”.
 
-`0x0002` -- Instead of characters the output is in HEX format (using hex format -- for example `"column":"4b4c204d"`).
+* `0x0002` -- Instead of characters the output is in HEX format (using hex format -- for example `"column":"4b4c204d"`).
 
-a|`column`
-a|_numeric_
-a|`0`
-a|`2`
-a|`0`
-a|
-a|Column duplicate specification.
+|`column`
+|_numeric_, min: 0, max: 2, default: 0
+|Column duplicate specification.
 
-`0` –- Default behavior, INSERT and DELETE contain only non-null values. UPDATE contains only changed columns or those which are member of the primary key.
+* `0` -- Default behavior, INSERT and DELETE contain only non-null values. UPDATE contains only changed columns or those which are member of the primary key.
 
-TIP: This is the format which takes less space. There is an assumption that if the column does not appear in the INSERT of DELETE statement it means that the value is NULL.
+_TIP:_ This is the format which takes less space. There is an assumption that if the column does not appear in the INSERT of DELETE statement it means that the value is NULL.
 
-CAUTION: For LOB columns the before value is not available in the REDO stream. Therefore, the column is not included in the output. Only after value is included.
+_CAUTION:_ For LOB columns the before value is not available in the REDO stream. Therefore, the column is not included in the output. Only after value is included.
 
-`1` –- INSERT and DELETE contain all values. UPDATE contains only changed columns or those which are member of primary key.
+* `1` -- INSERT and DELETE contain all values. UPDATE contains only changed columns or those which are member of primary key.
 
-`2` –- JSON output would contain all columns which appear in REDO stream, including those which did not change.
+* `2` -- JSON output would contain all columns which appear in REDO stream, including those which did not change.
 
-CAUTION: It is technically not possible to differentiate if the column was actually mentioned by UPDATE DML command or not. `UPDATE X SET A = A` might have the same redo log vector as `UPDATE X SET A = A, B = B` –- in some cases (especially for tables with large schema). The receiver of the output stream should not make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
+_CAUTION:_ It is technically not possible to differentiate if the column was actually mentioned by UPDATE DML command or not. `UPDATE X SET A = A` might have the same redo log vector as `UPDATE X SET A = A, B = B` -- in some cases (especially for tables with large schema). The receiver of the output stream should not make any assumption that the user included a column in the UPDATE operation if it appeared in the output stream and has the same _before_ and _after_ image.
 
-a|`message`
-a|_number_
-a|`0`
-a|`15`
-a|`0`
-a|
-a|Message format specification.
+|`message`
+|_number_, min: 0, max: 15, default: 0
+|Message format specification.
 
-Value is a logical sum of:
+Value is a sum of:
 
-`0x0001` -– One message for the whole transaction.
+* `0x0001` -– One message for the whole transaction.
 
-TIP: By default, the transaction is split to many messages: begin, DML, DML, ..., commit. Using this flag would cause to combine all messages into one. For performance reasons this is not recommended when using Kafka when transactions could be in hundreds of megabytes in size.
+_TIP:_ By default, the transaction is split to many messages: begin, DML, DML, ..., commit. Using this flag would cause to combine all messages into one. For performance reasons this is not recommended when using Kafka when transactions could be in hundreds of megabytes in size.
 
-`0x0002` -– Add `num` field to every message. The field would contain a sequence number of the message in the transaction.
+* `0x0002` -– Add `num` field to every message. The field would contain a sequence number of the message in the transaction.
 
 For JSON only target the following additional flags are available:
 
-`0x0004` -- Skip begin message (when using flag `0x0001`).
+* `0x0004` -- Skip begin message (when using flag `0x0001`).
 
-`0x0009` -- Skip commit message (when using flag `0x0001`).
+* `0x0008` -- Skip commit message (when using flag `0x0001`).
 
-a|`rid`
-a|_number_
-a|`0`
-a|`1`
-a|`0`
-a|
-a|Add `rid` field for every row in output with the Row ID.
+|`rid`
+|_number_, min: 0, max: 1, default: 0
+|Add `rid` field for every row in output with the Row ID.
 
-`0` -- Do not add `rid` field (default).
+Possible values are:
 
-`1` -- Add `rid` field for every row in output with the Row ID.
+* `0` -- Do not add `rid` field (default).
 
-a|`schema`
-a|_number_
-a|`0`
-a|`7`
-a|`0`
-a|
-a|Schema format sent to output.
+* `1` -- Add `rid` field for every row in output with the Row ID.
+
+|`schema`
+|_number_, min: 0, max: 7, default: 0
+|Schema format sent to output.
 
 By default, the schema is not sent to output.
 
 Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","obj":0},"after":{"A":100,"B":999,"C":10.22,"D":"xx2","E":"yyy","F":1564662896000}}]}`
 
-The field is a logical sum of values:
+The field is a sum of values:
 
-`0x0001` –- Print full schema (including column descriptions), but just with first message for every table.
+* `0x0001` -- Print full schema (including column descriptions), but just with first message for every table.
 
-TIP: This optimization is based on the fact that it is meaningless to attach the same schema definition every time if it did not change. It is assumed that the client would cache the schema and would not request it again. If the schema changes, the first message where new schema is used would contain the full schema.
+_TIP:_ This optimization is based on the fact that it is meaningless to attach the same schema definition every time if it did not change. It is assumed that the client would cache the schema and would not request it again. If the schema changes, the first message where new schema is used would contain the full schema.
 
 Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","columns":[{"name":"A","type":"number","precision":-1,"scale":0,"nullable":1},{"name":"B","type":"number","precision":10,"scale":0,"nullable":1},{"name":"C","type":"number","precision":10,"scale":2,"nullable":1},{"name":"D","type":"char","length":10,"nullable":1},{"name":"E","type":"varchar2","length":10,"nullable":1},{"name":"F","type":"timestamp","length":11,"nullable":1},{"name":"G","type":"date","nullable":1}]},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2","after":{"A":100,"B":999,"C":10.22,"D":"xx3       ","E":"yyy","F":1564662896000}}]}`
 
-`0x0002` –- Add full schema definition (including column descriptions) to every message.
+* `0x0002` -- Add full schema definition (including column descriptions) to every message.
 
-TIP: Remember to use flag `0x0001` together with flag `0x0002`. The flag `0x0002` alone has no effect.
+_TIP:_ Remember to use flag `0x0001` together with flag `0x0002`. The flag `0x0002` alone has no effect.
 
-`0x0004` –- Add _objn_ field to schema description which contains database object ID.
+* `0x0004` -- Add _objn_ field to schema description which contains database object ID.
 
 Example output:
 `{"scns":"0x0","tm":0,"xid":"x","payload":[{"op":"c","schema":{"owner":"USR1","table":"ADAM2"},"after":{"A":100,"B":999,"C":10.22,"D":"xx2       ","E":"yyy","F":1564662896000}}]}`
 
-a|`scn`
-a|_number_
-a|`0`
-a|`3`
-a|`0`
-a|
-a|By default, SCN is present only in first message (when message = `0`) in scn field. This field is a logical sum of:
+|`scn`
+|_number_, min: 0, max: 3, default: 0
+|By default, SCN is present only in first message (when message = `0`) in scn field.
 
-`1` -– Print SCN values in hexadecimal format (in _“C”_ format – like `0xFF`) in scns field.
+Number is a sum of:
 
-`2` –- Put SCN field in every message (when message is set to `0`).
+* `0x0001` -– Print SCN values in hexadecimal format (in _“C”_ format – like `0xFF`) in scns field.
 
-a|`timestamp`
-a|_number_
-a|`0`
-a|`3`
-a|`0`
-a|
-a|Format of timestamp values. By default `tm` field is used and timestamp in Unix Epoch format (example: `"tm": 1679100920000`).
+* `0x0002` -- Put SCN field in every message (when message is set to `0`).
 
-Field value is a logical sum of:
+|`timestamp`
+|_number_, min: 0, max: 3, default: 0
+|Format of timestamp values. By default `tm` field is used and timestamp in Unix Epoch format (example: `"tm": 1679100920000`).
 
-`1` –- Use _tms_ field name instead and assign text value of timestamp in _ISO-8601_ format (`"tsm":"YYYY-MM-DDTHH:MI:SSS"`).
+Number is a sum of:
 
-`2` –- Put timestamp field in every message (when _message_ field does not contain the logical bit set to `0x0001`).
+* `0x0001` -- Use _tms_ field name instead and assign text value of timestamp in _ISO-8601_ format (`"tsm":"YYYY-MM-DDTHH:MI:SSS"`).
 
-a|`unknown`
-a|_number_
-a|`0`
-a|`1`
-a|`0`
-a|
-a|Unknown value reporting. For unknown values `‘?’` is sent to output.
+* `0x0002` -- Put timestamp field in every message (when _message_ field does not contain the bit set to `0x0001`).
+
+|`unknown`
+|_number_, min: 0, max: 1, default: 0
+|Unknown value reporting. For unknown values `‘?’` is sent to output.
 
 Possible values are:
 
-`0` –- Silently ignore unknown values.
+* `0` -- Silently ignore unknown values.
 
-`1` –- Output to _stderr_ information about decode mismatch.
+* `1` -- Output to _stderr_ information about decode mismatch.
 
-a|`xid`
-a|_number_
-a|`0`
-a|`2`
-a|`0`
-a|
-a|Format of XID of transaction. Values:
+|`xid`
+|_number_, min: 0, max: 2, default: 0
+|Format of XID of transaction.
 
-`0` –- classic hex format (like: `"xid":"0x0002.012.00004162"`).
+Possible values are:
 
-`1` –- decimal format (like: `"xid":"2.18.16738"`).
+* `0` -- classic hex format (like: `"xid":"0x0002.012.00004162"`).
 
-`2` -- single 64-bit number format (like: `"xidn":563027262849378`).
+* `1` -- decimal format (like: `"xid":"2.18.16738"`).
+
+* `2` -- single 64-bit number format (like: `"xidn":563027262849378`).
 
 |===
 
 [[filter]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Filter element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`table`
-a|_list_ of <<table,tables>>
-a|
-a|
-a|
-a|
-a|List of <<table,tables>> which should be tracked in the redo log stream and sent to output.
+|Parameter
+|Specification
+|Notes
+
+|`table`
+|_list_ of <<table,table>> element
+|List of table regex rules which should be tracked in the redo log stream and sent to output.
 
 A table that matches at least one of the rules is tracked, thus the rules can overlap.
 
 Example:
 `“table”: {{“table”: “owner1.table1”}, {“table”: “owner2.table2”, “key”: “col1, col2, col3”}, {“table”:”sys.%”}}.`
 
-a|`skip-xid`
-a|_list_ of _text_
-a|
-a|
-a|
-a|
-a|List of transaction ID's which should be skipped. The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.
+|`skip-xid`
+|_list_ of _text_, max length: 32
+|List of transaction ID's which should be skipped. The format if XID should be one of: `UUUUSSSSQQQQQQQQ`, `UUUU.SSS.QQQQQQQQ`, `UUUU.SSSS.QQQQQQQQ`, `0xUUUU.SSS.QQQQQQQQ`, `0xUUUU.SSSS.QQQQQQQQ`.
 
 Example:
 `"skip-xid": ["0x0002.012.00004162"]`
 
-a|`dump-xid`
-a|_list_ of _text_
-a|
-a|
-a|
-a|
-a|Debug option to dump to _stderr_ internals about certain XID. The format is the same as for _skip-xid_.
+|`dump-xid`
+|_list_ of _text_, max length: 32
+|Debug option to dump to _stderr_ internals about certain XID. The format is the same as for _skip-xid_.
 
 |===
 
 [[table]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Table element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`owner`
-a|_text_
-a|
-a|`128`
-a|
-a|yes
-a|Regex pattern for matching owner name. The pattern is case-sensitive.
+|Parameter
+|Specification
+|Notes
 
-a|`table`
-a|_text_
-a|
-a|`128`
-a|
-a|yes
-a|Regex pattern for matching table name. The pattern is case-sensitive.
+|`owner`
+|_text_, max length: 128, mandatory
+|Regex pattern for matching owner name. The pattern is case-sensitive.
 
-a|`key`
-a|_text_
-a|
-a|`4096`
-a|
-a|
-a|List of columns which should be used as primary key. The columns are separated by comma. The column names are case-sensitive.
+|`table`
+|_text_, max length: 128, mandatory
+|Regex pattern for matching table name. The pattern is case-sensitive.
 
-TIP: If a table does not contain a primary key, a custom set of columns can be treated as a primary key.
+|`key`
+|_text_, max length: 4096
+|A text field with a list of columns which should be used as primary key. The columns are separated by comma. The column names are case-sensitive.
+
+_TIP:_ If a table does not contain a primary key, a custom set of columns can be treated as a primary key.
 
 |===
 
 [[target]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Target element
-[width="100%",cols=",,,,,,50%"]
 |===
 
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
+|Parameter
+|Specification
+|Notes
 
-a|`alias`
-a|_text_
-a|
-a|`256`
-a|
-a|yes
-a|A logical name of the target used in JSON file for referencing.
+|`alias`
+|_text_, max length: 256, mandatory
+|A logical name of the target used in JSON file for referencing.
 
-a|`source`
-a|_text_
-a|
-a|`256`
-a|
-a|yes
-a|A logical name of the source which this target should be connected with.
+|`source`
+|_text_, max length: 256, mandatory
+|A logical name of the source which this target should be connected with.
 
-a|`writer`
-a|_group_
-a|
-a|`256`
-a|
-a|yes
-a|Configuration of output <<writer,writer>>.
+|`writer`
+|_element_, of <<writer,writer>>, mandatory
+|Configuration of output processor.
 
 |===
 
 [[writer]]
+[width="100%",cols="a,a,50%a",options="header"]
 .Writer element
-[width="100%",cols=",,,,,,50%"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
 
-a|`brokers`
-a|_text_
-a|
-a|4096
-a|
-a|yes
-a|String list of Kafka brokers.
+|Parameter
+|Specification
+|Notes
+
+|`brokers`
+|_text_, max length: 4096, mandatory
+|String list of Kafka brokers.
 
 Example: `"brokers": "host1:9092, host2:9092"`
 
-NOTE: This field is valid only for `kafka` type.
+_NOTE:_ This field is valid only for `kafka` type.
 
-a|`topic`
-a|_text_
-a|
-a|256
-a|
-a|yes
-a|Name of Kafka topic used to send transactions as JSON messages.
+|`topic`
+|_text_, max length: 256, mandatory
+|Name of Kafka topic used to send transactions as JSON messages.
 
-NOTE: This field is valid only for `kafka` type.
+_NOTE:_ This field is valid only for `kafka` type.
 
-a|`type`
-a|_text_
-a|
-a|256
-a|
-a|yes
-a|Valid values are:
+|`type`
+|_text_, max length: 256, mandatory
+|Possible values are:
 
-`kafka` –- Connect directly to Kafka message system and send transactions.
+* `kafka` -- Connect directly to Kafka message system and send transactions.
 
-`file` –- Write output messages directly to a file.
+* `file` -- Write output messages directly to a file.
 
-`network` –- Stream using plain TCP/IP transmission.
+* `network` -- Stream using plain TCP/IP transmission.
 
 This mode assumes that OpenLogReplicator acts as a server. A client connects to the server and receives the messages. If the client disconnects, the server will wait for a new client to connect and buffer transactions while no client connection is present.
 
-`zeromq` –- Stream using ZeroMQ messaging.
+`zeromq` -- Stream using ZeroMQ messaging.
 
-TIP: Technically this is the same as `network` but instead of using plain TCP/IP connection it uses ZeroMQ messaging.
+_TIP:_ Technically this is the same as `network` but instead of using plain TCP/IP connection it uses ZeroMQ messaging.
 
-a|`uri`
-a|_text_
-a|
-a|256
-a|
-a|yes
-a|For network: `<host>:<port>` –- information for network listener.
+|`uri`
+|_text_, max length: 256, mandatory
+|For network: `<host>:<port>` -- information for network listener.
 
 For zeromq: `<protocol>://<host>:<port>` -– URI for ZeroMQ connection.
 
-NOTE: This field is valid only for `network` and `zeromq` types.
+_NOTE:_ This field is valid only for `network` and `zeromq` types.
 
-a|`append`
-a|_number_
-a|`0`
-a|`1`
-a|`1`
-a|
-a|If define output file for transaction exists, append to it. If not, create a new file.
+|`append`
+|_number_, min: 0, max: 1, default: 1
+|If define output file for transaction exists, append to it. If not, create a new file.
 
-NOTE: This field is valid only for `file` type.
+_NOTE:_ This field is valid only for `file` type.
 
-CAUTION: Parameter `output` can't be used together with `append`.
+_CAUTION:_ Parameter `output` can't be used together with `append`.
 
-a|`enable-idempotence`
-a|_number_
-a|`0`
-a|`1`
-a|`1`
-a|
-a|Idempotent producer is enabled when parameter set to `1`. Disabled when set to `0`.
+|`enable-idempotence`
+|_number_, min: 0, max: 1, default: 1
+|Idempotent producer is enabled when parameter set to `1`. Disabled when set to `0`.
 
-NOTE: This field is valid only for `kafka` type.
+_NOTE:_ This field is valid only for `kafka` type.
 
-a|`max-message-mb`
-a|_number_
-a|`1
-a|`953`
-a|`100`
-a|
-a|Maximum size of message sent to Kafka.
+|`max-message-mb`
+|_number_, min: 1, max: 953, default: 100
+|Maximum size of message sent to Kafka.
 
-CAUTION: Memory for this buffer is allocated independently of memory defined as `memory-min-mb`/`memory-max-mb` when a big message to Kafka is being constructed. If transaction is close to this value it would be divided in many parts. Every time such situation occurs, a warning is printed to the log.
+Number in megabytes.
 
-NOTE: The value is in megabytes.
+_CAUTION:_ Memory for this buffer is allocated independently of memory defined as `memory-min-mb`/`memory-max-mb` when a big message to Kafka is being constructed. If transaction is close to this value it would be divided in many parts. Every time such situation occurs, a warning is printed to the log.
 
-NOTE: This field is valid only for `kafka` type.
+_NOTE:_ This field is valid only for `kafka` type.
 
-a|`max-file-size`
-a|_number_
-a|`0`
-a|
-a|`0`
-a|
-a|Maximum file size for output file. The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
+|`max-file-size`
+|_number_, min: 0, default: 0
+|Maximum file size for output file. The size can be defined only when `output` parameter is set and is using `%i` or `%t` placeholder.
 
-NOTE: This field is valid only for `file` type.
+_NOTE:_ This field is valid only for `file` type.
 
-a|`max-messages`
-a|_number_
-a|`1`
-a|`10000000`
-a|`100000`
-a|
-a|Maximum number of messages handled by the client Kafka library (value of the parameter `queue.buffering.max.messages`).
+|`max-messages`
+|_number_, min: 1, max: 10000000, default: 100000
+|Maximum number of messages handled by the client Kafka library (value of the parameter `queue.buffering.max.messages`).
 
-NOTE: This field is valid only for `kafka` type.
+_NOTE:_ This field is valid only for `kafka` type.
 
-a|`new-line`
-a|_number_
-a|`0`
-a|`2`
-a|`0`
-a|
-a|Put a new line after each transaction. Values:
+|`new-line`
+|_number_, min: 0, max: 2, default: 0
+|Put a new line after each transaction.
 
-`0` –- no new line.
+Possible values are:
 
-`1` –- new line after each transaction in Unix format (`\n`).
+* `0` -- no new line.
 
-`2` –- new line after each transaction in Windows format (`\r\n`).
+* `1` -- new line after each transaction in Unix format (`\n`).
 
-NOTE: This field is valid only for `file` type.
+* `2` -- new line after each transaction in Windows format (`\r\n`).
 
-a|`output`
-a|_text_
-a|
-a|256
-a|
-a|
-a| Format of output file. The format is the same as for `strftime` function. The following placeholders are supported:
+_NOTE:_ This field is valid only for `file` type.
 
-`%i` -- autogenerated sequence id, starting from 0.
+|`output`
+|_text_, max length: 256
+| Format of output file. The format is the same as for `strftime` function.
 
-`%t` –- date and time in format `YYYY-MM-DD_HH:MM:SS`.
+The following placeholders are supported:
 
-`%s` -- database sequence number.
+* `%i` -- autogenerated sequence id, starting from 0.
 
-NOTE: There should be only one placeholder in the format. When using `%i` or `%t` format `max-size` parameter must be set to value greater than 0.
+* `%t` -- date and time in format defined by `timestamp-format` parameter.
 
-NOTE: This field is valid only for `file` type.
+* `%s` -- database sequence number.
 
-a|`poll-interval-us`
-a|_number_
-a|`100`
-a|`3600000000`
-a|`100000`
-a|
-a|Interval for polling for new messages. Number in microseconds.
+_NOTE:_ There should be only one placeholder in the format. When using `%i` or `%t` format `max-size` parameter must be set to value greater than 0.
 
-TIP: This parameter defines how often the client library checks for new messages. The smaller the value, the more often the client library checks for new messages. The larger the value, the more messages are buffered in the client library.
+_NOTE:_ This field is valid only for `file` type.
 
-NOTE: This field is valid only for `kafka`, `network` and `zeromq` types.
+|`poll-interval-us`
+|_number_, min: 100, max: 3600000000, default: 100000
+|Interval for polling for new messages. Number in microseconds.
 
-a|`queue-size`
-a|_number_
-a|`1`
-a|`1000000`
-a|`65536`
-a|
-a|Size of message queue.
+_TIP:_ This parameter defines how often the client library checks for new messages. The smaller the value, the more often the client library checks for new messages. The larger the value, the more messages are buffered in the client library.
 
-TIP: This parameter defines how many messages can be sent to output. If the message offers a level of parallelism, messages can be sent in parallel. If the message transport doesn't offer a level of parallelism, messages are sent one by one. The larger the value, the more messages can be sent in parallel.
+_NOTE:_ This field is valid only for `kafka`, `network` and `zeromq` types.
 
-a|`timestamp-format`
-a|_text_
-a|
-a|256
-a|`%F_%T`
-a|
-a|Format of timestamp (defined using placeholder `%t` in field `output`) in output file name. The format is the same as for `strftime` function in C. Please refer to the documentation of your C library for more information.
+|`queue-size`
+|_number_, min: 1, max: 1000000, default: 65536
+|Size of message queue.
 
-NOTE: This field is valid only for `file` type.
+_TIP:_ This parameter defines how many messages can be sent to output. If the message offers a level of parallelism, messages can be sent in parallel. If the message transport doesn't offer a level of parallelism, messages are sent one by one. The larger the value, the more messages can be sent in parallel.
+
+|`timestamp-format`
+|_text_, max length: 256, default: `%F_%T`
+|Format of timestamp (defined using placeholder `%t` in field `output`) in output file name. The format is the same as for `strftime` function in C. Please refer to the documentation of your C library for more information.
+
+_NOTE:_ This field is valid only for `file` type.
 
 |===

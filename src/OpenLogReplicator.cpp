@@ -622,7 +622,7 @@ namespace OpenLogReplicator {
                 if (filterJson.HasMember("skip-xid")) {
                     const rapidjson::Value& skipXidArrayJson = Ctx::getJsonFieldA(fileName, filterJson, "skip-xid");
                     for (rapidjson::SizeType k = 0; k < skipXidArrayJson.Size(); ++k) {
-                        typeXid xid(Ctx::getJsonFieldS(fileName, JSON_XID_LIST_LENGTH, skipXidArrayJson, "skip-xid", k));
+                        typeXid xid(Ctx::getJsonFieldS(fileName, JSON_XID_LENGTH, skipXidArrayJson, "skip-xid", k));
                         INFO("adding XID to skip list: " << xid)
                         transactionBuffer->skipXidList.insert(xid);
                     }
@@ -631,7 +631,7 @@ namespace OpenLogReplicator {
                 if (filterJson.HasMember("dump-xid")) {
                     const rapidjson::Value& dumpXidArrayJson = Ctx::getJsonFieldA(fileName, filterJson, "dump-xid");
                     for (rapidjson::SizeType k = 0; k < dumpXidArrayJson.Size(); ++k) {
-                        typeXid xid(Ctx::getJsonFieldS(fileName, JSON_XID_LIST_LENGTH, dumpXidArrayJson, "dump-xid", k));
+                        typeXid xid(Ctx::getJsonFieldS(fileName, JSON_XID_LENGTH, dumpXidArrayJson, "dump-xid", k));
                         INFO("adding XID to dump list: " << xid)
                         transactionBuffer->dumpXidList.insert(xid);
                     }
