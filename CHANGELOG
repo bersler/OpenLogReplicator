@@ -4,6 +4,7 @@ nightly build
 - fix: minor parameter validation bug
 - fix: minor issue related to sending character data in hex format for debug purposes
 - cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
+- doc: Commands Reference Manual
 
 1.1.0
 - debug: trace formatting changes
