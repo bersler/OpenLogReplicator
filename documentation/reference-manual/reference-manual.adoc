@@ -37,7 +37,7 @@ image:json-config-file.png[JSON config file main elements,,,]
 The file is in JSON format. The file should contain a single object with the following parameters:
 
 .Global parameters
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -147,7 +147,7 @@ CAUTION: The codes can change without prior notice.
 
 [[source]]
 .Source element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -363,7 +363,7 @@ a|Number in microseconds. During online redo log reading new redo log group coul
 
 [[reader]]
 .Reader element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -557,7 +557,7 @@ CAUTION: The intention of this parameter is for debugging purposes only. It is n
 
 [[state]]
 .State element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -627,7 +627,7 @@ a|Only `disk` is supported.
 
 [[debug]]
 .Debug element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -675,7 +675,7 @@ a|This is technical parameter primary used only for running test cases and defin
 
 [[format]]
 .Format element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -853,7 +853,7 @@ a|Format of XID of transaction. Values:
 
 [[filter]]
 .Filter element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -893,7 +893,7 @@ a|Debug option to dump to _stderr_ internals about certain XID. The format is th
 
 [[table]]
 .Table element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
@@ -927,7 +927,7 @@ TIP: If a table does not contain a primary key, a custom set of columns can be t
 
 [[target]]
 .Target element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
@@ -960,7 +960,7 @@ a|Configuration of output <<writer,writer>>.
 
 [[writer]]
 .Writer element
-[cols=",,,,,,50%"]
+[width="100%",cols=",,,,,,50%"]
 |===
 |Parameter|Type|Min|Max|Default|Mandatory|Notes
 
