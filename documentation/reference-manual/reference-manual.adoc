@@ -1,4 +1,4 @@
-= Reference manual
+= Reference Manual
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
 :revdate: 2022-03-29
@@ -37,52 +37,32 @@ image:json-config-file.png[JSON config file main elements,,,]
 The file is in JSON format. The file should contain a single object with the following parameters:
 
 .Global parameters
-[width="100%",cols=",,,,,,50%"]
+[width="100%", cols="1,2,4"]
 |===
-|Parameter|Type|Min|Max|Default|Mandatory|Notes
+|Parameter|Specification|Notes
 
 a|`source`
-a|_list_ <<source,sources>>
-a|`1`
-a|`1`
-a|
-a|yes
+a|_list_ of <<source,sources>>, mandatory
 a|The list should contain just one source element.
 
 a|`target`
-a|_list_ of <<target,targets>>
-a|`1`
-a|`1`
-a|
-a|yes
+a|_list_ of <<target,targets>>, mandatory
 a|The list should contain just one target element.
 
 a|`version`
-a|_text_
-a|`1`
-a|`256`
-a|
-a|yes
+a|_text_, max length: 256, mandatory
 a|The value must be equal to `"1.1.0"`.
 
-This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
+TIP: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
 
 a|`dump-path`
-a|_text_
-a|
-a|`256`
-a|`.`
-a|
+a|_text_, max length: 256, default value: `.`
 a|The location where the `logdump` files are created. The path can be relative to the current directory.
 
 NOTE: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 a|`dump-raw-data`
-a|_number_
-a|`0`
-a|`1`
-a|`0`
-a|
+a|_number_, min: 0, max: 1, default: 0
 a|Print hex dump of vector data for all dumped OP codes.
 
 Possible values:
@@ -94,11 +74,7 @@ Possible values:
 NOTE: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 a|`dump-redo-log`
-a|_number_
-a|`0`
-a|`2`
-a|`0`
-a|
+a|_number_, min: 0, max: 2, default: 0
 a|Create output similar to `logdump` command which can be compared as text to verify if certain parameters have been correctly decoded.
 
 Possible values:
@@ -112,11 +88,7 @@ Possible values:
 CAUTION: The result does not have to fully match the results of `logdump`.There can be some inconsistency. Not all redo OP codes are parsed and analyzed and there is no guarantee that the results should be exactly the same.
 
 a|`trace`
-a|_number_
-a|`0`
-a|`4`
-a|`2`
-a|
+a|_number_, min: 0, max: 4, default: 2
 a|Messages verbose level.
 
 All messages are sent to _stderr_ output stream. Possible values:
@@ -132,11 +104,7 @@ All messages are sent to _stderr_ output stream. Possible values:
 `4` –- _Debug_ -- print all messages.
 
 a|`trace2`
-a|_number_
-a|`0`
-a|`131071`
-a|`0`
-a|
+a|_number_, min: 0, max: 131071, default: 0
 a|Print debug information.
 
 The value is a logical map of various trace parameters, please refer to source code for details.
