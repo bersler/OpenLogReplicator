@@ -17,7 +17,7 @@ This document describes configuration parameters and usage of OpenLogReplicator.
 
 OpenLogReplicator program is non-interactive. The only parameters accepted are:
 
-* `-f|--file <config file>` -- configuration file name (default: `OpenLogReplicator.json`)
+* `-f|--file <config file>` -- configuration file name (default: `"OpenLogReplicator.json"`)
 * `-v|--version` -- print version and exit
 
 All parameters are defined in `OpenLogReplicator.json` config file which should be placed in the same directory. The file should be in JSON format. For start please check example config files in `scripts` folder. Please refer to full parameters list for more details.
@@ -60,7 +60,7 @@ The file is in JSON format. The file should contain a single object with the fol
 _TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
 
 |`dump-path`
-|_text_, max length: 256, default value: `.`
+|_text_, max length: 256, default: `"."`
 |The location where the `logdump` files are created. The path can be relative to the current directory.
 
 _NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
@@ -461,7 +461,7 @@ _TIP:_ Keeping larger number of checkpoint files allows to adjust starting SCN m
 _CAUTION:_ The number of checkpoint files may be actually larger than this parameter (exactly up to `keep-checkpoints` + `schema-force-interval`). Checkpoint file might be deleted only if it is not referred in some consecutive checkpoint files (which do not contain schema data).
 
 |`path`
-|_text_, max length: 2048, default: `checkpoint`
+|_text_, max length: 2048, default: `"checkpoint"`
 |The path to store checkpoint files.
 
 _NOTE:_ This field is valid only for `disk` type.
@@ -475,7 +475,7 @@ _IMPORTANT:_ The path should be accessible for writing by the user which runs th
 _TIP:_ The value of `0` means that the schema is always included in the checkpoint file.
 
 |`type`
-|_text_, max length: 256, default: `disk`
+|_text_, max length: 256, default: `"disk"`
 |Only `disk` is supported.
 
 |===
@@ -867,7 +867,7 @@ _NOTE:_ This field is valid only for `kafka`, `network` and `zeromq` types.
 _TIP:_ This parameter defines how many messages can be sent to output. If the message offers a level of parallelism, messages can be sent in parallel. If the message transport doesn't offer a level of parallelism, messages are sent one by one. The larger the value, the more messages can be sent in parallel.
 
 |`timestamp-format`
-|_text_, max length: 256, default: `%F_%T`
+|_text_, max length: 256, default: `"%F_%T"`
 |Format of timestamp (defined using placeholder `%t` in field `output`) in output file name. The format is the same as for `strftime` function in C. Please refer to the documentation of your C library for more information.
 
 _NOTE:_ This field is valid only for `file` type.
