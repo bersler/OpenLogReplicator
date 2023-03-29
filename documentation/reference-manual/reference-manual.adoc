@@ -36,9 +36,10 @@ image:json-config-file.png[JSON config file main elements,,,]
 
 The file is in JSON format. The file should contain a single object with the following parameters:
 
+[width="100%",cols="1a,2a,4a",options=header]
 .Global parameters
-[width="100%",cols=".<1a,.<2a,.<4a",options=header]
 |===
+
 |Parameter
 |Specification
 |Notes
@@ -55,7 +56,10 @@ The file is in JSON format. The file should contain a single object with the fol
 |_text_, max length: 256, mandatory
 |The value must be equal to `"1.1.0"`.
 
-TIP This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
+[TIP]
+====
+This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
+====
 
 |`dump-path`
 |_text_, max length: 256, default value: `.`
@@ -69,9 +73,9 @@ NOTE This parameter is only valid when `dump-redo-log` parameter is set to non-z
 
 Possible values:
 
-`0` -– No hex dump is added to `DUMP-<nnn>.trace` file.
+* `0` -– No hex dump is added to `DUMP-<nnn>.trace` file.
 
-`1` -– Before logdump information for every vector the full vector is dumped in HEX format – useful for analysis of the content.
+* `1` -– Before logdump information for every vector the full vector is dumped in HEX format – useful for analysis of the content.
 
 NOTE This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
@@ -95,15 +99,15 @@ CAUTION The result does not have to fully match the results of `logdump`.There c
 
 All messages are sent to _stderr_ output stream. Possible values:
 
-`0` –- _Silent_ -- don't print anything.
+* `0` –- _Silent_ -- don't print anything.
 
-`1` -- _Error_ -- print only error messages.
+* `1` -- _Error_ -- print only error messages.
 
-`2` –- _Warning_ -- print error and warning messages (default setting).
+* `2` –- _Warning_ -- print error and warning messages (default setting).
 
-`3` –- _Info_ -- print error, warning and info messages.
+* `3` –- _Info_ -- print error, warning and info messages.
 
-`4` –- _Debug_ -- print all messages.
+* `4` –- _Debug_ -- print all messages.
 
 |`trace2`
 |_number_, min: 0, max: 131071, default: 0
