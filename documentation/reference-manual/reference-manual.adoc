@@ -37,7 +37,7 @@ image:json-config-file.png[JSON config file main elements,,,]
 
 The file is in JSON format. The file should contain a single object with the following parameters:
 
-[width="100%",cols="1a,2a,4a",options="header"]
+[width="100%",cols="a,a,50%a",options="header"]
 .Global parameters
 |===
 
@@ -57,16 +57,13 @@ The file is in JSON format. The file should contain a single object with the fol
 |_text_, max length: 256, mandatory
 |The value must be equal to `"1.1.0"`.
 
-[TIP]
-====
-This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
-====
+_TIP_: This is a safe-checker to make sure to check the content of the JSON configuration file during program upgrade. During upgrade always check the documentation for parameter changes and verify that the JSON configuration file is correct.
 
 |`dump-path`
 |_text_, max length: 256, default value: `.`
 |The location where the `logdump` files are created. The path can be relative to the current directory.
 
-NOTE This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+_NOTE_: This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 |`dump-raw-data`
 |_number_, min: 0, max: 1, default: 0
@@ -78,7 +75,7 @@ Possible values:
 
 * `1` -– Before logdump information for every vector the full vector is dumped in HEX format – useful for analysis of the content.
 
-NOTE This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
+_NOTE:_ This parameter is only valid when `dump-redo-log` parameter is set to non-zero value.
 
 |`dump-redo-log`
 |_number_, min: 0, max: 2, default: 0
@@ -92,7 +89,7 @@ Possible values:
 
 * `2` –- like `1` but additional information is printed which is not originally printed in `logdump` output –- for example details about supplemental log groups.
 
-CAUTION The result does not have to fully match the results of `logdump`.There can be some inconsistency. Not all redo OP codes are parsed and analyzed and there is no guarantee that the results should be exactly the same.
+_CAUTION:_ The result does not have to fully match the results of `logdump`.There can be some inconsistency. Not all redo OP codes are parsed and analyzed and there is no guarantee that the results should be exactly the same.
 
 |`trace`
 |_number_, min: 0, max: 4, default: 2
@@ -116,7 +113,7 @@ All messages are sent to _stderr_ output stream. Possible values:
 
 The value is a logical map of various trace parameters, please refer to source code for details.
 
-CAUTION The codes can change without prior notice.
+_CAUTION:_ The codes can change without prior notice.
 
 |===
 
