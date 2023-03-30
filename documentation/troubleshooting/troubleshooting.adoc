@@ -1,0 +1,46 @@
+= Troubleshooting Guide
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.1.0
+:revdate: 2022-03-26
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This document is a guide for troubleshooting the most common problems with the OpenLogReplicator.
+
+== Runtime errors
+
+If running OpenLogReplicator gives you a result like:
+
+[source,shell]
+----
+#> ./OpenLogReplicator
+./OpenLogReplicator: error while loading shared libraries: libclntshcore.so.19.1: cannot open shared object file: No such file or directory
+----
+
+This means that the libraries are not correctly linked. Please check which libraries are missing, example:
+
+[source,shell]
+----
+#> ldd OpenLogReplicator
+linux-vdso.so.1 =>  (0x00007fff75ddd000)
+libasan.so.0 => /lib64/libasan.so.0 (0x00007f45c27df000)
+libclntshcore.so.19.1 => not found
+libnnz19.so => not found
+libclntsh.so.19.1 => not found
+librdkafka++.so.1 => not found
+	librdkafka.so.1 => not found
+	libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f45c25c3000)
+	libstdc++.so.6 => /lib64/libstdc++.so.6 (0x00007f45c22bc000)
+libm.so.6 => /lib64/libm.so.6 (0x00007f45c1fba000)
+libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007f45c1da4000)
+libc.so.6 => /lib64/libc.so.6 (0x00007f45c19d6000)
+libdl.so.2 => /lib64/libdl.so.2 (0x00007f45c17d2000)
+/lib64/ld-linux-x86-64.so.2 (0x00007f45c576f000)
+----
+
+In the above example all libraries marked with “not found” are missing. Please check that the environment variable LD_LIBRARY_PATH includes paths where the required files are located. If necessary – create appropriate symlinks.
