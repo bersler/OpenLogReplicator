@@ -1,0 +1,163 @@
+= Installation Guide
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.1.0
+:revdate: 2022-03-30
+:imagesdir: ./images
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This document describes installation and configuration guide.
+
+== System Requirements
+
+OpenLogReplicator does not require a separate host to run on. It can run on any host, even on the same host which the source database is running.
+
+The only requirement is to be able to physically read redo log files. The files can be read through network-mounted filesystem (like SSHFS).
+
+OpenLogReplicator is developed and tested only on Linux operating system. It is not tested on other operating systems. There is no guarantee that the code would compile without errors using other operating systems.
+
+== Oracle database requirements
+
+This chapter describes requirements for the source database.
+
+=== Version
+
+Version requirements
+
+The following limitations apply to the source database:
+
+* Supported versions: 11.2, 12.1, 12.2, 18c, 19c, 21c.
+
+* Supported editions: XE, SE, SE2, PE, EE.
+
+* Supported database character set: 138 different (TODO: link to user manual).
+
+* Supported platforms: Linux64, Solaris x64, Solaris Sparc.
+
+* Supported storage: file system (ext4, btrfs, zfs, xfs, sshfs).
+
+* Supported database block sizes: 2k, 4k, 8k, 16k, 32k.
+
+* Required options: none.
+
+* Both singe-tenant and multi-tenant configurations are supported.
+
+* Supported reading Standby Data Guard databases.
+
+* Database must be in single instance mode (non RAC).
+
+=== Configuration requirements
+
+==== Database parameters
+
+The database must be working in *ARCHIVELOG* mode and having enabled *MINIMAL SUPPLEMENTAL LOGGING*.
+
+Example script to configure database:
+
+[source, sql]
+----
+SELECT SUPPLEMENTAL_LOG_DATA_MIN, LOG_MODE FROM V$DATABASE;
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+ALTER SYSTEM ARCHIVE LOG CURRENT;
+SELECT SUPPLEMENTAL_LOG_DATA_MIN, LOG_MODE FROM V$DATABASE;
+----
+
+If you would like to capture UPDATE operations with full PRIMARY KEY columns -- you can set supplemental logging for tables. This is not a requirement for OpenLogReplicator to work.
+
+For OFFLINE mode it is required that Fast Recovery Area is configured. Example:
+
+[source, sql]
+----
+ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 50G;
+ALTER SYSTEM SET DB_RECOVERY_FILE_DEST = '/opt/oracle/fra';
+----
+
+To capture all transactions from the database it is recommended to have also FORCE LOGGING turned on. But it is not a must-have requirement. Having this option turned off results just that some transactions might not be replicated.
+
+[source, sql]
+----
+SELECT FORCE_LOGGING FROM V$DATABASE;
+ALTER DATABASE FORCE LOGGING;
+ALTER SYSTEM ARCHIVE LOG CURRENT;
+SELECT FORCE_LOGGING FROM V$DATABASE;
+----
+
+==== User requirements
+
+Requirements for ONLINE mode:
+
+* user in the source database granted with rights to read some system tables (full list below),
+
+* physical access to read redo log files (online and archived), when running from a remote host access through SSHFS is possible.
+
+Requirements for OFFLINE mode:
+
+* physical access to read redo log files.
+
+It is not a recommended to run OpenLogReplicator using SYS or SYSTEM account or any account with high privileges to connect to the database. The database user should have JUST the following privileges and absolutely nothing more:
+
+[source, sql]
+----
+GRANT SELECT, FLASHBACK ON SYS.CCOL$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.CDEF$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.COL$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.DEFERRED_STG$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.ECOL$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.LOB$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.LOBCOMPPART$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.LOBFRAG$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.OBJ$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.TAB$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.TABCOMPART$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.TABPART$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.TABSUBPART$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.TS$ TO <USER>;
+GRANT SELECT, FLASHBACK ON SYS.USER$ TO <USER>;
+GRANT SELECT ON SYS.V_$ARCHIVED_LOG TO <USER>;
+GRANT SELECT ON SYS.V_$DATABASE TO <USER>;
+GRANT SELECT ON SYS.V_$DATABASE_INCARNATION TO <USER>;
+GRANT SELECT ON SYS.V_$LOG TO <USER>;
+GRANT SELECT ON SYS.V_$LOGFILE TO <USER>;
+GRANT SELECT ON SYS.V_$PARAMETER TO <USER>;
+GRANT SELECT ON SYS.V_$STANDBY_LOG TO <USER>;
+GRANT SELECT ON SYS.V_$TRANSPORTABLE_PLATFORM TO <USER>;
+----
+
+Grant script has to be run from _SYS_ account. For multi-tenant databases the user must be created and given grants in PDB.
+
+=== Runtime permissions
+
+During runtime OpenLogReplicator needs to be able to connect to the source databse using OCI connection.
+
+Database connection used in ONLINE mode is used for:
+
+* Checking database configuration including location of redo logs,
+
+* Reading table schema, verifying if schema contains supplemental log groups,
+
+* Getting archived redo log locations when reading from archived redo logs,
+
+During replication from online redo logs the connection to the database is idle. No queries are run. During startup no query is run that would access any data in user tables.
+
+
+== Source code compilation
+
+=== Docker image
+
+The easiest way to compile source code is to use docker script from github:
+
+[source, shell]
+----
+#> git clone https://github.com/bersler/OpenLogReplicator-docker
+#> bash build.sh
+----
+
+You need at least GCC 4.8 to compile OpenLogReplicator. Please refer to Docker images for Ubuntu or CentOS source scripts for details regarding required packages and compilation options.
