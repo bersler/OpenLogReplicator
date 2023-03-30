@@ -53,7 +53,7 @@ namespace OpenLogReplicator {
 
         conf = rd_kafka_conf_new();
         if (conf == nullptr)
-            throw ConfigurationException(std::string("Kafka failed to create configuration, message: ") + errstr);
+            throw ConfigurationException(1201,"Kafka failed to create configuration, message: " + std::string(errstr));
 
         std::string maxMessageMbStr(std::to_string(builder->getMaxMessageMb() * 1024 * 1024));
         std::string maxMessagesStr(std::to_string(maxMessages));
@@ -63,7 +63,7 @@ namespace OpenLogReplicator {
             rd_kafka_conf_set(conf, "group.id", "OpenLogReplicator", errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             rd_kafka_conf_set(conf, "message.max.bytes", maxMessageMbStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK ||
             rd_kafka_conf_set(conf, "queue.buffering.max.messages", maxMessagesStr.c_str(), errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
-            throw ConfigurationException(std::string("Kafka message: ") + errstr);
+            throw ConfigurationException(1202, "Kafka message: " + std::string(errstr));
         }
 
         rd_kafka_conf_set_opaque(conf, this);
@@ -73,7 +73,7 @@ namespace OpenLogReplicator {
 
         rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
         if (rk == nullptr)
-            throw ConfigurationException(std::string("Kafka failed to create producer, message: ") + errstr);
+            throw ConfigurationException(1203, "Kafka failed to create producer, message: " + std::string(errstr));
         conf = nullptr;
 
         rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);

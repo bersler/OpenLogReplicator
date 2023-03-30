@@ -826,4 +826,20 @@ namespace OpenLogReplicator {
                 pthread_kill(thread->pthread, SIGUSR1);
         }
     }
+
+    void Ctx::error(int code, const std::string& message) {
+        if (OLR_LOCALES == OLR_LOCALES_TIMESTAMP) {
+            std::ostringstream __s;
+            time_t __now = time(nullptr);
+            tm __nowTm = *localtime(&__now);
+            char __str[50];
+            strftime(__str, sizeof(__str), "%F %T", &__nowTm);
+            __s << __str << " [ERROR] code: " << std::dec << code << ": " << message << std::endl;
+            std::cerr << __s.str();
+        } else {
+            std::ostringstream __s;
+            __s << "[ERROR] code: " << std::dec << code << ": " << message << std::endl;
+            std::cerr << __s.str();
+        }
+    }
 }

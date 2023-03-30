@@ -93,10 +93,10 @@ namespace OpenLogReplicator {
             std::string regexString("check if matches!");
             bool regexWorks = regex_search(regexString, regexTest);
             if (!regexWorks)
-                throw ConfigurationException("binaries are build with no regex implementation, check if you have gcc version >= 4.9");
+                throw ConfigurationException(1101, "binaries are build with no regex implementation, check if you have gcc version >= 4.9");
 
             if (getuid() == 0)
-                throw ConfigurationException("program is run as root, you should never do that");
+                throw ConfigurationException(1102, "program is run as root, you should never do that");
 
             if (argc == 2 && (strncmp(argv[1], "-v", 2) == 0 || strncmp(argv[1], "--version", 9) == 0)) {
                 // Print banner and exit
@@ -105,10 +105,11 @@ namespace OpenLogReplicator {
                 // Custom config path
                 fileName = argv[2];
             } else if (argc > 1)
-                throw ConfigurationException(std::string("invalid arguments, run: ") + argv[0] +
-                                             " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
+                throw ConfigurationException(1103, "invalid arguments, run: " + std::string(argv[0]) +
+                        " [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is " + fileName);
         } catch (ConfigurationException& ex) {
-            ERROR(ex.msg)
+            if (mainCtx->trace >= TRACE_ERROR)
+                mainCtx->error(ex.code, ex.msg);
             return 1;
         }
 
@@ -116,7 +117,8 @@ namespace OpenLogReplicator {
         try {
             ret = openLogReplicator.run();
         } catch (ConfigurationException& ex) {
-            ERROR(ex.msg)
+            if (mainCtx->trace >= TRACE_ERROR)
+                mainCtx->error(ex.code, ex.msg);
             mainCtx->stopHard();
         } catch (std::bad_alloc& ex) {
             ERROR("memory allocation failed: " << ex.what())

@@ -1,9 +1,10 @@
 = Error Message Guide
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
-:revdate: 2022-03-30
+:revdate: 2022-03-31
 :imagesdir: ./images
 :toc: preamble
+:toclevels: 4
 
 [frame="none",grid="none"]
 |====
@@ -12,10 +13,64 @@ a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
 
 This document describes error messages of OpenLogReplicator.
 
-== Warning Messages
-
 == Error Messages
 
-== Fatal Messages
+=== Configuration Errors
 
-== Error Codes
+When the configuration file is not correct, the following error messages are displayed:
+
+==== code 1001: "opening in read mode file: <file name> - <os error>"
+
+Configuration file is missing or cannot be opened. Check if the file exists and has correct permissions.
+
+==== code 1002: "locking file: <file name> - another process may be running - <os error>"
+
+Attempt to create an exclusive lock on the configuration file failed. Check if another process is running.
+
+==== code 1003: "reading information from file: <file name> - <os error"
+
+Error occurred during reading metadata for configuration file. Check if the file is not corrupted.
+
+==== code 1004: "file <file name> wrong size: <file size>"
+
+File size is too large or file has zero size. Check if the file is not corrupted.
+
+==== code 1005: "can't read file: <file name"
+
+Error appeared during reading configuration file. Check if the file is not corrupted.
+
+==== code 1006: "parsing file: <file name> at offset: <offset>>, message: <message from parser"
+
+Error appeared during parsing configuration file. Check if the file is not corrupted. Please verify content of JSON file using online JSON validator.
+
+==== code 1007: "bad JSON, invalid '<field name>' value: <observed value>, expected <expected value>"
+
+Value of the field is not correct. Check if the file contains valid content.
+
+==== code 1101: "binaries are build with no regex implementation, check if you have gcc version >= 4.9"
+
+The code is compiled using old GCC compiler which technically has regex support, but it is not complete. Please use GCC version 4.9 or newer.
+
+Program starts at startup if regex support actually works.
+
+==== code 1102: "program is run as root, you should never do that"
+
+Program is run as root. It is not recommended to run the program as root. Please run the program as a normal user.
+
+Although technically it should be possible to run program as root user, this should never be done even for testing environment. The program is designed to run as a normal user. Running a root user may cause security issues.
+
+==== code 1103: "invalid arguments, run: <binary name> [-v|--version] or [-f|--file CONFIG] default path for CONFIG file is <file name>"
+
+Invalid arguments were passed to the program. Check if the program was started correctly.
+
+==== code 1201: "Kafka failed to create configuration, message: <error>"
+
+Kafka configuration cannot be created. Check if the configuration file contains valid content.
+
+==== code 1202: "Kafka message: <error>"
+
+Kafka library returned error during initialization. Please verify provided Kafka parameters.
+
+==== code 1203: "Kafka failed to create producer, message: <error"
+
+Error during Kafka producer creation. Please verify provided Kafka parameters.

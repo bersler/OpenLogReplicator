@@ -361,6 +361,8 @@ namespace OpenLogReplicator {
         void releaseBuffer();
         void allocateBuffer();
         void signalDump();
+
+        void error(int code, const std::string& message);
     };
 }
 

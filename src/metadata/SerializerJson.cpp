@@ -720,7 +720,10 @@ namespace OpenLogReplicator {
             const char* rowId = Ctx::getJsonFieldS(name, ROWID_LENGTH, sysTabJson[i], "row-id");
             typeObj obj = Ctx::getJsonFieldU32(name, sysTabJson[i], "obj");
             typeDataObj dataObj = Ctx::getJsonFieldU32(name, sysTabJson[i], "data-obj");
-            typeTs ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
+            typeTs ts = 0;
+            if (sysTabJson[i].HasMember("ts"))
+                ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
+            //typeTs ts = Ctx::getJsonFieldU32(name, sysTabJson[i], "ts");
             typeCol cluCols = Ctx::getJsonFieldI16(name, sysTabJson[i], "clu-cols");
 
             const rapidjson::Value& flagsJson = Ctx::getJsonFieldA(name, sysTabJson[i], "flags");

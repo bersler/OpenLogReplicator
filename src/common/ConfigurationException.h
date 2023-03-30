@@ -30,10 +30,11 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 namespace OpenLogReplicator {
     class ConfigurationException: public std::exception {
     public:
+        int code;
         std::string msg;
 
-        explicit ConfigurationException(const std::string& newMsg);
-        explicit ConfigurationException(const char* newMsg);
+        explicit ConfigurationException(int newCode, const std::string& newMsg);
+        explicit ConfigurationException(int newCode, const char* newMsg);
         ~ConfigurationException() override;
 
         friend std::ostream& operator<<(std::ostream& os, const ConfigurationException& exception);
