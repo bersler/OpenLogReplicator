@@ -24,6 +24,8 @@ All parameters are defined in `OpenLogReplicator.json` config file which should 
 
 All output messages are sent to _stderr_ stream. Optionally JSON output can be sent to _stdout_ stream when test parameter is set to a no zero value .
 
+The only language of the documentation and error messages and used in program is English.
+
 == Folder permissions
 
 In some interval the program writes a checkpoint file which contain information about the last processed transaction (sent to Kafka output).
@@ -854,7 +856,9 @@ _NOTE:_ This field is valid only for `file` type.
 
 |`poll-interval-us`
 |_number_, min: 100, max: 3600000000, default: 100000
-|Interval for polling for new messages. Number in microseconds.
+|Interval for polling for new messages.
+
+Number in microseconds.
 
 _TIP:_ This parameter defines how often the client library checks for new messages. The smaller the value, the more often the client library checks for new messages. The larger the value, the more messages are buffered in the client library.
 
