@@ -1,0 +1,60 @@
+= Release Notes of OpenLogReplicator
+:author: Adam Leszczyński <aleszczynski@bersler.com>
+:revnumber: 1.1.0
+:revdate: 2022-03-30
+:imagesdir: ./images
+:url-github: https://github.com/bersler/OpenLogReplicator
+:url-db-engines: https://db-engines.com/en/ranking_trend
+:toc: preamble
+
+[frame="none",grid="none"]
+|====
+a|[.small]#Autor: {author}, version: {revnumber}, date: {revdate}#
+|====
+
+This document describes the release notes of OpenLogReplicator.
+
+== Major Release 1.x
+
+=== Version 1.0
+
+This is the first public release of OpenLogReplicator.
+
+==== Version 1.0.1
+
+The following changes are available in version 1.0.1:
+
+- fix: incorrect checkpoint file when non-ascii characters are used in schema files
+- fix: incorrect message printed on error
+- fix: allow to use stop-* parameters without using schemales mode
+- enhancement: added consistency checks for experimental LOB support
+- fix: standardization of output messages
+- fix: race condition might result in transaction data loss
+- fix: experimental LOB support schema script error
+- enhancement: optimized DDL processing speed
+- enhancement: added debug info for release builds
+- enhancement: added support for Oracle 19.18 and 21.8
+- fix: experimental LOB data missing
+
+=== Version 1.1.0
+
+The following changes are available in version 1.1.0:
+
+- debug: trace formatting changes
+- enhancement: add handling of OP 26.2 for experimental LOB support
+- fix: experimental LOB support
+- enhancement: code style corrections
+- fix: error handling of incorrect config file
+- fix: experimental LOB support Unicode character decoding
+- new feature: basicfile LOB (removed being experimental)
+
+=== Nightly Builds
+
+The following changes are available in nightly builds:
+
+- doc: Introduction to OpenLogReplicator
+- fix: minor bug related to sending ddl operations to output
+- fix: minor parameter validation bug
+- fix: minor issue related to sending character data in hex format for debug purposes
+- cleanup in parameter names: renamed "max-size" "max-file-size" and "format" to "timestamp-format" for better understanding
+- doc: Commands Reference Manual
