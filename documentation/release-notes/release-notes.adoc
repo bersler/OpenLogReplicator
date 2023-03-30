@@ -1,4 +1,4 @@
-= Release Notes of OpenLogReplicator
+= Release Notes
 :author: Adam Leszczyński <aleszczynski@bersler.com>
 :revnumber: 1.1.0
 :revdate: 2022-03-30

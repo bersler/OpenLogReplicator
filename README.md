@@ -16,12 +16,12 @@ Please do not create issues claiming that the documentation is missing. It is st
 
 The currently available chapters are:
 
-1. [Introduction](documentation/introduction/introduction.adoc)
+1. [Introduction to OpenLogReplicator](documentation/introduction/introduction.adoc)
 2. [User Manual](documentation/user-manual/user-manual.adoc)
 3. [Reference Manual](documentation/reference-manual/reference-manual.adoc)
-4. [Installation](documentation/installation/installation.adoc)
+4. [Installation Guide](documentation/installation/installation.adoc)
 5. [Release Notes](documentation/release-notes/release-notes.adoc)
-6. [Troubleshooting](documentation/troubleshooting/troubleshooting.adoc)
+6. [Troubleshooting Guide](documentation/troubleshooting/troubleshooting.adoc)
 7. [Error Message Guide](documentation/error-messages/error-messages.adoc)
 
 Additionally:
