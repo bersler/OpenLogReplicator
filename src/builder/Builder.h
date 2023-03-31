@@ -950,7 +950,7 @@ namespace OpenLogReplicator {
                 typeUnicode unicodeCharacter;
 
                 if ((charFormat & CHAR_FORMAT_NOMAPPING) == 0) {
-                    unicodeCharacter = characterSet->decode(lastXid, parseData, parseLength);
+                    unicodeCharacter = characterSet->decode(ctx, lastXid, parseData, parseLength);
 
                     if ((charFormat & CHAR_FORMAT_HEX) == 0 || isSystem) {
                         // 0xxxxxxx

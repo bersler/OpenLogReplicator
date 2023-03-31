@@ -10,6 +10,7 @@ nightly build
 - doc: Release Notes
 - doc: Troubleshooting Guide
 - doc: User Manual
+- fix: treat character decoding issues as warnings
 
 1.1.0
 - debug: trace formatting changes

@@ -27,14 +27,17 @@ along with OpenLogReplicator; see the file LICENSE;  If not see
 #define MAX_CHARACTER_LENGTH                8
 
 namespace OpenLogReplicator {
+    class Ctx;
+
     class CharacterSet {
     protected:
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1) const;
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1, uint64_t byte2) const;
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3) const;
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const;
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const;
-        [[nodiscard]] uint64_t badChar(typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5, uint64_t byte6) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5) const;
+        [[nodiscard]] uint64_t badChar(Ctx* ctx, typeXid xid, uint64_t byte1, uint64_t byte2, uint64_t byte3, uint64_t byte4, uint64_t byte5,
+                                       uint64_t byte6) const;
 
     public:
         const char* name;
@@ -42,7 +45,7 @@ namespace OpenLogReplicator {
         explicit CharacterSet(const char* newName);
         virtual ~CharacterSet();
 
-        virtual uint64_t decode(typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;
+        virtual uint64_t decode(Ctx* ctx, typeXid xid, const uint8_t*& str, uint64_t& length) const = 0;
     };
 }
 
