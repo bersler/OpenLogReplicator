@@ -12,6 +12,7 @@ nightly build
 - doc: User Manual
 - fix: treat character decoding issues as warnings
 - fix: removed obsolete example file
+- fix: removed obsolete files
 
 1.1.0
 - debug: trace formatting changes
